@@ -177,7 +177,7 @@
         {
           "properties": {
             "kind": { "const": "sidecar" },
-            "base": { "type": "string", "pattern": "^[^?#]+/$" }
+            "base": { "type": "string", "pattern": "^[^?#]*/$" }
           },
           "required": ["base"],
           "additionalProperties": false

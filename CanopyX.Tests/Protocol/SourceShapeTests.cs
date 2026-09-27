@@ -14,10 +14,13 @@ public sealed class SourceShapeTests {
     }
 
     [Theory]
+    [InlineData("/", "/")]
     [InlineData("data", "data/")]
     [InlineData("https://example.test/data/", "https://example.test/data/")]
     public void SidecarBasesNormalizeFolderPaths(string input, string expected) {
-        Assert.Equal(expected, CanopySource.Sidecar(input).BaseUrl);
+        var view = View(); view.Source = CanopySource.Sidecar(input);
+        Assert.Equal(expected, view.Source.BaseUrl);
+        ProtocolSchema.AssertValid(view.ToJson(), "Sidecar folder base");
     }
 
     [Fact]
