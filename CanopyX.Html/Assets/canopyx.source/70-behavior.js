@@ -97,21 +97,6 @@
       }
     },
 
-    async retryPage(status) {
-      const parent = status.parent;
-      const previous = new Set(parent.children || []);
-      const element = document.activeElement;
-      const revision = this.focusRevision || 0;
-      const owned = this.focused === status && element && element._w === status;
-      await this.loadPage(parent, parent.next && previous.size ? parent.next : null);
-      if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
-          (document.activeElement !== element && document.activeElement !== document.body)) return;
-      const target = parent.error ? this.statusRow(parent, "error") :
-        (parent.children || []).find((child) => !previous.has(child)) ||
-        (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
-      if (target) this.setFocus(target, true);
-      else this.grid.focus();
-    },
 
     /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
     select(w, options) {
