@@ -93,6 +93,8 @@ await grid.expandPath(["projects", "projects/plans"]);
 // Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
 
+Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement; the retired API retains its view metadata.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
