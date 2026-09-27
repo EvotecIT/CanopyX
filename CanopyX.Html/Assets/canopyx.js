@@ -1920,6 +1920,7 @@
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
       if (this.destroyed) return;
+      const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
       w._v = 0;
@@ -1928,6 +1929,8 @@
         if (!w.children) {
           throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
         }
+      } else if (!wasOpen) {
+        await this.expandInitial(w);
       }
     },
 
