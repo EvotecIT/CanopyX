@@ -187,7 +187,7 @@ for (const invalidFile of ["manifest", "shard"]) {
       const file = ref === "manifest" ? "manifest" : "shard";
       const bad = file === invalidFile && ++attempts[file] === 1;
       const doc = bad ? { protocol: "wrong", type: file } : file === "manifest"
-        ? { protocol: "canopyx/1", type: "manifest", root: "r/0", search: { shards: { ab: 1 } } }
+        ? { protocol: "canopyx/1", type: "manifest", view: "retry", root: "r/0", search: { shards: { ab: 1 } } }
         : { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [{ path: ["ab"], label: "Abacus" }] };
       return route.fulfill({ contentType: "application/javascript", body: `CanopyXSidecar.push(${JSON.stringify(["retry", ref, doc])});` });
     });

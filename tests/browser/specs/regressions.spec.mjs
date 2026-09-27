@@ -152,7 +152,7 @@ for (const prefix of ["", "k-"]) {
   test(`sidecar search reads the ${prefix ? "portable" : "original"} shard layout`, async ({ page }) => {
     const view = { ...baseView(), roots: undefined, source: { kind: "sidecar", base: "/data/" }, search: { minLength: 2, maxResults: 20, placeholder: "Search" } };
     const docs = {
-      manifest: { protocol: "canopyx/1", type: "manifest", root: "r/0", search: { ...(prefix ? { prefix } : {}), shards: { ab: 1 } } },
+      manifest: { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", search: { ...(prefix ? { prefix } : {}), shards: { ab: 1 } } },
       "r/0": { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, items: [{ id: "ab", label: "Abacus" }] },
       ["s/" + prefix + "ab"]: { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [{ path: ["ab"], label: "Abacus" }] }
     };

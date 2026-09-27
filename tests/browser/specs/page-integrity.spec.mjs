@@ -24,7 +24,7 @@ for (const kind of ["remote", "sidecar"]) for (const nested of [false, true]) fo
     await page.route("https://canopyx.test/page?*", r => { const u = new URL(r.request().url()); return r.fulfill({ json: doc(u.searchParams.get("ref"), u.searchParams.get("cursor")) }); });
     await page.route("https://canopyx.test/data/**", r => {
       const ref = new URL(r.request().url()).pathname.slice(6, -3);
-      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", root: "r/0" } : doc(ref === "r/0" ? "" : nested ? "parent" : "", ref === "next" ? "next" : "");
+      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : doc(ref === "r/0" ? "" : nested ? "parent" : "", ref === "next" ? "next" : "");
       return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
     });
     await open(page, { ...view, roots: undefined, source: kind === "remote" ? { kind, children: "/page?ref={ref}&cursor={cursor}" } : { kind, base: "/data/" } });
