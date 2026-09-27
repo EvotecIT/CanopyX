@@ -4,6 +4,33 @@ namespace CanopyX.Tests.Protocol;
 
 public sealed class ProtocolBoundaryTests {
     [Fact]
+    public void PageCannotContainItsParentAndSearchTruncationMatchesTotal() {
+        var page = new CanopyPage("parent");
+        var child = new CanopyNode("child", "Child");
+        child.Children.Add(new CanopyNode("parent", "Parent"));
+        page.Items.Add(child);
+        Assert.Throws<InvalidOperationException>(() => page.ToJson());
+        var search = new CanopySearchResult("query") { Total = 1 };
+        Assert.Throws<InvalidOperationException>(() => search.ToJson());
+        search.Truncated = true;
+        ProtocolSchema.AssertValid(search.ToJson(), "truncated search");
+        search.Total = 0;
+        Assert.Throws<InvalidOperationException>(() => search.ToJson());
+    }
+
+    [Fact]
+    public void InlineRootsAndRemoteSearchEndpointAreRequired() {
+        var inline = SampleDocuments.FullView().ToJson();
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(inline, v => v.AsObject().Remove("roots"))).IsValid);
+        var remote = SampleDocuments.FullView(CanopySource.Remote("c?ref={ref}&cursor={cursor}", "s?q={query}&limit={limit}"));
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(remote.ToJson(), v => v["source"]!.AsObject().Remove("search"))).IsValid);
+        remote.Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}");
+        Assert.Throws<InvalidOperationException>(() => remote.ToJson());
+        remote.Search = null;
+        ProtocolSchema.AssertValid(remote.ToJson(), "remote without search");
+    }
+
+    [Fact]
     public void RemoteSearchRequiresLimitAndSchemaRejectsHiddenTreeColumn() {
         Assert.Throws<ArgumentException>(() => CanopySource.Remote("c?ref={ref}&cursor={cursor}", "s?q={query}"));
         var view = SampleDocuments.FullView().ToJson();
