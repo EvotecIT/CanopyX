@@ -9,6 +9,18 @@ namespace CanopyX.Tests.Rendering;
 /// </summary>
 public sealed class StaticHtmlTests {
     [Fact]
+    public void HiddenCountEncodesCustomCultureSeparators() {
+        var view = new CanopyView("culture", "Culture") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Roots.Add(new CanopyNode("root", "Root") { HasChildren = true, ChildCount = 1000 });
+        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
+        culture.NumberFormat.NumberGroupSeparator = "<img src=x>";
+        var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { Culture = culture });
+        Assert.DoesNotContain("<img", html);
+        Assert.Contains("(+1&lt;img src=x&gt;000)", html);
+    }
+
+    [Fact]
     public void Render_HtmlDetails_AreEncodedInTheScriptFreeFallback() {
         var view = SmallView();
         view.Roots.Add(new CanopyNode("html", "Markup") { Detail = new CanopyHtmlDetail("<script>alert(1)</script><img onerror='alert(2)' src=x>") });
