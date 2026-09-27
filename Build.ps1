@@ -5,7 +5,10 @@ param(
     [switch] $SkipPack,
 
     [ValidateRange(1, 86400)]
-    [int] $DotNetCommandTimeoutSeconds = 900
+    [int] $DotNetCommandTimeoutSeconds = 900,
+
+    [ValidateRange(1, 3600)]
+    [int] $PackageConsumerTimeoutSeconds = 300
 )
 
 $ErrorActionPreference = 'Stop'
@@ -106,6 +109,41 @@ function Assert-SourceLineBudget {
             }
         }
     }
+
+    foreach ($part in Get-ChildItem -Path (Join-Path $Root 'CanopyX.Html/Assets/canopyx.source') -Filter '*.js' -File) {
+        if ([System.IO.File]::ReadAllLines($part.FullName).Length -gt 350) {
+            throw "Runtime source part exceeds the 350-line budget: $($part.Name)"
+        }
+    }
+}
+
+function Invoke-PackageSmoke {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Root,
+        [Parameter(Mandatory = $true)] [string] $PackageRoot,
+        [Parameter(Mandatory = $true)] [string] $Version,
+        [Parameter(Mandatory = $true)] [int] $TimeoutSeconds
+    )
+
+    # A clean console app restores CanopyX.Html from the fresh packages only, with its own package cache so a stale or
+    # published copy of the same version cannot hide a packing mistake.
+    $consumerRoot = Join-Path ([System.IO.Path]::GetTempPath()) "CanopyX-package-smoke-$([Guid]::NewGuid().ToString('N'))"
+    New-Item -ItemType Directory -Path $consumerRoot | Out-Null
+    try {
+        # The nugetconfig template writes a lowercase nuget.config with <clear/> and one nuget.org source named "nuget".
+        # Removing that source leaves the fresh local packages as the only feed.
+        $config = Join-Path $consumerRoot 'nuget.config'
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('new', 'console', '--framework', 'net10.0', '--output', $consumerRoot, '--name', 'CanopyXSmoke', '--no-restore') -Description 'Package smoke project creation' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('new', 'nugetconfig', '--output', $consumerRoot) -Description 'Package smoke NuGet configuration' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('nuget', 'remove', 'source', 'nuget', '--configfile', $config) -Description 'Package smoke feed isolation' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('nuget', 'add', 'source', $PackageRoot, '--name', 'local-canopyx', '--configfile', $config) -Description 'Package smoke local feed' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('nuget', 'config', 'set', 'globalPackagesFolder', (Join-Path $consumerRoot '.packages'), '--configfile', $config) -Description 'Package smoke package cache' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Copy-Item -LiteralPath (Join-Path $Root 'Build/PackageSmoke/Program.cs') -Destination (Join-Path $consumerRoot 'Program.cs') -Force
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('add', (Join-Path $consumerRoot 'CanopyXSmoke.csproj'), 'package', 'CanopyX.Html', '--version', $Version) -Description 'Package smoke dependency restore' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('run', '--project', (Join-Path $consumerRoot 'CanopyXSmoke.csproj'), '-c', 'Release') -Description 'Package smoke run' -TimeoutSeconds $TimeoutSeconds
+    } finally {
+        Remove-Item -LiteralPath $consumerRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Assert-PackageContents {
@@ -167,6 +205,7 @@ try {
     )
 
     Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html')
+    & (Join-Path $root 'Build/Sync-Assets.ps1') -Check
 
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('build', $solution, '-c', $Configuration, '--no-restore') -Description 'Solution build' -TimeoutSeconds $DotNetCommandTimeoutSeconds
@@ -197,7 +236,10 @@ try {
             }
 
             Assert-PackageContents -PackagePath $package -Assembly $packageProject.Id -Version $version -DependencyIds $packageProject.DependencyIds
+            $packageProject.Version = $version
         }
+
+        Invoke-PackageSmoke -Root $root -PackageRoot $packageRoot -Version $packageProjects[1].Version -TimeoutSeconds $PackageConsumerTimeoutSeconds
     }
 } finally {
     Pop-Location

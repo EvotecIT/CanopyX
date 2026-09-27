@@ -1,0 +1,314 @@
+
+  // ---------- tree grid: behavior ----------
+  Object.assign(TreeGrid.prototype, {
+    /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
+    async toggle(w, expand) {
+      if (!w || w.status || !this.expandable(w)) {
+        return;
+      }
+      const open = !!w._open;
+      const want = expand === undefined ? !open : expand;
+      if (want === open && (!want || w.children)) {
+        return;
+      }
+      w.expanded = want;
+      w.filterCollapsed = !want && !!this.filter;
+      w._v = 0;
+      if (want && !w.children) {
+        await this.loadPage(w, null);
+      } else {
+        this.relayout();
+      }
+      this.emit("toggle", { node: w.h, expanded: want });
+      if (this.opts.onToggle) {
+        this.opts.onToggle(w.h, want);
+      }
+      this.stateChanged();
+    },
+
+    /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
+    loadPage(w, cursor) {
+      if (w.loading) {
+        return w._pending;
+      }
+      w.loading = true;
+      w.error = null;
+      w._v = 0;
+      this.relayout();
+      const started = performance.now();
+      const run = (async () => {
+        try {
+          const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
+          const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
+          const items = page.items || [];
+          if (!cursor || !w.children) {
+            w.children = [];
+          }
+          const base = w.children.length;
+          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i)));
+          w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
+          w.next = page.next || null;
+          this.applySort(w, false);
+          // Rows already painted show the old set size; repaint every sibling.
+          w.children.forEach((child) => { child._v = 0; });
+          const loaded = w.children.length;
+          const format = numberFormat(this.lang);
+          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
+          const info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
+          this.emit("load", info);
+          if (this.opts.onLoad) {
+            this.opts.onLoad(w.h, info);
+          }
+        } catch (err) {
+          w.error = err && err.message ? err.message : String(err);
+          this.emit("error", { node: w.h, message: w.error });
+        } finally {
+          w.loading = false;
+          w._v = 0;
+          w._pending = null;
+          this.relayout();
+        }
+      })();
+      w._pending = run;
+      return run;
+    },
+
+    async loadMore(w) {
+      if (w.children && w.next) {
+        const firstNew = w.children.length;
+        const hadFocus = !!(this.focused && this.focused.status === "more");
+        await this.loadPage(w, w.next);
+        const next = w.children[firstNew];
+        if (next && hadFocus) {
+          this.setFocus(next, true);
+        }
+      }
+    },
+
+    /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
+    select(w, options) {
+      if (!w || w.status) {
+        return;
+      }
+      const o = options || {};
+      const previous = Array.from(this.selected);
+      if (this.multi && o.range && this.anchor) {
+        this.selectRange(w);
+        return;
+      }
+      if (this.multi && o.toggle) {
+        if (this.selected.has(w)) {
+          this.selected.delete(w);
+        } else {
+          this.selected.add(w);
+        }
+      } else {
+        this.selected = new Set([w]);
+      }
+      this.anchor = w;
+      previous.forEach((p) => { p._v = 0; });
+      w._v = 0;
+      this.selectionChanged(w);
+    },
+
+    selectRange(w) {
+      const from = this.indexOf(this.anchor);
+      const to = this.indexOf(w);
+      if (from < 0 || to < 0) {
+        this.select(w);
+        return;
+      }
+      this.selected.forEach((p) => { p._v = 0; });
+      this.selected = new Set();
+      for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
+        if (!this.rows[i].status) {
+          this.selected.add(this.rows[i]);
+          this.rows[i]._v = 0;
+        }
+      }
+      this.selectionChanged(w);
+    },
+
+    selectionChanged(w) {
+      this.scheduleRender();
+      const nodes = Array.from(this.selected).map((s) => s.h);
+      this.emit("select", { node: w.h, nodes: nodes });
+      if (this.opts.onSelect) {
+        this.opts.onSelect(w.h, nodes);
+      }
+      this.writeDeepLink(w);
+    },
+
+    setFocus(w, domFocus) {
+      if (!w) {
+        return;
+      }
+      const previous = this.focused;
+      this.focused = w;
+      if (previous && previous !== w) {
+        previous._v = 0;
+      }
+      this.ensureVisible(w);
+      this.render();
+      const rowEl = this.rendered.get(w);
+      if (rowEl && domFocus !== false) {
+        rowEl.focus({ preventScroll: true });
+      }
+    },
+
+    ensureVisible(w) {
+      const i = this.indexOf(w);
+      if (i < 0) {
+        return;
+      }
+      const grid = this.grid;
+      const y = this.tops[i];
+      const height = w.span * this.rowH;
+      const viewHeight = grid.clientHeight - this.head.offsetHeight;
+      if (y < grid.scrollTop) {
+        grid.scrollTop = y;
+      } else if (y + height > grid.scrollTop + viewHeight) {
+        grid.scrollTop = y + height - viewHeight;
+      }
+    },
+
+    rowFromEvent(e) {
+      const rowEl = e.target.closest(".cx-row");
+      return rowEl && rowEl._w ? rowEl._w : null;
+    },
+
+    onClick(e) {
+      const w = this.rowFromEvent(e);
+      if (!w) {
+        return;
+      }
+      if (w.status) {
+        this.setFocus(w, true);
+        this.activate(w, true);
+        return;
+      }
+      if (w.h.detail) {
+        this.setFocus(w, !e.target.closest("a,button,input,select,textarea"));
+        return;
+      }
+      this.setFocus(w, true);
+      if (e.target.classList.contains("cx-exp")) {
+        this.toggle(w);
+      } else {
+        this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
+      }
+    },
+
+    onDblClick(e) {
+      const w = this.rowFromEvent(e);
+      if (w && !w.status && !e.target.classList.contains("cx-exp")) {
+        this.toggle(w);
+      }
+    },
+
+    /** Opens a node for expandPath and throws when its children cannot be loaded. */
+    async openForPath(w) {
+      w.expanded = true;
+      w.filterCollapsed = false;
+      w._v = 0;
+      if (!w.children) {
+        await this.loadPage(w, null);
+        if (!w.children) {
+          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
+        }
+      }
+    },
+
+    /**
+     * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
+     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node).
+     */
+    async expandPath(ids, options) {
+      const o = options || {};
+      await this.rootsReady;
+      let parent = this.root;
+      let w = null;
+      for (let k = 0; k < ids.length; k++) {
+        if (parent !== this.root) {
+          await this.openForPath(parent);
+        }
+        w = this.keyMap.get(ids[k]);
+        while ((!w || w.parent !== parent) && parent.children && parent.next) {
+          const before = parent.children.length;
+          await this.loadPage(parent, parent.next);
+          if (parent.error || parent.children.length === before) {
+            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
+          }
+          w = this.keyMap.get(ids[k]);
+        }
+        if (!w || w.parent !== parent) {
+          throw new Error("CanopyX: id not found on the path: " + ids[k]);
+        }
+        parent = w;
+      }
+      if (o.expandLast && w && this.expandable(w)) {
+        await this.openForPath(w);
+      }
+      this.relayout();
+      this.stateChanged();
+      if (w && o.select !== false) {
+        this.select(w);
+      }
+      if (w && o.focus !== false) {
+        this.setFocus(w, true);
+      } else if (w && o.reveal !== false) {
+        this.ensureVisible(w);
+      }
+      return w ? w.h : null;
+    },
+
+    /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */
+    setFilter(filter, options) {
+      this.filter = typeof filter === "function" ? { match: filter } : filter || null;
+      this.filterExpand = !!(options && options.autoExpand);
+      this.keyMap.forEach((w) => { w.filterCollapsed = false; });
+      this.version++;
+      this.relayout();
+    },
+
+    /** Turns a declarative flag filter from the view on or off; active filters must all match. */
+    setFilterActive(id, active) {
+      if (active) {
+        this.activeFilters.add(id);
+      } else {
+        this.activeFilters.delete(id);
+      }
+      const input = this.toolbar.querySelector("[data-cx-filter=\"" + CSS.escape(id) + "\"]");
+      if (input) {
+        input.checked = !!active;
+      }
+      const filters = (this.view.filters || []).filter((f) => this.activeFilters.has(f.id));
+      const has = (node, flag) => !!(flag && node.flags && node.flags.indexOf(flag) >= 0);
+      this.setFilter(filters.length ? {
+        match: (node) => filters.every((f) => has(node, f.flag)),
+        keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
+      } : null, { autoExpand: true });
+    },
+
+    sort(columnId, direction) {
+      this.sortState = direction ? { column: columnId, direction: direction } : null;
+      this.buildHeader();
+      this.applySort(this.root, true);
+      this.version++;
+      this.relayout();
+    },
+
+    setColumnVisible(columnId, visible) {
+      const index = this.columns.findIndex((c) => c.id === columnId);
+      if (index <= 0) {
+        return;
+      }
+      this.columns[index].hidden = !visible;
+      const input = this.toolbar.querySelector("[data-cx-column=\"" + CSS.escape(columnId) + "\"]");
+      if (input) {
+        input.checked = !!visible;
+      }
+      this.buildHeader();
+      this.relayout();
+    }
+  });

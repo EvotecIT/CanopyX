@@ -151,7 +151,7 @@ Exact label matches rank first, then labels that start with the query, then the 
 
 ## Deep Links
 
-With `deepLink` on, selecting a row writes `#cx.<view id>=<path>` to the URL hash, where `<path>` is the node's id path with each id encoded by `encodeURIComponent` and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report.
+With `deepLink` on, selecting a row writes `#cx.<view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded the same way and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report.
 
 ## Counts
 

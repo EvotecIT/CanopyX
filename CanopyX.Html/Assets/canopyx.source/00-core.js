@@ -1,0 +1,212 @@
+/*
+ * CanopyX browser runtime: a virtualized tree grid over the canopyx/1 data protocol. No dependencies.
+ * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
+ */
+(function (global) {
+  "use strict";
+
+  // A second copy of the runtime on the same page would take over the sidecar queue from the first; keep the first.
+  if (global.CanopyX) {
+    return;
+  }
+
+  const PROTOCOL = "canopyx/1";
+  const OVERSCAN = 8;
+  const TYPEAHEAD_MS = 600;
+  const INDENT = 18;
+  const COUNTS_BATCH = 50;
+  let instanceSeq = 0;
+
+  /** Creates an element with an optional class name. */
+  function h(tag, className) {
+    const element = document.createElement(tag);
+    if (className) {
+      element.className = className;
+    }
+    return element;
+  }
+
+  /** Sets text safely; every host string goes through textContent, never innerHTML. */
+  function setText(element, value) {
+    element.textContent = value == null ? "" : String(value);
+  }
+
+  function safeId(value) {
+    return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
+  }
+
+  /** Throws unless a document belongs to this protocol and has the expected type. */
+  function checkDocument(doc, type) {
+    if (!doc || typeof doc !== "object") {
+      throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
+    }
+    if (doc.protocol !== PROTOCOL) {
+      throw new Error("CanopyX: unsupported protocol '" + doc.protocol + "' (this runtime reads " + PROTOCOL + ")");
+    }
+    if (doc.type !== type) {
+      throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
+    }
+    return doc;
+  }
+
+  // ---------- cells ----------
+  function isCellObject(cell) {
+    return cell !== null && typeof cell === "object";
+  }
+
+  function cellValue(cell) {
+    return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
+  }
+
+  const numberFormats = new Map();
+  function numberFormat(lang) {
+    const key = lang || "";
+    let format = numberFormats.get(key);
+    if (!format) {
+      try {
+        format = new Intl.NumberFormat(lang || undefined, { maximumFractionDigits: 3 });
+      } catch (e) {
+        format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
+      }
+      numberFormats.set(key, format);
+    }
+    return format;
+  }
+
+  function pad2(value) {
+    return value < 10 ? "0" + value : String(value);
+  }
+
+  function formatDate(value) {
+    const time = Date.parse(value);
+    if (isNaN(time)) {
+      return String(value);
+    }
+    const d = new Date(time);
+    return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
+  }
+
+  /** Formats a value without display text, following the protocol's default formatting table. */
+  function formatValue(value, kind, lang) {
+    if (value === null || value === undefined) {
+      return "";
+    }
+    if (typeof value === "boolean") {
+      return value ? "Yes" : "No";
+    }
+    if (typeof value === "number" && kind === "number") {
+      return numberFormat(lang).format(value);
+    }
+    if (typeof value === "string" && kind === "datetime") {
+      return formatDate(value);
+    }
+    return String(value);
+  }
+
+  function cellText(cell, column, lang) {
+    if (isCellObject(cell) && typeof cell.text === "string") {
+      return cell.text;
+    }
+    return formatValue(cellValue(cell), column.kind, lang);
+  }
+
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+  /** Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. */
+  function sortKey(cell, column) {
+    let value = cellValue(cell);
+    if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
+      value = cell.text;
+    }
+    if (value === null || value === "") {
+      return { rank: 2, value: 0 };
+    }
+    if (typeof value === "boolean") {
+      return { rank: 0, value: value ? 1 : 0 };
+    }
+    if (typeof value === "number") {
+      return { rank: 0, value: value };
+    }
+    if (column.kind === "datetime") {
+      const time = Date.parse(value);
+      if (!isNaN(time)) {
+        return { rank: 0, value: time };
+      }
+    }
+    return { rank: 1, value: String(value) };
+  }
+
+  function compareKeys(a, b, direction) {
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    if (a.rank === 2) {
+      return 0;
+    }
+    const order = a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : collator.compare(a.value, b.value);
+    return order * direction;
+  }
+
+  // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
+  function foldUnit(unit) {
+    const code = unit.charCodeAt(0);
+    if (code < 128) {
+      return code >= 65 && code <= 90 ? String.fromCharCode(code + 32) : unit;
+    }
+    const lower = unit.toLowerCase();
+    return lower.length === 1 ? lower : unit;
+  }
+
+  function isSeparator(code) {
+    return code < 128 && !((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122));
+  }
+
+  function foldText(text) {
+    const source = String(text == null ? "" : text);
+    let out = "";
+    for (let i = 0; i < source.length; i++) {
+      out += foldUnit(source.charAt(i));
+    }
+    return out;
+  }
+
+  /** Splits text into folded words. */
+  function words(text) {
+    const folded = foldText(text);
+    const out = [];
+    let current = "";
+    for (let i = 0; i < folded.length; i++) {
+      if (isSeparator(folded.charCodeAt(i))) {
+        if (current) {
+          out.push(current);
+          current = "";
+        }
+      } else {
+        current += folded.charAt(i);
+      }
+    }
+    if (current) {
+      out.push(current);
+    }
+    return out;
+  }
+
+  function matchesWords(labelWords, queryWords) {
+    return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
+  }
+
+  function rankLabel(label, query) {
+    const l = foldText(label);
+    const q = foldText(query).trim();
+    return l === q ? 0 : l.startsWith(q) ? 1 : 2;
+  }
+
+  /** Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits. */
+  function shardKey(prefix) {
+    let out = "";
+    for (let i = 0; i < prefix.length; i++) {
+      const code = prefix.charCodeAt(i);
+      out += (code >= 97 && code <= 122) || (code >= 48 && code <= 57) ? prefix.charAt(i) : "_" + ("000" + code.toString(16)).slice(-4);
+    }
+    return out;
+  }
