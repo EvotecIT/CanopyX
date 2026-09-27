@@ -16,7 +16,8 @@
       }
     },
 
-    wrap(node, parent, index) {
+    wrap(node, parent, index, suppressExpansion) {
+      const initialExpansion = !suppressExpansion && !this.restoring;
       const create = (data, owner, position) => {
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
@@ -37,12 +38,12 @@
           w.children = first.items.map((child, i) => create(child, w, i));
           w.total = first.total;
           w.next = first.next;
-          w.expanded = !!data.expanded && !this.restoring;
+          w.expanded = !!data.expanded && initialExpansion;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
         } else if (data.hasChildren) {
           w.total = typeof data.childCount === "number" ? data.childCount : null;
-          w.autoExpand = !!data.expanded && !this.restoring;
+          w.autoExpand = !!data.expanded && initialExpansion;
         }
       }
       return root;

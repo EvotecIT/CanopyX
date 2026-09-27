@@ -210,6 +210,8 @@ The manifest:
 
 A shard covers every word that starts with a given prefix of the folded word. A prefix starts at two code units. When a shard would hold more entries than the bundle writer's limit, it splits into prefixes one code unit longer, and words exactly as long as the old prefix move to a shard for the old prefix marked with a trailing `-`. The shard key is the prefix encoded for file names: `a` to `z` and `0` to `9` stay as they are, and any other code unit becomes `_` followed by its four lowercase hex digits (`é` becomes `_00e9`).
 
+A shard can be stored in numbered parts when it exceeds an entry or file budget. The first part uses its base key; subsequent keys append `.2`, `.3`, and so on (including after a terminal `-`, for example `ab-.2`). The manifest lists every part separately in `search.shards`, with that file's entry count, for example `{ "report": 2000, "report.2": 640 }`. Writers include the base key and use consecutive part numbers starting at two. Readers discover parts from this list, not by probing filenames: resolve the base prefix without treating a part suffix as a longer prefix, then load its base file followed by listed parts in ascending numeric order. Each file's `searchShard.key` equals its manifest key. A missing part list means the base file is the complete shard.
+
 To search, the runtime takes the longest query word (the first one on a tie) and starts with its first two code units. If a shard exists for that prefix, it loads it. If shards exist for longer prefixes that start with it, it adds the next code unit and repeats; if the query word runs out first, it loads every shard under the current prefix, including the `-` shard. Entries are then matched against the whole query as described in [Search](#search).
 
 ### Remote
@@ -238,3 +240,7 @@ Inline tree serialization uses an iterative traversal, so deep valid hierarchies
 Accessible grid, column, filter, and search names contain non-whitespace text. Cell keys identify a non-empty column ID. Expandable nodes with inline children contain at least one child; lazy nodes omit the children array. Search-shard keys contain at least two encoded UTF-16 units (`a-z`, `0-9`, or `_` plus four lowercase hexadecimal digits), with the documented terminal and part suffixes.
 
 A nonempty inline `children` array cannot declare `hasChildren: false`; an omitted flag remains valid for readers that infer expandability from the array.
+
+Structural counters (`offset`, totals, child counts, manifest node counts, and shard entry counts) range from their declared minimum through 2,147,483,647, matching the C# integer properties and remaining exact in browser JSON. Column widths have the same upper bound; view and manifest page sizes range from 1 through 10,000.
+
+Readers attach a wire page only when `parent` equals the requested node ID, or `null` for the top level; a node reference is a file/endpoint locator, not its identity. A mismatched parent is a load error for remote and sidecar sources.

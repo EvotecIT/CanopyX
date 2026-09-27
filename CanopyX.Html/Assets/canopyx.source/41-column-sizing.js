@@ -21,18 +21,29 @@
     },
 
     startResize(e, column) {
+      if (this.destroyed || e.button !== 0) return;
+      if (this.cancelResize) this.cancelResize();
       e.preventDefault();
       const x0 = e.clientX;
       const w0 = column.width;
+      const pointer = e.pointerId;
       const move = (ev) => {
+        if (ev.pointerId !== pointer) return;
         column.width = Math.max(40, w0 + ev.clientX - x0);
         this.applyWidths();
       };
-      const up = () => {
+      const stop = () => {
         global.removeEventListener("pointermove", move);
-        global.removeEventListener("pointerup", up);
+        global.removeEventListener("pointerup", end);
+        global.removeEventListener("pointercancel", end);
+        global.removeEventListener("blur", stop);
+        if (this.cancelResize === stop) this.cancelResize = null;
       };
+      const end = (ev) => { if (ev.pointerId === pointer) stop(); };
+      this.cancelResize = stop;
       global.addEventListener("pointermove", move);
-      global.addEventListener("pointerup", up);
+      global.addEventListener("pointerup", end);
+      global.addEventListener("pointercancel", end);
+      global.addEventListener("blur", stop);
     }
   });

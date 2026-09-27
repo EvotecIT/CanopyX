@@ -38,6 +38,8 @@
       w.error = null;
       this.relayout();
       const started = performance.now();
+      const restoration = this.restoreGeneration || 0;
+      const suppressInitial = !!this.restoring;
       const run = (async () => {
         let info = null;
         try {
@@ -49,7 +51,8 @@
             w.children = [];
           }
           const base = w.children.length;
-          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i)));
+          const suppressExpansion = suppressInitial || restoration !== (this.restoreGeneration || 0);
+          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
           this.applySort(w, false);
@@ -74,7 +77,7 @@
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w.error) await this.expandInitial(w);
+          if (!this.destroyed && !w.error && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
         }
       })();
       w._pending = run;
