@@ -32,7 +32,8 @@ test("throwing selection hook leaves selection and deep link consistent", async 
 test("opening a loaded parent processes deferred lazy defaults", async ({ page }) => {
   await open(page, { ...view, roots: undefined }, `{source:{page:async node=>({items:node?[{id:"child",label:"Child"}]:[{id:"parent",label:"Parent",children:[{id:"lazy",label:"Lazy",hasChildren:true,expanded:true,ref:"lazy"}]}],next:null})}}`);
   await page.evaluate(() => api.expandPath(["parent"], {expandLast:true}));
-  // The public path opener must honor the same declarative defaults as a row toggle.
+  // The public path opener must honor the same declarative defaults as a row toggle on the first open.
+  await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
   await page.locator('[data-cx-id="parent"] .cx-exp').click();
   await page.locator('[data-cx-id="parent"] .cx-exp').click();
   await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
