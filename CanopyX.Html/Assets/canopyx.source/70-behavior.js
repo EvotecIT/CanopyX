@@ -254,9 +254,10 @@
         w = this.keyMap.get(ids[k]);
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
           const before = parent.children.length;
+          const cursor = parent.next;
           await this.loadPage(parent, parent.next);
           if (this.destroyed) return null;
-          if (parent.error || parent.children.length === before) {
+          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
           w = this.keyMap.get(ids[k]);

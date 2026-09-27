@@ -49,6 +49,9 @@ internal static class CanopyViewValidator {
             throw new InvalidOperationException("View '" + view.Id + "' uses a sidecar source, whose search shards need queries of at least 2 characters.");
         }
 
+        if (view.Search != null && view.Source.Kind == CanopySourceKind.Remote && view.Source.SearchUrl == null) {
+            throw new InvalidOperationException("Remote search options require a search endpoint.");
+        }
         var inline = view.Source.Kind == CanopySourceKind.Inline;
         CanopyTreeValidator.Validate(view.Roots, "View '" + view.Id + "'", node => ValidateNode(view, columns, inline, requireCompleteTree, node));
     }
