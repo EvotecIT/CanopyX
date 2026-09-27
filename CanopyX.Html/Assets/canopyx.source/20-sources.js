@@ -64,18 +64,15 @@
 
   /** Picks the search shards for one folded query word (see "Sidecar" in docs/data-protocol.md). */
   function resolveShards(shards, keys, word) {
+    const bases = keys.filter((key) => !/\.\d+$/.test(key));
+    const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
+      .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
     for (let length = 2; length <= word.length; length++) {
       const key = shardKey(word.slice(0, length));
-      if (Object.prototype.hasOwnProperty.call(shards, key)) {
-        return [key];
-      }
-      const deeper = keys.filter((k) => k.length > key.length && k.startsWith(key));
-      if (!deeper.length) {
-        return [];
-      }
-      if (length === word.length) {
-        return deeper;
-      }
+      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
+      const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
+      if (!deeper.length) return [];
+      if (length === word.length) return parts(deeper);
     }
     return [];
   }

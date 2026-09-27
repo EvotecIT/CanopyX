@@ -13,7 +13,7 @@ public sealed class CanopySearchHit {
     /// <summary>Creates a search hit.</summary>
     /// <param name="path">Node ids from the top level down to and including the match.</param>
     /// <param name="label">The match's label, shown in the result list.</param>
-    /// <exception cref="ArgumentException"><paramref name="path"/> is empty or contains an empty id.</exception>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty or contains an empty id, repeated id, or unpaired surrogate.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> is null.</exception>
     public CanopySearchHit(IEnumerable<string> path, string label) {
         var ids = (path ?? throw new ArgumentNullException(nameof(path))).ToArray();
@@ -24,7 +24,8 @@ public sealed class CanopySearchHit {
             throw new ArgumentException("A search path cannot repeat a node id.", nameof(path));
         }
 
-        Path = ids;
+        foreach (var id in ids) CanopyIdentifiers.Require(id, nameof(path));
+        Path = Array.AsReadOnly(ids);
         Label = label ?? throw new ArgumentNullException(nameof(label));
     }
 
