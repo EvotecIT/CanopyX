@@ -156,8 +156,9 @@
       for (let i = first; i <= last; i++) {
         want.add(this.rows[i]);
       }
-      if (this.focused) {
-        want.add(this.focused);
+      const visibleFocus = this.indexOf(this.focused) >= 0 ? this.focused : null;
+      if (visibleFocus) {
+        want.add(visibleFocus);
       }
       for (const [w, rowEl] of this.rendered) {
         if (!want.has(w)) {
@@ -169,7 +170,7 @@
         }
       }
       // With nothing focused, the tab stop is the first row inside the viewport (not an overscan row).
-      const tabRow = this.focused || this.rows[n ? this.rowAt(top) : 0] || null;
+      const tabRow = visibleFocus || this.rows[n ? this.rowAt(top) : 0] || null;
       const fragment = document.createDocumentFragment();
       for (const w of want) {
         const index = this.indexOf(w);

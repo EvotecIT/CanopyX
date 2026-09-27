@@ -24,7 +24,12 @@
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
       refresh: () => { grid.version++; grid.scheduleRender(); },
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
-      focus: () => grid.setFocus(grid.focused || grid.rows[0], true),
+      focus: () => {
+        if (grid.destroyed) return;
+        const target = grid.focused || grid.rows[0];
+        if (target) grid.setFocus(target, true);
+        else grid.grid.focus({ preventScroll: true });
+      },
       visibleRows: () => grid.visibleRows(),
       toOutline: () => grid.toOutline(),
       getState: () => ({ expanded: grid.getExpandedPaths() }),
