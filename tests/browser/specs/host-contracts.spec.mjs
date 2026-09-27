@@ -77,3 +77,42 @@ test("slow restoration cannot overwrite the saved expansion set", async ({ page 
   }, view);
   expect(saved).toEqual({ expanded: [["b"]] });
 });
+
+test("outline respects owned custom cells and fallback badge order", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy();
+    data.roots = [{ id: "owned", label: "Owned", badges: [{ text: "Suppressed" }] },
+      { id: "fallback", label: "Fallback", badges: [{ text: "Node badge" }], cells: { name: { value: "Fallback", badges: [{ text: "Cell badge" }] } } }];
+    const api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, el) {
+      if (node.id === "owned") { el.textContent = "Host only"; return true; }
+      return false;
+    } });
+    await api.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const div = document.createElement("div"); div.innerHTML = api.toOutline();
+    return { live: [...host.querySelectorAll(".cx-row")].map(el => el.textContent), outline: [...div.querySelectorAll("tbody tr")].map(el => el.textContent) };
+  }, view);
+  expect(result.outline).toEqual(result.live);
+  expect(result.outline[0]).not.toContain("Suppressed");
+  expect(result.outline[1]).toContain("Node badgeCell badge");
+});
+
+test("sidecar search retains paths whose newline-joined strings collide", async ({ page }) => {
+  await open(page);
+  const data = { ...view, source: { kind: "sidecar", base: "/data/" } };
+  const entries = [{ path: ["a\nb", "c"], label: "Abacus one" }, { path: ["a", "b\nc"], label: "Abacus two" }];
+  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", root: "r/0", search: { prefix: "k-", shards: { ab: 1 } } },
+    "s/k-ab": { protocol: "canopyx/1", type: "searchShard", key: "ab", entries } };
+  await page.route("https://canopyx.test/data/**", route => {
+    const ref = new URL(route.request().url()).pathname.slice(6, -3);
+    return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([data.id, ref, docs[ref]])});` });
+  });
+  const paths = await page.evaluate(async ({ data, entries }) => {
+    const sidecar = await CanopyX.sources.sidecar(data).search("ab", 20);
+    const inline = await CanopyX.sources.inline({ ...data, roots: entries.map(e => ({ id: e.path[0], label: "Parent", children: [{ id: e.path[1], label: e.label }] })) }).search("ab", 20);
+    return { sidecar: sidecar.hits.map(h => h.path), inline: inline.hits.map(h => h.path) };
+  }, { data, entries });
+  expect(paths.sidecar).toEqual(paths.inline);
+  expect(paths.sidecar).toHaveLength(2);
+});
