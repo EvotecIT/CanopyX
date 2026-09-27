@@ -138,11 +138,13 @@ test("virtual rows stay in DOM order during continuous scrolling", async ({ page
   const view = baseView(Array.from({ length: 2000 }, (_, i) => ({ id: "n" + i, label: "Node " + i })));
   view.pageSize = 10000;
   await openView(page, view);
-  for (let i = 1; i <= 12; i++) {
-    await page.locator(".cx-grid").evaluate((grid, top) => { grid.scrollTop = top; }, i * 500);
+  await row(page, "n0").focus();
+  for (const top of [...Array.from({ length: 12 }, (_, i) => (i + 1) * 500), ...Array.from({ length: 12 }, (_, i) => (11 - i) * 500)]) {
+    await page.locator(".cx-grid").evaluate((grid, top) => { grid.scrollTop = top; }, top);
     await nextFrames(page);
     const indexes = await page.locator(".cx-canvas > .cx-row").evaluateAll((rows) => rows.map((row) => Number(row.getAttribute("aria-rowindex"))));
     expect(indexes).toEqual(indexes.slice().sort((a, b) => a - b));
+    await expect(row(page, "n0")).toBeFocused();
   }
 });
 

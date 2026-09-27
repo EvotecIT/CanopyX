@@ -229,7 +229,17 @@ try {
             # CI restores the packages in its own step; locally, restore whenever the lock file is newer than the install.
             $installed = Join-Path $browserRoot 'node_modules/.package-lock.json'
             if (-not $env:CI -and (-not (Test-Path $installed) -or (Get-Item (Join-Path $browserRoot 'package-lock.json')).LastWriteTimeUtc -gt (Get-Item $installed).LastWriteTimeUtc)) {
-                Invoke-ToolCommand -FileName 'npm' -Arguments @('ci', '--no-audit', '--no-fund') -WorkingDirectory $browserRoot -Description 'Browser test restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                if ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) {
+                    # Process.Start cannot launch npm.cmd directly. Run the CLI shipped beside that launcher.
+                    $npm = Get-Command 'npm' -CommandType Application -ErrorAction Stop | Select-Object -First 1
+                    $npmCli = Join-Path (Split-Path -Parent $npm.Source) 'node_modules/npm/bin/npm-cli.js'
+                    if (-not (Test-Path -LiteralPath $npmCli)) {
+                        throw "The npm CLI was not found beside '$($npm.Source)': $npmCli"
+                    }
+                    Invoke-ToolCommand -FileName 'node' -Arguments @($npmCli, 'ci', '--no-audit', '--no-fund') -WorkingDirectory $browserRoot -Description 'Browser test restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                } else {
+                    Invoke-ToolCommand -FileName 'npm' -Arguments @('ci', '--no-audit', '--no-fund') -WorkingDirectory $browserRoot -Description 'Browser test restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                }
             }
 
             $previousExamples = $env:CANOPYX_EXAMPLES
