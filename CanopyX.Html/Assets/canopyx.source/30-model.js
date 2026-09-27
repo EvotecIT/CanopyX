@@ -146,6 +146,10 @@
 
     relayout() {
       if (this.destroyed) return;
+      const previousFocus = this.focused;
+      const previousIndex = this.indexOf(previousFocus);
+      const previousElement = this.rendered.get(previousFocus);
+      const ownedFocus = previousElement && previousElement.contains(document.activeElement);
       const rows = [];
       const filter = this.filter;
       if (filter) {
@@ -197,8 +201,17 @@
       this.canvas.style.height = y + "px";
       this.grid.setAttribute("aria-rowcount", String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0) {
+        let target = this.focused.parent;
+        while (target && this.indexOf(target) < 0) target = target.parent;
+        target = target || rows[Math.min(Math.max(0, previousIndex), rows.length - 1)];
         this.focused = null;
+        if (target) this.setFocus(target, !!ownedFocus);
+        else if (ownedFocus) {
+          this.grid.tabIndex = 0;
+          this.grid.focus({ preventScroll: true });
+        }
       }
+      this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
     }
 
