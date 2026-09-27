@@ -47,5 +47,7 @@ test("outline HTML details honor host ownership while default markup remains enc
   const result = await page.evaluate(() => { const api=document.querySelector('.cx-host').canopyx; const out=document.createElement('div'); out.innerHTML=api.toOutline(); return { strong: out.querySelector('strong')?.textContent, em: out.querySelectorAll('em').length, text: out.textContent }; });
   expect(result.strong).toBe("Host detail"); expect(result.em).toBe(0); expect(result.text).toContain("<em>Encoded</em>");
   await page.evaluate(() => window.dispatchEvent(new Event('beforeprint'))); await expect(page.locator('.cx-outline strong')).toHaveText('Host detail');
+  await page.emulateMedia({ media: "print" }); await expect(page.locator(".cx-outline")).toBeVisible();
+  await expect(page.locator(".cx-outline")).toContainText("<em>Encoded</em>");
   await page.screenshot({ path: path.join(repo, "artifacts/takeover/tenth-outline.png") });
 });
