@@ -78,11 +78,12 @@
 
     async loadMore(w) {
       if (w.children && w.next) {
-        const firstNew = w.children.length;
-        const hadFocus = !!(this.focused && this.focused.status === "more");
+        const previous = new Set(w.children);
+        const focus = this.focused;
+        const hadFocus = !!(focus && focus.status === "more" && focus.parent === w);
         await this.loadPage(w, w.next);
-        const next = w.children[firstNew];
-        if (next && hadFocus) {
+        const next = w.children.find((child) => !previous.has(child));
+        if (next && hadFocus && this.focused === focus) {
           this.setFocus(next, true);
         }
       }

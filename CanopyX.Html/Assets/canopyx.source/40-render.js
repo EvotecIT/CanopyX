@@ -187,6 +187,23 @@
       }
       if (this.focused) {
         want.add(this.focused);
+      } else {
+        // Keep the DOM slots stationary and assign visible nodes in order. Moving recycled elements triggers
+        // expensive subtree restyling; updating their existing cell skeletons preserves both order and reuse.
+        const slots = Array.from(this.canvas.children);
+        this.rendered.clear();
+        let slot = 0;
+        for (const w of want) {
+          if (slot < slots.length) {
+            this.rendered.set(w, slots[slot++]);
+          }
+        }
+        while (slot < slots.length) {
+          const rowEl = slots[slot++];
+          rowEl.remove();
+          rowEl._w = null;
+          if (this.pool.length < 200) this.pool.push(rowEl);
+        }
       }
       const free = [];
       const active = document.activeElement;
