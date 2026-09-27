@@ -120,7 +120,7 @@
       }
       const prefix = this.deepLinkName() + "=";
       const params = this.hashParams().filter((p) => !p.startsWith(prefix));
-      params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
+      if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
       const hash = "#" + params.join("&");
       try {
         global.history.replaceState(global.history.state, "", hash);
@@ -147,8 +147,7 @@
         if (w.h.detail) {
           const detail = w.h.detail;
           const content = h("div");
-          if (detail.type === "html") setText(content, detail.html || "");
-          else this.renderDetail(w.h, content);
+          this.renderDetail(w.h, content, true);
           out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }

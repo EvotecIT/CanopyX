@@ -127,6 +127,21 @@ public sealed class FallbackBoundaryTests {
         } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
 
+    [Fact]
+    public void MaterializedRemoteTreesUseBundleSearchWithoutARemoteSearchEndpoint() {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-local-search-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = View(); view.Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}");
+            view.Search = new CanopySearchOptions(); view.Roots.Add(new CanopyNode("root", "Searchable root"));
+            Assert.Throws<InvalidOperationException>(() => view.ToJson());
+            var result = new CanopyBundleWriter().Write(view, directory);
+            Assert.True(result.SearchShardCount > 0);
+            Assert.Equal(CanopySourceKind.Sidecar, result.Source.Kind);
+            view.SaveHtmlBundle(directory);
+            Assert.True(File.Exists(Path.Combine(directory, "index.html")));
+        } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
     [Theory]
     [InlineData("./assets/")]
     [InlineData("./")]

@@ -95,6 +95,8 @@ await grid.expandPath(["projects", "projects/plans"]);
 
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement; the retired API retains its view metadata.
 
+Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
+
 ## Documentation
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
