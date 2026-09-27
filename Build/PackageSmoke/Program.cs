@@ -2,6 +2,7 @@
 // CanopyX.Html package from a local feed, then runs it. It proves the published surface works outside the solution.
 using CanopyX;
 using CanopyX.Html;
+using CanopyX.Rendering;
 
 var output = Path.Combine(AppContext.BaseDirectory, "smoke-output");
 
@@ -20,6 +21,13 @@ Require(page.Contains(CanopyHtmlAssets.Script, StringComparison.Ordinal), "the p
 
 var assets = CanopyHtmlAssets.WriteTo(Path.Combine(output, "assets"));
 Require(assets.All(File.Exists), "the asset files were not written");
+
+var outline = CanopyStaticHtml.Render(view);
+Require(outline.Contains("Child", StringComparison.Ordinal) && !outline.Contains("<script", StringComparison.Ordinal), "the static outline is wrong");
+
+var bundle = view.SaveHtmlBundle(Path.Combine(output, "bundle"));
+Require(bundle.NodeCount == 2 && File.Exists(Path.Combine(output, "bundle", "index.html")), "the bundle was not written");
+Require(File.Exists(Path.Combine(bundle.DataDirectory, "manifest.js")), "the bundle has no manifest");
 
 Console.WriteLine("CanopyX package smoke passed.");
 

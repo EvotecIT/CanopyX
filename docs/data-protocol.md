@@ -144,8 +144,8 @@ The path starts at a top-level node and ends at the hit. Choosing a hit expands 
 Matching is by word prefix: a label matches when every word of the query is the start of some word of the label. "sal rep" matches "Quarterly Sales Report". The bundle writer and the runtime split and fold text the same way:
 
 - A word is a run of characters that are not separators. Separators are every ASCII character other than `A` to `Z`, `a` to `z`, and `0` to `9`; characters above ASCII are always part of a word.
-- `A` to `Z` fold to `a` to `z`. A character above ASCII folds to its invariant lowercase form when that form is a single UTF-16 code unit, and stays as it is otherwise.
-- Lengths are counted in UTF-16 code units of the folded word.
+- Folding uses a fixed table, not a platform's lowercase data (which differs between .NET Framework, .NET, and browsers). Capitals fold to small letters in these ranges: `A` to `Z`; Latin-1 U+00C0 to U+00DE except U+00D7; Latin Extended-A U+0100 to U+017F, where each capital is followed by its small letter (capitals are the even code points up to U+0137 and from U+014A to U+0177, the odd ones from U+0139 to U+0148 and from U+0179 to U+017E, and U+0178 folds to U+00FF); Greek U+0391 to U+03A9 except U+03A2, plus the accented capitals U+0386, U+0388 to U+038A, U+038C, U+038E, and U+038F; Cyrillic U+0400 to U+042F. Every other code unit, including U+0130 and U+0131, stays as it is.
+- Lengths are counted in UTF-16 code units of the folded word. Query words shorter than two code units cannot pick a shard; a sidecar search whose words are all that short returns no hits.
 
 Exact label matches rank first, then labels that start with the query, then the rest in natural order. Remote endpoints may rank differently.
 
@@ -192,23 +192,25 @@ The three array items are the view id, the file's reference (its path under `bas
 | --- | --- | --- |
 | `manifest` | `manifest` | View id, first top-level page, node count, page size, search shard list |
 | `r/<n>` | `page` | Page `n` of the top-level nodes |
-| `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the node id in UTF-8, `<hh>` its first two digits. |
-| `s/<key>` | `searchShard` | Search index entries whose words start with `key` |
+| `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the node id in UTF-8 (all 64 digits when another id in the bundle already has those 16), `<hh>` its first two digits. |
+| `s/k-<key>` | `searchShard` | Search index entries whose words start with the shard's prefix. The `k-` keeps keys such as `con` or `nul` from becoming Windows device names. |
 
-Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. Hashing keeps file names short, safe on case-insensitive file systems, and independent of the characters in ids. The two-digit folder keeps any one folder from holding tens of thousands of files.
+Every page holds at most the writer's page size and stays within its file budget (512 KiB by default), so page sizes vary and `offset` tells where each page starts. Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. Hashing keeps file names short, safe on case-insensitive file systems, and independent of the characters in ids. The two-digit folder keeps any one folder from holding tens of thousands of files.
 
 The manifest:
 
 ```json
 { "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 120000, "pageSize": 250,
-  "search": { "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3 } } }
+  "search": { "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
 ```
 
-`search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`), and each entry is filed under every distinct word of its label that has at least two characters.
+`search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`, where the bundle writer's context names the nearest two ancestors), and each entry is filed under every distinct word of its label that has at least two code units.
 
 A shard covers every word that starts with a given prefix of the folded word. A prefix starts at two code units. When a shard would hold more entries than the bundle writer's limit, it splits into prefixes one code unit longer, and words exactly as long as the old prefix move to a shard for the old prefix marked with a trailing `-`. The shard key is the prefix encoded for file names: `a` to `z` and `0` to `9` stay as they are, and any other code unit becomes `_` followed by its four lowercase hex digits (`é` becomes `_00e9`).
 
-To search, the runtime takes the longest query word (the first one on a tie) and starts with its first two code units. If a shard exists for that prefix, it loads it. If shards exist for longer prefixes that start with it, it adds the next code unit and repeats; if the query word runs out first, it loads every shard under the current prefix, including the `-` shard. Entries are then matched against the whole query as described in [Search](#search).
+A shard that still holds more entries than the limit, because a word is very common or its prefix reached the writer's longest prefix (12 code units), or whose file would exceed the file budget, is stored in parts: the first part under its key, the next ones under the key followed by `.2`, `.3`, and so on.
+
+To search, the runtime takes the longest query word (the first one on a tie) and starts with its first two code units. If a shard exists for that prefix, it loads it. If shards exist for longer prefixes that start with it, it adds the next code unit and repeats; if the query word runs out first, it loads every shard under the current prefix, including the `-` shard. It loads the shards and their parts in order, a few files at a time, and stops once it has five times the view's `maxResults` in matches, reporting the result as truncated; a truncated result is not guaranteed to hold the best-ranked matches. Entries are matched against the whole query as described in [Search](#search).
 
 ### Remote
 

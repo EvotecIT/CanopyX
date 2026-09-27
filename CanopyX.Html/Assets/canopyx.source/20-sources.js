@@ -66,7 +66,7 @@
       if (Object.prototype.hasOwnProperty.call(shards, key)) {
         return [key];
       }
-      const deeper = keys.filter((k) => k.length > key.length && k.startsWith(key));
+      const deeper = keys.filter((k) => k.length > key.length && k.startsWith(key) && k.charAt(key.length) !== ".");
       if (!deeper.length) {
         return [];
       }
@@ -87,17 +87,26 @@
       manifestPromise = null;
       throw err;
     }));
+    // Shards stay cached for repeated queries, but only the most recent ones, so a few broad queries cannot keep
+    // megabytes of index alive.
     const loadShard = (key) => {
-      if (!shardCache.has(key)) {
-        shardCache.set(key, load("s/" + key).then((doc) => {
+      let pending = shardCache.get(key);
+      if (pending) {
+        shardCache.delete(key);
+      } else {
+        pending = load("s/k-" + key).then((doc) => {
           checkDocument(doc, "searchShard");
           return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
         }, (err) => {
           shardCache.delete(key);
           throw err;
-        }));
+        });
       }
-      return shardCache.get(key);
+      shardCache.set(key, pending);
+      if (shardCache.size > SHARD_CACHE) {
+        shardCache.delete(shardCache.keys().next().value);
+      }
+      return pending;
     };
     return {
       kind: "sidecar",
@@ -119,20 +128,40 @@
         }
         const longest = queryWords.reduce((a, b) => (b.length > a.length ? b : a));
         const shards = m.search.shards;
-        const keys = resolveShards(shards, Object.keys(shards), longest);
-        const loaded = await Promise.all(keys.map(loadShard));
+        const all = Object.keys(shards);
+        const partNumber = (key) => Number(key.slice(key.lastIndexOf(".") + 1));
+        // A large shard is stored in parts (key.2, key.3, ...). Parts load one at a time, and loading stops once
+        // there are plenty of matches to rank, so a very common word does not pull in the whole index.
+        const bases = resolveShards(shards, all, longest).filter((key) => !/\.\d+$/.test(key));
+        const order = [];
+        bases.forEach((key) => order.push.apply(order, [key].concat(all.filter((k) => k.startsWith(key + ".")).sort((a, b) => partNumber(a) - partNumber(b)))));
         const seen = new Set();
         const hits = [];
-        for (const shard of loaded) {
-          for (const item of shard) {
-            const pathKey = item.entry.path.join("\n");
-            if (!seen.has(pathKey) && matchesWords(item.words, queryWords)) {
-              seen.add(pathKey);
-              hits.push(item.entry);
+        let stopped = false;
+        // Files load a few at a time: parallel enough for HTTP, and the candidate check between batches keeps a
+        // broad query from pulling in every part.
+        for (let i = 0; i < order.length; i += SHARD_BATCH) {
+          if (hits.length >= limit * SEARCH_CANDIDATES) {
+            stopped = true;
+            break;
+          }
+          const batch = await Promise.all(order.slice(i, i + SHARD_BATCH).map(loadShard));
+          for (const shard of batch) {
+            for (const item of shard) {
+              const pathKey = item.entry.path.join("\n");
+              if (!seen.has(pathKey) && matchesWords(item.words, queryWords)) {
+                seen.add(pathKey);
+                hits.push(item.entry);
+              }
             }
           }
         }
-        return rankHits(hits, query, limit);
+        const ranked = rankHits(hits, query, limit);
+        if (stopped) {
+          ranked.truncated = true;
+          ranked.total = undefined;
+        }
+        return ranked;
       }
     };
   }

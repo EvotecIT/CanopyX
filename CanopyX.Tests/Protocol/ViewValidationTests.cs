@@ -14,7 +14,7 @@ public sealed class ViewValidationTests {
         { "hidden tree column", "cannot be hidden" },
         { "detail with children", "a detail row must be a leaf" },
         { "detail with lazy children", "a detail row must be a leaf" },
-        { "lazy node in an inline view", "uses an inline source" },
+        { "lazy node in an inline view", "needs the complete tree" },
         { "inline children fewer than child count", "inline children must be complete" },
         { "sidecar search shorter than two characters", "at least 2 characters" }
     };

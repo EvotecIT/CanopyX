@@ -8,7 +8,11 @@ namespace CanopyX;
 /// detail rows, and nodes an inline view can actually show.
 /// </summary>
 internal static class CanopyViewValidator {
-    internal static void Validate(CanopyView view) {
+    /// <param name="view">The view.</param>
+    /// <param name="requireCompleteTree">
+    /// True when every child must be in the tree even though the source is not inline, as for the bundle writer.
+    /// </param>
+    internal static void Validate(CanopyView view, bool requireCompleteTree = false) {
         if (view.Columns.Count == 0) {
             throw new InvalidOperationException("View '" + view.Id + "' needs at least one column.");
         }
@@ -45,7 +49,7 @@ internal static class CanopyViewValidator {
             throw new InvalidOperationException("View '" + view.Id + "' uses a sidecar source, whose search shards need queries of at least 2 characters.");
         }
 
-        var inline = view.Source.Kind == CanopySourceKind.Inline;
+        var inline = requireCompleteTree || view.Source.Kind == CanopySourceKind.Inline;
         CanopyTreeValidator.Validate(view.Roots, "View '" + view.Id + "'", node => ValidateNode(view, columns, inline, node));
     }
 
@@ -62,7 +66,7 @@ internal static class CanopyViewValidator {
 
         // An inline view has nowhere to load children from, so every child must already be in the tree.
         if (inline && ((node.HasChildren && !node.HasInlineChildren) || node.Ref != null)) {
-            throw new InvalidOperationException("Node '" + node.Id + "' declares children that load later, but view '" + view.Id + "' uses an inline source; add the children or use a sidecar or remote source.");
+            throw new InvalidOperationException("Node '" + node.Id + "' declares children that load later, but view '" + view.Id + "' needs the complete tree (an inline source or a bundle); add the children or use a remote source.");
         }
     }
 }

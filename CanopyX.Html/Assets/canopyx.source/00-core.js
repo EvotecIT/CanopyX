@@ -15,6 +15,9 @@
   const TYPEAHEAD_MS = 600;
   const INDENT = 18;
   const COUNTS_BATCH = 50;
+  const SHARD_CACHE = 24;
+  const SEARCH_CANDIDATES = 5;
+  const SHARD_BATCH = 4;
   let instanceSeq = 0;
 
   /** Creates an element with an optional class name. */
@@ -148,13 +151,37 @@
   }
 
   // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  function foldUnit(unit) {
-    const code = unit.charCodeAt(0);
-    if (code < 128) {
-      return code >= 65 && code <= 90 ? String.fromCharCode(code + 32) : unit;
+  // A fixed table instead of toLowerCase(), whose data differs between browsers and from .NET: ASCII, Latin-1,
+  // Latin Extended-A, basic Greek, and basic Cyrillic capitals fold to small letters; everything else stays.
+  const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
+
+  function foldCode(c) {
+    if (c < 0x80) {
+      return c >= 65 && c <= 90 ? c + 32 : c;
     }
-    const lower = unit.toLowerCase();
-    return lower.length === 1 ? lower : unit;
+    if (c >= 0xC0 && c <= 0xDE && c !== 0xD7) {
+      return c + 0x20;
+    }
+    if (c >= 0x0100 && c <= 0x017F) {
+      if ((c <= 0x012F || (c >= 0x0132 && c <= 0x0137) || (c >= 0x014A && c <= 0x0177)) && c % 2 === 0) {
+        return c + 1;
+      }
+      if (((c >= 0x0139 && c <= 0x0148) || (c >= 0x0179 && c <= 0x017E)) && c % 2 === 1) {
+        return c + 1;
+      }
+      return c === 0x0178 ? 0x00FF : c;
+    }
+    if ((c >= 0x0391 && c <= 0x03A9 && c !== 0x03A2) || (c >= 0x0410 && c <= 0x042F)) {
+      return c + 0x20;
+    }
+    if (c >= 0x0400 && c <= 0x040F) {
+      return c + 0x50;
+    }
+    return GREEK_ACCENTED[c] || c;
+  }
+
+  function foldUnit(unit) {
+    return String.fromCharCode(foldCode(unit.charCodeAt(0)));
   }
 
   function isSeparator(code) {

@@ -118,6 +118,13 @@ internal sealed class CanopyJsonWriter {
         return this;
     }
 
+    /// <summary>Writes a value that is already serialized JSON, such as a node the bundle writer measured before packing.</summary>
+    internal CanopyJsonWriter Raw(string json) {
+        BeforeValue();
+        _builder.Append(json);
+        return this;
+    }
+
     internal CanopyJsonWriter Property(string name, string? value) => Name(name).String(value);
 
     internal CanopyJsonWriter Property(string name, long value) => Name(name).Number(value);

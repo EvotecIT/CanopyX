@@ -290,7 +290,7 @@
           "properties": {
             "shards": {
               "type": "object",
-              "propertyNames": { "pattern": "^[a-z0-9_]{2,}-?$" },
+              "propertyNames": { "pattern": "^[a-z0-9_]{2,}-?(\\.[0-9]+)?$" },
               "additionalProperties": { "type": "integer", "minimum": 1 }
             }
           }
@@ -304,7 +304,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "searchShard" },
-        "key": { "type": "string", "pattern": "^[a-z0-9_]{2,}-?$" },
+        "key": { "type": "string", "pattern": "^[a-z0-9_]{2,}-?(\\.[0-9]+)?$" },
         "entries": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
       }
     }
