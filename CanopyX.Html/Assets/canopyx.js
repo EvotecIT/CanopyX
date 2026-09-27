@@ -1589,7 +1589,7 @@
 
     async retryPage(status) {
       const parent = status.parent;
-      await this.loadStatusPage(parent, status, parent.next && parent.children && parent.children.length ? parent.next : null);
+      await this.loadStatusPage(parent, status, parent.next || null);
     },
 
     typeAhead(e, i) {
