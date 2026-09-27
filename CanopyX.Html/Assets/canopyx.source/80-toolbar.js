@@ -94,8 +94,8 @@
           }
           item.addEventListener("mousedown", (e) => {
             e.preventDefault();
-            choose(index);
           });
+          item.addEventListener("click", () => choose(index));
           list.appendChild(item);
         });
         list.hidden = !hits.length;

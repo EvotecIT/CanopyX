@@ -147,7 +147,7 @@ Matching is by word prefix: a label matches when every word of the query is the 
 
 - A word is a run of characters that are not separators. Separators are every ASCII character other than `A` to `Z`, `a` to `z`, and `0` to `9`; characters above ASCII are always part of a word.
 - `A` to `Z` fold to `a` to `z`. A character above ASCII folds to its invariant lowercase form when that form is a single UTF-16 code unit, and stays as it is otherwise.
-- Lengths are counted in UTF-16 code units of the folded word.
+- Lengths are counted in UTF-16 code units of the folded word. A sidecar query needs at least one word of two or more code units to select an indexed shard. The runtime rejects queries made entirely of shorter words, including `a b`; inline and remote search can handle them according to their source.
 
 Exact label matches rank first, then labels that start with the query, then the rest in natural order. Remote endpoints may rank differently.
 
@@ -224,7 +224,7 @@ To search, the runtime takes the longest query word (the first one on a tie) and
 The runtime fills the placeholders with URL-encoded values and sends `GET` requests with `Accept: application/json`:
 
 - `children`: `{ref}` is empty for the top level and otherwise the node's `ref` (or `id`); `{cursor}` is empty for the first page and otherwise the previous page's `next`. The response is a `page` document.
-- `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document. Without it, the search box is hidden for remote views and view-level search options must be omitted.
+- `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document whose `query` must echo the request exactly; a mismatched response is rejected before its hits are shown. Without the endpoint, the search box is hidden for remote views and view-level search options must be omitted.
 - `counts` (optional): `{ids}` is the node ids, each encoded with `encodeURIComponent`, joined with a literal comma and inserted without further encoding, so a comma inside an id arrives as `%2C`. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
 
 A response with a non-success status, invalid JSON, or the wrong `protocol` or `type` shows an error row with a retry action in place of the children. Authorization, page-size limits, and query-time limits belong to the host's endpoints.

@@ -19,6 +19,7 @@
         await this.loadPage(w, null);
       } else {
         this.relayout();
+        if (want) await this.expandInitial(w);
       }
       if (this.destroyed || w.toggleRevision !== revision) return;
       this.emit("toggle", { node: w.h, expanded: w.expanded });
@@ -55,6 +56,11 @@
           items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
+          if (w !== this.root && !w.next && !w.children.length) {
+            w.h.hasChildren = false;
+            w.h.childCount = 0;
+            w.expanded = false;
+          }
           this.applySort(w, false);
           // Paging changes sibling metadata, not retained host cell content.
           const loaded = w.children.length;
@@ -88,60 +94,6 @@
       if (w.children && w.next) {
         await this.loadStatusPage(w, this.statusRow(w, "more"), w.next);
       }
-    },
-
-    /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
-    select(w, options) {
-      if (!w || w.status) {
-        return;
-      }
-      const o = options || {};
-      const previous = Array.from(this.selected);
-      if (this.multi && o.range && this.anchor) {
-        this.selectRange(w);
-        return;
-      }
-      if (this.multi && o.toggle) {
-        if (this.selected.has(w)) {
-          this.selected.delete(w);
-        } else {
-          this.selected.add(w);
-        }
-      } else {
-        this.selected = new Set([w]);
-      }
-      this.anchor = w;
-      previous.forEach((p) => { p._v = 0; });
-      w._v = 0;
-      this.selectionChanged(w);
-    },
-
-    selectRange(w) {
-      const from = this.indexOf(this.anchor);
-      const to = this.indexOf(w);
-      if (from < 0 || to < 0) {
-        this.select(w);
-        return;
-      }
-      this.selected.forEach((p) => { p._v = 0; });
-      this.selected = new Set();
-      for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
-        if (!this.rows[i].status) {
-          this.selected.add(this.rows[i]);
-          this.rows[i]._v = 0;
-        }
-      }
-      this.selectionChanged(w);
-    },
-
-    selectionChanged(w) {
-      this.scheduleRender();
-      const nodes = Array.from(this.selected).map((s) => s.h);
-      this.emit("select", { node: w.h, nodes: nodes });
-      if (this.opts.onSelect) {
-        this.opts.onSelect(w.h, nodes);
-      }
-      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
     },
 
     setFocus(w, domFocus) {
@@ -307,7 +259,7 @@
       } else {
         this.activeFilters.delete(id);
       }
-      const input = this.toolbar.querySelector("[data-cx-filter=\"" + CSS.escape(id) + "\"]");
+      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-filter]")).find((el) => el.getAttribute("data-cx-filter") === id);
       if (input) {
         input.checked = !!active;
       }
@@ -333,7 +285,7 @@
         return;
       }
       this.columns[index].hidden = !visible;
-      const input = this.toolbar.querySelector("[data-cx-column=\"" + CSS.escape(columnId) + "\"]");
+      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-column]")).find((el) => el.getAttribute("data-cx-column") === columnId);
       if (input) {
         input.checked = !!visible;
       }

@@ -246,7 +246,7 @@
   const sidecarWaiters = new Map();
 
   function sidecarKey(view, ref) {
-    return view + "\n" + ref;
+    return JSON.stringify([view, ref]);
   }
 
   function acceptSidecar(entry) {
@@ -427,8 +427,11 @@
         return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
-        const m = await manifest();
         const queryWords = words(query);
+        if (queryWords.length && !queryWords.some((word) => word.length >= 2)) {
+          throw new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
+        }
+        const m = await manifest();
         if (!m.search || !queryWords.length) {
           return { hits: [], total: 0, truncated: false };
         }
@@ -477,6 +480,7 @@
           return { hits: [], total: 0, truncated: false };
         }
         const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search");
+        if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
         return { hits: doc.hits || [], total: doc.total, truncated: !!doc.truncated };
       },
       counts: source.counts ? async (ids) => {
@@ -626,8 +630,9 @@
     /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
       if (this.restoring) return;
+      const generation = this.restoreGeneration || 0;
       const pending = (parent.children || []).slice().reverse();
-      while (pending.length && !this.destroyed) {
+      while (pending.length && !this.destroyed && !this.restoring && generation === (this.restoreGeneration || 0)) {
         const w = pending.pop();
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
@@ -1704,6 +1709,7 @@
         await this.loadPage(w, null);
       } else {
         this.relayout();
+        if (want) await this.expandInitial(w);
       }
       if (this.destroyed || w.toggleRevision !== revision) return;
       this.emit("toggle", { node: w.h, expanded: w.expanded });
@@ -1740,6 +1746,11 @@
           items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
+          if (w !== this.root && !w.next && !w.children.length) {
+            w.h.hasChildren = false;
+            w.h.childCount = 0;
+            w.expanded = false;
+          }
           this.applySort(w, false);
           // Paging changes sibling metadata, not retained host cell content.
           const loaded = w.children.length;
@@ -1773,60 +1784,6 @@
       if (w.children && w.next) {
         await this.loadStatusPage(w, this.statusRow(w, "more"), w.next);
       }
-    },
-
-    /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
-    select(w, options) {
-      if (!w || w.status) {
-        return;
-      }
-      const o = options || {};
-      const previous = Array.from(this.selected);
-      if (this.multi && o.range && this.anchor) {
-        this.selectRange(w);
-        return;
-      }
-      if (this.multi && o.toggle) {
-        if (this.selected.has(w)) {
-          this.selected.delete(w);
-        } else {
-          this.selected.add(w);
-        }
-      } else {
-        this.selected = new Set([w]);
-      }
-      this.anchor = w;
-      previous.forEach((p) => { p._v = 0; });
-      w._v = 0;
-      this.selectionChanged(w);
-    },
-
-    selectRange(w) {
-      const from = this.indexOf(this.anchor);
-      const to = this.indexOf(w);
-      if (from < 0 || to < 0) {
-        this.select(w);
-        return;
-      }
-      this.selected.forEach((p) => { p._v = 0; });
-      this.selected = new Set();
-      for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
-        if (!this.rows[i].status) {
-          this.selected.add(this.rows[i]);
-          this.rows[i]._v = 0;
-        }
-      }
-      this.selectionChanged(w);
-    },
-
-    selectionChanged(w) {
-      this.scheduleRender();
-      const nodes = Array.from(this.selected).map((s) => s.h);
-      this.emit("select", { node: w.h, nodes: nodes });
-      if (this.opts.onSelect) {
-        this.opts.onSelect(w.h, nodes);
-      }
-      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
     },
 
     setFocus(w, domFocus) {
@@ -1992,7 +1949,7 @@
       } else {
         this.activeFilters.delete(id);
       }
-      const input = this.toolbar.querySelector("[data-cx-filter=\"" + CSS.escape(id) + "\"]");
+      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-filter]")).find((el) => el.getAttribute("data-cx-filter") === id);
       if (input) {
         input.checked = !!active;
       }
@@ -2018,12 +1975,68 @@
         return;
       }
       this.columns[index].hidden = !visible;
-      const input = this.toolbar.querySelector("[data-cx-column=\"" + CSS.escape(columnId) + "\"]");
+      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-column]")).find((el) => el.getAttribute("data-cx-column") === columnId);
       if (input) {
         input.checked = !!visible;
       }
       this.buildHeader();
       this.relayout();
+    }
+  });
+  // ---------- tree grid: selection and deep-link ownership ----------
+  Object.assign(TreeGrid.prototype, {
+    /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
+    select(w, options) {
+      if (!w || w.status) {
+        return;
+      }
+      const o = options || {};
+      const previous = Array.from(this.selected);
+      if (this.multi && o.range && this.anchor) {
+        this.selectRange(w);
+        return;
+      }
+      if (this.multi && o.toggle) {
+        if (this.selected.has(w)) {
+          this.selected.delete(w);
+        } else {
+          this.selected.add(w);
+        }
+      } else {
+        this.selected = new Set([w]);
+      }
+      this.anchor = w;
+      previous.forEach((p) => { p._v = 0; });
+      w._v = 0;
+      this.selectionChanged(w);
+    },
+
+    selectRange(w) {
+      const from = this.indexOf(this.anchor);
+      const to = this.indexOf(w);
+      if (from < 0 || to < 0) {
+        this.select(w);
+        return;
+      }
+      this.selected.forEach((p) => { p._v = 0; });
+      this.selected = new Set();
+      for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
+        if (!this.rows[i].status) {
+          this.selected.add(this.rows[i]);
+          this.rows[i]._v = 0;
+        }
+      }
+      this.selectionChanged(w);
+    },
+
+    selectionChanged(w) {
+      this.scheduleRender();
+      const nodes = Array.from(this.selected).map((s) => s.h);
+      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
+      this.emit("select", { node: w.h, nodes: nodes });
+      if (this.opts.onSelect) {
+        this.opts.onSelect(w.h, nodes);
+      }
     }
   });
 
@@ -2122,8 +2135,8 @@
           }
           item.addEventListener("mousedown", (e) => {
             e.preventDefault();
-            choose(index);
           });
+          item.addEventListener("click", () => choose(index));
           list.appendChild(item);
         });
         list.hidden = !hits.length;
