@@ -973,6 +973,23 @@
       }
       if (this.focused) {
         want.add(this.focused);
+      } else {
+        // Keep the DOM slots stationary and assign visible nodes in order. Moving recycled elements triggers
+        // expensive subtree restyling; updating their existing cell skeletons preserves both order and reuse.
+        const slots = Array.from(this.canvas.children);
+        this.rendered.clear();
+        let slot = 0;
+        for (const w of want) {
+          if (slot < slots.length) {
+            this.rendered.set(w, slots[slot++]);
+          }
+        }
+        while (slot < slots.length) {
+          const rowEl = slots[slot++];
+          rowEl.remove();
+          rowEl._w = null;
+          if (this.pool.length < 200) this.pool.push(rowEl);
+        }
       }
       const free = [];
       const active = document.activeElement;
@@ -1636,11 +1653,12 @@
 
     async loadMore(w) {
       if (w.children && w.next) {
-        const firstNew = w.children.length;
-        const hadFocus = !!(this.focused && this.focused.status === "more");
+        const previous = new Set(w.children);
+        const focus = this.focused;
+        const hadFocus = !!(focus && focus.status === "more" && focus.parent === w);
         await this.loadPage(w, w.next);
-        const next = w.children[firstNew];
-        if (next && hadFocus) {
+        const next = w.children.find((child) => !previous.has(child));
+        if (next && hadFocus && this.focused === focus) {
           this.setFocus(next, true);
         }
       }
