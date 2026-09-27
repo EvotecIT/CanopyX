@@ -41,7 +41,7 @@
           w.children = first.items.map((child, i) => create(child, w, i));
           w.total = first.total;
           w.next = first.next;
-          w.expanded = !!data.expanded && initialExpansion;
+          w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
         } else if (data.hasChildren) {
