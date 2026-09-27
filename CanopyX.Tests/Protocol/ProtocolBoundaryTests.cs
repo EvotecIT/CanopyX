@@ -4,6 +4,34 @@ namespace CanopyX.Tests.Protocol;
 
 public sealed class ProtocolBoundaryTests {
     [Fact]
+    public void DeepInlineHierarchySerializesWithoutCallStackGrowth() {
+        var page = new CanopyPage(null);
+        var root = new CanopyNode("0", "Root"); page.Items.Add(root);
+        for (var index = 1; index <= 10000; index++) {
+            var child = new CanopyNode(index.ToString(), "Child");
+            root.Children.Add(child); root = child;
+        }
+        var json = page.ToJson();
+        Assert.Contains("\"id\":\"10000\"", json);
+        using var parsed = System.Text.Json.JsonDocument.Parse(json, new System.Text.Json.JsonDocumentOptions { MaxDepth = 25000 });
+        Assert.Equal("page", parsed.RootElement.GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public void OrphanReferencesAndEmptyAccessibleSearchNamesAreRejected() {
+        var page = new CanopyPage(null);
+        page.Items.Add(new CanopyNode("a", "A") { Ref = "a" });
+        Assert.Throws<InvalidOperationException>(() => page.ToJson());
+        page.Items[0].HasChildren = true;
+        var valid = page.ToJson();
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(valid, p => p["items"]![0]!.AsObject().Remove("hasChildren"))).IsValid);
+        foreach (var label in new[] { "", " \t" }) {
+            Assert.Throws<ArgumentException>(() => new CanopySearchOptions { Placeholder = label });
+            Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.FullView().ToJson(), v => v["search"]!["placeholder"] = label)).IsValid);
+        }
+    }
+
+    [Fact]
     public void PageCannotContainItsParentAndSearchTruncationMatchesTotal() {
         var page = new CanopyPage("parent");
         var child = new CanopyNode("child", "Child");

@@ -10,6 +10,17 @@ namespace CanopyX.Tests.Html;
 /// share, with the page pointing at its sidecar data instead of carrying the tree inline.
 /// </summary>
 public sealed class BundlePageTests {
+    [Theory]
+    [InlineData("con/")]
+    [InlineData("assets/aux/")]
+    [InlineData("COM1.txt/")]
+    public void ReservedAssetFoldersFailBeforeWriting(string assetPath) {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-reserved-" + Guid.NewGuid().ToString("N"));
+        var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
+        Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath }));
+        Assert.False(Directory.Exists(directory));
+    }
+
     [Fact]
     public void SaveHtmlBundle_WritesPageAssetsAndSidecarData() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-page-" + Guid.NewGuid().ToString("N"));

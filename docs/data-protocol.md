@@ -236,3 +236,5 @@ A response with a non-success status, invalid JSON, or the wrong `protocol` or `
 - Labels, cells, badges, tooltips, search context, and table and property values are inserted with `textContent`, never as HTML.
 - Icon SVG and `html` detail payloads are trusted host markup. Do not build them from user input without encoding.
 - Sidecar files are scripts. Serve a bundle only from a location the host controls, the same as the page itself.
+
+Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires inline children or an explicit lazy-child declaration. The search placeholder is also its accessible name and must contain non-whitespace text.

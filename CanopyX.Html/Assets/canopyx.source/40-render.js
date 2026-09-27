@@ -65,6 +65,7 @@
       // Rebuilding the header replaces its buttons; keep keyboard focus on the same column's sort button.
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
+      const focusedResize = active && active.classList.contains("cx-resize");
       this.cols = this.visibleColumns();
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
@@ -87,8 +88,15 @@
           setText(title, column.title);
           cell.appendChild(title);
         }
-        const grip = h("span", "cx-resize");
-        grip.setAttribute("aria-hidden", "true");
+        const grip = h("button", "cx-resize");
+        grip.type = "button";
+        grip.addEventListener("keydown", (e) => {
+          if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          column.width = e.key === "Home" ? 40 : Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10));
+          this.applyWidths();
+        });
         grip.addEventListener("pointerdown", (e) => this.startResize(e, column));
         cell.appendChild(grip);
         this.headRow.appendChild(cell);
@@ -97,7 +105,7 @@
       this.applyWidths();
       if (focusedColumn) {
         const index = this.cols.findIndex((c) => c.id === focusedColumn);
-        const button = index >= 0 ? this.headCells[index].querySelector("button") : null;
+        const button = index >= 0 ? this.headCells[index].querySelector(focusedResize ? ".cx-resize" : ".cx-sort") : null;
         if (button) {
           button.focus();
         }
@@ -108,6 +116,7 @@
       let sum = 0;
       this.cols.forEach((column, i) => {
         this.headCells[i].style.width = column.width + "px";
+        this.headCells[i].querySelector(".cx-resize").setAttribute("aria-label", "Resize " + column.title + ", " + column.width + " pixels; use Left and Right arrows");
         sum += column.width;
       });
       this.rowWidth = sum;
