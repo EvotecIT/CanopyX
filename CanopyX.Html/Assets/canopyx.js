@@ -2440,6 +2440,12 @@
       checkDocument(doc, "counts");
       (doc.items || []).forEach((item) => {
         const w = this.keyMap.get(item.id);
+        if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
+          throw new Error("CanopyX: inline childCount must equal children length.");
+        }
+      });
+      (doc.items || []).forEach((item) => {
+        const w = this.keyMap.get(item.id);
         if (!w) {
           return;
         }
