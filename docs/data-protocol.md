@@ -194,7 +194,7 @@ The three array items are the view id, the file's reference (its path under `bas
 | --- | --- | --- |
 | `manifest` | `manifest` | View id, first top-level page, node count, page size, search shard list |
 | `r/<n>` | `page` | Page `n` of the top-level nodes |
-| `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the node id in UTF-8 (all 64 digits when another id in the bundle already has those 16), `<hh>` its first two digits. |
+| `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the exact UTF-16LE code units of the node id (all 64 digits when another id in the bundle already has those 16), `<hh>` its first two digits. |
 | `s/k-<key>` | `searchShard` | Search index entries whose words start with the shard's prefix. The `k-` keeps keys such as `con` or `nul` from becoming Windows device names. |
 
 Every page holds at most the writer's page size and stays within its file budget (512 KiB by default), so page sizes vary and `offset` tells where each page starts. Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. Hashing keeps file names short, safe on case-insensitive file systems, and independent of the characters in ids. The two-digit folder keeps any one folder from holding tens of thousands of files.
@@ -206,7 +206,7 @@ The manifest:
   "search": { "prefix": "k-", "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
 ```
 
-`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The portable prefix and fixed folding table define the initial unpublished v1 bundle format; earlier foundation-stack drafts were not released.
+`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the exact UTF-16LE code units of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The portable prefix and fixed folding table define the initial unpublished v1 bundle format; earlier foundation-stack drafts were not released.
 
 `search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`, where the bundle writer's context names the nearest two ancestors), and each entry is filed under every distinct word of its label that has at least two code units.
 

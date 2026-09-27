@@ -461,7 +461,7 @@
           const batch = await Promise.all(order.slice(i, i + SHARD_BATCH).map(loadShard));
           for (const shard of batch) {
             for (const item of shard) {
-              const pathKey = item.entry.path.join("\n");
+              const pathKey = JSON.stringify(item.entry.path);
               if (!seen.has(pathKey) && matchesWords(item.words, queryWords)) {
                 seen.add(pathKey);
                 hits.push(item.entry);
@@ -2277,9 +2277,9 @@
           const text = cellText(value, column, this.lang);
           const content = h("span");
           if (!this.opts.renderCell || this.opts.renderCell(w.h, column.id, content, { level: w.level, expanded: w.expanded, index }) !== true) {
-            content.appendChild(detailCell("span", isCellObject(value) ? Object.assign({}, value, { text }) : { text }, this.lang));
+            const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
+            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.lang));
           }
-          if (i === 0) (w.h.badges || []).forEach((badge) => content.appendChild(detailCell("span", { text: "", badges: [badge] }, this.lang)));
           out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
         out.push("</tr>");
