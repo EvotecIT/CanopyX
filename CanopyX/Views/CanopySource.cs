@@ -84,9 +84,11 @@ public sealed class CanopySource {
             throw new ArgumentException("URL template is required.", parameter);
         }
 
+        var fragment = template.IndexOf('#');
+        var request = fragment < 0 ? template : template.Substring(0, fragment);
         foreach (var placeholder in placeholders) {
-            if (template.IndexOf(placeholder, StringComparison.Ordinal) < 0) {
-                throw new ArgumentException("URL template must contain " + placeholder + ".", parameter);
+            if (request.IndexOf(placeholder, StringComparison.Ordinal) < 0) {
+                throw new ArgumentException("URL template must contain " + placeholder + " before its fragment.", parameter);
             }
         }
     }

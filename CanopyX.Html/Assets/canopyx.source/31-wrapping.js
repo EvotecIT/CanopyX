@@ -19,6 +19,8 @@
     wrap(node, parent, index, suppressExpansion) {
       const initialExpansion = !suppressExpansion && !this.restoring;
       const create = (data, owner, position) => {
+        requireIdentifier(data.id, "node ID");
+        if (data.ref != null) requireIdentifier(data.ref, "node reference");
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
           children: null, total: null, next: null, inline: false, loading: false, error: null,

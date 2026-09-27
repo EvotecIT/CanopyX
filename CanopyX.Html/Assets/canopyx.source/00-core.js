@@ -53,8 +53,16 @@
   }
 
   /** Verifies wire page ownership before attaching its nodes to the requested parent. */
+  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
+  function requireIdentifier(value, name) {
+    if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
+      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
+    }
+  }
+
   function checkPage(doc, node) {
     checkDocument(doc, "page");
+    if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
     return doc;

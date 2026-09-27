@@ -111,7 +111,32 @@ public sealed class CanopyBundleWriter {
 
     /// <summary>Writes a list of nodes as pages of at most <see cref="CanopyBundleOptions.PageSize"/> nodes within the file budget.</summary>
     private void WritePages(WriteContext context, string? parentId, IReadOnlyList<CanopyNode> nodes, Func<int, string> reference) {
-        var items = new List<string>(nodes.Count);
+        var envelope = new CanopyJsonWriter(256);
+        envelope.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", nodes.Count).Property("total", nodes.Count)
+            .Name("items").BeginArray().EndArray().Name("next").String(reference(PageNumberBound(nodes.Count))).EndObject();
+        using var pages = Pack(SerializeNodes(context, nodes), Options.PageSize, Options.MaxFileBytes - FileOverhead(context, reference(0), envelope.ToString())).GetEnumerator();
+        var hasPage = pages.MoveNext();
+        var offset = 0;
+        var page = 0;
+        while (hasPage) {
+            var current = pages.Current;
+            hasPage = pages.MoveNext();
+            var json = new CanopyJsonWriter(16384);
+            json.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", offset).Property("total", nodes.Count).Name("items").BeginArray();
+            foreach (var item in current) {
+                json.Raw(item);
+            }
+
+            json.EndArray().Name("next").String(hasPage ? reference(page + 1) : null).EndObject();
+            WriteFile(context, reference(page), json.ToString());
+            context.Result.PageCount++;
+            offset += current.Count;
+            page++;
+        }
+    }
+
+    /// <summary>Serializes nodes only as the bounded page packer consumes them.</summary>
+    private static IEnumerable<string> SerializeNodes(WriteContext context, IReadOnlyList<CanopyNode> nodes) {
         foreach (var node in nodes) {
             var item = new CanopyJsonWriter(256);
             node.WriteJson(
@@ -119,51 +144,34 @@ public sealed class CanopyBundleWriter {
                 includeChildren: false,
                 refOverride: node.HasInlineChildren ? context.Layout.ChildrenPage(node.Id, 0) : null,
                 childCountOverride: node.HasInlineChildren ? node.ChildNodes.Count : (int?)null);
-            items.Add(item.ToString());
+            yield return item.ToString();
         }
 
-        var envelope = new CanopyJsonWriter(256);
-        envelope.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", nodes.Count).Property("total", nodes.Count)
-            .Name("items").BeginArray().EndArray().Name("next").String(reference(PageNumberBound(nodes.Count))).EndObject();
-        var pages = Pack(items, Options.PageSize, Options.MaxFileBytes - FileOverhead(context, reference(0), envelope.ToString()));
-        var offset = 0;
-        for (var page = 0; page < pages.Count; page++) {
-            var json = new CanopyJsonWriter(16384);
-            json.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", offset).Property("total", nodes.Count).Name("items").BeginArray();
-            foreach (var item in pages[page]) {
-                json.Raw(item);
-            }
-
-            json.EndArray().Name("next").String(page + 1 < pages.Count ? reference(page + 1) : null).EndObject();
-            WriteFile(context, reference(page), json.ToString());
-            context.Result.PageCount++;
-            offset += pages[page].Count;
-        }
     }
 
     /// <summary>Writes one shard, in parts (key, key.2, key.3, ...) when it exceeds the entry limit or the file budget.</summary>
     private void WriteShard(WriteContext context, CanopySearchIndex search, string key, List<int> entries, SortedDictionary<string, int> written) {
-        var items = new List<string>(entries.Count);
-        foreach (var entry in entries) {
-            var item = new CanopyJsonWriter(128);
-            search.Entry(entry).WriteJson(item);
-            items.Add(item.ToString());
+        IEnumerable<string> SerializeEntries() {
+            foreach (var entry in entries) {
+                var item = new CanopyJsonWriter(128);
+                search.Entry(entry).WriteJson(item);
+                yield return item.ToString();
+            }
         }
-
+        var longestKey = key + "." + Math.Max(2, entries.Count).ToString(CultureInfo.InvariantCulture);
         var envelope = new CanopyJsonWriter(128);
-        envelope.BeginObject().Envelope("searchShard").Property("key", key + ".99999").Name("entries").BeginArray().EndArray().EndObject();
-        var parts = Pack(items, Options.SearchShardLimit, Options.MaxFileBytes - FileOverhead(context, CanopyBundleLayout.Shard(key + ".99999"), envelope.ToString()));
-        for (var part = 0; part < parts.Count; part++) {
+        envelope.BeginObject().Envelope("searchShard").Property("key", longestKey).Name("entries").BeginArray().EndArray().EndObject();
+        var parts = Pack(SerializeEntries(), Options.SearchShardLimit, Options.MaxFileBytes - FileOverhead(context, CanopyBundleLayout.Shard(longestKey), envelope.ToString()));
+        var part = 0;
+        foreach (var current in parts) {
             var partKey = part == 0 ? key : key + "." + (part + 1).ToString(CultureInfo.InvariantCulture);
             var json = new CanopyJsonWriter(16384);
             json.BeginObject().Envelope("searchShard").Property("key", partKey).Name("entries").BeginArray();
-            foreach (var item in parts[part]) {
-                json.Raw(item);
-            }
-
+            foreach (var item in current) json.Raw(item);
             json.EndArray().EndObject();
             WriteFile(context, CanopyBundleLayout.Shard(partKey), json.ToString());
-            written[partKey] = parts[part].Count;
+            written[partKey] = current.Count;
+            part++;
         }
     }
 
@@ -171,14 +179,15 @@ public sealed class CanopyBundleWriter {
     /// Groups serialized items into runs of at most <paramref name="maxCount"/> whose UTF-8 size fits
     /// <paramref name="budget"/>. An item larger than the budget on its own still gets a file of its own.
     /// </summary>
-    private static List<List<string>> Pack(List<string> items, int maxCount, int budget) {
-        var parts = new List<List<string>>();
+    private static IEnumerable<List<string>> Pack(IEnumerable<string> items, int maxCount, int budget) {
+        var emitted = false;
         var current = new List<string>();
         long bytes = 0;
         foreach (var item in items) {
             var size = Utf8.GetByteCount(item) + 1;
             if (current.Count > 0 && (current.Count >= maxCount || bytes + size > budget)) {
-                parts.Add(current);
+                yield return current;
+                emitted = true;
                 current = new List<string>();
                 bytes = 0;
             }
@@ -187,11 +196,7 @@ public sealed class CanopyBundleWriter {
             bytes += size;
         }
 
-        if (current.Count > 0 || parts.Count == 0) {
-            parts.Add(current);
-        }
-
-        return parts;
+        if (current.Count > 0 || !emitted) yield return current;
     }
 
     /// <summary>The bytes a file needs around its items: the sidecar wrapper plus the document envelope, measured exactly.</summary>
@@ -202,7 +207,7 @@ public sealed class CanopyBundleWriter {
     }
 
     /// <summary>A reference number no page list reaches, so the measured "next" is at least as long as any real one.</summary>
-    private static int PageNumberBound(int count) => Math.Max(count, 1) * 10;
+    private static int PageNumberBound(int count) => Math.Max(count, 1);
 
     private void WriteManifest(WriteContext context, SortedDictionary<string, int>? shards) {
         var json = new CanopyJsonWriter(shards == null ? 256 : 256 + shards.Count * 16);

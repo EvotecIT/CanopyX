@@ -19,9 +19,7 @@ public sealed class CanopyFilter {
     /// <param name="flag">The node flag that makes a node match.</param>
     /// <exception cref="ArgumentException">An argument is null or empty, or the accessible label is whitespace.</exception>
     public CanopyFilter(string id, string label, string flag) {
-        if (string.IsNullOrEmpty(id)) {
-            throw new ArgumentException("Filter id is required.", nameof(id));
-        }
+        CanopyIdentifiers.Require(id, nameof(id));
 
         if (string.IsNullOrWhiteSpace(label)) {
             throw new ArgumentException("Filter label is required.", nameof(label));

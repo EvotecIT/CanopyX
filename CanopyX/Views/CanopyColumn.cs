@@ -18,9 +18,7 @@ public sealed class CanopyColumn {
     /// <param name="title">The header text.</param>
     /// <exception cref="ArgumentException"><paramref name="id"/> or <paramref name="title"/> is null or empty, or the title is whitespace.</exception>
     public CanopyColumn(string id, string title) {
-        if (string.IsNullOrEmpty(id)) {
-            throw new ArgumentException("Column id is required.", nameof(id));
-        }
+        CanopyIdentifiers.Require(id, nameof(id));
 
         if (string.IsNullOrWhiteSpace(title)) {
             throw new ArgumentException("Column title is required.", nameof(title));

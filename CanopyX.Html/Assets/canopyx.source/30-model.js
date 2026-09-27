@@ -5,6 +5,7 @@
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
+      requireIdentifier(view.id, "view ID");
       this.host = host;
       this.view = view;
       this.opts = options;
