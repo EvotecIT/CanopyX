@@ -9,6 +9,7 @@ namespace CanopyX;
 public sealed class CanopySearchOptions {
     private int _minLength = 2;
     private int _maxResults = 20;
+    private string _placeholder = "Search";
 
     /// <summary>Gets or sets how many characters a query needs before it runs. Sharded bundle indexes need at least 2.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below 1 or above 16.</exception>
@@ -37,7 +38,11 @@ public sealed class CanopySearchOptions {
     }
 
     /// <summary>Gets or sets the placeholder and accessible name of the search box.</summary>
-    public string Placeholder { get; set; } = "Search";
+    /// <exception cref="ArgumentException">The value has no accessible text.</exception>
+    public string Placeholder {
+        get => _placeholder;
+        set => _placeholder = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("Search needs an accessible name.", nameof(value));
+    }
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject()
