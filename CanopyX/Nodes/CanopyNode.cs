@@ -124,6 +124,9 @@ public sealed class CanopyNode {
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
     internal void ValidateShape() {
+        if (_ref != null && HasInlineChildren) {
+            throw new InvalidOperationException("Node '" + Id + "' has both inline children and a load reference; inline children must be complete.");
+        }
         if (_ref != null && !HasChildren && !HasInlineChildren) {
             throw new InvalidOperationException("Node '" + Id + "' has a reference but no children; set HasChildren for children that load later.");
         }
