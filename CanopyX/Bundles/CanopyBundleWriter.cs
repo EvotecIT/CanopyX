@@ -75,9 +75,9 @@ public sealed class CanopyBundleWriter {
 
     /// <summary>Walks the tree depth first without recursion: writes every node's children pages and collects search entries.</summary>
     private void WriteDescendants(WriteContext context, CanopySearchIndex? search) {
-        var pending = new Stack<(CanopyNode Node, string[] Path, string? Parent, string? Grandparent)>();
+        var pending = new Stack<(CanopyNode Node, SearchPath? Path, string? Parent, string? Grandparent)>();
         for (var index = context.View.Roots.Count - 1; index >= 0; index--) {
-            pending.Push((context.View.Roots[index], search == null ? Array.Empty<string>() : new[] { context.View.Roots[index].Id }, null, null));
+            pending.Push((context.View.Roots[index], search == null ? null : new SearchPath(context.View.Roots[index].Id, null), null, null));
         }
 
         while (pending.Count > 0) {
@@ -86,7 +86,7 @@ public sealed class CanopyBundleWriter {
             if (search != null) {
                 // The context names the nearest two ancestors; the full chain would repeat in every shard the entry is in.
                 var where = parent == null ? null : grandparent == null ? parent : grandparent + " / " + parent;
-                search.Add(new CanopySearchHit(path, node.Label) { Kind = node.Kind, Context = where });
+                search.Add(node.Label, () => new CanopySearchHit(path!.ToArray(), node.Label) { Kind = node.Kind, Context = where });
             }
 
             var children = node.ChildNodes;
@@ -98,12 +98,7 @@ public sealed class CanopyBundleWriter {
             WritePages(context, parentId, children, page => context.Layout.ChildrenPage(parentId, page));
             for (var index = children.Count - 1; index >= 0; index--) {
                 var child = children[index];
-                var childPath = Array.Empty<string>();
-                if (search != null) {
-                    childPath = new string[path.Length + 1];
-                    Array.Copy(path, childPath, path.Length);
-                    childPath[path.Length] = child.Id;
-                }
+                var childPath = search == null ? null : new SearchPath(child.Id, path);
                 pending.Push((child, childPath, node.Label, parent));
             }
         }
@@ -114,7 +109,7 @@ public sealed class CanopyBundleWriter {
         var envelope = new CanopyJsonWriter(256);
         envelope.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", nodes.Count).Property("total", nodes.Count)
             .Name("items").BeginArray().EndArray().Name("next").String(reference(PageNumberBound(nodes.Count))).EndObject();
-        using var pages = Pack(SerializeNodes(context, nodes), Options.PageSize, Options.MaxFileBytes - FileOverhead(context, reference(0), envelope.ToString())).GetEnumerator();
+        using var pages = Pack(SerializeNodes(context, nodes), Options.PageSize, ItemBudget(context, reference(0), envelope.ToString())).GetEnumerator();
         var hasPage = pages.MoveNext();
         var offset = 0;
         var page = 0;
@@ -161,7 +156,7 @@ public sealed class CanopyBundleWriter {
         var longestKey = key + "." + Math.Max(2, entries.Count).ToString(CultureInfo.InvariantCulture);
         var envelope = new CanopyJsonWriter(128);
         envelope.BeginObject().Envelope("searchShard").Property("key", longestKey).Name("entries").BeginArray().EndArray().EndObject();
-        var parts = Pack(SerializeEntries(), Options.SearchShardLimit, Options.MaxFileBytes - FileOverhead(context, CanopyBundleLayout.Shard(longestKey), envelope.ToString()));
+        var parts = Pack(SerializeEntries(), Options.SearchShardLimit, ItemBudget(context, CanopyBundleLayout.Shard(longestKey), envelope.ToString()));
         var part = 0;
         foreach (var current in parts) {
             var partKey = part == 0 ? key : key + "." + (part + 1).ToString(CultureInfo.InvariantCulture);
@@ -197,6 +192,12 @@ public sealed class CanopyBundleWriter {
         }
 
         if (current.Count > 0 || !emitted) yield return current;
+    }
+
+    private int ItemBudget(WriteContext context, string reference, string envelope) {
+        var budget = Options.MaxFileBytes - FileOverhead(context, reference, envelope);
+        if (budget <= 0) throw new InvalidOperationException("Sidecar '" + reference + "' fixed envelope exceeds MaxFileBytes; shorten identifiers or increase the budget.");
+        return budget;
     }
 
     /// <summary>The bytes a file needs around its items: the sidecar wrapper plus the document envelope, measured exactly.</summary>
@@ -244,6 +245,19 @@ public sealed class CanopyBundleWriter {
         context.Result.FileCount++;
         context.Result.TotalBytes += bytes.Length;
         context.Result.LargestFileBytes = Math.Max(context.Result.LargestFileBytes, bytes.Length);
+    }
+
+    /// <summary>Shares ancestor links until a searchable hit needs its complete path.</summary>
+    private sealed class SearchPath {
+        internal SearchPath(string id, SearchPath? parent) { Id = id; Parent = parent; Depth = (parent?.Depth ?? 0) + 1; }
+        private string Id { get; }
+        private SearchPath? Parent { get; }
+        private int Depth { get; }
+        internal string[] ToArray() {
+            var result = new string[Depth];
+            for (SearchPath? path = this; path != null; path = path.Parent) result[path.Depth - 1] = path.Id;
+            return result;
+        }
     }
 
     private sealed class WriteContext {

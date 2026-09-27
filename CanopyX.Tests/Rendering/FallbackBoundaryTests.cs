@@ -106,7 +106,7 @@ public sealed class FallbackBoundaryTests {
             foreach (var id in new[] { "a.b", "a?b", "Files", "files", "\U00010000", "\U00010400" }) {
                 var view = View(id);
                 view.Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}");
-                var root = new CanopyNode("root", "Root") { Ref = "original/ref" };
+                var root = new CanopyNode("root", "Root");
                 root.Children.Add(new CanopyNode("child", "Child")); view.Roots.Add(root);
                 var result = new CanopyBundleWriter().Write(view, directory);
                 Assert.True(paths.Add(result.DataDirectory));
