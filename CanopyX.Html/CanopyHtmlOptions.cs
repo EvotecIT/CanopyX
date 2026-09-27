@@ -14,7 +14,8 @@ public sealed class CanopyHtmlOptions {
 
     /// <summary>
     /// Gets or sets the folder, relative to the page, that holds <c>canopyx.js</c> and <c>canopyx.css</c> when
-    /// <see cref="AssetMode"/> is <see cref="CanopyAssetMode.External"/>. Defaults to <c>assets/</c>.
+    /// <see cref="AssetMode"/> is <see cref="CanopyAssetMode.External"/>. Backslashes in relative folder paths become
+    /// URL slashes so saved bundle assets use the same path as the generated page. Defaults to <c>assets/</c>.
     /// </summary>
     /// <exception cref="ArgumentNullException">The value is null.</exception>
     public string AssetBaseUrl {

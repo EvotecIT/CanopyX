@@ -20,7 +20,7 @@ for (const kind of ["remote", "sidecar"]) for (const mismatch of ["missing", "ex
 });
 
 for (const query of ["\u00a0folder", "folder\u00a0", "\u3000folder", "folder\u3000"]) for (const kind of ["inline", "remote", "sidecar"]) test(`${kind} preserves non-ASCII boundaries in ${JSON.stringify(query)}`, async ({ page }) => {
-  const hit = { path: ["found"], label: query }; const search = { protocol: "canopyx/1", type: "search", hits: [hit], total: 1, truncated: false };
+  const hit = { path: ["found"], label: query }; const search = { protocol: "canopyx/1", type: "search", query, hits: [hit], total: 1, truncated: false };
   const shard = [...query].slice(0, 3).map(c => /[a-z0-9]/.test(c) ? c : "_" + c.charCodeAt(0).toString(16).padStart(4, "0")).join("");
   await page.route("https://canopyx.test/search?*", r => r.fulfill({ json: new URL(r.request().url()).searchParams.get("q") === query ? search : { ...search, hits: [], total: 0 } }));
   await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, items: [{ id: "found", label: query }] } }));
@@ -34,12 +34,20 @@ for (const query of ["\u00a0folder", "folder\u00a0", "\u3000folder", "folder\u30
 
 for (const action of ["Control", "Meta", "Space"]) test(`${action} deselection updates only the grid hash parameter`, async ({ page }) => {
   await open(page, { ...view, selection: "multiple", deepLink: true, roots: [{ id: "one", label: "One" }, { id: "two", label: "Two" }] });
-  const one = page.locator('[data-cx-id="one"]'), two = page.locator('[data-cx-id="two"]'); await one.click(); await two.click({ modifiers: ["Control"] });
-  if (action === "Space") { await two.focus(); await two.press("Space"); } else await two.click({ modifiers: [action] });
+  const one = page.locator('[data-cx-id="one"]'), two = page.locator('[data-cx-id="two"]'); await one.click(); await two.click({ modifiers: ["ControlOrMeta"] });
+  const toggle = async row => row.dispatchEvent("click", { ctrlKey: action === "Control", metaKey: action === "Meta" });
+  if (action === "Space") { await two.focus(); await two.press("Space"); } else await toggle(two);
   await expect(two).toHaveAttribute("aria-selected", "false"); expect(await page.evaluate(() => location.hash)).toContain("cx.contracts=one");
-  if (action === "Space") { await one.focus(); await one.press("Space"); } else await one.click({ modifiers: [action] });
+  if (action === "Space") { await one.focus(); await one.press("Space"); } else await toggle(one);
   expect(await page.evaluate(() => location.hash)).toBe("#other=keep");
   await page.reload(); await page.waitForSelector("[data-cx-ready]"); await expect(page.locator('[aria-selected="true"]')).toHaveCount(0);
+});
+
+test("the platform's native multi-select modifier retains both selected rows", async ({ page }) => {
+  await open(page, { ...view, selection: "multiple", roots: [{ id: "one", label: "One" }, { id: "two", label: "Two" }] });
+  await page.locator('[data-cx-id="one"]').click();
+  await page.locator('[data-cx-id="two"]').click({ modifiers: ["ControlOrMeta"] });
+  await expect(page.locator('[aria-selected="true"]')).toHaveCount(2);
 });
 
 test("outline HTML details honor host ownership while default markup remains encoded", async ({ page }) => {
