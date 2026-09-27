@@ -56,7 +56,7 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 - Only the rows in the viewport, a small overscan, and the focused row exist in the DOM.
 - A row that leaves the window is reused in place for a row that enters it: the element stays attached, keeps its cell elements, and only its text, attributes, badges, and position change. Detaching, rebuilding, or moving rows forces the browser to restyle them, which is what dropped frames at a 4x CPU slowdown in the D21 spike.
 - Positions and attributes are written only when they change, and rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
-- Screen readers in browse mode read DOM order, so rows stay in visual order throughout scrolling. Without a focused row, stationary DOM slots are reused in order; with a focused row, neighboring elements are reordered around it. The focused row is never moved, because moving a focused element drops its focus.
+- Screen readers in browse mode read DOM order, so rows stay in visual order throughout scrolling. Departing rows are updated while detached, retaining their cell skeletons, then inserted in order; rows still visible are retained. The focused row is never moved, because moving a focused element drops its focus.
 
 ### Accessibility Contract
 

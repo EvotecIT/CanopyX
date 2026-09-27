@@ -114,6 +114,26 @@ for (const reject of [false, true]) {
   });
 }
 
+test("completing a page does not steal focus moved during the request", async ({ page }) => {
+  await openView(page, baseView());
+  await page.evaluate(async (view) => {
+    const host = document.querySelector(".cx-host");
+    host.canopyx.destroy();
+    const api = CanopyX.createTreeGrid(host, { view, source: {
+      page: async (node, cursor) => cursor ? new Promise((resolve) => { window.finishPage = resolve; })
+        : { items: [{ id: "a", label: "A" }], next: "next" }
+    } });
+    await api.ready;
+  }, { ...baseView(), source: { kind: "remote", children: "c?ref={ref}&cursor={cursor}" } });
+  await page.locator(".cx-row[data-cx-status=more]").focus();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => !!window.finishPage)).toBe(true);
+  await row(page, "a").click();
+  await page.evaluate(() => window.finishPage({ items: [{ id: "b", label: "B" }], next: null }));
+  await expect(row(page, "b")).toBeVisible();
+  await expect(row(page, "a")).toBeFocused();
+});
+
 test("virtual rows stay in DOM order during continuous scrolling", async ({ page }) => {
   const view = baseView(Array.from({ length: 2000 }, (_, i) => ({ id: "n" + i, label: "Node " + i })));
   view.pageSize = 10000;

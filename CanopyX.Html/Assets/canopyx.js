@@ -821,7 +821,7 @@
       host.appendChild(this.live);
       host.appendChild(this.outline);
       this.buildHeader();
-      this.onScroll = () => this.scheduleRender(true);
+      this.onScroll = () => this.scheduleRender();
       this.onPrint = () => { this.outline.innerHTML = this.toOutline(); };
       grid.addEventListener("scroll", this.onScroll, { passive: true });
       grid.addEventListener("click", (e) => this.onClick(e));
@@ -921,13 +921,12 @@
       global.addEventListener("pointerup", up);
     },
 
-    /** Renders in the next animation frame; a render requested by anything but scrolling restores DOM order at once. */
-    scheduleRender(fromScroll) {
-      this.renderFromScroll = !!fromScroll && (this.rafId === 0 || this.renderFromScroll);
+    /** Renders in the next animation frame while retaining visual DOM order. */
+    scheduleRender() {
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;
-          this.render(this.renderFromScroll);
+          this.render();
         });
       }
     },
@@ -954,11 +953,10 @@
 
     /**
      * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
-     * reused in place for a row that enters it: it stays attached, keeps its cells, and only its content and position
-     * change. Detaching and re-inserting rows (or moving them to keep DOM order) forces the browser to restyle whole
-     * rows, which is what dropped frames under CPU pressure. Positions and attributes are written only when they change.
+     * reused for a row that enters it: its cells survive, content is updated while detached, and it is inserted in
+     * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
      */
-    render(fromScroll) {
+    render() {
       if (this.destroyed) {
         return;
       }
@@ -2269,7 +2267,6 @@
     destroy() {
       this.destroyed = true;
       cancelAnimationFrame(this.rafId);
-      clearTimeout(this.orderTimer);
       this.resizeObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);

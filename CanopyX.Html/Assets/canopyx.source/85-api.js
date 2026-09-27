@@ -193,7 +193,6 @@
     destroy() {
       this.destroyed = true;
       cancelAnimationFrame(this.rafId);
-      clearTimeout(this.orderTimer);
       this.resizeObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
