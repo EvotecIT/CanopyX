@@ -13,8 +13,8 @@ public sealed class CanopyBundleOptions {
 
     /// <summary>
     /// Gets or sets the folder for the sidecar files, relative to the output folder and to the page, with forward
-    /// slashes. Defaults to <c>data/&lt;view id&gt;/</c>, with characters other than letters, digits, <c>-</c> and
-    /// <c>_</c> in the view id replaced by <c>_</c>.
+    /// slashes. Defaults to <c>data/&lt;safe view id&gt;-&lt;SHA-256 of view id&gt;/</c>. The readable part is at most
+    /// 40 characters, uses letters, digits, <c>-</c> and <c>_</c>, and escapes Windows device names.
     /// </summary>
     /// <exception cref="ArgumentException">The value is empty, absolute, or climbs out of the output folder.</exception>
     public string? DataPath {
