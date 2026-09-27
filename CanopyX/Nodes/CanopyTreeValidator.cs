@@ -13,8 +13,9 @@ namespace CanopyX;
 /// hits, deep links, and remembered state point at the wrong row.
 /// </remarks>
 internal static class CanopyTreeValidator {
-    internal static void Validate(IEnumerable<CanopyNode> roots, string owner, Action<CanopyNode>? visit = null) {
+    internal static void Validate(IEnumerable<CanopyNode> roots, string owner, Action<CanopyNode>? visit = null, string? parentId = null) {
         var ids = new HashSet<string>(StringComparer.Ordinal);
+        if (parentId != null) ids.Add(parentId);
         var pending = new Stack<CanopyNode>();
         var top = new List<CanopyNode>(roots);
         for (var index = top.Count - 1; index >= 0; index--) {

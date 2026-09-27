@@ -94,7 +94,7 @@ public sealed class CanopyPage {
             throw new InvalidOperationException("Page continuation must agree with the known total.");
         }
 
-        CanopyTreeValidator.Validate(Items, ParentId == null ? "The top-level page" : "The page of '" + ParentId + "'");
+        CanopyTreeValidator.Validate(Items, ParentId == null ? "The top-level page" : "The page of '" + ParentId + "'", parentId: ParentId);
         writer.BeginObject().Envelope("page").Name("parent").String(ParentId).Property("offset", _offset);
         writer.OptionalProperty("total", _total);
         writer.Name("items").BeginArray();
