@@ -113,7 +113,7 @@
         "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
         "hasChildren": { "type": "boolean" },
-        "childCount": { "type": "integer", "minimum": 1 },
+        "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
         "ref": { "$ref": "#/$defs/nonEmptyString" },
         "expanded": { "type": "boolean" },
         "detail": { "$ref": "#/$defs/detail" },
@@ -159,7 +159,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/nonEmptyString" },
         "title": { "$ref": "#/$defs/accessibleLabel" },
-        "width": { "type": "integer", "minimum": 40 },
+        "width": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
         "hidden": { "type": "boolean" }
@@ -264,8 +264,8 @@
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "page" },
         "parent": { "type": ["string", "null"], "minLength": 1 },
-        "offset": { "type": "integer", "minimum": 0 },
-        "total": { "type": "integer", "minimum": 0 },
+        "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "items": { "type": "array", "items": { "$ref": "#/$defs/node" } },
         "next": { "type": ["string", "null"], "minLength": 1 }
       }
@@ -278,7 +278,7 @@
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "search" },
         "query": { "type": "string" },
-        "total": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "truncated": { "type": "boolean" },
         "hits": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
       }
@@ -298,7 +298,7 @@
             "additionalProperties": false,
             "properties": {
               "id": { "$ref": "#/$defs/nonEmptyString" },
-              "childCount": { "type": "integer", "minimum": 0 },
+              "childCount": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
               "cells": { "$ref": "#/$defs/cells" },
               "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }
             }
@@ -315,8 +315,8 @@
         "type": { "const": "manifest" },
         "view": { "$ref": "#/$defs/nonEmptyString" },
         "root": { "$ref": "#/$defs/nonEmptyString" },
-        "nodeCount": { "type": "integer", "minimum": 0 },
-        "pageSize": { "type": "integer", "minimum": 1 },
+        "nodeCount": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "search": {
           "type": "object",
           "required": ["shards"],
@@ -324,8 +324,8 @@
           "properties": {
             "shards": {
               "type": "object",
-              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?$" },
-              "additionalProperties": { "type": "integer", "minimum": 1 }
+              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
+              "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
             }
           }
         }
