@@ -58,6 +58,10 @@ async function scrollOnce(pageUrl, cpu) {
     await page.goto(pageUrl);
     await page.waitForSelector("[data-cx-ready]", { timeout: 120000 });
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const expandedRows = await page.locator(".cx-grid").getAttribute("aria-rowcount");
+    if (Number(expandedRows) - 1 !== 5 * (Math.ceil(rows / 5) + 1)) {
+      throw new Error("Scroll benchmark did not render the expected expanded fixture");
+    }
     await page.evaluate(() => {
       const grid = document.querySelector(".cx-grid");
       grid.scrollTop = 0;
