@@ -83,12 +83,14 @@ public static class CanopyViewHtmlExtensions {
         }
 
         var pageOptions = options ?? new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
+        var assetFolder = pageOptions.AssetBaseUrl;
+        while (assetFolder.StartsWith("./", StringComparison.Ordinal)) assetFolder = assetFolder.Substring(2);
         var previousSource = view.Source;
         var result = new CanopyBundleWriter(bundleOptions).Write(view, directory);
         view.Source = result.Source;
         try {
-            if (pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(pageOptions.AssetBaseUrl)) {
-                var assets = pageOptions.AssetBaseUrl.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
+            if (pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(assetFolder)) {
+                var assets = assetFolder.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
                 CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets));
             }
 

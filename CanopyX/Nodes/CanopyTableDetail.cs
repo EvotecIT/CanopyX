@@ -63,6 +63,7 @@ public sealed class CanopyTableDetail : CanopyDetail {
         writer.StringArray("columns", Columns);
         writer.Name("rows").BeginArray();
         foreach (var row in Rows) {
+            if (row == null) throw new InvalidOperationException("A table detail cannot contain a null row.");
             if (row.Count != Columns.Count) {
                 throw new InvalidOperationException("A table detail row has " + row.Count + " cells but the table has " + Columns.Count + " columns.");
             }

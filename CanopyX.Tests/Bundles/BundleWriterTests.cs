@@ -23,7 +23,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
         try {
             var result = new CanopyBundleWriter().Write(view, directory);
-            Assert.EndsWith("_" + id, result.DataDirectory);
+            Assert.StartsWith("_" + id + "-", Path.GetFileName(result.DataDirectory));
             Assert.True(File.Exists(Path.Combine(result.DataDirectory, "manifest.js")));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);

@@ -49,11 +49,11 @@ internal static class CanopyViewValidator {
             throw new InvalidOperationException("View '" + view.Id + "' uses a sidecar source, whose search shards need queries of at least 2 characters.");
         }
 
-        var inline = requireCompleteTree || view.Source.Kind == CanopySourceKind.Inline;
-        CanopyTreeValidator.Validate(view.Roots, "View '" + view.Id + "'", node => ValidateNode(view, columns, inline, node));
+        var inline = view.Source.Kind == CanopySourceKind.Inline;
+        CanopyTreeValidator.Validate(view.Roots, "View '" + view.Id + "'", node => ValidateNode(view, columns, inline, requireCompleteTree, node));
     }
 
-    private static void ValidateNode(CanopyView view, HashSet<string> columns, bool inline, CanopyNode node) {
+    private static void ValidateNode(CanopyView view, HashSet<string> columns, bool inline, bool complete, CanopyNode node) {
         if (node.Icon != null && !view.Icons.ContainsKey(node.Icon)) {
             throw new InvalidOperationException("Node '" + node.Id + "' uses icon '" + node.Icon + "', which view '" + view.Id + "' does not declare.");
         }
@@ -65,7 +65,7 @@ internal static class CanopyViewValidator {
         }
 
         // An inline view has nowhere to load children from, so every child must already be in the tree.
-        if (inline && ((node.HasChildren && !node.HasInlineChildren) || node.Ref != null)) {
+        if (((inline || complete) && node.HasChildren && !node.HasInlineChildren) || (inline && node.Ref != null)) {
             throw new InvalidOperationException("Node '" + node.Id + "' declares children that load later, but view '" + view.Id + "' needs the complete tree (an inline source or a bundle); add the children or use a remote source.");
         }
     }
