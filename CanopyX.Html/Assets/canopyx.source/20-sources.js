@@ -114,8 +114,11 @@
         return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
-        const m = await manifest();
         const queryWords = words(query);
+        if (queryWords.length && !queryWords.some((word) => word.length >= 2)) {
+          throw new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
+        }
+        const m = await manifest();
         if (!m.search || !queryWords.length) {
           return { hits: [], total: 0, truncated: false };
         }
@@ -164,6 +167,7 @@
           return { hits: [], total: 0, truncated: false };
         }
         const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search");
+        if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
         return { hits: doc.hits || [], total: doc.total, truncated: !!doc.truncated };
       },
       counts: source.counts ? async (ids) => {

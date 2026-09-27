@@ -3,8 +3,9 @@
     /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
       if (this.restoring) return;
+      const generation = this.restoreGeneration || 0;
       const pending = (parent.children || []).slice().reverse();
-      while (pending.length && !this.destroyed) {
+      while (pending.length && !this.destroyed && !this.restoring && generation === (this.restoreGeneration || 0)) {
         const w = pending.pop();
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
