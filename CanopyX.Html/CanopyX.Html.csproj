@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net472;netstandard2.0;net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsAotCompatible Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">true</IsAotCompatible>
+    <EnableTrimAnalyzer Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">true</EnableSingleFileAnalyzer>
+    <EnableAotAnalyzer Condition="'$(TargetFramework)' == 'net8.0' Or '$(TargetFramework)' == 'net10.0'">true</EnableAotAnalyzer>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageId>CanopyX.Html</PackageId>
+    <Version>$(CanopyXProductVersion)</Version>
+    <Authors>Evotec</Authors>
+    <Description>Self-contained browser runtime for CanopyX views (virtualized tree grid, inline, sidecar, and remote data sources, theme CSS) and the API that writes pages, fragments, bundles, and asset files.</Description>
+    <PackageReleaseNotes>CanopyX.Html 0.1.0 is the first release: the tree grid runtime and the page, fragment, bundle, and asset writers.</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>tree-grid;treegrid;treeview;virtualization;lazy-loading;data-views;html;javascript;reports;zero-dependency;aot;trimming</PackageTags>
+    <PackageProjectUrl>https://github.com/EvotecIT/CanopyX</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/EvotecIT/CanopyX</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) Evotec</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CanopyX\CanopyX.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.nuget.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+</Project>
