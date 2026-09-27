@@ -27,6 +27,11 @@ public sealed class CanopyBundleOptions {
                 if (path.Length == 0 || path.StartsWith("/", StringComparison.Ordinal) || ("/" + path).Contains("./") || path.EndsWith(".", StringComparison.Ordinal) || !IsUrlSafe(path)) {
                     throw new ArgumentException("The data path must be a relative folder inside the output folder, using letters, digits, '-', '_', '.', and '/'.", nameof(value));
                 }
+                foreach (var component in path.Split('/')) {
+                    if (PortableFolderNames.IsDeviceName(component)) {
+                        throw new ArgumentException("The data path contains a reserved Windows device name.", nameof(value));
+                    }
+                }
 
                 _dataPath = path.EndsWith("/", StringComparison.Ordinal) ? path : path + "/";
             } else {

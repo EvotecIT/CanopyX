@@ -5,6 +5,38 @@ using CanopyX.Rendering;
 namespace CanopyX.Tests.Rendering;
 
 public sealed class FallbackBoundaryTests {
+    [Theory]
+    [InlineData("javascript:alert(1)", false)]
+    [InlineData("data:text/html,script", false)]
+    [InlineData("java\tscript:alert(1)", false)]
+    [InlineData("https://example.test/report", true)]
+    [InlineData("report.html", true)]
+    public void OverflowLinksCannotExecuteActiveSchemes(string url, bool linked) {
+        var view = View();
+        view.Roots.Add(new CanopyNode("a", "A"));
+        view.Roots.Add(new CanopyNode("b", "B"));
+        var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { MaxRows = 1, FullReportUrl = url });
+        Assert.Equal(linked, html.Contains("<a href=", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExplicitNullTreeCellDoesNotFallBackToLabel() {
+        var view = View();
+        var node = new CanopyNode("a", "Fallback label");
+        view.Roots.Add(node);
+        Assert.Contains("Fallback label", CanopyStaticHtml.Render(view));
+        node.Cells["name"] = null!;
+        Assert.DoesNotContain("Fallback label", CanopyStaticHtml.Render(view));
+    }
+
+    [Theory]
+    [InlineData("con")]
+    [InlineData("data/aux")]
+    [InlineData("data/COM1.txt")]
+    public void CustomDataPathsRejectDeviceNames(string path) {
+        Assert.Throws<ArgumentException>(() => new CanopyBundleOptions { DataPath = path });
+    }
+
     private static CanopyView View(string id = "test") {
         var view = new CanopyView(id, "Test");
         view.Columns.Add(new CanopyColumn("name", "Name"));
@@ -49,7 +81,7 @@ public sealed class FallbackBoundaryTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-boundary-" + Guid.NewGuid().ToString("N"));
         try {
             var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var id in new[] { "a.b", "a?b", "Files", "files" }) {
+            foreach (var id in new[] { "a.b", "a?b", "Files", "files", "\uD800", "\uD801" }) {
                 var view = View(id);
                 view.Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}");
                 var root = new CanopyNode("root", "Root") { Ref = "original/ref" };

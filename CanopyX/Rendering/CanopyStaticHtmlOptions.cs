@@ -54,7 +54,7 @@ public sealed class CanopyStaticHtmlOptions {
     /// </summary>
     public string HiddenRowsTitle { get; set; } = "{count} rows below are not shown";
 
-    /// <summary>Gets or sets an address added to the overflow note, for example the interactive report.</summary>
+    /// <summary>Gets or sets an address added to the overflow note. Relative URLs and HTTP, HTTPS, or mailto links are allowed; other schemes are omitted.</summary>
     public string? FullReportUrl { get; set; }
 
     /// <summary>Gets or sets the text of the link to <see cref="FullReportUrl"/>. Defaults to "Open the full report".</summary>
