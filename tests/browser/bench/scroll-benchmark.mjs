@@ -69,7 +69,7 @@ async function scrollOnce(pageUrl, cpu) {
       window.__long = [];
       window.__blank = 0;
       window.__samples = 0;
-      window.__rec = true;
+      window.__rec = false;
       const box = grid.getBoundingClientRect();
       const probes = [0.3, 0.6, 0.9].map((y) => [box.left + 80, box.top + box.height * y]);
       let pending = false;
@@ -95,18 +95,23 @@ async function scrollOnce(pageUrl, cpu) {
           requestAnimationFrame(frame);
         }
       };
-      requestAnimationFrame((ts) => { last = ts; requestAnimationFrame(frame); });
-      try {
-        window.__observer = new PerformanceObserver((list) => { for (const e of list.getEntries()) window.__long.push(e.duration); });
+      window.__beginCapture = () => {
+        const startedAt = last = performance.now();
+        window.__rec = true;
+        requestAnimationFrame(frame);
+        try {
+        window.__observer = new PerformanceObserver((list) => { for (const e of list.getEntries()) if (e.startTime >= startedAt) window.__long.push(e.duration); });
         window.__observer.observe({ type: "longtask" });
       } catch (e) {
-        // Long task timing is not available everywhere.
-      }
+          // Long task timing is not available everywhere.
+        }
+        return startedAt;
+      };
     });
     const box = await page.locator(".cx-grid").boundingBox();
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     const started = Date.now();
-    const startedAt = await page.evaluate(() => performance.now());
+    const startedAt = await page.evaluate(() => window.__beginCapture());
     let steps = 0;
     for (;;) {
       await page.mouse.wheel(0, 500);
@@ -128,7 +133,11 @@ async function scrollOnce(pageUrl, cpu) {
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const result = await page.evaluate(({ wheelSteps, startedAt }) => {
       window.__rec = false;
-      const frames = window.__frames.slice(2);
+      if (window.__observer) {
+        for (const e of window.__observer.takeRecords()) if (e.startTime >= startedAt) window.__long.push(e.duration);
+        window.__observer.disconnect();
+      }
+      const frames = window.__frames;
       const sorted = frames.slice().sort((a, b) => a - b);
       return {
         rowsInList: document.querySelector(".cx-grid").getAttribute("aria-rowcount") - 1,
