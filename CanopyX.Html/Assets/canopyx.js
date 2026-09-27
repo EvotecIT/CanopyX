@@ -408,10 +408,14 @@
     }));
     const loadShard = (key) => {
       if (!shardCache.has(key)) {
-        shardCache.set(key, load("s/" + key).then((doc) => {
+        shardCache.set(key, manifest().then((m) => load("s/" + key).then((doc) => {
           checkDocument(doc, "searchShard");
+          if (doc.key !== key) throw new Error("CanopyX: search shard key does not match the manifest.");
+          if (!Array.isArray(doc.entries) || doc.entries.length !== m.search.shards[key]) {
+            throw new Error("CanopyX: search shard entry count does not match the manifest.");
+          }
           return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
-        }).catch((err) => {
+        })).catch((err) => {
           shardCache.delete(key);
           throw err;
         }));
@@ -1518,14 +1522,18 @@
       const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
       w._v = 0;
-      if (want && !w.children) {
-        await this.loadPage(w, null);
-      } else {
-        this.relayout();
-        if (want) await this.expandInitial(w);
+      try {
+        if (want && !w.children) {
+          await this.loadPage(w, null);
+        } else {
+          this.relayout();
+          if (want) await this.expandInitial(w);
+        }
+      } finally {
+        // A host load callback may throw after the page was applied; its expansion still belongs in saved state.
+        if (!this.destroyed && w.toggleRevision === revision) this.stateChanged();
       }
       if (this.destroyed || w.toggleRevision !== revision) return;
-      this.stateChanged();
       this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, w.expanded);
