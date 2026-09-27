@@ -241,9 +241,17 @@
     return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
   }
 
+  /** Trims only protocol separators; all non-ASCII code units remain word characters. */
+  function trimSeparators(text) {
+    let start = 0, end = text.length;
+    while (start < end && isSeparator(text.charCodeAt(start))) start++;
+    while (end > start && isSeparator(text.charCodeAt(end - 1))) end--;
+    return text.slice(start, end);
+  }
+
   function rankLabel(label, query) {
     const l = foldText(label);
-    const q = foldText(query).trim();
+    const q = trimSeparators(foldText(query));
     return l === q ? 0 : l.startsWith(q) ? 1 : 2;
   }
 
@@ -863,6 +871,9 @@
     }
     if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
       throw new Error("CanopyX: page total is smaller than its loaded range.");
+    }
+    if (page.total != null && (page.next != null) !== (expectedOffset + items.length < page.total)) {
+      throw new Error("CanopyX: page continuation disagrees with its total.");
     }
     validateNodes(items, existing);
     return items;
@@ -1534,7 +1545,7 @@
 
   Object.assign(TreeGrid.prototype, {
     /** Fills a detail row with its table, property list, or trusted host markup; a host callback can take over. */
-    renderDetail(node, element) {
+    renderDetail(node, element, plainHtml = false) {
       if (this.opts.renderDetail && this.opts.renderDetail(node, element) === true) {
         return;
       }
@@ -1575,7 +1586,8 @@
         });
         body.appendChild(list);
       } else if (detail.type === "html") {
-        body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
+        if (plainHtml) setText(body, detail.html || "");
+        else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
       }
       element.appendChild(body);
     }
@@ -1866,7 +1878,7 @@
       if (this.opts.onSelect) {
         this.opts.onSelect(w.h, nodes);
       }
-      this.writeDeepLink(w);
+      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
     },
 
     setFocus(w, domFocus) {
@@ -2172,7 +2184,7 @@
       };
       const run = async () => {
         if (this.destroyed) return;
-        const query = input.value.trim();
+        const query = trimSeparators(input.value);
         if (query.length < options.minLength) {
           sequence++;
           close();
@@ -2389,7 +2401,7 @@
       }
       const prefix = this.deepLinkName() + "=";
       const params = this.hashParams().filter((p) => !p.startsWith(prefix));
-      params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
+      if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
       const hash = "#" + params.join("&");
       try {
         global.history.replaceState(global.history.state, "", hash);
@@ -2416,8 +2428,7 @@
         if (w.h.detail) {
           const detail = w.h.detail;
           const content = h("div");
-          if (detail.type === "html") setText(content, detail.html || "");
-          else this.renderDetail(w.h, content);
+          this.renderDetail(w.h, content, true);
           out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }
