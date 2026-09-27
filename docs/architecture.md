@@ -37,11 +37,14 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `00-core.js` | Closure start, constants, text and number formatting, DOM helpers |
 | `10-sidecar.js` | Sidecar registry: sidecar files push into a queue, so they work whether they load before or after the runtime |
 | `20-sources.js` | Inline, sidecar, and remote data sources behind one promise-based interface |
-| `30-model.js` | Tree grid constructor, node model, flattening of visible rows, per-level sort, filter that keeps ancestors |
+| `30-model.js` | Tree grid constructor, root loading, status rows, and events |
+| `31-wrapping.js` | Iterative node construction and initial expansion |
+| `32-layout.js` | Iterative filtering, visible-row layout, and per-level sorting |
 | `40-render.js` | DOM scaffold, windowed rendering, row pool, DOM order of virtual rows |
 | `45-cells.js` | Row and cell painting, badges, tones, icons |
 | `50-detail.js` | Detail row payloads: table, properties, trusted HTML, or a host `renderDetail` callback |
 | `60-keyboard.js` | Keyboard model, type-ahead, roving focus |
+| `65-page-focus.js` | Focus ownership across paging and retry |
 | `70-behavior.js` | Expand and collapse, paging, selection, `expandPath`, column resize and visibility |
 | `80-toolbar.js` | Built-in search box and filter switches |
 | `85-api.js` | Public instance API, remembered state, deep links, outline and visible rows |

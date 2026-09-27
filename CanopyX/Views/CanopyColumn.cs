@@ -16,13 +16,13 @@ public sealed class CanopyColumn {
     /// <summary>Creates a column.</summary>
     /// <param name="id">The id that node cells use as their key.</param>
     /// <param name="title">The header text.</param>
-    /// <exception cref="ArgumentException"><paramref name="id"/> or <paramref name="title"/> is null or empty.</exception>
+    /// <exception cref="ArgumentException"><paramref name="id"/> or <paramref name="title"/> is null or empty, or the title is whitespace.</exception>
     public CanopyColumn(string id, string title) {
         if (string.IsNullOrEmpty(id)) {
             throw new ArgumentException("Column id is required.", nameof(id));
         }
 
-        if (string.IsNullOrEmpty(title)) {
+        if (string.IsNullOrWhiteSpace(title)) {
             throw new ArgumentException("Column title is required.", nameof(title));
         }
 

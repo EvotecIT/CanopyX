@@ -40,18 +40,21 @@
         const queryWords = words(query);
         const hits = [];
         if (queryWords.length) {
-          // Depth-first without recursion; each stack entry carries the path and labels above the node.
-          const stack = (view.roots || []).map((node) => ({ node: node, path: [], labels: [] })).reverse();
+          // Paths are linked during traversal and materialized only for matching hits.
+          const stack = (view.roots || []).map((node) => ({ node, parent: null })).reverse();
           while (stack.length) {
             const item = stack.pop();
-            const path = item.path.concat(item.node.id);
             if (matchesWords(wordsOf(item.node), queryWords)) {
-              hits.push({ path: path, label: item.node.label, kind: item.node.kind, context: item.labels.join(" / ") });
+              const path = [];
+              const labels = [];
+              for (let entry = item; entry; entry = entry.parent) {
+                path.push(entry.node.id);
+                if (entry !== item) labels.push(entry.node.label);
+              }
+              hits.push({ path: path.reverse(), label: item.node.label, kind: item.node.kind, context: labels.reverse().join(" / ") });
             }
             const children = item.node.children || [];
-            for (let i = children.length - 1; i >= 0; i--) {
-              stack.push({ node: children[i], path: path, labels: item.labels.concat(item.node.label) });
-            }
+            for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], parent: item });
           }
         }
         return Promise.resolve(rankHits(hits, query, limit));

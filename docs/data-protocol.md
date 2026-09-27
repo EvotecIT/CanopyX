@@ -234,3 +234,5 @@ A response with a non-success status, invalid JSON, or the wrong `protocol` or `
 - Sidecar files are scripts. Serve a bundle only from a location the host controls, the same as the page itself.
 
 Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires inline children or an explicit lazy-child declaration. The search placeholder is also its accessible name and must contain non-whitespace text.
+
+Accessible grid, column, filter, and search names contain non-whitespace text. Cell keys identify a non-empty column ID. Expandable nodes with inline children contain at least one child; lazy nodes omit the children array. Search-shard keys contain at least two encoded UTF-16 units (`a-z`, `0-9`, or `_` plus four lowercase hexadecimal digits), with the documented terminal and part suffixes.
