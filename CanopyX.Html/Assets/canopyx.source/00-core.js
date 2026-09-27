@@ -15,6 +15,8 @@
   const TYPEAHEAD_MS = 600;
   const INDENT = 18;
   const COUNTS_BATCH = 50;
+  const MAX_COLUMN_WIDTH = 2147483647;
+  const activeGrids = new WeakMap();
   let instanceSeq = 0;
 
   /** Creates an element with an optional class name. */
