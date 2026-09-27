@@ -4,7 +4,7 @@ CanopyX renders large interactive data views from .NET without runtime dependenc
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
 
-> Status: this first change defines the planned 0.1 API and architecture. The implementation, build tools, protocol reference, and packages are not available at this revision. The examples below describe the proposed API.
+> Status: 0.1 is in development and the packages are not published yet.
 
 ![A CanopyX tree grid in the light theme: file shares with sizes, dates, owners, badges, and a version's before and after table open as a detail row](docs/images/tree-grid-light.png)
 
@@ -94,7 +94,7 @@ await grid.expandPath(["projects", "projects/plans"]);
 ## Documentation
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
-- Data protocol and JSON schema: planned with the protocol implementation.
+- [Data protocol](docs/data-protocol.md): the `canopyx/1` documents, bundle file layout, and remote endpoints, with a JSON schema in `docs/schema`.
 - [Roadmap](TODO.md): milestones, their consumers, and their gates.
 - [Contributing](CONTRIBUTING.md): the quality loop, browser tests, and performance evidence.
 
