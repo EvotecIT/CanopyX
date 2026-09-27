@@ -11,7 +11,7 @@ async function open(page, data) {
   await nextFrames(page);
 }
 
-test("detail labels search and select, preserving trusted browser print HTML and indicators", async ({ page }) => {
+test("detail labels search and select, encoding browser print HTML and preserving indicators", async ({ page }) => {
   const data = view([{ id: "detail", label: "Ready details", detail: { type: "html", html: "<strong>Ready</strong>", height: 2 } },
     { id: "cell", label: "Cell", badges: [{ text: "Node badge" }], cells: { name: { value: "Cell", title: "Tooltip", badges: [{ text: "Cell badge" }] } } }]);
   data.search = { minLength: 2, maxResults: 20, placeholder: "Search" };
@@ -21,7 +21,8 @@ test("detail labels search and select, preserving trusted browser print HTML and
   await row(page, "detail").click();
   await expect(row(page, "detail")).toHaveAttribute("aria-selected", "true");
   await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
-  await expect(page.locator(".cx-outline strong")).toHaveText("Ready");
+  await expect(page.locator(".cx-outline strong")).toHaveCount(0);
+  await expect(page.locator(".cx-outline")).toContainText("<strong>Ready</strong>");
   await expect(page.locator(".cx-outline")).toContainText("Node badge");
   await expect(page.locator(".cx-outline")).toContainText("Cell badge");
   await expect(page.locator(".cx-outline [title=Tooltip]")).toHaveCount(1);

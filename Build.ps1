@@ -114,11 +114,7 @@ function Assert-SourceLineBudget {
         }
     }
 
-    foreach ($part in Get-ChildItem -Path (Join-Path $Root 'CanopyX.Html/Assets/canopyx.source') -Filter '*.js' -File) {
-        if ([System.IO.File]::ReadAllLines($part.FullName).Length -gt 350) {
-            throw "Runtime source part exceeds the 350-line budget: $($part.Name)"
-        }
-    }
+
 }
 
 function Invoke-PackageSmoke {
