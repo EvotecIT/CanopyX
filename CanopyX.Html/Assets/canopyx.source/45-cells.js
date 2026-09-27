@@ -185,13 +185,14 @@
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
         slot.title = null;
-        slot.content.textContent = "";
+        const fresh = h("span", "cx-content");
+        slot.content.replaceWith(fresh);
+        slot.content = fresh;
         slot.badges = [];
-        slot.content.appendChild(slot.textSpan);
         if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
-          slot.textSpan.remove();
           return;
         }
+        slot.content.appendChild(slot.textSpan);
       }
       const text = cellText(value, column, this.lang);
       if (slot.text.data !== text) {
