@@ -72,6 +72,8 @@ CanopyBundleResult bundle = view.SaveHtmlBundle("report");
 Console.WriteLine($"{bundle.FileCount} files, largest {bundle.LargestFileBytes:N0} bytes");
 ```
 
+Local external assets in an HTML bundle use a separate directory tree from its sidecar data. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.
+
 For email, print, or Word, render the static outline:
 
 ```csharp
@@ -101,5 +103,3 @@ await grid.expandPath(["projects", "projects/plans"]);
 ## License
 
 CanopyX is licensed under the [MIT License](LICENSE).
-
-Local external assets in an HTML bundle use a separate directory tree from its sidecar data. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.
