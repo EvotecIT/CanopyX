@@ -676,6 +676,10 @@
 
     relayout() {
       if (this.destroyed) return;
+      const previousFocus = this.focused;
+      const previousIndex = this.indexOf(previousFocus);
+      const previousElement = this.rendered.get(previousFocus);
+      const ownedFocus = previousElement && previousElement.contains(document.activeElement);
       const rows = [];
       const filter = this.filter;
       if (filter) {
@@ -727,8 +731,17 @@
       this.canvas.style.height = y + "px";
       this.grid.setAttribute("aria-rowcount", String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0) {
+        let target = this.focused.parent;
+        while (target && this.indexOf(target) < 0) target = target.parent;
+        target = target || rows[Math.min(Math.max(0, previousIndex), rows.length - 1)];
         this.focused = null;
+        if (target) this.setFocus(target, !!ownedFocus);
+        else if (ownedFocus) {
+          this.grid.tabIndex = 0;
+          this.grid.focus({ preventScroll: true });
+        }
       }
+      this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
     }
 
@@ -856,6 +869,7 @@
       // Rebuilding the header replaces its buttons; keep keyboard focus on the same column's sort button.
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
+      const focusedResize = active && active.classList.contains("cx-resize");
       this.cols = this.visibleColumns();
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
@@ -878,8 +892,15 @@
           setText(title, column.title);
           cell.appendChild(title);
         }
-        const grip = h("span", "cx-resize");
-        grip.setAttribute("aria-hidden", "true");
+        const grip = h("button", "cx-resize");
+        grip.type = "button";
+        grip.addEventListener("keydown", (e) => {
+          if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          column.width = e.key === "Home" ? 40 : Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10));
+          this.applyWidths();
+        });
         grip.addEventListener("pointerdown", (e) => this.startResize(e, column));
         cell.appendChild(grip);
         this.headRow.appendChild(cell);
@@ -888,7 +909,7 @@
       this.applyWidths();
       if (focusedColumn) {
         const index = this.cols.findIndex((c) => c.id === focusedColumn);
-        const button = index >= 0 ? this.headCells[index].querySelector("button") : null;
+        const button = index >= 0 ? this.headCells[index].querySelector(focusedResize ? ".cx-resize" : ".cx-sort") : null;
         if (button) {
           button.focus();
         }
@@ -899,6 +920,7 @@
       let sum = 0;
       this.cols.forEach((column, i) => {
         this.headCells[i].style.width = column.width + "px";
+        this.headCells[i].querySelector(".cx-resize").setAttribute("aria-label", "Resize " + column.title + ", " + column.width + " pixels; use Left and Right arrows");
         sum += column.width;
       });
       this.rowWidth = sum;
@@ -1477,7 +1499,7 @@
         return;
       }
       const i = this.indexOf(w);
-      const pageRows = Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH) - 1);
+      const pageHeight = Math.max(this.rowH, this.grid.clientHeight - this.head.offsetHeight - this.rowH);
       const last = this.rows.length - 1;
       // A space inside a running type-ahead term continues the term ("lab c").
       const key = e.key === " " && this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS ? "typeahead" : e.key;
@@ -1486,8 +1508,8 @@
       switch (key) {
         case "ArrowDown": target = this.rows[Math.min(last, i + 1)]; break;
         case "ArrowUp": target = this.rows[Math.max(0, i - 1)]; break;
-        case "PageDown": target = this.rows[Math.min(last, i + pageRows)]; break;
-        case "PageUp": target = this.rows[Math.max(0, i - pageRows)]; break;
+        case "PageDown": target = this.rows[Math.min(last, Math.max(i + 1, this.rowAt(this.tops[i] + pageHeight)))]; break;
+        case "PageUp": target = this.rows[Math.max(0, Math.min(i - 1, this.rowAt(this.tops[i] - pageHeight)))]; break;
         case "Home": target = this.rows[0]; break;
         case "End": target = this.rows[last]; break;
         case "ArrowRight":

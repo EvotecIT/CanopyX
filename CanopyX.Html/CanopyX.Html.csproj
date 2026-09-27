@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CanopyX\CanopyX.csproj" />
+    <Compile Include="..\CanopyX\Bundles\PortableFolderNames.cs" Link="Shared\PortableFolderNames.cs" />
   </ItemGroup>
 
   <ItemGroup>

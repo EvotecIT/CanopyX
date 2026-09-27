@@ -85,6 +85,13 @@ public static class CanopyViewHtmlExtensions {
         var pageOptions = options ?? new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
         var assetFolder = pageOptions.AssetBaseUrl;
         while (assetFolder.StartsWith("./", StringComparison.Ordinal)) assetFolder = assetFolder.Substring(2);
+        if (pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(assetFolder)) {
+            foreach (var component in assetFolder.Split('/')) {
+                if (CanopyX.Bundles.PortableFolderNames.IsDeviceName(component)) {
+                    throw new ArgumentException("Asset folders cannot use reserved device names.", nameof(options));
+                }
+            }
+        }
         var previousSource = view.Source;
         var result = new CanopyBundleWriter(bundleOptions).Write(view, directory);
         view.Source = result.Source;
