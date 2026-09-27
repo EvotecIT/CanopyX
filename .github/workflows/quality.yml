@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-test-pack:
-    name: Build, test, pack (${{ matrix.name }})
+    name: Build, test, examples, browser tests, pack (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -38,6 +38,24 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/browser/package-lock.json
+
+      - name: Install browser test dependencies
+        working-directory: tests/browser
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            node node_modules/@playwright/test/cli.js install --with-deps chromium
+          else
+            node node_modules/@playwright/test/cli.js install chromium
+          fi
+
       - name: Run quality loop
         shell: pwsh
         run: ./Build.ps1 -Configuration Release
@@ -50,3 +68,23 @@ jobs:
             artifacts/packages/Release/*.nupkg
             artifacts/packages/Release/*.snupkg
           if-no-files-found: error
+
+      - name: Upload example pages
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-examples-${{ matrix.runner }}
+          path: |
+            CanopyX.Examples/bin/Release/net10.0/output/inline.html
+            CanopyX.Examples/bin/Release/net10.0/output/outline.html
+          if-no-files-found: warn
+
+      - name: Upload browser test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-playwright-report-${{ matrix.runner }}
+          path: |
+            tests/browser/playwright-report
+            tests/browser/test-results
+          if-no-files-found: ignore

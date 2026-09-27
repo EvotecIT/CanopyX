@@ -813,7 +813,7 @@
       this.canvas.setAttribute("role", "rowgroup");
       grid.appendChild(this.head);
       grid.appendChild(this.canvas);
-      this.live = h("div", "cx-sr-only");
+      this.live = h("div", "cx-live cx-sr-only");
       this.live.setAttribute("aria-live", "polite");
       this.outline = h("div", "cx-outline");
       host.appendChild(this.toolbar);

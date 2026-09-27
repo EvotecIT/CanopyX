@@ -2,6 +2,10 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Release',
 
+    [switch] $SkipExamples,
+
+    [switch] $SkipBrowserTests,
+
     [switch] $SkipPack,
 
     [ValidateRange(1, 86400)]
@@ -210,6 +214,33 @@ try {
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('build', $solution, '-c', $Configuration, '--no-restore') -Description 'Solution build' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore') -Description 'Test run' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+
+    if (-not $SkipExamples) {
+        $examplesOutput = Join-Path $root "CanopyX.Examples/bin/$Configuration/net10.0/output"
+        if (Test-Path $examplesOutput) {
+            Remove-Item -LiteralPath $examplesOutput -Recurse -Force
+        }
+
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('run', '--project', (Join-Path $root 'CanopyX.Examples/CanopyX.Examples.csproj'), '-c', $Configuration, '--no-build', '--', $examplesOutput) -Description 'Example generation' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+
+        if (-not $SkipBrowserTests) {
+            # The browser tests open the generated examples; CI installs the browser before this step.
+            $browserRoot = Join-Path $root 'tests/browser'
+            # CI restores the packages in its own step; locally, restore whenever the lock file is newer than the install.
+            $installed = Join-Path $browserRoot 'node_modules/.package-lock.json'
+            if (-not $env:CI -and (-not (Test-Path $installed) -or (Get-Item (Join-Path $browserRoot 'package-lock.json')).LastWriteTimeUtc -gt (Get-Item $installed).LastWriteTimeUtc)) {
+                Invoke-ToolCommand -FileName 'npm' -Arguments @('ci', '--no-audit', '--no-fund') -WorkingDirectory $browserRoot -Description 'Browser test restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+            }
+
+            $previousExamples = $env:CANOPYX_EXAMPLES
+            $env:CANOPYX_EXAMPLES = $examplesOutput
+            try {
+                Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+            } finally {
+                $env:CANOPYX_EXAMPLES = $previousExamples
+            }
+        }
+    }
 
     if (-not $SkipPack) {
         $packageRoot = Join-Path $root "artifacts/packages/$Configuration"

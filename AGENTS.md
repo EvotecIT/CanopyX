@@ -54,7 +54,7 @@ Use the faster loop for C#-only changes:
 dotnet test .\CanopyX.sln -c Release
 ```
 
-After editing runtime source parts, reassemble the runtime, then rebuild so the embedded runtime and the example pages are fresh. The quality loop runs the browser tests against the regenerated examples (run `npm ci` and `npx playwright install chromium` in `tests/browser` once first):
+After editing runtime source parts, reassemble the runtime, then rebuild so the embedded runtime and the example pages are fresh. The quality loop runs the browser tests against the regenerated examples (run `npm ci` and `node node_modules/@playwright/test/cli.js install chromium` in `tests/browser` once first):
 
 ```powershell
 ./Build/Sync-Assets.ps1

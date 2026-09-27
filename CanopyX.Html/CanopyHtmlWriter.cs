@@ -36,7 +36,7 @@ internal static class CanopyHtmlWriter {
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
-            ["title"] = WebUtility.HtmlEncode(options.Title ?? view.Label),
+            ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(options),
             ["body"] = Fragment(view, fragmentOptions)
         };

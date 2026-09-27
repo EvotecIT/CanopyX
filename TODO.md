@@ -18,32 +18,33 @@ Consumers: the TestimoX GPO explorer (both views, the GPO list and the scope tre
 
 Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 
-- [ ] Every Must:
-  - [ ] lazy children from a data source (inline, sidecar, remote)
-  - [ ] paged children with "show more"
-  - [ ] virtual scrolling
-  - [ ] columns with per-level sort
-  - [ ] search that returns id paths and expands them
-  - [ ] "only matching" filter that keeps ancestors
-  - [ ] badges and rollup values supplied by the host
-  - [ ] detail rows that host other components (for example a before/after table under a revision)
-  - [ ] selection event for a drawer
-  - [ ] deep link that expands a path
-  - [ ] remembered expansion state
-  - [ ] ARIA tree grid roles and states with a row-focus keyboard model and screen-reader announcements
-  - [ ] theming in light and dark from a small set of base colours
-  - [ ] outline fallback for email, print, and Office
+- [x] Every Must, each covered by the Playwright suite in `tests/browser`:
+  - [x] lazy children from a data source (inline, sidecar, remote)
+  - [x] paged children with "show more"
+  - [x] virtual scrolling
+  - [x] columns with per-level sort
+  - [x] search that returns id paths and expands them
+  - [x] "only matching" filter that keeps ancestors
+  - [x] badges and rollup values supplied by the host
+  - [x] detail rows that host other components (for example a before/after table under a revision)
+  - [x] selection event for a drawer
+  - [x] deep link that expands a path
+  - [x] remembered expansion state
+  - [x] ARIA tree grid roles and states with a row-focus keyboard model and screen-reader announcements
+  - [x] theming in light and dark from a small set of base colours
+  - [x] outline fallback for email, print, and Office
 - [x] Row-cell reuse on recycle, with measured before/after scroll numbers at normal speed and at a 4x CPU slowdown. On a 5,005-row list at 4x, rows reused in place halved the frames over 50 ms (100 to 52 per full scroll, 5.9% of frames against 7.1%) and cut frames over 33 ms from 310 to 106.
-- [ ] Multi-select (a Should, small: selection set plus `aria-multiselectable`).
-- [ ] Column resize and hide (a Should; the spike already has resize, hide is small).
+- [x] Multi-select (a Should, small: selection set plus `aria-multiselectable`).
+- [x] Column resize and hide (a Should; the spike already has resize, hide is small).
 - [x] Bundle writer: top-level pages, children per parent, paged long lists, and a search index sharded by name prefix (a shard that grows too large splits on a longer prefix), all as sidecar scripts that load from `file://`. It replaces the spike's one-off converter and removes the 7.7 MB single-file problem.
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
-- [ ] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
-- [ ] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
+- [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
+- [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
+- [ ] A screen-reader pass (NVDA and Narrator) over the tree grid, including the DOM order restored after scrolling pauses. Automated checks cover roles, states, focus, and order, not what a reader announces.
 
 Gate:
 
-- In CanopyX CI, on the large bundle example (a synthetic tree of about 120,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling.
+- In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling.
 - With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was patched Wunderbaum's median in the spike (56 of about 900).
 - In TestimoX, measured there on its own fixture: the GPO explorer design packet renders both views on CanopyX with the L fixture (5 domains, 5,000 GPOs, 200,000 links) within the TestimoX plan section 7.2 budgets.
 - Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) renders on CanopyX with the same content.

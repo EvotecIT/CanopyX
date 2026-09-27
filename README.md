@@ -6,6 +6,16 @@ CanopyX is generic. Hosts supply the data, including rollup counts, badges, and 
 
 > Status: 0.1 is in development and the packages are not published yet.
 
+![A CanopyX tree grid in the light theme: file shares with sizes, dates, owners, badges, and a version's before and after table open as a detail row](docs/images/tree-grid-light.png)
+
+The same view in the dark theme, and the static outline that email, print, and Word get:
+
+| Dark theme | Static outline |
+| --- | --- |
+| ![The tree grid in the dark theme](docs/images/tree-grid-dark.png) | ![The script-free outline table](docs/images/static-outline.png) |
+
+The images come from the pages `CanopyX.Examples` generates; `tests/browser/tools/screenshots.mjs` refreshes them.
+
 ## Packages
 
 | Package | Purpose |

@@ -82,7 +82,7 @@ The interaction budgets follow the first consumer's reporting plan for its large
 | Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 40 KB |
 | Largest sidecar file written by the bundle writer | 1 MB |
 
-The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of about 120,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs` and reported in pull requests; hosted CI runners are too noisy to gate on it. Consumers measure their own fixtures against their own budgets.
+The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs` and reported in pull requests; hosted CI runners are too noisy to gate on it. Consumers measure their own fixtures against their own budgets.
 
 ## Build Standards
 
