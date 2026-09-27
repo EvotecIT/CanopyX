@@ -42,6 +42,9 @@ public sealed class CanopySearchResult {
     /// <summary>Writes the <c>search</c> document.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     public string ToJson() {
+        if (_total.HasValue && _total.Value < Hits.Count) {
+            throw new InvalidOperationException("Search total cannot be below the number of returned hits.");
+        }
         var writer = new CanopyJsonWriter(1024);
         writer.BeginObject().Envelope("search").Property("query", Query);
         writer.OptionalProperty("total", _total);
