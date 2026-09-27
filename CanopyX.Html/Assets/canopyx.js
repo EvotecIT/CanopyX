@@ -831,6 +831,7 @@
       this.canvas.addEventListener("focusin", (e) => {
         const rowEl = e.target.closest(".cx-row");
         if (rowEl && rowEl._w && this.focused !== rowEl._w) {
+          this.focusRevision = (this.focusRevision || 0) + 1;
           if (this.focused) {
             this.focused._v = 0;
           }
@@ -1655,10 +1656,13 @@
       if (w.children && w.next) {
         const previous = new Set(w.children);
         const focus = this.focused;
-        const hadFocus = !!(focus && focus.status === "more" && focus.parent === w);
+        const element = document.activeElement;
+        const revision = this.focusRevision || 0;
+        const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
         await this.loadPage(w, w.next);
         const next = w.children.find((child) => !previous.has(child));
-        if (next && hadFocus && this.focused === focus) {
+        if (next && hadFocus && (this.focusRevision || 0) === revision &&
+            (document.activeElement === element || document.activeElement === document.body)) {
           this.setFocus(next, true);
         }
       }
@@ -1723,6 +1727,7 @@
         return;
       }
       const previous = this.focused;
+      this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
       if (previous && previous !== w) {
         previous._v = 0;
