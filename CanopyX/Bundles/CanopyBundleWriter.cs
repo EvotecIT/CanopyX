@@ -245,11 +245,15 @@ public sealed class CanopyBundleWriter {
         }
 
         var folder = builder.ToString();
-        var name = folder.ToUpperInvariant();
-        var reserved = name == "CON" || name == "PRN" || name == "AUX" || name == "NUL"
-            || (name.Length == 4 && (name.StartsWith("COM", StringComparison.Ordinal) || name.StartsWith("LPT", StringComparison.Ordinal)) && name[3] >= '1' && name[3] <= '9');
+        var reserved = PortableFolderNames.IsDeviceName(folder);
         using (var sha = System.Security.Cryptography.SHA256.Create()) {
-            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(id));
+            // Hash the exact UTF-16 units, including lone surrogates, without replacement fallback.
+            var identity = new byte[id.Length * 2];
+            for (var index = 0; index < id.Length; index++) {
+                identity[index * 2] = (byte)id[index];
+                identity[index * 2 + 1] = (byte)(id[index] >> 8);
+            }
+            var hash = sha.ComputeHash(identity);
             var suffix = new StringBuilder(64);
             foreach (var value in hash) suffix.Append(value.ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
             return (reserved ? "_" : "") + folder.Substring(0, Math.Min(40, folder.Length)) + "-" + suffix;

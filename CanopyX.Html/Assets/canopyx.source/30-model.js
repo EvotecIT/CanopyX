@@ -17,7 +17,7 @@
       this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
       this.keyMap = new Map();
       this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null, span: 1 };
-      if (!view.source || view.source.kind === "inline") {
+      if (!options.source && (!view.source || view.source.kind === "inline")) {
         this.root.inlineItems = view.roots || [];
       }
       this.rows = [];

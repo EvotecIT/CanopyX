@@ -238,11 +238,14 @@
         "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
       "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
-      "then": { "properties": { "roots": { "items": { "$ref": "#/$defs/inlineNode" } } } },
+      "then": { "required": ["roots"], "properties": { "roots": { "items": { "$ref": "#/$defs/inlineNode" } } } },
       "else": { "not": { "required": ["roots"] } },
       "allOf": [{
         "if": { "properties": { "source": { "properties": { "kind": { "const": "sidecar" } } } } },
         "then": { "properties": { "search": { "properties": { "minLength": { "minimum": 2 } } } } }
+      }, {
+        "if": { "required": ["search"], "properties": { "source": { "properties": { "kind": { "const": "remote" } } } } },
+        "then": { "properties": { "source": { "required": ["search"] } } }
       }]
     },
     "page": {

@@ -117,7 +117,7 @@ A detail row spans `height` row slots (1 to 40) under its parent and holds one o
 { "type": "html", "height": 8, "html": "<div class=\"host-widget\">...</div>" }
 ```
 
-Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail` callback.
+Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail` callback. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
 
 ## Page
 
@@ -126,7 +126,7 @@ Table and property cells follow the cell rules above. In the interactive browser
   "items": [ { "id": "projects/plans", "label": "plans" } ], "next": "c/3f/3f2a9c01d4e5b6a7-1" }
 ```
 
-- `parent` is the id of the node whose children these are, or `null` for the top level.
+- `parent` is the id of the node whose children these are, or `null` for the top level. It must not occur among the page items or their inline descendants.
 - `offset` is the index of the first item among all of the parent's children.
 - `total` is optional; when present it is at least `offset` plus the number of items. A continuation is required exactly when that sum is below the known total.
 - `next` is an opaque continuation. The data source passes it back to get the next page; `null` means the last page. The runtime shows a "show more" row while `next` is set.
@@ -141,7 +141,7 @@ A search result lists id paths, so the runtime can expand the tree to each hit w
   "hits": [ { "path": ["projects", "projects/plans"], "label": "plans", "kind": "folder", "context": "\\\\files\\projects" } ] }
 ```
 
-The path starts at a top-level node and ends at the hit, with no repeated node ids. A known search total must be at least the number of returned hits. Choosing a hit expands every node on the path, paging through "show more" until each id is loaded, then selects and focuses the hit. Reaching a child deep in a long list loads its pages one after another; a location hint on hits is a follow-up in `TODO.md`.
+The path starts at a top-level node and ends at the hit, with no repeated node ids. A known search total must be at least the number of returned hits, and `truncated` must be true exactly when the total exceeds that count. Choosing a hit expands every node on the path, paging through "show more" until each id is loaded, then selects and focuses the hit. Reaching a child deep in a long list loads its pages one after another; a location hint on hits is a follow-up in `TODO.md`.
 
 Matching is by word prefix: a label matches when every word of the query is the start of some word of the label. "sal rep" matches "Quarterly Sales Report". The bundle writer and the runtime split and fold text the same way:
 
@@ -226,7 +226,7 @@ To search, the runtime takes the longest query word (the first one on a tie) and
 The runtime fills the placeholders with URL-encoded values and sends `GET` requests with `Accept: application/json`:
 
 - `children`: `{ref}` is empty for the top level and otherwise the node's `ref` (or `id`); `{cursor}` is empty for the first page and otherwise the previous page's `next`. The response is a `page` document.
-- `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document. Without it, the search box is hidden for remote views.
+- `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document. Without it, the search box is hidden for remote views and view-level search options must be omitted.
 - `counts` (optional): `{ids}` is the node ids, each encoded with `encodeURIComponent`, joined with a literal comma and inserted without further encoding, so a comma inside an id arrives as `%2C`. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
 
 A response with a non-success status, invalid JSON, or the wrong `protocol` or `type` shows an error row with a retry action in place of the children. Authorization, page-size limits, and query-time limits belong to the host's endpoints.

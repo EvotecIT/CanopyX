@@ -62,7 +62,7 @@ public static class CanopyStaticHtml {
                 .Replace("{shown}", rows.Count.ToString("N0", o.Culture))
                 .Replace("{total}", unknown ? "unknown" : total.ToString("N0", o.Culture));
             html.Append("<p style=\"").Append(CanopyStaticStyles.Note).Append("\">").Append(Encode(note));
-            if (!string.IsNullOrEmpty(o.FullReportUrl)) {
+            if (IsSafeReportUrl(o.FullReportUrl)) {
                 html.Append(" <a href=\"").Append(Encode(o.FullReportUrl!)).Append("\" style=\"").Append(CanopyStaticStyles.Link).Append("\">").Append(Encode(o.FullReportText)).Append("</a>");
             }
 
@@ -148,9 +148,7 @@ public static class CanopyStaticHtml {
         for (var index = 0; index < columns.Count; index++) {
             var column = columns[index];
             CanopyCell? cell = null;
-            if (node.HasCells) {
-                node.Cells.TryGetValue(column.Id, out cell);
-            }
+            var hasCell = node.HasCells && node.Cells.TryGetValue(column.Id, out cell);
 
             var style = CanopyStaticStyles.Cell + Align(column);
             if (index == 0) {
@@ -167,7 +165,7 @@ public static class CanopyStaticHtml {
                 html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
             }
 
-            html.Append('>').Append(Encode(index == 0 && cell == null ? node.Label : cell?.DisplayText(column.Kind) ?? string.Empty));
+            html.Append('>').Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind) ?? string.Empty));
             if (index == 0 && node.HasBadges) {
                 AppendBadges(html, node.Badges);
             }
@@ -267,6 +265,18 @@ public static class CanopyStaticHtml {
     }
 
     private static string Align(CanopyColumn column) => column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty;
+
+    private static bool IsSafeReportUrl(string? url) {
+        if (string.IsNullOrEmpty(url)) return false;
+        foreach (var ch in url!) if (ch <= ' ' || ch == '\\') return false;
+        var colon = url.IndexOf(':');
+        var boundary = url.IndexOfAny(new[] { '/', '?', '#' });
+        if (colon < 0 || (boundary >= 0 && boundary < colon)) return true;
+        var scheme = url.Substring(0, colon);
+        return scheme.Equals("https", StringComparison.OrdinalIgnoreCase)
+            || scheme.Equals("http", StringComparison.OrdinalIgnoreCase)
+            || scheme.Equals("mailto", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static string Encode(string value) => WebUtility.HtmlEncode(value);
 }
