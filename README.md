@@ -4,7 +4,6 @@ CanopyX renders large interactive data views from .NET without runtime dependenc
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
 
-> Status: the core protocol and build tooling are implemented. Browser rendering, bundles, and examples arrive in the dependent foundation changes. Public packages have not been published.
 
 ## Packages
 

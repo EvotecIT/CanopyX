@@ -13,6 +13,7 @@
   ],
   "$defs": {
     "protocol": { "const": "canopyx/1" },
+    "accessibleLabel": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "tone": { "enum": ["neutral", "info", "success", "warning", "danger", "muted"] },
     "badge": {
@@ -45,6 +46,7 @@
     },
     "cells": {
       "type": "object",
+      "propertyNames": { "$ref": "#/$defs/nonEmptyString" },
       "additionalProperties": { "$ref": "#/$defs/cell" }
     },
     "detail": {
@@ -124,6 +126,9 @@
           { "required": ["children"], "properties": { "children": { "minItems": 1 } } },
           { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } }
         ] }
+      }, {
+        "if": { "required": ["hasChildren", "children"], "properties": { "hasChildren": { "const": true } } },
+        "then": { "properties": { "children": { "minItems": 1 } } }
       }],
       "not": {
         "required": ["detail"],
@@ -150,7 +155,7 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/nonEmptyString" },
-        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "title": { "$ref": "#/$defs/accessibleLabel" },
         "width": { "type": "integer", "minimum": 40 },
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
@@ -191,7 +196,7 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/nonEmptyString" },
-        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "label": { "$ref": "#/$defs/accessibleLabel" },
         "flag": { "$ref": "#/$defs/nonEmptyString" },
         "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" }
       }
@@ -215,7 +220,7 @@
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "view" },
         "id": { "$ref": "#/$defs/nonEmptyString" },
-        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "label": { "$ref": "#/$defs/accessibleLabel" },
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
@@ -316,7 +321,7 @@
           "properties": {
             "shards": {
               "type": "object",
-              "propertyNames": { "pattern": "^[a-z0-9_]{2,}-?$" },
+              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?$" },
               "additionalProperties": { "type": "integer", "minimum": 1 }
             }
           }
@@ -330,7 +335,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "searchShard" },
-        "key": { "type": "string", "pattern": "^[a-z0-9_]{2,}-?$" },
+        "key": { "type": "string", "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
         "entries": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
       }
     }

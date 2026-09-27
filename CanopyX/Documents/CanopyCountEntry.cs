@@ -47,6 +47,7 @@ public sealed class CanopyCountEntry {
     public IList<string>? Flags { get; set; }
 
     internal void WriteJson(CanopyJsonWriter writer) {
+        if (_cells != null) CanopyCell.ValidateEntries(_cells);
         writer.BeginObject().Property("id", Id);
         writer.OptionalProperty("childCount", _childCount);
         if (_cells != null && _cells.Count > 0) {

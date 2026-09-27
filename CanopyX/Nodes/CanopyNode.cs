@@ -131,7 +131,7 @@ public sealed class CanopyNode {
         if (_ref != null && !HasChildren && !HasInlineChildren) {
             throw new InvalidOperationException("Node '" + Id + "' has a reference but no children; set HasChildren for children that load later.");
         }
-        foreach (var cell in CellEntries) cell.Value?.ValidateShape();
+        CanopyCell.ValidateEntries(CellEntries);
         if (Detail != null && (HasInlineChildren || HasChildren)) {
             throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
         }
