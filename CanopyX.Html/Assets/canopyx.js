@@ -855,6 +855,19 @@
     }
   }
 
+  /** Validates the entire incoming page before its wrappers or key map can change. */
+  function validatePage(page, existing, expectedOffset) {
+    const items = page.items || [];
+    if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
+      throw new Error("CanopyX: page offset does not match the loaded child count.");
+    }
+    if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
+      throw new Error("CanopyX: page total is smaller than its loaded range.");
+    }
+    validateNodes(items, existing);
+    return items;
+  }
+
   // ---------- tree grid: DOM scaffold and windowed rendering ----------
   Object.assign(TreeGrid.prototype, {
     build() {
@@ -1758,15 +1771,7 @@
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
           if (this.destroyed) return;
-          const items = page.items || [];
-          const expectedOffset = cursor ? (w.children || []).length : 0;
-          if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
-            throw new Error("CanopyX: page offset does not match the loaded child count.");
-          }
-          if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
-            throw new Error("CanopyX: page total is smaller than its loaded range.");
-          }
-          validateNodes(items, this.keyMap);
+          const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
           if (!cursor || !w.children) {
             w.children = [];
           }
