@@ -242,3 +242,5 @@ Accessible grid, column, filter, and search names contain non-whitespace text. C
 A nonempty inline `children` array cannot declare `hasChildren: false`; an omitted flag remains valid for readers that infer expandability from the array.
 
 Structural counters (`offset`, totals, child counts, manifest node counts, and shard entry counts) range from their declared minimum through 2,147,483,647, matching the C# integer properties and remaining exact in browser JSON. Column widths have the same upper bound; view and manifest page sizes range from 1 through 10,000.
+
+Readers attach a wire page only when `parent` equals the requested node ID, or `null` for the top level; a node reference is a file/endpoint locator, not its identity. A mismatched parent is a load error for remote and sidecar sources.
