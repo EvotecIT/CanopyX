@@ -149,8 +149,8 @@
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
-          const content = detailCell("span", value, this.lang);
-          content.firstChild.textContent = cellText(value, column, this.lang);
+          const text = cellText(value, column, this.lang);
+          const content = detailCell("span", isCellObject(value) ? Object.assign({}, value, { text }) : { text }, this.lang);
           if (i === 0) (w.h.badges || []).forEach((badge) => content.appendChild(detailCell("span", { text: "", badges: [badge] }, this.lang)));
           out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
