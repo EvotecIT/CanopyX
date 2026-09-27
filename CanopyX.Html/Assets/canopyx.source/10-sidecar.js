@@ -7,7 +7,7 @@
   const sidecarWaiters = new Map();
 
   function sidecarKey(view, ref) {
-    return view + "\n" + ref;
+    return JSON.stringify([view, ref]);
   }
 
   function acceptSidecar(entry) {
