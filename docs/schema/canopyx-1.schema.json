@@ -129,6 +129,9 @@
       }, {
         "if": { "required": ["hasChildren", "children"], "properties": { "hasChildren": { "const": true } } },
         "then": { "properties": { "children": { "minItems": 1 } } }
+      }, {
+        "if": { "required": ["children"], "properties": { "children": { "minItems": 1 } } },
+        "then": { "properties": { "hasChildren": { "const": true } } }
       }],
       "not": {
         "required": ["detail"],
