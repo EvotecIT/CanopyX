@@ -17,3 +17,16 @@
       }
     }
   }
+
+  /** Validates the entire incoming page before its wrappers or key map can change. */
+  function validatePage(page, existing, expectedOffset) {
+    const items = page.items || [];
+    if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
+      throw new Error("CanopyX: page offset does not match the loaded child count.");
+    }
+    if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
+      throw new Error("CanopyX: page total is smaller than its loaded range.");
+    }
+    validateNodes(items, existing);
+    return items;
+  }
