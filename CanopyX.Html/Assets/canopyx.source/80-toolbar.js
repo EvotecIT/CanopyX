@@ -112,7 +112,9 @@
             show(result);
           }
         } catch (err) {
-          setText(status, "Search failed: " + (err && err.message ? err.message : err));
+          if (mine === sequence) {
+            setText(status, "Search failed: " + (err && err.message ? err.message : err));
+          }
         }
       };
       const move = (delta) => {
@@ -129,6 +131,7 @@
         item.scrollIntoView({ block: "nearest" });
       };
       input.addEventListener("input", () => {
+        sequence++;
         // Results for the previous text are stale as soon as the text changes; Enter waits for the new ones.
         clearTimeout(timer);
         hits = [];
@@ -143,6 +146,8 @@
             choose(active >= 0 ? active : 0);
           }
         } else if (e.key === "Escape") {
+          sequence++;
+          clearTimeout(timer);
           if (list.hidden) {
             input.value = "";
           }

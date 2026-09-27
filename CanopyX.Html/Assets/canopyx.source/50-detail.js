@@ -12,6 +12,7 @@
       if (cell.title) {
         element.title = cell.title;
       }
+      appendBadges(element, cell.badges);
     }
     return element;
   }
