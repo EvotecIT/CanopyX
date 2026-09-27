@@ -80,6 +80,7 @@ internal sealed class CanopyJsonWriter {
     }
 
     internal CanopyJsonWriter Number(long value) {
+        RequireSafeMagnitude(value);
         BeforeValue();
         _builder.Append(value.ToString(CultureInfo.InvariantCulture));
         return this;
@@ -88,6 +89,9 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter Number(double value) {
         if (double.IsNaN(value) || double.IsInfinity(value)) {
             return Null();
+        }
+        if (Math.Abs(value) > 9007199254740991d) {
+            throw new InvalidOperationException("Numeric values must be within JavaScript's safe integer range; use a text cell for larger exact values.");
         }
 
         BeforeValue();
@@ -101,9 +105,16 @@ internal sealed class CanopyJsonWriter {
     }
 
     internal CanopyJsonWriter Number(decimal value) {
+        RequireSafeMagnitude(value);
         BeforeValue();
         _builder.Append(value.ToString(CultureInfo.InvariantCulture));
         return this;
+    }
+
+    private static void RequireSafeMagnitude(decimal value) {
+        if (value < -9007199254740991m || value > 9007199254740991m) {
+            throw new InvalidOperationException("Numeric values must be within JavaScript's safe integer range; use a text cell for larger exact values.");
+        }
     }
 
     internal CanopyJsonWriter Boolean(bool value) {

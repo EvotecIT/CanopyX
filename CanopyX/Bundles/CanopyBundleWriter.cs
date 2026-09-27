@@ -83,7 +83,7 @@ public sealed class CanopyBundleWriter {
         while (pending.Count > 0) {
             var (node, path, parent, grandparent) = pending.Pop();
             context.Result.NodeCount++;
-            if (search != null && node.Detail == null) {
+            if (search != null) {
                 // The context names the nearest two ancestors; the full chain would repeat in every shard the entry is in.
                 var where = parent == null ? null : grandparent == null ? parent : grandparent + " / " + parent;
                 search.Add(new CanopySearchHit(path, node.Label) { Kind = node.Kind, Context = where });
@@ -248,7 +248,12 @@ public sealed class CanopyBundleWriter {
         var name = folder.ToUpperInvariant();
         var reserved = name == "CON" || name == "PRN" || name == "AUX" || name == "NUL"
             || (name.Length == 4 && (name.StartsWith("COM", StringComparison.Ordinal) || name.StartsWith("LPT", StringComparison.Ordinal)) && name[3] >= '1' && name[3] <= '9');
-        return reserved ? "_" + folder : folder;
+        using (var sha = System.Security.Cryptography.SHA256.Create()) {
+            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(id));
+            var suffix = new StringBuilder(64);
+            foreach (var value in hash) suffix.Append(value.ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+            return (reserved ? "_" : "") + folder.Substring(0, Math.Min(40, folder.Length)) + "-" + suffix;
+        }
     }
 
     private sealed class WriteContext {

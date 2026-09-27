@@ -28,13 +28,16 @@
     },
 
     async setState(state) {
-      if (!state || !Array.isArray(state.expanded)) {
+      if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
       this.restoring = true;
       try {
+        this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; w._v = 0; });
+        this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
         for (const path of paths) {
+          if (this.destroyed) break;
           try {
             await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true });
           } catch (e) {
@@ -52,11 +55,12 @@
 
     stateChanged() {
       const key = this.stateKey();
-      if (!key || this.restoring) {
+      if (this.destroyed || !key || this.restoring) {
         return;
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
+        if (this.destroyed) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
@@ -137,18 +141,18 @@
         if (w.h.detail) {
           const detail = w.h.detail;
           const content = h("div");
-          if (detail.type === "html") {
-            setText(content, detail.html);
-          } else {
-            this.renderDetail(w.h, content);
-          }
+          this.renderDetail(w.h, content);
           out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }
         out.push("<tr>");
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
-          out.push("<td" + (i === 0 ? pad : "") + ">" + escapeHtml(cellText(this.cellOf(w.h, column, index), column, this.lang)) + "</td>");
+          const value = this.cellOf(w.h, column, index);
+          const text = cellText(value, column, this.lang);
+          const content = detailCell("span", isCellObject(value) ? Object.assign({}, value, { text }) : { text }, this.lang);
+          if (i === 0) (w.h.badges || []).forEach((badge) => content.appendChild(detailCell("span", { text: "", badges: [badge] }, this.lang)));
+          out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
         out.push("</tr>");
       });
@@ -158,6 +162,7 @@
 
     /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
     applyCounts(doc) {
+      if (this.destroyed) return;
       checkDocument(doc, "counts");
       (doc.items || []).forEach((item) => {
         const w = this.keyMap.get(item.id);
@@ -167,6 +172,11 @@
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;
+          if (!w.inline) {
+            w.h.hasChildren = item.childCount > 0;
+            if (item.childCount > 0 && w.children && !w.children.length) w.children = null;
+            if (!item.childCount && (!w.children || !w.children.length)) w.expanded = false;
+          }
         }
         if (item.cells) {
           w.h.cells = Object.assign({}, w.h.cells, item.cells);
@@ -181,17 +191,25 @@
     },
 
     async refreshCounts(ids) {
-      if (!this.source.counts) {
+      if (this.destroyed || !this.source.counts) {
         return null;
       }
       const wanted = ids || this.rows.filter((w) => !w.status).map((w) => w.key);
+      const revisions = this.countRevisions || (this.countRevisions = new Map());
+      const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
+      mine.forEach((revision, id) => revisions.set(id, revision));
       const doc = await this.source.counts(wanted);
-      this.applyCounts(doc);
+      if (this.destroyed) return null;
+      checkDocument(doc, "counts");
+      this.applyCounts(Object.assign({}, doc, { items: (doc.items || []).filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }));
       return doc;
     },
 
     destroy() {
+      if (this.destroyed) return;
       this.destroyed = true;
+      clearTimeout(this.saveTimer);
+      if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);

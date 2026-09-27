@@ -135,8 +135,8 @@
       global.addEventListener("pointerup", up);
     },
 
-    /** Renders in the next animation frame while retaining visual DOM order. */
     scheduleRender() {
+      if (this.destroyed) return;
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;

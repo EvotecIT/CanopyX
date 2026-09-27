@@ -76,6 +76,8 @@ A node declares lazy children with `hasChildren: true` and no `children` array. 
 
 ## Cell
 
+Numeric cells use JavaScript binary floating-point semantics and must be within -9,007,199,254,740,991 to 9,007,199,254,740,991. Fractional decimals may round in the browser. Use a text cell for larger integers or values requiring exact decimal precision; writers reject numbers outside that range.
+
 A cell is either a bare value (string, number, boolean, or null) or an object:
 
 ```json
@@ -126,7 +128,7 @@ Table and property cells follow the cell rules above. In the interactive browser
 
 - `parent` is the id of the node whose children these are, or `null` for the top level.
 - `offset` is the index of the first item among all of the parent's children.
-- `total` is optional; when present it is at least `offset` plus the number of items.
+- `total` is optional; when present it is at least `offset` plus the number of items. A continuation is required exactly when that sum is below the known total.
 - `next` is an opaque continuation. The data source passes it back to get the next page; `null` means the last page. The runtime shows a "show more" row while `next` is set.
 - Items may carry inline `children`.
 
@@ -139,7 +141,7 @@ A search result lists id paths, so the runtime can expand the tree to each hit w
   "hits": [ { "path": ["projects", "projects/plans"], "label": "plans", "kind": "folder", "context": "\\\\files\\projects" } ] }
 ```
 
-The path starts at a top-level node and ends at the hit. Choosing a hit expands every node on the path, paging through "show more" until each id is loaded, then selects and focuses the hit. Reaching a child deep in a long list loads its pages one after another; a location hint on hits is a follow-up in `TODO.md`.
+The path starts at a top-level node and ends at the hit, with no repeated node ids. A known search total must be at least the number of returned hits. Choosing a hit expands every node on the path, paging through "show more" until each id is loaded, then selects and focuses the hit. Reaching a child deep in a long list loads its pages one after another; a location hint on hits is a follow-up in `TODO.md`.
 
 Matching is by word prefix: a label matches when every word of the query is the start of some word of the label. "sal rep" matches "Quarterly Sales Report". The bundle writer and the runtime split and fold text the same way:
 
@@ -151,7 +153,7 @@ Exact label matches rank first, then labels that start with the query, then the 
 
 ## Deep Links
 
-With `deepLink` on, selecting a row writes `#cx.<view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded the same way and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report.
+With `deepLink` on, selecting a row writes `#cx.<encoded view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded by `encodeURIComponent` and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report.
 
 ## Counts
 
@@ -204,7 +206,7 @@ The manifest:
   "search": { "prefix": "k-", "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
 ```
 
-`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names with a leading underscore.
+`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The portable prefix and fixed folding table define the initial unpublished v1 bundle format; earlier foundation-stack drafts were not released.
 
 `search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`, where the bundle writer's context names the nearest two ancestors), and each entry is filed under every distinct word of its label that has at least two code units.
 

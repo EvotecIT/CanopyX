@@ -32,7 +32,7 @@ internal static class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, Height = options.Height };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme };
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",

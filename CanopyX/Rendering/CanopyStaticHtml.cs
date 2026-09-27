@@ -14,7 +14,7 @@ namespace CanopyX.Rendering;
 /// <remarks>
 /// Rows follow the tree depth first in the order the host supplied. The first column is indented by level; the
 /// others show each cell's display text, with tones as text colour and badges as small pills. Detail rows become a
-/// nested table, a property list, or the host's trusted markup. When rows are left out, a note says how many and can
+/// nested table, a property list, or HTML payload preserved as text. When rows are left out, a note says how many and can
 /// link to the full report.
 /// </remarks>
 public static class CanopyStaticHtml {
@@ -34,7 +34,7 @@ public static class CanopyStaticHtml {
         var o = options ?? new CanopyStaticHtmlOptions();
         CanopyViewValidator.Validate(view);
         var columns = view.Columns.Where((column, index) => index == 0 || !column.Hidden).ToList();
-        var rows = CollectRows(view, o, out var total, out var hiddenBelow);
+        var rows = CollectRows(view, o, out var total, out var hiddenBelow, out var unknown);
         var html = new StringBuilder(256 + rows.Count * 160);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(CanopyStaticStyles.Table).Append("\">");
         var caption = o.Caption ?? view.Label;
@@ -57,10 +57,10 @@ public static class CanopyStaticHtml {
         }
 
         html.Append("</tbody></table>");
-        if (total > rows.Count) {
+        if (unknown || total > rows.Count) {
             var note = o.OverflowNote
                 .Replace("{shown}", rows.Count.ToString("N0", o.Culture))
-                .Replace("{total}", total.ToString("N0", o.Culture));
+                .Replace("{total}", unknown ? "unknown" : total.ToString("N0", o.Culture));
             html.Append("<p style=\"").Append(CanopyStaticStyles.Note).Append("\">").Append(Encode(note));
             if (!string.IsNullOrEmpty(o.FullReportUrl)) {
                 html.Append(" <a href=\"").Append(Encode(o.FullReportUrl!)).Append("\" style=\"").Append(CanopyStaticStyles.Link).Append("\">").Append(Encode(o.FullReportText)).Append("</a>");
@@ -77,9 +77,10 @@ public static class CanopyStaticHtml {
     /// MaxDepth, or under a collapsed node (with OnlyExpanded) are not shown, and the nodes cut below a shown row are
     /// recorded so the row can say so. Children a sidecar or remote source would load count by their declared number.
     /// </summary>
-    private static List<(CanopyNode Node, int Level)> CollectRows(CanopyView view, CanopyStaticHtmlOptions options, out int total, out Dictionary<CanopyNode, int> hiddenBelow) {
+    private static List<(CanopyNode Node, int Level)> CollectRows(CanopyView view, CanopyStaticHtmlOptions options, out long total, out Dictionary<CanopyNode, long> hiddenBelow, out bool unknown) {
         var rows = new List<(CanopyNode, int)>();
-        hiddenBelow = new Dictionary<CanopyNode, int>();
+        hiddenBelow = new Dictionary<CanopyNode, long>();
+        unknown = false;
         var pending = new Stack<(CanopyNode Node, int Level)>();
         for (var index = view.Roots.Count - 1; index >= 0; index--) {
             pending.Push((view.Roots[index], 1));
@@ -100,17 +101,20 @@ public static class CanopyStaticHtml {
                     hiddenBelow[node] = node.ChildCount.Value;
                 } else {
                     hiddenBelow[node] = -1;
+                    unknown = true;
                 }
             } else if (level < options.MaxDepth && (!options.OnlyExpanded || node.Expanded)) {
                 for (var index = children.Count - 1; index >= 0; index--) {
                     pending.Push((children[index], level + 1));
                 }
             } else {
-                var hidden = CountBelow(node);
+                var hidden = CountBelow(node, out var hiddenUnknown);
+                unknown |= hiddenUnknown;
                 if (hidden > 0) {
                     total += hidden;
                     hiddenBelow[node] = hidden;
                 }
+                if (hiddenUnknown) hiddenBelow[node] = -1;
             }
 
         }
@@ -118,8 +122,9 @@ public static class CanopyStaticHtml {
         return rows;
     }
 
-    private static int CountBelow(CanopyNode node) {
-        var count = 0;
+    private static long CountBelow(CanopyNode node, out bool unknown) {
+        long count = 0;
+        unknown = false;
         var pending = new Stack<CanopyNode>();
         pending.Push(node);
         while (pending.Count > 0) {
@@ -127,6 +132,7 @@ public static class CanopyStaticHtml {
             if (current.ChildNodes.Count == 0 && current.HasChildren && current.ChildCount > 0) {
                 count += current.ChildCount.Value;
             }
+            if (current.ChildNodes.Count == 0 && current.HasChildren && !current.ChildCount.HasValue) unknown = true;
 
             foreach (var child in current.ChildNodes) {
                 count++;
@@ -137,7 +143,7 @@ public static class CanopyStaticHtml {
         return count;
     }
 
-    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, int hiddenBelow, CanopyStaticHtmlOptions options) {
+    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options) {
         html.Append("<tr>");
         for (var index = 0; index < columns.Count; index++) {
             var column = columns[index];

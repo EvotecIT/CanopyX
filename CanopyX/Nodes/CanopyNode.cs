@@ -128,6 +128,8 @@ public sealed class CanopyNode {
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
     internal void ValidateShape() {
+        // Detail collections are public; use their canonical writer validation for every renderer.
+        if (Detail != null) Detail.WriteJson(new CanopyJsonWriter());
         if (Detail != null && (HasInlineChildren || HasChildren)) {
             throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
         }
