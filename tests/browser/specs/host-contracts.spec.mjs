@@ -102,7 +102,7 @@ test("sidecar search retains paths whose newline-joined strings collide", async 
   await open(page);
   const data = { ...view, source: { kind: "sidecar", base: "/data/" } };
   const entries = [{ path: ["a\nb", "c"], label: "Abacus one" }, { path: ["a", "b\nc"], label: "Abacus two" }];
-  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0", search: { prefix: "k-", shards: { ab: 1 } } },
+  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0", search: { prefix: "k-", shards: { ab: 2 } } },
     "s/k-ab": { protocol: "canopyx/1", type: "searchShard", key: "ab", entries } };
   await page.route("https://canopyx.test/data/**", route => {
     const ref = new URL(route.request().url()).pathname.slice(6, -3);

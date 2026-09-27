@@ -42,6 +42,28 @@ test("a throwing toggle callback cannot prevent state persistence", async ({ pag
   expect(errors).toContain("host toggle failure");
 });
 
+test("a throwing load callback cannot prevent persistence of applied lazy expansion", async ({ page }) => {
+  await open(page, { ...view, stateKey: "twelfth-lazy", roots: [] });
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.evaluate(() => {
+    const host = document.querySelector(".cx-host");
+    const data = { ...host.canopyx.view, roots: undefined };
+    host.canopyx.destroy();
+    window.api = CanopyX.createTreeGrid(host, { view: data,
+      source: { page: async node => node
+        ? { items: [{ id: "child", label: "Child" }], next: null }
+        : { items: [{ id: "lazy", label: "Lazy", hasChildren: true }], next: null } },
+      onLoad(node) { if (node && node.id === "lazy") throw new Error("host load failure"); } });
+    return api.ready;
+  });
+  await page.locator('[data-cx-id="lazy"] .cx-exp').click();
+  await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
+  await page.waitForFunction(() => sessionStorage.getItem("canopyx:twelfth-lazy") !== null, null, { timeout: 2000 });
+  expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-lazy")))).toEqual({ expanded: [["lazy"]] });
+  expect(errors).toContain("host load failure");
+});
+
 test("sidecar manifest owner is checked before caching and can be retried", async ({ page }) => {
   await open(page, view);
   const result = await page.evaluate(async () => {
@@ -55,6 +77,25 @@ test("sidecar manifest owner is checked before caching and can be retried", asyn
   });
   expect(result.error).toContain("view");
   expect(result.owner).toBe("manifest-owner");
+});
+
+for (const mismatch of ["key", "count"]) test(`sidecar shard ${mismatch} mismatch is retryable`, async ({ page }) => {
+  await open(page, view);
+  const result = await page.evaluate(async mismatch => {
+    const id = "shard-" + mismatch;
+    const source = CanopyX.sources.sidecar({ id, source: { base: "/data/" } });
+    const hit = { path: ["found"], label: "Abacus" };
+    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: id,
+      root: "r/0", search: { shards: { ab: 1 } } }]);
+    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: mismatch === "key" ? "wrong" : "ab",
+      entries: mismatch === "count" ? [hit, hit] : [hit] }]);
+    let error = null;
+    try { await source.search("ab", 10); } catch (caught) { error = caught.message; }
+    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [hit] }]);
+    return { error, hits: (await source.search("ab", 10)).hits };
+  }, mismatch);
+  expect(result.error).toContain(mismatch === "key" ? "key" : "count");
+  expect(result.hits).toEqual([{ path: ["found"], label: "Abacus" }]);
 });
 
 test("an expanded empty inline node remains a leaf across state restoration", async ({ page }) => {
