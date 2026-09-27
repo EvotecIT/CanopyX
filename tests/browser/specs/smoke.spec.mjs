@@ -176,7 +176,9 @@ test.describe("sidecar bundle", () => {
     // Opening the share loaded exactly its first children page, a hashed sidecar script.
     const loaded = await page.evaluate((from) => window.__scripts.slice(from), before);
     expect(loaded).toHaveLength(1);
-    expect(loaded[0]).toMatch(/\/data\/files\/c\/[0-9a-f]{2}\/[0-9a-f]{16}-0\.js$/);
+    const base = await page.evaluate(() => new URL(document.querySelector(".cx-host").canopyx.view.source.base, location.href).href);
+    expect(loaded[0].startsWith(base)).toBe(true);
+    expect(loaded[0].slice(base.length)).toMatch(/^c\/[0-9a-f]{2}\/[0-9a-f]{16}-0\.js$/);
   });
 
   test("pages 3,000 files 250 at a time", async ({ page }) => {
