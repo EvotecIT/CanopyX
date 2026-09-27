@@ -120,7 +120,7 @@
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
-        const doc = checkDocument(await load(ref), "page");
+        const doc = checkPage(await load(ref), node);
         return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
@@ -183,10 +183,10 @@
       kind: "remote",
       canSearch: !!source.search,
       async page(node, cursor) {
-        const doc = await getJson(fill(source.children, {
+        const doc = checkPage(await getJson(fill(source.children, {
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
-        }), "page");
+        }), "page"), node);
         return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
