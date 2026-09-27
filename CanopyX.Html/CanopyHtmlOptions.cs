@@ -20,7 +20,7 @@ public sealed class CanopyHtmlOptions {
     public string AssetBaseUrl {
         get => _assetBaseUrl;
         set {
-            var url = value ?? throw new ArgumentNullException(nameof(value));
+            var url = (value ?? throw new ArgumentNullException(nameof(value))).Replace('\\', '/');
             _assetBaseUrl = url.Length == 0 || url.EndsWith("/", StringComparison.Ordinal) ? url : url + "/";
         }
     }

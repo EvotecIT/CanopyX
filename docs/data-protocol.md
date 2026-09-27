@@ -147,7 +147,7 @@ Matching is by word prefix: a label matches when every word of the query is the 
 
 - A word is a run of characters that are not separators. Separators are every ASCII character other than `A` to `Z`, `a` to `z`, and `0` to `9`; characters above ASCII are always part of a word.
 - Folding uses a fixed table, not a platform's lowercase data (which differs between .NET Framework, .NET, and browsers). Capitals fold to small letters in these ranges: `A` to `Z`; Latin-1 U+00C0 to U+00DE except U+00D7; Latin Extended-A U+0100 to U+017F, where each capital is followed by its small letter (capitals are the even code points up to U+0137 and from U+014A to U+0177, the odd ones from U+0139 to U+0148 and from U+0179 to U+017E, and U+0178 folds to U+00FF); Greek U+0391 to U+03A9 except U+03A2, plus the accented capitals U+0386, U+0388 to U+038A, U+038C, U+038E, and U+038F; Cyrillic U+0400 to U+042F. Every other code unit, including U+0130 and U+0131, stays as it is.
-- Lengths are counted in UTF-16 code units of the folded word. Query words shorter than two code units cannot pick a shard; a sidecar search whose words are all that short returns no hits.
+- Lengths are counted in UTF-16 code units of the folded word. A sidecar query needs at least one word of two or more code units to select an indexed shard. The runtime rejects queries made entirely of shorter words, including `a b`; inline and remote search can handle them according to their source.
 
 Exact label matches rank first, then labels that start with the query, then the rest in natural order. Remote endpoints may rank differently.
 
@@ -226,7 +226,7 @@ To search, the runtime takes the longest query word (the first one on a tie) and
 The runtime fills the placeholders with URL-encoded values and sends `GET` requests with `Accept: application/json`:
 
 - `children`: `{ref}` is empty for the top level and otherwise the node's `ref` (or `id`); `{cursor}` is empty for the first page and otherwise the previous page's `next`. The response is a `page` document.
-- `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document. Without it, the search box is hidden for remote views and view-level search options must be omitted.
+- `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document whose `query` must echo the request exactly; a mismatched response is rejected before its hits are shown. Without the endpoint, the search box is hidden for remote views and view-level search options must be omitted.
 - `counts` (optional): `{ids}` is the node ids, each encoded with `encodeURIComponent`, joined with a literal comma and inserted without further encoding, so a comma inside an id arrives as `%2C`. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
 
 A response with a non-success status, invalid JSON, or the wrong `protocol` or `type` shows an error row with a retry action in place of the children. Authorization, page-size limits, and query-time limits belong to the host's endpoints.
@@ -253,5 +253,5 @@ Sidecar bases name a folder, end in `/`, and contain no query or fragment. Inlin
 
 Known page totals require a continuation exactly when the loaded range ends before the total. Browser search normalization removes only ASCII separators; non-ASCII word characters remain part of the query. A multi-selection deep link names a currently selected row and is removed when the grid selection becomes empty. Browser outlines honor host detail rendering callbacks; their default HTML-detail fallback escapes markup for script-free output.
 
-Local external assets in an HTML bundle use a separate directory tree from its sidecar data. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.
+Local external assets in an HTML bundle use a separate directory tree from its sidecar data. `AssetBaseUrl` normalizes backslashes to URL slashes, so a relative Windows-style asset folder is written at the same path used by the page. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.
 Fully materialized remote trees can be written as sidecar bundles with local search enabled even when the original remote source has no search endpoint; ordinary remote views still require that endpoint.
