@@ -24,7 +24,7 @@
 
   Object.assign(TreeGrid.prototype, {
     /** Fills a detail row with its table, property list, or trusted host markup; a host callback can take over. */
-    renderDetail(node, element) {
+    renderDetail(node, element, plainHtml = false) {
       if (this.opts.renderDetail && this.opts.renderDetail(node, element) === true) {
         return;
       }
@@ -65,7 +65,8 @@
         });
         body.appendChild(list);
       } else if (detail.type === "html") {
-        body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
+        if (plainHtml) setText(body, detail.html || "");
+        else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
       }
       element.appendChild(body);
     }

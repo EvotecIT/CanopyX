@@ -27,6 +27,9 @@
     if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
       throw new Error("CanopyX: page total is smaller than its loaded range.");
     }
+    if (page.total != null && (page.next != null) !== (expectedOffset + items.length < page.total)) {
+      throw new Error("CanopyX: page continuation disagrees with its total.");
+    }
     validateNodes(items, existing);
     return items;
   }
