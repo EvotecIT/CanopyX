@@ -1395,12 +1395,17 @@
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
         slot.title = null;
-        const fresh = h("span", "cx-content");
         if (slot.content === slot.cell) {
-          slot.cell.textContent = "";
-          slot.cell.appendChild(fresh);
-        } else slot.content.replaceWith(fresh);
-        slot.content = fresh;
+          const old = slot.cell;
+          const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
+          old.replaceWith(fresh);
+          slot.cell = fresh;
+          slot.content = fresh;
+        } else {
+          const fresh = h("span", "cx-content");
+          slot.content.replaceWith(fresh);
+          slot.content = fresh;
+        }
         slot.badges = [];
         if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
           return;
