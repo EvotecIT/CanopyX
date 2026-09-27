@@ -1,0 +1,77 @@
+using System.Text.Json.Nodes;
+
+namespace CanopyX.Tests.Protocol;
+
+/// <summary>
+/// The writer and the checked-in schema describe the same protocol. Hosts that are not .NET build documents from the
+/// schema, so a writer change that the schema does not describe (or the reverse) is a protocol break.
+/// </summary>
+public sealed class ProtocolSchemaTests {
+    public static TheoryData<string, string> Documents() => new() {
+        { "view, inline source", SampleDocuments.FullView().ToJson() },
+        { "view, sidecar source", SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson() },
+        { "view, remote source", SampleDocuments.FullView(CanopySource.Remote("api/children?ref={ref}&cursor={cursor}", "api/search?q={query}&limit={limit}", "api/counts?ids={ids}")).ToJson() },
+        { "page", SampleDocuments.Page().ToJson() },
+        { "search", SampleDocuments.Search().ToJson() },
+        { "counts", SampleDocuments.Counts().ToJson() }
+    };
+
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void ToJson_EveryDocumentKind_MatchesSchema(string kind, string json) {
+        ProtocolSchema.AssertValid(json, kind);
+    }
+
+    /// <summary>Documents that break a rule the C# writer enforces must also fail the schema, so the two cannot drift apart.</summary>
+    public static TheoryData<string> RejectedMutations() => new() {
+        "other protocol version",
+        "misspelt node field",
+        "detail row with children",
+        "empty ref",
+        "empty continuation",
+        "roots in a sidecar view",
+        "remote source without cursor placeholder",
+        "unknown tone"
+    };
+
+    [Theory]
+    [MemberData(nameof(RejectedMutations))]
+    public void Schema_DocumentBreakingAWriterRule_IsRejected(string rule) {
+        var json = rule switch {
+            "other protocol version" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["protocol"] = "canopyx/2"),
+            "misspelt node field" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["hasChildrn"] = true),
+            "detail row with children" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["detail"] = JsonNode.Parse("{\"type\":\"html\",\"height\":2,\"html\":\"x\"}")),
+            "empty ref" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["ref"] = ""),
+            "empty continuation" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["next"] = ""),
+            "roots in a sidecar view" => ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson(), view => view["roots"] = new JsonArray()),
+            "remote source without cursor placeholder" => ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Remote("c?ref={ref}&cursor={cursor}")).ToJson(), view => view["source"]!["children"] = "c?ref={ref}"),
+            "unknown tone" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["badges"] = JsonNode.Parse("[{\"text\":\"x\",\"tone\":\"red\"}]")),
+            _ => throw new ArgumentOutOfRangeException(nameof(rule))
+        };
+
+        Assert.False(ProtocolSchema.Evaluate(json).IsValid, rule);
+    }
+
+    [Fact]
+    public void ToJson_InlineSource_WritesRootsAndOtherSourcesDoNot() {
+        var inline = JsonNode.Parse(SampleDocuments.FullView().ToJson())!;
+        var sidecar = JsonNode.Parse(SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson())!;
+
+        Assert.Equal(2, inline["roots"]!.AsArray().Count);
+        Assert.Equal("share/plans", inline["roots"]![0]!["children"]![0]!["id"]!.GetValue<string>());
+        Assert.Null(sidecar["roots"]);
+        Assert.Equal("data/files/", sidecar["source"]!["base"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void ToJson_LazyNodeOnPage_WritesDeclarationWithoutChildren() {
+        var page = JsonNode.Parse(SampleDocuments.Page().ToJson())!;
+        var revision = page["items"]![0]!;
+
+        Assert.True(revision["hasChildren"]!.GetValue<bool>());
+        Assert.Equal(3, revision["childCount"]!.GetValue<int>());
+        Assert.Equal("rev-100/changes", revision["ref"]!.GetValue<string>());
+        Assert.Null(revision["children"]);
+        Assert.Equal("cursor-3", page["next"]!.GetValue<string>());
+    }
+}

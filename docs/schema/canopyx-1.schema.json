@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/schema/canopyx-1.schema.json",
+  "title": "CanopyX data protocol, version 1 (canopyx/1)",
+  "description": "Every canopyx/1 document. The schema lists every field of the current revision and rejects unknown ones, so it doubles as a writer check. Readers must ignore unknown fields so documents from a newer canopyx/1 writer still load.",
+  "oneOf": [
+    { "$ref": "#/$defs/view" },
+    { "$ref": "#/$defs/page" },
+    { "$ref": "#/$defs/search" },
+    { "$ref": "#/$defs/counts" },
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/searchShard" }
+  ],
+  "$defs": {
+    "protocol": { "const": "canopyx/1" },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "tone": { "enum": ["neutral", "info", "success", "warning", "danger", "muted"] },
+    "badge": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "$ref": "#/$defs/nonEmptyString" },
+        "tone": { "$ref": "#/$defs/tone" },
+        "title": { "type": "string" }
+      }
+    },
+    "cellValue": { "type": ["string", "number", "boolean", "null"] },
+    "cell": {
+      "description": "A bare value, or an object with a value plus display text, tooltip, tone, and badges.",
+      "oneOf": [
+        { "$ref": "#/$defs/cellValue" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": { "$ref": "#/$defs/cellValue" },
+            "text": { "type": "string" },
+            "title": { "type": "string" },
+            "tone": { "$ref": "#/$defs/tone" },
+            "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } }
+          }
+        }
+      ]
+    },
+    "cells": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/cell" }
+    },
+    "detail": {
+      "type": "object",
+      "required": ["type", "height"],
+      "properties": {
+        "type": { "enum": ["table", "properties", "html"] },
+        "height": { "type": "integer", "minimum": 1, "maximum": 40 }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "table" },
+            "height": true,
+            "caption": { "type": "string" },
+            "columns": { "type": "array", "items": { "type": "string" } },
+            "rows": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/cell" } } }
+          },
+          "required": ["columns", "rows"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "properties" },
+            "height": true,
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "value"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "$ref": "#/$defs/nonEmptyString" },
+                  "value": { "$ref": "#/$defs/cell" }
+                }
+              }
+            }
+          },
+          "required": ["items"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "type": { "const": "html" },
+            "height": true,
+            "html": { "type": "string" }
+          },
+          "required": ["html"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "label": { "type": "string" },
+        "kind": { "type": "string" },
+        "icon": { "type": "string" },
+        "group": { "type": "boolean" },
+        "cells": { "$ref": "#/$defs/cells" },
+        "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
+        "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "hasChildren": { "type": "boolean" },
+        "childCount": { "type": "integer", "minimum": 1 },
+        "ref": { "$ref": "#/$defs/nonEmptyString" },
+        "expanded": { "type": "boolean" },
+        "detail": { "$ref": "#/$defs/detail" },
+        "className": { "type": "string" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
+      },
+      "not": {
+        "required": ["detail"],
+        "anyOf": [
+          { "required": ["children"] },
+          { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } }
+        ]
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["id", "title", "width", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "title": { "$ref": "#/$defs/nonEmptyString" },
+        "width": { "type": "integer", "minimum": 40 },
+        "kind": { "enum": ["text", "number", "datetime"] },
+        "sortable": { "type": "boolean" },
+        "hidden": { "type": "boolean" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        {
+          "properties": { "kind": { "const": "inline" } },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "kind": { "const": "sidecar" },
+            "base": { "$ref": "#/$defs/nonEmptyString" }
+          },
+          "required": ["base"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "kind": { "const": "remote" },
+            "children": { "type": "string", "pattern": "\\{ref\\}.*\\{cursor\\}|\\{cursor\\}.*\\{ref\\}" },
+            "search": { "type": "string", "pattern": "\\{query\\}" },
+            "counts": { "type": "string", "pattern": "\\{ids\\}" }
+          },
+          "required": ["children"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "filter": {
+      "type": "object",
+      "required": ["id", "label", "flag"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "flag": { "$ref": "#/$defs/nonEmptyString" },
+        "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "searchHit": {
+      "type": "object",
+      "required": ["path", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "label": { "type": "string" },
+        "kind": { "type": "string" },
+        "context": { "type": "string" }
+      }
+    },
+    "view": {
+      "type": "object",
+      "required": ["protocol", "type", "id", "label", "rowHeight", "pageSize", "selection", "columns", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "view" },
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "selection": { "enum": ["single", "multiple"] },
+        "columns": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/column" } },
+        "icons": { "type": "object", "propertyNames": { "minLength": 1 }, "additionalProperties": { "type": "string", "pattern": "^\\s*<[sS][vV][gG]" } },
+        "search": {
+          "type": "object",
+          "required": ["minLength", "maxResults", "placeholder"],
+          "additionalProperties": false,
+          "properties": {
+            "minLength": { "type": "integer", "minimum": 1, "maximum": 16 },
+            "maxResults": { "type": "integer", "minimum": 1, "maximum": 500 },
+            "placeholder": { "type": "string" }
+          }
+        },
+        "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
+        "stateKey": { "type": "string" },
+        "deepLink": { "type": "boolean" },
+        "source": { "$ref": "#/$defs/source" },
+        "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } }
+      },
+      "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
+      "else": { "not": { "required": ["roots"] } }
+    },
+    "page": {
+      "type": "object",
+      "required": ["protocol", "type", "parent", "offset", "items", "next"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "page" },
+        "parent": { "type": ["string", "null"], "minLength": 1 },
+        "offset": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+        "next": { "type": ["string", "null"], "minLength": 1 }
+      }
+    },
+    "search": {
+      "type": "object",
+      "required": ["protocol", "type", "query", "truncated", "hits"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "search" },
+        "query": { "type": "string" },
+        "total": { "type": "integer", "minimum": 0 },
+        "truncated": { "type": "boolean" },
+        "hits": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": ["protocol", "type", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "counts" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/nonEmptyString" },
+              "childCount": { "type": "integer", "minimum": 0 },
+              "cells": { "$ref": "#/$defs/cells" },
+              "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } }
+            }
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "required": ["protocol", "type", "view", "root", "nodeCount", "pageSize"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "manifest" },
+        "view": { "$ref": "#/$defs/nonEmptyString" },
+        "root": { "$ref": "#/$defs/nonEmptyString" },
+        "nodeCount": { "type": "integer", "minimum": 0 },
+        "pageSize": { "type": "integer", "minimum": 1 },
+        "search": {
+          "type": "object",
+          "required": ["shards"],
+          "additionalProperties": false,
+          "properties": {
+            "shards": {
+              "type": "object",
+              "propertyNames": { "pattern": "^[a-z0-9_]{2,}-?$" },
+              "additionalProperties": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "searchShard": {
+      "type": "object",
+      "required": ["protocol", "type", "key", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "searchShard" },
+        "key": { "type": "string", "pattern": "^[a-z0-9_]{2,}-?$" },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
+      }
+    }
+  }
+}
