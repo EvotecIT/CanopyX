@@ -11,6 +11,43 @@ namespace CanopyX.Tests.Bundles;
 /// must sit in the shard the runtime looks in (docs/data-protocol.md, "Sidecar").
 /// </summary>
 public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
+    [Theory]
+    [InlineData("con")]
+    [InlineData("NUL")]
+    [InlineData("aux")]
+    [InlineData("COM1")]
+    [InlineData("lpt9")]
+    public void Write_ReservedViewId_UsesAPortableDataFolder(string id) {
+        var view = new CanopyView(id, "View");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            Assert.EndsWith("_" + id, result.DataDirectory);
+            Assert.True(File.Exists(Path.Combine(result.DataDirectory, "manifest.js")));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_ManifestOverBudget_FailsWithTheReferenceAndBudget() {
+        var view = new CanopyView("large-index", "Index") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        for (var i = 0; i < 1600; i++) {
+            view.Roots.Add(new CanopyNode(i.ToString(CultureInfo.InvariantCulture), "字" + (char)(0x4e00 + i)));
+        }
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
+        try {
+            var error = Assert.Throws<InvalidOperationException>(() => new CanopyBundleWriter(new CanopyBundleOptions { MaxFileBytes = 16384 }).Write(view, directory));
+            Assert.Contains("manifest", error.Message);
+            Assert.Contains("MaxFileBytes", error.Message);
+            Assert.False(File.Exists(Path.Combine(directory, "data", view.Id, "manifest.js")));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private readonly BundleFixture _bundle;
 
     public BundleWriterTests(BundleFixture bundle) {

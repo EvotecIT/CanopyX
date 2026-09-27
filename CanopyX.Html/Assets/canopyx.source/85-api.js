@@ -136,8 +136,13 @@
         const pad = " style=\"padding-left:" + ((w.level - 1) * 14 + 4) + "px\"";
         if (w.h.detail) {
           const detail = w.h.detail;
-          const summary = detail.caption || w.h.label;
-          out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + escapeHtml(summary) + "</td></tr>");
+          const content = h("div");
+          if (detail.type === "html") {
+            setText(content, detail.html);
+          } else {
+            this.renderDetail(w.h, content);
+          }
+          out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }
         out.push("<tr>");
@@ -171,6 +176,7 @@
         }
       });
       this.version++;
+      this.applySort(this.root, true);
       this.relayout();
     },
 

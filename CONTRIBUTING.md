@@ -1,5 +1,7 @@
 # Contributing
 
+> At this documentation-only revision, validate changes with `git diff --check` and check the existing documentation links. The quality loop, solution, asset assembler, and browser tests below are planned and become runnable with the implementation PRs.
+
 ## Local Quality Loop
 
 Run the full repository quality loop before opening a pull request:

@@ -94,7 +94,7 @@
       if (pending) {
         shardCache.delete(key);
       } else {
-        pending = load("s/k-" + key).then((doc) => {
+        pending = manifest().then((m) => load("s/" + (m.search.prefix || "") + key)).then((doc) => {
           checkDocument(doc, "searchShard");
           return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
         }, (err) => {

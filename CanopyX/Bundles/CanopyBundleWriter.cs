@@ -209,7 +209,7 @@ public sealed class CanopyBundleWriter {
             .Property("nodeCount", context.Result.NodeCount)
             .Property("pageSize", Options.PageSize);
         if (shards != null) {
-            json.Name("search").BeginObject().Name("shards").BeginObject();
+            json.Name("search").BeginObject().Property("prefix", "k-").Name("shards").BeginObject();
             foreach (var shard in shards) {
                 json.Property(shard.Key, shard.Value);
             }
@@ -222,13 +222,16 @@ public sealed class CanopyBundleWriter {
     }
 
     /// <summary>Writes one sidecar script: it pushes the view id, its own reference, and the document onto the queue.</summary>
-    private static void WriteFile(WriteContext context, string reference, string document) {
+    private void WriteFile(WriteContext context, string reference, string document) {
         var header = new CanopyJsonWriter(128);
         header.BeginArray().String(context.View.Id).String(reference).Raw(document).EndArray();
         var content = "(self.CanopyXSidecar = self.CanopyXSidecar || []).push(" + header.ToString() + ");\n";
         var path = Path.Combine(context.DataDirectory, reference.Replace('/', Path.DirectorySeparatorChar) + ".js");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var bytes = Utf8.GetBytes(content);
+        if (reference == CanopyBundleLayout.Manifest && bytes.Length > Options.MaxFileBytes) {
+            throw new InvalidOperationException("Sidecar '" + reference + "' exceeds MaxFileBytes (" + bytes.Length + " bytes). Increase the budget or reduce the search index.");
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllBytes(path, bytes);
         context.Result.FileCount++;
         context.Result.TotalBytes += bytes.Length;
@@ -241,7 +244,11 @@ public sealed class CanopyBundleWriter {
             builder.Append((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_' ? ch : '_');
         }
 
-        return builder.ToString();
+        var folder = builder.ToString();
+        var name = folder.ToUpperInvariant();
+        var reserved = name == "CON" || name == "PRN" || name == "AUX" || name == "NUL"
+            || (name.Length == 4 && (name.StartsWith("COM", StringComparison.Ordinal) || name.StartsWith("LPT", StringComparison.Ordinal)) && name[3] >= '1' && name[3] <= '9');
+        return reserved ? "_" + folder : folder;
     }
 
     private sealed class WriteContext {

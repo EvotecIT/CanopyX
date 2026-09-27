@@ -115,7 +115,7 @@ A detail row spans `height` row slots (1 to 40) under its parent and holds one o
 { "type": "html", "height": 8, "html": "<div class=\"host-widget\">...</div>" }
 ```
 
-Table and property cells follow the cell rules above. `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail` callback.
+Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail` callback.
 
 ## Page
 
@@ -201,8 +201,10 @@ The manifest:
 
 ```json
 { "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 120000, "pageSize": 250,
-  "search": { "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
+  "search": { "prefix": "k-", "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
 ```
+
+`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names with a leading underscore.
 
 `search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`, where the bundle writer's context names the nearest two ancestors), and each entry is filed under every distinct word of its label that has at least two code units.
 

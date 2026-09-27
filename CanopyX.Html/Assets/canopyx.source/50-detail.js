@@ -12,6 +12,12 @@
       if (cell.title) {
         element.title = cell.title;
       }
+      (cell.badges || []).forEach((badge) => {
+        const span = h("span", "cx-badge cx-tone-" + (badge.tone || "neutral"));
+        setText(span, badge.text);
+        if (badge.title) span.title = badge.title;
+        element.appendChild(span);
+      });
     }
     return element;
   }
