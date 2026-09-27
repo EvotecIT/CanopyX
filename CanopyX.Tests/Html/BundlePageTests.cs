@@ -21,12 +21,12 @@ public sealed class BundlePageTests {
             var page = File.ReadAllText(Path.Combine(directory, "index.html"));
             var config = JsonNode.Parse(Regex.Match(page, "class=\"cx-config\">(.*?)</script>", RegexOptions.Singleline).Groups[1].Value)!;
             Assert.Equal("sidecar", config["source"]!["kind"]!.GetValue<string>());
-            Assert.Equal("data/shares/", config["source"]!["base"]!.GetValue<string>());
+            Assert.Equal(result.Source.BaseUrl, config["source"]!["base"]!.GetValue<string>());
             Assert.Null(config["roots"]);
             Assert.Contains("<script src=\"assets/canopyx.js\" defer></script>", page);
             Assert.True(File.Exists(Path.Combine(directory, "assets", CanopyHtmlAssets.ScriptFileName)));
-            Assert.True(File.Exists(Path.Combine(directory, "data", "shares", "manifest.js")));
-            Assert.Equal(Path.Combine(directory, "data", "shares"), result.DataDirectory);
+            Assert.True(File.Exists(Path.Combine(result.DataDirectory, "manifest.js")));
+            Assert.Equal(Path.GetFullPath(Path.Combine(directory, result.Source.BaseUrl!)), Path.GetFullPath(result.DataDirectory) + Path.DirectorySeparatorChar);
         } finally {
             Directory.Delete(directory, recursive: true);
         }
