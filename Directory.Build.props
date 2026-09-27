@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <CanopyXProductVersion>0.1.0</CanopyXProductVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'CanopyX' Or '$(MSBuildProjectName)' == 'CanopyX.Html'">
+    <AssemblyVersion>$(CanopyXProductVersion).0</AssemblyVersion>
+    <FileVersion>$(CanopyXProductVersion).0</FileVersion>
+    <InformationalVersion>$(CanopyXProductVersion)</InformationalVersion>
+  </PropertyGroup>
+</Project>

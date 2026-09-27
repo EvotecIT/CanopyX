@@ -1,0 +1,52 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-pack:
+    name: Build, test, pack (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            runner: ubuntu-latest
+          - name: Windows
+            runner: windows-latest
+          - name: macOS
+            runner: macos-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Run quality loop
+        shell: pwsh
+        run: ./Build.ps1 -Configuration Release
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-packages-${{ matrix.runner }}
+          path: |
+            artifacts/packages/Release/*.nupkg
+            artifacts/packages/Release/*.snupkg
+          if-no-files-found: error
