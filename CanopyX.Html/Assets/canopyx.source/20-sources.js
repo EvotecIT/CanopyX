@@ -100,8 +100,12 @@
       if (pending) {
         shardCache.delete(key);
       } else {
-        pending = manifest().then((m) => load("s/" + (m.search.prefix || "") + key)).then((doc) => {
-          checkDocument(doc, "searchShard");
+        pending = manifest().then(async (m) => {
+          const doc = checkDocument(await load("s/" + (m.search.prefix || "") + key), "searchShard");
+          if (doc.key !== key) throw new Error("CanopyX: search shard key does not match the manifest.");
+          if (!Array.isArray(doc.entries) || doc.entries.length !== m.search.shards[key]) {
+            throw new Error("CanopyX: search shard entry count does not match the manifest.");
+          }
           return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
         }).catch((err) => {
           shardCache.delete(key);
