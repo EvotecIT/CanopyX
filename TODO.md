@@ -33,14 +33,14 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
   - [x] ARIA tree grid roles and states with a row-focus keyboard model and screen-reader announcements
   - [x] theming in light and dark from a small set of base colours
   - [x] outline fallback for email, print, and Office
-- [x] Row-cell reuse on recycle, with measured before/after scroll numbers at normal speed and at a 4x CPU slowdown. On a 5,005-row list at 4x, rows reused in place halved the frames over 50 ms (100 to 52 per full scroll, 5.9% of frames against 7.1%) and cut frames over 33 ms from 310 to 106.
+- [x] Row-cell reuse on recycle, with virtual rows kept in DOM order throughout scrolling. Normal-speed and 4x CPU comparisons for the final renderer are recorded in PR #5; timing depends on the workload and machine.
 - [x] Multi-select (a Should, small: selection set plus `aria-multiselectable`).
 - [x] Column resize and hide (a Should; the spike already has resize, hide is small).
 - [x] Bundle writer: top-level pages, children per parent, paged long lists, and a search index sharded by name prefix (a shard that grows too large splits on a longer prefix), all as sidecar scripts that load from `file://`. It replaces the spike's one-off converter and removes the 7.7 MB single-file problem.
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
 - [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
 - [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
-- [ ] A screen-reader pass (NVDA and Narrator) over the tree grid, including the DOM order restored after scrolling pauses. Automated checks cover roles, states, focus, and order, not what a reader announces.
+- [ ] A screen-reader pass (NVDA and Narrator) over the tree grid, including DOM order during scrolling. Automated checks cover roles, states, focus, and order, not what a reader announces.
 
 Gate:
 

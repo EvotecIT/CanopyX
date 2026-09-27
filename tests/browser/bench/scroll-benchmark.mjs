@@ -111,14 +111,12 @@ async function scrollOnce(pageUrl, cpu) {
       if (pauseEvery > 0 && steps % pauseEvery === 0) {
         await page.waitForTimeout(pauseMs);
       }
-      if (steps % 20 === 0) {
-        const done = await page.evaluate(() => { const g = document.querySelector(".cx-grid"); return g.scrollTop + g.clientHeight >= g.scrollHeight - 2; });
-        if (done) {
-          break;
-        }
-        if (Date.now() - started > 180000) {
-          throw new Error("Scroll benchmark timed out before reaching the bottom");
-        }
+      const done = await page.evaluate(() => { const g = document.querySelector(".cx-grid"); return g.scrollTop + g.clientHeight >= g.scrollHeight - 2; });
+      if (done) {
+        break;
+      }
+      if (Date.now() - started > 180000) {
+        throw new Error("Scroll benchmark timed out before reaching the bottom");
       }
     }
     // Include deferred work from either runtime under comparison, then the frames that paint it.
@@ -142,6 +140,9 @@ async function scrollOnce(pageUrl, cpu) {
         wheelSteps: wheelSteps
       };
     }, { wheelSteps: steps, startedAt: startedAt });
+    if (errors.length) {
+      throw new Error("Scroll benchmark encountered page errors: " + errors.join("; "));
+    }
     result.errors = errors;
     return result;
   } finally {
