@@ -7,6 +7,23 @@ namespace CanopyX.Tests.Protocol;
 /// schema, so a writer change that the schema does not describe (or the reverse) is a protocol break.
 /// </summary>
 public sealed class ProtocolSchemaTests {
+    [Theory]
+    [InlineData("{\"id\":\"x\",\"label\":\"x\",\"hasChildren\":true}")]
+    [InlineData("{\"id\":\"x\",\"label\":\"x\",\"ref\":\"x\"}")]
+    [InlineData("{\"id\":\"x\",\"label\":\"x\",\"children\":[{\"id\":\"y\",\"label\":\"y\",\"hasChildren\":true}]} ")]
+    public void Schema_InlineView_RejectsUnloadedDescendants(string root) {
+        var json = ProtocolSchema.Mutate(SampleDocuments.FullView().ToJson(), view => view["roots"] = new JsonArray(JsonNode.Parse(root)));
+        Assert.False(ProtocolSchema.Evaluate(json).IsValid);
+    }
+
+    [Fact]
+    public void Schema_RejectsUnsupportedSidecarSearchAndUndeclaredChildren() {
+        var sidecar = ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson(), view => view["search"]!["minLength"] = 1);
+        Assert.False(ProtocolSchema.Evaluate(sidecar).IsValid);
+        var page = ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), doc => doc["items"] = JsonNode.Parse("[{\"id\":\"x\",\"label\":\"x\",\"childCount\":2}]"));
+        Assert.False(ProtocolSchema.Evaluate(page).IsValid);
+    }
+
     public static TheoryData<string, string> Documents() => new() {
         { "view, inline source", SampleDocuments.FullView().ToJson() },
         { "view, sidecar source", SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson() },
