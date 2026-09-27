@@ -51,7 +51,7 @@
       }
       if (target) {
         this.setFocus(target);
-        if (this.multi && e.shiftKey && /^(Arrow(Up|Down)|Page(Up|Down)|Home|End)$/.test(key)) {
+        if (!target.status && this.multi && e.shiftKey && /^(Arrow(Up|Down)|Page(Up|Down)|Home|End)$/.test(key)) {
           this.selectRange(target);
         }
       }

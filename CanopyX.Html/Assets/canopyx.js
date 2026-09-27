@@ -1040,14 +1040,8 @@
         this.canvas.appendChild(fragment);
       }
       this.window = { first: first, last: last };
-      // Nobody reads rows while the wheel turns, so DOM order is restored once scrolling pauses. Keyboard focus moves
-      // and every other change render without the scroll flag and restore it at once.
-      clearTimeout(this.orderTimer);
-      if (fromScroll) {
-        this.orderTimer = setTimeout(() => this.keepDomOrder(this.window.first, this.window.last), 250);
-      } else {
-        this.keepDomOrder(first, last);
-      }
+      // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
+      this.keepDomOrder(first, last);
     },
 
     // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
@@ -1399,6 +1393,12 @@
       if (cell.title) {
         element.title = cell.title;
       }
+      (cell.badges || []).forEach((badge) => {
+        const span = h("span", "cx-badge cx-tone-" + (badge.tone || "neutral"));
+        setText(span, badge.text);
+        if (badge.title) span.title = badge.title;
+        element.appendChild(span);
+      });
     }
     return element;
   }
@@ -1504,7 +1504,7 @@
       }
       if (target) {
         this.setFocus(target);
-        if (this.multi && e.shiftKey && /^(Arrow(Up|Down)|Page(Up|Down)|Home|End)$/.test(key)) {
+        if (!target.status && this.multi && e.shiftKey && /^(Arrow(Up|Down)|Page(Up|Down)|Home|End)$/.test(key)) {
           this.selectRange(target);
         }
       }
@@ -1625,6 +1625,9 @@
           w._v = 0;
           w._pending = null;
           this.relayout();
+        }
+        if (!w.error) {
+          await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -1984,7 +1987,9 @@
             show(result);
           }
         } catch (err) {
-          setText(status, "Search failed: " + (err && err.message ? err.message : err));
+          if (mine === sequence) {
+            setText(status, "Search failed: " + (err && err.message ? err.message : err));
+          }
         }
       };
       const move = (delta) => {
@@ -2001,6 +2006,7 @@
         item.scrollIntoView({ block: "nearest" });
       };
       input.addEventListener("input", () => {
+        sequence++;
         // Results for the previous text are stale as soon as the text changes; Enter waits for the new ones.
         clearTimeout(timer);
         hits = [];
@@ -2015,6 +2021,8 @@
             choose(active >= 0 ? active : 0);
           }
         } else if (e.key === "Escape") {
+          sequence++;
+          clearTimeout(timer);
           if (list.hidden) {
             input.value = "";
           }
@@ -2195,8 +2203,13 @@
         const pad = " style=\"padding-left:" + ((w.level - 1) * 14 + 4) + "px\"";
         if (w.h.detail) {
           const detail = w.h.detail;
-          const summary = detail.caption || w.h.label;
-          out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + escapeHtml(summary) + "</td></tr>");
+          const content = h("div");
+          if (detail.type === "html") {
+            setText(content, detail.html);
+          } else {
+            this.renderDetail(w.h, content);
+          }
+          out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }
         out.push("<tr>");
@@ -2230,6 +2243,7 @@
         }
       });
       this.version++;
+      this.applySort(this.root, true);
       this.relayout();
     },
 

@@ -118,6 +118,13 @@
         "className": { "type": "string" },
         "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
+      "allOf": [{
+        "if": { "required": ["childCount"] },
+        "then": { "anyOf": [
+          { "required": ["children"] },
+          { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } }
+        ] }
+      }],
       "not": {
         "required": ["detail"],
         "anyOf": [
@@ -125,6 +132,17 @@
           { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } }
         ]
       }
+    },
+    "inlineNode": {
+      "allOf": [
+        { "$ref": "#/$defs/node" },
+        {
+          "not": { "required": ["ref"] },
+          "properties": { "children": { "items": { "$ref": "#/$defs/inlineNode" } } },
+          "if": { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } },
+          "then": { "required": ["children"], "properties": { "children": { "minItems": 1 } } }
+        }
+      ]
     },
     "column": {
       "type": "object",
@@ -220,7 +238,12 @@
         "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
       "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
-      "else": { "not": { "required": ["roots"] } }
+      "then": { "properties": { "roots": { "items": { "$ref": "#/$defs/inlineNode" } } } },
+      "else": { "not": { "required": ["roots"] } },
+      "allOf": [{
+        "if": { "properties": { "source": { "properties": { "kind": { "const": "sidecar" } } } } },
+        "then": { "properties": { "search": { "properties": { "minLength": { "minimum": 2 } } } } }
+      }]
     },
     "page": {
       "type": "object",

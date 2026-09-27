@@ -68,6 +68,9 @@
           w._pending = null;
           this.relayout();
         }
+        if (!w.error) {
+          await this.expandInitial(w);
+        }
       })();
       w._pending = run;
       return run;
