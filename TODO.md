@@ -33,7 +33,7 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
   - [ ] ARIA tree grid roles and states with a row-focus keyboard model and screen-reader announcements
   - [ ] theming in light and dark from a small set of base colours
   - [ ] outline fallback for email, print, and Office
-- [ ] Row-cell reuse on recycle, with measured before/after scroll numbers at normal speed and at a 4x CPU slowdown. The D21 spike found frame drops at 4x because recycled rows rebuilt every cell.
+- [x] Row-cell reuse on recycle, with measured before/after scroll numbers at normal speed and at a 4x CPU slowdown. On a 5,005-row list at 4x, rows reused in place halved the frames over 50 ms (100 to 52 per full scroll, 5.9% of frames against 7.1%) and cut frames over 33 ms from 310 to 106.
 - [ ] Multi-select (a Should, small: selection set plus `aria-multiselectable`).
 - [ ] Column resize and hide (a Should; the spike already has resize, hide is small).
 - [ ] Bundle writer: top-level pages, children per parent, paged long lists, and a search index sharded by name prefix (a shard that grows too large splits on a longer prefix), all as sidecar scripts that load from `file://`. It replaces the spike's one-off converter and removes the 7.7 MB single-file problem.

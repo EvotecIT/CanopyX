@@ -35,7 +35,7 @@
       host.appendChild(this.live);
       host.appendChild(this.outline);
       this.buildHeader();
-      this.onScroll = () => this.scheduleRender();
+      this.onScroll = () => this.scheduleRender(true);
       this.onPrint = () => { this.outline.innerHTML = this.toOutline(); };
       grid.addEventListener("scroll", this.onScroll, { passive: true });
       grid.addEventListener("click", (e) => this.onClick(e));
@@ -65,6 +65,7 @@
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       this.cols = this.visibleColumns();
+      this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {
@@ -111,6 +112,8 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
+      // A new column layout makes every row rebuild its cell skeleton once.
+      this.layout = (this.layout || 0) + 1;
       this.version++;
       this.scheduleRender();
     },
@@ -131,11 +134,13 @@
       global.addEventListener("pointerup", up);
     },
 
-    scheduleRender() {
+    /** Renders in the next animation frame; a render requested by anything but scrolling restores DOM order at once. */
+    scheduleRender(fromScroll) {
+      this.renderFromScroll = !!fromScroll && (this.rafId === 0 || this.renderFromScroll);
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;
-          this.render();
+          this.render(this.renderFromScroll);
         });
       }
     },
@@ -160,7 +165,16 @@
       return i !== undefined && this.rows[i] === w ? i : -1;
     },
 
-    render() {
+    /**
+     * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
+     * reused in place for a row that enters it: it stays attached, keeps its cells, and only its content and position
+     * change. Detaching and re-inserting rows (or moving them to keep DOM order) forces the browser to restyle whole
+     * rows, which is what dropped frames under CPU pressure. Positions and attributes are written only when they change.
+     */
+    render(fromScroll) {
+      if (this.destroyed) {
+        return;
+      }
       const grid = this.grid;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
@@ -174,12 +188,17 @@
       if (this.focused) {
         want.add(this.focused);
       }
+      const free = [];
+      const active = document.activeElement;
       for (const [w, rowEl] of this.rendered) {
         if (!want.has(w)) {
           this.rendered.delete(w);
-          rowEl.remove();
-          if (this.pool.length < 200) {
-            this.pool.push(rowEl);
+          if (rowEl.contains(active)) {
+            // Reusing it would leave keyboard focus on a row that now shows another node.
+            rowEl.remove();
+            rowEl._w = null;
+          } else {
+            free.push(rowEl);
           }
         }
       }
@@ -193,28 +212,61 @@
         }
         let rowEl = this.rendered.get(w);
         if (!rowEl) {
-          rowEl = this.pool.pop() || h("div");
+          rowEl = free.pop() || this.pool.pop() || h("div");
+          if (!rowEl.parentNode) {
+            fragment.appendChild(rowEl);
+          }
           this.rendered.set(w, rowEl);
           w._v = 0;
-          fragment.appendChild(rowEl);
         }
         if (w._v !== this.version || rowEl._w !== w) {
           this.fillRow(rowEl, w);
           w._v = this.version;
         }
-        rowEl.style.transform = "translateY(" + this.tops[index] + "px)";
-        rowEl.setAttribute("aria-rowindex", String(index + 2));
-        rowEl.classList.toggle("cx-alt", index % 2 === 1 && !w.status && !w.h.detail);
-        rowEl.tabIndex = w === tabRow ? 0 : -1;
+        const y = this.tops[index];
+        if (rowEl._top !== y) {
+          rowEl.style.transform = "translateY(" + y + "px)";
+          rowEl._top = y;
+        }
+        if (rowEl._index !== index) {
+          rowEl.setAttribute("aria-rowindex", String(index + 2));
+          rowEl._index = index;
+        }
+        const alt = index % 2 === 1 && !w.status && !w.h.detail;
+        if (rowEl._alt !== alt) {
+          rowEl.classList.toggle("cx-alt", alt);
+          rowEl._alt = alt;
+        }
+        const tab = w === tabRow ? 0 : -1;
+        if (rowEl._tab !== tab) {
+          rowEl.tabIndex = tab;
+          rowEl._tab = tab;
+        }
+      }
+      for (const rowEl of free) {
+        rowEl.remove();
+        rowEl._w = null;
+        if (this.pool.length < 200) {
+          this.pool.push(rowEl);
+        }
       }
       if (fragment.childNodes.length) {
         this.canvas.appendChild(fragment);
       }
-      this.keepDomOrder(first, last);
+      this.window = { first: first, last: last };
+      // Nobody reads rows while the wheel turns, so DOM order is restored once scrolling pauses. Keyboard focus moves
+      // and every other change render without the scroll flag and restore it at once.
+      clearTimeout(this.orderTimer);
+      if (fromScroll) {
+        this.orderTimer = setTimeout(() => this.keepDomOrder(this.window.first, this.window.last), 250);
+      } else {
+        this.keepDomOrder(first, last);
+      }
     },
 
-    // Screen readers in browse mode read rows in DOM order, so recycled rows are kept in visual order. The focused
-    // row is never moved, because moving a focused element drops its focus.
+    // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
+    // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
+    // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
     keepDomOrder(first, last) {
       const ordered = [];
       const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
@@ -231,13 +283,33 @@
       if (focusedEl && focusedIndex > last) {
         ordered.push(focusedEl);
       }
-      const kids = this.canvas.children;
-      let inOrder = kids.length === ordered.length;
-      for (let k = 0; inOrder && k < ordered.length; k++) {
+      const kids = Array.prototype.slice.call(this.canvas.children);
+      const n = ordered.length;
+      let inOrder = kids.length === n;
+      for (let k = 0; inOrder && k < n; k++) {
         inOrder = kids[k] === ordered[k];
       }
       if (inOrder) {
         return;
+      }
+      if (kids.length === n && !focusedEl) {
+        const shift = kids.indexOf(ordered[0]);
+        let rotation = shift > 0;
+        for (let k = 0; rotation && k < n; k++) {
+          rotation = kids[(shift + k) % n] === ordered[k];
+        }
+        if (rotation) {
+          if (shift <= n - shift) {
+            for (let k = 0; k < shift; k++) {
+              this.canvas.appendChild(kids[k]);
+            }
+          } else {
+            for (let k = n - 1; k >= shift; k--) {
+              this.canvas.insertBefore(kids[k], this.canvas.firstChild);
+            }
+          }
+          return;
+        }
       }
       const p = focusedEl ? ordered.indexOf(focusedEl) : -1;
       if (p < 0) {

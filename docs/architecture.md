@@ -53,10 +53,10 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 
 - Loaded nodes keep their children. The visible rows are a flat array rebuilt on each structure change (expand, collapse, page loaded, sort, filter); the cost is proportional to the visible rows, not to the whole tree.
 - Rows have a fixed height. A detail row spans a declared number of row slots, so an offset table gives every row's top position and a binary search finds the first row in the viewport.
-- Only the rows in the viewport, a small overscan, and the focused row exist in the DOM. Rows leaving the window go back to a pool.
-- A recycled row keeps its cell elements. Painting a row updates text, attributes, and badges in place instead of rebuilding the cells.
-- Rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
-- Rows stay in visual order in the DOM, because screen readers in browse mode read DOM order. The focused row is never moved, because moving a focused element drops its focus.
+- Only the rows in the viewport, a small overscan, and the focused row exist in the DOM.
+- A row that leaves the window is reused in place for a row that enters it: the element stays attached, keeps its cell elements, and only its text, attributes, badges, and position change. Detaching, rebuilding, or moving rows forces the browser to restyle them, which is what dropped frames at a 4x CPU slowdown in the D21 spike.
+- Positions and attributes are written only when they change, and rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
+- Screen readers in browse mode read DOM order, so rows are put back in visual order 250 ms after scrolling pauses, and at once after keyboard moves and every other change. The focused row is never moved, because moving a focused element drops its focus.
 
 ### Accessibility Contract
 

@@ -765,7 +765,7 @@
       host.appendChild(this.live);
       host.appendChild(this.outline);
       this.buildHeader();
-      this.onScroll = () => this.scheduleRender();
+      this.onScroll = () => this.scheduleRender(true);
       this.onPrint = () => { this.outline.innerHTML = this.toOutline(); };
       grid.addEventListener("scroll", this.onScroll, { passive: true });
       grid.addEventListener("click", (e) => this.onClick(e));
@@ -795,6 +795,7 @@
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       this.cols = this.visibleColumns();
+      this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {
@@ -841,6 +842,8 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
+      // A new column layout makes every row rebuild its cell skeleton once.
+      this.layout = (this.layout || 0) + 1;
       this.version++;
       this.scheduleRender();
     },
@@ -861,11 +864,13 @@
       global.addEventListener("pointerup", up);
     },
 
-    scheduleRender() {
+    /** Renders in the next animation frame; a render requested by anything but scrolling restores DOM order at once. */
+    scheduleRender(fromScroll) {
+      this.renderFromScroll = !!fromScroll && (this.rafId === 0 || this.renderFromScroll);
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;
-          this.render();
+          this.render(this.renderFromScroll);
         });
       }
     },
@@ -890,7 +895,16 @@
       return i !== undefined && this.rows[i] === w ? i : -1;
     },
 
-    render() {
+    /**
+     * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
+     * reused in place for a row that enters it: it stays attached, keeps its cells, and only its content and position
+     * change. Detaching and re-inserting rows (or moving them to keep DOM order) forces the browser to restyle whole
+     * rows, which is what dropped frames under CPU pressure. Positions and attributes are written only when they change.
+     */
+    render(fromScroll) {
+      if (this.destroyed) {
+        return;
+      }
       const grid = this.grid;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
@@ -904,12 +918,17 @@
       if (this.focused) {
         want.add(this.focused);
       }
+      const free = [];
+      const active = document.activeElement;
       for (const [w, rowEl] of this.rendered) {
         if (!want.has(w)) {
           this.rendered.delete(w);
-          rowEl.remove();
-          if (this.pool.length < 200) {
-            this.pool.push(rowEl);
+          if (rowEl.contains(active)) {
+            // Reusing it would leave keyboard focus on a row that now shows another node.
+            rowEl.remove();
+            rowEl._w = null;
+          } else {
+            free.push(rowEl);
           }
         }
       }
@@ -923,28 +942,61 @@
         }
         let rowEl = this.rendered.get(w);
         if (!rowEl) {
-          rowEl = this.pool.pop() || h("div");
+          rowEl = free.pop() || this.pool.pop() || h("div");
+          if (!rowEl.parentNode) {
+            fragment.appendChild(rowEl);
+          }
           this.rendered.set(w, rowEl);
           w._v = 0;
-          fragment.appendChild(rowEl);
         }
         if (w._v !== this.version || rowEl._w !== w) {
           this.fillRow(rowEl, w);
           w._v = this.version;
         }
-        rowEl.style.transform = "translateY(" + this.tops[index] + "px)";
-        rowEl.setAttribute("aria-rowindex", String(index + 2));
-        rowEl.classList.toggle("cx-alt", index % 2 === 1 && !w.status && !w.h.detail);
-        rowEl.tabIndex = w === tabRow ? 0 : -1;
+        const y = this.tops[index];
+        if (rowEl._top !== y) {
+          rowEl.style.transform = "translateY(" + y + "px)";
+          rowEl._top = y;
+        }
+        if (rowEl._index !== index) {
+          rowEl.setAttribute("aria-rowindex", String(index + 2));
+          rowEl._index = index;
+        }
+        const alt = index % 2 === 1 && !w.status && !w.h.detail;
+        if (rowEl._alt !== alt) {
+          rowEl.classList.toggle("cx-alt", alt);
+          rowEl._alt = alt;
+        }
+        const tab = w === tabRow ? 0 : -1;
+        if (rowEl._tab !== tab) {
+          rowEl.tabIndex = tab;
+          rowEl._tab = tab;
+        }
+      }
+      for (const rowEl of free) {
+        rowEl.remove();
+        rowEl._w = null;
+        if (this.pool.length < 200) {
+          this.pool.push(rowEl);
+        }
       }
       if (fragment.childNodes.length) {
         this.canvas.appendChild(fragment);
       }
-      this.keepDomOrder(first, last);
+      this.window = { first: first, last: last };
+      // Nobody reads rows while the wheel turns, so DOM order is restored once scrolling pauses. Keyboard focus moves
+      // and every other change render without the scroll flag and restore it at once.
+      clearTimeout(this.orderTimer);
+      if (fromScroll) {
+        this.orderTimer = setTimeout(() => this.keepDomOrder(this.window.first, this.window.last), 250);
+      } else {
+        this.keepDomOrder(first, last);
+      }
     },
 
-    // Screen readers in browse mode read rows in DOM order, so recycled rows are kept in visual order. The focused
-    // row is never moved, because moving a focused element drops its focus.
+    // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
+    // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
+    // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
     keepDomOrder(first, last) {
       const ordered = [];
       const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
@@ -961,13 +1013,33 @@
       if (focusedEl && focusedIndex > last) {
         ordered.push(focusedEl);
       }
-      const kids = this.canvas.children;
-      let inOrder = kids.length === ordered.length;
-      for (let k = 0; inOrder && k < ordered.length; k++) {
+      const kids = Array.prototype.slice.call(this.canvas.children);
+      const n = ordered.length;
+      let inOrder = kids.length === n;
+      for (let k = 0; inOrder && k < n; k++) {
         inOrder = kids[k] === ordered[k];
       }
       if (inOrder) {
         return;
+      }
+      if (kids.length === n && !focusedEl) {
+        const shift = kids.indexOf(ordered[0]);
+        let rotation = shift > 0;
+        for (let k = 0; rotation && k < n; k++) {
+          rotation = kids[(shift + k) % n] === ordered[k];
+        }
+        if (rotation) {
+          if (shift <= n - shift) {
+            for (let k = 0; k < shift; k++) {
+              this.canvas.appendChild(kids[k]);
+            }
+          } else {
+            for (let k = n - 1; k >= shift; k--) {
+              this.canvas.insertBefore(kids[k], this.canvas.firstChild);
+            }
+          }
+          return;
+        }
       }
       const p = focusedEl ? ordered.indexOf(focusedEl) : -1;
       if (p < 0) {
@@ -999,64 +1071,145 @@
   });
 
   // ---------- tree grid: row and cell painting ----------
+  // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
+  // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
+  // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
+  // (node, detail, status) or the columns change.
+  function setAttr(element, name, value) {
+    const cache = element._attrs || (element._attrs = {});
+    if (cache[name] === value) {
+      return;
+    }
+    cache[name] = value;
+    if (value === null) {
+      element.removeAttribute(name);
+    } else {
+      element.setAttribute(name, value);
+    }
+  }
+
+  function setClass(element, value) {
+    if (element._cls !== value) {
+      element.className = value;
+      element._cls = value;
+      element._alt = false;
+    }
+  }
+
   Object.assign(TreeGrid.prototype, {
     /** Paints a row for a node or a status row. The row element may be recycled from another node. */
     fillRow(rowEl, w) {
-      const node = w.h;
       rowEl._w = w;
-      rowEl.className = "cx-row";
+      const kind = w.status ? "status" : w.h.detail ? "detail" : "node";
+      if (rowEl._kind !== kind || rowEl._layout !== this.layout) {
+        this.buildRow(rowEl, kind);
+      }
+      setAttr(rowEl, "aria-level", String(w.level));
+      const height = w.span * this.rowH + "px";
+      if (rowEl._height !== height) {
+        rowEl.style.height = height;
+        rowEl._height = height;
+      }
+      if (kind === "status") {
+        this.paintStatusRow(rowEl, w);
+      } else if (kind === "detail") {
+        this.paintDetailRow(rowEl, w);
+      } else {
+        this.paintNodeRow(rowEl, w);
+      }
+    },
+
+    buildRow(rowEl, kind) {
       rowEl.textContent = "";
-      rowEl.setAttribute("role", "row");
-      rowEl.setAttribute("aria-level", String(w.level));
+      // The attribute cache is reset with the skeleton, so drop what a node row of another kind left behind.
       ["aria-expanded", "aria-busy", "aria-setsize", "aria-posinset", "aria-selected", "data-cx-id", "data-cx-status", "data-kind"].forEach((name) => rowEl.removeAttribute(name));
-      rowEl.style.height = w.span * this.rowH + "px";
+      rowEl._attrs = {};
+      rowEl._cls = null;
+      rowEl._kind = kind;
+      rowEl._layout = this.layout;
+      rowEl._height = null;
+      rowEl.setAttribute("role", "row");
       rowEl.style.width = this.rowWidth + "px";
-      if (w.status) {
-        this.fillStatusRow(rowEl, w);
-        return;
-      }
-      rowEl.setAttribute("data-cx-id", node.id);
-      if (node.kind) {
-        rowEl.setAttribute("data-kind", node.kind);
-      }
-      if (node.group) {
-        rowEl.classList.add("cx-group");
-      }
-      if (node.className) {
-        node.className.split(/\s+/).filter(Boolean).forEach((name) => rowEl.classList.add(name));
-      }
-      this.setPosition(rowEl, w);
-      rowEl.setAttribute("aria-selected", this.selected.has(w) ? "true" : "false");
-      if (node.detail) {
-        rowEl.classList.add("cx-detail");
+      if (kind !== "node") {
         const cell = this.cell(rowEl, 0, this.rowWidth);
         cell.setAttribute("aria-colspan", String(this.cols.length));
-        cell.style.paddingLeft = (w.level - 1) * INDENT + 8 + "px";
-        this.renderDetail(node, cell);
+        rowEl._cells = [{ cell: cell }];
+        if (kind === "status") {
+          const indent = cell.appendChild(h("span", "cx-indent"));
+          const label = cell.appendChild(h("span"));
+          rowEl._cells[0].indent = indent;
+          rowEl._cells[0].label = label;
+          rowEl._cells[0].text = label.appendChild(document.createTextNode(""));
+        }
         return;
       }
-      if (this.expandable(w)) {
-        rowEl.setAttribute("aria-expanded", w._open ? "true" : "false");
-      }
-      if (w.loading) {
-        rowEl.setAttribute("aria-busy", "true");
-      }
-      this.cols.forEach((column, i) => {
+      rowEl._cells = this.cols.map((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
-        const content = i === 0 ? this.treeCell(cell, w) : cell;
-        this.paintCell(content, cell, node, column, i, w);
+        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null };
+        cell.className = slot.base;
+        if (i === 0) {
+          slot.indent = cell.appendChild(h("span", "cx-indent"));
+          slot.exp = cell.appendChild(h("span", "cx-exp"));
+          slot.exp.setAttribute("aria-hidden", "true");
+          slot.content = cell.appendChild(h("span", "cx-content"));
+        } else {
+          slot.content = cell;
+        }
+        slot.textSpan = slot.content.appendChild(h("span", "cx-text"));
+        slot.text = slot.textSpan.appendChild(document.createTextNode(""));
+        return slot;
       });
     },
 
-    fillStatusRow(rowEl, w) {
-      rowEl.classList.add("cx-status", "cx-" + w.status);
-      rowEl.setAttribute("data-cx-status", w.status);
+    paintStatusRow(rowEl, w) {
+      setClass(rowEl, "cx-row cx-status cx-" + w.status);
+      setAttr(rowEl, "data-cx-status", w.status);
+      const slot = rowEl._cells[0];
+      slot.label.className = w.status === "more" ? "cx-more-btn" : "cx-status-text";
+      slot.indent.style.width = (w.level - 1) * INDENT + "px";
+      if (slot.text.data !== w.h.label) {
+        slot.text.data = w.h.label;
+      }
+    },
+
+    paintDetailRow(rowEl, w) {
+      const node = w.h;
+      setClass(rowEl, "cx-row cx-detail" + (node.className ? " " + node.className : ""));
+      this.paintRowState(rowEl, w);
+      // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
+      const old = rowEl._cells[0].cell;
       const cell = this.cell(rowEl, 0, this.rowWidth);
+      rowEl.replaceChild(cell, old);
+      rowEl._cells[0].cell = cell;
       cell.setAttribute("aria-colspan", String(this.cols.length));
-      cell.appendChild(this.indent(w.level));
-      const label = h("span", w.status === "more" ? "cx-more-btn" : "cx-status-text");
-      setText(label, w.h.label);
-      cell.appendChild(label);
+      cell.style.paddingLeft = (w.level - 1) * INDENT + 8 + "px";
+      this.renderDetail(node, cell);
+    },
+
+    paintNodeRow(rowEl, w) {
+      const node = w.h;
+      setClass(rowEl, "cx-row" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
+      this.paintRowState(rowEl, w);
+      setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
+      setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
+      const slots = rowEl._cells;
+      for (let i = 0; i < this.cols.length; i++) {
+        const slot = slots[i];
+        if (i === 0) {
+          this.paintTreeSlot(slot, w);
+        }
+        this.paintSlot(slot, node, this.cols[i], this.columnIndex[i], w);
+      }
+    },
+
+    /** Attributes shared by node and detail rows. */
+    paintRowState(rowEl, w) {
+      const node = w.h;
+      setAttr(rowEl, "data-cx-id", node.id);
+      setAttr(rowEl, "data-kind", node.kind || null);
+      setAttr(rowEl, "data-cx-status", null);
+      setAttr(rowEl, "aria-selected", this.selected.has(w) ? "true" : "false");
+      this.setPosition(rowEl, w);
     },
 
     /**
@@ -1067,8 +1220,104 @@
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
       const size = this.filter ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
-      rowEl.setAttribute("aria-setsize", String(size));
-      rowEl.setAttribute("aria-posinset", String(w.pos));
+      setAttr(rowEl, "aria-setsize", String(size));
+      setAttr(rowEl, "aria-posinset", String(w.pos));
+    },
+
+    paintTreeSlot(slot, w) {
+      const level = w.level;
+      if (slot.level !== level) {
+        slot.indent.style.width = (level - 1) * INDENT + "px";
+        slot.level = level;
+      }
+      const expander = this.expandable(w) ? "cx-exp" : "cx-exp cx-leaf";
+      if (slot.expCls !== expander) {
+        slot.exp.className = expander;
+        slot.expCls = expander;
+      }
+      const key = w.h.icon && this.iconTemplates.has(w.h.icon) ? w.h.icon : null;
+      if (slot.iconKey !== key) {
+        if (slot.iconEl) {
+          slot.iconEl.remove();
+        }
+        slot.iconEl = key ? this.iconTemplates.get(key).cloneNode(true) : null;
+        if (slot.iconEl) {
+          slot.cell.insertBefore(slot.iconEl, slot.content);
+        }
+        slot.iconKey = key;
+      }
+    },
+
+    paintSlot(slot, node, column, index, w) {
+      const value = this.cellOf(node, column, index);
+      if (this.opts.renderCell) {
+        // Host-rendered cells own their content, so they are rebuilt on every paint, from a clean cell.
+        slot.cell.className = slot.base;
+        slot.cell.removeAttribute("title");
+        slot.cls = slot.base;
+        slot.title = null;
+        slot.content.textContent = "";
+        slot.badges = [];
+        slot.content.appendChild(slot.textSpan);
+        if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
+          slot.textSpan.remove();
+          return;
+        }
+      }
+      const text = cellText(value, column, this.lang);
+      if (slot.text.data !== text) {
+        slot.text.data = text;
+      }
+      const object = isCellObject(value);
+      const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
+      if (slot.cls !== cls) {
+        slot.cell.className = cls;
+        slot.cls = cls;
+      }
+      const title = object && value.title ? value.title : null;
+      if (slot.title !== title) {
+        if (title) {
+          slot.cell.title = title;
+        } else {
+          slot.cell.removeAttribute("title");
+        }
+        slot.title = title;
+      }
+      this.paintBadges(slot, (index === 0 && node.badges) || null, object && value.badges ? value.badges : null);
+    },
+
+    /** Reuses badge elements: updates the ones that exist, adds missing ones, removes extras. */
+    paintBadges(slot, first, second) {
+      const count = (first ? first.length : 0) + (second ? second.length : 0);
+      for (let k = 0; k < count; k++) {
+        const badge = first && k < first.length ? first[k] : second[k - (first ? first.length : 0)];
+        let span = slot.badges[k];
+        if (!span) {
+          span = slot.content.appendChild(h("span"));
+          span._text = span.appendChild(document.createTextNode(""));
+          slot.badges.push(span);
+        }
+        const cls = "cx-badge cx-tone-" + (badge.tone || "neutral");
+        if (span._cls !== cls) {
+          span.className = cls;
+          span._cls = cls;
+        }
+        if (span._text.data !== badge.text) {
+          span._text.data = badge.text;
+        }
+        const title = badge.title || null;
+        if (span._title !== title) {
+          if (title) {
+            span.title = title;
+          } else {
+            span.removeAttribute("title");
+          }
+          span._title = title;
+        }
+      }
+      while (slot.badges.length > count) {
+        slot.badges.pop().remove();
+      }
     },
 
     cell(rowEl, index, width, kind) {
@@ -1078,57 +1327,6 @@
       cell.style.width = width + "px";
       rowEl.appendChild(cell);
       return cell;
-    },
-
-    indent(level) {
-      const span = h("span", "cx-indent");
-      span.style.width = (level - 1) * INDENT + "px";
-      return span;
-    },
-
-    /** Builds the tree column's indent, expander, and icon; returns the element that holds the label. */
-    treeCell(cell, w) {
-      cell.classList.add("cx-tree");
-      cell.appendChild(this.indent(w.level));
-      const expander = h("span", "cx-exp" + (this.expandable(w) ? "" : " cx-leaf"));
-      expander.setAttribute("aria-hidden", "true");
-      cell.appendChild(expander);
-      const template = w.h.icon ? this.iconTemplates.get(w.h.icon) : null;
-      if (template) {
-        cell.appendChild(template.cloneNode(true));
-      }
-      const content = h("span", "cx-content");
-      cell.appendChild(content);
-      return content;
-    },
-
-    paintCell(content, cell, node, column, index, w) {
-      const value = this.cellOf(node, column, index);
-      if (this.opts.renderCell && this.opts.renderCell(node, column.id, content, { level: w.level, expanded: w.expanded, index: index }) === true) {
-        return;
-      }
-      const text = h("span", "cx-text");
-      setText(text, cellText(value, column, this.lang));
-      content.appendChild(text);
-      if (isCellObject(value)) {
-        if (value.tone) {
-          cell.classList.add("cx-tone-" + value.tone);
-        }
-        if (value.title) {
-          cell.title = value.title;
-        }
-      }
-      const badges = (index === 0 && node.badges ? node.badges : []).concat(isCellObject(value) && value.badges ? value.badges : []);
-      badges.forEach((badge) => content.appendChild(this.badge(badge)));
-    },
-
-    badge(badge) {
-      const span = h("span", "cx-badge cx-tone-" + (badge.tone || "neutral"));
-      setText(span, badge.text);
-      if (badge.title) {
-        span.title = badge.title;
-      }
-      return span;
     }
   });
 
@@ -1990,6 +2188,9 @@
     },
 
     destroy() {
+      this.destroyed = true;
+      cancelAnimationFrame(this.rafId);
+      clearTimeout(this.orderTimer);
       this.resizeObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
@@ -2007,6 +2208,8 @@
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
+   *   renderCell(node, columnId, element, context) returns true when it drew the cell itself; context.index is the
+   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row.
    */
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {

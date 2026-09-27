@@ -7,6 +7,8 @@
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
+   *   renderCell(node, columnId, element, context) returns true when it drew the cell itself; context.index is the
+   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row.
    */
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {
