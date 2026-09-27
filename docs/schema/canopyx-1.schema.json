@@ -121,7 +121,7 @@
       "allOf": [{
         "if": { "anyOf": [{ "required": ["childCount"] }, { "required": ["ref"] }] },
         "then": { "anyOf": [
-          { "required": ["children"] },
+          { "required": ["children"], "properties": { "children": { "minItems": 1 } } },
           { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } }
         ] }
       }],
