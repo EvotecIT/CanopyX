@@ -322,7 +322,7 @@
             "prefix": { "enum": ["", "k-"] },
             "shards": {
               "type": "object",
-              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?$" },
+              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
               "additionalProperties": { "type": "integer", "minimum": 1 }
             }
           }

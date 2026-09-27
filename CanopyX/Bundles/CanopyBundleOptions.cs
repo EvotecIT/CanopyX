@@ -16,20 +16,16 @@ public sealed class CanopyBundleOptions {
     /// slashes. Defaults to <c>data/&lt;safe view id&gt;-&lt;SHA-256 of view id&gt;/</c>. The readable part is at most
     /// 40 characters, uses letters, digits, <c>-</c> and <c>_</c>, and escapes Windows device names.
     /// </summary>
-    /// <exception cref="ArgumentException">The value is empty, absolute, or climbs out of the output folder.</exception>
+    /// <exception cref="ArgumentException">The value contains an empty, unsafe, or non-portable folder component.</exception>
     public string? DataPath {
         get => _dataPath;
         set {
             if (value != null) {
                 var path = value.Replace('\\', '/');
-                // The path becomes part of script URLs, so it is limited to characters that need no encoding.
-                // Windows drops a trailing dot from folder names, which would move the files away from their URLs.
-                if (path.Length == 0 || path.StartsWith("/", StringComparison.Ordinal) || ("/" + path).Contains("./") || path.EndsWith(".", StringComparison.Ordinal) || !IsUrlSafe(path)) {
-                    throw new ArgumentException("The data path must be a relative folder inside the output folder, using letters, digits, '-', '_', '.', and '/'.", nameof(value));
-                }
-                foreach (var component in path.Split('/')) {
-                    if (PortableFolderNames.IsDeviceName(component)) {
-                        throw new ArgumentException("The data path contains a reserved Windows device name.", nameof(value));
+                var folder = path.EndsWith("/", StringComparison.Ordinal) ? path.Substring(0, path.Length - 1) : path;
+                foreach (var component in folder.Split('/')) {
+                    if (!PortableFolderNames.IsPortableComponent(component)) {
+                        throw new ArgumentException("The data path must contain portable relative folder names, without empty components, trailing dots, or reserved device names.", nameof(value));
                     }
                 }
 
@@ -87,13 +83,4 @@ public sealed class CanopyBundleOptions {
         }
     }
 
-    private static bool IsUrlSafe(string path) {
-        foreach (var ch in path) {
-            if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_' || ch == '.' || ch == '/')) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }
