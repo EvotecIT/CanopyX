@@ -1585,13 +1585,17 @@
       if (owned) this.focusHandoff = status;
       try { await this.loadPage(parent, parent.next && previous.size ? parent.next : null); }
       finally { if (this.focusHandoff === status) this.focusHandoff = null; }
-      if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
-          (document.activeElement !== element && document.activeElement !== document.body)) return;
-      const target = parent.error ? this.statusRow(parent, "error") :
-        (parent.children || []).find((child) => !previous.has(child)) ||
-        (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
-      if (target) this.setFocus(target, true);
-      else this.grid.focus();
+      try {
+        if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
+            (document.activeElement !== element && document.activeElement !== document.body)) return;
+        const target = parent.error ? this.statusRow(parent, "error") :
+          (parent.children || []).find((child) => !previous.has(child)) ||
+          (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
+        if (target) this.setFocus(target, true);
+        else this.grid.focus();
+      } finally {
+        if (!this.destroyed) this.relayout();
+      }
     },
 
     typeAhead(e, i) {
