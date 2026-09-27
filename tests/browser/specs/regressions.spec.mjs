@@ -66,6 +66,25 @@ test("later pages expand lazy nodes marked expanded", async ({ page }) => {
   expect(ids).toEqual(["first", "lazy", "child"]);
 });
 
+test("sorted paging focuses a newly loaded row", async ({ page }) => {
+  await openView(page, baseView(["Z", "Y", "A", "B"].map((label) => ({ id: label, label }))));
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.sort("name", "asc"));
+  await page.locator(".cx-row[data-cx-status=more]").focus();
+  await page.keyboard.press("Enter");
+  await expect(row(page, "A")).toBeFocused();
+});
+
+test("paging another branch preserves the focused show-more row", async ({ page }) => {
+  const roots = ["a", "b"].map((id) => ({ id, label: id, expanded: true,
+    children: [1, 2, 3].map((i) => ({ id: id + i, label: id + i })) }));
+  await openView(page, baseView(roots));
+  const focused = page.locator(".cx-row[data-cx-status=more]").first();
+  await focused.focus();
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.loadMore("b"));
+  await expect(focused).toBeFocused();
+  await expect(row(page, "b3")).not.toBeFocused();
+});
+
 for (const reject of [false, true]) {
   test(`editing search invalidates an in-flight ${reject ? "error" : "result"} before debounce`, async ({ page }) => {
     await openView(page, { ...baseView(), search: { minLength: 2, maxResults: 20, placeholder: "Search" } });
