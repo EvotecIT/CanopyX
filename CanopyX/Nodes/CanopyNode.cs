@@ -126,6 +126,9 @@ public sealed class CanopyNode {
     internal void ValidateShape() {
         // Detail collections are public; use their canonical writer validation for every renderer.
         if (Detail != null) Detail.WriteJson(new CanopyJsonWriter());
+        if (_ref != null && HasInlineChildren) {
+            throw new InvalidOperationException("Node '" + Id + "' has both inline children and a load reference; inline children must be complete.");
+        }
         if (_ref != null && !HasChildren && !HasInlineChildren) {
             throw new InvalidOperationException("Node '" + Id + "' has a reference but no children; set HasChildren for children that load later.");
         }

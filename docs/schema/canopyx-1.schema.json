@@ -114,14 +114,14 @@
         "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
         "hasChildren": { "type": "boolean" },
-        "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647, "$comment": "When children is present, readers require this value to equal its length; this cross-field equality is a semantic protocol constraint." },
         "ref": { "$ref": "#/$defs/identifier" },
         "expanded": { "type": "boolean" },
         "detail": { "$ref": "#/$defs/detail" },
         "className": { "type": "string" },
         "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
-      "allOf": [{
+      "allOf": [{ "not": { "required": ["ref", "children"] } }, {
         "if": { "anyOf": [{ "required": ["childCount"] }, { "required": ["ref"] }] },
         "then": { "anyOf": [
           { "required": ["children"], "properties": { "children": { "minItems": 1 } } },
@@ -177,7 +177,7 @@
         {
           "properties": {
             "kind": { "const": "sidecar" },
-            "base": { "$ref": "#/$defs/nonEmptyString" }
+            "base": { "type": "string", "pattern": "^[^?#]+/$" }
           },
           "required": ["base"],
           "additionalProperties": false

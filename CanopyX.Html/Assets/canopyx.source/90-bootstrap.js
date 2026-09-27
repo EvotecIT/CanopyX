@@ -14,6 +14,8 @@
     if (!host || !options || !options.view) {
       throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
     }
+    const existing = activeGrids.get(host);
+    if (existing) return existing;
     const grid = new TreeGrid(host, options);
     const api = Object.freeze({
       element: host,
@@ -43,8 +45,14 @@
       },
       applyCounts: (doc) => grid.applyCounts(doc),
       refreshCounts: (ids) => grid.refreshCounts(ids),
-      destroy: () => grid.destroy()
+      destroy: () => {
+        grid.destroy();
+        if (activeGrids.get(host) === api) activeGrids.delete(host);
+        if (host.canopyx === api) delete host.canopyx;
+      }
     });
+    activeGrids.set(host, api);
+    host.setAttribute("data-canopyx-mounted", "true");
     host.canopyx = api;
     return api;
   }
