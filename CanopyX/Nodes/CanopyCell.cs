@@ -153,7 +153,19 @@ public sealed class CanopyCell {
     private static string FormatIso(DateTime date) =>
         date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
+    internal static void ValidateEntries(IEnumerable<KeyValuePair<string, CanopyCell>> cells) {
+        foreach (var cell in cells) {
+            if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
+            cell.Value?.ValidateShape();
+        }
+    }
+
     internal void ValidateShape() {
+        switch (_value) {
+            case long whole: CanopyJsonWriter.RequireSafeMagnitude((decimal)whole); break;
+            case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
+            case double real: CanopyJsonWriter.RequireSafeMagnitude(real); break;
+        }
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) throw new InvalidOperationException("A cell cannot contain a null badge.");

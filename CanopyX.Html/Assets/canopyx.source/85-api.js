@@ -8,22 +8,21 @@
     pathOf(w) {
       const path = [];
       for (let node = w; node && node !== this.root; node = node.parent) {
-        path.unshift(node.key);
+        path.push(node.key);
       }
-      return path;
+      return path.reverse();
     },
 
     getExpandedPaths() {
       const out = [];
-      const walk = (w) => {
-        for (const child of w.children || []) {
-          if (child.expanded && child.children) {
-            out.push(this.pathOf(child));
-            walk(child);
-          }
+      const pending = (this.root.children || []).slice().reverse();
+      while (pending.length) {
+        const child = pending.pop();
+        if (child.expanded && child.children) {
+          out.push(this.pathOf(child));
+          for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
         }
-      };
-      walk(this.root);
+      }
       return out;
     },
 

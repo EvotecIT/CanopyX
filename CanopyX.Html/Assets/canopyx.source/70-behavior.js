@@ -83,23 +83,9 @@
 
     async loadMore(w) {
       if (w.children && w.next) {
-        const previous = new Set(w.children);
-        const focus = this.focused;
-        const element = document.activeElement;
-        const revision = this.focusRevision || 0;
-        const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
-        if (hadFocus) this.focusHandoff = focus;
-        try { await this.loadPage(w, w.next); }
-        finally { if (this.focusHandoff === focus) this.focusHandoff = null; }
-        const next = w.children.find((child) => !previous.has(child));
-        if (!this.destroyed && next && hadFocus && (this.focusRevision || 0) === revision &&
-            (document.activeElement === element || document.activeElement === document.body)) {
-          this.setFocus(next, true);
-        }
-        this.relayout();
+        await this.loadStatusPage(w, this.statusRow(w, "more"), w.next);
       }
     },
-
 
     /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
     select(w, options) {
@@ -241,25 +227,29 @@
 
     /**
      * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
-     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node).
+     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node),
+     * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
      */
     async expandPath(ids, options) {
       const o = options || {};
+      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
+      if (cancelled()) return null;
       await this.rootsReady;
-      if (this.destroyed) return null;
+      if (cancelled()) return null;
       let parent = this.root;
       let w = null;
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
-          await this.openForPath(parent);
+          try { await this.openForPath(parent); }
+          catch (err) { if (cancelled()) return null; throw err; }
         }
-        if (this.destroyed) return null;
+        if (cancelled()) return null;
         w = this.keyMap.get(ids[k]);
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
           const before = parent.children.length;
           const cursor = parent.next;
           await this.loadPage(parent, parent.next);
-          if (this.destroyed) return null;
+          if (cancelled()) return null;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -271,9 +261,10 @@
         parent = w;
       }
       if (o.expandLast && w && this.expandable(w)) {
-        await this.openForPath(w);
+        try { await this.openForPath(w); }
+        catch (err) { if (cancelled()) return null; throw err; }
       }
-      if (this.destroyed) return null;
+      if (cancelled()) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
         this.activeFilters.clear();
