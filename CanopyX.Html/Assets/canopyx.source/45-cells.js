@@ -60,6 +60,17 @@
       cell.appendChild(label);
     },
 
+    /** Updates paging metadata without replacing a retained host control or its DOM state. */
+    refreshRowState(rowEl, w) {
+      const expanded = this.expandable(w) ? (w._open ? "true" : "false") : null;
+      if (expanded === null) rowEl.removeAttribute("aria-expanded");
+      else if (rowEl.getAttribute("aria-expanded") !== expanded) rowEl.setAttribute("aria-expanded", expanded);
+      const busy = w.loading ? "true" : null;
+      if (busy === null) rowEl.removeAttribute("aria-busy");
+      else if (rowEl.getAttribute("aria-busy") !== busy) rowEl.setAttribute("aria-busy", busy);
+      this.setPosition(rowEl, w);
+    },
+
     /**
      * aria-posinset is the position among the visible siblings in display (sorted) order. aria-setsize counts children
      * that are not loaded yet; -1 means the total is unknown.

@@ -949,7 +949,7 @@
         if (w._v !== this.version || rowEl._w !== w) {
           this.fillRow(rowEl, w);
           w._v = this.version;
-        }
+        } else if (!w.status) this.refreshRowState(rowEl, w);
         rowEl.style.transform = "translateY(" + this.tops[index] + "px)";
         rowEl.setAttribute("aria-rowindex", String(index + 2));
         rowEl.classList.toggle("cx-alt", index % 2 === 1 && !w.status && !w.h.detail);
@@ -1113,6 +1113,17 @@
       const label = h("span", w.status === "more" ? "cx-more-btn" : "cx-status-text");
       setText(label, w.h.label);
       cell.appendChild(label);
+    },
+
+    /** Updates paging metadata without replacing a retained host control or its DOM state. */
+    refreshRowState(rowEl, w) {
+      const expanded = this.expandable(w) ? (w._open ? "true" : "false") : null;
+      if (expanded === null) rowEl.removeAttribute("aria-expanded");
+      else if (rowEl.getAttribute("aria-expanded") !== expanded) rowEl.setAttribute("aria-expanded", expanded);
+      const busy = w.loading ? "true" : null;
+      if (busy === null) rowEl.removeAttribute("aria-busy");
+      else if (rowEl.getAttribute("aria-busy") !== busy) rowEl.setAttribute("aria-busy", busy);
+      this.setPosition(rowEl, w);
     },
 
     /**
@@ -1440,7 +1451,6 @@
       }
       w.loading = true;
       w.error = null;
-      w._v = 0;
       this.relayout();
       const started = performance.now();
       const run = (async () => {
@@ -1458,8 +1468,7 @@
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
           this.applySort(w, false);
-          // Rows already painted show the old set size; repaint every sibling.
-          w.children.forEach((child) => { child._v = 0; });
+          // Paging changes sibling metadata, not retained host cell content.
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
           this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
@@ -1470,7 +1479,6 @@
           this.emit("error", { node: w.h, message: w.error });
         } finally {
           w.loading = false;
-          w._v = 0;
           w._pending = null;
           this.relayout();
         }
@@ -2199,7 +2207,7 @@
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {
         if (grid.destroyed) return;
-        const target = grid.focused || grid.rows[0];
+        const target = grid.indexOf(grid.focused) >= 0 ? grid.focused : grid.rows[0];
         if (target) grid.setFocus(target, true);
         else grid.grid.focus({ preventScroll: true });
       },

@@ -187,7 +187,7 @@
         if (w._v !== this.version || rowEl._w !== w) {
           this.fillRow(rowEl, w);
           w._v = this.version;
-        }
+        } else if (!w.status) this.refreshRowState(rowEl, w);
         rowEl.style.transform = "translateY(" + this.tops[index] + "px)";
         rowEl.setAttribute("aria-rowindex", String(index + 2));
         rowEl.classList.toggle("cx-alt", index % 2 === 1 && !w.status && !w.h.detail);
