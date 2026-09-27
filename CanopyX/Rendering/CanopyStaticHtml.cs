@@ -174,7 +174,7 @@ public static class CanopyStaticHtml {
                 // -1 marks children a source would load without a declared count.
                 var count = hiddenBelow > 0 ? hiddenBelow.ToString("N0", options.Culture) : "?";
                 html.Append(" <span style=\"").Append(CanopyStaticStyles.Hidden).Append("\" title=\"").Append(Encode(options.HiddenRowsTitle.Replace("{count}", count))).Append("\">(+")
-                    .Append(hiddenBelow > 0 ? count : string.Empty).Append(")</span>");
+                    .Append(hiddenBelow > 0 ? Encode(count) : string.Empty).Append(")</span>");
             }
 
             if (cell != null && cell.HasBadges) {
