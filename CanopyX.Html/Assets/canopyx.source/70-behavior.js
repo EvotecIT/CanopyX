@@ -23,7 +23,7 @@
       if (this.destroyed || w.toggleRevision !== revision) return;
       this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
-        this.opts.onToggle(w.h, want);
+        this.opts.onToggle(w.h, w.expanded);
       }
       this.stateChanged();
     },
@@ -270,7 +270,8 @@
         await this.openForPath(w);
       }
       if (this.destroyed) return null;
-      if (w && o.reveal !== false && this.filter && this.matchState(w) === 0) {
+      this.relayout();
+      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
         this.activeFilters.clear();
         this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
         this.setFilter(null);
