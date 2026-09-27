@@ -674,7 +674,7 @@
       this.total = y;
       this.canvas.style.height = y + "px";
       this.grid.setAttribute("aria-rowcount", String(rows.length + 1));
-      if (this.focused && this.indexOf(this.focused) < 0) {
+      if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
         while (target && this.indexOf(target) < 0) target = target.parent;
         target = target || rows[Math.min(Math.max(0, previousIndex), rows.length - 1)];
@@ -821,6 +821,7 @@
       this.headCells = this.cols.map((column, i) => {
         const cell = h("div", "cx-hcell cx-kind-" + (column.kind || "text"));
         cell.setAttribute("role", "columnheader");
+        cell.setAttribute("aria-label", column.title);
         cell.setAttribute("data-cx-column", column.id);
         cell.setAttribute("aria-colindex", String(i + 1));
         if (column.sortable) {
@@ -836,8 +837,11 @@
           setText(title, column.title);
           cell.appendChild(title);
         }
-        const grip = h("button", "cx-resize");
-        grip.type = "button";
+        const grip = h("span", "cx-resize");
+        grip.tabIndex = 0;
+        grip.setAttribute("role", "separator");
+        grip.setAttribute("aria-orientation", "vertical");
+        grip.setAttribute("aria-valuemin", "40");
         grip.addEventListener("keydown", (e) => {
           if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
           e.preventDefault();
@@ -858,38 +862,6 @@
           button.focus();
         }
       }
-    },
-
-    applyWidths() {
-      let sum = 0;
-      this.cols.forEach((column, i) => {
-        this.headCells[i].style.width = column.width + "px";
-        this.headCells[i].querySelector(".cx-resize").setAttribute("aria-label", "Resize " + column.title + ", " + column.width + " pixels; use Left and Right arrows");
-        sum += column.width;
-      });
-      this.rowWidth = sum;
-      this.headRow.style.width = sum + "px";
-      this.canvas.style.width = sum + "px";
-      // A new column layout makes every row rebuild its cell skeleton once.
-      this.layout = (this.layout || 0) + 1;
-      this.version++;
-      this.scheduleRender();
-    },
-
-    startResize(e, column) {
-      e.preventDefault();
-      const x0 = e.clientX;
-      const w0 = column.width;
-      const move = (ev) => {
-        column.width = Math.max(40, w0 + ev.clientX - x0);
-        this.applyWidths();
-      };
-      const up = () => {
-        global.removeEventListener("pointermove", move);
-        global.removeEventListener("pointerup", up);
-      };
-      global.addEventListener("pointermove", move);
-      global.addEventListener("pointerup", up);
     },
 
     scheduleRender() {
@@ -1091,6 +1063,44 @@
         }
         prev = ordered[k];
       }
+    }
+  });
+
+  // ---------- tree grid: column sizing ----------
+  Object.assign(TreeGrid.prototype, {
+    applyWidths() {
+      let sum = 0;
+      this.cols.forEach((column, i) => {
+        this.headCells[i].style.width = column.width + "px";
+        const grip = this.headCells[i].querySelector(".cx-resize");
+        grip.setAttribute("aria-label", "Resize " + column.title);
+        grip.setAttribute("aria-valuenow", String(column.width));
+        grip.setAttribute("aria-valuetext", column.width + " pixels");
+        sum += column.width;
+      });
+      this.rowWidth = sum;
+      this.headRow.style.width = sum + "px";
+      this.canvas.style.width = sum + "px";
+      // A new column layout makes every row rebuild its cell skeleton once.
+      this.layout = (this.layout || 0) + 1;
+      this.version++;
+      this.scheduleRender();
+    },
+
+    startResize(e, column) {
+      e.preventDefault();
+      const x0 = e.clientX;
+      const w0 = column.width;
+      const move = (ev) => {
+        column.width = Math.max(40, w0 + ev.clientX - x0);
+        this.applyWidths();
+      };
+      const up = () => {
+        global.removeEventListener("pointermove", move);
+        global.removeEventListener("pointerup", up);
+      };
+      global.addEventListener("pointermove", move);
+      global.addEventListener("pointerup", up);
     }
   });
 
@@ -1436,7 +1446,7 @@
   // printable keys run type-ahead on labels. Tab leaves the grid.
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (e.target.closest("input,textarea,select,button,a")) {
+      if (e.target.closest("input,textarea,select,button,a,[role=separator]")) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -1516,7 +1526,9 @@
       const element = document.activeElement;
       const revision = this.focusRevision || 0;
       const owned = this.focused === status && element && element._w === status;
-      await this.loadPage(parent, parent.next && previous.size ? parent.next : null);
+      if (owned) this.focusHandoff = status;
+      try { await this.loadPage(parent, parent.next && previous.size ? parent.next : null); }
+      finally { if (this.focusHandoff === status) this.focusHandoff = null; }
       if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
           (document.activeElement !== element && document.activeElement !== document.body)) return;
       const target = parent.error ? this.statusRow(parent, "error") :
@@ -1640,12 +1652,15 @@
         const element = document.activeElement;
         const revision = this.focusRevision || 0;
         const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
-        await this.loadPage(w, w.next);
+        if (hadFocus) this.focusHandoff = focus;
+        try { await this.loadPage(w, w.next); }
+        finally { if (this.focusHandoff === focus) this.focusHandoff = null; }
         const next = w.children.find((child) => !previous.has(child));
         if (!this.destroyed && next && hadFocus && (this.focusRevision || 0) === revision &&
             (document.activeElement === element || document.activeElement === document.body)) {
           this.setFocus(next, true);
         }
+        this.relayout();
       }
     },
 

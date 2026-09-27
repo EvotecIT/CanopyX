@@ -5,7 +5,7 @@
   // printable keys run type-ahead on labels. Tab leaves the grid.
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (e.target.closest("input,textarea,select,button,a")) {
+      if (e.target.closest("input,textarea,select,button,a,[role=separator]")) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -85,7 +85,9 @@
       const element = document.activeElement;
       const revision = this.focusRevision || 0;
       const owned = this.focused === status && element && element._w === status;
-      await this.loadPage(parent, parent.next && previous.size ? parent.next : null);
+      if (owned) this.focusHandoff = status;
+      try { await this.loadPage(parent, parent.next && previous.size ? parent.next : null); }
+      finally { if (this.focusHandoff === status) this.focusHandoff = null; }
       if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
           (document.activeElement !== element && document.activeElement !== document.body)) return;
       const target = parent.error ? this.statusRow(parent, "error") :
