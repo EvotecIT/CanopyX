@@ -119,9 +119,9 @@
         "children": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
       "allOf": [{
-        "if": { "required": ["childCount"] },
+        "if": { "anyOf": [{ "required": ["childCount"] }, { "required": ["ref"] }] },
         "then": { "anyOf": [
-          { "required": ["children"] },
+          { "required": ["children"], "properties": { "children": { "minItems": 1 } } },
           { "required": ["hasChildren"], "properties": { "hasChildren": { "const": true } } }
         ] }
       }],
@@ -228,7 +228,7 @@
           "properties": {
             "minLength": { "type": "integer", "minimum": 1, "maximum": 16 },
             "maxResults": { "type": "integer", "minimum": 1, "maximum": 500 },
-            "placeholder": { "type": "string" }
+            "placeholder": { "type": "string", "minLength": 1, "pattern": "\\S" }
           }
         },
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },

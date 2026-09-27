@@ -128,6 +128,10 @@ public sealed class CanopyNode {
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
     internal void ValidateShape() {
+        if (_ref != null && !HasChildren && !HasInlineChildren) {
+            throw new InvalidOperationException("Node '" + Id + "' has a reference but no children; set HasChildren for children that load later.");
+        }
+        foreach (var cell in CellEntries) cell.Value?.ValidateShape();
         if (Detail != null && (HasInlineChildren || HasChildren)) {
             throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
         }
@@ -164,10 +168,30 @@ public sealed class CanopyNode {
     }
 
     /// <summary>
-    /// Writes the node. With <paramref name="includeChildren"/> the inline children are written recursively;
+    /// Writes the node. With <paramref name="includeChildren"/> the inline children are written iteratively;
     /// otherwise only the lazy-load declaration is written, optionally with a reference and count chosen by the caller.
     /// </summary>
     internal void WriteJson(CanopyJsonWriter writer, bool includeChildren, string? refOverride = null, int? childCountOverride = null) {
+        if (!WriteStart(writer, includeChildren, refOverride, childCountOverride)) {
+            writer.EndObject();
+            return;
+        }
+        var pending = new Stack<(CanopyNode Node, int Index)>();
+        pending.Push((this, 0));
+        while (pending.Count > 0) {
+            var (node, index) = pending.Pop();
+            if (index == node.ChildNodes.Count) {
+                writer.EndArray().EndObject();
+            } else {
+                pending.Push((node, index + 1));
+                var child = node.ChildNodes[index];
+                if (child.WriteStart(writer, true, null, null)) pending.Push((child, 0));
+                else writer.EndObject();
+            }
+        }
+    }
+
+    private bool WriteStart(CanopyJsonWriter writer, bool includeChildren, string? refOverride, int? childCountOverride) {
         ValidateShape();
         writer.BeginObject().Property("id", Id).Property("label", _label);
         writer.OptionalProperty("kind", Kind);
@@ -225,13 +249,7 @@ public sealed class CanopyNode {
         writer.OptionalProperty("className", ClassName);
         if (inline) {
             writer.Name("children").BeginArray();
-            foreach (var child in _children!) {
-                child.WriteJson(writer, includeChildren: true);
-            }
-
-            writer.EndArray();
         }
-
-        writer.EndObject();
+        return inline;
     }
 }

@@ -13,7 +13,7 @@
         return;
       }
       const i = this.indexOf(w);
-      const pageRows = Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH) - 1);
+      const pageHeight = Math.max(this.rowH, this.grid.clientHeight - this.head.offsetHeight - this.rowH);
       const last = this.rows.length - 1;
       // A space inside a running type-ahead term continues the term ("lab c").
       const key = e.key === " " && this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS ? "typeahead" : e.key;
@@ -22,8 +22,8 @@
       switch (key) {
         case "ArrowDown": target = this.rows[Math.min(last, i + 1)]; break;
         case "ArrowUp": target = this.rows[Math.max(0, i - 1)]; break;
-        case "PageDown": target = this.rows[Math.min(last, i + pageRows)]; break;
-        case "PageUp": target = this.rows[Math.max(0, i - pageRows)]; break;
+        case "PageDown": target = this.rows[Math.min(last, Math.max(i + 1, this.rowAt(this.tops[i] + pageHeight)))]; break;
+        case "PageUp": target = this.rows[Math.max(0, Math.min(i - 1, this.rowAt(this.tops[i] - pageHeight)))]; break;
         case "Home": target = this.rows[0]; break;
         case "End": target = this.rows[last]; break;
         case "ArrowRight":
