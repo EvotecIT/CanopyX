@@ -22,11 +22,11 @@
         if (want) await this.expandInitial(w);
       }
       if (this.destroyed || w.toggleRevision !== revision) return;
+      this.stateChanged();
       this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, w.expanded);
       }
-      this.stateChanged();
     },
 
     /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */

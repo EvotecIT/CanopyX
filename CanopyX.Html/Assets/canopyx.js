@@ -398,7 +398,11 @@
     const shardCache = new Map();
     let manifestPromise = null;
     // Failed loads are not cached, so a retry can succeed once the file is back.
-    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => checkDocument(doc, "manifest")).catch((err) => {
+    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => {
+      checkDocument(doc, "manifest");
+      if (doc.view !== view.id) throw new Error("CanopyX: manifest view does not match the requested view.");
+      return doc;
+    }).catch((err) => {
       manifestPromise = null;
       throw err;
     }));
@@ -668,7 +672,7 @@
           w.children = first.items.map((child, i) => create(child, w, i));
           w.total = first.total;
           w.next = first.next;
-          w.expanded = !!data.expanded && initialExpansion;
+          w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
         } else if (data.hasChildren) {
@@ -1717,11 +1721,11 @@
         if (want) await this.expandInitial(w);
       }
       if (this.destroyed || w.toggleRevision !== revision) return;
+      this.stateChanged();
       this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, w.expanded);
       }
-      this.stateChanged();
     },
 
     /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
@@ -2179,7 +2183,7 @@
         if (active >= 0) {
           list.children[active].setAttribute("aria-selected", "false");
         }
-        active = (active + delta + hits.length) % hits.length;
+        active = active < 0 ? (delta < 0 ? hits.length - 1 : 0) : (active + delta + hits.length) % hits.length;
         const item = list.children[active];
         item.setAttribute("aria-selected", "true");
         input.setAttribute("aria-activedescendant", item.id);
