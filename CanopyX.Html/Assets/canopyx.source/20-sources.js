@@ -85,7 +85,11 @@
     const shardCache = new Map();
     let manifestPromise = null;
     // Failed loads are not cached, so a retry can succeed once the file is back.
-    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => checkDocument(doc, "manifest")).catch((err) => {
+    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => {
+      checkDocument(doc, "manifest");
+      if (doc.view !== view.id) throw new Error("CanopyX: manifest view does not match the requested view.");
+      return doc;
+    }).catch((err) => {
       manifestPromise = null;
       throw err;
     }));

@@ -130,7 +130,7 @@
         if (active >= 0) {
           list.children[active].setAttribute("aria-selected", "false");
         }
-        active = (active + delta + hits.length) % hits.length;
+        active = active < 0 ? (delta < 0 ? hits.length - 1 : 0) : (active + delta + hits.length) % hits.length;
         const item = list.children[active];
         item.setAttribute("aria-selected", "true");
         input.setAttribute("aria-activedescendant", item.id);
