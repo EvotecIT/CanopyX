@@ -81,6 +81,8 @@ await grid.expandPath(["projects", "projects/plans"]);
 // Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
 
+Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
+
 ## Documentation
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
@@ -92,4 +94,3 @@ await grid.expandPath(["projects", "projects/plans"]);
 
 CanopyX is licensed under the [MIT License](LICENSE).
 
-Local external assets in an HTML bundle use a separate directory tree from its sidecar data. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.

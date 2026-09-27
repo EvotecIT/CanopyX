@@ -80,6 +80,18 @@ public sealed class FallbackBoundaryTests {
     }
 
     [Fact]
+    public void StaticAndJsonRejectNullOrdinaryCellBadges() {
+        var view = View();
+        var node = new CanopyNode("row", "Row");
+        var cell = new CanopyCell("Value");
+        cell.Badges.Add(null!);
+        node.Cells["name"] = cell;
+        view.Roots.Add(node);
+        Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.Render(view));
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+    }
+
+    [Fact]
     public void StaticAndJsonRejectMalformedDetailCollections() {
         var view = View();
         var table = new CanopyTableDetail().AddColumns("Value");
@@ -112,6 +124,21 @@ public sealed class FallbackBoundaryTests {
                 Assert.True(paths.Add(result.DataDirectory));
                 Assert.True(File.Exists(Path.Combine(result.DataDirectory, "manifest.js")));
             }
+        } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Fact]
+    public void MaterializedRemoteTreesUseBundleSearchWithoutARemoteSearchEndpoint() {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-local-search-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = View(); view.Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}");
+            view.Search = new CanopySearchOptions(); view.Roots.Add(new CanopyNode("root", "Searchable root"));
+            Assert.Throws<InvalidOperationException>(() => view.ToJson());
+            var result = new CanopyBundleWriter().Write(view, directory);
+            Assert.True(result.SearchShardCount > 0);
+            Assert.Equal(CanopySourceKind.Sidecar, result.Source.Kind);
+            view.SaveHtmlBundle(directory);
+            Assert.True(File.Exists(Path.Combine(directory, "index.html")));
         } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
 
