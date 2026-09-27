@@ -78,6 +78,7 @@ const grid = CanopyX.createTreeGrid(document.getElementById("files"), {
   onSelect: (node) => showDrawer(node)
 });
 await grid.expandPath(["projects", "projects/plans"]);
+// Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
 
 ## Documentation

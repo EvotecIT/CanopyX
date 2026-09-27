@@ -326,18 +326,21 @@
         const queryWords = words(query);
         const hits = [];
         if (queryWords.length) {
-          // Depth-first without recursion; each stack entry carries the path and labels above the node.
-          const stack = (view.roots || []).map((node) => ({ node: node, path: [], labels: [] })).reverse();
+          // Paths are linked during traversal and materialized only for matching hits.
+          const stack = (view.roots || []).map((node) => ({ node, parent: null })).reverse();
           while (stack.length) {
             const item = stack.pop();
-            const path = item.path.concat(item.node.id);
             if (matchesWords(wordsOf(item.node), queryWords)) {
-              hits.push({ path: path, label: item.node.label, kind: item.node.kind, context: item.labels.join(" / ") });
+              const path = [];
+              const labels = [];
+              for (let entry = item; entry; entry = entry.parent) {
+                path.push(entry.node.id);
+                if (entry !== item) labels.push(entry.node.label);
+              }
+              hits.push({ path: path.reverse(), label: item.node.label, kind: item.node.kind, context: labels.reverse().join(" / ") });
             }
             const children = item.node.children || [];
-            for (let i = children.length - 1; i >= 0; i--) {
-              stack.push({ node: children[i], path: path, labels: item.labels.concat(item.node.label) });
-            }
+            for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], parent: item });
           }
         }
         return Promise.resolve(rankHits(hits, query, limit));
@@ -557,66 +560,110 @@
       return Promise.resolve();
     }
 
-    /** Loads lazy children of nodes that start expanded. */
-    async expandInitial(parent) {
+    expandable(w) {
+      return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length)));
+    }
+
+    statusRow(parent, kind) {
+      let row = parent["_" + kind];
+      if (!row) {
+        row = parent["_" + kind] = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+      }
+      const loaded = parent.children ? parent.children.length : 0;
+      const format = numberFormat(this.lang);
+      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
+        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
+      row._v = 0;
+      return row;
+    }
+
+    /** The cell for a column; the tree column falls back to the label. */
+    cellOf(node, column, index) {
+      const cells = node.cells;
+      if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
+        return cells[column.id];
+      }
+      return index === 0 ? node.label : undefined;
+    }
+
+    emit(name, detail) {
       if (this.destroyed) return;
-      for (const w of parent.children || []) {
+      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
+    }
+  }
+  // ---------- tree grid: iterative construction and initial expansion ----------
+  Object.assign(TreeGrid.prototype, {
+    /** Loads lazy children of nodes that start expanded without recursive tree walks. */
+    async expandInitial(parent) {
+      const pending = (parent.children || []).slice().reverse();
+      while (pending.length && !this.destroyed) {
+        const w = pending.pop();
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
           await this.toggle(w, true);
         }
         if (w.expanded && w.children) {
-          await this.expandInitial(w);
+          for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
         }
       }
-    }
+    },
 
     wrap(node, parent, index) {
-      const w = {
-        key: node.id, h: node, parent: parent, level: parent.level + 1, idx: index, expanded: false,
-        children: null, total: null, next: null, inline: false, loading: false, error: null,
-        span: node.detail ? Math.max(1, node.detail.height || 1) : 1, _v: 0
+      const create = (data, owner, position) => {
+        const w = {
+          key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
+          children: null, total: null, next: null, inline: false, loading: false, error: null,
+          span: data.detail ? Math.max(1, data.detail.height || 1) : 1, _v: 0
+        };
+        this.keyMap.set(data.id, w);
+        return w;
       };
-      this.keyMap.set(node.id, w);
-      if (Array.isArray(node.children)) {
-        const first = slicePage(node.children, null, this.pageSize);
-        w.inline = true;
-        w.children = first.items.map((child, i) => this.wrap(child, w, i));
-        w.total = first.total;
-        w.next = first.next;
-        w.expanded = !!node.expanded;
-        this.applySort(w, false);
-      } else if (node.hasChildren) {
-        w.total = typeof node.childCount === "number" ? node.childCount : null;
-        w.autoExpand = !!node.expanded;
+      const root = create(node, parent, index);
+      const pending = [root];
+      while (pending.length) {
+        const w = pending.pop();
+        const data = w.h;
+        if (Array.isArray(data.children)) {
+          const first = slicePage(data.children, null, this.pageSize);
+          w.inline = true;
+          w.children = first.items.map((child, i) => create(child, w, i));
+          w.total = first.total;
+          w.next = first.next;
+          w.expanded = !!data.expanded;
+          for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
+          this.applySort(w, false);
+        } else if (data.hasChildren) {
+          w.total = typeof data.childCount === "number" ? data.childCount : null;
+          w.autoExpand = !!data.expanded;
+        }
       }
-      return w;
+      return root;
     }
-
-    expandable(w) {
-      return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length)));
-    }
-
+  });
+  // ---------- tree grid: iterative filtering, layout, and sorting ----------
+  Object.assign(TreeGrid.prototype, {
     /** 2 = the node matches (its subtree shows), 1 = kept as an ancestor of matches, 0 = hidden. */
     matchState(w) {
-      if (w._fm !== undefined) {
-        return w._fm;
-      }
-      let state = this.filter.match(w.h) ? 2 : 0;
-      if (!state && this.filter.keep && this.filter.keep(w.h)) {
-        state = 1;
-      }
-      if (!state && w.children) {
-        for (const child of w.children) {
-          if (this.matchState(child) > 0) {
-            state = 1;
-            break;
+      const pending = [{ node: w, visited: false }];
+      while (pending.length) {
+        const entry = pending.pop();
+        const node = entry.node;
+        if (node._fm !== undefined) continue;
+        if (entry.visited) {
+          node._fm = (node.children || []).some((child) => child._fm > 0) ? 1 : 0;
+          continue;
+        }
+        if (this.filter.match(node.h)) node._fm = 2;
+        else if (this.filter.keep && this.filter.keep(node.h)) node._fm = 1;
+        else {
+          pending.push({ node, visited: true });
+          for (const child of node.children || []) {
+            if (child._fm === undefined) pending.push({ node: child, visited: false });
           }
         }
       }
-      w._fm = state;
-      return state;
-    }
+      return w._fm;
+    },
 
     relayout() {
       if (this.destroyed) return;
@@ -629,38 +676,30 @@
       if (filter) {
         this.keyMap.forEach((w) => { w._fm = undefined; });
       }
-      const walk = (parent, filtered) => {
-        let pos = 0;
-        for (const w of parent.children || []) {
-          let filterChildren = false;
-          if (filtered) {
-            const state = this.matchState(w);
-            if (!state) {
-              continue;
-            }
-            filterChildren = state === 1;
-          }
-          w.pos = ++pos;
+      const pending = [{ parent: this.root, filtered: !!filter, index: 0, pos: 0 }];
+      while (pending.length) {
+        const frame = pending[pending.length - 1];
+        const children = frame.parent.children || [];
+        if (frame.index < children.length) {
+          const w = children[frame.index++];
+          const state = frame.filtered ? this.matchState(w) : 2;
+          if (!state) continue;
+          const filterChildren = frame.filtered && state === 1;
+          w.pos = ++frame.pos;
           rows.push(w);
-          // A node opens when the user expanded it (its first page may still be loading or have failed) or when a
-          // filter reveals loaded matches below it, unless the user collapsed it while that filter was on.
           const autoOpen = filterChildren && this.filterExpand && !w.filterCollapsed && w.children && w.children.length;
           w._open = !!((w.expanded && (w.children || w.loading || w.error)) || autoOpen);
-          if (w._open) {
-            walk(w, filterChildren);
-          }
+          if (w._open) pending.push({ parent: w, filtered: filterChildren, index: 0, pos: 0 });
+        } else {
+          const parent = frame.parent;
+          parent.visibleCount = frame.pos;
+          // Unloaded matches remain reachable through their parent status row.
+          if (parent.loading) rows.push(this.statusRow(parent, "loading"));
+          else if (parent.error) rows.push(this.statusRow(parent, "error"));
+          else if (parent.next) rows.push(this.statusRow(parent, "more"));
+          pending.pop();
         }
-        parent.visibleCount = pos;
-        // "Show more" stays under filtered branches too: matches on pages not loaded yet must stay reachable.
-        if (parent.loading) {
-          rows.push(this.statusRow(parent, "loading"));
-        } else if (parent.error) {
-          rows.push(this.statusRow(parent, "error"));
-        } else if (parent.next) {
-          rows.push(this.statusRow(parent, "more"));
-        }
-      };
-      walk(this.root, !!filter);
+      }
       this.rows = rows;
       const tops = new Array(rows.length + 1);
       let y = 0;
@@ -687,65 +726,37 @@
       }
       this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
-    }
-
-    statusRow(parent, kind) {
-      let row = parent["_" + kind];
-      if (!row) {
-        row = parent["_" + kind] = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
-      }
-      const loaded = parent.children ? parent.children.length : 0;
-      const format = numberFormat(this.lang);
-      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
-        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
-      row._v = 0;
-      return row;
-    }
+    },
 
     applySort(parent, deep) {
-      const children = parent.children;
-      if (!children) {
-        return;
-      }
-      const state = this.sortState;
-      const column = state && this.columns.find((c) => c.id === state.column);
-      if (column) {
-        const direction = state.direction === "desc" ? -1 : 1;
-        const index = this.columns.indexOf(column);
-        const keys = new Map();
-        const keyOf = (w) => {
-          let key = keys.get(w);
-          if (!key) {
-            key = sortKey(this.cellOf(w.h, column, index), column);
-            keys.set(w, key);
-          }
-          return key;
-        };
-        children.sort((a, b) => compareKeys(keyOf(a), keyOf(b), direction) || a.idx - b.idx);
-      } else {
-        children.sort((a, b) => a.idx - b.idx);
-      }
-      if (deep) {
-        for (const child of children) {
-          this.applySort(child, true);
+      const pending = [parent];
+      while (pending.length) {
+        const children = pending.pop().children;
+        if (!children) continue;
+        const state = this.sortState;
+        const column = state && this.columns.find((c) => c.id === state.column);
+        if (column) {
+          const direction = state.direction === "desc" ? -1 : 1;
+          const index = this.columns.indexOf(column);
+          const keys = new Map();
+          const keyOf = (w) => {
+            let key = keys.get(w);
+            if (!key) {
+              key = sortKey(this.cellOf(w.h, column, index), column);
+              keys.set(w, key);
+            }
+            return key;
+          };
+          children.sort((a, b) => compareKeys(keyOf(a), keyOf(b), direction) || a.idx - b.idx);
+        } else {
+          children.sort((a, b) => a.idx - b.idx);
+        }
+        if (deep) {
+          for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
         }
       }
     }
-
-    /** The cell for a column; the tree column falls back to the label. */
-    cellOf(node, column, index) {
-      const cells = node.cells;
-      if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
-        return cells[column.id];
-      }
-      return index === 0 ? node.label : undefined;
-    }
-
-    emit(name, detail) {
-      if (this.destroyed) return;
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
-    }
-  }
+  });
 
   // ---------- tree grid: DOM scaffold and windowed rendering ----------
   Object.assign(TreeGrid.prototype, {
@@ -1327,24 +1338,7 @@
 
     async retryPage(status) {
       const parent = status.parent;
-      const previous = new Set(parent.children || []);
-      const element = document.activeElement;
-      const revision = this.focusRevision || 0;
-      const owned = this.focused === status && element && element._w === status;
-      if (owned) this.focusHandoff = status;
-      try { await this.loadPage(parent, parent.next && previous.size ? parent.next : null); }
-      finally { if (this.focusHandoff === status) this.focusHandoff = null; }
-      try {
-        if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
-            (document.activeElement !== element && document.activeElement !== document.body)) return;
-        const target = parent.error ? this.statusRow(parent, "error") :
-          (parent.children || []).find((child) => !previous.has(child)) ||
-          (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
-        if (target) this.setFocus(target, true);
-        else this.grid.focus();
-      } finally {
-        if (!this.destroyed) this.relayout();
-      }
+      await this.loadStatusPage(parent, status, parent.next && parent.children && parent.children.length ? parent.next : null);
     },
 
     typeAhead(e, i) {
@@ -1369,6 +1363,39 @@
 
     announce(message) {
       setText(this.live, message);
+    }
+  });
+  // ---------- tree grid: focus ownership across status-row page requests ----------
+  Object.assign(TreeGrid.prototype, {
+    async loadStatusPage(parent, status, cursor) {
+      const previous = new Set(parent.children || []);
+      const element = document.activeElement;
+      const revision = this.focusRevision || 0;
+      const owned = this.focused === status && element && element._w === status;
+      if (owned) this.focusHandoff = status;
+      try { await this.loadPage(parent, cursor); }
+      finally {
+        if (this.focusHandoff === status) this.focusHandoff = null;
+        if (!this.destroyed) {
+          if (owned && (this.focusRevision || 0) === revision &&
+              (document.activeElement === element || document.activeElement === document.body)) {
+            let target = parent.error ? this.statusRow(parent, "error") :
+              (parent.children || []).find((child) => !previous.has(child)) ||
+              (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
+            while (target && this.indexOf(target) < 0) target = target.parent;
+            target = target || this.rows[0];
+            if (target) this.setFocus(target, true);
+            else {
+              this.focused = null;
+              this.grid.tabIndex = 0;
+              this.render();
+              this.grid.focus({ preventScroll: true });
+            }
+          }
+          // Also retire removed status rows when another control took focus during the request.
+          this.relayout();
+        }
+      }
     }
   });
 
@@ -1456,23 +1483,9 @@
 
     async loadMore(w) {
       if (w.children && w.next) {
-        const previous = new Set(w.children);
-        const focus = this.focused;
-        const element = document.activeElement;
-        const revision = this.focusRevision || 0;
-        const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
-        if (hadFocus) this.focusHandoff = focus;
-        try { await this.loadPage(w, w.next); }
-        finally { if (this.focusHandoff === focus) this.focusHandoff = null; }
-        const next = w.children.find((child) => !previous.has(child));
-        if (!this.destroyed && next && hadFocus && (this.focusRevision || 0) === revision &&
-            (document.activeElement === element || document.activeElement === document.body)) {
-          this.setFocus(next, true);
-        }
-        this.relayout();
+        await this.loadStatusPage(w, this.statusRow(w, "more"), w.next);
       }
     },
-
 
     /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
     select(w, options) {
@@ -1614,25 +1627,29 @@
 
     /**
      * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
-     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node).
+     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node),
+     * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
      */
     async expandPath(ids, options) {
       const o = options || {};
+      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
+      if (cancelled()) return null;
       await this.rootsReady;
-      if (this.destroyed) return null;
+      if (cancelled()) return null;
       let parent = this.root;
       let w = null;
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
-          await this.openForPath(parent);
+          try { await this.openForPath(parent); }
+          catch (err) { if (cancelled()) return null; throw err; }
         }
-        if (this.destroyed) return null;
+        if (cancelled()) return null;
         w = this.keyMap.get(ids[k]);
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
           const before = parent.children.length;
           const cursor = parent.next;
           await this.loadPage(parent, parent.next);
-          if (this.destroyed) return null;
+          if (cancelled()) return null;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -1644,9 +1661,10 @@
         parent = w;
       }
       if (o.expandLast && w && this.expandable(w)) {
-        await this.openForPath(w);
+        try { await this.openForPath(w); }
+        catch (err) { if (cancelled()) return null; throw err; }
       }
-      if (this.destroyed) return null;
+      if (cancelled()) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
         this.activeFilters.clear();
@@ -1765,6 +1783,8 @@
       let timer = 0;
       let blurTimer = 0;
       let sequence = 0;
+      let navigation = null;
+      const cancelNavigation = () => { if (navigation) navigation.abort(); };
       let hits = [];
       let active = -1;
       const close = () => {
@@ -1778,11 +1798,13 @@
         if (!hit) {
           return;
         }
+        cancelNavigation();
+        const current = navigation = new AbortController();
         close();
         try {
-          await this.expandPath(hit.path, { select: true, focus: true });
+          await this.expandPath(hit.path, { select: true, focus: true, signal: current.signal });
         } catch (err) {
-          setText(status, err.message);
+          if (!this.destroyed && !current.signal.aborted) setText(status, err.message);
         }
       };
       const show = (result) => {
@@ -1851,6 +1873,7 @@
         item.scrollIntoView({ block: "nearest" });
       };
       input.addEventListener("input", () => {
+        cancelNavigation();
         sequence++;
         // Results for the previous text are stale as soon as the text changes; Enter waits for the new ones.
         clearTimeout(timer);
@@ -1866,6 +1889,7 @@
             choose(active >= 0 ? active : 0);
           }
         } else if (e.key === "Escape") {
+          cancelNavigation();
           sequence++;
           clearTimeout(timer);
           if (list.hidden) {
@@ -1878,7 +1902,7 @@
         e.preventDefault();
       });
       input.addEventListener("blur", () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 150); });
-      this.cancelSearch = () => { sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
+      this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
       box.appendChild(input);
       box.appendChild(list);
       box.appendChild(status);
@@ -1921,22 +1945,21 @@
     pathOf(w) {
       const path = [];
       for (let node = w; node && node !== this.root; node = node.parent) {
-        path.unshift(node.key);
+        path.push(node.key);
       }
-      return path;
+      return path.reverse();
     },
 
     getExpandedPaths() {
       const out = [];
-      const walk = (w) => {
-        for (const child of w.children || []) {
-          if (child.expanded && child.children) {
-            out.push(this.pathOf(child));
-            walk(child);
-          }
+      const pending = (this.root.children || []).slice().reverse();
+      while (pending.length) {
+        const child = pending.pop();
+        if (child.expanded && child.children) {
+          out.push(this.pathOf(child));
+          for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
         }
-      };
-      walk(this.root);
+      }
       return out;
     },
 
