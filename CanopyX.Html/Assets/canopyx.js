@@ -621,10 +621,11 @@
     }
 
     statusRow(parent, kind) {
-      let row = parent["_" + kind];
+      let row = parent._status;
       if (!row) {
-        row = parent["_" + kind] = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
       }
+      row.status = kind;
       const loaded = parent.children ? parent.children.length : 0;
       const format = numberFormat(this.lang);
       row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
@@ -651,6 +652,7 @@
   Object.assign(TreeGrid.prototype, {
     /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
+      if (this.restoring) return;
       const pending = (parent.children || []).slice().reverse();
       while (pending.length && !this.destroyed) {
         const w = pending.pop();
@@ -685,12 +687,12 @@
           w.children = first.items.map((child, i) => create(child, w, i));
           w.total = first.total;
           w.next = first.next;
-          w.expanded = !!data.expanded;
+          w.expanded = !!data.expanded && !this.restoring;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
         } else if (data.hasChildren) {
           w.total = typeof data.childCount === "number" ? data.childCount : null;
-          w.autoExpand = !!data.expanded;
+          w.autoExpand = !!data.expanded && !this.restoring;
         }
       }
       return root;
@@ -981,8 +983,9 @@
       for (let i = first; i <= last; i++) {
         want.add(this.rows[i]);
       }
-      if (this.focused) {
-        want.add(this.focused);
+      const visibleFocus = this.indexOf(this.focused) >= 0 ? this.focused : null;
+      if (visibleFocus) {
+        want.add(visibleFocus);
       }
       const free = [];
       const active = document.activeElement;
@@ -1002,7 +1005,7 @@
         }
       }
       // With nothing focused, the tab stop is the first row inside the viewport (not an overscan row).
-      const tabRow = this.focused || this.rows[n ? this.rowAt(top) : 0] || null;
+      const tabRow = visibleFocus || this.rows[n ? this.rowAt(top) : 0] || null;
       const fragment = document.createDocumentFragment();
       for (const w of want) {
         const index = this.indexOf(w);
@@ -1513,7 +1516,7 @@
   // printable keys run type-ahead on labels. Tab leaves the grid.
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (e.target.closest("input,textarea,select,button,a,[role=separator]")) {
+      if (e.target.closest("input,textarea,select,button,a,[contenteditable]:not([contenteditable=false]),[role=separator]")) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -1691,6 +1694,7 @@
       this.relayout();
       const started = performance.now();
       const run = (async () => {
+        let info = null;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
@@ -1709,11 +1713,7 @@
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
           this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
-          const info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
-          this.emit("load", info);
-          if (this.opts.onLoad) {
-            this.opts.onLoad(w.h, info);
-          }
+          info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
         } catch (err) {
           if (this.destroyed) return;
           w.error = err && err.message ? err.message : String(err);
@@ -1724,8 +1724,14 @@
           w._pending = null;
           this.relayout();
         }
-        if (!this.destroyed && !w.error) {
-          await this.expandInitial(w);
+        // Host callback failures do not turn an applied page into a source failure.
+        try {
+          if (info && !this.destroyed) {
+            this.emit("load", info);
+            if (this.opts.onLoad) this.opts.onLoad(w.h, info);
+          }
+        } finally {
+          if (!this.destroyed && !w.error) await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -1841,10 +1847,14 @@
         this.activate(w, true);
         return;
       }
+      const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])");
+      if (interactive && !e.target.closest(".cx-exp")) {
+        this.setFocus(w, false);
+        return;
+      }
       if (w.h.detail) {
-        const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]");
-        this.setFocus(w, !interactive);
-        if (!interactive) this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
+        this.setFocus(w, true);
+        this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
         return;
       }
       this.setFocus(w, true);
@@ -1857,7 +1867,7 @@
 
     onDblClick(e) {
       const w = this.rowFromEvent(e);
-      if (w && !w.status && !e.target.classList.contains("cx-exp")) {
+      if (w && !w.status && !e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])")) {
         this.toggle(w);
       }
     },
@@ -2439,7 +2449,12 @@
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
       refresh: () => { grid.version++; grid.scheduleRender(); },
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
-      focus: () => grid.setFocus(grid.focused || grid.rows[0], true),
+      focus: () => {
+        if (grid.destroyed) return;
+        const target = grid.focused || grid.rows[0];
+        if (target) grid.setFocus(target, true);
+        else grid.grid.focus({ preventScroll: true });
+      },
       visibleRows: () => grid.visibleRows(),
       toOutline: () => grid.toOutline(),
       getState: () => ({ expanded: grid.getExpandedPaths() }),

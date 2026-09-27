@@ -2,6 +2,7 @@
   Object.assign(TreeGrid.prototype, {
     /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
+      if (this.restoring) return;
       const pending = (parent.children || []).slice().reverse();
       while (pending.length && !this.destroyed) {
         const w = pending.pop();
@@ -36,12 +37,12 @@
           w.children = first.items.map((child, i) => create(child, w, i));
           w.total = first.total;
           w.next = first.next;
-          w.expanded = !!data.expanded;
+          w.expanded = !!data.expanded && !this.restoring;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
         } else if (data.hasChildren) {
           w.total = typeof data.childCount === "number" ? data.childCount : null;
-          w.autoExpand = !!data.expanded;
+          w.autoExpand = !!data.expanded && !this.restoring;
         }
       }
       return root;
