@@ -18,6 +18,8 @@
   const SHARD_CACHE = 24;
   const SEARCH_CANDIDATES = 5;
   const SHARD_BATCH = 4;
+  const MAX_COLUMN_WIDTH = 2147483647;
+  const activeGrids = new WeakMap();
   let instanceSeq = 0;
 
   /** Creates an element with an optional class name. */
