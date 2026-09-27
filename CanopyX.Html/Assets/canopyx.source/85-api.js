@@ -189,7 +189,7 @@
           }
         }
         if (item.cells) {
-          w.h.cells = Object.assign({}, w.h.cells, item.cells);
+          w.h.cells = Object.assign(Object.create(null), w.h.cells, item.cells);
         }
         if (Array.isArray(item.flags)) {
           w.h.flags = item.flags.slice();

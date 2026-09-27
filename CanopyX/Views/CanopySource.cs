@@ -38,10 +38,14 @@ public sealed class CanopySource {
     /// <summary>Nodes live in sidecar script files written by the bundle writer.</summary>
     /// <param name="baseUrl">The folder holding the sidecar files, relative to the page, for example <c>data/files/</c>.</param>
     /// <returns>A sidecar source.</returns>
-    /// <exception cref="ArgumentException"><paramref name="baseUrl"/> is null or empty.</exception>
+    /// <exception cref="ArgumentException"><paramref name="baseUrl"/> is null, empty, or contains a query or fragment.</exception>
     public static CanopySource Sidecar(string baseUrl) {
         if (string.IsNullOrEmpty(baseUrl)) {
             throw new ArgumentException("Sidecar base URL is required.", nameof(baseUrl));
+        }
+
+        if (baseUrl.IndexOfAny(new[] { '?', '#' }) >= 0) {
+            throw new ArgumentException("Sidecar base URL must be a folder path without a query or fragment.", nameof(baseUrl));
         }
 
         return new CanopySource(CanopySourceKind.Sidecar, baseUrl.EndsWith("/", StringComparison.Ordinal) ? baseUrl : baseUrl + "/", null, null, null);

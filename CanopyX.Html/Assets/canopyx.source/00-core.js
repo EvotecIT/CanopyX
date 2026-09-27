@@ -49,7 +49,6 @@
     return doc;
   }
 
-  /** Verifies wire page ownership before attaching its nodes to the requested parent. */
   /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
   function requireIdentifier(value, name) {
     if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
@@ -57,8 +56,10 @@
     }
   }
 
+  /** Verifies wire page ownership and required structural counters. */
   function checkPage(doc, node) {
     checkDocument(doc, "page");
+    if (!Number.isInteger(doc.offset) || doc.offset < 0) throw new Error("CanopyX: page offset must be a nonnegative integer.");
     if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
