@@ -36,7 +36,6 @@
       }
       w.loading = true;
       w.error = null;
-      w._v = 0;
       this.relayout();
       const started = performance.now();
       const run = (async () => {
@@ -54,8 +53,7 @@
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
           this.applySort(w, false);
-          // Rows already painted show the old set size; repaint every sibling.
-          w.children.forEach((child) => { child._v = 0; });
+          // Paging changes sibling metadata, not retained host cell content.
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
           this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
@@ -66,7 +64,6 @@
           this.emit("error", { node: w.h, message: w.error });
         } finally {
           w.loading = false;
-          w._v = 0;
           w._pending = null;
           this.relayout();
         }

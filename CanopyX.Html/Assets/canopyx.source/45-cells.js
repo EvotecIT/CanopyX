@@ -141,6 +141,13 @@
       this.setPosition(rowEl, w);
     },
 
+    /** Updates paging metadata without replacing a retained host control or its DOM state. */
+    refreshRowState(rowEl, w) {
+      setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
+      setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
+      this.setPosition(rowEl, w);
+    },
+
     /**
      * aria-posinset is the position among the visible siblings in display (sorted) order. aria-setsize counts children
      * that are not loaded yet; -1 means the total is unknown.
