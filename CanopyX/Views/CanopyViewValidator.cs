@@ -29,7 +29,9 @@ internal static class CanopyViewValidator {
         }
 
         foreach (var icon in view.Icons) {
-            if (string.IsNullOrEmpty(icon.Key) || icon.Value == null || !icon.Value.TrimStart().StartsWith("<svg", StringComparison.OrdinalIgnoreCase)) {
+            var markup = icon.Value?.TrimStart();
+            if (string.IsNullOrEmpty(icon.Key) || markup == null || markup.Length <= 4 || !markup.StartsWith("<svg", StringComparison.OrdinalIgnoreCase)
+                || " \t\r\n\f/>".IndexOf(markup[4]) < 0) {
                 throw new InvalidOperationException("Icon '" + icon.Key + "' of view '" + view.Id + "' must be SVG markup that starts with <svg.");
             }
         }

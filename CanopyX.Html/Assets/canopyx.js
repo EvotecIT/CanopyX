@@ -50,8 +50,16 @@
   }
 
   /** Verifies wire page ownership before attaching its nodes to the requested parent. */
+  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
+  function requireIdentifier(value, name) {
+    if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
+      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
+    }
+  }
+
   function checkPage(doc, node) {
     checkDocument(doc, "page");
+    if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
     return doc;
@@ -358,18 +366,15 @@
 
   /** Picks the search shards for one folded query word (see "Sidecar" in docs/data-protocol.md). */
   function resolveShards(shards, keys, word) {
+    const bases = keys.filter((key) => !/\.\d+$/.test(key));
+    const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
+      .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
     for (let length = 2; length <= word.length; length++) {
       const key = shardKey(word.slice(0, length));
-      if (Object.prototype.hasOwnProperty.call(shards, key)) {
-        return [key];
-      }
-      const deeper = keys.filter((k) => k.length > key.length && k.startsWith(key));
-      if (!deeper.length) {
-        return [];
-      }
-      if (length === word.length) {
-        return deeper;
-      }
+      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
+      const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
+      if (!deeper.length) return [];
+      if (length === word.length) return parts(deeper);
     }
     return [];
   }
@@ -490,6 +495,7 @@
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
+      requireIdentifier(view.id, "view ID");
       this.host = host;
       this.view = view;
       this.opts = options;
@@ -622,6 +628,8 @@
     wrap(node, parent, index, suppressExpansion) {
       const initialExpansion = !suppressExpansion && !this.restoring;
       const create = (data, owner, position) => {
+        requireIdentifier(data.id, "node ID");
+        if (data.ref != null) requireIdentifier(data.ref, "node reference");
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
           children: null, total: null, next: null, inline: false, loading: false, error: null,

@@ -22,9 +22,7 @@ public sealed class CanopyView {
     /// <param name="label">The accessible name of the tree grid.</param>
     /// <exception cref="ArgumentException">An argument is null or empty, or the accessible label is whitespace.</exception>
     public CanopyView(string id, string label) {
-        if (string.IsNullOrEmpty(id)) {
-            throw new ArgumentException("View id is required.", nameof(id));
-        }
+        CanopyIdentifiers.Require(id, nameof(id));
 
         if (string.IsNullOrWhiteSpace(label)) {
             throw new ArgumentException("View label is required.", nameof(label));
