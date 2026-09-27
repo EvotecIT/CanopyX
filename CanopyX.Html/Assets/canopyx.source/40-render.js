@@ -93,11 +93,12 @@
         grip.setAttribute("role", "separator");
         grip.setAttribute("aria-orientation", "vertical");
         grip.setAttribute("aria-valuemin", "40");
+        grip.setAttribute("aria-valuemax", String(MAX_COLUMN_WIDTH));
         grip.addEventListener("keydown", (e) => {
           if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
           e.preventDefault();
           e.stopPropagation();
-          column.width = e.key === "Home" ? 40 : Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10));
+          column.width = e.key === "Home" ? 40 : Math.min(MAX_COLUMN_WIDTH, Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10)));
           this.applyWidths();
         });
         grip.addEventListener("pointerdown", (e) => this.startResize(e, column));

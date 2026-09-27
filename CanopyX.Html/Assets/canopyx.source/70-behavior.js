@@ -47,6 +47,14 @@
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
           if (this.destroyed) return;
           const items = page.items || [];
+          const expectedOffset = cursor ? (w.children || []).length : 0;
+          if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
+            throw new Error("CanopyX: page offset does not match the loaded child count.");
+          }
+          if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
+            throw new Error("CanopyX: page total is smaller than its loaded range.");
+          }
+          validateNodes(items, this.keyMap);
           if (!cursor || !w.children) {
             w.children = [];
           }

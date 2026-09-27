@@ -78,7 +78,9 @@
   }
 
   function sidecarSource(view) {
-    const base = view.source.base;
+    const supplied = view.source.base;
+    if (typeof supplied !== "string" || !supplied || /[?#]/.test(supplied)) throw new Error("CanopyX: sidecar base must be a folder path without a query or fragment.");
+    const base = supplied.endsWith("/") ? supplied : supplied + "/";
     const load = (ref) => loadSidecar(base, view.id, ref);
     const shardCache = new Map();
     let manifestPromise = null;
