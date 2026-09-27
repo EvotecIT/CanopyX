@@ -45,6 +45,9 @@ public sealed class CanopySearchResult {
         if (_total.HasValue && _total.Value < Hits.Count) {
             throw new InvalidOperationException("Search total cannot be below the number of returned hits.");
         }
+        if (_total.HasValue && Truncated != (_total.Value > Hits.Count)) {
+            throw new InvalidOperationException("Search truncation must agree with the known total.");
+        }
         var writer = new CanopyJsonWriter(1024);
         writer.BeginObject().Envelope("search").Property("query", Query);
         writer.OptionalProperty("total", _total);

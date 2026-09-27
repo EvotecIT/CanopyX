@@ -146,6 +146,18 @@ function Invoke-PackageSmoke {
     }
 }
 
+function Assert-RuntimeLineBudget {
+    param([string] $Root)
+    $parts = Join-Path $Root 'CanopyX.Html/Assets/canopyx.source'
+    if (Test-Path -LiteralPath $parts) {
+        foreach ($part in Get-ChildItem -LiteralPath $parts -Filter '*.js' -File) {
+            if ([System.IO.File]::ReadAllLines($part.FullName).Length -gt 350) {
+                throw "Runtime source part exceeds the 350-line budget: $($part.Name)"
+            }
+        }
+    }
+}
+
 function Assert-PackageContents {
     param(
         [Parameter(Mandatory = $true)] [string] $PackagePath,
@@ -205,6 +217,7 @@ try {
     )
 
     Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html')
+    Assert-RuntimeLineBudget -Root $root
     & (Join-Path $root 'Build/Sync-Assets.ps1') -Check
 
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds

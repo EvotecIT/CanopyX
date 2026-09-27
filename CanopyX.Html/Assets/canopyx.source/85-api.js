@@ -32,6 +32,7 @@
         return;
       }
       this.restoring = true;
+      clearTimeout(this.saveTimer);
       try {
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; w._v = 0; });
         this.relayout();
@@ -60,7 +61,7 @@
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.restoring) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
@@ -141,7 +142,8 @@
         if (w.h.detail) {
           const detail = w.h.detail;
           const content = h("div");
-          this.renderDetail(w.h, content);
+          if (detail.type === "html") setText(content, detail.html || "");
+          else this.renderDetail(w.h, content);
           out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }
@@ -150,7 +152,10 @@
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
           const text = cellText(value, column, this.lang);
-          const content = detailCell("span", isCellObject(value) ? Object.assign({}, value, { text }) : { text }, this.lang);
+          const content = h("span");
+          if (!this.opts.renderCell || this.opts.renderCell(w.h, column.id, content, { level: w.level, expanded: w.expanded, index }) !== true) {
+            content.appendChild(detailCell("span", isCellObject(value) ? Object.assign({}, value, { text }) : { text }, this.lang));
+          }
           if (i === 0) (w.h.badges || []).forEach((badge) => content.appendChild(detailCell("span", { text: "", badges: [badge] }, this.lang)));
           out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
