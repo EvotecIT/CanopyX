@@ -1,0 +1,10 @@
+artifacts/
+Ignore/
+bin/
+obj/
+.vs/
+TestResults/
+node_modules/
+tests/browser/test-results/
+tests/browser/playwright-report/
+tests/browser/bench-results/
