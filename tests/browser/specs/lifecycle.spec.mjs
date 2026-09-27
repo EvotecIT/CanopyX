@@ -115,6 +115,27 @@ test("destroyed initialization cannot mark or emit into a remounted host", async
   expect(events).toEqual({ events: [], rows: [], ready: true });
 });
 
+test("count changes during expansion keep toggle events and callbacks consistent", async ({ page }) => {
+  await open(page, view());
+  const states = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy();
+    let finish;
+    const events = [], callbacks = [];
+    host.addEventListener("canopyx:toggle", event => events.push(event.detail.expanded));
+    const api = CanopyX.createTreeGrid(host, { view: data, onToggle: (_, expanded) => callbacks.push(expanded), source: {
+      page: async node => node ? new Promise(resolve => { finish = resolve; }) : { items: [{ id: "p", label: "Parent", hasChildren: true }], next: null }
+    } });
+    await api.ready;
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    document.querySelector("[data-cx-id=p] .cx-exp").click();
+    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "p", childCount: 0 }] });
+    finish({ items: [], next: null });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    return { events, callbacks };
+  }, { ...view(), source: { kind: "remote", children: "c?ref={ref}&cursor={cursor}" } });
+  expect(states).toEqual({ events: [false], callbacks: [false] });
+});
+
 for (const failAgain of [false, true]) {
   test(`keyboard retry retains focus on ${failAgain ? "another error" : "new rows"}`, async ({ page }) => {
     await open(page, view());
