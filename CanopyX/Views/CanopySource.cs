@@ -60,7 +60,7 @@ public sealed class CanopySource {
     public static CanopySource Remote(string childrenUrl, string? searchUrl = null, string? countsUrl = null) {
         Require(childrenUrl, nameof(childrenUrl), "{ref}", "{cursor}");
         if (searchUrl != null) {
-            Require(searchUrl, nameof(searchUrl), "{query}");
+            Require(searchUrl, nameof(searchUrl), "{query}", "{limit}");
         }
 
         if (countsUrl != null) {
