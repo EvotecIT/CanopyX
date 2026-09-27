@@ -2556,7 +2556,6 @@
       destroy: () => {
         grid.destroy();
         if (activeGrids.get(host) === api) activeGrids.delete(host);
-        if (host.canopyx === api) delete host.canopyx;
       }
     });
     activeGrids.set(host, api);
