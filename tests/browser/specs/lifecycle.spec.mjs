@@ -143,3 +143,40 @@ test("revealing a search path clears a filter hiding its target", async ({ page 
   await expect(row(page, "a")).toBeVisible();
   await expect(row(page, "a")).toBeFocused();
 });
+
+test("revealing a child already visible under a matching parent retains filters", async ({ page }) => {
+  await open(page, view([{ id: "parent", label: "Parent", flags: ["visible"], children: [{ id: "child", label: "Child" }] },
+    { id: "unrelated", label: "Unrelated" }]));
+  await page.evaluate(async () => {
+    const api = document.querySelector(".cx-host").canopyx;
+    api.setFilter(node => (node.flags || []).includes("visible"));
+    await api.expandPath(["parent", "child"]);
+  });
+  await expect(row(page, "child")).toBeFocused();
+  await expect(row(page, "unrelated")).toHaveCount(0);
+});
+
+for (const invalidFile of ["manifest", "shard"]) {
+  test(`sidecar retries recover after invalid ${invalidFile} content is corrected`, async ({ page }) => {
+    await open(page, view());
+    const attempts = { manifest: 0, shard: 0 };
+    await page.route("https://canopyx.test/data/**", route => {
+      const ref = new URL(route.request().url()).pathname.slice(6, -3);
+      const file = ref === "manifest" ? "manifest" : "shard";
+      const bad = file === invalidFile && ++attempts[file] === 1;
+      const doc = bad ? { protocol: "wrong", type: file } : file === "manifest"
+        ? { protocol: "canopyx/1", type: "manifest", root: "r/0", search: { shards: { ab: 1 } } }
+        : { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [{ path: ["ab"], label: "Abacus" }] };
+      return route.fulfill({ contentType: "application/javascript", body: `CanopyXSidecar.push(${JSON.stringify(["retry", ref, doc])});` });
+    });
+    const result = await page.evaluate(async () => {
+      const source = CanopyX.sources.sidecar({ id: "retry", source: { base: "/data/" } });
+      let failed = false;
+      try { await source.search("ab", 20); } catch { failed = true; }
+      return { failed, hits: (await source.search("ab", 20)).hits };
+    });
+    expect(result.failed).toBe(true);
+    expect(result.hits[0].label).toBe("Abacus");
+    expect(attempts[invalidFile]).toBe(2);
+  });
+}
