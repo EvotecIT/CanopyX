@@ -20,14 +20,12 @@ internal sealed class CanopySearchIndex {
 
     internal int EntryCount => _entries.Count;
 
-    internal void Add(CanopySearchHit entry) {
+    internal void Add(string label, Func<CanopySearchHit> createEntry) {
+        var words = CanopySearchFolding.Words(label).Where(word => word.Length >= 2).ToArray();
+        if (words.Length == 0) return;
         var index = _entries.Count;
-        _entries.Add(entry);
-        foreach (var word in CanopySearchFolding.Words(entry.Label)) {
-            if (word.Length >= 2) {
-                _words.Add(new KeyValuePair<string, int>(word, index));
-            }
-        }
+        _entries.Add(createEntry());
+        foreach (var word in words) _words.Add(new KeyValuePair<string, int>(word, index));
     }
 
     internal CanopySearchHit Entry(int index) => _entries[index];

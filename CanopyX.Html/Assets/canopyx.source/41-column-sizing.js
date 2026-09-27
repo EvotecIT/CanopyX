@@ -29,7 +29,7 @@
       const pointer = e.pointerId;
       const move = (ev) => {
         if (ev.pointerId !== pointer) return;
-        column.width = Math.max(40, w0 + ev.clientX - x0);
+        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
         this.applyWidths();
       };
       const stop = () => {

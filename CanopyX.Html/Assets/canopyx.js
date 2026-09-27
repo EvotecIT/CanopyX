@@ -52,7 +52,6 @@
     return doc;
   }
 
-  /** Verifies wire page ownership before attaching its nodes to the requested parent. */
   /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
   function requireIdentifier(value, name) {
     if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
@@ -60,8 +59,10 @@
     }
   }
 
+  /** Verifies wire page ownership and required structural counters. */
   function checkPage(doc, node) {
     checkDocument(doc, "page");
+    if (!Number.isInteger(doc.offset) || doc.offset < 0) throw new Error("CanopyX: page offset must be a nonnegative integer.");
     if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
@@ -407,7 +408,9 @@
   }
 
   function sidecarSource(view) {
-    const base = view.source.base;
+    const supplied = view.source.base;
+    if (typeof supplied !== "string" || !supplied || /[?#]/.test(supplied)) throw new Error("CanopyX: sidecar base must be a folder path without a query or fragment.");
+    const base = supplied.endsWith("/") ? supplied : supplied + "/";
     const load = (ref) => loadSidecar(base, view.id, ref);
     const shardCache = new Map();
     let manifestPromise = null;
@@ -616,6 +619,7 @@
       if (!this.root.inlineItems) {
         return this.loadPage(this.root, null);
       }
+      validateNodes(this.root.inlineItems, this.keyMap);
       const first = slicePage(this.root.inlineItems, null, this.pageSize);
       this.root.inline = true;
       this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
@@ -829,6 +833,25 @@
       }
     }
   });
+  // ---------- protocol node semantics before attachment ----------
+  function validateNodes(nodes, existing) {
+    if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
+    const seen = new Set();
+    const pending = nodes.slice();
+    while (pending.length) {
+      const node = pending.pop();
+      requireIdentifier(node && node.id, "node ID");
+      if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
+      seen.add(node.id);
+      if (node.ref != null) requireIdentifier(node.ref, "node reference");
+      if (Array.isArray(node.children)) {
+        if (node.ref != null) throw new Error("CanopyX: inline children cannot have a load reference.");
+        if (node.hasChildren === false && node.children.length) throw new Error("CanopyX: inline children cannot declare a leaf.");
+        if (node.childCount != null && node.childCount !== node.children.length) throw new Error("CanopyX: inline childCount must equal children length.");
+        for (const child of node.children) pending.push(child);
+      }
+    }
+  }
 
   // ---------- tree grid: DOM scaffold and windowed rendering ----------
   Object.assign(TreeGrid.prototype, {
@@ -925,11 +948,12 @@
         grip.setAttribute("role", "separator");
         grip.setAttribute("aria-orientation", "vertical");
         grip.setAttribute("aria-valuemin", "40");
+        grip.setAttribute("aria-valuemax", String(MAX_COLUMN_WIDTH));
         grip.addEventListener("keydown", (e) => {
           if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
           e.preventDefault();
           e.stopPropagation();
-          column.width = e.key === "Home" ? 40 : Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10));
+          column.width = e.key === "Home" ? 40 : Math.min(MAX_COLUMN_WIDTH, Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10)));
           this.applyWidths();
         });
         grip.addEventListener("pointerdown", (e) => this.startResize(e, column));
@@ -1179,7 +1203,7 @@
       const pointer = e.pointerId;
       const move = (ev) => {
         if (ev.pointerId !== pointer) return;
-        column.width = Math.max(40, w0 + ev.clientX - x0);
+        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
         this.applyWidths();
       };
       const stop = () => {
@@ -1732,6 +1756,14 @@
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
           if (this.destroyed) return;
           const items = page.items || [];
+          const expectedOffset = cursor ? (w.children || []).length : 0;
+          if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
+            throw new Error("CanopyX: page offset does not match the loaded child count.");
+          }
+          if (page.total != null && (!Number.isInteger(page.total) || page.total < expectedOffset + items.length)) {
+            throw new Error("CanopyX: page total is smaller than its loaded range.");
+          }
+          validateNodes(items, this.keyMap);
           if (!cursor || !w.children) {
             w.children = [];
           }
@@ -2418,7 +2450,7 @@
           }
         }
         if (item.cells) {
-          w.h.cells = Object.assign({}, w.h.cells, item.cells);
+          w.h.cells = Object.assign(Object.create(null), w.h.cells, item.cells);
         }
         if (Array.isArray(item.flags)) {
           w.h.flags = item.flags.slice();
@@ -2476,6 +2508,8 @@
     if (!host || !options || !options.view) {
       throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
     }
+    const existing = activeGrids.get(host);
+    if (existing) return existing;
     const grid = new TreeGrid(host, options);
     const api = Object.freeze({
       element: host,
@@ -2505,8 +2539,14 @@
       },
       applyCounts: (doc) => grid.applyCounts(doc),
       refreshCounts: (ids) => grid.refreshCounts(ids),
-      destroy: () => grid.destroy()
+      destroy: () => {
+        grid.destroy();
+        if (activeGrids.get(host) === api) activeGrids.delete(host);
+        if (host.canopyx === api) delete host.canopyx;
+      }
     });
+    activeGrids.set(host, api);
+    host.setAttribute("data-canopyx-mounted", "true");
     host.canopyx = api;
     return api;
   }

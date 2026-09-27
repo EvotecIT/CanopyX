@@ -237,7 +237,7 @@ A response with a non-success status, invalid JSON, or the wrong `protocol` or `
 - Icon SVG and `html` detail payloads are trusted host markup. Do not build them from user input without encoding.
 - Sidecar files are scripts. Serve a bundle only from a location the host controls, the same as the page itself.
 
-Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires inline children or an explicit lazy-child declaration. The search placeholder is also its accessible name and must contain non-whitespace text.
+Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires an explicit lazy-child declaration and cannot accompany inline children. The search placeholder is also its accessible name and must contain non-whitespace text.
 
 Accessible grid, column, filter, and search names contain non-whitespace text. Cell keys identify a non-empty column ID. Expandable nodes with inline children contain at least one child; lazy nodes omit the children array. Search-shard keys contain at least two encoded UTF-16 units (`a-z`, `0-9`, or `_` plus four lowercase hexadecimal digits), with the documented terminal and part suffixes.
 
@@ -248,3 +248,5 @@ Structural counters (`offset`, totals, child counts, manifest node counts, and s
 Readers attach a wire page only when `parent` equals the requested node ID, or `null` for the top level; a node reference is a file/endpoint locator, not its identity. A mismatched parent is a load error for remote and sidecar sources.
 
 Identifiers and URL-bound references (node/view IDs, search paths, parent IDs, and continuations) contain well-formed Unicode: unpaired UTF-16 surrogates are rejected. Valid supplementary characters remain supported. Hosts producing earlier invalid identifiers must map them to stable valid IDs before serialization. Required remote URL placeholders appear before any `#` fragment, because fragments do not reach HTTP endpoints. Icon markup starts with the SVG tag name followed by an HTML whitespace character, `/`, or `>`.
+
+Sidecar bases name a folder, end in `/`, and contain no query or fragment. Inline `children` arrays are complete; an optional `childCount` must equal the array length. C# writers and browser readers enforce that semantic equality in addition to the schema's structural constraints. Readers reject an unexpected page offset before appending items: zero initially, then the number of children already loaded.
