@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using CanopyX.Html;
+using CanopyX.Bundles;
 using CanopyX.Tests.Bundles;
 
 namespace CanopyX.Tests.Html;
@@ -17,11 +18,56 @@ public sealed class BundlePageTests {
     [InlineData("assets./")]
     [InlineData("assets/nested./")]
     [InlineData("assets//nested/")]
+    [InlineData("assets/./shared/")]
+    [InlineData("assets/tmp/../shared/")]
     public void ReservedAssetFoldersFailBeforeWriting(string assetPath) {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-reserved-" + Guid.NewGuid().ToString("N"));
         var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
-        Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath }));
-        Assert.False(Directory.Exists(directory));
+        try {
+            Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath }));
+            Assert.False(Directory.Exists(directory));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("index.html/", "assets/", CanopyAssetMode.External)]
+    [InlineData("INDEX.HTML/nested/", "assets/", CanopyAssetMode.Inline)]
+    [InlineData("assets/canopyx.js/", "assets/", CanopyAssetMode.External)]
+    [InlineData("assets/canopyx.css/nested/", "assets/", CanopyAssetMode.External)]
+    [InlineData("payload/", "payload/manifest.js/", CanopyAssetMode.External)]
+    [InlineData("payload/nested/", "payload/", CanopyAssetMode.External)]
+    [InlineData("payload/", "INDEX.HTML/", CanopyAssetMode.External)]
+    [InlineData("canopyx.js/", "./", CanopyAssetMode.External)]
+    public void ConflictingBundlePathsFailBeforeWriting(string dataPath, string assetPath, CanopyAssetMode mode) {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-layout-" + Guid.NewGuid().ToString("N"));
+        var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
+        var originalSource = view.Source;
+        try {
+            Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory,
+                new CanopyHtmlOptions { AssetMode = mode, AssetBaseUrl = assetPath }, new CanopyBundleOptions { DataPath = dataPath }));
+            Assert.Same(originalSource, view.Source);
+            Assert.False(Directory.Exists(directory));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("./assets/", "assets")]
+    [InlineData("./", "")]
+    [InlineData("", "")]
+    public void LeadingDotAndRootAssetsAreWritten(string assetPath, string folder) {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-local-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
+            view.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath });
+            Assert.True(File.Exists(Path.Combine(directory, folder, CanopyHtmlAssets.ScriptFileName)));
+            Assert.Contains("src=\"" + assetPath + "canopyx.js\"", File.ReadAllText(Path.Combine(directory, "index.html")));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]

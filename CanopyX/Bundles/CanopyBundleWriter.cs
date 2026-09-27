@@ -51,7 +51,7 @@ public sealed class CanopyBundleWriter {
             throw new InvalidOperationException("View '" + view.Id + "' is written as a bundle, whose search shards need queries of at least 2 characters.");
         }
 
-        var dataPath = Options.DataPath ?? "data/" + SafeFolder(view.Id) + "/";
+        var dataPath = BundlePaths.DataPath(view.Id, Options.DataPath);
         var dataDirectory = Path.GetFullPath(Path.Combine(outputDirectory, dataPath.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar)));
         var result = new CanopyBundleResult(CanopySource.Sidecar(dataPath), dataDirectory);
         using var layout = new CanopyBundleLayout();
@@ -239,23 +239,6 @@ public sealed class CanopyBundleWriter {
         context.Result.FileCount++;
         context.Result.TotalBytes += bytes.Length;
         context.Result.LargestFileBytes = Math.Max(context.Result.LargestFileBytes, bytes.Length);
-    }
-
-    private static string SafeFolder(string id) {
-        var builder = new StringBuilder(id.Length);
-        foreach (var ch in id) {
-            builder.Append((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_' ? ch : '_');
-        }
-
-        var folder = builder.ToString();
-        var reserved = PortableFolderNames.IsDeviceName(folder);
-        using (var sha = System.Security.Cryptography.SHA256.Create()) {
-            // Hash the exact UTF-16 units, including lone surrogates, without replacement fallback.
-            var hash = sha.ComputeHash(BundleIdentity.Bytes(id));
-            var suffix = new StringBuilder(64);
-            foreach (var value in hash) suffix.Append(value.ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
-            return (reserved ? "_" : "") + folder.Substring(0, Math.Min(40, folder.Length)) + "-" + suffix;
-        }
     }
 
     private sealed class WriteContext {

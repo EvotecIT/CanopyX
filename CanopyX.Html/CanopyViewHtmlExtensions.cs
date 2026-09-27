@@ -64,7 +64,9 @@ public static class CanopyViewHtmlExtensions {
     /// <see cref="CanopyView.Source"/> at the written sidecar files before it writes the page. Without
     /// <paramref name="options"/>, the page references <c>assets/canopyx.js</c> and <c>assets/canopyx.css</c>, which are
     /// written next to it; with options, their asset mode applies, and assets are written when the base URL is a
-    /// relative folder inside <paramref name="directory"/>. If writing fails, the view keeps its previous source.
+    /// relative folder inside <paramref name="directory"/>. Local asset and data folders use separate directory trees;
+    /// internal dot segments are rejected. A leading <c>./</c> is allowed. Invalid layouts fail before writing.
+    /// If writing fails, the view keeps its previous source.
     /// </remarks>
     /// <param name="view">The view.</param>
     /// <param name="directory">The folder for the page, the <c>assets</c> folder, and the data folder.</param>
@@ -85,7 +87,8 @@ public static class CanopyViewHtmlExtensions {
         var pageOptions = options ?? new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
         var assetFolder = pageOptions.AssetBaseUrl;
         while (assetFolder.StartsWith("./", StringComparison.Ordinal)) assetFolder = assetFolder.Substring(2);
-        if (pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(assetFolder)) {
+        var localAssets = pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(assetFolder);
+        if (localAssets) {
             var folder = assetFolder.EndsWith("/", StringComparison.Ordinal) ? assetFolder.Substring(0, assetFolder.Length - 1) : assetFolder;
             foreach (var component in folder.Length == 0 ? Array.Empty<string>() : folder.Split('/')) {
                 if (!CanopyX.Bundles.PortableFolderNames.IsPortableComponent(component)) {
@@ -93,11 +96,12 @@ public static class CanopyViewHtmlExtensions {
                 }
             }
         }
+        ValidateBundleLayout(CanopyX.Bundles.BundlePaths.DataPath(view.Id, bundleOptions?.DataPath), localAssets ? assetFolder : null);
         var previousSource = view.Source;
         var result = new CanopyBundleWriter(bundleOptions).Write(view, directory);
         view.Source = result.Source;
         try {
-            if (pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(assetFolder)) {
+            if (localAssets) {
                 var assets = assetFolder.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
                 CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets));
             }
@@ -111,12 +115,28 @@ public static class CanopyViewHtmlExtensions {
         return result;
     }
 
+    /// <summary>Rejects page/file collisions and overlapping local asset/data trees before any output is written.</summary>
+    private static void ValidateBundleLayout(string dataFolder, string? assetFolder) {
+        bool Under(string path, string folder) => path.StartsWith(folder, StringComparison.OrdinalIgnoreCase);
+        if (Under(dataFolder, "index.html/") || (assetFolder != null && Under(assetFolder, "index.html/"))) {
+            throw new ArgumentException("Bundle folders cannot occupy the index.html page path.");
+        }
+        if (assetFolder == null) return;
+        if (Under(dataFolder, assetFolder + CanopyHtmlAssets.ScriptFileName + "/")
+            || Under(dataFolder, assetFolder + CanopyHtmlAssets.StyleFileName + "/")) {
+            throw new ArgumentException("The data folder cannot occupy a runtime asset file path.");
+        }
+        if (assetFolder.Length != 0 && (Under(dataFolder, assetFolder) || Under(assetFolder, dataFolder))) {
+            throw new ArgumentException("Local asset and data folders must use separate directory trees.");
+        }
+    }
+
     /// <summary>
     /// True for a relative folder inside the bundle (or empty, meaning next to the page) written with characters that
     /// need no URL encoding; anything else, such as an absolute URL, is left for the host to serve.
     /// </summary>
     private static bool IsLocalFolder(string url) {
-        if (("/" + url).Contains("/../") || ("/" + url).Contains("/./") || url.StartsWith("/", StringComparison.Ordinal)) {
+        if (url.StartsWith("../", StringComparison.Ordinal) || url.StartsWith("/", StringComparison.Ordinal)) {
             return false;
         }
 
