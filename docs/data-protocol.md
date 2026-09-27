@@ -206,7 +206,7 @@ The manifest:
   "search": { "prefix": "k-", "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
 ```
 
-`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the exact UTF-16LE code units of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The portable prefix and fixed folding table define the initial unpublished v1 bundle format; earlier foundation-stack drafts were not released.
+`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the exact UTF-16LE code units of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The portable prefix and fixed folding table define the v1 bundle format.
 
 `search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`, where the bundle writer's context names the nearest two ancestors), and each entry is filed under every distinct word of its label that has at least two code units.
 
@@ -238,3 +238,5 @@ A response with a non-success status, invalid JSON, or the wrong `protocol` or `
 - Sidecar files are scripts. Serve a bundle only from a location the host controls, the same as the page itself.
 
 Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires inline children or an explicit lazy-child declaration. The search placeholder is also its accessible name and must contain non-whitespace text.
+
+Accessible grid, column, filter, and search names contain non-whitespace text. Cell keys identify a non-empty column ID. Expandable nodes with inline children contain at least one child; lazy nodes omit the children array. Search-shard keys contain at least two encoded UTF-16 units (`a-z`, `0-9`, or `_` plus four lowercase hexadecimal digits), with the documented terminal and part suffixes.

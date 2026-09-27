@@ -14,6 +14,9 @@ public sealed class BundlePageTests {
     [InlineData("con/")]
     [InlineData("assets/aux/")]
     [InlineData("COM1.txt/")]
+    [InlineData("assets./")]
+    [InlineData("assets/nested./")]
+    [InlineData("assets//nested/")]
     public void ReservedAssetFoldersFailBeforeWriting(string assetPath) {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-reserved-" + Guid.NewGuid().ToString("N"));
         var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);

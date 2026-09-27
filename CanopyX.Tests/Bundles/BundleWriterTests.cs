@@ -31,6 +31,36 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Fact]
+    public void DeepTreeWithoutSearchWritesEveryChildPage() {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-deep-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = new CanopyView("deep", "Deep tree");
+            view.Columns.Add(new CanopyColumn("name", "Name"));
+            var node = new CanopyNode("n0", "Node 0");
+            view.Roots.Add(node);
+            for (var i = 1; i < 2000; i++) {
+                var child = new CanopyNode("n" + i, "Node " + i);
+                node.Children.Add(child);
+                node = child;
+            }
+            var result = new CanopyBundleWriter().Write(view, directory);
+            Assert.Equal(2000, result.NodeCount);
+            Assert.Equal(2000, result.PageCount);
+            Assert.Equal(0, result.SearchShardCount);
+            var files = new SidecarFiles(result.DataDirectory, view.Id);
+            var reference = files.Document("manifest")["root"]!.GetValue<string>();
+            for (var i = 0; i < 2000; i++) {
+                var item = files.Document(reference)["items"]![0]!;
+                Assert.Equal("n" + i, item["id"]!.GetValue<string>());
+                if (i < 1999) reference = item["ref"]!.GetValue<string>();
+                else Assert.Null(item["ref"]);
+            }
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Write_ManifestOverBudget_FailsWithTheReferenceAndBudget() {
         var view = new CanopyView("large-index", "Index") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
@@ -245,6 +275,9 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Theory]
+    [InlineData("data//view")]
+    [InlineData("data//")]
+    [InlineData("data./view")]
     [InlineData("data/../x")]
     [InlineData("./data")]
     [InlineData("data#1")]

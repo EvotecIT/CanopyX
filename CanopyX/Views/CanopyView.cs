@@ -20,13 +20,13 @@ public sealed class CanopyView {
     /// <summary>Creates a view.</summary>
     /// <param name="id">The view id, unique within a page. It scopes element ids, remembered state, and deep links.</param>
     /// <param name="label">The accessible name of the tree grid.</param>
-    /// <exception cref="ArgumentException">An argument is null or empty.</exception>
+    /// <exception cref="ArgumentException">An argument is null or empty, or the accessible label is whitespace.</exception>
     public CanopyView(string id, string label) {
         if (string.IsNullOrEmpty(id)) {
             throw new ArgumentException("View id is required.", nameof(id));
         }
 
-        if (string.IsNullOrEmpty(label)) {
+        if (string.IsNullOrWhiteSpace(label)) {
             throw new ArgumentException("View label is required.", nameof(label));
         }
 

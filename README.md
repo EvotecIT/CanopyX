@@ -4,7 +4,6 @@ CanopyX renders large interactive data views from .NET without runtime dependenc
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
 
-> Status: 0.1 is in development and the packages are not published yet.
 
 ![A CanopyX tree grid in the light theme: file shares with sizes, dates, owners, badges, and a version's before and after table open as a detail row](docs/images/tree-grid-light.png)
 
@@ -89,6 +88,7 @@ const grid = CanopyX.createTreeGrid(document.getElementById("files"), {
   onSelect: (node) => showDrawer(node)
 });
 await grid.expandPath(["projects", "projects/plans"]);
+// Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
 
 ## Documentation

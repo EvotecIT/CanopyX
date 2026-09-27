@@ -9,6 +9,19 @@ namespace CanopyX.Tests.Rendering;
 /// </summary>
 public sealed class StaticHtmlTests {
     [Fact]
+    public void OrdinaryNumericCellsShareTheProtocolMagnitudeConstraint() {
+        var view = SmallView();
+        var node = view.Roots[0];
+        foreach (var cell in new[] { new CanopyCell(long.MaxValue), new CanopyCell(1e20), new CanopyCell(decimal.MaxValue) }) {
+            node.Cells["size"] = cell;
+            Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.Render(view));
+            Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        }
+        node.Cells["size"] = long.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains("9223372036854775807", CanopyStaticHtml.Render(view));
+    }
+
+    [Fact]
     public void HiddenCountEncodesCustomCultureSeparators() {
         var view = new CanopyView("culture", "Culture") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));

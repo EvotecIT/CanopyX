@@ -47,6 +47,8 @@
       let timer = 0;
       let blurTimer = 0;
       let sequence = 0;
+      let navigation = null;
+      const cancelNavigation = () => { if (navigation) navigation.abort(); };
       let hits = [];
       let active = -1;
       const close = () => {
@@ -60,11 +62,13 @@
         if (!hit) {
           return;
         }
+        cancelNavigation();
+        const current = navigation = new AbortController();
         close();
         try {
-          await this.expandPath(hit.path, { select: true, focus: true });
+          await this.expandPath(hit.path, { select: true, focus: true, signal: current.signal });
         } catch (err) {
-          setText(status, err.message);
+          if (!this.destroyed && !current.signal.aborted) setText(status, err.message);
         }
       };
       const show = (result) => {
@@ -133,6 +137,7 @@
         item.scrollIntoView({ block: "nearest" });
       };
       input.addEventListener("input", () => {
+        cancelNavigation();
         sequence++;
         // Results for the previous text are stale as soon as the text changes; Enter waits for the new ones.
         clearTimeout(timer);
@@ -148,6 +153,7 @@
             choose(active >= 0 ? active : 0);
           }
         } else if (e.key === "Escape") {
+          cancelNavigation();
           sequence++;
           clearTimeout(timer);
           if (list.hidden) {
@@ -160,7 +166,7 @@
         e.preventDefault();
       });
       input.addEventListener("blur", () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 150); });
-      this.cancelSearch = () => { sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
+      this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
       box.appendChild(input);
       box.appendChild(list);
       box.appendChild(status);

@@ -2,8 +2,16 @@ using System;
 
 namespace CanopyX.Bundles;
 
-/// <summary>Identifies device names that Windows reserves even when a filename has an extension.</summary>
+/// <summary>Checks portable, URL-safe folder components.</summary>
 internal static class PortableFolderNames {
+    internal static bool IsPortableComponent(string component) {
+        if (component.Length == 0 || component.EndsWith(".", StringComparison.Ordinal) || IsDeviceName(component)) return false;
+        foreach (var ch in component) {
+            if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_' || ch == '.')) return false;
+        }
+        return true;
+    }
+
     internal static bool IsDeviceName(string component) {
         var name = component.Split('.')[0].ToUpperInvariant();
         return name == "CON" || name == "PRN" || name == "AUX" || name == "NUL"

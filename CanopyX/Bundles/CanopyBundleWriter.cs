@@ -77,7 +77,7 @@ public sealed class CanopyBundleWriter {
     private void WriteDescendants(WriteContext context, CanopySearchIndex? search) {
         var pending = new Stack<(CanopyNode Node, string[] Path, string? Parent, string? Grandparent)>();
         for (var index = context.View.Roots.Count - 1; index >= 0; index--) {
-            pending.Push((context.View.Roots[index], new[] { context.View.Roots[index].Id }, null, null));
+            pending.Push((context.View.Roots[index], search == null ? Array.Empty<string>() : new[] { context.View.Roots[index].Id }, null, null));
         }
 
         while (pending.Count > 0) {
@@ -98,9 +98,12 @@ public sealed class CanopyBundleWriter {
             WritePages(context, parentId, children, page => context.Layout.ChildrenPage(parentId, page));
             for (var index = children.Count - 1; index >= 0; index--) {
                 var child = children[index];
-                var childPath = new string[path.Length + 1];
-                Array.Copy(path, childPath, path.Length);
-                childPath[path.Length] = child.Id;
+                var childPath = Array.Empty<string>();
+                if (search != null) {
+                    childPath = new string[path.Length + 1];
+                    Array.Copy(path, childPath, path.Length);
+                    childPath[path.Length] = child.Id;
+                }
                 pending.Push((child, childPath, node.Label, parent));
             }
         }

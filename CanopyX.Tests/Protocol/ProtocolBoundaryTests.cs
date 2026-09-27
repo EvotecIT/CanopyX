@@ -4,6 +4,45 @@ namespace CanopyX.Tests.Protocol;
 
 public sealed class ProtocolBoundaryTests {
     [Fact]
+    public void AccessibleLabelsAndCellKeysHaveUsableNames() {
+        Assert.Throws<ArgumentException>(() => new CanopyView("view", " \t"));
+        Assert.Throws<ArgumentException>(() => new CanopyColumn("name", " "));
+        Assert.Throws<ArgumentException>(() => new CanopyFilter("filter", " ", "flag"));
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.FullView().ToJson(), v => v["label"] = " ")).IsValid);
+        var page = new CanopyPage(null);
+        var node = new CanopyNode("node", "Node"); node.Cells[""] = "Value"; page.Items.Add(node);
+        Assert.Throws<InvalidOperationException>(() => page.ToJson());
+        var counts = new CanopyCounts(); var entry = new CanopyCountEntry("node"); entry.Cells[""] = "Value"; counts.Items.Add(entry);
+        Assert.Throws<InvalidOperationException>(() => counts.ToJson());
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), v => v["items"]![0]!["cells"] = JsonNode.Parse("{\"\":\"Value\"}"))).IsValid);
+    }
+
+    [Fact]
+    public void SchemaDistinguishesLazyChildrenFromAnEmptyInlineArray() {
+        var json = ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), p => p["items"] = JsonNode.Parse("[{\"id\":\"x\",\"label\":\"X\",\"hasChildren\":true,\"children\":[]}]"));
+        Assert.False(ProtocolSchema.Evaluate(json).IsValid);
+    }
+
+    [Theory]
+    [InlineData("ab", true)]
+    [InlineData("a_00e9", true)]
+    [InlineData("_d800_dfff", true)]
+    [InlineData("ab-", true)]
+    [InlineData("__", false)]
+    [InlineData("_00e9", false)]
+    [InlineData("a_", false)]
+    [InlineData("_00zzb", false)]
+    public void SchemaValidatesEncodedShardUnits(string key, bool valid) {
+        var manifest = new JsonObject { ["protocol"] = "canopyx/1", ["type"] = "manifest", ["view"] = "v", ["root"] = "r", ["nodeCount"] = 0, ["pageSize"] = 10,
+            ["search"] = new JsonObject { ["shards"] = new JsonObject { [key] = 1 } } };
+        var shard = new JsonObject { ["protocol"] = "canopyx/1", ["type"] = "searchShard", ["key"] = key, ["entries"] = new JsonArray() };
+        Assert.Equal(valid, ProtocolSchema.Evaluate(manifest.ToJsonString()).IsValid);
+        Assert.Equal(valid, ProtocolSchema.Evaluate(shard.ToJsonString()).IsValid);
+        shard["key"] = key + ".2";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(shard.ToJsonString()).IsValid);
+    }
+
+    [Fact]
     public void DeepInlineHierarchySerializesWithoutCallStackGrowth() {
         var page = new CanopyPage(null);
         var root = new CanopyNode("0", "Root"); page.Items.Add(root);
