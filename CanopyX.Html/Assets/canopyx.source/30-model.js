@@ -61,8 +61,10 @@
         await this.restoreState();
         await this.openDeepLink();
       } finally {
-        this.host.setAttribute("data-cx-ready", "true");
-        this.emit("ready", {});
+        if (!this.destroyed) {
+          this.host.setAttribute("data-cx-ready", "true");
+          this.emit("ready", {});
+        }
       }
     }
 
@@ -83,6 +85,7 @@
 
     /** Loads lazy children of nodes that start expanded. */
     async expandInitial(parent) {
+      if (this.destroyed) return;
       for (const w of parent.children || []) {
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
@@ -142,6 +145,7 @@
     }
 
     relayout() {
+      if (this.destroyed) return;
       const rows = [];
       const filter = this.filter;
       if (filter) {
@@ -251,6 +255,7 @@
     }
 
     emit(name, detail) {
+      if (this.destroyed) return;
       this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
     }
   }

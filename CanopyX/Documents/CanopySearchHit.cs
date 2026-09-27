@@ -20,6 +20,9 @@ public sealed class CanopySearchHit {
         if (ids.Length == 0 || ids.Any(string.IsNullOrEmpty)) {
             throw new ArgumentException("A search hit needs a non-empty path of non-empty ids.", nameof(path));
         }
+        if (ids.Distinct(StringComparer.Ordinal).Count() != ids.Length) {
+            throw new ArgumentException("A search path cannot repeat a node id.", nameof(path));
+        }
 
         Path = ids;
         Label = label ?? throw new ArgumentNullException(nameof(label));
