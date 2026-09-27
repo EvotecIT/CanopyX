@@ -135,9 +135,8 @@
       global.addEventListener("pointerup", up);
     },
 
-    /** Renders in the next animation frame; a render requested by anything but scrolling restores DOM order at once. */
-    scheduleRender(fromScroll) {
-      this.renderFromScroll = !!fromScroll && (this.rafId === 0 || this.renderFromScroll);
+    scheduleRender() {
+      if (this.destroyed) return;
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;

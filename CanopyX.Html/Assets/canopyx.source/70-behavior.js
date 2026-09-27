@@ -3,7 +3,7 @@
   Object.assign(TreeGrid.prototype, {
     /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
     async toggle(w, expand) {
-      if (!w || w.status || !this.expandable(w)) {
+      if (this.destroyed || !w || w.status || !this.expandable(w)) {
         return;
       }
       const open = !!w._open;
@@ -12,6 +12,7 @@
         return;
       }
       w.expanded = want;
+      const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
       w._v = 0;
       if (want && !w.children) {
@@ -19,7 +20,8 @@
       } else {
         this.relayout();
       }
-      this.emit("toggle", { node: w.h, expanded: want });
+      if (this.destroyed || w.toggleRevision !== revision) return;
+      this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, want);
       }
@@ -28,6 +30,7 @@
 
     /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
     loadPage(w, cursor) {
+      if (this.destroyed) return Promise.resolve();
       if (w.loading) {
         return w._pending;
       }
@@ -40,6 +43,7 @@
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
+          if (this.destroyed) return;
           const items = page.items || [];
           if (!cursor || !w.children) {
             w.children = [];
@@ -60,6 +64,7 @@
             this.opts.onLoad(w.h, info);
           }
         } catch (err) {
+          if (this.destroyed) return;
           w.error = err && err.message ? err.message : String(err);
           this.emit("error", { node: w.h, message: w.error });
         } finally {
@@ -68,7 +73,7 @@
           w._pending = null;
           this.relayout();
         }
-        if (!w.error) {
+        if (!this.destroyed && !w.error) {
           await this.expandInitial(w);
         }
       })();
@@ -85,11 +90,27 @@
         const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
         await this.loadPage(w, w.next);
         const next = w.children.find((child) => !previous.has(child));
-        if (next && hadFocus && (this.focusRevision || 0) === revision &&
+        if (!this.destroyed && next && hadFocus && (this.focusRevision || 0) === revision &&
             (document.activeElement === element || document.activeElement === document.body)) {
           this.setFocus(next, true);
         }
       }
+    },
+
+    async retryPage(status) {
+      const parent = status.parent;
+      const previous = new Set(parent.children || []);
+      const element = document.activeElement;
+      const revision = this.focusRevision || 0;
+      const owned = this.focused === status && element && element._w === status;
+      await this.loadPage(parent, parent.next && previous.size ? parent.next : null);
+      if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
+          (document.activeElement !== element && document.activeElement !== document.body)) return;
+      const target = parent.error ? this.statusRow(parent, "error") :
+        (parent.children || []).find((child) => !previous.has(child)) ||
+        (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
+      if (target) this.setFocus(target, true);
+      else this.grid.focus();
     },
 
     /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
@@ -196,7 +217,9 @@
         return;
       }
       if (w.h.detail) {
-        this.setFocus(w, !e.target.closest("a,button,input,select,textarea"));
+        const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]");
+        this.setFocus(w, !interactive);
+        if (!interactive) this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
         return;
       }
       this.setFocus(w, true);
@@ -216,6 +239,7 @@
 
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
+      if (this.destroyed) return;
       w.expanded = true;
       w.filterCollapsed = false;
       w._v = 0;
@@ -234,16 +258,19 @@
     async expandPath(ids, options) {
       const o = options || {};
       await this.rootsReady;
+      if (this.destroyed) return null;
       let parent = this.root;
       let w = null;
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
           await this.openForPath(parent);
         }
+        if (this.destroyed) return null;
         w = this.keyMap.get(ids[k]);
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
           const before = parent.children.length;
           await this.loadPage(parent, parent.next);
+          if (this.destroyed) return null;
           if (parent.error || parent.children.length === before) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -256,6 +283,12 @@
       }
       if (o.expandLast && w && this.expandable(w)) {
         await this.openForPath(w);
+      }
+      if (this.destroyed) return null;
+      if (w && o.reveal !== false && this.filter && this.matchState(w) === 0) {
+        this.activeFilters.clear();
+        this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+        this.setFilter(null);
       }
       this.relayout();
       this.stateChanged();

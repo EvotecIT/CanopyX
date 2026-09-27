@@ -86,8 +86,12 @@ public sealed class CanopyPage {
 
     /// <summary>Writes the page, letting the bundle writer decide how each node's lazy-load declaration looks.</summary>
     internal void WriteJson(CanopyJsonWriter writer, Action<CanopyNode, CanopyJsonWriter> writeNode) {
-        if (_total.HasValue && _total.Value < _offset + Items.Count) {
+        var end = (long)_offset + Items.Count;
+        if (_total.HasValue && _total.Value < end) {
             throw new InvalidOperationException("Page total " + _total.Value + " is below offset " + _offset + " plus " + Items.Count + " items.");
+        }
+        if (_total.HasValue && ((_next != null) != (end < _total.Value))) {
+            throw new InvalidOperationException("Page continuation must agree with the known total.");
         }
 
         CanopyTreeValidator.Validate(Items, ParentId == null ? "The top-level page" : "The page of '" + ParentId + "'");

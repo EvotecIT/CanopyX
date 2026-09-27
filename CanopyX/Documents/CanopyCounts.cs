@@ -15,9 +15,13 @@ public sealed class CanopyCounts {
     /// <summary>Writes the <c>counts</c> document.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     public string ToJson() {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
         var writer = new CanopyJsonWriter(1024);
         writer.BeginObject().Envelope("counts").Name("items").BeginArray();
         foreach (var item in Items) {
+            if (item != null && !ids.Add(item.Id)) {
+                throw new InvalidOperationException("Counts cannot repeat node id '" + item.Id + "'.");
+            }
             (item ?? throw new InvalidOperationException("Counts cannot contain a null entry.")).WriteJson(writer);
         }
 
