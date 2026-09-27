@@ -5,6 +5,28 @@ using CanopyX.Rendering;
 namespace CanopyX.Tests.Rendering;
 
 public sealed class FallbackBoundaryTests {
+    [Fact]
+    public void BundleChildPagesPreserveDistinctSurrogateNodeIdentities() {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-identity-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = View();
+            for (var index = 0; index < 3; index++) {
+                var parent = new CanopyNode(((char)(0xD800 + index)).ToString(), "Parent" + index);
+                parent.Children.Add(new CanopyNode("child" + index, "Child" + index));
+                view.Roots.Add(parent);
+            }
+            var result = new CanopyBundleWriter().Write(view, directory);
+            var root = File.ReadAllText(Path.Combine(result.DataDirectory, "r", "0.js"));
+            var references = System.Text.RegularExpressions.Regex.Matches(root, "\"ref\":\"([^\"]+)\"");
+            Assert.Equal(3, references.Count);
+            Assert.Equal(3, references.Select(m => m.Groups[1].Value).Distinct().Count());
+            for (var index = 0; index < 3; index++) {
+                var page = File.ReadAllText(Path.Combine(result.DataDirectory, references[index].Groups[1].Value + ".js"));
+                Assert.Contains("\"id\":\"child" + index + "\"", page);
+            }
+        } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
     [Theory]
     [InlineData("javascript:alert(1)", false)]
     [InlineData("data:text/html,script", false)]

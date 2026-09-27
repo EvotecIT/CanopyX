@@ -25,12 +25,12 @@ internal sealed class CanopyBundleLayout : IDisposable {
 
     /// <summary>
     /// The reference of a children page: <c>c/&lt;hh&gt;/&lt;hash&gt;-&lt;n&gt;</c>, where the hash is the first 16 hex
-    /// digits of SHA-256 over the UTF-8 id. If another id already took those 16 digits, the full 64 are used.
+    /// digits of SHA-256 over the exact UTF-16LE id. If another id already took those 16 digits, the full 64 are used.
     /// </summary>
     internal string ChildrenPage(string parentId, int page) => "c/" + HashOf(parentId) + "-" + page;
 
     private string HashOf(string id) {
-        var full = Hex(_sha.ComputeHash(Encoding.UTF8.GetBytes(id)));
+        var full = Hex(_sha.ComputeHash(BundleIdentity.Bytes(id)));
         var shortHash = full.Substring(0, 16);
         if (_ownerOfHash.TryGetValue(shortHash, out var owner) && !string.Equals(owner, id, StringComparison.Ordinal)) {
             shortHash = full;
