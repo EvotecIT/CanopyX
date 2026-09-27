@@ -1024,7 +1024,7 @@
         if (w._v !== this.version || rowEl._w !== w) {
           this.fillRow(rowEl, w);
           w._v = this.version;
-        }
+        } else if (!w.status) this.refreshRowState(rowEl, w);
         const y = this.tops[index];
         if (rowEl._top !== y) {
           rowEl.style.transform = "translateY(" + y + "px)";
@@ -1313,6 +1313,13 @@
       setAttr(rowEl, "data-kind", node.kind || null);
       setAttr(rowEl, "data-cx-status", null);
       setAttr(rowEl, "aria-selected", this.selected.has(w) ? "true" : "false");
+      this.setPosition(rowEl, w);
+    },
+
+    /** Updates paging metadata without replacing a retained host control or its DOM state. */
+    refreshRowState(rowEl, w) {
+      setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
+      setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
       this.setPosition(rowEl, w);
     },
 
@@ -1690,7 +1697,6 @@
       }
       w.loading = true;
       w.error = null;
-      w._v = 0;
       this.relayout();
       const started = performance.now();
       const run = (async () => {
@@ -1708,8 +1714,7 @@
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
           this.applySort(w, false);
-          // Rows already painted show the old set size; repaint every sibling.
-          w.children.forEach((child) => { child._v = 0; });
+          // Paging changes sibling metadata, not retained host cell content.
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
           this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
@@ -1720,7 +1725,6 @@
           this.emit("error", { node: w.h, message: w.error });
         } finally {
           w.loading = false;
-          w._v = 0;
           w._pending = null;
           this.relayout();
         }
@@ -2451,7 +2455,7 @@
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {
         if (grid.destroyed) return;
-        const target = grid.focused || grid.rows[0];
+        const target = grid.indexOf(grid.focused) >= 0 ? grid.focused : grid.rows[0];
         if (target) grid.setFocus(target, true);
         else grid.grid.focus({ preventScroll: true });
       },

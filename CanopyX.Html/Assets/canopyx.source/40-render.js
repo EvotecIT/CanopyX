@@ -206,7 +206,7 @@
         if (w._v !== this.version || rowEl._w !== w) {
           this.fillRow(rowEl, w);
           w._v = this.version;
-        }
+        } else if (!w.status) this.refreshRowState(rowEl, w);
         const y = this.tops[index];
         if (rowEl._top !== y) {
           rowEl.style.transform = "translateY(" + y + "px)";

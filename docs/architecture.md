@@ -18,7 +18,7 @@ Hosts own everything product-specific. A host maps its records into `CanopyNode`
 3. The host picks a delivery mode:
    - **Single file**: the nodes travel inside the view as inline data. Best for small and medium trees.
    - **Bundle**: `CanopyBundleWriter` splits the tree into small sidecar script files (top level, children per parent, paged long lists, and a search index sharded by name prefix). The page loads them on demand, including from `file://`, where `fetch` of local files is blocked.
-   - **Hosted** (0.2): the page asks an HTTP endpoint for the same documents.
+   - **Hosted**: the page asks an HTTP endpoint for the same documents.
 4. `CanopyX.Html` renders the fragment: a host element, the view as a JSON configuration script, and optionally a `<noscript>` outline. Assets are inlined or referenced as `canopyx.js` and `canopyx.css`.
 5. The runtime finds every `[data-canopyx-host]` element, reads its configuration, creates the data source, and mounts a tree grid.
 
@@ -51,6 +51,8 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `90-bootstrap.js` | Auto-mount from JSON configuration, `window.CanopyX`, closure end |
 
 `window.CanopyX` exposes `createTreeGrid(element, options)`, `mount(root)`, and the data source factories, so JavaScript hosts can build views without the C# side.
+
+Host controls in custom cells and details keep their click and keyboard behavior. Paging updates metadata on retained rows without rebuilding their host content. `focus()` enters the current visible row or the empty grid. Restoring saved expansion suppresses declarative expansion defaults on newly loaded pages. `onLoad` runs after the page is applied; a callback exception rejects the operation without marking that page as a source failure or changing its continuation cursor.
 
 ### Rendering Model
 

@@ -28,7 +28,7 @@
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {
         if (grid.destroyed) return;
-        const target = grid.focused || grid.rows[0];
+        const target = grid.indexOf(grid.focused) >= 0 ? grid.focused : grid.rows[0];
         if (target) grid.setFocus(target, true);
         else grid.grid.focus({ preventScroll: true });
       },
