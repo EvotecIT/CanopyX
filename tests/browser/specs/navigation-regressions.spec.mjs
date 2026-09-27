@@ -67,3 +67,29 @@ test("a newer search selection retains ownership when the older path finishes la
   expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.getSelected().map(n => n.id))).toEqual(["b"]);
   expect(errors).toEqual([]); await page.screenshot({ path: path.join(repo, "artifacts/takeover/search-newer-focus.png") });
 });
+
+for (const nested of [false, true]) {
+  test(`retry preserves the failed continuation after empty pages at ${nested ? "child" : "root"} level`, async ({ page }) => {
+    await open(page);
+    await page.evaluate(async nested => {
+      const host = document.querySelector(".cx-host"), data = host.canopyx.view; host.canopyx.destroy();
+      window.retryCursors = []; let failures = 0;
+      const api = CanopyX.createTreeGrid(host, { view: data, source: { page: async (node, cursor) => {
+        if (nested && !node) return { items: [{ id: "parent", label: "Parent", hasChildren: true, childCount: 1 }] };
+        window.retryCursors.push(cursor);
+        if (cursor === "third") {
+          if (++failures === 1) throw new Error("Temporary continuation failure");
+          return { items: [{ id: "recovered", label: "Recovered" }], next: null };
+        }
+        return { items: [], next: cursor === "second" ? "third" : "second" };
+      } } }); await api.ready;
+      if (nested) await api.expandPath(["parent"], { expandLast: true, select: false, focus: false });
+      await api.loadMore(nested ? "parent" : null);
+      await api.loadMore(nested ? "parent" : null);
+    }, nested);
+    await nextFrames(page);
+    await page.locator("[data-cx-status=error]").focus(); await page.keyboard.press("Enter");
+    await expect(page.locator('[data-cx-id="recovered"]')).toBeFocused();
+    expect(await page.evaluate(() => window.retryCursors)).toEqual([null, "second", "third", "third"]);
+  });
+}
