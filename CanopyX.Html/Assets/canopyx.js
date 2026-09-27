@@ -1423,7 +1423,12 @@
       const object = isCellObject(value);
       const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
       if (slot.cls !== cls) {
-        slot.cell.className = cls;
+        if (this.opts.renderCell) {
+          // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
+          if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
+        } else {
+          slot.cell.className = cls;
+        }
         slot.cls = cls;
       }
       const title = object && value.title ? value.title : null;
