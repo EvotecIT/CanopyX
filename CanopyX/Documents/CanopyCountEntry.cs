@@ -13,11 +13,9 @@ public sealed class CanopyCountEntry {
 
     /// <summary>Creates an entry.</summary>
     /// <param name="id">The id of the node to update.</param>
-    /// <exception cref="ArgumentException"><paramref name="id"/> is null or empty.</exception>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is null, empty, or contains unpaired surrogates.</exception>
     public CanopyCountEntry(string id) {
-        if (string.IsNullOrEmpty(id)) {
-            throw new ArgumentException("Node id is required.", nameof(id));
-        }
+        CanopyIdentifiers.Require(id, nameof(id));
 
         Id = id;
     }

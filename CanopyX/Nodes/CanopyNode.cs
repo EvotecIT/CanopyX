@@ -24,12 +24,10 @@ public sealed class CanopyNode {
     /// <summary>Creates a node.</summary>
     /// <param name="id">The id, unique within the view.</param>
     /// <param name="label">The text shown in the tree column; also used for type-ahead, search, and the outline.</param>
-    /// <exception cref="ArgumentException"><paramref name="id"/> is null or empty.</exception>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is null, empty, or contains unpaired surrogates.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> is null.</exception>
     public CanopyNode(string id, string label) {
-        if (string.IsNullOrEmpty(id)) {
-            throw new ArgumentException("Node id is required.", nameof(id));
-        }
+        CanopyIdentifiers.Require(id, nameof(id));
 
         Id = id;
         _label = label ?? throw new ArgumentNullException(nameof(label));
@@ -93,13 +91,11 @@ public sealed class CanopyNode {
     /// sets it for sidecar files; remote sources receive it in the children URL. Defaults to the id. Inline views
     /// cannot load children later, so they reject it.
     /// </summary>
-    /// <exception cref="ArgumentException">The value is an empty string.</exception>
+    /// <exception cref="ArgumentException">The value is empty or contains unpaired surrogates.</exception>
     public string? Ref {
         get => _ref;
         set {
-            if (value != null && value.Length == 0) {
-                throw new ArgumentException("A node reference cannot be empty; an empty reference means the top level.", nameof(value));
-            }
+            CanopyIdentifiers.Require(value, nameof(value), allowNull: true);
 
             _ref = value;
         }
