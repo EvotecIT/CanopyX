@@ -4,6 +4,20 @@ namespace CanopyX.Tests.Protocol;
 
 public sealed class ProtocolBoundaryTests {
     [Fact]
+    public void NonemptyInlineChildrenCannotDeclareALeaf() {
+        var view = new CanopyView("tree", "Tree");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var parent = new CanopyNode("parent", "Parent");
+        parent.Children.Add(new CanopyNode("child", "Child"));
+        view.Roots.Add(parent);
+        var json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "inline parent");
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, p => p["roots"]![0]!["hasChildren"] = false)).IsValid);
+        var page = new CanopyPage(null); page.Items.Add(parent);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(page.ToJson(), p => p["items"]![0]!["hasChildren"] = false)).IsValid);
+    }
+
+    [Fact]
     public void AccessibleLabelsAndCellKeysHaveUsableNames() {
         Assert.Throws<ArgumentException>(() => new CanopyView("view", " \t"));
         Assert.Throws<ArgumentException>(() => new CanopyColumn("name", " "));

@@ -88,10 +88,11 @@
     }
 
     statusRow(parent, kind) {
-      let row = parent["_" + kind];
+      let row = parent._status;
       if (!row) {
-        row = parent["_" + kind] = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
       }
+      row.status = kind;
       const loaded = parent.children ? parent.children.length : 0;
       const format = numberFormat(this.lang);
       row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :

@@ -40,6 +40,7 @@
       this.relayout();
       const started = performance.now();
       const run = (async () => {
+        let info = null;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
@@ -58,11 +59,7 @@
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
           this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
-          const info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
-          this.emit("load", info);
-          if (this.opts.onLoad) {
-            this.opts.onLoad(w.h, info);
-          }
+          info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
         } catch (err) {
           if (this.destroyed) return;
           w.error = err && err.message ? err.message : String(err);
@@ -73,8 +70,14 @@
           w._pending = null;
           this.relayout();
         }
-        if (!this.destroyed && !w.error) {
-          await this.expandInitial(w);
+        // Host callback failures do not turn an applied page into a source failure.
+        try {
+          if (info && !this.destroyed) {
+            this.emit("load", info);
+            if (this.opts.onLoad) this.opts.onLoad(w.h, info);
+          }
+        } finally {
+          if (!this.destroyed && !w.error) await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -190,10 +193,14 @@
         this.activate(w, true);
         return;
       }
+      const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])");
+      if (interactive && !e.target.closest(".cx-exp")) {
+        this.setFocus(w, false);
+        return;
+      }
       if (w.h.detail) {
-        const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]");
-        this.setFocus(w, !interactive);
-        if (!interactive) this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
+        this.setFocus(w, true);
+        this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
         return;
       }
       this.setFocus(w, true);
@@ -206,7 +213,7 @@
 
     onDblClick(e) {
       const w = this.rowFromEvent(e);
-      if (w && !w.status && !e.target.classList.contains("cx-exp")) {
+      if (w && !w.status && !e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])")) {
         this.toggle(w);
       }
     },
