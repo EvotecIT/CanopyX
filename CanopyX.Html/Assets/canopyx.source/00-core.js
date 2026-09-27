@@ -214,9 +214,17 @@
     return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
   }
 
+  /** Trims only protocol separators; all non-ASCII code units remain word characters. */
+  function trimSeparators(text) {
+    let start = 0, end = text.length;
+    while (start < end && isSeparator(text.charCodeAt(start))) start++;
+    while (end > start && isSeparator(text.charCodeAt(end - 1))) end--;
+    return text.slice(start, end);
+  }
+
   function rankLabel(label, query) {
     const l = foldText(label);
-    const q = foldText(query).trim();
+    const q = trimSeparators(foldText(query));
     return l === q ? 0 : l.startsWith(q) ? 1 : 2;
   }
 

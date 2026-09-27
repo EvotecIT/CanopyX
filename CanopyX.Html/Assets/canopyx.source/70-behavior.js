@@ -141,7 +141,7 @@
       if (this.opts.onSelect) {
         this.opts.onSelect(w.h, nodes);
       }
-      this.writeDeepLink(w);
+      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
     },
 
     setFocus(w, domFocus) {

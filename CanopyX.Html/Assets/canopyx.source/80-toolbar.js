@@ -104,7 +104,7 @@
       };
       const run = async () => {
         if (this.destroyed) return;
-        const query = input.value.trim();
+        const query = trimSeparators(input.value);
         if (query.length < options.minLength) {
           sequence++;
           close();
