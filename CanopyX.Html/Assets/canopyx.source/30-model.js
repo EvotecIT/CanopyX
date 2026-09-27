@@ -200,7 +200,7 @@
       this.total = y;
       this.canvas.style.height = y + "px";
       this.grid.setAttribute("aria-rowcount", String(rows.length + 1));
-      if (this.focused && this.indexOf(this.focused) < 0) {
+      if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
         while (target && this.indexOf(target) < 0) target = target.parent;
         target = target || rows[Math.min(Math.max(0, previousIndex), rows.length - 1)];

@@ -73,6 +73,7 @@
       this.headCells = this.cols.map((column, i) => {
         const cell = h("div", "cx-hcell cx-kind-" + (column.kind || "text"));
         cell.setAttribute("role", "columnheader");
+        cell.setAttribute("aria-label", column.title);
         cell.setAttribute("data-cx-column", column.id);
         cell.setAttribute("aria-colindex", String(i + 1));
         if (column.sortable) {
@@ -88,8 +89,11 @@
           setText(title, column.title);
           cell.appendChild(title);
         }
-        const grip = h("button", "cx-resize");
-        grip.type = "button";
+        const grip = h("span", "cx-resize");
+        grip.tabIndex = 0;
+        grip.setAttribute("role", "separator");
+        grip.setAttribute("aria-orientation", "vertical");
+        grip.setAttribute("aria-valuemin", "40");
         grip.addEventListener("keydown", (e) => {
           if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
           e.preventDefault();
@@ -110,38 +114,6 @@
           button.focus();
         }
       }
-    },
-
-    applyWidths() {
-      let sum = 0;
-      this.cols.forEach((column, i) => {
-        this.headCells[i].style.width = column.width + "px";
-        this.headCells[i].querySelector(".cx-resize").setAttribute("aria-label", "Resize " + column.title + ", " + column.width + " pixels; use Left and Right arrows");
-        sum += column.width;
-      });
-      this.rowWidth = sum;
-      this.headRow.style.width = sum + "px";
-      this.canvas.style.width = sum + "px";
-      // A new column layout makes every row rebuild its cell skeleton once.
-      this.layout = (this.layout || 0) + 1;
-      this.version++;
-      this.scheduleRender();
-    },
-
-    startResize(e, column) {
-      e.preventDefault();
-      const x0 = e.clientX;
-      const w0 = column.width;
-      const move = (ev) => {
-        column.width = Math.max(40, w0 + ev.clientX - x0);
-        this.applyWidths();
-      };
-      const up = () => {
-        global.removeEventListener("pointermove", move);
-        global.removeEventListener("pointerup", up);
-      };
-      global.addEventListener("pointermove", move);
-      global.addEventListener("pointerup", up);
     },
 
     scheduleRender() {
