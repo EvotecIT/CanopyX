@@ -9,6 +9,39 @@ namespace CanopyX.Tests.Rendering;
 /// </summary>
 public sealed class StaticHtmlTests {
     [Fact]
+    public void Render_HtmlDetails_AreEncodedInTheScriptFreeFallback() {
+        var view = SmallView();
+        view.Roots.Add(new CanopyNode("html", "Markup") { Detail = new CanopyHtmlDetail("<script>alert(1)</script><img onerror='alert(2)' src=x>") });
+        var html = CanopyStaticHtml.Render(view);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<img", html, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("&lt;script&gt;", html);
+    }
+
+    [Theory]
+    [InlineData(true, 64)]
+    [InlineData(false, 1)]
+    public void Render_CollapsedOrDepthLimitedLazyNode_CountsChildrenOnce(bool onlyExpanded, int maxDepth) {
+        var view = new CanopyView("lazy", "Lazy") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Roots.Add(new CanopyNode("root", "Root") { HasChildren = true, ChildCount = 5 });
+        var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { OnlyExpanded = onlyExpanded, MaxDepth = maxDepth });
+        Assert.Contains("Showing 1 of 6 rows.", html);
+        Assert.Contains("(+5)</span>", html);
+    }
+
+    [Fact]
+    public void Render_DetailCells_PreserveTitlesAndBadges() {
+        var view = SmallView();
+        var cell = new CanopyCell("value") { Title = "A & B" };
+        cell.Badges.Add(new CanopyBadge("Changed", CanopyTone.Warning));
+        view.Roots.Add(new CanopyNode("props", "Properties") { Detail = new CanopyPropertiesDetail().Add("Status", cell) });
+        var html = CanopyStaticHtml.Render(view);
+        Assert.Contains("title=\"A &amp; B\"", html);
+        Assert.Contains(">Changed</span>", html);
+    }
+
+    [Fact]
     public void Render_IsScriptFreeWithInlineStylesOnly() {
         var view = SmallView();
         view.Roots[0].Label = "<b>Finance</b> & legal";

@@ -311,6 +311,7 @@
           "required": ["shards"],
           "additionalProperties": false,
           "properties": {
+            "prefix": { "enum": ["", "k-"] },
             "shards": {
               "type": "object",
               "propertyNames": { "pattern": "^[a-z0-9_]{2,}-?(\\.[0-9]+)?$" },

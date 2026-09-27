@@ -94,7 +94,14 @@ public static class CanopyStaticHtml {
             }
 
             var children = node.ChildNodes;
-            if (level < options.MaxDepth && (!options.OnlyExpanded || node.Expanded)) {
+            if (children.Count == 0 && node.HasChildren) {
+                if (node.ChildCount > 0) {
+                    total += node.ChildCount.Value;
+                    hiddenBelow[node] = node.ChildCount.Value;
+                } else {
+                    hiddenBelow[node] = -1;
+                }
+            } else if (level < options.MaxDepth && (!options.OnlyExpanded || node.Expanded)) {
                 for (var index = children.Count - 1; index >= 0; index--) {
                     pending.Push((children[index], level + 1));
                 }
@@ -106,14 +113,6 @@ public static class CanopyStaticHtml {
                 }
             }
 
-            if (children.Count == 0 && node.HasChildren) {
-                if (node.ChildCount > 0) {
-                    total += node.ChildCount.Value;
-                    hiddenBelow[node] = node.ChildCount.Value;
-                } else {
-                    hiddenBelow[node] = -1;
-                }
-            }
         }
 
         return rows;
@@ -234,7 +233,9 @@ public static class CanopyStaticHtml {
                 html.Append("</tbody></table>");
                 break;
             case CanopyHtmlDetail markup:
-                html.Append(markup.Html); // trusted host markup, see docs/data-protocol.md
+                // Arbitrary host HTML can contain scripts, handlers, active URLs, or embedded frames. The fallback
+                // has no HTML parser dependency and preserves this payload as text to keep its script-free contract.
+                html.Append(Encode(markup.Html));
                 break;
         }
 
@@ -248,7 +249,15 @@ public static class CanopyStaticHtml {
             html.Append("color:").Append(CanopyStaticStyles.ToneColor(tone)).Append(';');
         }
 
-        html.Append("\">").Append(Encode(cell?.DisplayText(CanopyColumnKind.Text) ?? string.Empty)).Append("</td>");
+        html.Append('"');
+        if (!string.IsNullOrEmpty(cell?.Title)) {
+            html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
+        }
+        html.Append('>').Append(Encode(cell?.DisplayText(CanopyColumnKind.Text) ?? string.Empty));
+        if (cell != null) {
+            AppendBadges(html, cell.Badges);
+        }
+        html.Append("</td>");
     }
 
     private static string Align(CanopyColumn column) => column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty;
