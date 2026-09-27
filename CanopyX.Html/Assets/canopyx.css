@@ -193,7 +193,7 @@
   /* Paper is white whatever the screen theme is. */
   .cx-host, .cx-host[data-cx-theme] {
     --cx-surface: #ffffff; --cx-text: #1f2328; --cx-accent: #0a58ca; --cx-line: #d1d9e0;
-    --cx-info: #0550ae; --cx-success: #116329; --cx-warning: #7d4e00; --cx-danger: #b3261e;
+    --cx-tone-info: #0550ae; --cx-tone-success: #116329; --cx-tone-warning: #7d4e00; --cx-tone-danger: #b3261e;
     color-scheme: light; height: auto !important; color: #000000; background: #ffffff;
   }
   .cx-outline-table { color: #000000; background: #ffffff; }

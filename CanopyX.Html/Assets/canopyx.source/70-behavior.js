@@ -88,12 +88,15 @@
         const element = document.activeElement;
         const revision = this.focusRevision || 0;
         const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
-        await this.loadPage(w, w.next);
+        if (hadFocus) this.focusHandoff = focus;
+        try { await this.loadPage(w, w.next); }
+        finally { if (this.focusHandoff === focus) this.focusHandoff = null; }
         const next = w.children.find((child) => !previous.has(child));
         if (!this.destroyed && next && hadFocus && (this.focusRevision || 0) === revision &&
             (document.activeElement === element || document.activeElement === document.body)) {
           this.setFocus(next, true);
         }
+        this.relayout();
       }
     },
 
