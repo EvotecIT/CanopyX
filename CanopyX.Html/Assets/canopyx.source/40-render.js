@@ -133,6 +133,7 @@
     },
 
     scheduleRender() {
+      if (this.destroyed) return;
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;

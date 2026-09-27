@@ -45,7 +45,7 @@
           while (stack.length) {
             const item = stack.pop();
             const path = item.path.concat(item.node.id);
-            if (!item.node.detail && matchesWords(wordsOf(item.node), queryWords)) {
+            if (matchesWords(wordsOf(item.node), queryWords)) {
               hits.push({ path: path, label: item.node.label, kind: item.node.kind, context: item.labels.join(" / ") });
             }
             const children = item.node.children || [];
@@ -83,7 +83,7 @@
     const shardCache = new Map();
     let manifestPromise = null;
     // Failed loads are not cached, so a retry can succeed once the file is back.
-    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => checkDocument(doc, "manifest"), (err) => {
+    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => checkDocument(doc, "manifest")).catch((err) => {
       manifestPromise = null;
       throw err;
     }));
@@ -92,7 +92,7 @@
         shardCache.set(key, load("s/" + key).then((doc) => {
           checkDocument(doc, "searchShard");
           return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
-        }, (err) => {
+        }).catch((err) => {
           shardCache.delete(key);
           throw err;
         }));

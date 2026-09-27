@@ -45,6 +45,7 @@
       input.setAttribute("aria-controls", list.id);
       status.setAttribute("aria-live", "polite");
       let timer = 0;
+      let blurTimer = 0;
       let sequence = 0;
       let hits = [];
       let active = -1;
@@ -98,6 +99,7 @@
         setText(status, hits.length ? hits.length + (result.truncated ? " of " + (result.total || "many") : "") + " results" : "No results");
       };
       const run = async () => {
+        if (this.destroyed) return;
         const query = input.value.trim();
         if (query.length < options.minLength) {
           sequence++;
@@ -108,11 +110,11 @@
         const mine = ++sequence;
         try {
           const result = await this.source.search(query, options.maxResults);
-          if (mine === sequence) {
+          if (!this.destroyed && mine === sequence) {
             show(result);
           }
         } catch (err) {
-          if (mine === sequence) {
+          if (!this.destroyed && mine === sequence) {
             setText(status, "Search failed: " + (err && err.message ? err.message : err));
           }
         }
@@ -157,7 +159,8 @@
         }
         e.preventDefault();
       });
-      input.addEventListener("blur", () => setTimeout(close, 150));
+      input.addEventListener("blur", () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 150); });
+      this.cancelSearch = () => { sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
       box.appendChild(input);
       box.appendChild(list);
       box.appendChild(status);

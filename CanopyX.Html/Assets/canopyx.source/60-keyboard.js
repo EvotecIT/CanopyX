@@ -66,7 +66,7 @@
       if (w.status === "more") {
         this.loadMore(w.parent);
       } else if (w.status === "error") {
-        this.loadPage(w.parent, w.parent.next && w.parent.children && w.parent.children.length ? w.parent.next : null);
+        this.retryPage(w);
       } else if (!w.status) {
         if (this.multi && !enter) {
           this.select(w, { toggle: true });

@@ -331,7 +331,7 @@
           while (stack.length) {
             const item = stack.pop();
             const path = item.path.concat(item.node.id);
-            if (!item.node.detail && matchesWords(wordsOf(item.node), queryWords)) {
+            if (matchesWords(wordsOf(item.node), queryWords)) {
               hits.push({ path: path, label: item.node.label, kind: item.node.kind, context: item.labels.join(" / ") });
             }
             const children = item.node.children || [];
@@ -369,7 +369,7 @@
     const shardCache = new Map();
     let manifestPromise = null;
     // Failed loads are not cached, so a retry can succeed once the file is back.
-    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => checkDocument(doc, "manifest"), (err) => {
+    const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => checkDocument(doc, "manifest")).catch((err) => {
       manifestPromise = null;
       throw err;
     }));
@@ -378,7 +378,7 @@
         shardCache.set(key, load("s/" + key).then((doc) => {
           checkDocument(doc, "searchShard");
           return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
-        }, (err) => {
+        }).catch((err) => {
           shardCache.delete(key);
           throw err;
         }));
@@ -535,8 +535,10 @@
         await this.restoreState();
         await this.openDeepLink();
       } finally {
-        this.host.setAttribute("data-cx-ready", "true");
-        this.emit("ready", {});
+        if (!this.destroyed) {
+          this.host.setAttribute("data-cx-ready", "true");
+          this.emit("ready", {});
+        }
       }
     }
 
@@ -557,6 +559,7 @@
 
     /** Loads lazy children of nodes that start expanded. */
     async expandInitial(parent) {
+      if (this.destroyed) return;
       for (const w of parent.children || []) {
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
@@ -616,6 +619,7 @@
     }
 
     relayout() {
+      if (this.destroyed) return;
       const rows = [];
       const filter = this.filter;
       if (filter) {
@@ -725,6 +729,7 @@
     }
 
     emit(name, detail) {
+      if (this.destroyed) return;
       this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
     }
   }
@@ -863,6 +868,7 @@
     },
 
     scheduleRender() {
+      if (this.destroyed) return;
       if (!this.rafId) {
         this.rafId = requestAnimationFrame(() => {
           this.rafId = 0;
@@ -1272,7 +1278,7 @@
       if (w.status === "more") {
         this.loadMore(w.parent);
       } else if (w.status === "error") {
-        this.loadPage(w.parent, w.parent.next && w.parent.children && w.parent.children.length ? w.parent.next : null);
+        this.retryPage(w);
       } else if (!w.status) {
         if (this.multi && !enter) {
           this.select(w, { toggle: true });
@@ -1314,7 +1320,7 @@
   Object.assign(TreeGrid.prototype, {
     /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
     async toggle(w, expand) {
-      if (!w || w.status || !this.expandable(w)) {
+      if (this.destroyed || !w || w.status || !this.expandable(w)) {
         return;
       }
       const open = !!w._open;
@@ -1323,6 +1329,7 @@
         return;
       }
       w.expanded = want;
+      const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
       w._v = 0;
       if (want && !w.children) {
@@ -1330,7 +1337,8 @@
       } else {
         this.relayout();
       }
-      this.emit("toggle", { node: w.h, expanded: want });
+      if (this.destroyed || w.toggleRevision !== revision) return;
+      this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, want);
       }
@@ -1339,6 +1347,7 @@
 
     /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
     loadPage(w, cursor) {
+      if (this.destroyed) return Promise.resolve();
       if (w.loading) {
         return w._pending;
       }
@@ -1351,6 +1360,7 @@
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
+          if (this.destroyed) return;
           const items = page.items || [];
           if (!cursor || !w.children) {
             w.children = [];
@@ -1371,6 +1381,7 @@
             this.opts.onLoad(w.h, info);
           }
         } catch (err) {
+          if (this.destroyed) return;
           w.error = err && err.message ? err.message : String(err);
           this.emit("error", { node: w.h, message: w.error });
         } finally {
@@ -1379,7 +1390,7 @@
           w._pending = null;
           this.relayout();
         }
-        if (!w.error) {
+        if (!this.destroyed && !w.error) {
           await this.expandInitial(w);
         }
       })();
@@ -1396,11 +1407,27 @@
         const hadFocus = !!(focus && focus.status === "more" && focus.parent === w && element && element._w === focus);
         await this.loadPage(w, w.next);
         const next = w.children.find((child) => !previous.has(child));
-        if (next && hadFocus && (this.focusRevision || 0) === revision &&
+        if (!this.destroyed && next && hadFocus && (this.focusRevision || 0) === revision &&
             (document.activeElement === element || document.activeElement === document.body)) {
           this.setFocus(next, true);
         }
       }
+    },
+
+    async retryPage(status) {
+      const parent = status.parent;
+      const previous = new Set(parent.children || []);
+      const element = document.activeElement;
+      const revision = this.focusRevision || 0;
+      const owned = this.focused === status && element && element._w === status;
+      await this.loadPage(parent, parent.next && previous.size ? parent.next : null);
+      if (this.destroyed || !owned || (this.focusRevision || 0) !== revision ||
+          (document.activeElement !== element && document.activeElement !== document.body)) return;
+      const target = parent.error ? this.statusRow(parent, "error") :
+        (parent.children || []).find((child) => !previous.has(child)) ||
+        (parent.next ? this.statusRow(parent, "more") : parent !== this.root ? parent : this.rows[0]);
+      if (target) this.setFocus(target, true);
+      else this.grid.focus();
     },
 
     /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
@@ -1507,7 +1534,9 @@
         return;
       }
       if (w.h.detail) {
-        this.setFocus(w, !e.target.closest("a,button,input,select,textarea"));
+        const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]");
+        this.setFocus(w, !interactive);
+        if (!interactive) this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
         return;
       }
       this.setFocus(w, true);
@@ -1527,6 +1556,7 @@
 
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
+      if (this.destroyed) return;
       w.expanded = true;
       w.filterCollapsed = false;
       w._v = 0;
@@ -1545,16 +1575,19 @@
     async expandPath(ids, options) {
       const o = options || {};
       await this.rootsReady;
+      if (this.destroyed) return null;
       let parent = this.root;
       let w = null;
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
           await this.openForPath(parent);
         }
+        if (this.destroyed) return null;
         w = this.keyMap.get(ids[k]);
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
           const before = parent.children.length;
           await this.loadPage(parent, parent.next);
+          if (this.destroyed) return null;
           if (parent.error || parent.children.length === before) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -1567,6 +1600,12 @@
       }
       if (o.expandLast && w && this.expandable(w)) {
         await this.openForPath(w);
+      }
+      if (this.destroyed) return null;
+      if (w && o.reveal !== false && this.filter && this.matchState(w) === 0) {
+        this.activeFilters.clear();
+        this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+        this.setFilter(null);
       }
       this.relayout();
       this.stateChanged();
@@ -1678,6 +1717,7 @@
       input.setAttribute("aria-controls", list.id);
       status.setAttribute("aria-live", "polite");
       let timer = 0;
+      let blurTimer = 0;
       let sequence = 0;
       let hits = [];
       let active = -1;
@@ -1731,6 +1771,7 @@
         setText(status, hits.length ? hits.length + (result.truncated ? " of " + (result.total || "many") : "") + " results" : "No results");
       };
       const run = async () => {
+        if (this.destroyed) return;
         const query = input.value.trim();
         if (query.length < options.minLength) {
           sequence++;
@@ -1741,11 +1782,11 @@
         const mine = ++sequence;
         try {
           const result = await this.source.search(query, options.maxResults);
-          if (mine === sequence) {
+          if (!this.destroyed && mine === sequence) {
             show(result);
           }
         } catch (err) {
-          if (mine === sequence) {
+          if (!this.destroyed && mine === sequence) {
             setText(status, "Search failed: " + (err && err.message ? err.message : err));
           }
         }
@@ -1790,7 +1831,8 @@
         }
         e.preventDefault();
       });
-      input.addEventListener("blur", () => setTimeout(close, 150));
+      input.addEventListener("blur", () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 150); });
+      this.cancelSearch = () => { sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
       box.appendChild(input);
       box.appendChild(list);
       box.appendChild(status);
@@ -1853,13 +1895,16 @@
     },
 
     async setState(state) {
-      if (!state || !Array.isArray(state.expanded)) {
+      if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
       this.restoring = true;
       try {
+        this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; w._v = 0; });
+        this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
         for (const path of paths) {
+          if (this.destroyed) break;
           try {
             await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true });
           } catch (e) {
@@ -1877,11 +1922,12 @@
 
     stateChanged() {
       const key = this.stateKey();
-      if (!key || this.restoring) {
+      if (this.destroyed || !key || this.restoring) {
         return;
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
+        if (this.destroyed) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
@@ -1962,18 +2008,18 @@
         if (w.h.detail) {
           const detail = w.h.detail;
           const content = h("div");
-          if (detail.type === "html") {
-            setText(content, detail.html);
-          } else {
-            this.renderDetail(w.h, content);
-          }
+          this.renderDetail(w.h, content);
           out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
           return;
         }
         out.push("<tr>");
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
-          out.push("<td" + (i === 0 ? pad : "") + ">" + escapeHtml(cellText(this.cellOf(w.h, column, index), column, this.lang)) + "</td>");
+          const value = this.cellOf(w.h, column, index);
+          const content = detailCell("span", value, this.lang);
+          content.firstChild.textContent = cellText(value, column, this.lang);
+          if (i === 0) (w.h.badges || []).forEach((badge) => content.appendChild(detailCell("span", { text: "", badges: [badge] }, this.lang)));
+          out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
         out.push("</tr>");
       });
@@ -1983,6 +2029,7 @@
 
     /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
     applyCounts(doc) {
+      if (this.destroyed) return;
       checkDocument(doc, "counts");
       (doc.items || []).forEach((item) => {
         const w = this.keyMap.get(item.id);
@@ -1992,6 +2039,11 @@
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;
+          if (!w.inline) {
+            w.h.hasChildren = item.childCount > 0;
+            if (item.childCount > 0 && w.children && !w.children.length) w.children = null;
+            if (!item.childCount && (!w.children || !w.children.length)) w.expanded = false;
+          }
         }
         if (item.cells) {
           w.h.cells = Object.assign({}, w.h.cells, item.cells);
@@ -2006,16 +2058,26 @@
     },
 
     async refreshCounts(ids) {
-      if (!this.source.counts) {
+      if (this.destroyed || !this.source.counts) {
         return null;
       }
       const wanted = ids || this.rows.filter((w) => !w.status).map((w) => w.key);
+      const revisions = this.countRevisions || (this.countRevisions = new Map());
+      const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
+      mine.forEach((revision, id) => revisions.set(id, revision));
       const doc = await this.source.counts(wanted);
-      this.applyCounts(doc);
+      if (this.destroyed) return null;
+      checkDocument(doc, "counts");
+      this.applyCounts(Object.assign({}, doc, { items: (doc.items || []).filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }));
       return doc;
     },
 
     destroy() {
+      if (this.destroyed) return;
+      this.destroyed = true;
+      clearTimeout(this.saveTimer);
+      if (this.cancelSearch) this.cancelSearch();
+      cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
