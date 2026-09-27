@@ -984,14 +984,8 @@
         this.canvas.appendChild(fragment);
       }
       this.window = { first: first, last: last };
-      // Nobody reads rows while the wheel turns, so DOM order is restored once scrolling pauses. Keyboard focus moves
-      // and every other change render without the scroll flag and restore it at once.
-      clearTimeout(this.orderTimer);
-      if (fromScroll) {
-        this.orderTimer = setTimeout(() => this.keepDomOrder(this.window.first, this.window.last), 250);
-      } else {
-        this.keepDomOrder(first, last);
-      }
+      // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
+      this.keepDomOrder(first, last);
     },
 
     // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused

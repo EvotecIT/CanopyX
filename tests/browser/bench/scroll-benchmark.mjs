@@ -113,11 +113,17 @@ async function scrollOnce(pageUrl, cpu) {
       }
       if (steps % 20 === 0) {
         const done = await page.evaluate(() => { const g = document.querySelector(".cx-grid"); return g.scrollTop + g.clientHeight >= g.scrollHeight - 2; });
-        if (done || Date.now() - started > 180000) {
+        if (done) {
           break;
+        }
+        if (Date.now() - started > 180000) {
+          throw new Error("Scroll benchmark timed out before reaching the bottom");
         }
       }
     }
+    // Include deferred work from either runtime under comparison, then the frames that paint it.
+    await page.waitForTimeout(300);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const result = await page.evaluate(({ wheelSteps, startedAt }) => {
       window.__rec = false;
       const frames = window.__frames.slice(2);
