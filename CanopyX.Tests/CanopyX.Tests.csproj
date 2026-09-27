@@ -14,9 +14,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" PrivateAssets="all" />
+    <PackageReference Include="JsonSchema.Net" Version="9.4.0" PrivateAssets="all" />
     <PackageReference Include="xunit" Version="2.9.3" PrivateAssets="all" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" PrivateAssets="all">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\docs\schema\canopyx-1.schema.json" Link="Schema\canopyx-1.schema.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

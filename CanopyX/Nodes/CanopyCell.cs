@@ -1,0 +1,211 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using CanopyX.Json;
+
+namespace CanopyX;
+
+/// <summary>
+/// The content of one cell: a value used for sorting and default formatting, plus optional display text, tooltip,
+/// tone, and badges supplied by the host.
+/// </summary>
+/// <remarks>
+/// Values are limited to text, numbers, booleans, and dates so every cell can be written as JSON and sorted in the
+/// browser. Implicit conversions let hosts assign plain values: <c>node.Cells["size"] = 1024;</c>.
+/// A cell that has only a value is written as a bare JSON value; otherwise it is written as an object.
+/// </remarks>
+public sealed class CanopyCell {
+    private readonly object? _value;
+    private List<CanopyBadge>? _badges;
+
+    /// <summary>Creates an empty cell, useful for a cell that shows only badges or display text.</summary>
+    public CanopyCell() {
+    }
+
+    /// <summary>Creates a text cell.</summary>
+    /// <param name="value">The text value; <see langword="null"/> leaves the cell empty.</param>
+    public CanopyCell(string? value) {
+        _value = value;
+    }
+
+    /// <summary>Creates a numeric cell.</summary>
+    /// <param name="value">The value.</param>
+    public CanopyCell(long value) {
+        _value = value;
+    }
+
+    /// <summary>Creates a numeric cell.</summary>
+    /// <param name="value">The value. <see cref="double.NaN"/> and infinities are written as an empty value.</param>
+    public CanopyCell(double value) {
+        _value = value;
+    }
+
+    /// <summary>Creates a numeric cell.</summary>
+    /// <param name="value">The value.</param>
+    public CanopyCell(decimal value) {
+        _value = value;
+    }
+
+    /// <summary>Creates a boolean cell.</summary>
+    /// <param name="value">The value.</param>
+    public CanopyCell(bool value) {
+        _value = value;
+    }
+
+    /// <summary>Creates a date and time cell. The value is written as ISO 8601 UTC.</summary>
+    /// <param name="value">The value. <see cref="DateTimeKind.Unspecified"/> values are treated as UTC.</param>
+    public CanopyCell(DateTime value) {
+        _value = value.Kind == DateTimeKind.Local ? value.ToUniversalTime() : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+    }
+
+    /// <summary>Creates a date and time cell. The value is written as ISO 8601 UTC.</summary>
+    /// <param name="value">The value.</param>
+    public CanopyCell(DateTimeOffset value) {
+        _value = value.UtcDateTime;
+    }
+
+    /// <summary>
+    /// Gets the value: a <see cref="string"/>, <see cref="long"/>, <see cref="double"/>, <see cref="decimal"/>,
+    /// <see cref="bool"/>, UTC <see cref="DateTime"/>, or <see langword="null"/>.
+    /// </summary>
+    public object? Value => _value;
+
+    /// <summary>Gets or sets the text shown instead of the formatted value.</summary>
+    public string? Text { get; set; }
+
+    /// <summary>Gets or sets an optional tooltip.</summary>
+    public string? Title { get; set; }
+
+    /// <summary>Gets or sets the semantic colour of the cell text.</summary>
+    public CanopyTone Tone { get; set; }
+
+    /// <summary>Gets the badges shown after the cell text.</summary>
+    public IList<CanopyBadge> Badges => _badges ??= new List<CanopyBadge>();
+
+    /// <summary>Converts text to a cell.</summary>
+    /// <param name="value">The text.</param>
+    public static implicit operator CanopyCell(string? value) => new CanopyCell(value);
+
+    /// <summary>Converts a number to a cell.</summary>
+    /// <param name="value">The number.</param>
+    public static implicit operator CanopyCell(int value) => new CanopyCell(value);
+
+    /// <summary>Converts a number to a cell.</summary>
+    /// <param name="value">The number.</param>
+    public static implicit operator CanopyCell(long value) => new CanopyCell(value);
+
+    /// <summary>Converts a number to a cell.</summary>
+    /// <param name="value">The number.</param>
+    public static implicit operator CanopyCell(double value) => new CanopyCell(value);
+
+    /// <summary>Converts a number to a cell.</summary>
+    /// <param name="value">The number.</param>
+    public static implicit operator CanopyCell(decimal value) => new CanopyCell(value);
+
+    /// <summary>Converts a boolean to a cell.</summary>
+    /// <param name="value">The boolean.</param>
+    public static implicit operator CanopyCell(bool value) => new CanopyCell(value);
+
+    /// <summary>Converts a date and time to a cell.</summary>
+    /// <param name="value">The date and time.</param>
+    public static implicit operator CanopyCell(DateTime value) => new CanopyCell(value);
+
+    /// <summary>Converts a date and time to a cell.</summary>
+    /// <param name="value">The date and time.</param>
+    public static implicit operator CanopyCell(DateTimeOffset value) => new CanopyCell(value);
+
+    /// <summary>
+    /// Formats the value the way the runtime does when no display text is set, for renderers that run without a
+    /// browser (the static outline).
+    /// </summary>
+    internal string FormatValue(CanopyColumnKind kind) {
+        switch (_value) {
+            case null:
+                return string.Empty;
+            case string text:
+                if (kind == CanopyColumnKind.DateTime
+                    && DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed)) {
+                    return parsed.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC";
+                }
+
+                return text;
+            case bool flag:
+                return flag ? "Yes" : "No";
+            case DateTime date:
+                return kind == CanopyColumnKind.DateTime ? date.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC" : FormatIso(date);
+            case long whole:
+                return kind == CanopyColumnKind.Number ? whole.ToString("#,0", CultureInfo.InvariantCulture) : whole.ToString(CultureInfo.InvariantCulture);
+            case double real:
+                return double.IsNaN(real) || double.IsInfinity(real) ? string.Empty : real.ToString(kind == CanopyColumnKind.Number ? "#,0.###" : "R", CultureInfo.InvariantCulture);
+            case decimal exact:
+                return exact.ToString(kind == CanopyColumnKind.Number ? "#,0.###" : "G", CultureInfo.InvariantCulture);
+            default:
+                return Convert.ToString(_value, CultureInfo.InvariantCulture) ?? string.Empty;
+        }
+    }
+
+    /// <summary>Returns the text a reader sees: the display text when set, otherwise the formatted value.</summary>
+    internal string DisplayText(CanopyColumnKind kind) => Text ?? FormatValue(kind);
+
+    internal bool HasBadges => _badges != null && _badges.Count > 0;
+
+    /// <summary>ISO 8601 UTC, with milliseconds only when they are not zero.</summary>
+    private static string FormatIso(DateTime date) =>
+        date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
+
+    internal void WriteJson(CanopyJsonWriter writer) {
+        var simple = Text == null && Title == null && Tone == CanopyTone.None && !HasBadges;
+        if (simple) {
+            WriteValue(writer);
+            return;
+        }
+
+        writer.BeginObject();
+        if (_value != null) {
+            writer.Name("value");
+            WriteValue(writer);
+        }
+
+        writer.OptionalProperty("text", Text);
+        writer.OptionalProperty("title", Title);
+        writer.OptionalProperty("tone", CanopyJsonNames.Tone(Tone));
+        if (HasBadges) {
+            writer.Name("badges").BeginArray();
+            foreach (var badge in _badges!) {
+                (badge ?? throw new InvalidOperationException("A cell cannot contain a null badge.")).WriteJson(writer);
+            }
+
+            writer.EndArray();
+        }
+
+        writer.EndObject();
+    }
+
+    private void WriteValue(CanopyJsonWriter writer) {
+        switch (_value) {
+            case null:
+                writer.Null();
+                break;
+            case string text:
+                writer.String(text);
+                break;
+            case bool flag:
+                writer.Boolean(flag);
+                break;
+            case long whole:
+                writer.Number(whole);
+                break;
+            case double real:
+                writer.Number(real);
+                break;
+            case decimal exact:
+                writer.Number(exact);
+                break;
+            case DateTime date:
+                writer.String(FormatIso(date));
+                break;
+            default:
+                throw new InvalidOperationException("Unsupported cell value type: " + _value.GetType().FullName);
+        }
+    }
+}
