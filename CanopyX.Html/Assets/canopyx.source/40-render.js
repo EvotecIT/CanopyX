@@ -45,6 +45,7 @@
       this.canvas.addEventListener("focusin", (e) => {
         const rowEl = e.target.closest(".cx-row");
         if (rowEl && rowEl._w && this.focused !== rowEl._w) {
+          this.focusRevision = (this.focusRevision || 0) + 1;
           if (this.focused) {
             this.focused._v = 0;
           }
