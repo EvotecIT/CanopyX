@@ -52,6 +52,14 @@
     return doc;
   }
 
+  /** Verifies wire page ownership before attaching its nodes to the requested parent. */
+  function checkPage(doc, node) {
+    checkDocument(doc, "page");
+    const parent = node ? node.id : null;
+    if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
+    return doc;
+  }
+
   // ---------- cells ----------
   function isCellObject(cell) {
     return cell !== null && typeof cell === "object";
@@ -86,7 +94,7 @@
       return String(value);
     }
     const d = new Date(time);
-    return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
+    return String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
   }
 
   /** Formats a value without display text, following the protocol's default formatting table. */

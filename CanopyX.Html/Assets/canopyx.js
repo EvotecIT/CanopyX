@@ -52,6 +52,14 @@
     return doc;
   }
 
+  /** Verifies wire page ownership before attaching its nodes to the requested parent. */
+  function checkPage(doc, node) {
+    checkDocument(doc, "page");
+    const parent = node ? node.id : null;
+    if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
+    return doc;
+  }
+
   // ---------- cells ----------
   function isCellObject(cell) {
     return cell !== null && typeof cell === "object";
@@ -86,7 +94,7 @@
       return String(value);
     }
     const d = new Date(time);
-    return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
+    return String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
   }
 
   /** Formats a value without display text, following the protocol's default formatting table. */
@@ -433,7 +441,7 @@
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
-        const doc = checkDocument(await load(ref), "page");
+        const doc = checkPage(await load(ref), node);
         return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
@@ -496,10 +504,10 @@
       kind: "remote",
       canSearch: !!source.search,
       async page(node, cursor) {
-        const doc = await getJson(fill(source.children, {
+        const doc = checkPage(await getJson(fill(source.children, {
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
-        }), "page");
+        }), "page"), node);
         return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
@@ -667,7 +675,8 @@
       }
     },
 
-    wrap(node, parent, index) {
+    wrap(node, parent, index, suppressExpansion) {
+      const initialExpansion = !suppressExpansion && !this.restoring;
       const create = (data, owner, position) => {
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
@@ -688,12 +697,12 @@
           w.children = first.items.map((child, i) => create(child, w, i));
           w.total = first.total;
           w.next = first.next;
-          w.expanded = !!data.expanded && !this.restoring;
+          w.expanded = !!data.expanded && initialExpansion;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
         } else if (data.hasChildren) {
           w.total = typeof data.childCount === "number" ? data.childCount : null;
-          w.autoExpand = !!data.expanded && !this.restoring;
+          w.autoExpand = !!data.expanded && initialExpansion;
         }
       }
       return root;
@@ -1159,19 +1168,30 @@
     },
 
     startResize(e, column) {
+      if (this.destroyed || e.button !== 0) return;
+      if (this.cancelResize) this.cancelResize();
       e.preventDefault();
       const x0 = e.clientX;
       const w0 = column.width;
+      const pointer = e.pointerId;
       const move = (ev) => {
+        if (ev.pointerId !== pointer) return;
         column.width = Math.max(40, w0 + ev.clientX - x0);
         this.applyWidths();
       };
-      const up = () => {
+      const stop = () => {
         global.removeEventListener("pointermove", move);
-        global.removeEventListener("pointerup", up);
+        global.removeEventListener("pointerup", end);
+        global.removeEventListener("pointercancel", end);
+        global.removeEventListener("blur", stop);
+        if (this.cancelResize === stop) this.cancelResize = null;
       };
+      const end = (ev) => { if (ev.pointerId === pointer) stop(); };
+      this.cancelResize = stop;
       global.addEventListener("pointermove", move);
-      global.addEventListener("pointerup", up);
+      global.addEventListener("pointerup", end);
+      global.addEventListener("pointercancel", end);
+      global.addEventListener("blur", stop);
     }
   });
 
@@ -1700,6 +1720,8 @@
       w.error = null;
       this.relayout();
       const started = performance.now();
+      const restoration = this.restoreGeneration || 0;
+      const suppressInitial = !!this.restoring;
       const run = (async () => {
         let info = null;
         try {
@@ -1711,7 +1733,8 @@
             w.children = [];
           }
           const base = w.children.length;
-          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i)));
+          const suppressExpansion = suppressInitial || restoration !== (this.restoreGeneration || 0);
+          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
           w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
           w.next = page.next || null;
           this.applySort(w, false);
@@ -1736,7 +1759,7 @@
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w.error) await this.expandInitial(w);
+          if (!this.destroyed && !w.error && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -2233,6 +2256,9 @@
       if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
+      if (this.restoreController) this.restoreController.abort();
+      const current = this.restoreController = new AbortController();
+      this.restoreGeneration = (this.restoreGeneration || 0) + 1;
       this.restoring = true;
       clearTimeout(this.saveTimer);
       try {
@@ -2240,15 +2266,18 @@
         this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
         for (const path of paths) {
-          if (this.destroyed) break;
+          if (this.destroyed || current.signal.aborted) break;
           try {
-            await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true });
+            await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true, signal: current.signal });
           } catch (e) {
             // A remembered node may no longer exist.
           }
         }
       } finally {
-        this.restoring = false;
+        if (this.restoreController === current) {
+          this.restoring = false;
+          this.restoreController = null;
+        }
       }
     },
 
@@ -2415,6 +2444,8 @@
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
+      if (this.restoreController) this.restoreController.abort();
+      if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);

@@ -30,6 +30,9 @@
       if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
+      if (this.restoreController) this.restoreController.abort();
+      const current = this.restoreController = new AbortController();
+      this.restoreGeneration = (this.restoreGeneration || 0) + 1;
       this.restoring = true;
       clearTimeout(this.saveTimer);
       try {
@@ -37,15 +40,18 @@
         this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
         for (const path of paths) {
-          if (this.destroyed) break;
+          if (this.destroyed || current.signal.aborted) break;
           try {
-            await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true });
+            await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true, signal: current.signal });
           } catch (e) {
             // A remembered node may no longer exist.
           }
         }
       } finally {
-        this.restoring = false;
+        if (this.restoreController === current) {
+          this.restoring = false;
+          this.restoreController = null;
+        }
       }
     },
 
@@ -212,6 +218,8 @@
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
+      if (this.restoreController) this.restoreController.abort();
+      if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
