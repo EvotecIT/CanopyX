@@ -80,7 +80,7 @@ internal sealed class CanopyJsonWriter {
     }
 
     internal CanopyJsonWriter Number(long value) {
-        RequireSafeMagnitude(value);
+        RequireSafeMagnitude((decimal)value);
         BeforeValue();
         _builder.Append(value.ToString(CultureInfo.InvariantCulture));
         return this;
@@ -90,9 +90,7 @@ internal sealed class CanopyJsonWriter {
         if (double.IsNaN(value) || double.IsInfinity(value)) {
             return Null();
         }
-        if (Math.Abs(value) > 9007199254740991d) {
-            throw new InvalidOperationException("Numeric values must be within JavaScript's safe integer range; use a text cell for larger exact values.");
-        }
+        RequireSafeMagnitude(value);
 
         BeforeValue();
 #if NETCOREAPP3_0_OR_GREATER
@@ -111,7 +109,13 @@ internal sealed class CanopyJsonWriter {
         return this;
     }
 
-    private static void RequireSafeMagnitude(decimal value) {
+    internal static void RequireSafeMagnitude(double value) {
+        if (!double.IsNaN(value) && !double.IsInfinity(value) && Math.Abs(value) > 9007199254740991d) {
+            throw new InvalidOperationException("Numeric values must be within JavaScript's safe integer range; use a text cell for larger exact values.");
+        }
+    }
+
+    internal static void RequireSafeMagnitude(decimal value) {
         if (value < -9007199254740991m || value > 9007199254740991m) {
             throw new InvalidOperationException("Numeric values must be within JavaScript's safe integer range; use a text cell for larger exact values.");
         }
