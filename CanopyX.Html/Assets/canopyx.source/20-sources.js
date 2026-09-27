@@ -64,18 +64,15 @@
 
   /** Picks the search shards for one folded query word (see "Sidecar" in docs/data-protocol.md). */
   function resolveShards(shards, keys, word) {
+    const bases = keys.filter((key) => !/\.\d+$/.test(key));
+    const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
+      .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
     for (let length = 2; length <= word.length; length++) {
       const key = shardKey(word.slice(0, length));
-      if (Object.prototype.hasOwnProperty.call(shards, key)) {
-        return [key];
-      }
-      const deeper = keys.filter((k) => k.length > key.length && k.startsWith(key) && k.charAt(key.length) !== ".");
-      if (!deeper.length) {
-        return [];
-      }
-      if (length === word.length) {
-        return deeper;
-      }
+      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
+      const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
+      if (!deeper.length) return [];
+      if (length === word.length) return parts(deeper);
     }
     return [];
   }
@@ -132,12 +129,8 @@
         const longest = queryWords.reduce((a, b) => (b.length > a.length ? b : a));
         const shards = m.search.shards;
         const all = Object.keys(shards);
-        const partNumber = (key) => Number(key.slice(key.lastIndexOf(".") + 1));
-        // A large shard is stored in parts (key.2, key.3, ...). Parts load one at a time, and loading stops once
-        // there are plenty of matches to rank, so a very common word does not pull in the whole index.
-        const bases = resolveShards(shards, all, longest).filter((key) => !/\.\d+$/.test(key));
-        const order = [];
-        bases.forEach((key) => order.push.apply(order, [key].concat(all.filter((k) => k.startsWith(key + ".")).sort((a, b) => partNumber(a) - partNumber(b)))));
+        // Parts use the same canonical resolver as ordinary shards and load in numeric order.
+        const order = resolveShards(shards, all, longest);
         const seen = new Set();
         const hits = [];
         let stopped = false;

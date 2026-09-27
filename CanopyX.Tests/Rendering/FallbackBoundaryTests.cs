@@ -11,7 +11,7 @@ public sealed class FallbackBoundaryTests {
         try {
             var view = View();
             for (var index = 0; index < 3; index++) {
-                var parent = new CanopyNode(((char)(0xD800 + index)).ToString(), "Parent" + index);
+                var parent = new CanopyNode(((char)(0xD800 + index)).ToString() + (char)0xDC00, "Parent" + index);
                 parent.Children.Add(new CanopyNode("child" + index, "Child" + index));
                 view.Roots.Add(parent);
             }
@@ -103,7 +103,7 @@ public sealed class FallbackBoundaryTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-boundary-" + Guid.NewGuid().ToString("N"));
         try {
             var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var id in new[] { "a.b", "a?b", "Files", "files", "\uD800", "\uD801" }) {
+            foreach (var id in new[] { "a.b", "a?b", "Files", "files", "\U00010000", "\U00010400" }) {
                 var view = View(id);
                 view.Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}");
                 var root = new CanopyNode("root", "Root") { Ref = "original/ref" };

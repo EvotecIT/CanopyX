@@ -15,11 +15,9 @@ public sealed class CanopyPage {
 
     /// <summary>Creates a page.</summary>
     /// <param name="parentId">The id of the node whose children these are, or <see langword="null"/> for the top level.</param>
-    /// <exception cref="ArgumentException"><paramref name="parentId"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><paramref name="parentId"/> is empty or contains unpaired surrogates.</exception>
     public CanopyPage(string? parentId) {
-        if (parentId != null && parentId.Length == 0) {
-            throw new ArgumentException("A parent id cannot be empty; use null for the top level.", nameof(parentId));
-        }
+        CanopyIdentifiers.Require(parentId, nameof(parentId), allowNull: true);
 
         ParentId = parentId;
     }
@@ -63,13 +61,11 @@ public sealed class CanopyPage {
     /// Gets or sets the continuation for the next page: an opaque value the data source passes back to get the next
     /// page, or <see langword="null"/> when this is the last page.
     /// </summary>
-    /// <exception cref="ArgumentException">The value is an empty string.</exception>
+    /// <exception cref="ArgumentException">The value is empty or contains unpaired surrogates.</exception>
     public string? Next {
         get => _next;
         set {
-            if (value != null && value.Length == 0) {
-                throw new ArgumentException("A continuation cannot be empty; use null for the last page.", nameof(value));
-            }
+            CanopyIdentifiers.Require(value, nameof(value), allowNull: true);
 
             _next = value;
         }
