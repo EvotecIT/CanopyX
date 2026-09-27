@@ -153,7 +153,16 @@ public sealed class CanopyCell {
     private static string FormatIso(DateTime date) =>
         date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
+    internal void ValidateShape() {
+        if (_badges != null) {
+            foreach (var badge in _badges) {
+                if (badge == null) throw new InvalidOperationException("A cell cannot contain a null badge.");
+            }
+        }
+    }
+
     internal void WriteJson(CanopyJsonWriter writer) {
+        ValidateShape();
         var simple = Text == null && Title == null && Tone == CanopyTone.None && !HasBadges;
         if (simple) {
             WriteValue(writer);
