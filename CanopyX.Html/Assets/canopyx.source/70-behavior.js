@@ -15,14 +15,18 @@
       const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
       w._v = 0;
-      if (want && !w.children) {
-        await this.loadPage(w, null);
-      } else {
-        this.relayout();
-        if (want) await this.expandInitial(w);
+      try {
+        if (want && !w.children) {
+          await this.loadPage(w, null);
+        } else {
+          this.relayout();
+          if (want) await this.expandInitial(w);
+        }
+      } finally {
+        // A host load callback may throw after the page was applied; its expansion still belongs in saved state.
+        if (!this.destroyed && w.toggleRevision === revision) this.stateChanged();
       }
       if (this.destroyed || w.toggleRevision !== revision) return;
-      this.stateChanged();
       this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, w.expanded);
