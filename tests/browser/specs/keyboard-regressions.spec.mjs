@@ -85,3 +85,31 @@ for (const theme of ["dark", "auto"]) {
     await page.screenshot({ path: path.join(repo, `artifacts/takeover/print-${theme}.png`), fullPage: true });
   });
 }
+for (const empty of [false, true]) {
+  for (const moved of [false, true]) {
+    test(`retry removes stale status after ${empty ? "empty" : "populated"} success with ${moved ? "toolbar" : "row"} focus`, async ({ page }) => {
+      await open(page, []);
+      await page.evaluate(async () => {
+        const host = document.querySelector(".cx-host"), data = host.canopyx.view;
+        host.canopyx.destroy();
+        let calls = 0;
+        const api = CanopyX.createTreeGrid(host, { view: data, source: { page: async () => {
+          if (++calls === 1) throw new Error("Temporary failure");
+          return new Promise(resolve => { window.finishRetry = resolve; });
+        } } });
+        await api.ready;
+      });
+      await page.locator("[data-cx-status=error]").focus();
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() => !!window.finishRetry);
+      const sort = page.getByRole("button", { name: "Name", exact: true });
+      if (moved) await sort.focus();
+      await page.evaluate(empty => window.finishRetry({ items: empty ? [] : [{ id: "new", label: "New" }], next: null }), empty);
+      await nextFrames(page);
+      await expect(page.locator("[data-cx-status=error]")).toHaveCount(0);
+      if (moved) await expect(sort).toBeFocused();
+      else await expect(empty ? page.getByRole("treegrid") : page.locator('[data-cx-id="new"]')).toBeFocused();
+      if (!empty) await expect(page.locator('[data-cx-id="new"]')).toHaveAttribute("tabindex", "0");
+    });
+  }
+}
