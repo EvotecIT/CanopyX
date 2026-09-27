@@ -80,6 +80,18 @@ public sealed class FallbackBoundaryTests {
     }
 
     [Fact]
+    public void StaticAndJsonRejectNullOrdinaryCellBadges() {
+        var view = View();
+        var node = new CanopyNode("row", "Row");
+        var cell = new CanopyCell("Value");
+        cell.Badges.Add(null!);
+        node.Cells["name"] = cell;
+        view.Roots.Add(node);
+        Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.Render(view));
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+    }
+
+    [Fact]
     public void StaticAndJsonRejectMalformedDetailCollections() {
         var view = View();
         var table = new CanopyTableDetail().AddColumns("Value");
