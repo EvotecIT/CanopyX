@@ -125,7 +125,7 @@
         const hits = [];
         for (const shard of loaded) {
           for (const item of shard) {
-            const pathKey = item.entry.path.join("\n");
+              const pathKey = JSON.stringify(item.entry.path);
             if (!seen.has(pathKey) && matchesWords(item.words, queryWords)) {
               seen.add(pathKey);
               hits.push(item.entry);
