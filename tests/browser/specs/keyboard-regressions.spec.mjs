@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { focusedId, nextFrames, viewPage } from "./support.mjs";
+import path from "node:path";
+import { focusedId, nextFrames, repo, viewPage } from "./support.mjs";
 
 async function open(page, roots) {
   const view = { protocol: "canopyx/1", type: "view", id: "keyboard", label: "Keyboard", rowHeight: 28, pageSize: 100,
@@ -49,9 +50,9 @@ test("keyboard resizing updates widths and retains its control through header re
   await expect(resize).toHaveAttribute("aria-valuetext", "310 pixels");
   await page.evaluate(() => document.querySelector(".cx-host").canopyx.sort("name", "asc"));
   await expect(resize).toBeFocused();
-  await page.screenshot({ path: "../../artifacts/takeover/resize-wide.png" });
+  await page.screenshot({ path: path.join(repo, "artifacts/takeover/resize-wide.png") });
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.screenshot({ path: "../../artifacts/takeover/resize-compact.png" });
+  await page.screenshot({ path: path.join(repo, "artifacts/takeover/resize-compact.png") });
   await page.keyboard.press("Home");
   await expect(page.locator(".cx-hcell")).toHaveCSS("width", "40px");
 });
@@ -81,6 +82,6 @@ for (const theme of ["dark", "auto"]) {
     await page.emulateMedia({ media: "print", colorScheme: "dark" });
     await expect(page.locator(".cx-outline .cx-tone-danger")).toHaveCSS("color", "rgb(179, 38, 30)");
     await expect(page.locator(".cx-host")).toHaveCSS("background-color", "rgb(255, 255, 255)");
-    await page.screenshot({ path: `../../artifacts/takeover/print-${theme}.png`, fullPage: true });
+    await page.screenshot({ path: path.join(repo, `artifacts/takeover/print-${theme}.png`), fullPage: true });
   });
 }
