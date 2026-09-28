@@ -9,6 +9,8 @@ namespace CanopyX;
 /// </summary>
 internal static class CanopyViewValidator {
     internal static void Validate(CanopyView view) {
+        // Bundle writers use this validation before creating sidecars, not only when serializing the page.
+        CanopyJsonNames.Selection(view.Selection);
         if (view.Columns.Count == 0) {
             throw new InvalidOperationException("View '" + view.Id + "' needs at least one column.");
         }

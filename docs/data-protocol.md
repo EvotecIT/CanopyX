@@ -130,7 +130,7 @@ Table and property cells follow the cell rules above. `html` is trusted host mar
 - `offset` is the index of the first item among all of the parent's children.
 - `total` is optional; when present it is at least `offset` plus the number of items. A continuation is required exactly when that sum is below the known total.
 - `next` is an opaque continuation. The data source passes it back to get the next page; `null` means the last page. The runtime shows a "show more" row while `next` is set.
-- Items may carry inline `children`.
+- Items may carry inline `children`. A node with a lazy `ref` or positive `childCount` and no inline children must declare `hasChildren: true`; readers reject the otherwise unreachable children before attaching the page.
 
 ## Search
 
@@ -228,7 +228,7 @@ The runtime fills the placeholders with URL-encoded values and sends `GET` reque
 
 - `children`: `{ref}` is empty for the top level and otherwise the node's `ref` (or `id`); `{cursor}` is empty for the first page and otherwise the previous page's `next`. The response is a `page` document.
 - `search` (optional): `{query}` is the query, `{limit}` the view's `maxResults`. The response is a `search` document whose `query` must echo the request exactly; a mismatched response is rejected before its hits are shown. Without the endpoint, the search box is hidden for remote views and view-level search options must be omitted.
-- `counts` (optional): `{ids}` is the node ids, each encoded with `encodeURIComponent`, joined with a literal comma and inserted without further encoding, so a comma inside an id arrives as `%2C`. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
+- `counts` (optional): `{ids}` is the node ids, each encoded twice with `encodeURIComponent`, joined with a literal comma and inserted without further encoding. After normal query-parameter decoding, split on commas and decode each component once more; for example, the id `a,b` arrives as `a%2Cb` in the decoded parameter, so it remains one id. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
 
 A response with a non-success status, invalid JSON, or the wrong `protocol` or `type` shows an error row with a retry action in place of the children. Authorization, page-size limits, and query-time limits belong to the host's endpoints.
 
