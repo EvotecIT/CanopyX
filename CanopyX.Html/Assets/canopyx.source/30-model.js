@@ -66,16 +66,12 @@
         await this.openDeepLink();
       } finally {
         this.initializing = false;
-        if (!this.destroyed) {
-          try {
-            await this.flushPendingToggles();
-          } finally {
-            if (!this.destroyed) {
-              this.host.setAttribute("data-cx-ready", "true");
-              this.emit("ready", {});
-            }
-          }
-        }
+      }
+      if (this.destroyed) return;
+      await this.flushPendingToggles();
+      if (!this.destroyed) {
+        this.host.setAttribute("data-cx-ready", "true");
+        this.emit("ready", {});
       }
     }
 

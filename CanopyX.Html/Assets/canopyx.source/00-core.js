@@ -18,7 +18,8 @@
   const SHARD_CACHE = 24;
   const SEARCH_CANDIDATES = 5;
   const SHARD_BATCH = 4;
-  const MAX_COLUMN_WIDTH = 2147483647;
+  const MAX_PROTOCOL_INTEGER = 2147483647;
+  const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
   const activeGrids = new WeakMap();
   let instanceSeq = 0;
 
@@ -40,6 +41,10 @@
     return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
   }
 
+  function validStructuralCount(value) {
+    return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
+  }
+
   /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
@@ -54,8 +59,19 @@
     if (type === "search") {
       if (!Array.isArray(doc.hits)) throw new Error("CanopyX: search hits must be an array.");
       if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
+      if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
+        throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
+      }
     }
-    if (type === "counts" && !Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
+    if (type === "counts") {
+      if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
+      for (const item of doc.items) {
+        requireIdentifier(item && item.id, "counts node ID");
+        if (Object.prototype.hasOwnProperty.call(item, "childCount") && !validStructuralCount(item.childCount)) {
+          throw new Error("CanopyX: counts childCount must be a nonnegative 32-bit integer.");
+        }
+      }
+    }
     return doc;
   }
 
@@ -70,7 +86,10 @@
   function checkPage(doc, node) {
     checkDocument(doc, "page");
     if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
-    if (!Number.isInteger(doc.offset) || doc.offset < 0) throw new Error("CanopyX: page offset must be a nonnegative integer.");
+    if (!validStructuralCount(doc.offset)) throw new Error("CanopyX: page offset must be a nonnegative 32-bit integer.");
+    if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
+      throw new Error("CanopyX: page total must be a nonnegative 32-bit integer.");
+    }
     if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
