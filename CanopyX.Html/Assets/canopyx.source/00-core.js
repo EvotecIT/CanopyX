@@ -173,13 +173,19 @@
   }
 
   // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
+  const EXTRA_FOLD_PAIRS = "__CANOPYX_FOLD_PAIRS__";
+  const EXTRA_LOWERCASE = new Map();
+  const extraBytes = atob(EXTRA_FOLD_PAIRS);
+  for (let i = 0; i < extraBytes.length; i += 4) {
+    EXTRA_LOWERCASE.set(extraBytes.charCodeAt(i) | (extraBytes.charCodeAt(i + 1) << 8),
+      extraBytes.charCodeAt(i + 2) | (extraBytes.charCodeAt(i + 3) << 8));
+  }
   function foldUnit(unit) {
     const code = unit.charCodeAt(0);
     if (code < 128) {
       return code >= 65 && code <= 90 ? String.fromCharCode(code + 32) : unit;
     }
-    const lower = unit.toLowerCase();
-    return lower.length === 1 ? lower : unit;
+    return String.fromCharCode(EXTRA_LOWERCASE.get(code) || code);
   }
 
   function isSeparator(code) {

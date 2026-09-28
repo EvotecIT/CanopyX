@@ -146,7 +146,7 @@ The path starts at a top-level node and ends at the hit, with no repeated node i
 Matching is by word prefix: a label matches when every word of the query is the start of some word of the label. "sal rep" matches "Quarterly Sales Report". The bundle writer and the runtime split and fold text the same way:
 
 - A word is a run of characters that are not separators. Separators are every ASCII character other than `A` to `Z`, `a` to `z`, and `0` to `9`; characters above ASCII are always part of a word.
-- `A` to `Z` fold to `a` to `z`. A character above ASCII folds to its invariant lowercase form when that form is a single UTF-16 code unit, and stays as it is otherwise.
+- `A` to `Z` fold to `a` to `z`. Other single-unit lowercase pairs use one frozen Unicode 16.0 table shared by the browser and C# bundle writer; mappings that expand to multiple units, including U+0130, are not applied. The table does not depend on the host's casing version.
 - Lengths are counted in UTF-16 code units of the folded word. A sidecar query needs at least one word of two or more code units to select an indexed shard. The runtime rejects queries made entirely of shorter words, including `a b`; inline and remote search can handle them according to their source.
 
 Exact label matches rank first, then labels that start with the query, then the rest in natural order. Remote endpoints may rank differently.

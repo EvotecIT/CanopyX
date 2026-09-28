@@ -4,6 +4,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+$foldSource = [System.IO.File]::ReadAllText((Join-Path $root 'CanopyX/Search/CanopySearchFoldingTable.cs'))
+$foldAssignment = [regex]::Match($foldSource, 'internal const string LowercasePairs\s*=\s*(?<parts>(?:"[A-Za-z0-9+/=]+"\s*\+\s*)*"[A-Za-z0-9+/=]+")\s*;')
+if (-not $foldAssignment.Success) { throw 'The canonical search folding table is missing.' }
+$foldPieces = [regex]::Matches($foldAssignment.Groups['parts'].Value, '"([A-Za-z0-9+/=]+)"')
+$foldPairs = -join @($foldPieces | ForEach-Object { $_.Groups[1].Value })
 
 $assets = @(
     @{
@@ -33,6 +38,8 @@ foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
     $generated = Join-AssetSource -SourcePath $sourcePath
+    if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
+    $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

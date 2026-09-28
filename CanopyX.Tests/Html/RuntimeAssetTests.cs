@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using CanopyX.Html;
 
 namespace CanopyX.Tests.Html;
@@ -18,6 +19,17 @@ public sealed class RuntimeAssetTests {
             .ToArray();
 
         var expected = string.Join("\n", parts) + "\n";
+        const string marker = "__CANOPYX_FOLD_PAIRS__";
+        Assert.Contains(marker, expected);
+        var tableSource = File.ReadAllText(Path.Combine(root, "CanopyX", "Search", "CanopySearchFoldingTable.cs"));
+        var start = tableSource.IndexOf("internal const string LowercasePairs =", StringComparison.Ordinal);
+        Assert.True(start >= 0, "The canonical search folding table is missing.");
+        var end = tableSource.IndexOf(';', start);
+        Assert.True(end > start, "The canonical search folding table is incomplete.");
+        var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
+        var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
+        Assert.NotEmpty(encoded);
+        expected = expected.Replace(marker, encoded);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
         Assert.True(expected == Normalize(CanopyHtmlAssets.Script), "canopyx.js is out of date. Run Build/Sync-Assets.ps1.");
