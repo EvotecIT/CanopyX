@@ -14,6 +14,8 @@ internal static class CanopyViewValidator {
     /// True when every child must be in the tree even though the source is not inline, as for the bundle writer.
     /// </param>
     internal static void Validate(CanopyView view, bool requireCompleteTree = false) {
+        // Bundle writers use this validation before creating sidecars, not only when serializing the page.
+        CanopyJsonNames.Selection(view.Selection);
         if (view.Columns.Count == 0) {
             throw new InvalidOperationException("View '" + view.Id + "' needs at least one column.");
         }

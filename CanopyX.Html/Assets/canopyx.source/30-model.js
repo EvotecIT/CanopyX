@@ -44,6 +44,10 @@
       this.ready = this.init();
     }
 
+    async search(query, limit) {
+      return validateSearchResult(await this.source.search(query, limit));
+    }
+
     buildIcons(icons) {
       const templates = new Map();
       Object.keys(icons).forEach((key) => {

@@ -13,6 +13,9 @@
           (!validStructuralCount(node.childCount) || node.childCount < 1)) {
         throw new Error("CanopyX: node childCount must be a positive 32-bit integer.");
       }
+      if (!Array.isArray(node.children) && (node.ref != null || node.childCount != null) && node.hasChildren !== true) {
+        throw new Error("CanopyX: lazy node reference or childCount requires hasChildren true.");
+      }
       if (Array.isArray(node.children)) {
         if (node.ref != null) throw new Error("CanopyX: inline children cannot have a load reference.");
         if (node.hasChildren === false && node.children.length) throw new Error("CanopyX: inline children cannot declare a leaf.");

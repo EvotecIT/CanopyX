@@ -113,7 +113,7 @@
         }
         const mine = ++sequence;
         try {
-          const result = await this.source.search(query, options.maxResults);
+          const result = await this.search(query, options.maxResults);
           if (!this.destroyed && mine === sequence) {
             show(result);
           }

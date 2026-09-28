@@ -57,11 +57,15 @@
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
     if (type === "search") {
-      if (!Array.isArray(doc.hits)) throw new Error("CanopyX: search hits must be an array.");
+      validateSearchResult(doc);
       if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
       if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
         throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
       }
+    }
+    if (type === "searchShard") {
+      if (!Array.isArray(doc.entries)) throw new Error("CanopyX: search shard entries must be an array.");
+      doc.entries.forEach(validateSearchHit);
     }
     if (type === "counts") {
       if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
@@ -83,6 +87,30 @@
     if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
       throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
     }
+  }
+
+  /** Search paths must be complete, unambiguous node-id paths before they reach navigation. */
+  function validateSearchHit(hit) {
+    if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
+      throw new Error("CanopyX: search hit needs an ID path and string label.");
+    }
+    const ids = new Set();
+    for (const id of hit.path) {
+      requireIdentifier(id, "search hit path ID");
+      if (ids.has(id)) throw new Error("CanopyX: search hit path repeats node ID '" + id + "'.");
+      ids.add(id);
+    }
+    if ((Object.prototype.hasOwnProperty.call(hit, "kind") && typeof hit.kind !== "string") ||
+        (Object.prototype.hasOwnProperty.call(hit, "context") && typeof hit.context !== "string")) {
+      throw new Error("CanopyX: search hit kind and context must be strings.");
+    }
+  }
+
+  /** Built-in and host-provided search results share the same hit boundary before navigation. */
+  function validateSearchResult(result) {
+    if (!result || !Array.isArray(result.hits)) throw new Error("CanopyX: search hits must be an array.");
+    result.hits.forEach(validateSearchHit);
+    return result;
   }
 
   /** Verifies wire page ownership and required structural counters. */
@@ -434,7 +462,9 @@
                 path.push(entry.node.id);
                 if (entry !== item) labels.push(entry.node.label);
               }
-              hits.push({ path: path.reverse(), label: item.node.label, kind: item.node.kind, context: labels.reverse().join(" / ") });
+              const hit = { path: path.reverse(), label: item.node.label, context: labels.reverse().join(" / ") };
+              if (item.node.kind != null) hit.kind = item.node.kind;
+              hits.push(hit);
             }
             const children = item.node.children || [];
             for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], parent: item });
@@ -592,7 +622,8 @@
       counts: source.counts ? async (ids) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
-          const batch = ids.slice(i, i + COUNTS_BATCH).map(encodeURIComponent).join(",");
+          // The host's normal query parser decodes once; retain encoded components for its split-then-decode step.
+          const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
           const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
           items.push.apply(items, doc.items);
         }
@@ -655,6 +686,10 @@
       this.build();
       this.buildToolbar();
       this.ready = this.init();
+    }
+
+    async search(query, limit) {
+      return validateSearchResult(await this.source.search(query, limit));
     }
 
     buildIcons(icons) {
@@ -923,6 +958,9 @@
       if (Object.prototype.hasOwnProperty.call(node, "childCount") &&
           (!validStructuralCount(node.childCount) || node.childCount < 1)) {
         throw new Error("CanopyX: node childCount must be a positive 32-bit integer.");
+      }
+      if (!Array.isArray(node.children) && (node.ref != null || node.childCount != null) && node.hasChildren !== true) {
+        throw new Error("CanopyX: lazy node reference or childCount requires hasChildren true.");
       }
       if (Array.isArray(node.children)) {
         if (node.ref != null) throw new Error("CanopyX: inline children cannot have a load reference.");
@@ -2341,7 +2379,7 @@
         }
         const mine = ++sequence;
         try {
-          const result = await this.source.search(query, options.maxResults);
+          const result = await this.search(query, options.maxResults);
           if (!this.destroyed && mine === sequence) {
             show(result);
           }
@@ -2814,7 +2852,7 @@
       toOutline: () => grid.toOutline(),
       getState: () => ({ expanded: grid.getExpandedPaths() }),
       setState: (state) => grid.setState(state),
-      search: (query, limit) => grid.source.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
+      search: (query, limit) => grid.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
       loadMore: (id) => {
         const w = id == null ? grid.root : grid.keyMap.get(id);
         return w ? grid.loadMore(w) : Promise.resolve();
