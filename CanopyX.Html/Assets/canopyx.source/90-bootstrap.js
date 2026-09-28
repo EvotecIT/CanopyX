@@ -60,6 +60,22 @@
   function mount(root) {
     const scope = root || document;
     const created = [];
+    const showError = (host, err, api) => {
+      if (api) {
+        api.destroy();
+        if (host.canopyx === api) delete host.canopyx;
+      }
+      const message = err && err.message ? err.message : String(err);
+      const notice = document.createElement("div");
+      notice.className = "cx-mount-error";
+      notice.setAttribute("role", "alert");
+      setText(notice, "This view could not be displayed: " + message);
+      host.classList.add("cx-host");
+      host.setAttribute("data-canopyx-mounted", "true");
+      host.setAttribute("data-cx-error", message);
+      host.appendChild(notice);
+      if (global.console) global.console.error(err);
+    };
     scope.querySelectorAll("[data-canopyx-host]:not([data-canopyx-mounted])").forEach((host) => {
       const config = host.querySelector("script.cx-config");
       if (!config) {
@@ -67,19 +83,11 @@
       }
       host.setAttribute("data-canopyx-mounted", "true");
       try {
-        created.push(createTreeGrid(host, { view: JSON.parse(config.textContent) }));
+        const api = createTreeGrid(host, { view: JSON.parse(config.textContent) });
+        created.push(api);
+        api.ready.catch((err) => showError(host, err, api));
       } catch (err) {
-        const message = err && err.message ? err.message : String(err);
-        const notice = document.createElement("div");
-        notice.className = "cx-mount-error";
-        notice.setAttribute("role", "alert");
-        setText(notice, "This view could not be displayed: " + message);
-        host.classList.add("cx-host");
-        host.setAttribute("data-cx-error", message);
-        host.appendChild(notice);
-        if (global.console) {
-          global.console.error(err);
-        }
+        showError(host, err);
       }
     });
     return created;
