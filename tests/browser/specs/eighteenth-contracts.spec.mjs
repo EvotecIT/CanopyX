@@ -46,11 +46,14 @@ test("a user collapse cancels a waiting path expansion", async ({ page }) => {
     window.navigation = api.expandPath(["parent", "child"]);
   }, { ...view, deepLink: true });
   await page.waitForFunction(() => !!window.finishChildren);
-  await page.locator('[data-cx-id="parent"] .cx-exp').click();
+  const parent = page.locator('[data-cx-id="parent"]');
+  await parent.locator('.cx-exp').click();
+  await expect(parent).toHaveAttribute("aria-expanded", "false");
   await page.evaluate(() => finishChildren({ items: [{ id: "child", label: "Child" }], total: 1, next: null }));
   expect(await page.evaluate(async () => ({ result: await navigation, selected: api.getSelected().map(node => node.id),
-    hash: location.hash, expanded: document.querySelector('[data-cx-id="parent"]').getAttribute("aria-expanded") })))
-    .toEqual({ result: null, selected: [], hash: "", expanded: "false" });
+    hash: location.hash }))).toEqual({ result: null, selected: [], hash: "" });
+  await expect(parent).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator('[data-cx-id="child"]')).toHaveCount(0);
 });
 
 for (const detail of [false, true]) {
