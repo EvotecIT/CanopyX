@@ -161,6 +161,7 @@ public sealed class CanopyCell {
     }
 
     internal void ValidateShape() {
+        CanopyJsonNames.Tone(Tone);
         switch (_value) {
             case long whole: CanopyJsonWriter.RequireSafeMagnitude((decimal)whole); break;
             case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
@@ -169,6 +170,7 @@ public sealed class CanopyCell {
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) throw new InvalidOperationException("A cell cannot contain a null badge.");
+                badge.ValidateShape();
             }
         }
     }

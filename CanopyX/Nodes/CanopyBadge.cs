@@ -31,7 +31,10 @@ public sealed class CanopyBadge {
     /// <summary>Gets or sets an optional tooltip that explains the badge.</summary>
     public string? Title { get; set; }
 
+    internal void ValidateShape() => CanopyJsonNames.Tone(Tone);
+
     internal void WriteJson(CanopyJsonWriter writer) {
+        ValidateShape();
         writer.BeginObject().Property("text", Text);
         writer.OptionalProperty("tone", CanopyJsonNames.Tone(Tone));
         writer.OptionalProperty("title", Title);

@@ -36,6 +36,9 @@
 
   /** Loads one sidecar document by injecting its script; resolves with the document the script registers. */
   function loadSidecar(base, view, ref) {
+    if (ref.split("/").some((part) => part === "." || part === "..")) {
+      return Promise.reject(new Error("Sidecar reference cannot contain a dot path component: " + ref));
+    }
     const key = sidecarKey(view, ref);
     if (sidecarDocs.has(key)) {
       const doc = sidecarDocs.get(key);

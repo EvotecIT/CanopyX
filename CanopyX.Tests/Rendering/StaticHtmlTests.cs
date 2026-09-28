@@ -22,6 +22,27 @@ public sealed class StaticHtmlTests {
     }
 
     [Fact]
+    public void UndefinedCellAndBadgeTonesAreRejectedByBothRenderers() {
+        var view = SmallView();
+        var node = view.Roots[0];
+        var cell = new CanopyCell("value") { Tone = (CanopyTone)999 };
+        node.Cells["size"] = cell;
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyStaticHtml.Render(view));
+        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+
+        cell.Tone = CanopyTone.None;
+        var badge = new CanopyBadge("Unknown", (CanopyTone)999);
+        node.Badges.Add(badge);
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyStaticHtml.Render(view));
+        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+
+        node.Badges.Remove(badge);
+        cell.Badges.Add(badge);
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyStaticHtml.Render(view));
+        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+    }
+
+    [Fact]
     public void HiddenCountEncodesCustomCultureSeparators() {
         var view = new CanopyView("culture", "Culture") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));
