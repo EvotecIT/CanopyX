@@ -62,8 +62,11 @@
     }
     if (type === "counts") {
       if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
+      const ids = new Set();
       for (const item of doc.items) {
         requireIdentifier(item && item.id, "counts node ID");
+        if (ids.has(item.id)) throw new Error("CanopyX: duplicate counts node ID '" + item.id + "'.");
+        ids.add(item.id);
         if (Object.prototype.hasOwnProperty.call(item, "childCount") && !validStructuralCount(item.childCount)) {
           throw new Error("CanopyX: counts childCount must be a nonnegative 32-bit integer.");
         }
@@ -2602,7 +2605,9 @@
       try {
         const api = createTreeGrid(host, { view: JSON.parse(config.textContent) });
         created.push(api);
-        api.ready.catch((err) => showError(host, err, api));
+        api.ready.catch((err) => {
+          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api);
+        });
       } catch (err) {
         showError(host, err);
       }

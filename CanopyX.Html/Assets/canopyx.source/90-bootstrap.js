@@ -83,7 +83,9 @@
       try {
         const api = createTreeGrid(host, { view: JSON.parse(config.textContent) });
         created.push(api);
-        api.ready.catch((err) => showError(host, err, api));
+        api.ready.catch((err) => {
+          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api);
+        });
       } catch (err) {
         showError(host, err);
       }

@@ -286,6 +286,7 @@
     },
     "counts": {
       "type": "object",
+      "$comment": "Counts item ids are unique within a document; writers and readers enforce this semantic constraint.",
       "required": ["protocol", "type", "items"],
       "additionalProperties": false,
       "properties": {
