@@ -14,10 +14,14 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
-      // A new column layout makes every row rebuild its cell skeleton once.
-      this.layout = (this.layout || 0) + 1;
-      this.version++;
-      this.scheduleRender();
+      // A width change does not change the cell layout or its host-owned controls.
+      for (const row of this.rendered.values()) {
+        row.style.width = sum + "px";
+        if (!row._cells) continue;
+        if (row._kind === "node") {
+          row._cells.forEach((slot, i) => { if (this.cols[i]) slot.cell.style.width = this.cols[i].width + "px"; });
+        } else if (row._cells[0]) row._cells[0].cell.style.width = sum + "px";
+      }
     },
 
     startResize(e, column) {
