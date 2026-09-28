@@ -2133,7 +2133,7 @@
 
     selectionChanged(w, notify = true) {
       for (const [node, row] of this.rendered) {
-        if (!node.status) row.setAttribute("aria-selected", this.selected.has(node) ? "true" : "false");
+        if (!node.status) setAttr(row, "aria-selected", this.selected.has(node) ? "true" : "false");
       }
       this.scheduleRender();
       const nodes = Array.from(this.selected).map((s) => s.h);
