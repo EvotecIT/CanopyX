@@ -20,7 +20,6 @@
       w.expanded = want;
       const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
-      w._v = 0;
       try {
         if (want && !w.children) {
           await this.loadPage(w, null);
@@ -203,7 +202,6 @@
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
-      w._v = 0;
       const revision = w.toggleRevision || 0;
       if (!w.children) {
         await this.loadPage(w, null);
@@ -316,7 +314,6 @@
       this.sortState = direction ? { column: columnId, direction: direction } : null;
       this.buildHeader();
       this.applySort(this.root, true);
-      this.version++;
       this.relayout();
     },
 
