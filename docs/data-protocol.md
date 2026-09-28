@@ -162,7 +162,7 @@ With `deepLink` on, selecting a row writes `#cx.<encoded view id>=<path>` to the
   "items": [ { "id": "projects", "childCount": 13, "cells": { "changed": 3 }, "flags": ["changed-below"] } ] }
 ```
 
-Each entry updates a loaded node: `childCount` replaces the total, `cells` replace cells with the same column ids, and `flags` (when present) replace the node's flags. Nodes that are not loaded are ignored.
+Each entry updates a loaded node: `childCount` replaces the total, `cells` replace cells with the same column ids, and `flags` (when present) replace the node's flags. Nodes that are not loaded are ignored. A counts document contains at most one entry per node id; writers and readers reject duplicate ids before applying updates.
 
 ## Sources
 
