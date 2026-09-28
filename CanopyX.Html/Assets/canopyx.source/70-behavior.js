@@ -59,6 +59,9 @@
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
           if (this.destroyed || w._invalidated) return;
           const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
+          if (cursor != null && !items.length && page.next === cursor) {
+            throw new Error("CanopyX: page continuation did not advance.");
+          }
           if (!cursor || !w.children) {
             w.children = [];
           }

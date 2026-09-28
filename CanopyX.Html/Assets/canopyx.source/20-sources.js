@@ -204,5 +204,9 @@
     if (kind === "remote") {
       return remoteSource(view);
     }
-    return inlineSource(view);
+    if (kind === "inline") {
+      if (!Array.isArray(view.roots)) throw new Error("CanopyX: inline view roots must be an array.");
+      return inlineSource(view);
+    }
+    throw new Error("CanopyX: unknown source kind '" + kind + "'.");
   }
