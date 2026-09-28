@@ -119,7 +119,7 @@
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
         const doc = checkPage(await load(ref), node);
-        return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+        return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
         const queryWords = words(query);
@@ -168,7 +168,7 @@
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
         }), "page"), node);
-        return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+        return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
         if (!source.search) {

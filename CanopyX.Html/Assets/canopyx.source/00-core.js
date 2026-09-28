@@ -61,6 +61,7 @@
   /** Verifies wire page ownership and required structural counters. */
   function checkPage(doc, node) {
     checkDocument(doc, "page");
+    if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
     if (!Number.isInteger(doc.offset) || doc.offset < 0) throw new Error("CanopyX: page offset must be a nonnegative integer.");
     if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
