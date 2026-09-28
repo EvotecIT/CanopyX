@@ -45,6 +45,12 @@
     return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
 
+  function requireFlags(flags, name) {
+    if (!Array.isArray(flags) || flags.some((flag) => typeof flag !== "string" || !flag.length)) {
+      throw new Error("CanopyX: " + name + " must be an array of nonempty strings.");
+    }
+  }
+
   /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
@@ -81,6 +87,7 @@
             (!item.cells || typeof item.cells !== "object" || Array.isArray(item.cells))) {
           throw new Error("CanopyX: counts cells must be an object.");
         }
+        if (Object.prototype.hasOwnProperty.call(item, "flags")) requireFlags(item.flags, "counts flags");
       }
     }
     return doc;
