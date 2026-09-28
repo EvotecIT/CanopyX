@@ -167,6 +167,7 @@
         e.preventDefault();
       });
       input.addEventListener("blur", () => {
+        cancelNavigation();
         sequence++;
         clearTimeout(timer);
         clearTimeout(blurTimer);
