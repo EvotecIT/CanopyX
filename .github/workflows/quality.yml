@@ -47,14 +47,17 @@ jobs:
 
       - name: Install browser test dependencies
         working-directory: tests/browser
-        shell: bash
+        shell: pwsh
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "300000"
         run: |
           npm ci --no-audit --no-fund
-          if [ "$RUNNER_OS" = "Linux" ]; then
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($env:RUNNER_OS -eq 'Linux') {
             node node_modules/@playwright/test/cli.js install --with-deps chromium
-          else
+          } else {
             node node_modules/@playwright/test/cli.js install chromium
-          fi
+          }
 
       - name: Run quality loop
         shell: pwsh
