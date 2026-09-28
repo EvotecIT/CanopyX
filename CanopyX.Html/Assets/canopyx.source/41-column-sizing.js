@@ -18,8 +18,8 @@
       // Keep recycled rows in sync without replacing host-owned cell content.
       const resizeRow = (row) => {
         row.style.width = sum + "px";
-        if (!row._w || !row.firstElementChild) return;
-        if (row._w.status || row._w.h.detail) row.firstElementChild.style.width = sum + "px";
+        if (!row._kind || !row.firstElementChild) return;
+        if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
         else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
       };
       this.rendered.forEach(resizeRow);

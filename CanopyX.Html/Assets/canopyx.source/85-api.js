@@ -48,6 +48,10 @@
       this.pendingRestorationToggles = null;
       this.restoring = true;
       clearTimeout(this.saveTimer);
+      const before = new Map();
+      this.keyMap.forEach((w) => before.set(w, [w.expanded, w.autoExpand, w.filterCollapsed]));
+      let restored = 0;
+      let fallback = false;
       try {
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
@@ -55,15 +59,33 @@
         for (const path of paths) {
           if (this.destroyed || current.signal.aborted) break;
           try {
-            await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true, signal: current.signal });
+            const node = await this.expandPath(path, { select: false, focus: false, reveal: false, expandLast: true, signal: current.signal });
+            const wrapper = node && this.keyMap.get(node.id);
+            if (wrapper && wrapper.expanded) restored++;
           } catch (e) {
-            // A remembered node may no longer exist.
+            // A missing node is obsolete; a failed lazy load still owns its open error row.
+            const last = this.keyMap.get(path[path.length - 1]);
+            if ((last && last.expanded) || path.some((id) => {
+              const node = this.keyMap.get(id);
+              return node && node.expanded && node.error;
+            })) restored++;
           }
+        }
+        fallback = !!state.expanded.length && !restored && !this.destroyed && !current.signal.aborted;
+        if (fallback) {
+          this.keyMap.forEach((w) => {
+            const old = before.get(w);
+            w.expanded = old ? old[0] : !!w.h.expanded && !!w.children && w.children.length > 0;
+            w.autoExpand = old ? old[1] : !!w.h.expanded && !w.children && this.expandable(w);
+            if (old) w.filterCollapsed = old[2];
+          });
+          this.relayout();
         }
       } finally {
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
+          if (fallback && !this.initializing) await this.expandInitial(this.root);
           if (!this.initializing) await this.flushPendingToggles();
         }
       }

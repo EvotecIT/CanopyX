@@ -47,7 +47,7 @@ internal static class CanopySearchFolding {
             case 0x038C: return (char)0x03CC;
             case 0x038E: return (char)0x03CD;
             case 0x038F: return (char)0x03CE;
-            default: return char.ToLowerInvariant(unit);
+            default: return CanopySearchFoldingTable.Fold(unit);
         }
     }
 

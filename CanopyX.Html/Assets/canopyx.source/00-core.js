@@ -176,8 +176,14 @@
   }
 
   // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  // Common Latin, Greek, Cyrillic, and Armenian capitals use the same fixed table as the C# writer.
-  // Other UTF-16 units retain their previous single-unit lowercase behavior.
+  // Common ranges use direct rules. The remaining one-unit pairs come from the C# writer's frozen table.
+  const EXTRA_FOLD_PAIRS = "__CANOPYX_FOLD_PAIRS__";
+  const EXTRA_LOWERCASE = new Map();
+  const extraBytes = atob(EXTRA_FOLD_PAIRS);
+  for (let i = 0; i < extraBytes.length; i += 4) {
+    EXTRA_LOWERCASE.set(extraBytes.charCodeAt(i) | (extraBytes.charCodeAt(i + 1) << 8),
+      extraBytes.charCodeAt(i + 2) | (extraBytes.charCodeAt(i + 3) << 8));
+  }
   const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
 
   function foldCode(c) {
@@ -206,8 +212,7 @@
       return c + 0x30;
     }
     if (GREEK_ACCENTED[c]) return GREEK_ACCENTED[c];
-    const lower = String.fromCharCode(c).toLowerCase();
-    return lower.length === 1 ? lower.charCodeAt(0) : c;
+    return EXTRA_LOWERCASE.get(c) || c;
   }
 
   function foldUnit(unit) {
