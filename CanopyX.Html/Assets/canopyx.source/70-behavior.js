@@ -53,6 +53,7 @@
       const suppressInitial = !!this.restoring;
       const run = (async () => {
         let info = null;
+        let appliedCount = null;
         let removedSelection = null;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
@@ -74,10 +75,7 @@
           }
           this.applySort(w, false);
           // Paging changes sibling metadata, not retained host cell content.
-          const loaded = w.children.length;
-          const format = numberFormat(this.lang);
-          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
-          info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
+          appliedCount = items.length;
         } catch (err) {
           if (this.destroyed || w._invalidated) return;
           w.error = err && err.message ? err.message : String(err);
@@ -86,13 +84,24 @@
           w.loading = false;
           w._pending = null;
           if (!this.destroyed && !w._invalidated && w.pendingChildCount != null) {
-            w.total = Math.max(w.total || 0, w.pendingChildCount);
-            if (w.children && !w.next && w.children.length < w.pendingChildCount) {
+            const count = w.pendingChildCount;
+            const loaded = w.children ? w.children.length : 0;
+            w.total = count;
+            if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
-            }
+            } else if (w.next && loaded === count) w.next = null;
+            if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
           if (!this.destroyed && !w._invalidated) this.relayout();
+        }
+        // A newer count can discard an older page during reconciliation. Only announce and notify
+        // the host after the page is known to remain attached to the tree.
+        if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
+          const loaded = w.children.length;
+          const format = numberFormat(this.lang);
+          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
+          info = { node: w.h, count: appliedCount, total: w.total, ms: performance.now() - started };
         }
         if (removedSelection) this.selectionChanged(removedSelection);
         // Host callback failures do not turn an applied page into a source failure.
