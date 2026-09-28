@@ -176,6 +176,9 @@
         }
         const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search");
         if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
+        if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
+          throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
+        }
         return { hits: doc.hits || [], total: doc.total, truncated: !!doc.truncated };
       },
       counts: source.counts ? async (ids) => {

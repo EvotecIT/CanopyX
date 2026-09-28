@@ -489,6 +489,9 @@
         }
         const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search");
         if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
+        if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
+          throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
+        }
         return { hits: doc.hits || [], total: doc.total, truncated: !!doc.truncated };
       },
       counts: source.counts ? async (ids) => {
@@ -553,6 +556,7 @@
       this.typeAt = 0;
       this.rafId = 0;
       this.iconTemplates = this.buildIcons(view.icons || {});
+      this.initializing = true;
       this.build();
       this.buildToolbar();
       this.ready = this.init();
@@ -573,13 +577,22 @@
       try {
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
-        await this.expandInitial(this.root);
         await this.restoreState();
+        // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
+        // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
+        await this.expandInitial(this.root);
         await this.openDeepLink();
       } finally {
+        this.initializing = false;
         if (!this.destroyed) {
-          this.host.setAttribute("data-cx-ready", "true");
-          this.emit("ready", {});
+          try {
+            await this.flushPendingToggles();
+          } finally {
+            if (!this.destroyed) {
+              this.host.setAttribute("data-cx-ready", "true");
+              this.emit("ready", {});
+            }
+          }
         }
       }
     }
@@ -644,7 +657,7 @@
         const w = pending.pop();
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
-          await this.toggle(w, true);
+          await this.toggle(w, true, true);
         }
         if (w.expanded && w.children) {
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
@@ -1368,7 +1381,7 @@
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
-      const size = parent.childrenFiltered ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
+      const size = parent.childrenFiltered ? (parent.next ? -1 : parent.visibleCount) : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
       setAttr(rowEl, "aria-setsize", String(size));
       setAttr(rowEl, "aria-posinset", String(w.pos));
     },
@@ -1570,9 +1583,14 @@
   // Row-focus model: Up/Down move, Right expands then enters, Left collapses then goes to the parent, Home/End,
   // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
   // printable keys run type-ahead on labels. Tab leaves the grid.
+  function hostControl(target) {
+    const row = target.closest(".cx-row");
+    const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
+    return control && row && row !== control && row.contains(control) ? control : null;
+  }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (e.target.closest("input,textarea,select,button,a,[contenteditable]:not([contenteditable=false]),[role=separator]")) {
+      if (hostControl(e.target)) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -1712,8 +1730,14 @@
   // ---------- tree grid: behavior ----------
   Object.assign(TreeGrid.prototype, {
     /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
-    async toggle(w, expand) {
+    async toggle(w, expand, automatic = false) {
       if (this.destroyed || !w || w.status || !this.expandable(w)) {
+        return;
+      }
+      if ((this.restoring || this.initializing) && !automatic) {
+        const pending = this.pendingRestorationToggles || (this.pendingRestorationToggles = new Map());
+        const last = pending.has(w) ? pending.get(w) : !!w._open;
+        pending.set(w, expand === undefined ? !last : expand);
         return;
       }
       const open = !!w._open;
@@ -1797,7 +1821,7 @@
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w.error && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          if (!this.destroyed && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -1859,7 +1883,7 @@
         this.activate(w, true);
         return;
       }
-      const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])");
+      const interactive = hostControl(e.target);
       if (interactive && !e.target.closest(".cx-exp")) {
         this.setFocus(w, false);
         return;
@@ -1879,7 +1903,7 @@
 
     onDblClick(e) {
       const w = this.rowFromEvent(e);
-      if (w && !w.status && !e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])")) {
+      if (w && !w.status && !hostControl(e.target)) {
         this.toggle(w);
       }
     },
@@ -2322,8 +2346,15 @@
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
+          if (!this.initializing) await this.flushPendingToggles();
         }
       }
+    },
+
+    async flushPendingToggles() {
+      const pending = this.pendingRestorationToggles;
+      this.pendingRestorationToggles = null;
+      if (pending) for (const [node, expand] of pending) await this.toggle(node, expand);
     },
 
     stateKey() {
@@ -2332,12 +2363,12 @@
 
     stateChanged() {
       const key = this.stateKey();
-      if (this.destroyed || !key || this.restoring) {
+      if (this.destroyed || !key || this.restoring || this.initializing) {
         return;
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
-        if (this.destroyed || this.restoring) return;
+        if (this.destroyed || this.restoring || this.initializing) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
@@ -2455,6 +2486,7 @@
         if (!w) {
           return;
         }
+        w._v = 0;
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;
@@ -2471,7 +2503,6 @@
           w.h.flags = item.flags.slice();
         }
       });
-      this.version++;
       this.applySort(this.root, true);
       this.relayout();
     },
