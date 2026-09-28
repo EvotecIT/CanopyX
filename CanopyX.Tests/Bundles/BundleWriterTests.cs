@@ -46,6 +46,22 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Fact]
+    public void InvalidSelectionFailsBeforeBundleOutput() {
+        var view = new CanopyView("bad-selection", "View") { Selection = (CanopySelectionMode)999 };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Roots.Add(new CanopyNode("one", "One"));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bad-selection-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyBundleWriter().Write(view, directory));
+            Assert.False(Directory.Exists(directory));
+            Assert.Throws<ArgumentOutOfRangeException>(() => view.SaveHtmlBundle(directory));
+            Assert.False(Directory.Exists(directory));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Write_CompleteRemoteTree_ReplacesAnOriginalLoadReference() {
         var view = new CanopyView("complete-ref", "Complete tree") { Source = CanopySource.Remote("children?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));
