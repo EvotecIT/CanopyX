@@ -10,6 +10,10 @@
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");
+      if (node.detail != null && (Object.prototype.hasOwnProperty.call(node, "children") ||
+          node.hasChildren === true || node.ref != null || node.childCount != null)) {
+        throw new Error("CanopyX: detail row must be a leaf.");
+      }
       if (Object.prototype.hasOwnProperty.call(node, "childCount") &&
           (!validStructuralCount(node.childCount) || node.childCount < 1)) {
         throw new Error("CanopyX: node childCount must be a positive 32-bit integer.");

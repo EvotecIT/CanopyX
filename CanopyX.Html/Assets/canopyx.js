@@ -74,6 +74,10 @@
         if (Object.prototype.hasOwnProperty.call(item, "childCount") && !validStructuralCount(item.childCount)) {
           throw new Error("CanopyX: counts childCount must be a nonnegative 32-bit integer.");
         }
+        if (Object.prototype.hasOwnProperty.call(item, "cells") &&
+            (!item.cells || typeof item.cells !== "object" || Array.isArray(item.cells))) {
+          throw new Error("CanopyX: counts cells must be an object.");
+        }
       }
     }
     return doc;
@@ -118,7 +122,8 @@
     if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
       throw new Error("CanopyX: page total must be a nonnegative 32-bit integer.");
     }
-    if (doc.next != null) requireIdentifier(doc.next, "page continuation");
+    if (!Object.prototype.hasOwnProperty.call(doc, "next")) throw new Error("CanopyX: page continuation is required.");
+    if (doc.next !== null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
     return doc;
@@ -900,6 +905,10 @@
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");
+      if (node.detail != null && (Object.prototype.hasOwnProperty.call(node, "children") ||
+          node.hasChildren === true || node.ref != null || node.childCount != null)) {
+        throw new Error("CanopyX: detail row must be a leaf.");
+      }
       if (Object.prototype.hasOwnProperty.call(node, "childCount") &&
           (!validStructuralCount(node.childCount) || node.childCount < 1)) {
         throw new Error("CanopyX: node childCount must be a positive 32-bit integer.");
