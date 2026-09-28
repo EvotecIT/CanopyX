@@ -9,7 +9,7 @@
         const w = pending.pop();
         if (w.autoExpand && !w.children) {
           w.autoExpand = false;
-          await this.toggle(w, true);
+          await this.toggle(w, true, true);
         }
         if (w.expanded && w.children) {
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);

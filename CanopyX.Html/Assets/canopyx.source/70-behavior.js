@@ -2,8 +2,14 @@
   // ---------- tree grid: behavior ----------
   Object.assign(TreeGrid.prototype, {
     /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
-    async toggle(w, expand) {
+    async toggle(w, expand, automatic = false) {
       if (this.destroyed || !w || w.status || !this.expandable(w)) {
+        return;
+      }
+      if ((this.restoring || this.initializing) && !automatic) {
+        const pending = this.pendingRestorationToggles || (this.pendingRestorationToggles = new Map());
+        const last = pending.has(w) ? pending.get(w) : !!w._open;
+        pending.set(w, expand === undefined ? !last : expand);
         return;
       }
       const open = !!w._open;
@@ -87,7 +93,7 @@
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w.error && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          if (!this.destroyed && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -149,7 +155,7 @@
         this.activate(w, true);
         return;
       }
-      const interactive = e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])");
+      const interactive = hostControl(e.target);
       if (interactive && !e.target.closest(".cx-exp")) {
         this.setFocus(w, false);
         return;
@@ -169,7 +175,7 @@
 
     onDblClick(e) {
       const w = this.rowFromEvent(e);
-      if (w && !w.status && !e.target.closest("a,button,input,select,textarea,[contenteditable]:not([contenteditable=false])")) {
+      if (w && !w.status && !hostControl(e.target)) {
         this.toggle(w);
       }
     },

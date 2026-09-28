@@ -55,7 +55,9 @@ internal static class CanopyViewValidator {
             throw new InvalidOperationException("Remote search options require a search endpoint.");
         }
         var inline = view.Source.Kind == CanopySourceKind.Inline;
-        CanopyTreeValidator.Validate(view.Roots, "View '" + view.Id + "'", node => ValidateNode(view, columns, inline, requireCompleteTree, node));
+        // Sidecar views keep the original in-memory roots after bundling, but serialize only a manifest reference.
+        var replacingInlineRefs = requireCompleteTree || view.Source.Kind == CanopySourceKind.Sidecar;
+        CanopyTreeValidator.Validate(view.Roots, "View '" + view.Id + "'", node => ValidateNode(view, columns, inline, requireCompleteTree, node), replacingInlineRefs: replacingInlineRefs);
     }
 
     private static void ValidateNode(CanopyView view, HashSet<string> columns, bool inline, bool complete, CanopyNode node) {
@@ -70,7 +72,7 @@ internal static class CanopyViewValidator {
         }
 
         // An inline view has nowhere to load children from, so every child must already be in the tree.
-        if (((inline || complete) && node.HasChildren && !node.HasInlineChildren) || (inline && node.Ref != null)) {
+        if (((inline || complete) && node.HasChildren && !node.HasInlineChildren) || (inline && !complete && node.Ref != null)) {
             throw new InvalidOperationException("Node '" + node.Id + "' declares children that load later, but view '" + view.Id + "' needs the complete tree (an inline source or a bundle); add the children or use a remote source.");
         }
     }

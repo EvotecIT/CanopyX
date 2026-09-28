@@ -90,7 +90,8 @@ public static class CanopyStaticHtml {
         while (pending.Count > 0) {
             var (node, level) = pending.Pop();
             total++;
-            if (rows.Count < options.MaxRows) {
+            var emitted = rows.Count < options.MaxRows;
+            if (emitted) {
                 rows.Add((node, level));
             }
 
@@ -98,9 +99,9 @@ public static class CanopyStaticHtml {
             if (children.Count == 0 && node.HasChildren) {
                 if (node.ChildCount > 0) {
                     total += node.ChildCount.Value;
-                    hiddenBelow[node] = node.ChildCount.Value;
+                    if (emitted) hiddenBelow[node] = node.ChildCount.Value;
                 } else {
-                    hiddenBelow[node] = -1;
+                    if (emitted) hiddenBelow[node] = -1;
                     unknown = true;
                 }
             } else if (level < options.MaxDepth && (!options.OnlyExpanded || node.Expanded)) {
@@ -112,9 +113,9 @@ public static class CanopyStaticHtml {
                 unknown |= hiddenUnknown;
                 if (hidden > 0) {
                     total += hidden;
-                    hiddenBelow[node] = hidden;
+                    if (emitted) hiddenBelow[node] = hidden;
                 }
-                if (hiddenUnknown) hiddenBelow[node] = -1;
+                if (hiddenUnknown && emitted) hiddenBelow[node] = -1;
             }
 
         }

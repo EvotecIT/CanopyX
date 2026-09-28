@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using CanopyX.Bundles;
+using CanopyX.Html;
 using CanopyX.Tests.Protocol;
 
 namespace CanopyX.Tests.Bundles;
@@ -11,6 +12,29 @@ namespace CanopyX.Tests.Bundles;
 /// must sit in the shard the runtime looks in (docs/data-protocol.md, "Sidecar").
 /// </summary>
 public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
+    [Fact]
+    public void Write_CompleteRemoteTree_ReplacesAnOriginalLoadReference() {
+        var view = new CanopyView("complete-ref", "Complete tree") { Source = CanopySource.Remote("children?ref={ref}&cursor={cursor}") };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var parent = new CanopyNode("parent", "Parent") { Ref = "old-host-reference", HasChildren = true };
+        parent.Children.Add(new CanopyNode("child", "Child"));
+        view.Roots.Add(parent);
+        // The ordinary remote protocol still forbids a node with both an inline child and a load reference.
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-complete-ref-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = view.SaveHtmlBundle(directory);
+            var files = new SidecarFiles(result.DataDirectory, view.Id);
+            var root = files.Document("r/0")["items"]![0]!;
+            var childRef = root["ref"]!.GetValue<string>();
+            Assert.NotEqual("old-host-reference", childRef);
+            Assert.Equal("child", files.Document(childRef)["items"]![0]!["id"]!.GetValue<string>());
+            Assert.True(File.Exists(Path.Combine(directory, "index.html")));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("con")]
     [InlineData("NUL")]
