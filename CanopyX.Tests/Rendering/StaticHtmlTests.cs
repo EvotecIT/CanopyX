@@ -89,6 +89,23 @@ public sealed class StaticHtmlTests {
     }
 
     [Fact]
+    public void Render_RowLimitAttributesHiddenDescendantsToTheirVisibleAncestor() {
+        var view = new CanopyView("limited", "Limited");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var first = new CanopyNode("first", "First");
+        first.Children.Add(new CanopyNode("a", "A"));
+        first.Children.Add(new CanopyNode("b", "B"));
+        first.Children.Add(new CanopyNode("c", "C"));
+        view.Roots.Add(first);
+        view.Roots.Add(new CanopyNode("second", "Second"));
+
+        var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { MaxRows = 1 });
+        Assert.Single(Regex.Matches(html, "<tr><td"));
+        Assert.Contains("(+3)</span>", html);
+        Assert.Contains("Showing 1 of 5 rows.", html);
+    }
+
+    [Fact]
     public void Render_IndentsByLevel_AndOnlyExpandedStopsAtCollapsedNodes() {
         var view = SmallView();
 

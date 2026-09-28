@@ -40,7 +40,7 @@
     return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
   }
 
-  /** Throws unless a document belongs to this protocol and has the expected type. */
+  /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
       throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
@@ -51,6 +51,11 @@
     if (doc.type !== type) {
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
+    if (type === "search") {
+      if (!Array.isArray(doc.hits)) throw new Error("CanopyX: search hits must be an array.");
+      if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
+    }
+    if (type === "counts" && !Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
     return doc;
   }
 
@@ -545,14 +550,14 @@
         if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
           throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
         }
-        return { hits: doc.hits || [], total: doc.total, truncated: !!doc.truncated };
+        return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
       },
       counts: source.counts ? async (ids) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
           const batch = ids.slice(i, i + COUNTS_BATCH).map(encodeURIComponent).join(",");
           const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
-          items.push.apply(items, doc.items || []);
+          items.push.apply(items, doc.items);
         }
         return { protocol: PROTOCOL, type: "counts", items: items };
       } : null
@@ -1834,6 +1839,7 @@
       const suppressInitial = !!this.restoring;
       const run = (async () => {
         let info = null;
+        let appliedCount = null;
         let removedSelection = null;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
@@ -1855,10 +1861,7 @@
           }
           this.applySort(w, false);
           // Paging changes sibling metadata, not retained host cell content.
-          const loaded = w.children.length;
-          const format = numberFormat(this.lang);
-          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
-          info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
+          appliedCount = items.length;
         } catch (err) {
           if (this.destroyed || w._invalidated) return;
           w.error = err && err.message ? err.message : String(err);
@@ -1867,13 +1870,24 @@
           w.loading = false;
           w._pending = null;
           if (!this.destroyed && !w._invalidated && w.pendingChildCount != null) {
-            w.total = Math.max(w.total || 0, w.pendingChildCount);
-            if (w.children && !w.next && w.children.length < w.pendingChildCount) {
+            const count = w.pendingChildCount;
+            const loaded = w.children ? w.children.length : 0;
+            w.total = count;
+            if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
-            }
+            } else if (w.next && loaded === count) w.next = null;
+            if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
           if (!this.destroyed && !w._invalidated) this.relayout();
+        }
+        // A newer count can discard an older page during reconciliation. Only announce and notify
+        // the host after the page is known to remain attached to the tree.
+        if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
+          const loaded = w.children.length;
+          const format = numberFormat(this.lang);
+          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
+          info = { node: w.h, count: appliedCount, total: w.total, ms: performance.now() - started };
         }
         if (removedSelection) this.selectionChanged(removedSelection);
         // Host callback failures do not turn an applied page into a source failure.
@@ -2583,6 +2597,7 @@
         if (this.anchor === child) this.anchor = null;
       }
       w.children = null;
+      w.next = null;
       w.expanded = false;
       w._v = 0;
       return removedSelection;
@@ -2592,13 +2607,13 @@
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
-      (doc.items || []).forEach((item) => {
+      doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
           throw new Error("CanopyX: inline childCount must equal children length.");
         }
       });
-      (doc.items || []).forEach((item) => {
+      doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (!w) {
           return;
@@ -2609,10 +2624,11 @@
           w.total = item.childCount;
           if (!w.inline) {
             w.h.hasChildren = item.childCount > 0;
-            if (item.childCount > (w.children ? w.children.length : 0)) {
-              if (w.loading) w.pendingChildCount = item.childCount;
-              else if (w.children && !w.next) removedSelection = this.invalidateChildren(w) || removedSelection;
-            }
+            const loaded = w.children ? w.children.length : 0;
+            if (w.loading) w.pendingChildCount = item.childCount;
+            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
+              removedSelection = this.invalidateChildren(w) || removedSelection;
+            else if (item.childCount === loaded && w.next) w.next = null;
             if (!item.childCount && (!w.children || !w.children.length)) w.expanded = false;
           }
         }
@@ -2639,7 +2655,7 @@
       const doc = await this.source.counts(wanted);
       if (this.destroyed) return null;
       checkDocument(doc, "counts");
-      this.applyCounts(Object.assign({}, doc, { items: (doc.items || []).filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }));
+      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }));
       return doc;
     },
 

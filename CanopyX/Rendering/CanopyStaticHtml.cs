@@ -81,46 +81,53 @@ public static class CanopyStaticHtml {
         var rows = new List<(CanopyNode, int)>();
         hiddenBelow = new Dictionary<CanopyNode, long>();
         unknown = false;
-        var pending = new Stack<(CanopyNode Node, int Level)>();
+        var pending = new Stack<(CanopyNode Node, int Level, CanopyNode? VisibleAncestor)>();
         for (var index = view.Roots.Count - 1; index >= 0; index--) {
-            pending.Push((view.Roots[index], 1));
+            pending.Push((view.Roots[index], 1, null));
         }
 
         total = 0;
         while (pending.Count > 0) {
-            var (node, level) = pending.Pop();
+            var (node, level, visibleAncestor) = pending.Pop();
             total++;
             var emitted = rows.Count < options.MaxRows;
             if (emitted) {
                 rows.Add((node, level));
+                visibleAncestor = node;
+            } else {
+                AddHidden(hiddenBelow, visibleAncestor, 1, false);
             }
 
             var children = node.ChildNodes;
             if (children.Count == 0 && node.HasChildren) {
                 if (node.ChildCount > 0) {
                     total += node.ChildCount.Value;
-                    if (emitted) hiddenBelow[node] = node.ChildCount.Value;
+                    AddHidden(hiddenBelow, visibleAncestor, node.ChildCount.Value, false);
                 } else {
-                    if (emitted) hiddenBelow[node] = -1;
+                    AddHidden(hiddenBelow, visibleAncestor, 0, true);
                     unknown = true;
                 }
             } else if (level < options.MaxDepth && (!options.OnlyExpanded || node.Expanded)) {
                 for (var index = children.Count - 1; index >= 0; index--) {
-                    pending.Push((children[index], level + 1));
+                    pending.Push((children[index], level + 1, visibleAncestor));
                 }
             } else {
                 var hidden = CountBelow(node, out var hiddenUnknown);
                 unknown |= hiddenUnknown;
-                if (hidden > 0) {
-                    total += hidden;
-                    if (emitted) hiddenBelow[node] = hidden;
-                }
-                if (hiddenUnknown && emitted) hiddenBelow[node] = -1;
+                total += hidden;
+                AddHidden(hiddenBelow, visibleAncestor, hidden, hiddenUnknown);
             }
 
         }
 
         return rows;
+    }
+
+    private static void AddHidden(Dictionary<CanopyNode, long> hiddenBelow, CanopyNode? visibleAncestor, long count, bool unknown) {
+        if (visibleAncestor == null) return;
+        hiddenBelow.TryGetValue(visibleAncestor, out var current);
+        if (unknown) hiddenBelow[visibleAncestor] = -1;
+        else if (count > 0 && current >= 0) hiddenBelow[visibleAncestor] = current + count;
     }
 
     private static long CountBelow(CanopyNode node, out bool unknown) {

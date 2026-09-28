@@ -40,7 +40,7 @@
     return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
   }
 
-  /** Throws unless a document belongs to this protocol and has the expected type. */
+  /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
       throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
@@ -51,6 +51,11 @@
     if (doc.type !== type) {
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
+    if (type === "search") {
+      if (!Array.isArray(doc.hits)) throw new Error("CanopyX: search hits must be an array.");
+      if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
+    }
+    if (type === "counts" && !Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
     return doc;
   }
 

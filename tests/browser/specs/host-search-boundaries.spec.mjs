@@ -10,7 +10,7 @@ test.beforeEach(({ page }) => { page.errors = []; page.on("pageerror", e => page
 test.afterEach(({ page }) => expect(page.errors).toEqual([]));
 
 for (const query of [undefined, null, "different"]) test(`remote search rejects echoed query ${query}`, async ({ page }) => {
-  await page.route("https://canopyx.test/search?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "search", query, hits: [{ path: ["one"], label: "Alpha Beta" }] } }));
+  await page.route("https://canopyx.test/search?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "search", query, hits: [{ path: ["one"], label: "Alpha Beta" }], truncated: false } }));
   await open(page, { ...view, source: { kind: "remote", children: "/page?ref={ref}&cursor={cursor}", search: "/search?q={query}&limit={limit}" } }, `{source: {page: async()=>({items:[]})}}`);
   const result = await page.evaluate(async () => { try { await CanopyX.sources.remote({source:{search:"/search?q={query}&limit={limit}"}}).search("alpha",20); return null; } catch(e) { return e.message; } });
   expect(result).toContain("query");
