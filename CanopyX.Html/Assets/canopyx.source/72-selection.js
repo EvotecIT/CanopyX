@@ -6,7 +6,6 @@
         return;
       }
       const o = options || {};
-      const previous = Array.from(this.selected);
       if (this.multi && o.range && this.anchor) {
         this.selectRange(w);
         return;
@@ -21,8 +20,6 @@
         this.selected = new Set([w]);
       }
       this.anchor = w;
-      previous.forEach((p) => { p._v = 0; });
-      w._v = 0;
       this.selectionChanged(w, !o.deferNotify);
     },
 
@@ -33,18 +30,19 @@
         this.select(w);
         return;
       }
-      this.selected.forEach((p) => { p._v = 0; });
       this.selected = new Set();
       for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
         if (!this.rows[i].status) {
           this.selected.add(this.rows[i]);
-          this.rows[i]._v = 0;
         }
       }
       this.selectionChanged(w);
     },
 
     selectionChanged(w, notify = true) {
+      for (const [node, row] of this.rendered) {
+        if (!node.status) row.setAttribute("aria-selected", this.selected.has(node) ? "true" : "false");
+      }
       this.scheduleRender();
       const nodes = Array.from(this.selected).map((s) => s.h);
       this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
