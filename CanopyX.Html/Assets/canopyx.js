@@ -740,6 +740,7 @@
         } else {
           const parent = frame.parent;
           parent.visibleCount = frame.pos;
+          parent.childrenFiltered = frame.filtered;
           // Unloaded matches remain reachable through their parent status row.
           if (parent.loading) rows.push(this.statusRow(parent, "loading"));
           else if (parent.error) rows.push(this.statusRow(parent, "error"));
@@ -908,6 +909,7 @@
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       const focusedResize = active && active.classList.contains("cx-resize");
       this.cols = this.visibleColumns();
+      this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {
@@ -1151,6 +1153,7 @@
     fillRow(rowEl, w) {
       const node = w.h;
       rowEl._w = w;
+      rowEl._expander = null;
       rowEl.className = "cx-row";
       rowEl.textContent = "";
       rowEl.setAttribute("role", "row");
@@ -1191,7 +1194,7 @@
       this.cols.forEach((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
         const content = i === 0 ? this.treeCell(cell, w) : cell;
-        this.paintCell(content, cell, node, column, i, w);
+        this.paintCell(content, cell, node, column, this.columnIndex[i], w);
       });
     },
 
@@ -1215,6 +1218,7 @@
       if (busy === null) rowEl.removeAttribute("aria-busy");
       else if (rowEl.getAttribute("aria-busy") !== busy) rowEl.setAttribute("aria-busy", busy);
       this.setPosition(rowEl, w);
+      if (rowEl._expander) rowEl._expander.classList.toggle("cx-leaf", !this.expandable(w));
     },
 
     /**
@@ -1224,7 +1228,7 @@
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
-      const size = this.filter ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
+      const size = parent.childrenFiltered ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
       rowEl.setAttribute("aria-setsize", String(size));
       rowEl.setAttribute("aria-posinset", String(w.pos));
     },
@@ -1251,6 +1255,7 @@
       const expander = h("span", "cx-exp" + (this.expandable(w) ? "" : " cx-leaf"));
       expander.setAttribute("aria-hidden", "true");
       cell.appendChild(expander);
+      cell.parentNode._expander = expander;
       const template = w.h.icon ? this.iconTemplates.get(w.h.icon) : null;
       if (template) {
         cell.appendChild(template.cloneNode(true));
@@ -2084,9 +2089,11 @@
       const pending = (this.root.children || []).slice().reverse();
       while (pending.length) {
         const child = pending.pop();
-        if (child.expanded && child.children) {
+        if (child.expanded && this.expandable(child)) {
           out.push(this.pathOf(child));
-          for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
+          if (child.children) {
+            for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
+          }
         }
       }
       return out;

@@ -18,9 +18,11 @@
       const pending = (this.root.children || []).slice().reverse();
       while (pending.length) {
         const child = pending.pop();
-        if (child.expanded && child.children) {
+        if (child.expanded && this.expandable(child)) {
           out.push(this.pathOf(child));
-          for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
+          if (child.children) {
+            for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
+          }
         }
       }
       return out;

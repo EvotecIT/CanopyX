@@ -5,6 +5,7 @@
     fillRow(rowEl, w) {
       const node = w.h;
       rowEl._w = w;
+      rowEl._expander = null;
       rowEl.className = "cx-row";
       rowEl.textContent = "";
       rowEl.setAttribute("role", "row");
@@ -45,7 +46,7 @@
       this.cols.forEach((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
         const content = i === 0 ? this.treeCell(cell, w) : cell;
-        this.paintCell(content, cell, node, column, i, w);
+        this.paintCell(content, cell, node, column, this.columnIndex[i], w);
       });
     },
 
@@ -69,6 +70,7 @@
       if (busy === null) rowEl.removeAttribute("aria-busy");
       else if (rowEl.getAttribute("aria-busy") !== busy) rowEl.setAttribute("aria-busy", busy);
       this.setPosition(rowEl, w);
+      if (rowEl._expander) rowEl._expander.classList.toggle("cx-leaf", !this.expandable(w));
     },
 
     /**
@@ -78,7 +80,7 @@
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
-      const size = this.filter ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
+      const size = parent.childrenFiltered ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
       rowEl.setAttribute("aria-setsize", String(size));
       rowEl.setAttribute("aria-posinset", String(w.pos));
     },
@@ -105,6 +107,7 @@
       const expander = h("span", "cx-exp" + (this.expandable(w) ? "" : " cx-leaf"));
       expander.setAttribute("aria-hidden", "true");
       cell.appendChild(expander);
+      cell.parentNode._expander = expander;
       const template = w.h.icon ? this.iconTemplates.get(w.h.icon) : null;
       if (template) {
         cell.appendChild(template.cloneNode(true));

@@ -67,6 +67,7 @@
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       const focusedResize = active && active.classList.contains("cx-resize");
       this.cols = this.visibleColumns();
+      this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {
