@@ -10,7 +10,7 @@
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (hostControl(e.target)) {
+      if (this.head.contains(e.target) || hostControl(e.target)) {
         return;
       }
       const w = this.focused || this.rows[0];

@@ -189,6 +189,7 @@ The bundle writer splits the tree into small script files under `base`. Script f
 ```
 
 The three array items are the view id, the file's reference (its path under `base` without `.js`), and the document. The queue works whether the file loads before or after the runtime, and the view id keeps two bundles on one page apart.
+For sidecar sources, each slash-delimited reference component is a file path component: `.` and `..` are rejected before a script is loaded. Remote-source references remain opaque identifiers.
 
 | Reference | Document | Content |
 | --- | --- | --- |

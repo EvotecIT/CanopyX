@@ -8,6 +8,18 @@ namespace CanopyX.Tests.Protocol;
 /// </summary>
 public sealed class ProtocolSchemaTests {
     [Theory]
+    [InlineData("")]
+    [InlineData("k-")]
+    public void Schema_ManifestAcceptsBothSearchShardLayouts(string prefix) {
+        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"shards\":{\"ab\":1}}}")!;
+        Assert.True(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+        doc["search"]!["prefix"] = prefix;
+        Assert.True(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+        doc["search"]!["prefix"] = "other";
+        Assert.False(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+    }
+
+    [Theory]
     [InlineData("{\"id\":\"x\",\"label\":\"x\",\"hasChildren\":true}")]
     [InlineData("{\"id\":\"x\",\"label\":\"x\",\"ref\":\"x\"}")]
     [InlineData("{\"id\":\"x\",\"label\":\"x\",\"children\":[{\"id\":\"y\",\"label\":\"y\",\"hasChildren\":true}]} ")]
