@@ -176,8 +176,8 @@
   }
 
   // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  // A fixed table instead of toLowerCase(), whose data differs between browsers and from .NET: ASCII, Latin-1,
-  // Latin Extended-A, basic Greek, and basic Cyrillic capitals fold to small letters; everything else stays.
+  // Common Latin, Greek, Cyrillic, and Armenian capitals use the same fixed table as the C# writer.
+  // Other UTF-16 units retain their previous single-unit lowercase behavior.
   const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
 
   function foldCode(c) {
@@ -202,7 +202,12 @@
     if (c >= 0x0400 && c <= 0x040F) {
       return c + 0x50;
     }
-    return GREEK_ACCENTED[c] || c;
+    if (c >= 0x0531 && c <= 0x0556) {
+      return c + 0x30;
+    }
+    if (GREEK_ACCENTED[c]) return GREEK_ACCENTED[c];
+    const lower = String.fromCharCode(c).toLowerCase();
+    return lower.length === 1 ? lower.charCodeAt(0) : c;
   }
 
   function foldUnit(unit) {

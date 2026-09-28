@@ -71,7 +71,7 @@
       this.tops = tops;
       this.total = y;
       this.canvas.style.height = y + "px";
-      this.grid.setAttribute("aria-rowcount", String(rows.length + 1));
+      this.grid.setAttribute("aria-rowcount", rows.some((row) => row.status) ? "-1" : String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
         while (target && this.indexOf(target) < 0) target = target.parent;

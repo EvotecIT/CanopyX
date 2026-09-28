@@ -64,11 +64,15 @@
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       const focusedResize = active && active.classList.contains("cx-resize");
-      this.cols = this.visibleColumns();
+      const nextCols = this.visibleColumns();
+      const layoutChanged = !this.cols || this.cols.length !== nextCols.length || nextCols.some((column, i) => column !== this.cols[i]);
+      this.cols = nextCols;
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       // Visibility changes alter the cell skeleton; width-only changes do not.
-      this.layout = (this.layout || 0) + 1;
-      this.version++;
+      if (layoutChanged) {
+        this.layout = (this.layout || 0) + 1;
+        this.version++;
+      }
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {

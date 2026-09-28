@@ -14,14 +14,16 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
-      // A width change does not change the cell layout or its host-owned controls.
-      for (const row of this.rendered.values()) {
+      // Both the original and pooled painters place grid cells directly under the row.
+      // Keep recycled rows in sync without replacing host-owned cell content.
+      const resizeRow = (row) => {
         row.style.width = sum + "px";
-        if (!row._cells) continue;
-        if (row._kind === "node") {
-          row._cells.forEach((slot, i) => { if (this.cols[i]) slot.cell.style.width = this.cols[i].width + "px"; });
-        } else if (row._cells[0]) row._cells[0].cell.style.width = sum + "px";
-      }
+        if (!row._w || !row.firstElementChild) return;
+        if (row._w.status || row._w.h.detail) row.firstElementChild.style.width = sum + "px";
+        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+      };
+      this.rendered.forEach(resizeRow);
+      this.pool.forEach(resizeRow);
     },
 
     startResize(e, column) {
