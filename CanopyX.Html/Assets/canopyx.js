@@ -937,6 +937,7 @@
       }
       if (Array.isArray(node.children)) {
         if (node.ref != null) throw new Error("CanopyX: inline children cannot have a load reference.");
+        if (node.hasChildren === true && !node.children.length) throw new Error("CanopyX: expandable inline children cannot be empty.");
         if (node.hasChildren === false && node.children.length) throw new Error("CanopyX: inline children cannot declare a leaf.");
         if (node.childCount != null && node.childCount !== node.children.length) throw new Error("CanopyX: inline childCount must equal children length.");
         for (const child of node.children) pending.push(child);
