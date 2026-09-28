@@ -20,7 +20,8 @@
 
   /** Validates the entire incoming page before its wrappers or key map can change. */
   function validatePage(page, existing, expectedOffset) {
-    const items = page.items || [];
+    if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
+    const items = page.items;
     if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
       throw new Error("CanopyX: page offset does not match the loaded child count.");
     }

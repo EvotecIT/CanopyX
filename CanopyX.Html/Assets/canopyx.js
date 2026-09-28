@@ -64,6 +64,7 @@
   /** Verifies wire page ownership and required structural counters. */
   function checkPage(doc, node) {
     checkDocument(doc, "page");
+    if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
     if (!Number.isInteger(doc.offset) || doc.offset < 0) throw new Error("CanopyX: page offset must be a nonnegative integer.");
     if (doc.next != null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
@@ -468,7 +469,7 @@
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
         const doc = checkPage(await load(ref), node);
-        return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+        return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
         const queryWords = words(query);
@@ -533,7 +534,7 @@
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
         }), "page"), node);
-        return { items: doc.items || [], total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+        return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       async search(query, limit) {
         if (!source.search) {
@@ -892,7 +893,8 @@
 
   /** Validates the entire incoming page before its wrappers or key map can change. */
   function validatePage(page, existing, expectedOffset) {
-    const items = page.items || [];
+    if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
+    const items = page.items;
     if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
       throw new Error("CanopyX: page offset does not match the loaded child count.");
     }
@@ -1681,8 +1683,9 @@
           break;
         case "Enter":
         case " ":
-          this.activate(w, key === "Enter");
-          break;
+          try { this.activate(w, key === "Enter"); }
+          finally { e.preventDefault(); e.stopPropagation(); }
+          return;
         default:
           handled = this.typeAhead(e, i);
       }
@@ -1708,10 +1711,11 @@
         if (this.multi && !enter) {
           this.select(w, { toggle: true });
         } else {
-          this.select(w);
+          this.select(w, { deferNotify: enter && this.expandable(w) });
         }
         if (enter && this.expandable(w)) {
           this.toggle(w);
+          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
         }
       }
     },
@@ -1786,7 +1790,7 @@
       if (this.destroyed || !w || w.status || !this.expandable(w)) {
         return;
       }
-      if ((this.restoring || this.initializing) && !automatic) {
+      if ((this.restoring || this.initializing || this.replayingToggles) && !automatic) {
         const pending = this.pendingRestorationToggles || (this.pendingRestorationToggles = new Map());
         const last = pending.has(w) ? pending.get(w) : !!w._open;
         pending.set(w, expand === undefined ? !last : expand);
@@ -2111,7 +2115,7 @@
       this.anchor = w;
       previous.forEach((p) => { p._v = 0; });
       w._v = 0;
-      this.selectionChanged(w);
+      this.selectionChanged(w, !o.deferNotify);
     },
 
     selectRange(w) {
@@ -2132,10 +2136,14 @@
       this.selectionChanged(w);
     },
 
-    selectionChanged(w) {
+    selectionChanged(w, notify = true) {
       this.scheduleRender();
       const nodes = Array.from(this.selected).map((s) => s.h);
       this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
+      if (notify) this.notifySelection(w, nodes);
+    },
+
+    notifySelection(w, nodes) {
       this.emit("select", { node: w.h, nodes: nodes });
       if (this.opts.onSelect) {
         this.opts.onSelect(w.h, nodes);
@@ -2380,6 +2388,8 @@
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
+      // Clicks queued for an older restoration cannot override this state.
+      this.pendingRestorationToggles = null;
       this.restoring = true;
       clearTimeout(this.saveTimer);
       try {
@@ -2404,23 +2414,51 @@
     },
 
     async flushPendingToggles() {
+      if (this.pendingToggleFlush) {
+        try { await this.pendingToggleFlush; }
+        catch (error) { if (!this.restoreController) throw error; }
+        if (this.restoring || this.initializing) return;
+        return this.flushPendingToggles();
+      }
       const pending = this.pendingRestorationToggles;
-      this.pendingRestorationToggles = null;
-      if (pending) for (const [node, expand] of pending) await this.toggle(node, expand);
+      if (!pending || !pending.size) return;
+      const generation = this.restoreGeneration || 0;
+      this.replayingToggles = true;
+      const run = (async () => {
+        let failure = null;
+        while (!this.destroyed && generation === (this.restoreGeneration || 0) && pending.size) {
+          const [node, expand] = pending.entries().next().value;
+          pending.delete(node);
+          try { await this.toggle(node, expand, true); }
+          catch (error) { if (!failure) failure = error; }
+        }
+        if (failure && generation === (this.restoreGeneration || 0)) throw failure;
+      })();
+      this.pendingToggleFlush = run;
+      try {
+        await run;
+      } finally {
+        if (this.pendingToggleFlush === run) this.pendingToggleFlush = null;
+        this.replayingToggles = false;
+        if (this.pendingRestorationToggles === pending && !pending.size) {
+          this.pendingRestorationToggles = null;
+          if (!this.destroyed) this.stateChanged();
+        }
+      }
     },
 
     stateKey() {
-      return this.view.stateKey ? "canopyx:" + this.view.stateKey : null;
+      return this.view.stateKey == null ? null : "canopyx:" + this.view.stateKey;
     },
 
     stateChanged() {
       const key = this.stateKey();
-      if (this.destroyed || !key || this.restoring || this.initializing) {
+      if (this.destroyed || !key || this.restoring || this.initializing || this.replayingToggles) {
         return;
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
-        if (this.destroyed || this.restoring || this.initializing) return;
+        if (this.destroyed || this.restoring || this.initializing || this.replayingToggles) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
