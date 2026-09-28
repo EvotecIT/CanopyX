@@ -66,6 +66,9 @@
       const focusedResize = active && active.classList.contains("cx-resize");
       this.cols = this.visibleColumns();
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
+      // Visibility changes alter the cell skeleton; width-only changes do not.
+      this.layout = (this.layout || 0) + 1;
+      this.version++;
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {

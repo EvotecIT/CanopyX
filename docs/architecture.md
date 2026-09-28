@@ -26,7 +26,7 @@ Every document on the wire carries `"protocol": "canopyx/1"`. The runtime reject
 
 ## Static Fallback
 
-`CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints, preserving trusted HTML details and cell indicators. Its host-trusted browser print policy is separate from the script-free C# fallback, which preserves arbitrary HTML details as text.
+`CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints. The live browser view can render host-trusted HTML details; the built-in print outline encodes that markup as text. A host `renderDetail` callback can supply its own formatted print content. The script-free C# fallback also preserves arbitrary HTML details as text.
 
 ## Browser Runtime
 
