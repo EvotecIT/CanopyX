@@ -10,8 +10,8 @@ async function open(page) {
 test("a 10000-level inline tree supports mounting, filtering, sorting, search, state, and outline", async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message)); await open(page);
   const result = await page.evaluate(async () => {
-    const host = document.querySelector(".cx-host"); host.canopyx.destroy();
-    const data = { ...host.canopyx.view, roots: [] };
+    const host = document.querySelector(".cx-host"); const original = host.canopyx.view; host.canopyx.destroy();
+    const data = { ...original, roots: [] };
     let node = { id: "n0", label: "Root", expanded: true }; data.roots.push(node);
     for (let i = 1; i < 10000; i++) {
       const child = { id: "n" + i, label: i === 9999 ? "Unique target" : "Branch", expanded: true };

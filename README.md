@@ -93,7 +93,7 @@ await grid.expandPath(["projects", "projects/plans"]);
 // Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
 
-Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement; the retired API retains its view metadata.
+Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 
 Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
 
