@@ -108,3 +108,65 @@ test("counts reject inconsistent inline totals before changing any node", async 
     return { error, count:api.visibleRows()[0].node.childCount };
   }); expect(result.error).toContain("inline childCount"); expect(result.count).toBeUndefined();
 });
+
+for (const kind of ["remote", "sidecar"]) {
+  test(`${kind} rejects detail descendants before attaching the page`, async ({ page }) => {
+    const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
+      items: [{ id: "detail", label: "Detail", detail: { type: "html", html: "Info" },
+        children: [{ id: "hidden", label: "Hidden" }] }] };
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: document }));
+    await page.route("https://canopyx.test/data/**", r => {
+      const ref = new URL(r.request().url()).pathname.slice(6, -3);
+      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : document;
+      return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
+    });
+    await open(page, { ...view, roots: undefined, source: kind === "remote" ?
+      { kind, children: "/page?ref={ref}&cursor={cursor}" } : { kind, base: "/data/" } });
+    await expect(page.locator('[data-cx-status="error"]')).toContainText("detail row must be a leaf");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows().length)).toBe(0);
+  });
+
+  test(`${kind} rejects a page without its required next field`, async ({ page }) => {
+    const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0,
+      items: [{ id: "first", label: "First" }] };
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: document }));
+    await page.route("https://canopyx.test/data/**", r => {
+      const ref = new URL(r.request().url()).pathname.slice(6, -3);
+      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : document;
+      return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
+    });
+    await open(page, { ...view, roots: undefined, source: kind === "remote" ?
+      { kind, children: "/page?ref={ref}&cursor={cursor}" } : { kind, base: "/data/" } });
+    await expect(page.locator('[data-cx-status="error"]')).toContainText("page continuation is required");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows().length)).toBe(0);
+  });
+}
+
+for (const cells of ["bad", ["bad"]]) {
+  test(`direct and remote counts reject ${typeof cells === "string" ? "string" : "array"} cells atomically`, async ({ page }) => {
+    const data = { ...view, roots: [{ id: "one", label: "One", cells: { name: { text: "Before" } } }] };
+    await open(page, data);
+    const direct = await page.evaluate(cells => {
+      const api = document.querySelector('.cx-host').canopyx;
+      try { api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "one", cells }] }); return "accepted"; }
+      catch (error) { return error.message; }
+    }, cells);
+    expect(direct).toContain("counts cells must be an object");
+    await expect(page.locator('[data-cx-id="one"]')).toContainText("Before");
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null,
+      offset: 0, items: data.roots, next: null } }));
+    await page.route("https://canopyx.test/counts?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "counts", items: [{ id: "one", cells }] } }));
+    await page.evaluate(async data => {
+      const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+      const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: undefined,
+        source: { kind: "remote", children: "/page?ref={ref}&cursor={cursor}", counts: "/counts?ids={ids}" } } });
+      await api.ready;
+    }, data);
+    const remote = await page.evaluate(async () => {
+      try { await document.querySelector('.cx-host').canopyx.refreshCounts(["one"]); return "accepted"; }
+      catch (error) { return error.message; }
+    });
+    expect(remote).toContain("counts cells must be an object");
+    await expect(page.locator('[data-cx-id="one"]')).toContainText("Before");
+  });
+}

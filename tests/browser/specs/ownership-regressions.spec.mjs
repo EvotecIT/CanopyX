@@ -98,14 +98,14 @@ for (const source of ["remote", "sidecar"]) for (const nested of [false, true]) 
     await page.route("https://canopyx.test/page?*", route => {
       const child = new URL(route.request().url()).searchParams.get("ref");
       const doc = { protocol: "canopyx/1", type: "page", parent: nested && !child ? null : wrong ? "wrong" : nested ? "parent" : null,
-        offset: 0, total: 1, items: nested && !child ? [parent] : [{ id: "foreign", label: "Foreign" }] };
+        offset: 0, total: 1, items: nested && !child ? [parent] : [{ id: "foreign", label: "Foreign" }], next: null };
       return route.fulfill({ json: doc });
     });
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice("/data/".length).replace(/\.js$/, "");
       const doc = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0" } :
         { protocol: "canopyx/1", type: "page", parent: nested && ref === "r/0" ? null : wrong ? "wrong" : nested ? "parent" : null,
-          offset: 0, total: 1, items: nested && ref === "r/0" ? [parent] : [{ id: "foreign", label: "Foreign" }] };
+          offset: 0, total: 1, items: nested && ref === "r/0" ? [parent] : [{ id: "foreign", label: "Foreign" }], next: null };
       return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([data.id, ref, doc])});` });
     });
     await open(page, data); await nextFrames(page);

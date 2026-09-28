@@ -58,7 +58,7 @@ for (const semantic of [true,false]) test(`search option ${semantic?"semantic":"
 for(const queued of [true,false]) test(`sidecar pair identity is unambiguous (${queued?"queued":"pending"})`, async({page})=>{
   await open(page);
   const result=await page.evaluate(async queued=>{
-    const entries=[["a\nb","c",{protocol:"canopyx/1",type:"page",parent:null,offset:0,items:[{id:"first",label:"First"}]}],["a","b\nc",{protocol:"canopyx/1",type:"page",parent:null,offset:0,items:[{id:"second",label:"Second"}]}]];
+    const entries=[["a\nb","c",{protocol:"canopyx/1",type:"page",parent:null,offset:0,items:[{id:"first",label:"First"}],next:null}],["a","b\nc",{protocol:"canopyx/1",type:"page",parent:null,offset:0,items:[{id:"second",label:"Second"}],next:null}]];
     const sources=entries.map(([id,ref],i)=>{CanopyXSidecar.push([id,"manifest",{protocol:"canopyx/1",type:"manifest",view:id,root:ref}]);return CanopyX.sources.sidecar({id,source:{base:"/pair"+i+"/"}});});
     if(queued) entries.forEach(e=>CanopyXSidecar.push(e));
     const pending=sources.map(s=>s.page(null,null));
