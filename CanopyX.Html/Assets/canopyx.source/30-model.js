@@ -38,6 +38,7 @@
       this.typeAt = 0;
       this.rafId = 0;
       this.iconTemplates = this.buildIcons(view.icons || {});
+      this.initializing = true;
       this.build();
       this.buildToolbar();
       this.ready = this.init();
@@ -58,13 +59,22 @@
       try {
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
-        await this.expandInitial(this.root);
         await this.restoreState();
+        // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
+        // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
+        await this.expandInitial(this.root);
         await this.openDeepLink();
       } finally {
+        this.initializing = false;
         if (!this.destroyed) {
-          this.host.setAttribute("data-cx-ready", "true");
-          this.emit("ready", {});
+          try {
+            await this.flushPendingToggles();
+          } finally {
+            if (!this.destroyed) {
+              this.host.setAttribute("data-cx-ready", "true");
+              this.emit("ready", {});
+            }
+          }
         }
       }
     }

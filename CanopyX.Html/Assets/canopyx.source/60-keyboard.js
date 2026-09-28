@@ -3,9 +3,14 @@
   // Row-focus model: Up/Down move, Right expands then enters, Left collapses then goes to the parent, Home/End,
   // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
   // printable keys run type-ahead on labels. Tab leaves the grid.
+  function hostControl(target) {
+    const row = target.closest(".cx-row");
+    const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
+    return control && row && row !== control && row.contains(control) ? control : null;
+  }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (e.target.closest("input,textarea,select,button,a,[contenteditable]:not([contenteditable=false]),[role=separator]")) {
+      if (hostControl(e.target)) {
         return;
       }
       const w = this.focused || this.rows[0];
