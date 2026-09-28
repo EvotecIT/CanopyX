@@ -993,6 +993,7 @@
       }
       if (Array.isArray(node.children)) {
         if (node.ref != null) throw new Error("CanopyX: inline children cannot have a load reference.");
+        if (node.hasChildren === true && !node.children.length) throw new Error("CanopyX: expandable inline children cannot be empty.");
         if (node.hasChildren === false && node.children.length) throw new Error("CanopyX: inline children cannot declare a leaf.");
         if (node.childCount != null && node.childCount !== node.children.length) throw new Error("CanopyX: inline childCount must equal children length.");
         for (const child of node.children) pending.push(child);
@@ -1505,7 +1506,7 @@
 
     paintDetailRow(rowEl, w) {
       const node = w.h;
-      setClass(rowEl, "cx-row cx-detail" + (node.className ? " " + node.className : ""));
+      setClass(rowEl, "cx-row cx-detail" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
       // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
