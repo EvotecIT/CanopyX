@@ -51,6 +51,7 @@
         } else {
           const parent = frame.parent;
           parent.visibleCount = frame.pos;
+          parent.childrenFiltered = frame.filtered;
           // Unloaded matches remain reachable through their parent status row.
           if (parent.loading) rows.push(this.statusRow(parent, "loading"));
           else if (parent.error) rows.push(this.statusRow(parent, "error"));

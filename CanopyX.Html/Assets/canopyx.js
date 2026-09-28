@@ -792,6 +792,7 @@
         } else {
           const parent = frame.parent;
           parent.visibleCount = frame.pos;
+          parent.childrenFiltered = frame.filtered;
           // Unloaded matches remain reachable through their parent status row.
           if (parent.loading) rows.push(this.statusRow(parent, "loading"));
           else if (parent.error) rows.push(this.statusRow(parent, "error"));
@@ -1408,6 +1409,7 @@
       setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
       setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
       this.setPosition(rowEl, w);
+      if (rowEl._kind === "node") this.paintTreeSlot(rowEl._cells[0], w);
     },
 
     /**
@@ -1417,7 +1419,7 @@
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
-      const size = this.filter ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
+      const size = parent.childrenFiltered ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
       setAttr(rowEl, "aria-setsize", String(size));
       setAttr(rowEl, "aria-posinset", String(w.pos));
     },
@@ -2336,9 +2338,11 @@
       const pending = (this.root.children || []).slice().reverse();
       while (pending.length) {
         const child = pending.pop();
-        if (child.expanded && child.children) {
+        if (child.expanded && this.expandable(child)) {
           out.push(this.pathOf(child));
-          for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
+          if (child.children) {
+            for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
+          }
         }
       }
       return out;
