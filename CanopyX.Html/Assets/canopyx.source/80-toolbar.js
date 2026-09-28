@@ -146,6 +146,7 @@
         timer = setTimeout(run, 150);
       });
       input.addEventListener("keydown", (e) => {
+        if (e.isComposing) return;
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           move(e.key === "ArrowDown" ? 1 : -1);
         } else if (e.key === "Enter") {

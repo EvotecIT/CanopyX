@@ -209,9 +209,27 @@
     },
 
     /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
+    invalidateChildren(w) {
+      const pending = (w.children || []).slice();
+      let removedSelection = null;
+      while (pending.length) {
+        const child = pending.pop();
+        if (child.children) for (const descendant of child.children) pending.push(descendant);
+        child._invalidated = true;
+        if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
+        if (this.selected.delete(child) && !removedSelection) removedSelection = child;
+        if (this.anchor === child) this.anchor = null;
+      }
+      w.children = null;
+      w.expanded = false;
+      w._v = 0;
+      return removedSelection;
+    },
+
     applyCounts(doc) {
       if (this.destroyed) return;
       checkDocument(doc, "counts");
+      let removedSelection = null;
       (doc.items || []).forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
@@ -229,7 +247,10 @@
           w.total = item.childCount;
           if (!w.inline) {
             w.h.hasChildren = item.childCount > 0;
-            if (item.childCount > 0 && w.children && !w.children.length) w.children = null;
+            if (item.childCount > (w.children ? w.children.length : 0)) {
+              if (w.loading) w.pendingChildCount = item.childCount;
+              else if (w.children && !w.next) removedSelection = this.invalidateChildren(w) || removedSelection;
+            }
             if (!item.childCount && (!w.children || !w.children.length)) w.expanded = false;
           }
         }
@@ -242,6 +263,7 @@
       });
       this.applySort(this.root, true);
       this.relayout();
+      if (removedSelection) this.selectionChanged(removedSelection);
     },
 
     async refreshCounts(ids) {
