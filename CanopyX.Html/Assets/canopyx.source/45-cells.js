@@ -103,7 +103,7 @@
 
     paintDetailRow(rowEl, w) {
       const node = w.h;
-      setClass(rowEl, "cx-row cx-detail" + (node.className ? " " + node.className : ""));
+      setClass(rowEl, "cx-row cx-detail" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
       // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
