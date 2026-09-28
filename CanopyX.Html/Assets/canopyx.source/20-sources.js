@@ -125,7 +125,7 @@
       canSearch: true,
       manifest: manifest,
       async page(node, cursor) {
-        const ref = cursor || (node ? node.ref : (await manifest()).root);
+        const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
