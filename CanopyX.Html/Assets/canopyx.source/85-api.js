@@ -35,6 +35,8 @@
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
+      // Clicks queued for an older restoration cannot override this state.
+      this.pendingRestorationToggles = null;
       this.restoring = true;
       clearTimeout(this.saveTimer);
       try {
@@ -59,23 +61,51 @@
     },
 
     async flushPendingToggles() {
+      if (this.pendingToggleFlush) {
+        try { await this.pendingToggleFlush; }
+        catch (error) { if (!this.restoreController) throw error; }
+        if (this.restoring || this.initializing) return;
+        return this.flushPendingToggles();
+      }
       const pending = this.pendingRestorationToggles;
-      this.pendingRestorationToggles = null;
-      if (pending) for (const [node, expand] of pending) await this.toggle(node, expand);
+      if (!pending || !pending.size) return;
+      const generation = this.restoreGeneration || 0;
+      this.replayingToggles = true;
+      const run = (async () => {
+        let failure = null;
+        while (!this.destroyed && generation === (this.restoreGeneration || 0) && pending.size) {
+          const [node, expand] = pending.entries().next().value;
+          pending.delete(node);
+          try { await this.toggle(node, expand, true); }
+          catch (error) { if (!failure) failure = error; }
+        }
+        if (failure && generation === (this.restoreGeneration || 0)) throw failure;
+      })();
+      this.pendingToggleFlush = run;
+      try {
+        await run;
+      } finally {
+        if (this.pendingToggleFlush === run) this.pendingToggleFlush = null;
+        this.replayingToggles = false;
+        if (this.pendingRestorationToggles === pending && !pending.size) {
+          this.pendingRestorationToggles = null;
+          if (!this.destroyed) this.stateChanged();
+        }
+      }
     },
 
     stateKey() {
-      return this.view.stateKey ? "canopyx:" + this.view.stateKey : null;
+      return this.view.stateKey == null ? null : "canopyx:" + this.view.stateKey;
     },
 
     stateChanged() {
       const key = this.stateKey();
-      if (this.destroyed || !key || this.restoring || this.initializing) {
+      if (this.destroyed || !key || this.restoring || this.initializing || this.replayingToggles) {
         return;
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
-        if (this.destroyed || this.restoring || this.initializing) return;
+        if (this.destroyed || this.restoring || this.initializing || this.replayingToggles) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
