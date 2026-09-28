@@ -14,6 +14,7 @@ export default defineConfig({
   outputDir: "test-results",
   use: {
     channel: process.env.CANOPYX_BROWSER_CHANNEL || undefined,
+    launchOptions: { executablePath: process.env.CANOPYX_BROWSER_EXECUTABLE || undefined },
     viewport: { width: 1400, height: 900 },
     trace: "retain-on-failure"
   }

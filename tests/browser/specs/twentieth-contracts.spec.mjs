@@ -39,6 +39,18 @@ test("selection and sorting retain edited controls in surviving rows", async ({ 
   expect(await page.evaluate(() => originalEdit.isConnected && originalEdit === document.querySelector('[aria-label="Edit a"]'))).toBe(true);
 });
 
+test("recycled rows clear selection after another selected row scrolls away", async ({ page }) => {
+  await open(page, { ...view, selection: "multiple",
+    roots: Array.from({ length: 150 }, (_, i) => ({ id: "r" + i, label: "Row " + i })) });
+  await page.locator('[data-cx-id="r1"] .cx-tree').click();
+  await page.locator('[data-cx-id="r2"] .cx-tree').click({ modifiers: ["ControlOrMeta"] });
+  await expect(page.locator('[data-cx-id="r1"]')).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("treegrid").evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await nextFrames(page);
+  const stale = await page.locator('.cx-row[data-cx-id]:not([data-cx-id="r1"]):not([data-cx-id="r2"])[aria-selected="true"]').count();
+  expect(stale).toBe(0);
+});
+
 test("pointer and keyboard resize align pooled rows with the header", async ({ page }) => {
   await open(page, { ...view, roots: Array.from({ length: 150 }, (_, i) => ({ id: "r" + i, label: "Row " + i })) });
   const grid = page.getByRole("treegrid"), grip = page.getByRole("separator", { name: "Resize Name" });
