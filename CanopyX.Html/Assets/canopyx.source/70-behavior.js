@@ -290,7 +290,6 @@
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
       this.filterExpand = !!(options && options.autoExpand);
       this.keyMap.forEach((w) => { w.filterCollapsed = false; });
-      this.version++;
       this.relayout();
     },
 

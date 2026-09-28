@@ -281,6 +281,9 @@
 
   /** Loads one sidecar document by injecting its script; resolves with the document the script registers. */
   function loadSidecar(base, view, ref) {
+    if (ref.split("/").some((part) => part === "." || part === "..")) {
+      return Promise.reject(new Error("Sidecar reference cannot contain a dot path component: " + ref));
+    }
     const key = sidecarKey(view, ref);
     if (sidecarDocs.has(key)) {
       const doc = sidecarDocs.get(key);
@@ -416,7 +419,7 @@
     }));
     const loadShard = (key) => {
       if (!shardCache.has(key)) {
-        shardCache.set(key, manifest().then((m) => load("s/" + key).then((doc) => {
+        shardCache.set(key, manifest().then((m) => load("s/" + (m.search.prefix || "") + key).then((doc) => {
           checkDocument(doc, "searchShard");
           if (doc.key !== key) throw new Error("CanopyX: search shard key does not match the manifest.");
           if (!Array.isArray(doc.entries) || doc.entries.length !== m.search.shards[key]) {
@@ -1406,7 +1409,7 @@
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (hostControl(e.target)) {
+      if (this.head.contains(e.target) || hostControl(e.target)) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -1836,7 +1839,6 @@
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
       this.filterExpand = !!(options && options.autoExpand);
       this.keyMap.forEach((w) => { w.filterCollapsed = false; });
-      this.version++;
       this.relayout();
     },
 
@@ -2109,7 +2111,12 @@
         }
         e.preventDefault();
       });
-      input.addEventListener("blur", () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 150); });
+      input.addEventListener("blur", () => {
+        sequence++;
+        clearTimeout(timer);
+        clearTimeout(blurTimer);
+        blurTimer = setTimeout(close, 150);
+      });
       this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
       box.appendChild(input);
       box.appendChild(list);

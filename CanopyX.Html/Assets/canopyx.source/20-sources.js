@@ -95,7 +95,7 @@
     }));
     const loadShard = (key) => {
       if (!shardCache.has(key)) {
-        shardCache.set(key, manifest().then((m) => load("s/" + key).then((doc) => {
+        shardCache.set(key, manifest().then((m) => load("s/" + (m.search.prefix || "") + key).then((doc) => {
           checkDocument(doc, "searchShard");
           if (doc.key !== key) throw new Error("CanopyX: search shard key does not match the manifest.");
           if (!Array.isArray(doc.entries) || doc.entries.length !== m.search.shards[key]) {
