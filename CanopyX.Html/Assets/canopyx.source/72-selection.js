@@ -23,7 +23,7 @@
       this.anchor = w;
       previous.forEach((p) => { p._v = 0; });
       w._v = 0;
-      this.selectionChanged(w);
+      this.selectionChanged(w, !o.deferNotify);
     },
 
     selectRange(w) {
@@ -44,10 +44,14 @@
       this.selectionChanged(w);
     },
 
-    selectionChanged(w) {
+    selectionChanged(w, notify = true) {
       this.scheduleRender();
       const nodes = Array.from(this.selected).map((s) => s.h);
       this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
+      if (notify) this.notifySelection(w, nodes);
+    },
+
+    notifySelection(w, nodes) {
       this.emit("select", { node: w.h, nodes: nodes });
       if (this.opts.onSelect) {
         this.opts.onSelect(w.h, nodes);

@@ -49,8 +49,9 @@
           break;
         case "Enter":
         case " ":
-          this.activate(w, key === "Enter");
-          break;
+          try { this.activate(w, key === "Enter"); }
+          finally { e.preventDefault(); e.stopPropagation(); }
+          return;
         default:
           handled = this.typeAhead(e, i);
       }
@@ -76,10 +77,11 @@
         if (this.multi && !enter) {
           this.select(w, { toggle: true });
         } else {
-          this.select(w);
+          this.select(w, { deferNotify: enter && this.expandable(w) });
         }
         if (enter && this.expandable(w)) {
           this.toggle(w);
+          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
         }
       }
     },

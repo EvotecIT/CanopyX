@@ -6,7 +6,7 @@
       if (this.destroyed || !w || w.status || !this.expandable(w)) {
         return;
       }
-      if ((this.restoring || this.initializing) && !automatic) {
+      if ((this.restoring || this.initializing || this.replayingToggles) && !automatic) {
         const pending = this.pendingRestorationToggles || (this.pendingRestorationToggles = new Map());
         const last = pending.has(w) ? pending.get(w) : !!w._open;
         pending.set(w, expand === undefined ? !last : expand);
