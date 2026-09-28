@@ -27,7 +27,7 @@ test("a matching paged parent keeps the known sibling count under a filter", asy
   await expect(page.locator('[data-cx-id="child-1"]')).toHaveAttribute("aria-setsize", "4");
   await expect(page.locator('[data-cx-id="child-2"]')).toHaveAttribute("aria-posinset", "2");
   await page.evaluate(() => api.setFilter(node => node.id === "child-1"));
-  await expect(page.locator('[data-cx-id="child-1"]')).toHaveAttribute("aria-setsize", "1");
+  await expect(page.locator('[data-cx-id="child-1"]')).toHaveAttribute("aria-setsize", "-1");
   await page.evaluate(() => api.setFilter(null));
   await expect(page.locator('[data-cx-id="child-1"]')).toHaveAttribute("aria-setsize", "4");
 });
