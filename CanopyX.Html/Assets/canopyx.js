@@ -2180,6 +2180,7 @@
         e.preventDefault();
       });
       input.addEventListener("blur", () => {
+        cancelNavigation();
         sequence++;
         clearTimeout(timer);
         clearTimeout(blurTimer);
@@ -2498,7 +2499,7 @@
         if (!w) {
           return;
         }
-        if (item.cells || Array.isArray(item.flags)) w._v = 0;
+        if (item.cells) w._v = 0;
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;
