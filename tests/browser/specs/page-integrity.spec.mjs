@@ -37,13 +37,15 @@ for (const kind of ["remote", "sidecar"]) for (const nested of [false, true]) fo
   });
 }
 
-for (const broken of ["initial offset", "inline count", "inline reference", "duplicate ID"]) {
+for (const broken of ["initial offset", "inline count", "inline reference", "empty expandable children", "duplicate ID"]) {
   test(`page ${broken} is rejected before any items attach`, async ({ page }) => {
     await open(page);
     await page.evaluate(async ({ data, broken }) => {
       const host = document.querySelector(".cx-host"); host.canopyx.destroy();
       const bad = broken === "inline count" ? { id: "bad", label: "Bad", childCount: 2, children: [{ id: "child", label: "Child" }] } :
-        broken === "inline reference" ? { id: "bad", label: "Bad", ref: "extra", children: [{ id: "child", label: "Child" }] } : { id: "good", label: "Duplicate" };
+        broken === "inline reference" ? { id: "bad", label: "Bad", ref: "extra", children: [{ id: "child", label: "Child" }] } :
+          broken === "empty expandable children" ? { id: "bad", label: "Bad", hasChildren: true, children: [] } :
+            { id: "good", label: "Duplicate" };
       window.integrityApi = CanopyX.createTreeGrid(host, { view: data, source: { page: async () => ({ offset: broken === "initial offset" ? 1 : 0,
         items: broken === "initial offset" ? [{ id: "good", label: "Good" }] : [{ id: "good", label: "Good" }, bad] }) } }); await integrityApi.ready;
     }, { data: view, broken });
@@ -110,6 +112,21 @@ test("counts reject inconsistent inline totals before changing any node", async 
 });
 
 for (const kind of ["remote", "sidecar"]) {
+  test(`${kind} rejects an empty expandable child list before attaching its page`, async ({ page }) => {
+    const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
+      items: [{ id: "bad", label: "Bad", hasChildren: true, children: [] }] };
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: document }));
+    await page.route("https://canopyx.test/data/**", r => {
+      const ref = new URL(r.request().url()).pathname.slice(6, -3);
+      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : document;
+      return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
+    });
+    await open(page, { ...view, roots: undefined, source: kind === "remote" ?
+      { kind, children: "/page?ref={ref}&cursor={cursor}" } : { kind, base: "/data/" } });
+    await expect(page.locator('[data-cx-status="error"]')).toContainText("expandable inline children cannot be empty");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows().length)).toBe(0);
+  });
+
   test(`${kind} rejects detail descendants before attaching the page`, async ({ page }) => {
     const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
       items: [{ id: "detail", label: "Detail", detail: { type: "html", html: "Info" },

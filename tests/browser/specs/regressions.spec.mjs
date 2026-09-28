@@ -41,6 +41,16 @@ for (const kind of ["table", "properties"]) {
   });
 }
 
+test("group detail rows keep group styling without assigning it to ordinary details", async ({ page }) => {
+  const detail = { type: "html", html: "Detail" };
+  await openView(page, baseView([
+    { id: "grouped", label: "Grouped", group: true, detail },
+    { id: "ordinary", label: "Ordinary", detail }
+  ]));
+  await expect(row(page, "grouped")).toHaveClass(/\bcx-group\b/);
+  await expect(row(page, "ordinary")).not.toHaveClass(/\bcx-group\b/);
+});
+
 test("Shift navigation onto show-more never selects a status node", async ({ page }) => {
   await openView(page, baseView([{ id: "a", label: "A" }, { id: "b", label: "B" }, { id: "c", label: "C" }]));
   await row(page, "a").click();
