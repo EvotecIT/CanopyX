@@ -222,6 +222,7 @@
       }
       w.children = null;
       w.next = null;
+      w.error = null;
       w.expanded = false;
       w._v = 0;
       return removedSelection;
@@ -252,7 +253,10 @@
             if (w.loading) w.pendingChildCount = item.childCount;
             else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
               removedSelection = this.invalidateChildren(w) || removedSelection;
-            else if (item.childCount === loaded && w.next) w.next = null;
+            else if (item.childCount === loaded) {
+              w.next = null;
+              w.error = null;
+            }
             if (!item.childCount && (!w.children || !w.children.length)) w.expanded = false;
           }
         }

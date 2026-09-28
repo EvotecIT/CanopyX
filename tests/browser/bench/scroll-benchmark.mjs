@@ -62,6 +62,8 @@ async function scrollOnce(pageUrl, cpu) {
     if (Number(expandedRows) - 1 !== 5 * (Math.ceil(rows / 5) + 1)) {
       throw new Error("Scroll benchmark did not render the expected expanded fixture");
     }
+    const canScroll = await page.locator(".cx-grid").evaluate(grid => grid.scrollHeight > grid.clientHeight + 2);
+    if (!canScroll) throw new Error("Scroll benchmark fixture does not overflow the grid; increase --rows.");
     await page.evaluate(() => {
       const grid = document.querySelector(".cx-grid");
       grid.scrollTop = 0;
