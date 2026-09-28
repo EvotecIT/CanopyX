@@ -255,7 +255,6 @@
       w.next = null;
       w.error = null;
       w.expanded = false;
-      w._v = 0;
       return removedSelection;
     },
 
@@ -279,7 +278,7 @@
         if (!w) {
           return;
         }
-        w._v = 0;
+        if (item.cells || Array.isArray(item.flags)) w._v = 0;
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;

@@ -496,7 +496,7 @@
       canSearch: true,
       manifest: manifest,
       async page(node, cursor) {
-        const ref = cursor || (node ? node.ref : (await manifest()).root);
+        const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
@@ -896,6 +896,7 @@
     while (pending.length) {
       const node = pending.pop();
       requireIdentifier(node && node.id, "node ID");
+      if (typeof node.label !== "string") throw new Error("CanopyX: node label must be a string.");
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");
@@ -2474,7 +2475,6 @@
       w.next = null;
       w.error = null;
       w.expanded = false;
-      w._v = 0;
       return removedSelection;
     },
 
@@ -2498,7 +2498,7 @@
         if (!w) {
           return;
         }
-        w._v = 0;
+        if (item.cells || Array.isArray(item.flags)) w._v = 0;
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;
@@ -2606,6 +2606,7 @@
       destroy: () => {
         grid.destroy();
         if (activeGrids.get(host) === api) activeGrids.delete(host);
+        if (host.canopyx === api) delete host.canopyx;
       }
     });
     activeGrids.set(host, api);
