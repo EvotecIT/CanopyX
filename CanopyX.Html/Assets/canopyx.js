@@ -176,8 +176,8 @@
   }
 
   // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  // A fixed table instead of toLowerCase(), whose data differs between browsers and from .NET: ASCII, Latin-1,
-  // Latin Extended-A, basic Greek, and basic Cyrillic capitals fold to small letters; everything else stays.
+  // Common Latin, Greek, Cyrillic, and Armenian capitals use the same fixed table as the C# writer.
+  // Other UTF-16 units retain their previous single-unit lowercase behavior.
   const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
 
   function foldCode(c) {
@@ -202,7 +202,12 @@
     if (c >= 0x0400 && c <= 0x040F) {
       return c + 0x50;
     }
-    return GREEK_ACCENTED[c] || c;
+    if (c >= 0x0531 && c <= 0x0556) {
+      return c + 0x30;
+    }
+    if (GREEK_ACCENTED[c]) return GREEK_ACCENTED[c];
+    const lower = String.fromCharCode(c).toLowerCase();
+    return lower.length === 1 ? lower.charCodeAt(0) : c;
   }
 
   function foldUnit(unit) {
@@ -836,7 +841,7 @@
       this.tops = tops;
       this.total = y;
       this.canvas.style.height = y + "px";
-      this.grid.setAttribute("aria-rowcount", String(rows.length + 1));
+      this.grid.setAttribute("aria-rowcount", rows.some((row) => row.status) ? "-1" : String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
         while (target && this.indexOf(target) < 0) target = target.parent;
@@ -983,11 +988,15 @@
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       const focusedResize = active && active.classList.contains("cx-resize");
-      this.cols = this.visibleColumns();
+      const nextCols = this.visibleColumns();
+      const layoutChanged = !this.cols || this.cols.length !== nextCols.length || nextCols.some((column, i) => column !== this.cols[i]);
+      this.cols = nextCols;
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
       // Visibility changes alter the cell skeleton; width-only changes do not.
-      this.layout = (this.layout || 0) + 1;
-      this.version++;
+      if (layoutChanged) {
+        this.layout = (this.layout || 0) + 1;
+        this.version++;
+      }
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {
@@ -1254,14 +1263,16 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
-      // A width change does not change the cell layout or its host-owned controls.
-      for (const row of this.rendered.values()) {
+      // Both the original and pooled painters place grid cells directly under the row.
+      // Keep recycled rows in sync without replacing host-owned cell content.
+      const resizeRow = (row) => {
         row.style.width = sum + "px";
-        if (!row._cells) continue;
-        if (row._kind === "node") {
-          row._cells.forEach((slot, i) => { if (this.cols[i]) slot.cell.style.width = this.cols[i].width + "px"; });
-        } else if (row._cells[0]) row._cells[0].cell.style.width = sum + "px";
-      }
+        if (!row._w || !row.firstElementChild) return;
+        if (row._w.status || row._w.h.detail) row.firstElementChild.style.width = sum + "px";
+        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+      };
+      this.rendered.forEach(resizeRow);
+      this.pool.forEach(resizeRow);
     },
 
     startResize(e, column) {
@@ -1818,7 +1829,6 @@
       w.expanded = want;
       const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
-      w._v = 0;
       try {
         if (want && !w.children) {
           await this.loadPage(w, null);
@@ -2001,7 +2011,6 @@
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
-      w._v = 0;
       const revision = w.toggleRevision || 0;
       if (!w.children) {
         await this.loadPage(w, null);
@@ -2114,7 +2123,6 @@
       this.sortState = direction ? { column: columnId, direction: direction } : null;
       this.buildHeader();
       this.applySort(this.root, true);
-      this.version++;
       this.relayout();
     },
 
@@ -2140,7 +2148,6 @@
         return;
       }
       const o = options || {};
-      const previous = Array.from(this.selected);
       if (this.multi && o.range && this.anchor) {
         this.selectRange(w);
         return;
@@ -2155,8 +2162,6 @@
         this.selected = new Set([w]);
       }
       this.anchor = w;
-      previous.forEach((p) => { p._v = 0; });
-      w._v = 0;
       this.selectionChanged(w, !o.deferNotify);
     },
 
@@ -2167,18 +2172,19 @@
         this.select(w);
         return;
       }
-      this.selected.forEach((p) => { p._v = 0; });
       this.selected = new Set();
       for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
         if (!this.rows[i].status) {
           this.selected.add(this.rows[i]);
-          this.rows[i]._v = 0;
         }
       }
       this.selectionChanged(w);
     },
 
     selectionChanged(w, notify = true) {
+      for (const [node, row] of this.rendered) {
+        if (!node.status) row.setAttribute("aria-selected", this.selected.has(node) ? "true" : "false");
+      }
       this.scheduleRender();
       const nodes = Array.from(this.selected).map((s) => s.h);
       this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
@@ -2433,6 +2439,15 @@
       if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
+      // Invalid or obsolete stored state must not clear current expansion or reject ready.
+      try {
+        for (const path of state.expanded) {
+          if (!Array.isArray(path) || !path.length) return;
+          for (const id of path) requireIdentifier(id, "remembered path ID");
+        }
+      } catch (error) {
+        return;
+      }
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
@@ -2441,7 +2456,7 @@
       this.restoring = true;
       clearTimeout(this.saveTimer);
       try {
-        this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; w._v = 0; });
+        this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
         for (const path of paths) {
@@ -2629,7 +2644,7 @@
       return removedSelection;
     },
 
-    applyCounts(doc) {
+    applyCounts(doc, fromRefresh = false) {
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
@@ -2639,6 +2654,11 @@
           throw new Error("CanopyX: inline childCount must equal children length.");
         }
       });
+      if (!fromRefresh && this.countRevisions) {
+        for (const id of new Set(doc.items.map((item) => item.id))) {
+          this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+        }
+      }
       doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (!w) {
@@ -2684,7 +2704,7 @@
       const doc = await this.source.counts(wanted);
       if (this.destroyed) return null;
       checkDocument(doc, "counts");
-      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }));
+      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
       return doc;
     },
 

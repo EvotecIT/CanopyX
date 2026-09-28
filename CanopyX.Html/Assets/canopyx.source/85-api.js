@@ -32,6 +32,15 @@
       if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
+      // Invalid or obsolete stored state must not clear current expansion or reject ready.
+      try {
+        for (const path of state.expanded) {
+          if (!Array.isArray(path) || !path.length) return;
+          for (const id of path) requireIdentifier(id, "remembered path ID");
+        }
+      } catch (error) {
+        return;
+      }
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
@@ -40,7 +49,7 @@
       this.restoring = true;
       clearTimeout(this.saveTimer);
       try {
-        this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; w._v = 0; });
+        this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
         for (const path of paths) {
@@ -228,7 +237,7 @@
       return removedSelection;
     },
 
-    applyCounts(doc) {
+    applyCounts(doc, fromRefresh = false) {
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
@@ -238,6 +247,11 @@
           throw new Error("CanopyX: inline childCount must equal children length.");
         }
       });
+      if (!fromRefresh && this.countRevisions) {
+        for (const id of new Set(doc.items.map((item) => item.id))) {
+          this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+        }
+      }
       doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (!w) {
@@ -283,7 +297,7 @@
       const doc = await this.source.counts(wanted);
       if (this.destroyed) return null;
       checkDocument(doc, "counts");
-      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }));
+      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
       return doc;
     },
 

@@ -74,10 +74,10 @@ for(const id of ["\u0000","line\nbreak","quote\"","emoji😀"]) test(`toolbar co
   expect(checked).toEqual([true,false]);
 });
 
-test("non-tree callback receives a fresh complete grid cell",async({page})=>{
+test("non-tree callback receives a complete cell and sorting retains it",async({page})=>{
   await open(page,{...view,columns:[...view.columns,{id:"extra",title:"Extra",width:200}],roots:[{id:"one",label:"Alpha Beta",cells:{extra:"Value"}}]},`{renderCell(node,id,el){if(id!=="extra")return false; window.shapes=(window.shapes||[]).concat([[el.tagName,el.getAttribute("role"),el.getAttribute("aria-colindex"),el.hasAttribute("data-old")]]);el.setAttribute("data-old","yes");el.classList.add("host-cell");el.textContent="Host value";return true;}}`);
   await page.evaluate(()=>api.sort("name","asc")); await nextFrames(page);
-  expect(await page.evaluate(()=>window.shapes)).toEqual([["DIV","gridcell","2",false],["DIV","gridcell","2",false]]);
+  expect(await page.evaluate(()=>window.shapes)).toEqual([["DIV","gridcell","2",false]]);
   await expect(page.locator('.cx-cell.host-cell')).toHaveText("Host value");
   await page.screenshot({path:path.join(repo,"artifacts/takeover/eleventh-host-cell.png")});
 });

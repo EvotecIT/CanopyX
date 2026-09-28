@@ -13,18 +13,18 @@ permissions:
 jobs:
   build-test-pack:
     name: Build, test, examples, browser tests, pack (${{ matrix.name }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ fromJSON(matrix.runner) }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: Linux
-            runner: ubuntu-latest
+            runner: '["self-hosted","Linux","X64","root"]'
           - name: Windows
-            runner: windows-latest
+            runner: '["self-hosted","Windows","X64"]'
           - name: macOS
-            runner: macos-latest
+            runner: '["self-hosted","macOS","ARM64"]'
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
@@ -63,7 +63,7 @@ jobs:
       - name: Upload packages
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-packages-${{ matrix.runner }}
+          name: canopyx-packages-${{ matrix.name }}
           path: |
             artifacts/packages/Release/*.nupkg
             artifacts/packages/Release/*.snupkg
@@ -73,7 +73,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-examples-${{ matrix.runner }}
+          name: canopyx-examples-${{ matrix.name }}
           path: |
             CanopyX.Examples/bin/Release/net10.0/output/inline.html
             CanopyX.Examples/bin/Release/net10.0/output/outline.html
@@ -83,7 +83,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-playwright-report-${{ matrix.runner }}
+          name: canopyx-playwright-report-${{ matrix.name }}
           path: |
             tests/browser/playwright-report
             tests/browser/test-results

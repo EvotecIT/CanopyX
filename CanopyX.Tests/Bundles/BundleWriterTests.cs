@@ -13,6 +13,39 @@ namespace CanopyX.Tests.Bundles;
 /// </summary>
 public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     [Fact]
+    public void SearchIndexFoldsArmenianCapitalsIntoTheMatchingShard() {
+        var view = new CanopyView("armenian", "Armenian") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Roots.Add(new CanopyNode("one", "Ար"));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-armenian-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            var files = new SidecarFiles(result.DataDirectory, view.Id);
+            const string key = "_0561_0580";
+            Assert.NotNull(files.Document("manifest")["search"]!["shards"]![key]);
+            Assert.Equal("one", files.Document("s/k-" + key)["entries"]![0]!["path"]![0]!.GetValue<string>());
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InvalidColumnKindFailsBeforeBundleOutput() {
+        var view = new CanopyView("bad-kind", "View");
+        view.Columns.Add(new CanopyColumn("name", "Name") { Kind = (CanopyColumnKind)999 });
+        view.Roots.Add(new CanopyNode("one", "One"));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bad-kind-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyBundleWriter().Write(view, directory));
+            Assert.False(Directory.Exists(directory));
+            Assert.Throws<ArgumentOutOfRangeException>(() => view.SaveHtmlBundle(directory));
+            Assert.False(Directory.Exists(directory));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Write_CompleteRemoteTree_ReplacesAnOriginalLoadReference() {
         var view = new CanopyView("complete-ref", "Complete tree") { Source = CanopySource.Remote("children?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));

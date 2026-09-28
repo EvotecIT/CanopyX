@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CanopyX.Json;
 
 namespace CanopyX;
 
@@ -22,6 +23,9 @@ internal static class CanopyViewValidator {
             if (column == null) {
                 throw new InvalidOperationException("View '" + view.Id + "' has a null column.");
             }
+
+            // Bundle writers validate before creating any sidecar output.
+            CanopyJsonNames.ColumnKind(column.Kind);
 
             if (!columns.Add(column.Id)) {
                 throw new InvalidOperationException("View '" + view.Id + "' has more than one column with id '" + column.Id + "'.");
