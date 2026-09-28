@@ -170,3 +170,113 @@ for (const cells of ["bad", ["bad"]]) {
     await expect(page.locator('[data-cx-id="one"]')).toContainText("Before");
   });
 }
+
+test("unknown source kinds fail instead of presenting an empty inline grid", async ({ page }) => {
+  await open(page);
+  const error = await page.evaluate(data => {
+    const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+    try { CanopyX.createTreeGrid(host, { view: { ...data, roots: undefined, source: { kind: "remtoe" } } }); return "accepted"; }
+    catch (e) { return e.message; }
+  }, view);
+  expect(error).toContain("unknown source kind");
+});
+
+test("inline views reject lazy child declarations before attaching roots", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+    const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: [{ id: "parent", label: "Parent",
+      hasChildren: true }] } });
+    let error; try { await api.ready; } catch (e) { error = e.message; }
+    return { error, rows: api.visibleRows().length };
+  }, view);
+  expect(result).toEqual({ error: "CanopyX: inline views cannot declare lazy children.", rows: 0 });
+});
+
+for (const flags of [null, "changed", [""]]) {
+  test(`direct and remote counts reject malformed flags ${JSON.stringify(flags)}`, async ({ page }) => {
+    const data = { ...view, roots: [{ id: "one", label: "One", flags: ["before"] }] };
+    await open(page, data);
+    const direct = await page.evaluate(flags => {
+      const api = document.querySelector('.cx-host').canopyx;
+      try { api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "one", flags }] }); return "accepted"; }
+      catch (error) { return error.message; }
+    }, flags);
+    expect(direct).toContain("counts flags must be an array of nonempty strings");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows()[0].node.flags)).toEqual(["before"]);
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null,
+      offset: 0, items: data.roots, next: null } }));
+    await page.route("https://canopyx.test/counts?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "counts", items: [{ id: "one", flags }] } }));
+    await page.evaluate(async data => {
+      const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+      const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: undefined,
+        source: { kind: "remote", children: "/page?ref={ref}&cursor={cursor}", counts: "/counts?ids={ids}" } } });
+      await api.ready;
+    }, data);
+    const remote = await page.evaluate(async () => {
+      try { await document.querySelector('.cx-host').canopyx.refreshCounts(["one"]); return "accepted"; }
+      catch (error) { return error.message; }
+    });
+    expect(remote).toContain("counts flags must be an array of nonempty strings");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows()[0].node.flags)).toEqual(["before"]);
+  });
+}
+
+for (const nested of [false, true]) {
+  test(`an empty repeated continuation at ${nested ? "child" : "root"} becomes a retryable error`, async ({ page }) => {
+    await open(page);
+    await page.evaluate(async (nested) => {
+      const host = document.querySelector('.cx-host'); const data = host.canopyx.view; host.canopyx.destroy();
+      let attempts = 0;
+      const api = CanopyX.createTreeGrid(host, { view: data, source: { page: async (node, cursor) => {
+        if (nested && !node) return { items: [{ id: "parent", label: "Parent", hasChildren: true }], next: null };
+        if (!cursor) return { items: [{ id: "first", label: "First" }], next: "same" };
+        return ++attempts === 1 ? { items: [], next: "same" } :
+          { items: [{ id: "second", label: "Second" }], next: null };
+      } } }); await api.ready;
+      if (nested) await api.expandPath(["parent"], { expandLast: true, select: false, focus: false });
+      window.integrityApi = api;
+    }, nested);
+    await page.evaluate(async nested => integrityApi.loadMore(nested ? "parent" : null), nested);
+    await expect(page.locator('[data-cx-status="error"]')).toContainText("page continuation did not advance");
+    await expect(page.locator('[data-cx-id="first"]')).toHaveCount(1);
+    await page.evaluate(async nested => integrityApi.loadMore(nested ? "parent" : null), nested);
+    await expect(page.locator('[data-cx-id="second"]')).toHaveCount(1);
+    await expect(page.locator('[data-cx-status="error"]')).toHaveCount(0);
+  });
+}
+
+for (const flags of ["pred", [""]]) {
+  test(`page nodes reject malformed flags ${JSON.stringify(flags)} before attachment`, async ({ page }) => {
+    await open(page);
+    const inline = await page.evaluate(async ({ data, flags }) => {
+      const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+      const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: [{ id: "bad", label: "Bad", flags }] } });
+      let error; try { await api.ready; } catch (e) { error = e.message; }
+      return { error, rows: api.visibleRows().length };
+    }, { data: view, flags });
+    expect(inline).toEqual({ error: "CanopyX: node flags must be an array of nonempty strings.", rows: 0 });
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page",
+      parent: null, offset: 0, next: null, items: [{ id: "bad", label: "Bad", flags }] } }));
+    await page.evaluate(async data => {
+      const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+      const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: undefined,
+        source: { kind: "remote", children: "/page?ref={ref}&cursor={cursor}" } } }); await api.ready;
+    }, view);
+    await expect(page.locator('[data-cx-status="error"]')).toContainText("node flags must be an array of nonempty strings");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows().length)).toBe(0);
+  });
+}
+
+for (const next of ["", 0]) {
+  test(`custom pages reject malformed continuation ${JSON.stringify(next)} before attachment`, async ({ page }) => {
+    await open(page);
+    await page.evaluate(async ({ data, next }) => {
+      const host = document.querySelector('.cx-host'); host.canopyx.destroy();
+      const api = CanopyX.createTreeGrid(host, { view: data, source: { page: async () =>
+        ({ items: [{ id: "first", label: "First" }], next }) } }); await api.ready;
+    }, { data: view, next });
+    await expect(page.locator('[data-cx-status="error"]')).toContainText("page continuation must be a nonempty");
+    expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows().length)).toBe(0);
+  });
+}
