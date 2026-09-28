@@ -99,3 +99,64 @@ test("destroy releases the host reference without revoking a caller-held view", 
   });
   expect(result).toEqual({ released: true, retainedView: "twentythird", replacementRetained: true });
 });
+
+test("flag-only counts retain an edited control on a row that survives filtering", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async () => {
+    const host = document.querySelector(".cx-host");
+    const data = { ...host.canopyx.view,
+      filters: [{ id: "keep", label: "Keep", flag: "keep" }],
+      roots: [{ id: "parent", label: "Parent", flags: ["keep"] }] };
+    host.canopyx.destroy();
+    const api = CanopyX.createTreeGrid(host, { view: data,
+      renderCell(node, column, cell) {
+        if (column !== "name") return false;
+        const input = document.createElement("input");
+        input.value = node.label;
+        cell.appendChild(input);
+        return true;
+      } });
+    await api.ready;
+    api.setFilterActive("keep", true);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const input = host.querySelector('[data-cx-id="parent"] input');
+    input.value = "edited";
+    input.focus();
+    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", flags: ["keep", "new"] }] });
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return { retained: host.querySelector('[data-cx-id="parent"] input') === input,
+      connected: input.isConnected, value: input.value, focused: document.activeElement === input,
+      visible: !!host.querySelector('[data-cx-id="parent"]') };
+  });
+  expect(result).toEqual({ retained: true, connected: true, value: "edited", focused: true, visible: true });
+  await page.screenshot({ path: path.join(repo, "artifacts/takeover/twentyfourth-flags-control.png") });
+});
+
+test("blurring search cancels navigation through a pending child page", async ({ page }) => {
+  await open(page, { ...view, search: { minLength: 2, maxResults: 10 } });
+  await page.evaluate(async () => {
+    const host = document.querySelector(".cx-host");
+    const data = host.canopyx.view;
+    host.canopyx.destroy();
+    const outside = document.createElement("button");
+    outside.textContent = "Outside";
+    document.body.appendChild(outside);
+    const api = CanopyX.createTreeGrid(host, { view: data, source: {
+      canSearch: true,
+      page: async node => node ? new Promise(resolve => { window.finishChild = resolve; }) :
+        { items: [{ id: "parent", label: "Parent", hasChildren: true, childCount: 1 }], next: null },
+      search: async () => ({ hits: [{ path: ["parent", "child"], label: "Child" }], total: 1, truncated: false })
+    } });
+    await api.ready;
+  });
+  const search = page.getByRole("combobox", { name: "Search" });
+  await search.fill("child");
+  await page.getByRole("option", { name: "Child" }).click();
+  await page.waitForFunction(() => !!window.finishChild);
+  const outside = page.getByRole("button", { name: "Outside" });
+  await outside.focus();
+  await page.evaluate(() => window.finishChild({ items: [{ id: "child", label: "Child" }], next: null }));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(outside).toBeFocused();
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.getSelected())).toEqual([]);
+});
