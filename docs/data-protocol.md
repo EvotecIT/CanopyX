@@ -189,13 +189,14 @@ The bundle writer splits the tree into small script files under `base`. Script f
 ```
 
 The three array items are the view id, the file's reference (its path under `base` without `.js`), and the document. The queue works whether the file loads before or after the runtime, and the view id keeps two bundles on one page apart.
+For sidecar sources, each slash-delimited reference component is a file path component: `.` and `..` are rejected before a script is loaded. Remote-source references remain opaque identifiers.
 
 | Reference | Document | Content |
 | --- | --- | --- |
 | `manifest` | `manifest` | View id, first top-level page, node count, page size, search shard list |
 | `r/<n>` | `page` | Page `n` of the top-level nodes |
 | `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the node id in UTF-8, `<hh>` its first two digits. |
-| `s/<key>` | `searchShard` | Search index entries whose words start with `key` |
+| `s/<prefix><key>` | `searchShard` | Search index entries whose words start with `key`; `prefix` comes from the manifest and defaults to empty. |
 
 Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. Hashing keeps file names short, safe on case-insensitive file systems, and independent of the characters in ids. The two-digit folder keeps any one folder from holding tens of thousands of files.
 
@@ -205,6 +206,8 @@ The manifest:
 { "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 120000, "pageSize": 250,
   "search": { "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3 } } }
 ```
+
+`search.prefix` is optional. An absent or empty prefix reads the original `s/<key>` layout; `"k-"` reads portable `s/k-<key>` files, avoiding Windows device names such as `con.js` and `nul.js`. Readers use the prefix before loading any shard. This optional field keeps the `canopyx/1` reader compatible with both layouts.
 
 `search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`), and each entry is filed under every distinct word of its label that has at least two characters.
 

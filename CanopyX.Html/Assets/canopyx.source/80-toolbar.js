@@ -166,7 +166,12 @@
         }
         e.preventDefault();
       });
-      input.addEventListener("blur", () => { clearTimeout(blurTimer); blurTimer = setTimeout(close, 150); });
+      input.addEventListener("blur", () => {
+        sequence++;
+        clearTimeout(timer);
+        clearTimeout(blurTimer);
+        blurTimer = setTimeout(close, 150);
+      });
       this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
       box.appendChild(input);
       box.appendChild(list);
