@@ -58,6 +58,23 @@ test("pointer and keyboard resize align pooled rows with the header", async ({ p
   expect(widths).toEqual(["325px", "160px"]);
 });
 
+test("a pooled row keeps resized cell widths when the viewport grows", async ({ page }) => {
+  await open(page, { ...view, roots: Array.from({ length: 150 }, (_, i) => ({ id: "r" + i, label: "Row " + i })) });
+  const host = page.locator(".cx-host"), grip = page.getByRole("separator", { name: "Resize Name" });
+  await host.evaluate(element => { element.style.height = "900px"; });
+  await nextFrames(page);
+  const before = await page.locator(".cx-row").count();
+  await host.evaluate(element => { element.style.height = "120px"; });
+  await nextFrames(page);
+  expect(await page.locator(".cx-row").count()).toBeLessThan(before);
+  await grip.focus(); await page.keyboard.press("ArrowRight");
+  await host.evaluate(element => { element.style.height = "900px"; });
+  await nextFrames(page);
+  const widths = await page.locator(".cx-row").evaluateAll(rows => rows.map(row => [...row.children].map(cell => cell.style.width)));
+  expect(widths.length).toBeGreaterThan(10);
+  expect(widths.every(pair => pair[0] === "310px" && pair[1] === "160px")).toBe(true);
+});
+
 test("direct counts supersede an older pending refresh", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(async data => {
@@ -86,6 +103,16 @@ test("malformed persisted paths leave declarative expansion and ready intact", a
   await expect(page.locator('[data-cx-id="child"]')).toHaveCount(1);
 });
 
+test("obsolete remembered paths keep declarative expansion", async ({ page }) => {
+  const data = { ...view, stateKey: "twentieth-obsolete", roots: [{ id: "parent", label: "Parent", expanded: true,
+    children: [{ id: "child", label: "Child" }] }] };
+  const html = viewPage(data).replace('<div class="cx-host"',
+    '<script>sessionStorage.setItem("canopyx:twentieth-obsolete", JSON.stringify({expanded:[["parent","removed-child"]]}));</script><div class="cx-host"');
+  await open(page, data, html);
+  await expect(page.locator('[data-cx-id="parent"]')).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator('[data-cx-id="child"]')).toHaveCount(1);
+});
+
 test("paged grid reports an unknown flattened row count", async ({ page }) => {
   await open(page);
   const count = await page.evaluate(async data => {
@@ -103,4 +130,11 @@ test("Armenian capitals match lowercase inline queries", async ({ page }) => {
   await open(page, { ...view, search: { minLength: 2, maxResults: 10, placeholder: "Search" }, roots: [{ id: "armenian", label: "Ար" }] });
   const hits = await page.evaluate(async () => (await document.querySelector(".cx-host").canopyx.search("ար", 10)).hits.map(hit => hit.path));
   expect(hits).toEqual([["armenian"]]);
+});
+
+test("a frozen lowercase pair matches across browser Unicode versions", async ({ page }) => {
+  await open(page, { ...view, search: { minLength: 2, maxResults: 10, placeholder: "Search" },
+    roots: [{ id: "rare-case", label: "\u1C89\u1C89" }] });
+  const hits = await page.evaluate(async () => (await document.querySelector(".cx-host").canopyx.search("\u1C8A\u1C8A", 10)).hits.map(hit => hit.path));
+  expect(hits).toEqual([["rare-case"]]);
 });

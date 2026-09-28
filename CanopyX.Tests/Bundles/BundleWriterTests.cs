@@ -12,16 +12,17 @@ namespace CanopyX.Tests.Bundles;
 /// must sit in the shard the runtime looks in (docs/data-protocol.md, "Sidecar").
 /// </summary>
 public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
-    [Fact]
-    public void SearchIndexFoldsArmenianCapitalsIntoTheMatchingShard() {
-        var view = new CanopyView("armenian", "Armenian") { Search = new CanopySearchOptions() };
+    [Theory]
+    [InlineData("Ար", "_0561_0580")]
+    [InlineData("\u1C89\u1C89", "_1c8a_1c8a")]
+    public void SearchIndexFoldsCapitalsIntoTheMatchingShard(string label, string key) {
+        var view = new CanopyView("folding", "Folding") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
-        view.Roots.Add(new CanopyNode("one", "Ար"));
-        var directory = Path.Combine(Path.GetTempPath(), "canopyx-armenian-" + Guid.NewGuid().ToString("N"));
+        view.Roots.Add(new CanopyNode("one", label));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-folding-" + Guid.NewGuid().ToString("N"));
         try {
             var result = new CanopyBundleWriter().Write(view, directory);
             var files = new SidecarFiles(result.DataDirectory, view.Id);
-            const string key = "_0561_0580";
             Assert.NotNull(files.Document("manifest")["search"]!["shards"]![key]);
             Assert.Equal("one", files.Document("s/k-" + key)["entries"]![0]!["path"]![0]!.GetValue<string>());
         } finally {

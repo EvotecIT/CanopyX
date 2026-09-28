@@ -9,8 +9,8 @@ namespace CanopyX.Bundles;
 /// docs/data-protocol.md), so a word the bundle writer files under a shard is the word the runtime looks up.
 /// </summary>
 /// <remarks>
-/// Common Latin, Greek, Cyrillic, and Armenian capitals use a fixed cross-runtime table. Other UTF-16 units use
-/// invariant single-unit lowercase as they did before the fixed table was introduced.
+/// Common ranges use direct rules. Remaining single-unit lowercase pairs come from the frozen table shared with
+/// the assembled browser runtime, rather than the host's Unicode casing version.
 /// </remarks>
 internal static class CanopySearchFolding {
     internal static char Fold(char unit) {
@@ -47,7 +47,7 @@ internal static class CanopySearchFolding {
             case 0x038C: return (char)0x03CC;
             case 0x038E: return (char)0x03CD;
             case 0x038F: return (char)0x03CE;
-            default: return char.ToLowerInvariant(unit);
+            default: return CanopySearchFoldingTable.Fold(unit);
         }
     }
 
