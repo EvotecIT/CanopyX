@@ -5,7 +5,7 @@ namespace CanopyX.Bundles;
 /// <summary>Checks portable, URL-safe folder components.</summary>
 internal static class PortableFolderNames {
     internal static bool IsPortableComponent(string component) {
-        if (component.Length == 0 || component.EndsWith(".", StringComparison.Ordinal) || IsDeviceName(component)) return false;
+        if (component.Length == 0 || component.Length > 255 || component.EndsWith(".", StringComparison.Ordinal) || IsDeviceName(component)) return false;
         foreach (var ch in component) {
             if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_' || ch == '.')) return false;
         }

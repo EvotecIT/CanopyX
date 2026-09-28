@@ -16,7 +16,7 @@ public sealed class CanopyBundleOptions {
     /// slashes. Defaults to <c>data/&lt;safe view id&gt;-&lt;SHA-256 of view id&gt;/</c>. The readable part is at most
     /// 40 characters, uses letters, digits, <c>-</c> and <c>_</c>, and escapes Windows device names.
     /// </summary>
-    /// <exception cref="ArgumentException">The value contains an empty, unsafe, or non-portable folder component.</exception>
+    /// <exception cref="ArgumentException">The value contains an empty, unsafe, overlong, or non-portable folder component.</exception>
     public string? DataPath {
         get => _dataPath;
         set {
@@ -25,7 +25,7 @@ public sealed class CanopyBundleOptions {
                 var folder = path.EndsWith("/", StringComparison.Ordinal) ? path.Substring(0, path.Length - 1) : path;
                 foreach (var component in folder.Split('/')) {
                     if (!PortableFolderNames.IsPortableComponent(component)) {
-                        throw new ArgumentException("The data path must contain portable relative folder names, without empty components, trailing dots, or reserved device names.", nameof(value));
+                        throw new ArgumentException("The data path must contain portable relative folder names of at most 255 characters, without empty components, trailing dots, or reserved device names.", nameof(value));
                     }
                 }
 

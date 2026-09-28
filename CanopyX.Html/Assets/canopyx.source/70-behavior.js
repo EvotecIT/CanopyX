@@ -3,7 +3,7 @@
   Object.assign(TreeGrid.prototype, {
     /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
     async toggle(w, expand, automatic = false) {
-      if (this.destroyed || !w || w.status || !this.expandable(w)) {
+      if (this.destroyed || !w || w._invalidated || w.status || !this.expandable(w)) {
         return;
       }
       if ((this.restoring || this.initializing || this.replayingToggles) && !automatic) {
@@ -30,9 +30,9 @@
         }
       } finally {
         // A host load callback may throw after the page was applied; its expansion still belongs in saved state.
-        if (!this.destroyed && w.toggleRevision === revision) this.stateChanged();
+        if (!this.destroyed && !w._invalidated && w.toggleRevision === revision) this.stateChanged();
       }
-      if (this.destroyed || w.toggleRevision !== revision) return;
+      if (this.destroyed || w._invalidated || w.toggleRevision !== revision) return;
       this.emit("toggle", { node: w.h, expanded: w.expanded });
       if (this.opts.onToggle) {
         this.opts.onToggle(w.h, w.expanded);
@@ -41,7 +41,7 @@
 
     /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
     loadPage(w, cursor) {
-      if (this.destroyed) return Promise.resolve();
+      if (this.destroyed || w._invalidated) return Promise.resolve();
       if (w.loading) {
         return w._pending;
       }
@@ -53,10 +53,11 @@
       const suppressInitial = !!this.restoring;
       const run = (async () => {
         let info = null;
+        let removedSelection = null;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
-          if (this.destroyed) return;
+          if (this.destroyed || w._invalidated) return;
           const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
           if (!cursor || !w.children) {
             w.children = [];
@@ -78,22 +79,30 @@
           this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
           info = { node: w.h, count: items.length, total: w.total, ms: performance.now() - started };
         } catch (err) {
-          if (this.destroyed) return;
+          if (this.destroyed || w._invalidated) return;
           w.error = err && err.message ? err.message : String(err);
           this.emit("error", { node: w.h, message: w.error });
         } finally {
           w.loading = false;
           w._pending = null;
-          this.relayout();
+          if (!this.destroyed && !w._invalidated && w.pendingChildCount != null) {
+            w.total = Math.max(w.total || 0, w.pendingChildCount);
+            if (w.children && !w.next && w.children.length < w.pendingChildCount) {
+              removedSelection = this.invalidateChildren(w);
+            }
+            w.pendingChildCount = null;
+          }
+          if (!this.destroyed && !w._invalidated) this.relayout();
         }
+        if (removedSelection) this.selectionChanged(removedSelection);
         // Host callback failures do not turn an applied page into a source failure.
         try {
-          if (info && !this.destroyed) {
+          if (info && !this.destroyed && !w._invalidated) {
             this.emit("load", info);
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
         }
       })();
       w._pending = run;
@@ -110,12 +119,8 @@
       if (!w) {
         return;
       }
-      const previous = this.focused;
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
-      if (previous && previous !== w) {
-        previous._v = 0;
-      }
       this.ensureVisible(w);
       this.render();
       const rowEl = this.rendered.get(w);
@@ -182,13 +187,14 @@
 
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
-      if (this.destroyed) return;
+      if (this.destroyed || w._invalidated) return;
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
       w._v = 0;
       if (!w.children) {
         await this.loadPage(w, null);
+        if (w._invalidated) return;
         if (!w.children) {
           throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
         }
@@ -213,15 +219,20 @@
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
           try { await this.openForPath(parent); }
-          catch (err) { if (cancelled()) return null; throw err; }
+          catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
         }
-        if (cancelled()) return null;
+        if (cancelled() || parent._invalidated) return null;
         w = this.keyMap.get(ids[k]);
+        const seenCursors = new Set();
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
           const before = parent.children.length;
           const cursor = parent.next;
+          if (seenCursors.has(cursor)) {
+            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
+          }
+          seenCursors.add(cursor);
           await this.loadPage(parent, parent.next);
-          if (cancelled()) return null;
+          if (cancelled() || parent._invalidated) return null;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -234,9 +245,9 @@
       }
       if (o.expandLast && w && this.expandable(w)) {
         try { await this.openForPath(w); }
-        catch (err) { if (cancelled()) return null; throw err; }
+        catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
       }
-      if (cancelled()) return null;
+      if (cancelled() || (w && w._invalidated)) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
         this.activeFilters.clear();

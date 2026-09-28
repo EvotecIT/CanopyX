@@ -46,10 +46,8 @@
         const rowEl = e.target.closest(".cx-row");
         if (rowEl && rowEl._w && this.focused !== rowEl._w) {
           this.focusRevision = (this.focusRevision || 0) + 1;
-          if (this.focused) {
-            this.focused._v = 0;
-          }
           this.focused = rowEl._w;
+          this.scheduleRender();
         }
       });
       global.addEventListener("beforeprint", this.onPrint);

@@ -11,6 +11,21 @@ namespace CanopyX.Tests.Html;
 /// share, with the page pointing at its sidecar data instead of carrying the tree inline.
 /// </summary>
 public sealed class BundlePageTests {
+    [Fact]
+    public void OverlongPortableFolderFailsBeforeBundleWrites() {
+        var component = new string('a', 256);
+        Assert.Throws<ArgumentException>(() => new CanopyBundleOptions { DataPath = component + "/" });
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-long-folder-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
+            Assert.Throws<ArgumentException>(() => view.SaveHtmlBundle(directory,
+                new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = component + "/" }));
+            Assert.False(Directory.Exists(directory));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("con/")]
     [InlineData("assets/aux/")]

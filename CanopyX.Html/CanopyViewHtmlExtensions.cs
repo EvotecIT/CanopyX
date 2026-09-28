@@ -92,7 +92,7 @@ public static class CanopyViewHtmlExtensions {
             var folder = assetFolder.EndsWith("/", StringComparison.Ordinal) ? assetFolder.Substring(0, assetFolder.Length - 1) : assetFolder;
             foreach (var component in folder.Length == 0 ? Array.Empty<string>() : folder.Split('/')) {
                 if (!CanopyX.Bundles.PortableFolderNames.IsPortableComponent(component)) {
-                    throw new ArgumentException("Asset folders must contain portable names without empty components, trailing dots, or reserved device names.", nameof(options));
+                    throw new ArgumentException("Asset folders must contain portable names of at most 255 characters, without empty components, trailing dots, or reserved device names.", nameof(options));
                 }
             }
         }
