@@ -1,7 +1,5 @@
 # Contributing
 
-> At this documentation-only revision, validate changes with `git diff --check` and check the existing documentation links. The quality loop, solution, asset assembler, and browser tests below are planned and become runnable with the implementation PRs.
-
 ## Local Quality Loop
 
 Run the full repository quality loop before opening a pull request:
@@ -29,12 +27,12 @@ Install the test dependencies once, then let the quality loop generate the examp
 ```powershell
 cd tests/browser
 npm ci
-npx playwright install chromium
+node node_modules/@playwright/test/cli.js install chromium
 cd ../..
 ./Build.ps1 -Configuration Release -SkipPack
 ```
 
-To rerun only the browser tests against the pages already generated, run `npx playwright test` in `tests/browser`.
+To rerun only the browser tests against the pages already generated, run `npm test` in `tests/browser` (it opens the Release examples; set `CANOPYX_EXAMPLES` to another output folder, for example after a Debug build). Set `CANOPYX_BROWSER_CHANNEL=msedge` (or `chrome`) to use an installed browser instead of Playwright's Chromium. After a visible change, refresh the README screenshots with `node tools/screenshots.mjs`.
 
 The suite covers a smoke pass over every Must feature of the tree grid, an axe-core scan in light and dark themes, a keyboard walkthrough, and performance budgets on the large bundle example.
 

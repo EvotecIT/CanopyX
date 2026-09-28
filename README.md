@@ -4,7 +4,16 @@ CanopyX renders large interactive data views from .NET without runtime dependenc
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
 
-> Status: this first change defines the planned 0.1 API and architecture. The implementation, build tools, protocol reference, and packages are not available at this revision. The examples below describe the proposed API.
+
+![A CanopyX tree grid in the light theme: file shares with sizes, dates, owners, badges, and a version's before and after table open as a detail row](docs/images/tree-grid-light.png)
+
+The same view in the dark theme, and the static outline that email, print, and Word get:
+
+| Dark theme | Static outline |
+| --- | --- |
+| ![The tree grid in the dark theme](docs/images/tree-grid-dark.png) | ![The script-free outline table](docs/images/static-outline.png) |
+
+The images come from the pages `CanopyX.Examples` generates; `tests/browser/tools/screenshots.mjs` refreshes them.
 
 ## Packages
 
@@ -63,6 +72,8 @@ CanopyBundleResult bundle = view.SaveHtmlBundle("report");
 Console.WriteLine($"{bundle.FileCount} files, largest {bundle.LargestFileBytes:N0} bytes");
 ```
 
+Local external assets in an HTML bundle use a separate directory tree from its sidecar data. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.
+
 For email, print, or Word, render the static outline:
 
 ```csharp
@@ -79,12 +90,17 @@ const grid = CanopyX.createTreeGrid(document.getElementById("files"), {
   onSelect: (node) => showDrawer(node)
 });
 await grid.expandPath(["projects", "projects/plans"]);
+// Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
+
+Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
+
+Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
 
 ## Documentation
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
-- Data protocol and JSON schema: planned with the protocol implementation.
+- [Data protocol](docs/data-protocol.md): the `canopyx/1` documents, bundle file layout, and remote endpoints, with a JSON schema in `docs/schema`.
 - [Roadmap](TODO.md): milestones, their consumers, and their gates.
 - [Contributing](CONTRIBUTING.md): the quality loop, browser tests, and performance evidence.
 

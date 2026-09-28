@@ -1,0 +1,130 @@
+
+  // ---------- tree grid: model ----------
+  // Loaded nodes keep their children. The visible rows are a flat array rebuilt on every structure change, in time
+  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots.
+  class TreeGrid {
+    constructor(host, options) {
+      const view = checkDocument(options.view, "view");
+      requireIdentifier(view.id, "view ID");
+      this.host = host;
+      this.view = view;
+      this.opts = options;
+      this.id = "cx" + ++instanceSeq;
+      this.source = options.source || sourceFor(view);
+      this.rowH = view.rowHeight || 28;
+      this.pageSize = view.pageSize || 100;
+      this.multi = view.selection === "multiple";
+      this.lang = document.documentElement.lang || undefined;
+      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
+      this.keyMap = new Map();
+      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null, span: 1 };
+      if (!options.source && (!view.source || view.source.kind === "inline")) {
+        this.root.inlineItems = view.roots || [];
+      }
+      this.rows = [];
+      this.tops = [0];
+      this.total = 0;
+      this.version = 1;
+      this.rendered = new Map();
+      this.pool = [];
+      this.focused = null;
+      this.selected = new Set();
+      this.anchor = null;
+      this.filter = null;
+      this.filterExpand = false;
+      this.activeFilters = new Set();
+      this.sortState = null;
+      this.typeBuf = "";
+      this.typeAt = 0;
+      this.rafId = 0;
+      this.iconTemplates = this.buildIcons(view.icons || {});
+      this.initializing = true;
+      this.build();
+      this.buildToolbar();
+      this.ready = this.init();
+    }
+
+    async search(query, limit) {
+      return validateSearchResult(await this.source.search(query, limit));
+    }
+
+    buildIcons(icons) {
+      const templates = new Map();
+      Object.keys(icons).forEach((key) => {
+        const holder = h("span", "cx-icon");
+        holder.setAttribute("aria-hidden", "true");
+        holder.innerHTML = icons[key]; // trusted host SVG, declared once per view
+        templates.set(key, holder);
+      });
+      return templates;
+    }
+
+    async init() {
+      try {
+        this.rootsReady = this.loadRoots();
+        await this.rootsReady;
+        await this.restoreState();
+        // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
+        // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
+        await this.expandInitial(this.root);
+        await this.openDeepLink();
+      } finally {
+        this.initializing = false;
+      }
+      if (this.destroyed) return;
+      await this.flushPendingToggles();
+      if (!this.destroyed) {
+        this.host.setAttribute("data-cx-ready", "true");
+        this.emit("ready", {});
+      }
+    }
+
+    /** Shows the first page of top-level nodes: synchronously for inline data, from the source otherwise. */
+    loadRoots() {
+      if (!this.root.inlineItems) {
+        return this.loadPage(this.root, null);
+      }
+      validateNodes(this.root.inlineItems, this.keyMap, true);
+      const first = slicePage(this.root.inlineItems, null, this.pageSize);
+      this.root.inline = true;
+      this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
+      this.root.total = first.total;
+      this.root.next = first.next;
+      this.applySort(this.root, false);
+      this.relayout();
+      return Promise.resolve();
+    }
+
+    expandable(w) {
+      return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length)));
+    }
+
+    statusRow(parent, kind) {
+      kind = parent.loading ? "loading" : parent.error ? "error" : kind;
+      let row = parent._status;
+      if (!row) {
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+      }
+      row.status = kind;
+      const loaded = parent.children ? parent.children.length : 0;
+      const format = numberFormat(this.lang);
+      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
+        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
+      row._v = 0;
+      return row;
+    }
+
+    /** The cell for a column; the tree column falls back to the label. */
+    cellOf(node, column, index) {
+      const cells = node.cells;
+      if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
+        return cells[column.id];
+      }
+      return index === 0 ? node.label : undefined;
+    }
+
+    emit(name, detail) {
+      if (this.destroyed) return;
+      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
+    }
+  }

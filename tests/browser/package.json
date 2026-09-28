@@ -1,0 +1,14 @@
+{
+  "name": "canopyx-browser-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests and benchmarks for the CanopyX runtime. Not part of the library build.",
+  "scripts": {
+    "test": "node node_modules/@playwright/test/cli.js test",
+    "bench": "node bench/scroll-benchmark.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0"
+  }
+}

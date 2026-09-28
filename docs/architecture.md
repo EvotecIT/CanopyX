@@ -18,7 +18,7 @@ Hosts own everything product-specific. A host maps its records into `CanopyNode`
 3. The host picks a delivery mode:
    - **Single file**: the nodes travel inside the view as inline data. Best for small and medium trees.
    - **Bundle**: `CanopyBundleWriter` splits the tree into small sidecar script files (top level, children per parent, paged long lists, and a search index sharded by name prefix). The page loads them on demand, including from `file://`, where `fetch` of local files is blocked.
-   - **Hosted** (0.2): the page asks an HTTP endpoint for the same documents.
+   - **Hosted**: the page asks an HTTP endpoint for the same documents.
 4. `CanopyX.Html` renders the fragment: a host element, the view as a JSON configuration script, and optionally a `<noscript>` outline. Assets are inlined or referenced as `canopyx.js` and `canopyx.css`.
 5. The runtime finds every `[data-canopyx-host]` element, reads its configuration, creates the data source, and mounts a tree grid.
 
@@ -26,7 +26,7 @@ Every document on the wire carries `"protocol": "canopyx/1"`. The runtime reject
 
 ## Static Fallback
 
-`CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints, so a printed page matches the screen.
+`CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints. The live browser view can render host-trusted HTML details; the built-in print outline encodes that markup as text. A host `renderDetail` callback can supply its own formatted print content. The script-free C# fallback also preserves arbitrary HTML details as text.
 
 ## Browser Runtime
 
@@ -37,11 +37,14 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `00-core.js` | Closure start, constants, text and number formatting, DOM helpers |
 | `10-sidecar.js` | Sidecar registry: sidecar files push into a queue, so they work whether they load before or after the runtime |
 | `20-sources.js` | Inline, sidecar, and remote data sources behind one promise-based interface |
-| `30-model.js` | Tree grid constructor, node model, flattening of visible rows, per-level sort, filter that keeps ancestors |
+| `30-model.js` | Tree grid constructor, root loading, status rows, and events |
+| `31-wrapping.js` | Iterative node construction and initial expansion |
+| `32-layout.js` | Iterative filtering, visible-row layout, and per-level sorting |
 | `40-render.js` | DOM scaffold, windowed rendering, row pool, DOM order of virtual rows |
 | `45-cells.js` | Row and cell painting, badges, tones, icons |
 | `50-detail.js` | Detail row payloads: table, properties, trusted HTML, or a host `renderDetail` callback |
 | `60-keyboard.js` | Keyboard model, type-ahead, roving focus |
+| `65-page-focus.js` | Focus ownership across paging and retry |
 | `70-behavior.js` | Expand and collapse, paging, selection, `expandPath`, column resize and visibility |
 | `80-toolbar.js` | Built-in search box and filter switches |
 | `85-api.js` | Public instance API, remembered state, deep links, outline and visible rows |
@@ -49,14 +52,16 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 
 `window.CanopyX` exposes `createTreeGrid(element, options)`, `mount(root)`, and the data source factories, so JavaScript hosts can build views without the C# side.
 
+Host controls in custom cells and details keep their click and keyboard behavior. Paging updates metadata on retained rows without rebuilding their host content. `focus()` enters the current visible row or the empty grid. Restoring saved expansion suppresses declarative expansion defaults on newly loaded pages. `onLoad` runs after the page is applied; a callback exception rejects the operation without marking that page as a source failure or changing its continuation cursor.
+
 ### Rendering Model
 
 - Loaded nodes keep their children. The visible rows are a flat array rebuilt on each structure change (expand, collapse, page loaded, sort, filter); the cost is proportional to the visible rows, not to the whole tree.
 - Rows have a fixed height. A detail row spans a declared number of row slots, so an offset table gives every row's top position and a binary search finds the first row in the viewport.
-- Only the rows in the viewport, a small overscan, and the focused row exist in the DOM. Rows leaving the window go back to a pool.
-- A recycled row keeps its cell elements. Painting a row updates text, attributes, and badges in place instead of rebuilding the cells.
-- Rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
-- Rows stay in visual order in the DOM, because screen readers in browse mode read DOM order. The focused row is never moved, because moving a focused element drops its focus.
+- Only the rows in the viewport, a small overscan, and the focused row exist in the DOM.
+- A row that leaves the window is reused for a row that enters it. Its cell elements survive; only text, attributes, badges, and position change. Rows retained in the viewport are not repainted.
+- Positions and attributes are written only when they change, and rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
+- Screen readers in browse mode read DOM order, so rows stay in visual order throughout scrolling. Departing rows are updated while detached, retaining their cell skeletons, then inserted in order; rows still visible are retained. The focused row is never moved, because moving a focused element drops its focus.
 
 ### Accessibility Contract
 
@@ -82,7 +87,7 @@ The interaction budgets follow the first consumer's reporting plan for its large
 | Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 40 KB |
 | Largest sidecar file written by the bundle writer | 1 MB |
 
-The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of about 120,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs` and reported in pull requests; hosted CI runners are too noisy to gate on it. Consumers measure their own fixtures against their own budgets.
+The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs`. Cold sidecar-search latency and shard requests can be compared at normal and 4x CPU speed with `tests/browser/bench/search-benchmark.mjs`; its synthetic fixture covers both dense early matches and sparse late matches. Hosted CI runners are too noisy to gate on these timings. Consumers measure their own fixtures against their own budgets.
 
 ## Build Standards
 

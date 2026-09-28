@@ -1,0 +1,116 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-pack:
+    name: Build, test, examples, browser tests, pack (${{ matrix.name }})
+    runs-on: ${{ fromJSON(matrix.runner) }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            runner: '["self-hosted","Linux","X64","root"]'
+          - name: Windows
+            runner: '["self-hosted","Windows","X64"]'
+          - name: macOS
+            runner: '["self-hosted","macOS","ARM64"]'
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/browser/package-lock.json
+
+      - name: Install browser test dependencies
+        working-directory: tests/browser
+        shell: pwsh
+        run: |
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $browser = (Get-Content node_modules/playwright-core/browsers.json -Raw | ConvertFrom-Json).browsers | Where-Object name -eq 'chromium' | Select-Object -First 1
+          if (-not $browser -or $browser.browserVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'Playwright Chromium version is missing.' }
+          if ($env:RUNNER_OS -eq 'Linux') {
+            node node_modules/@playwright/test/cli.js install-deps chromium
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $platform = 'linux64'
+            $executable = 'chrome-linux64/chrome'
+          } elseif ($env:RUNNER_OS -eq 'macOS') {
+            $platform = 'mac-arm64'
+            $executable = 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
+          } else {
+            $platform = 'win64'
+            $executable = 'chrome-win64/chrome.exe'
+          }
+          $archive = Join-Path $env:RUNNER_TEMP 'canopyx-chrome.zip'
+          $directory = Join-Path $env:RUNNER_TEMP 'canopyx-chrome'
+          $url = "https://storage.googleapis.com/chrome-for-testing-public/$($browser.browserVersion)/$platform/chrome-$platform.zip"
+          $curl = if ($env:RUNNER_OS -eq 'Windows') { 'curl.exe' } else { 'curl' }
+          & $curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 600 -o $archive $url
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Force -Path $directory | Out-Null
+          if ($env:RUNNER_OS -eq 'Windows') {
+            Expand-Archive -LiteralPath $archive -DestinationPath $directory -Force
+          } else {
+            & unzip -q -o $archive -d $directory
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $browserPath = Join-Path $directory $executable
+          if (-not (Test-Path -LiteralPath $browserPath -PathType Leaf)) { throw "Browser executable missing: $browserPath" }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CANOPYX_BROWSER_EXECUTABLE=$browserPath" -Encoding utf8
+
+      - name: Run quality loop
+        shell: pwsh
+        run: ./Build.ps1 -Configuration Release
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-packages-${{ matrix.name }}
+          path: |
+            artifacts/packages/Release/*.nupkg
+            artifacts/packages/Release/*.snupkg
+          if-no-files-found: error
+
+      - name: Upload example pages
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-examples-${{ matrix.name }}
+          path: |
+            CanopyX.Examples/bin/Release/net10.0/output/inline.html
+            CanopyX.Examples/bin/Release/net10.0/output/outline.html
+          if-no-files-found: warn
+
+      - name: Upload browser test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-playwright-report-${{ matrix.name }}
+          path: |
+            tests/browser/playwright-report
+            tests/browser/test-results
+          if-no-files-found: ignore
