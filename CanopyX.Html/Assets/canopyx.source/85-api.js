@@ -53,8 +53,15 @@
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
+          if (!this.initializing) await this.flushPendingToggles();
         }
       }
+    },
+
+    async flushPendingToggles() {
+      const pending = this.pendingRestorationToggles;
+      this.pendingRestorationToggles = null;
+      if (pending) for (const [node, expand] of pending) await this.toggle(node, expand);
     },
 
     stateKey() {
@@ -63,12 +70,12 @@
 
     stateChanged() {
       const key = this.stateKey();
-      if (this.destroyed || !key || this.restoring) {
+      if (this.destroyed || !key || this.restoring || this.initializing) {
         return;
       }
       clearTimeout(this.saveTimer);
       this.saveTimer = setTimeout(() => {
-        if (this.destroyed || this.restoring) return;
+        if (this.destroyed || this.restoring || this.initializing) return;
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
@@ -186,6 +193,7 @@
         if (!w) {
           return;
         }
+        w._v = 0;
         if (typeof item.childCount === "number") {
           w.h.childCount = item.childCount;
           w.total = item.childCount;
@@ -202,7 +210,6 @@
           w.h.flags = item.flags.slice();
         }
       });
-      this.version++;
       this.applySort(this.root, true);
       this.relayout();
     },

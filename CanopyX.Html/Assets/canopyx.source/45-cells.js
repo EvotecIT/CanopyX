@@ -80,7 +80,7 @@
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
-      const size = parent.childrenFiltered ? parent.visibleCount : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
+      const size = parent.childrenFiltered ? (parent.next ? -1 : parent.visibleCount) : parent.total != null ? Math.max(parent.total, loaded) : parent.next ? -1 : loaded;
       rowEl.setAttribute("aria-setsize", String(size));
       rowEl.setAttribute("aria-posinset", String(w.pos));
     },
