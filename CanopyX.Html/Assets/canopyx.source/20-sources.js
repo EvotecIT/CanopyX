@@ -179,14 +179,14 @@
         if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
           throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
         }
-        return { hits: doc.hits || [], total: doc.total, truncated: !!doc.truncated };
+        return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
       },
       counts: source.counts ? async (ids) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
           const batch = ids.slice(i, i + COUNTS_BATCH).map(encodeURIComponent).join(",");
           const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
-          items.push.apply(items, doc.items || []);
+          items.push.apply(items, doc.items);
         }
         return { protocol: PROTOCOL, type: "counts", items: items };
       } : null
