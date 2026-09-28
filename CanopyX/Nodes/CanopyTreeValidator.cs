@@ -13,7 +13,7 @@ namespace CanopyX;
 /// hits, deep links, and remembered state point at the wrong row.
 /// </remarks>
 internal static class CanopyTreeValidator {
-    internal static void Validate(IEnumerable<CanopyNode> roots, string owner, Action<CanopyNode>? visit = null, string? parentId = null) {
+    internal static void Validate(IEnumerable<CanopyNode> roots, string owner, Action<CanopyNode>? visit = null, string? parentId = null, bool replacingInlineRefs = false) {
         var ids = new HashSet<string>(StringComparer.Ordinal);
         if (parentId != null) ids.Add(parentId);
         var pending = new Stack<CanopyNode>();
@@ -28,7 +28,7 @@ internal static class CanopyTreeValidator {
                 throw new InvalidOperationException(owner + " has more than one node with id '" + node.Id + "'.");
             }
 
-            node.ValidateShape();
+            node.ValidateShape(replacingInlineRef: replacingInlineRefs && node.HasInlineChildren);
             visit?.Invoke(node);
             var children = node.ChildNodes;
             for (var index = children.Count - 1; index >= 0; index--) {

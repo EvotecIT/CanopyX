@@ -89,7 +89,8 @@ public sealed class CanopyNode {
     /// <summary>
     /// Gets or sets an opaque reference the data source uses to load the first page of children. The bundle writer
     /// sets it for sidecar files; remote sources receive it in the children URL. Defaults to the id. Inline views
-    /// cannot load children later, so they reject it.
+    /// cannot load children later, so they reject it. A complete remote tree can retain its original reference in
+    /// memory while a sidecar bundle replaces it with its generated child-page reference.
     /// </summary>
     /// <exception cref="ArgumentException">The value is empty or contains unpaired surrogates.</exception>
     public string? Ref {
@@ -123,10 +124,10 @@ public sealed class CanopyNode {
     internal IReadOnlyList<CanopyNode> ChildNodes => _children ?? (IReadOnlyList<CanopyNode>)Array.Empty<CanopyNode>();
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
-    internal void ValidateShape() {
+    internal void ValidateShape(bool replacingInlineRef = false) {
         // Detail collections are public; use their canonical writer validation for every renderer.
         if (Detail != null) Detail.WriteJson(new CanopyJsonWriter());
-        if (_ref != null && HasInlineChildren) {
+        if (_ref != null && HasInlineChildren && !replacingInlineRef) {
             throw new InvalidOperationException("Node '" + Id + "' has both inline children and a load reference; inline children must be complete.");
         }
         if (_ref != null && !HasChildren && !HasInlineChildren) {
@@ -193,7 +194,7 @@ public sealed class CanopyNode {
     }
 
     private bool WriteStart(CanopyJsonWriter writer, bool includeChildren, string? refOverride, int? childCountOverride) {
-        ValidateShape();
+        ValidateShape(replacingInlineRef: !includeChildren && HasInlineChildren && refOverride != null);
         writer.BeginObject().Property("id", Id).Property("label", _label);
         writer.OptionalProperty("kind", Kind);
         writer.OptionalProperty("icon", Icon);

@@ -26,7 +26,7 @@ Every document on the wire carries `"protocol": "canopyx/1"`. The runtime reject
 
 ## Static Fallback
 
-`CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints, so a printed page matches the screen.
+`CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints, preserving trusted HTML details and cell indicators. Its host-trusted browser print policy is separate from the script-free C# fallback, which preserves arbitrary HTML details as text.
 
 ## Browser Runtime
 
@@ -87,7 +87,7 @@ The interaction budgets follow the first consumer's reporting plan for its large
 | Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 40 KB |
 | Largest sidecar file written by the bundle writer | 1 MB |
 
-The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of about 120,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs` and reported in pull requests; hosted CI runners are too noisy to gate on it. Consumers measure their own fixtures against their own budgets.
+The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs`. Cold sidecar-search latency and shard requests can be compared at normal and 4x CPU speed with `tests/browser/bench/search-benchmark.mjs`; its synthetic fixture covers both dense early matches and sparse late matches. Hosted CI runners are too noisy to gate on these timings. Consumers measure their own fixtures against their own budgets.
 
 ## Build Standards
 
