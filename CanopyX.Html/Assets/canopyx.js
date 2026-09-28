@@ -45,6 +45,12 @@
     return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
 
+  function requireFlags(flags, name) {
+    if (!Array.isArray(flags) || flags.some((flag) => typeof flag !== "string" || !flag.length)) {
+      throw new Error("CanopyX: " + name + " must be an array of nonempty strings.");
+    }
+  }
+
   /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
@@ -81,6 +87,7 @@
             (!item.cells || typeof item.cells !== "object" || Array.isArray(item.cells))) {
           throw new Error("CanopyX: counts cells must be an object.");
         }
+        if (Object.prototype.hasOwnProperty.call(item, "flags")) requireFlags(item.flags, "counts flags");
       }
     }
     return doc;
@@ -645,7 +652,11 @@
     if (kind === "remote") {
       return remoteSource(view);
     }
-    return inlineSource(view);
+    if (kind === "inline") {
+      if (!Array.isArray(view.roots)) throw new Error("CanopyX: inline view roots must be an array.");
+      return inlineSource(view);
+    }
+    throw new Error("CanopyX: unknown source kind '" + kind + "'.");
   }
 
   // ---------- tree grid: model ----------
@@ -733,7 +744,7 @@
       if (!this.root.inlineItems) {
         return this.loadPage(this.root, null);
       }
-      validateNodes(this.root.inlineItems, this.keyMap);
+      validateNodes(this.root.inlineItems, this.keyMap, true);
       const first = slicePage(this.root.inlineItems, null, this.pageSize);
       this.root.inline = true;
       this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
@@ -950,7 +961,7 @@
     }
   });
   // ---------- protocol node semantics before attachment ----------
-  function validateNodes(nodes, existing) {
+  function validateNodes(nodes, existing, inlineOnly = false) {
     if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
     const seen = new Set();
     const pending = nodes.slice();
@@ -958,9 +969,17 @@
       const node = pending.pop();
       requireIdentifier(node && node.id, "node ID");
       if (typeof node.label !== "string") throw new Error("CanopyX: node label must be a string.");
+      if (Object.prototype.hasOwnProperty.call(node, "flags")) requireFlags(node.flags, "node flags");
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");
+      if (Object.prototype.hasOwnProperty.call(node, "children") && !Array.isArray(node.children)) {
+        throw new Error("CanopyX: node children must be an array.");
+      }
+      if (inlineOnly && (node.ref != null || node.childCount != null && !Array.isArray(node.children) ||
+          node.hasChildren === true && (!Array.isArray(node.children) || !node.children.length))) {
+        throw new Error("CanopyX: inline views cannot declare lazy children.");
+      }
       if (node.detail != null && (Object.prototype.hasOwnProperty.call(node, "children") ||
           node.hasChildren === true || node.ref != null || node.childCount != null)) {
         throw new Error("CanopyX: detail row must be a leaf.");
@@ -985,6 +1004,9 @@
   function validatePage(page, existing, expectedOffset) {
     if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
     const items = page.items;
+    if (Object.prototype.hasOwnProperty.call(page, "next") && page.next !== null) {
+      requireIdentifier(page.next, "page continuation");
+    }
     if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {
       throw new Error("CanopyX: page offset does not match the loaded child count.");
     }
@@ -1943,6 +1965,9 @@
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
           if (this.destroyed || w._invalidated) return;
           const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
+          if (cursor != null && !items.length && page.next === cursor) {
+            throw new Error("CanopyX: page continuation did not advance.");
+          }
           if (!cursor || !w.children) {
             w.children = [];
           }

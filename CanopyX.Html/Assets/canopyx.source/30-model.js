@@ -84,7 +84,7 @@
       if (!this.root.inlineItems) {
         return this.loadPage(this.root, null);
       }
-      validateNodes(this.root.inlineItems, this.keyMap);
+      validateNodes(this.root.inlineItems, this.keyMap, true);
       const first = slicePage(this.root.inlineItems, null, this.pageSize);
       this.root.inline = true;
       this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
