@@ -51,7 +51,9 @@
                 path.push(entry.node.id);
                 if (entry !== item) labels.push(entry.node.label);
               }
-              hits.push({ path: path.reverse(), label: item.node.label, kind: item.node.kind, context: labels.reverse().join(" / ") });
+              const hit = { path: path.reverse(), label: item.node.label, context: labels.reverse().join(" / ") };
+              if (item.node.kind != null) hit.kind = item.node.kind;
+              hits.push(hit);
             }
             const children = item.node.children || [];
             for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], parent: item });
@@ -209,7 +211,8 @@
       counts: source.counts ? async (ids) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
-          const batch = ids.slice(i, i + COUNTS_BATCH).map(encodeURIComponent).join(",");
+          // The host's normal query parser decodes once; retain encoded components for its split-then-decode step.
+          const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
           const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
           items.push.apply(items, doc.items);
         }

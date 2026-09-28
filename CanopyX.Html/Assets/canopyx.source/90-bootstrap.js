@@ -38,7 +38,7 @@
       toOutline: () => grid.toOutline(),
       getState: () => ({ expanded: grid.getExpandedPaths() }),
       setState: (state) => grid.setState(state),
-      search: (query, limit) => grid.source.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
+      search: (query, limit) => grid.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
       loadMore: (id) => {
         const w = id == null ? grid.root : grid.keyMap.get(id);
         return w ? grid.loadMore(w) : Promise.resolve();

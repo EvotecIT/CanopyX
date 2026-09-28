@@ -57,11 +57,15 @@
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
     if (type === "search") {
-      if (!Array.isArray(doc.hits)) throw new Error("CanopyX: search hits must be an array.");
+      validateSearchResult(doc);
       if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
       if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
         throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
       }
+    }
+    if (type === "searchShard") {
+      if (!Array.isArray(doc.entries)) throw new Error("CanopyX: search shard entries must be an array.");
+      doc.entries.forEach(validateSearchHit);
     }
     if (type === "counts") {
       if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
@@ -83,6 +87,30 @@
     if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
       throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
     }
+  }
+
+  /** Search paths must be complete, unambiguous node-id paths before they reach navigation. */
+  function validateSearchHit(hit) {
+    if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
+      throw new Error("CanopyX: search hit needs an ID path and string label.");
+    }
+    const ids = new Set();
+    for (const id of hit.path) {
+      requireIdentifier(id, "search hit path ID");
+      if (ids.has(id)) throw new Error("CanopyX: search hit path repeats node ID '" + id + "'.");
+      ids.add(id);
+    }
+    if ((Object.prototype.hasOwnProperty.call(hit, "kind") && typeof hit.kind !== "string") ||
+        (Object.prototype.hasOwnProperty.call(hit, "context") && typeof hit.context !== "string")) {
+      throw new Error("CanopyX: search hit kind and context must be strings.");
+    }
+  }
+
+  /** Built-in and host-provided search results share the same hit boundary before navigation. */
+  function validateSearchResult(result) {
+    if (!result || !Array.isArray(result.hits)) throw new Error("CanopyX: search hits must be an array.");
+    result.hits.forEach(validateSearchHit);
+    return result;
   }
 
   /** Verifies wire page ownership and required structural counters. */
