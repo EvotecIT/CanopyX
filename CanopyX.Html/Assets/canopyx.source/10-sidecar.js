@@ -53,7 +53,9 @@
     });
     sidecarWaiters.set(key, waiter);
     const script = document.createElement("script");
-    script.src = base + ref + ".js";
+    // A wire reference is an opaque path, not a URL suffix. Encode each component so ? and #
+    // remain part of the file name while the separators between bundle folders stay intact.
+    script.src = base + ref.split("/").map(encodeURIComponent).join("/") + ".js";
     script.async = true;
     script.onload = () => {
       script.remove();

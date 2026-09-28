@@ -298,7 +298,9 @@
     });
     sidecarWaiters.set(key, waiter);
     const script = document.createElement("script");
-    script.src = base + ref + ".js";
+    // A wire reference is an opaque path, not a URL suffix. Encode each component so ? and #
+    // remain part of the file name while the separators between bundle folders stay intact.
+    script.src = base + ref.split("/").map(encodeURIComponent).join("/") + ".js";
     script.async = true;
     script.onload = () => {
       script.remove();
@@ -928,6 +930,9 @@
       const focusedResize = active && active.classList.contains("cx-resize");
       this.cols = this.visibleColumns();
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
+      // Visibility changes alter the cell skeleton; width-only changes do not.
+      this.layout = (this.layout || 0) + 1;
+      this.version++;
       this.grid.setAttribute("aria-colcount", String(this.cols.length));
       this.headRow.textContent = "";
       this.headCells = this.cols.map((column, i) => {
@@ -1131,10 +1136,14 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
-      // A new column layout makes every row rebuild its cell skeleton once.
-      this.layout = (this.layout || 0) + 1;
-      this.version++;
-      this.scheduleRender();
+      // A width change does not change the cell layout or its host-owned controls.
+      for (const row of this.rendered.values()) {
+        row.style.width = sum + "px";
+        if (!row._cells) continue;
+        if (row._kind === "node") {
+          row._cells.forEach((slot, i) => { if (this.cols[i]) slot.cell.style.width = this.cols[i].width + "px"; });
+        } else if (row._cells[0]) row._cells[0].cell.style.width = sum + "px";
+      }
     },
 
     startResize(e, column) {
@@ -1626,7 +1635,10 @@
             w.total = count;
             if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
-            } else if (w.next && loaded === count) w.next = null;
+            } else if (loaded === count) {
+              w.next = null;
+              w.error = null;
+            }
             if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
@@ -1733,20 +1745,22 @@
 
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
-      if (this.destroyed || w._invalidated) return;
+      if (this.destroyed || w._invalidated) return false;
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
       w._v = 0;
+      const revision = w.toggleRevision || 0;
       if (!w.children) {
         await this.loadPage(w, null);
-        if (w._invalidated) return;
+        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
         if (!w.children) {
           throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
         }
       } else if (!wasOpen) {
         await this.expandInitial(w);
       }
+      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
     },
 
     /**
@@ -1762,12 +1776,14 @@
       if (cancelled()) return null;
       let parent = this.root;
       let w = null;
+      const opened = [];
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
-          try { await this.openForPath(parent); }
+          try { if (!await this.openForPath(parent)) return null; }
           catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
+          opened.push([parent, parent.toggleRevision || 0]);
         }
-        if (cancelled() || parent._invalidated) return null;
+        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return null;
         w = this.keyMap.get(ids[k]);
         const seenCursors = new Set();
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
@@ -1778,7 +1794,7 @@
           }
           seenCursors.add(cursor);
           await this.loadPage(parent, parent.next);
-          if (cancelled() || parent._invalidated) return null;
+          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return null;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -1790,10 +1806,12 @@
         parent = w;
       }
       if (o.expandLast && w && this.expandable(w)) {
-        try { await this.openForPath(w); }
+        try { if (!await this.openForPath(w)) return null; }
         catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
+        opened.push([w, w.toggleRevision || 0]);
       }
-      if (cancelled() || (w && w._invalidated)) return null;
+      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
+        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
         this.activeFilters.clear();
@@ -2349,6 +2367,7 @@
       }
       w.children = null;
       w.next = null;
+      w.error = null;
       w.expanded = false;
       w._v = 0;
       return removedSelection;
@@ -2379,7 +2398,10 @@
             if (w.loading) w.pendingChildCount = item.childCount;
             else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
               removedSelection = this.invalidateChildren(w) || removedSelection;
-            else if (item.childCount === loaded && w.next) w.next = null;
+            else if (item.childCount === loaded) {
+              w.next = null;
+              w.error = null;
+            }
             if (!item.childCount && (!w.children || !w.children.length)) w.expanded = false;
           }
         }

@@ -89,7 +89,10 @@
             w.total = count;
             if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
-            } else if (w.next && loaded === count) w.next = null;
+            } else if (loaded === count) {
+              w.next = null;
+              w.error = null;
+            }
             if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
@@ -196,20 +199,22 @@
 
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
-      if (this.destroyed || w._invalidated) return;
+      if (this.destroyed || w._invalidated) return false;
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
       w._v = 0;
+      const revision = w.toggleRevision || 0;
       if (!w.children) {
         await this.loadPage(w, null);
-        if (w._invalidated) return;
+        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
         if (!w.children) {
           throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
         }
       } else if (!wasOpen) {
         await this.expandInitial(w);
       }
+      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
     },
 
     /**
@@ -225,12 +230,14 @@
       if (cancelled()) return null;
       let parent = this.root;
       let w = null;
+      const opened = [];
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
-          try { await this.openForPath(parent); }
+          try { if (!await this.openForPath(parent)) return null; }
           catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
+          opened.push([parent, parent.toggleRevision || 0]);
         }
-        if (cancelled() || parent._invalidated) return null;
+        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return null;
         w = this.keyMap.get(ids[k]);
         const seenCursors = new Set();
         while ((!w || w.parent !== parent) && parent.children && parent.next) {
@@ -241,7 +248,7 @@
           }
           seenCursors.add(cursor);
           await this.loadPage(parent, parent.next);
-          if (cancelled() || parent._invalidated) return null;
+          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return null;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
           }
@@ -253,10 +260,12 @@
         parent = w;
       }
       if (o.expandLast && w && this.expandable(w)) {
-        try { await this.openForPath(w); }
+        try { if (!await this.openForPath(w)) return null; }
         catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
+        opened.push([w, w.toggleRevision || 0]);
       }
-      if (cancelled() || (w && w._invalidated)) return null;
+      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
+        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
         this.activeFilters.clear();
