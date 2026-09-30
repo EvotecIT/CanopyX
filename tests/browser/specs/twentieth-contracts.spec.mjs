@@ -17,11 +17,10 @@ test("selection and sorting retain edited controls in surviving rows", async ({ 
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, cell) {
-      if (column !== "value") return false;
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { value(node, cell) {
       const input = document.createElement("input"); input.setAttribute("aria-label", "Edit " + node.id);
       cell.appendChild(input); return true;
-    } });
+    } } });
     await api.ready;
   });
   const edit = page.getByRole("textbox", { name: "Edit a" });

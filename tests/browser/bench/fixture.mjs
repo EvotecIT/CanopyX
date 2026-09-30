@@ -68,10 +68,31 @@ export function scrollView(groups, perGroup) {
   };
 }
 
-/** A standalone page with the runtime and stylesheet inlined. */
-export function pageHtml(script, style, view) {
+/**
+ * Mounts the view with a host that draws some columns itself, the way a report draws its own chips. api is
+ * "renderers" (one function per column) or "renderCell" (the single callback of runtimes before renderers).
+ */
+function hostMount(columns, api) {
+  return "(function () {"
+    + "var view = JSON.parse(document.getElementById('bench-view').textContent), columns = " + JSON.stringify(columns) + ";"
+    + "function draw(node, id, element) { var cell = node.cells && node.cells[id]; var chip = document.createElement('span'); chip.className = 'cx-badge';"
+    + " chip.textContent = cell && typeof cell === 'object' ? String(cell.text || cell.value) : String(cell == null ? '' : cell); element.appendChild(chip); return true; }"
+    + "var options = { view: view };"
+    + (api === "renderCell"
+      ? "options.renderCell = function (node, id, element) { return columns.indexOf(id) >= 0 ? draw(node, id, element) : false; };"
+      : "options.renderers = {}; columns.forEach(function (id) { options.renderers[id] = function (node, element) { return draw(node, id, element); }; });")
+    + "CanopyX.createTreeGrid(document.getElementById('bench'), options); })();";
+}
+
+/** A standalone page with the runtime and stylesheet inlined. With host, the page mounts the view with host renderers. */
+export function pageHtml(script, style, view, host) {
   const json = JSON.stringify(view).replace(/</g, "\\" + "u003c");
-  return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX scroll benchmark</title><style>" + style
-    + "</style><script>" + script + "</script></head><body class=\"cx-page\"><div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\">"
+  const head = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX scroll benchmark</title><style>" + style
+    + "</style><script>" + script + "</script></head><body class=\"cx-page\">";
+  if (host) {
+    return head + "<div class=\"cx-host\" id=\"bench\" data-cx-theme=\"light\"></div><script type=\"application/json\" id=\"bench-view\">" + json
+      + "</script><script>" + hostMount(host.columns, host.api) + "</script></body></html>";
+  }
+  return head + "<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\">"
     + "<script type=\"application/json\" class=\"cx-config\">" + json + "</script></div></body></html>";
 }

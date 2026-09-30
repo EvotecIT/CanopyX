@@ -16,7 +16,21 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
-      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
+      if (options.renderCell) {
+        throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
+      }
+      // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
+      const renderers = options.renderers || {};
+      if (typeof renderers !== "object" || (Object.getPrototypeOf(renderers) !== Object.prototype && Object.getPrototypeOf(renderers) !== null)) {
+        throw new Error("CanopyX: renderers must be a plain object of functions by column id.");
+      }
+      Object.keys(renderers).forEach((id) => {
+        if (typeof renderers[id] !== "function" || !view.columns.some((column) => column.id === id)) {
+          throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
+        }
+      });
+      const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
+      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
       this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {

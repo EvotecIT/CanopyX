@@ -54,7 +54,7 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 
 `window.CanopyX` exposes `createTreeGrid(element, options)`, `mount(root)`, and the data source factories, so JavaScript hosts can build views without the C# side.
 
-Host controls in custom cells and details keep their click and keyboard behavior. Paging updates metadata on retained rows without rebuilding their host content. `focus()` enters the current visible row or the empty grid. Restoring saved expansion suppresses declarative expansion defaults on newly loaded pages. `onLoad` runs after the page is applied; a callback exception rejects the operation without marking that page as a source failure or changing its continuation cursor.
+`createTreeGrid` rejects the `renderCell` option of earlier revisions, which drew every column through one callback and so gave up cell reuse for the whole grid. Host controls in custom cells and details keep their click and keyboard behavior. Paging updates metadata on retained rows without rebuilding their host content. `focus()` enters the current visible row or the empty grid. Restoring saved expansion suppresses declarative expansion defaults on newly loaded pages. `onLoad` runs after the page is applied; a callback exception rejects the operation without marking that page as a source failure or changing its continuation cursor.
 
 ### Rendering Model
 
@@ -63,6 +63,7 @@ Host controls in custom cells and details keep their click and keyboard behavior
 - A detail row's content sits in a body that sticks at the row's indent and takes the visible width of the grid (`--cx-view-w`, which the runtime keeps up to date), so it stays readable when the columns are wider than the grid.
 - Only the rows in the viewport, a small overscan, and the focused row exist in the DOM.
 - A row that leaves the window is reused for a row that enters it. Its cell elements survive; only text, attributes, badges, and position change. Rows retained in the viewport are not repainted.
+- A host can draw columns itself through `renderers`, one function per column id. Only those columns give up cell reuse: their cell is rebuilt from a clean element each time a row is painted, so nothing a renderer left behind leaks into the next node. A renderer that returns false falls back to the default painting for that cell.
 - Positions and attributes are written only when they change, and rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
 - Screen readers in browse mode read DOM order, so rows stay in visual order throughout scrolling. Departing rows are updated while detached, retaining their cell skeletons, then inserted in order; rows still visible are retained. The focused row is never moved, because moving a focused element drops its focus.
 
@@ -87,7 +88,7 @@ The interaction budgets follow the first consumer's reporting plan for its large
 | First rows painted, cold load | 2.5 s |
 | Expand, page of children, search to expanded path | 250 ms (400 ms with a hosted round trip) |
 | Scrolling a large expanded tree | no blank rows |
-| Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 43 KB |
+| Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 48 KB |
 | Largest sidecar file written by the bundle writer | 1 MB |
 
 The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs`. Search index size and the cold and warm time from a query to an expanded hit are measured at normal and 4x CPU speed with `tests/browser/bench/search-benchmark.mjs`, on the large bundle example and on the two benchmark bundles that `CanopyX.Examples --search-bench` writes (an adversarial deep tree and a directory-shaped tree). Bundle packing is measured with `tests/browser/bench/expand-benchmark.mjs` on the bundle `CanopyX.Examples --pack-bench` writes (5,000 services, about 380,000 rows under about 150,000 parents): the files and bytes of the bundle, the time to the first rows, and cold expands level by level, at normal and 4x CPU speed. Hosted CI runners are too noisy to gate on these timings. Consumers measure their own fixtures against their own budgets.

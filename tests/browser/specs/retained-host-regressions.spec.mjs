@@ -21,7 +21,7 @@ for (const [level, detail] of [["root", false], ["root", true], ["child", false]
         if (level !== "root" && !node) return { items: [{ id: "parent", label: "Parent", hasChildren: true, expanded: true }] };
         if (++calls === 1) return { items: [{ id: "existing", label: "Existing", ...(detail ? { detail: { type: "html", html: "", height: 1 } } : {}) }], next: "second" };
         return new Promise(resolve => { window.finishPage = resolve; });
-      } }, renderCell: (node, col, el) => render(node, el), renderDetail: render }); await api.ready;
+      } }, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])), renderDetail: render }); await api.ready;
     }, { level, detail });
     await page.locator("[data-cx-status=more]").focus(); await page.keyboard.press("Enter");
     await page.waitForFunction(() => !!window.finishPage);

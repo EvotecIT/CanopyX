@@ -94,15 +94,15 @@ test("ordinary custom controls retain click and keyboard ownership without row s
     const host = document.querySelector(".cx-host"), data = { ...host.canopyx.view, roots: [
       { id: "parent", label: "Parent", children: [{ id: "leaf", label: "Leaf" }] }, { id: "other", label: "Other" }] };
     host.canopyx.destroy(); window.activations = 0;
-    const api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, col, el) {
-      if (col !== "controls" || node.id !== "parent") return false;
+    const api = CanopyX.createTreeGrid(host, { view: data, renderers: { controls(node, el) {
+      if (node.id !== "parent") return false;
       const button = document.createElement("button"); button.textContent = "Host action";
       button.onclick = () => window.activations++; el.appendChild(button);
       const input = document.createElement("input"); input.setAttribute("aria-label", "Host input"); el.appendChild(input);
       const editor = document.createElement("span"); editor.contentEditable = "true";
       editor.setAttribute("aria-label", "Host editor"); editor.textContent = "Editable"; el.appendChild(editor);
       return true;
-    } }); await api.ready;
+    } } }); await api.ready;
   });
   await page.locator('[data-cx-id="other"]').click();
   const button = page.getByRole("button", { name: "Host action" });

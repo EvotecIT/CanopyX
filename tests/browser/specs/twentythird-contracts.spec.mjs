@@ -20,13 +20,12 @@ test("count-only refresh keeps an edited host control on the affected row", asyn
       source: { kind: "remote", children: "/children?ref={ref}&cursor={cursor}" } },
       source: { page: async node => ({ items: node ? [{ id: "child", label: "Child" }] :
         [{ id: "parent", label: "Parent", hasChildren: true, ref: "parent", childCount: 1 }], next: null }) },
-      renderCell(node, column, cell) {
-        if (column !== "name") return false;
+      renderers: { name(node, cell) {
         const input = document.createElement("input");
         input.value = node.label;
         cell.appendChild(input);
         return true;
-      } });
+      } } });
     await api.ready;
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const input = host.querySelector('[data-cx-id="parent"] input');
@@ -109,13 +108,12 @@ test("flag-only counts retain an edited control on a row that survives filtering
       roots: [{ id: "parent", label: "Parent", flags: ["keep"] }] };
     host.canopyx.destroy();
     const api = CanopyX.createTreeGrid(host, { view: data,
-      renderCell(node, column, cell) {
-        if (column !== "name") return false;
+      renderers: { name(node, cell) {
         const input = document.createElement("input");
         input.value = node.label;
         cell.appendChild(input);
         return true;
-      } });
+      } } });
     await api.ready;
     api.setFilterActive("keep", true);
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));

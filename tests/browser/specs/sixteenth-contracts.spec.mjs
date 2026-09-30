@@ -27,7 +27,7 @@ for (const kind of ["cell", "detail"]) {
         return true;
       };
       window.api = CanopyX.createTreeGrid(host, { view: data,
-        ...(kind === "cell" ? { renderCell: (node, _column, element) => render(node, element) } : { renderDetail: render }) });
+        ...(kind === "cell" ? { renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) } : { renderDetail: render }) });
       await api.ready;
     }, kind);
     const input = page.getByRole("textbox", { name: "Host edit" });

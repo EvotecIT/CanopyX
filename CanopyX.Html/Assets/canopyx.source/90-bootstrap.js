@@ -3,12 +3,14 @@
   /**
    * Creates a tree grid in a host element.
    * @param {HTMLElement} host The element that receives the grid.
-   * @param {{ view: object, source?: object, renderCell?: Function, renderDetail?: Function,
+   * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
-   *   renderCell(node, columnId, element, context) returns true when it drew the cell itself; context.index is the
-   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row;
+   *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
+   *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
+   *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling.
+   *   renderDetail(node, element) returns true when it drew the detail row;
    *   element is the body of the row, which stays inside the visible width of the grid.
    */
   function createTreeGrid(host, options) {

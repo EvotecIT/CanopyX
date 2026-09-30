@@ -117,10 +117,10 @@ test("fallback tone preserves the class added by a host cell decorator", async (
     const host = document.querySelector(".cx-host");
     const data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, element) {
-      if (column === "value") { element.classList.add("host-decorator"); return false; }
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { value(node, element) {
+      element.classList.add("host-decorator");
       return false;
-    } });
+    } } });
     return api.ready;
   });
   const cell = page.locator('[data-cx-id="one"] [aria-colindex="2"]');

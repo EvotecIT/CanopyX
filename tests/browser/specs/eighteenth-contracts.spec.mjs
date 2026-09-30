@@ -68,7 +68,8 @@ for (const detail of [false, true]) {
         cell.appendChild(input); return true;
       };
       window.api = CanopyX.createTreeGrid(host, { view: data,
-        ...(detail ? { renderDetail: (node, cell) => render(node, null, cell) } : { renderCell: render }) });
+        ...(detail ? { renderDetail: (node, cell) => render(node, null, cell) }
+          : { renderers: Object.fromEntries(data.columns.map(column => [column.id, (node, cell) => render(node, column.id, cell)])) }) });
       await api.ready;
     }, detail);
     const input = page.getByRole("textbox", { name: "Host edit" });

@@ -217,11 +217,12 @@ test("count refresh preserves an unrelated edited host control and focus", async
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, _column, cell) {
+    const render = (node, cell) => {
       if (node.id !== "editor") return false;
       const input = document.createElement("input"); input.setAttribute("aria-label", "Host edit"); cell.appendChild(input);
       return true;
-    } });
+    };
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) });
     await api.ready;
   });
   const input = page.getByRole("textbox", { name: "Host edit" });

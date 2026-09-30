@@ -877,7 +877,21 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
-      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
+      if (options.renderCell) {
+        throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
+      }
+      // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
+      const renderers = options.renderers || {};
+      if (typeof renderers !== "object" || (Object.getPrototypeOf(renderers) !== Object.prototype && Object.getPrototypeOf(renderers) !== null)) {
+        throw new Error("CanopyX: renderers must be a plain object of functions by column id.");
+      }
+      Object.keys(renderers).forEach((id) => {
+        if (typeof renderers[id] !== "function" || !view.columns.some((column) => column.id === id)) {
+          throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
+        }
+      });
+      const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
+      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
       this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {
@@ -1641,7 +1655,8 @@
   // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
   // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
   // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
-  // (node, detail, status) or the columns change.
+  // (node, detail, status) or the columns change. A column the host draws itself (options.renderers) is the exception:
+  // its cell is rebuilt on every paint, and only that column pays for it.
   function setAttr(element, name, value) {
     const cache = element._attrs || (element._attrs = {});
     if (cache[name] === value) {
@@ -1832,8 +1847,9 @@
 
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
-      if (this.opts.renderCell) {
-        // Host-rendered cells own their content, so they are rebuilt on every paint, from a clean cell.
+      const render = column.render;
+      if (render) {
+        // A host-rendered cell owns its content, so it is rebuilt on every paint, from a clean cell.
         slot.cell.className = slot.base;
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
@@ -1850,7 +1866,7 @@
           slot.content = fresh;
         }
         slot.badges = [];
-        if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
+        if (render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true) {
           return;
         }
         slot.content.appendChild(slot.textSpan);
@@ -1862,7 +1878,7 @@
       const object = isCellObject(value);
       const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
       if (slot.cls !== cls) {
-        if (this.opts.renderCell) {
+        if (render) {
           // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
           if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
         } else {
@@ -3057,7 +3073,7 @@
           const value = this.cellOf(w.h, column, index);
           const text = cellText(value, column, this.lang);
           const content = h("span");
-          if (!this.opts.renderCell || this.opts.renderCell(w.h, column.id, content, { level: w.level, expanded: w.expanded, index }) !== true) {
+          if (!column.render || column.render(w.h, content, { column: column.id, level: w.level, expanded: w.expanded, index }) !== true) {
             const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
             content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.lang));
           }
@@ -3174,12 +3190,14 @@
   /**
    * Creates a tree grid in a host element.
    * @param {HTMLElement} host The element that receives the grid.
-   * @param {{ view: object, source?: object, renderCell?: Function, renderDetail?: Function,
+   * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
-   *   renderCell(node, columnId, element, context) returns true when it drew the cell itself; context.index is the
-   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row;
+   *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
+   *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
+   *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling.
+   *   renderDetail(node, element) returns true when it drew the detail row;
    *   element is the body of the row, which stays inside the visible width of the grid.
    */
   function createTreeGrid(host, options) {

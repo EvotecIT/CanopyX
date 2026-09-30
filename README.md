@@ -96,11 +96,15 @@ JavaScript hosts can create a tree grid directly from a view document:
 ```js
 const grid = CanopyX.createTreeGrid(document.getElementById("files"), {
   view,
+  // The host draws the columns it names and returns true; every other column keeps the default painting.
+  renderers: { owner: (node, element, context) => drawOwnerChip(node, element) },
   onSelect: (node) => showDrawer(node)
 });
 await grid.expandPath(["projects", "projects/plans"]);
 // Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
+
+A renderer gets the node, the element to fill, and `{ column, level, expanded, index }`. Name only the columns the host really draws: their cells are rebuilt whenever a row is painted, while the other columns reuse theirs, which is what keeps scrolling smooth on slow machines.
 
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 

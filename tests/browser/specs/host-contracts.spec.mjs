@@ -34,14 +34,15 @@ test("custom renderers get fresh containers and their decorators precede fallbac
     const host = document.querySelector(".cx-host"); host.canopyx.destroy();
     const seen = new WeakSet(); window.reusedContainers = 0;
     data.roots = Array.from({ length: 100 }, (_, i) => ({ id: "n" + i, label: "Label" + i, cells: { value: "Value" + i } }));
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, element) {
+    const render = (node, element) => {
       if (seen.has(element)) window.reusedContainers++;
       seen.add(element);
       const prefix = document.createElement("span"); prefix.textContent = "Prefix";
       element.replaceChildren(prefix);
       if (node.id === "n0") element.setAttribute("data-host-mark", "only-first");
       return false;
-    } });
+    };
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) });
     return window.api.ready;
   }, view);
   await expect(page.locator('[data-cx-id="n0"]')).toContainText("PrefixLabel0");
@@ -84,10 +85,11 @@ test("outline respects owned custom cells and fallback badge order", async ({ pa
     const host = document.querySelector(".cx-host"); host.canopyx.destroy();
     data.roots = [{ id: "owned", label: "Owned", badges: [{ text: "Suppressed" }] },
       { id: "fallback", label: "Fallback", badges: [{ text: "Node badge" }], cells: { name: { value: "Fallback", badges: [{ text: "Cell badge" }] } } }];
-    const api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, el) {
+    const render = (node, el) => {
       if (node.id === "owned") { el.textContent = "Host only"; return true; }
       return false;
-    } });
+    };
+    const api = CanopyX.createTreeGrid(host, { view: data, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) });
     await api.ready;
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const div = document.createElement("div"); div.innerHTML = api.toOutline();

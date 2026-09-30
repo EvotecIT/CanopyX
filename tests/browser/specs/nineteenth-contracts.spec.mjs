@@ -17,13 +17,12 @@ test("filtering retains a matching row's edited host control", async ({ page }) 
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, cell) {
-      if (column !== "value") return false;
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { value(node, cell) {
       const input = document.createElement("input");
       input.setAttribute("aria-label", "Host edit " + node.id);
       cell.appendChild(input);
       return true;
-    } });
+    } } });
     await api.ready;
   });
   const edit = page.getByRole("textbox", { name: "Host edit keep" });

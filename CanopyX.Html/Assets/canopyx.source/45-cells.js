@@ -3,7 +3,8 @@
   // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
   // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
   // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
-  // (node, detail, status) or the columns change.
+  // (node, detail, status) or the columns change. A column the host draws itself (options.renderers) is the exception:
+  // its cell is rebuilt on every paint, and only that column pays for it.
   function setAttr(element, name, value) {
     const cache = element._attrs || (element._attrs = {});
     if (cache[name] === value) {
@@ -194,8 +195,9 @@
 
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
-      if (this.opts.renderCell) {
-        // Host-rendered cells own their content, so they are rebuilt on every paint, from a clean cell.
+      const render = column.render;
+      if (render) {
+        // A host-rendered cell owns its content, so it is rebuilt on every paint, from a clean cell.
         slot.cell.className = slot.base;
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
@@ -212,7 +214,7 @@
           slot.content = fresh;
         }
         slot.badges = [];
-        if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
+        if (render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true) {
           return;
         }
         slot.content.appendChild(slot.textSpan);
@@ -224,7 +226,7 @@
       const object = isCellObject(value);
       const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
       if (slot.cls !== cls) {
-        if (this.opts.renderCell) {
+        if (render) {
           // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
           if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
         } else {

@@ -32,18 +32,17 @@ test("a matching paged parent keeps the known sibling count under a filter", asy
   await expect(page.locator('[data-cx-id="child-1"]')).toHaveAttribute("aria-setsize", "4");
 });
 
-test("outline and live renderCell callbacks use the same original column index when one is hidden", async ({ page }) => {
+test("outline and live column renderers get the same original column index when one is hidden", async ({ page }) => {
   await open(page, { ...view, columns: [{ id: "name", title: "Name", width: 240 },
     { id: "hidden", title: "Hidden", width: 100, hidden: true }, { id: "shown", title: "Shown", width: 120 }],
   roots: [{ id: "one", label: "One", cells: { shown: "Value" } }] });
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, cell, context) {
-      if (column !== "shown") return false;
-      cell.textContent = "index=" + context.index;
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { shown(node, cell, context) {
+      cell.textContent = context.column + " index=" + context.index;
       return true;
-    } });
+    } } });
     await api.ready;
   });
   await nextFrames(page);
@@ -53,7 +52,7 @@ test("outline and live renderCell callbacks use the same original column index w
     return { live: host.querySelector('[data-cx-id="one"] [aria-colindex="2"]')?.textContent,
       outline: outline.querySelector("tbody tr td:nth-child(2)")?.textContent };
   });
-  expect(result).toEqual({ live: "index=2", outline: "index=2" });
+  expect(result).toEqual({ live: "shown index=2", outline: "shown index=2" });
 });
 
 test("a failed lazy expansion is saved and reopened as an error row", async ({ page }) => {
