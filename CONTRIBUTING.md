@@ -16,6 +16,8 @@ For a faster C#-only loop:
 dotnet test .\CanopyX.sln -c Release
 ```
 
+The solution also holds `CanopyX.Tests.NetFramework`, which runs the framework-sensitive contract tests (search folding) against the `net472` build. It builds on every platform and runs on Windows.
+
 Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging.
 
 ## Browser Tests
