@@ -3368,7 +3368,9 @@
         hash = "#" + params.join("&");
       }
       try {
-        global.history.replaceState(global.history.state, "", hash);
+        // A bare "#fragment" resolves against the document's base URL, and a host page can carry a <base href> that
+        // points somewhere else: the address would leave the page. The page's own address is the base here.
+        global.history.replaceState(global.history.state, "", global.location.href.replace(/#.*$/, "") + hash);
       } catch (e) {
         global.location.hash = hash;
       }

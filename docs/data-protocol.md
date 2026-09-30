@@ -196,6 +196,8 @@ A host with a link scheme of its own passes two callbacks to the runtime and the
 
 The two callbacks are given together. One view per page can own the fragment this way; views with the default scheme share it through their `cx.<view id>` parameters. A newer fragment cancels one that is still being opened, and a fragment that could not be opened can be tried again.
 
+The fragment is written onto the page's own address (`location`), replacing the current history entry. A `<base href>` in the page, which some hosts inject so that the relative links of an uploaded report resolve against its library, does not change where a deep link points. It does change where relative data URLs resolve: a relative sidecar `base` and relative remote endpoint templates follow the document's base URL, like every other relative URL of the page.
+
 ## Counts
 
 ```json
