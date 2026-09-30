@@ -215,6 +215,53 @@ test("a packed index answers like separate files and loads only the packs its do
   expect(requested.filter((ref) => ref.startsWith("q/")).length).toBeLessThan(Object.keys(pack(separate, 2)).length - 1);
 });
 
+test("a corrupt or missing index pack is reported in the search box, and the query succeeds once the pack is back", async ({ page }) => {
+  const hits = [{ path: ["alpha"], label: "Alpha report" }, { path: ["beta"], label: "Beta report" }];
+  const { search: index, docs } = searchIndex(hits);
+  const files = pack({ manifest: manifest(index), ...docs }, 1);
+  files["r/0"] = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 2, next: null,
+    items: [{ id: "alpha", label: "Alpha report" }, { id: "beta", label: "Beta report" }] };
+  // With one document per pack, the shard of "report" has a pack of its own.
+  const shardPack = "q/" + (files.manifest.search.entryPacks.length + files.manifest.search.shardPacks.indexOf("re"));
+  const good = files[shardPack];
+  const requested = [];
+  const bundleView = { ...view, source: { kind: "sidecar", base: "/data/" }, search: { minLength: 2, maxResults: 20 } };
+  delete bundleView.roots;
+  await page.route("https://canopyx.test/", (route) => route.fulfill({ contentType: "text/html", body: viewPage(bundleView) }));
+  await page.route("https://canopyx.test/data/**", (route) => {
+    const ref = new URL(route.request().url()).pathname.slice(6, -3);
+    requested.push(ref);
+    if (!files[ref]) return route.abort();
+    return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, files[ref]])});` });
+  });
+  await page.goto("https://canopyx.test/");
+  await page.waitForSelector("[data-cx-ready]");
+  const input = page.locator(".cx-search-input");
+  const status = page.locator(".cx-search .cx-sr-only");
+  const query = async () => {
+    await input.fill("");
+    await input.fill("report");
+  };
+
+  // A pack whose shard does not match the manifest: the failure is reported and nothing is listed.
+  files[shardPack] = { ...good, pages: [JSON.stringify({ protocol: "canopyx/1", type: "searchShard", key: "re", words: ["report"], postings: [[0]] })] };
+  await query();
+  await expect(status).toContainText("Search failed: CanopyX: search shard posting count does not match the manifest");
+  await expect(page.locator(".cx-result")).toHaveCount(0);
+  // The failed pack is not kept: the next query asks for it again, and a missing file is reported by name.
+  delete files[shardPack];
+  await query();
+  await expect(status).toContainText("Search failed: Sidecar file is missing: " + shardPack);
+  await expect(page.locator(".cx-result")).toHaveCount(0);
+  // Back in place, the same query finds both nodes, and choosing a hit selects it.
+  files[shardPack] = good;
+  await query();
+  await expect(page.locator(".cx-result")).toHaveCount(2);
+  expect(requested.filter((ref) => ref === shardPack)).toHaveLength(3);
+  await page.locator(".cx-result").first().click();
+  await expect(page.locator('.cx-row[data-cx-id="alpha"]')).toHaveAttribute("aria-selected", "true");
+});
+
 test("a pack map that does not match the index is rejected before a pack is read", async ({ page }) => {
   const { search: index, docs } = searchIndex([{ path: ["a"], label: "Alpha beta" }, { path: ["b"], label: "Beta gamma" }]);
   const packed = pack({ manifest: manifest(index), ...docs }, 2);
