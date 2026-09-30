@@ -67,6 +67,7 @@ A node matches a filter when its `flags` contain the filter's `flag`; a matching
 | `cells` | object | Optional. Column id to cell. The first column shows `label` unless it has a cell. |
 | `badges` | array of badges | Optional. Shown after the label. |
 | `flags` | array of strings | Optional. Host flags used by filters. |
+| `data` | object of strings | Optional. Facts the host's own scripts need that are not cells, badges, or flags, by name. The runtime does not show or search them; host callbacks (`renderers`, `renderDetail`, a `setFilter` predicate, `onSelect`) read them as `node.data`. Names are not empty and not `__proto__`. A counts document does not change them. |
 | `hasChildren` | boolean | Optional. The node has children, loaded inline or on demand. |
 | `childCount` | integer, at least 1 | Optional. Total number of children, including those not loaded. Drives `aria-setsize` and "100 of 1,234 loaded". With inline `children` it equals their count. |
 | `ref` | non-empty string | Optional. Opaque reference a data source uses to load the first page of children. Defaults to `id`. |

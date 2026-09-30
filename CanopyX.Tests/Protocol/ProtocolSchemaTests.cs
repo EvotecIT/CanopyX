@@ -121,6 +121,21 @@ public sealed class ProtocolSchemaTests {
     }
 
     [Fact]
+    public void ToJson_NodeData_IsWrittenAsAnObjectOfStrings() {
+        var view = SampleDocuments.FullView();
+        var plans = JsonNode.Parse(view.ToJson())!["roots"]![0]!["children"]![0]!;
+
+        Assert.Equal("{\"position\":\"0-42\",\"level\":\"high\"}", plans["data"]!.ToJsonString());
+        Assert.Null(JsonNode.Parse(view.ToJson())!["roots"]![0]!["data"]);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["data"] = JsonNode.Parse("{\"position\":42}"))).IsValid);
+        foreach (var (name, value) in new[] { ("empty", (string?)null), ("", "x"), ("__proto__", "x") }) {
+            view.Roots[0].Data.Clear();
+            view.Roots[0].Data[name] = value!;
+            Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        }
+    }
+
+    [Fact]
     public void ToJson_TimeZone_IsWrittenOnlyWhenTheViewStartsInLocalTime() {
         var local = SampleDocuments.FullView();
         var utc = SampleDocuments.FullView();

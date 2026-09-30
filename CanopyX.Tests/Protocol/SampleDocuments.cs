@@ -37,6 +37,8 @@ internal static class SampleDocuments {
         plans.Cells["modified"] = new DateTime(2026, 9, 27, 10, 15, 0, DateTimeKind.Utc);
         plans.Cells["size"] = new CanopyCell(1_048_576L) { Badges = { new CanopyBadge("large", CanopyTone.Danger) } };
         plans.Flags.Add("changed");
+        plans.Data["position"] = "0-42";
+        plans.Data["level"] = "high";
         share.Children.Add(plans);
 
         var history = new CanopyNode("share/plans/history", "History") { ChildCount = 1 };

@@ -116,6 +116,7 @@
         "cells": { "$ref": "#/$defs/cells" },
         "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "data": { "description": "Host facts handed to host callbacks; not shown and not searched.", "type": "object", "propertyNames": { "type": "string", "minLength": 1, "not": { "const": "__proto__" } }, "additionalProperties": { "type": "string" } },
         "hasChildren": { "type": "boolean" },
         "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647, "$comment": "When children is present, readers require this value to equal its length; this cross-field equality is a semantic protocol constraint." },
         "ref": { "$ref": "#/$defs/identifier" },

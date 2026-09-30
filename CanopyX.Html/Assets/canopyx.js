@@ -1261,6 +1261,10 @@
       requireIdentifier(node && node.id, "node ID");
       if (typeof node.label !== "string") throw new Error("CanopyX: node label must be a string.");
       if (Object.prototype.hasOwnProperty.call(node, "flags")) requireFlags(node.flags, "node flags");
+      if (Object.prototype.hasOwnProperty.call(node, "data") && (!node.data || typeof node.data !== "object" || Array.isArray(node.data) ||
+          Object.keys(node.data).some((name) => !name || name === "__proto__" || typeof node.data[name] !== "string"))) {
+        throw new Error("CanopyX: node data must be an object of strings with nonempty names.");
+      }
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");

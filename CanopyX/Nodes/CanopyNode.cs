@@ -19,6 +19,7 @@ public sealed class CanopyNode {
     private Dictionary<string, CanopyCell>? _cells;
     private List<CanopyBadge>? _badges;
     private List<string>? _flags;
+    private Dictionary<string, string>? _data;
     private List<CanopyNode>? _children;
 
     /// <summary>Creates a node.</summary>
@@ -63,6 +64,13 @@ public sealed class CanopyNode {
 
     /// <summary>Gets host flags such as <c>changed</c>, used by <see cref="CanopyFilter"/> switches.</summary>
     public IList<string> Flags => _flags ??= new List<string>();
+
+    /// <summary>
+    /// Gets facts about the node that the host's own scripts need and that are not cells, badges, or flags: for
+    /// example a position in another index, or a level a host renderer turns into a marker. CanopyX shows none of
+    /// it and does not search it; the browser runtime hands it to host callbacks as <c>node.data</c>.
+    /// </summary>
+    public IDictionary<string, string> Data => _data ??= new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>Gets the inline children. Leave empty and set <see cref="HasChildren"/> to load children later.</summary>
     public IList<CanopyNode> Children => _children ??= new List<CanopyNode>();
@@ -119,6 +127,8 @@ public sealed class CanopyNode {
 
     internal bool HasFlags => _flags != null && _flags.Count > 0;
 
+    internal bool HasData => _data != null && _data.Count > 0;
+
     internal IEnumerable<KeyValuePair<string, CanopyCell>> CellEntries => _cells ?? (IEnumerable<KeyValuePair<string, CanopyCell>>)Array.Empty<KeyValuePair<string, CanopyCell>>();
 
     internal IReadOnlyList<CanopyNode> ChildNodes => _children ?? (IReadOnlyList<CanopyNode>)Array.Empty<CanopyNode>();
@@ -168,6 +178,15 @@ public sealed class CanopyNode {
             foreach (var flag in _flags) {
                 if (string.IsNullOrEmpty(flag)) {
                     throw new InvalidOperationException("Node '" + Id + "' has an empty flag.");
+                }
+            }
+        }
+
+        if (_data != null) {
+            foreach (var item in _data) {
+                // A sidecar file is a script, where "__proto__" in an object literal sets the prototype instead of a field.
+                if (item.Key.Length == 0 || item.Key == "__proto__" || item.Value == null) {
+                    throw new InvalidOperationException("Node '" + Id + "' has a data item with an empty or reserved name, or a null value.");
                 }
             }
         }
@@ -272,6 +291,15 @@ public sealed class CanopyNode {
 
         if (HasFlags) {
             writer.StringArray("flags", _flags!);
+        }
+
+        if (HasData) {
+            writer.Name("data").BeginObject();
+            foreach (var item in _data!) {
+                writer.Property(item.Key, item.Value);
+            }
+
+            writer.EndObject();
         }
 
     }
