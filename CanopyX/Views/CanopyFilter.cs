@@ -46,9 +46,20 @@ public sealed class CanopyFilter {
     /// <summary>Gets or sets the node flag that keeps a non-matching node visible as an ancestor of matches.</summary>
     public string? AncestorFlag { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the toolbar leaves the switch out. The host then draws its own control, for example one
+    /// button that stands for several filters, turns the filter on and off with the grid's <c>setFilterActive</c>,
+    /// and follows the <c>canopyx:filter</c> event, which also fires when the grid turns filters off to reveal a row.
+    /// </summary>
+    public bool Hidden { get; set; }
+
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", Label).Property("flag", Flag);
         writer.OptionalProperty("ancestorFlag", string.IsNullOrEmpty(AncestorFlag) ? null : AncestorFlag);
+        if (Hidden) {
+            writer.Property("hidden", true);
+        }
+
         writer.EndObject();
     }
 }

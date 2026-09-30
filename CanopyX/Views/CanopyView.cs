@@ -73,6 +73,13 @@ public sealed class CanopyView {
         }
     }
 
+    /// <summary>
+    /// Gets or sets whether the tree column stays in view while the other columns scroll sideways, which keeps rows
+    /// identifiable on a narrow screen. A host can change it at run time with the grid's
+    /// <c>setTreeColumnPinned</c>, for example below a viewport width of its choosing.
+    /// </summary>
+    public bool PinTreeColumn { get; set; }
+
     /// <summary>Gets or sets how many rows can be selected at once.</summary>
     public CanopySelectionMode Selection { get; set; }
 
@@ -158,6 +165,10 @@ public sealed class CanopyView {
         }
 
         writer.OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
+        if (PinTreeColumn) {
+            writer.Property("pinTreeColumn", true);
+        }
+
         writer.OptionalProperty("stateKey", StateKey);
         if (DeepLink) {
             writer.Property("deepLink", true);

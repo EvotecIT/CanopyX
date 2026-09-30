@@ -273,8 +273,7 @@
         node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.activeFilters.clear();
-        this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+        this.clearDeclaredFilters();
         this.setFilter(null);
       }
       this.relayout();
@@ -300,6 +299,10 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
+      if (!(this.view.filters || []).some((f) => f.id === id)) {
+        throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      }
+      const changed = this.activeFilters.has(id) !== !!active;
       if (active) {
         this.activeFilters.add(id);
       } else {
@@ -315,6 +318,8 @@
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
+      // A host that draws its own control for a hidden filter keeps it in step through this event.
+      if (changed) this.emit("filter", { active: Array.from(this.activeFilters) });
     },
 
     sort(columnId, direction) {

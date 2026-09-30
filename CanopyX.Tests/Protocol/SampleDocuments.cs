@@ -14,6 +14,7 @@ internal static class SampleDocuments {
             Search = new CanopySearchOptions { MinLength = 2, MaxResults = 25, Placeholder = "Find a file" },
             StateKey = "files-state",
             TimeZone = CanopyTimeZone.Local,
+            PinTreeColumn = true,
             DeepLink = true
         };
         if (source != null) {
@@ -26,6 +27,7 @@ internal static class SampleDocuments {
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });
         view.Icons["folder"] = FolderIcon;
         view.Filters.Add(new CanopyFilter("changed", "Only changed", "changed") { AncestorFlag = "changed-below" });
+        view.Filters.Add(new CanopyFilter("changed-30d", "Changed in 30 days", "changed-30d") { Hidden = true });
 
         var share = new CanopyNode("share", @"\\files\projects") { Kind = "share", Icon = "folder", Group = true, Expanded = true };
         share.Cells["size"] = 5_368_709_120L;

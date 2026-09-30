@@ -26,6 +26,23 @@
       this.pool.forEach(resizeRow);
     },
 
+    /** Sets a column's width in CSS pixels, within the limits a user has when dragging its edge. */
+    setColumnWidth(columnId, width) {
+      const column = this.columns.find((c) => c.id === columnId);
+      if (!column || !Number.isFinite(width)) {
+        throw new Error("CanopyX: setColumnWidth needs a column of the view and a width in pixels.");
+      }
+      // A drag in progress would put its own width back on the next pointer move.
+      if (this.cancelResize) this.cancelResize();
+      column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
+      this.applyWidths();
+    },
+
+    /** Keeps the tree column in view while the other columns scroll sideways, or lets it scroll with them. */
+    setTreeColumnPinned(pinned) {
+      this.host.classList.toggle("cx-pin-tree", !!pinned);
+    },
+
     startResize(e, column) {
       if (this.destroyed || e.button !== 0) return;
       if (this.cancelResize) this.cancelResize();

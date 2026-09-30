@@ -1327,6 +1327,7 @@
         host.setAttribute("data-cx-theme", "auto");
       }
       host.style.setProperty("--cx-row-h", this.rowH + "px");
+      this.setTreeColumnPinned(this.view.pinTreeColumn);
       this.toolbar = h("div", "cx-toolbar");
       this.toolbar.hidden = true;
       const grid = this.grid = h("div", "cx-grid");
@@ -1618,6 +1619,23 @@
       };
       this.rendered.forEach(resizeRow);
       this.pool.forEach(resizeRow);
+    },
+
+    /** Sets a column's width in CSS pixels, within the limits a user has when dragging its edge. */
+    setColumnWidth(columnId, width) {
+      const column = this.columns.find((c) => c.id === columnId);
+      if (!column || !Number.isFinite(width)) {
+        throw new Error("CanopyX: setColumnWidth needs a column of the view and a width in pixels.");
+      }
+      // A drag in progress would put its own width back on the next pointer move.
+      if (this.cancelResize) this.cancelResize();
+      column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
+      this.applyWidths();
+    },
+
+    /** Keeps the tree column in view while the other columns scroll sideways, or lets it scroll with them. */
+    setTreeColumnPinned(pinned) {
+      this.host.classList.toggle("cx-pin-tree", !!pinned);
     },
 
     startResize(e, column) {
@@ -2606,8 +2624,7 @@
         node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
       this.relayout();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.activeFilters.clear();
-        this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+        this.clearDeclaredFilters();
         this.setFilter(null);
       }
       this.relayout();
@@ -2633,6 +2650,10 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
+      if (!(this.view.filters || []).some((f) => f.id === id)) {
+        throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      }
+      const changed = this.activeFilters.has(id) !== !!active;
       if (active) {
         this.activeFilters.add(id);
       } else {
@@ -2648,6 +2669,8 @@
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
+      // A host that draws its own control for a hidden filter keeps it in step through this event.
+      if (changed) this.emit("filter", { active: Array.from(this.activeFilters) });
     },
 
     sort(columnId, direction) {
@@ -2740,6 +2763,8 @@
         any = true;
       }
       (this.view.filters || []).forEach((filter) => {
+        // A hidden filter has no switch here: the host draws the control and calls setFilterActive.
+        if (filter.hidden) return;
         const label = h("label", "cx-switch");
         const input = h("input");
         input.type = "checkbox";
@@ -2755,6 +2780,19 @@
         any = true;
       }
       bar.hidden = !any;
+    },
+
+    /**
+     * Turns the declared filters off, for a host predicate that replaces them or to reveal a row they hide, and
+     * tells the host when that changed something.
+     */
+    clearDeclaredFilters() {
+      if (!this.activeFilters.size) {
+        return;
+      }
+      this.activeFilters.clear();
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+      this.emit("filter", { active: [] });
     },
 
     /** Combobox search: typing lists hits, arrows move through them, Enter expands the tree to the chosen hit. */
@@ -3274,6 +3312,7 @@
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
+      this.host.classList.remove("cx-pin-tree");
       this.host.removeAttribute("data-cx-ready");
       this.host.removeAttribute("data-canopyx-mounted");
     }
@@ -3286,7 +3325,8 @@
    * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
-   *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
+   *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
+   *   the ids of the active declared filters whenever they change.
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
    *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling.
@@ -3305,10 +3345,14 @@
       view: grid.view,
       ready: grid.ready,
       expandPath: (ids, o) => grid.expandPath(ids, o),
-      setFilter: (filter, o) => grid.setFilter(filter, o),
+      // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
+      setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
+      getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
+      setColumnWidth: (columnId, width) => grid.setColumnWidth(columnId, width),
+      setTreeColumnPinned: (pinned) => grid.setTreeColumnPinned(pinned),
       setTimeZone: (zone) => grid.setTimeZone(zone),
       getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },

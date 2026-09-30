@@ -206,7 +206,8 @@
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "flag": { "$ref": "#/$defs/nonEmptyString" },
-        "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" }
+        "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" },
+        "hidden": { "description": "The toolbar draws no switch; the host controls the filter.", "type": "boolean" }
       }
     },
     "searchHit": {
@@ -247,6 +248,7 @@
         },
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
         "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
+        "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
         "source": { "$ref": "#/$defs/source" },

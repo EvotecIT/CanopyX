@@ -9,6 +9,8 @@
         any = true;
       }
       (this.view.filters || []).forEach((filter) => {
+        // A hidden filter has no switch here: the host draws the control and calls setFilterActive.
+        if (filter.hidden) return;
         const label = h("label", "cx-switch");
         const input = h("input");
         input.type = "checkbox";
@@ -24,6 +26,19 @@
         any = true;
       }
       bar.hidden = !any;
+    },
+
+    /**
+     * Turns the declared filters off, for a host predicate that replaces them or to reveal a row they hide, and
+     * tells the host when that changed something.
+     */
+    clearDeclaredFilters() {
+      if (!this.activeFilters.size) {
+        return;
+      }
+      this.activeFilters.clear();
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+      this.emit("filter", { active: [] });
     },
 
     /** Combobox search: typing lists hits, arrows move through them, Enter expands the tree to the chosen hit. */

@@ -335,6 +335,7 @@
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
+      this.host.classList.remove("cx-pin-tree");
       this.host.removeAttribute("data-cx-ready");
       this.host.removeAttribute("data-canopyx-mounted");
     }

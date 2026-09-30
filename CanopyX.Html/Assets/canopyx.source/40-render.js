@@ -8,6 +8,7 @@
         host.setAttribute("data-cx-theme", "auto");
       }
       host.style.setProperty("--cx-row-h", this.rowH + "px");
+      this.setTreeColumnPinned(this.view.pinTreeColumn);
       this.toolbar = h("div", "cx-toolbar");
       this.toolbar.hidden = true;
       const grid = this.grid = h("div", "cx-grid");

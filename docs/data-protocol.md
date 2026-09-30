@@ -44,16 +44,19 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `search` | object | Optional. Shows the search box. When present it has all of `minLength` (1 to 16; at least 2 for sidecar sources), `maxResults` (1 to 500), and `placeholder`, and optionally `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
 | `filters` | array of filters | Optional. "Only matching" switches. |
 | `timeZone` | `utc` or `local` | Optional. The time zone `datetime` columns show at first: UTC (the default), or the reader's own. A host can switch it at run time. |
+| `pinTreeColumn` | boolean | Optional. The tree column stays in view while the other columns scroll sideways. A host can change it at run time with `grid.setTreeColumnPinned(pinned)`. |
 | `stateKey` | string | Optional. Session storage key for remembered expanded paths. |
 | `deepLink` | boolean | Optional. Selection writes the id path to the URL hash; a hash expands it on load. |
 | `source` | object | Where nodes come from (see [Sources](#sources)). |
 | `roots` | array of nodes | Top-level nodes; present only for inline sources. |
 
-A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable` and `hidden`. The tree column cannot be hidden. A filter has `id`, `label`, `flag`, and an optional `ancestorFlag`.
+A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable` and `hidden`. The tree column cannot be hidden. Widths are initial: the reader drags a column edge, and a host sets one with `grid.setColumnWidth(columnId, pixels)`, for example to narrow the tree column on a small screen. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
 
 ### Filter Semantics
 
 A node matches a filter when its `flags` contain the filter's `flag`; a matching node keeps its whole subtree. A node that does not match stays visible, with its children filtered, when a loaded descendant matches or when it carries the `ancestorFlag`. The runtime never walks data it has not loaded, so a host that wants a collapsed branch to stay visible under a filter marks it with the ancestor flag. Rollup flags like these are always computed by the host.
+
+The toolbar draws a switch for every filter that is not `hidden`. A hidden filter is for a host that draws its own control, for example one "only changed" button in front of a filter per time window: it declares the filters, turns one on or off with `grid.setFilterActive(id, active)`, reads `grid.getActiveFilters()`, and listens for the `canopyx:filter` event on the host element, whose `detail.active` lists the ids of the active filters. The event fires only when the set changes, also when the grid itself turns the filters off: when a search hit or a deep link leads to a row the filters hide, and when the host sets a predicate of its own with `grid.setFilter`, which replaces the declared filters. `setFilterActive` rejects an id the view does not declare.
 
 ## Node
 

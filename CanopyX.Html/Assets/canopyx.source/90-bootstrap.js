@@ -6,7 +6,8 @@
    * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
-   *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
+   *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
+   *   the ids of the active declared filters whenever they change.
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
    *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling.
@@ -25,10 +26,14 @@
       view: grid.view,
       ready: grid.ready,
       expandPath: (ids, o) => grid.expandPath(ids, o),
-      setFilter: (filter, o) => grid.setFilter(filter, o),
+      // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
+      setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
+      getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
+      setColumnWidth: (columnId, width) => grid.setColumnWidth(columnId, width),
+      setTreeColumnPinned: (pinned) => grid.setTreeColumnPinned(pinned),
       setTimeZone: (zone) => grid.setTimeZone(zone),
       getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
