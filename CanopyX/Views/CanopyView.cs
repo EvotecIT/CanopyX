@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -9,7 +10,7 @@ namespace CanopyX;
 /// sources the view also carries the nodes.
 /// </summary>
 /// <remarks>
-/// <see cref="ToJson"/> writes the <c>view</c> document of the <c>canopyx/1</c> protocol. <c>CanopyX.Html</c> embeds
+/// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/1</c> protocol. <c>CanopyX.Html</c> embeds
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
 public sealed class CanopyView {
@@ -133,14 +134,31 @@ public sealed class CanopyView {
     /// <summary>Writes the <c>view</c> document of the <c>canopyx/1</c> protocol.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
-    public string ToJson() {
+    public string ToJson() => ToJson(null);
+
+    /// <summary>
+    /// Writes the view document with the switches of the named filters left out of the toolbar, as if they were
+    /// <see cref="CanopyFilter.Hidden"/>, without changing the view.
+    /// </summary>
+    /// <param name="hiddenFilterIds">Ids of the view's filters to write as hidden, for a page whose host draws its own control for them; null for none.</param>
+    /// <returns>The document as compact, HTML-safe JSON.</returns>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or an id is not one of its filters.</exception>
+    public string ToJson(ICollection<string>? hiddenFilterIds) {
         var writer = new CanopyJsonWriter(4096);
-        WriteJson(writer);
+        WriteJson(writer, hiddenFilterIds);
         return writer.ToString();
     }
 
-    internal void WriteJson(CanopyJsonWriter writer) {
+    internal void WriteJson(CanopyJsonWriter writer, ICollection<string>? hiddenFilterIds = null) {
         CanopyViewValidator.Validate(this);
+        if (hiddenFilterIds != null) {
+            foreach (var id in hiddenFilterIds) {
+                if (!Filters.Any(filter => filter.Id == id)) {
+                    throw new InvalidOperationException("View '" + Id + "' declares no filter '" + id + "' to hide.");
+                }
+            }
+        }
+
         writer.BeginObject().Envelope("view")
             .Property("id", Id)
             .Property("label", Label)
@@ -170,7 +188,7 @@ public sealed class CanopyView {
         if (Filters.Count > 0) {
             writer.Name("filters").BeginArray();
             foreach (var filter in Filters) {
-                filter.WriteJson(writer);
+                filter.WriteJson(writer, filter.Hidden || (hiddenFilterIds != null && hiddenFilterIds.Contains(filter.Id)));
             }
 
             writer.EndArray();

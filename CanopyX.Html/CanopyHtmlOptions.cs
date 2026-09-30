@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CanopyX.Html;
 
@@ -44,6 +45,14 @@ public sealed class CanopyHtmlOptions {
     /// script the host adds calls <c>CanopyX.mount()</c>.
     /// </summary>
     public bool AutoMount { get; set; } = true;
+
+    /// <summary>
+    /// Gets the ids of the view's filters whose switch the toolbar leaves out on this page, because the host draws its
+    /// own control for them (see <see cref="CanopyFilter.Hidden"/>). The view is not changed, so one view can be written
+    /// for hosts with and without their own filter bar at the same time. Writing the page fails when an id is not one of
+    /// the view's filters.
+    /// </summary>
+    public ISet<string> HiddenFilterIds { get; } = new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }

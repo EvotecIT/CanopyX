@@ -23,6 +23,35 @@ public sealed class HtmlWriterTests {
     }
 
     [Fact]
+    public void HiddenFilterIds_HideTheSwitchesOnThePage_WithoutChangingTheView() {
+        var view = new CanopyView("v", "Files");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Filters.Add(new CanopyFilter("week", "Changed this week", "changed-7d"));
+        view.Filters.Add(new CanopyFilter("month", "Changed this month", "changed-30d"));
+        var options = new CanopyHtmlOptions();
+        options.HiddenFilterIds.Add("week");
+
+        var fragment = System.Text.Json.Nodes.JsonNode.Parse(ConfigOf(view.ToHtmlFragment(options)))!["filters"]!.AsArray();
+        var page = System.Text.Json.Nodes.JsonNode.Parse(ConfigOf(view.ToHtmlPage(options)))!["filters"]!.AsArray();
+
+        foreach (var filters in new[] { fragment, page }) {
+            Assert.True(filters[0]!["hidden"]!.GetValue<bool>());
+            Assert.Null(filters[1]!["hidden"]);
+        }
+
+        // The view itself is untouched, so another page can be written from it at the same time with its switches.
+        Assert.False(view.Filters[0].Hidden);
+        Assert.Null(System.Text.Json.Nodes.JsonNode.Parse(view.ToJson())!["filters"]![0]!["hidden"]);
+        ProtocolSchema.AssertValid(view.ToJson(options.HiddenFilterIds), "view with a filter hidden by the page");
+        options.HiddenFilterIds.Add("year");
+        Assert.Contains("no filter 'year'", Assert.Throws<InvalidOperationException>(() => view.ToHtmlFragment(options)).Message);
+        // A bundle fails before its data is written.
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-hidden-" + Guid.NewGuid().ToString("N"));
+        Assert.Throws<InvalidOperationException>(() => view.SaveHtmlBundle(directory, options));
+        Assert.False(Directory.Exists(directory));
+    }
+
+    [Fact]
     public void ToHtmlFragment_WithoutAutoMount_IsMarkedForTheHostToMount() {
         var view = SampleDocuments.FullView();
 

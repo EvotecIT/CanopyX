@@ -1005,6 +1005,7 @@
       this.selected = new Set();
       this.anchor = null;
       this.filter = null;
+      this.declaredFilter = null;
       this.filterExpand = false;
       this.activeFilters = new Set();
       this.sortState = null;
@@ -2776,26 +2777,34 @@
     },
 
     setFilterActive(id, active) {
-      if (!(this.view.filters || []).some((f) => f.id === id)) {
-        throw new Error("CanopyX: the view declares no filter '" + id + "'.");
-      }
-      const changed = this.activeFilters.has(id) !== !!active;
-      if (active) {
-        this.activeFilters.add(id);
-      } else {
-        this.activeFilters.delete(id);
-      }
-      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-filter]")).find((el) => el.getAttribute("data-cx-filter") === id);
-      if (input) {
-        input.checked = !!active;
-      }
-      const filters = (this.view.filters || []).filter((f) => this.activeFilters.has(f.id));
+      const next = new Set(this.activeFilters);
+      if (active) next.add(id);
+      else next.delete(id);
+      this.applyActiveFilters([id], next);
+    },
+
+    setActiveFilters(ids) {
+      if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+      this.applyActiveFilters(ids, new Set(ids));
+    },
+
+    applyActiveFilters(named, next) {
+      const declared = this.view.filters || [];
+      named.forEach((id) => {
+        if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      });
+      const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
+      if (!changed && this.filter === this.declaredFilter) return;
+      this.activeFilters = next;
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = next.has(input.getAttribute("data-cx-filter")); });
+      const filters = declared.filter((f) => next.has(f.id));
       const has = (node, flag) => !!(flag && node.flags && node.flags.indexOf(flag) >= 0);
       this.setFilter(filters.length ? {
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
-      if (changed) this.emit("filter", { active: Array.from(this.activeFilters) });
+      this.declaredFilter = this.filter;
+      if (changed) this.emit("filter", { active: Array.from(next) });
     },
 
     sort(columnId, direction) {
@@ -3602,6 +3611,7 @@
       expandPath: (ids, o) => grid.expandPath(ids, o),
       setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
+      setActiveFilters: (ids) => grid.setActiveFilters(ids),
       getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),

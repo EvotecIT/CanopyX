@@ -232,27 +232,41 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
-      if (!(this.view.filters || []).some((f) => f.id === id)) {
-        throw new Error("CanopyX: the view declares no filter '" + id + "'.");
-      }
-      const changed = this.activeFilters.has(id) !== !!active;
-      if (active) {
-        this.activeFilters.add(id);
-      } else {
-        this.activeFilters.delete(id);
-      }
-      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-filter]")).find((el) => el.getAttribute("data-cx-filter") === id);
-      if (input) {
-        input.checked = !!active;
-      }
-      const filters = (this.view.filters || []).filter((f) => this.activeFilters.has(f.id));
+      const next = new Set(this.activeFilters);
+      if (active) next.add(id);
+      else next.delete(id);
+      this.applyActiveFilters([id], next);
+    },
+
+    /**
+     * Makes exactly the given declared filters active, all at once: one row rebuild, and one canopyx:filter event with
+     * the final set when it changed. An id the view does not declare is an error, and nothing changes.
+     */
+    setActiveFilters(ids) {
+      if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+      this.applyActiveFilters(ids, new Set(ids));
+    },
+
+    applyActiveFilters(named, next) {
+      const declared = this.view.filters || [];
+      named.forEach((id) => {
+        if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      });
+      const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
+      // The same set again leaves the rows as they are (branches collapsed under the filter stay collapsed), unless
+      // a predicate of the host's replaced the declared filters meanwhile.
+      if (!changed && this.filter === this.declaredFilter) return;
+      this.activeFilters = next;
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = next.has(input.getAttribute("data-cx-filter")); });
+      const filters = declared.filter((f) => next.has(f.id));
       const has = (node, flag) => !!(flag && node.flags && node.flags.indexOf(flag) >= 0);
       this.setFilter(filters.length ? {
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
+      this.declaredFilter = this.filter;
       // A host that draws its own control for a hidden filter keeps it in step through this event.
-      if (changed) this.emit("filter", { active: Array.from(this.activeFilters) });
+      if (changed) this.emit("filter", { active: Array.from(next) });
     },
 
     sort(columnId, direction) {

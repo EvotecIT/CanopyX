@@ -54,6 +54,8 @@
       this.selected = new Set();
       this.anchor = null;
       this.filter = null;
+      // The predicate built from the view's active filters, which a host predicate can replace.
+      this.declaredFilter = null;
       this.filterExpand = false;
       this.activeFilters = new Set();
       this.sortState = null;

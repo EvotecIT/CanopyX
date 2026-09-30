@@ -12,6 +12,7 @@ using CanopyX.Rendering;
 //   outline.html       the static outline for email, print, and Word
 //   outline-dark.html  the same outline in the dark theme, as literal colours
 //   outline-page.html  the same outline following the theme of the page it is in, without script
+//   filter-bar.html    a host's own filter bar in place of the view's filter switches
 //   index.html         links to the pages above
 // With --search-bench it writes the search benchmark bundles instead (deep/ and directory/, see SearchBenchTrees).
 // With --pack-bench it writes the packing benchmark bundle instead (catalog/, see PackBenchTree) and reports the
@@ -91,6 +92,19 @@ WriteTemplate("outline.html", Path.Combine(output, "outline-dark.html"), CanopyS
 var pageOutline = OutlineOptions();
 pageOutline.UseThemeVariables = true;
 WriteTemplate("outline-page.html", Path.Combine(output, "outline-page.html"), CanopyStaticHtml.Render(outlineView, pageOutline));
+// A host with a filter bar of its own: the page leaves the view's switches for those filters out, and the bar sets the
+// active filters in one step.
+var barTree = new SyntheticFileTree();
+var barView = ExampleViews.FileShares("files-filter-bar", barTree.Build(shares: 4, departments: 5, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 20));
+foreach (var root in barView.Roots) {
+    FlagLarge(root);
+}
+
+barView.Filters.Add(new CanopyX.CanopyFilter("large", "Large files", "large") { AncestorFlag = "large-below" });
+var barOptions = new CanopyHtmlOptions { Height = "70vh" };
+barOptions.HiddenFilterIds.Add("changed");
+barOptions.HiddenFilterIds.Add("large");
+WriteTemplate("filter-bar.html", Path.Combine(output, "filter-bar.html"), barView.ToHtmlFragment(barOptions));
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 
@@ -101,11 +115,30 @@ void WriteBundle(CanopyX.CanopyView view, string folder, string title) {
 static void ReportBundle(string folder, CanopyX.Bundles.CanopyBundleResult bundle) =>
     Report($"{folder}/index.html: {bundle.NodeCount:N0} nodes in {bundle.FileCount:N0} files ({bundle.PackCount:N0} packs), {bundle.TotalBytes / 1048576.0:N1} MB, largest file {bundle.LargestFileBytes / 1024.0:N0} KB, {bundle.SearchShardCount:N0} search shards");
 
+// The host computes its own flags: files the tree marks large, and the folders above them.
+static bool FlagLarge(CanopyX.CanopyNode node) {
+    var below = false;
+    foreach (var child in node.Children) {
+        below |= FlagLarge(child);
+    }
+
+    if (below) {
+        node.Flags.Add("large-below");
+    }
+
+    var large = node.Cells.TryGetValue("state", out var state) && Equals(state.Value, "large");
+    if (large) {
+        node.Flags.Add("large");
+    }
+
+    return large || below;
+}
+
 static void Report(FormattableString message) => Console.WriteLine(message.ToString(CultureInfo.InvariantCulture));
 
 static void WriteTemplate(string name, string path, string content) {
     using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates." + name)
         ?? throw new InvalidOperationException("Missing template " + name);
     using var reader = new StreamReader(stream);
-    File.WriteAllText(path, reader.ReadToEnd().Replace("{{content}}", content).Replace("{{style}}", CanopyHtmlAssets.HashedStyleFileName), new UTF8Encoding(false));
+    File.WriteAllText(path, reader.ReadToEnd().Replace("{{content}}", content).Replace("{{style}}", CanopyHtmlAssets.HashedStyleFileName).Replace("{{script}}", CanopyHtmlAssets.HashedScriptFileName), new UTF8Encoding(false));
 }

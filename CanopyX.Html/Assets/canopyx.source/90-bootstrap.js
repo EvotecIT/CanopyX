@@ -33,6 +33,7 @@
       // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
       setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
+      setActiveFilters: (ids) => grid.setActiveFilters(ids),
       getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),

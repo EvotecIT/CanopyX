@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using CanopyX.Bundles;
 
@@ -19,17 +20,17 @@ public static class CanopyViewHtmlExtensions {
     /// on the page. <see cref="CanopyHtmlOptions.AssetMode"/> does not apply to fragments.
     /// </remarks>
     /// <param name="view">The view.</param>
-    /// <param name="options">Theme and height; other options apply to full pages only.</param>
+    /// <param name="options">Theme, height, automatic mounting, and the filters whose switches the page hides; other options apply to full pages only.</param>
     /// <returns>The fragment markup.</returns>
-    /// <exception cref="InvalidOperationException">The view breaks a protocol rule.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or <see cref="CanopyHtmlOptions.HiddenFilterIds"/> names a filter the view does not declare.</exception>
     public static string ToHtmlFragment(this CanopyView view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Fragment(view, options ?? new CanopyHtmlOptions());
 
     /// <summary>Writes the view as a complete HTML page that fills the browser window.</summary>
     /// <param name="view">The view.</param>
-    /// <param name="options">Asset mode, theme, title, and language.</param>
+    /// <param name="options">Asset mode, theme, title, language, and the filters whose switches the page hides.</param>
     /// <returns>The page markup.</returns>
-    /// <exception cref="InvalidOperationException">The view breaks a protocol rule.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or <see cref="CanopyHtmlOptions.HiddenFilterIds"/> names a filter the view does not declare.</exception>
     public static string ToHtmlPage(this CanopyView view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Page(view ?? throw new ArgumentNullException(nameof(view)), options ?? new CanopyHtmlOptions());
 
@@ -121,6 +122,13 @@ public static class CanopyViewHtmlExtensions {
                 }
             }
         }
+        // A mistyped filter id fails before the data is written, not when the page is.
+        foreach (var id in pageOptions.HiddenFilterIds) {
+            if (!view.Filters.Any(filter => filter.Id == id)) {
+                throw new InvalidOperationException("View '" + view.Id + "' declares no filter '" + id + "' to hide.");
+            }
+        }
+
         ValidateBundleLayout(CanopyX.Bundles.BundlePaths.DataPath(view.Id, bundleOptions?.DataPath), localAssets ? assetFolder : null);
         var previousSource = view.Source;
         var result = write(new CanopyBundleWriter(bundleOptions));
