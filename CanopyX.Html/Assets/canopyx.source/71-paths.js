@@ -1,7 +1,8 @@
 
   // ---------- tree grid: opening a path (search hits, deep links, remembered state, expandPath) ----------
   // A path opens level by level in the model, but the rows are rebuilt and rendered once, when it is open: the levels
-  // in between are never laid out, and focus moves once, at the end.
+  // in between are never laid out, and focus moves once, at the end. Before that, the source may load the pages the path
+  // will read all at once (prefetch; a bundle's search index says where they are).
   Object.assign(TreeGrid.prototype, {
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
@@ -34,6 +35,10 @@
       if (cancelled()) return null;
       await this.rootsReady;
       if (cancelled()) return null;
+      // A newer navigation does not wait for the files an older one asked for.
+      const aborted = o.signal ? new Promise((resolve) => o.signal.addEventListener("abort", resolve, { once: true })) : null;
+      await (aborted ? Promise.race([this.prefetchPath(ids, !!o.expandLast), aborted]) : this.prefetchPath(ids, !!o.expandLast));
+      if (cancelled()) return null;
       const release = this.holdLayout();
       let w;
       let rebuilt = false;
@@ -63,6 +68,30 @@
         this.ensureVisible(w);
       }
       return w ? w.h : null;
+    },
+
+    /**
+     * Lets the source load at once the pages a path will read, instead of one level after another: the children of
+     * the nodes that open and are not loaded yet, and the lists that do not hold their node on a loaded page yet.
+     */
+    async prefetchPath(ids, openLast) {
+      if (typeof this.source.prefetch !== "function") return;
+      const opens = [];
+      const finds = [];
+      let parent = this.root;
+      ids.forEach((id, k) => {
+        if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
+        const w = this.keyMap.get(id);
+        if (!(w && parent && w.parent === parent)) finds.push(id);
+        parent = w && w.parent === parent ? w : null;
+      });
+      if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
+      if (!opens.length && !finds.length) return;
+      try {
+        await this.source.prefetch(opens, finds);
+      } catch (err) {
+        // Prefetching only saves time; opening the path reads and reports what failed.
+      }
     },
 
     /** Opens the nodes of a path in the model; returns the last node, or undefined when the path was abandoned. */

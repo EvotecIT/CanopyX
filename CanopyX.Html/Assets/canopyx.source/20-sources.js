@@ -5,6 +5,8 @@
   //   search(query, limit) -> { hits, total, truncated }
   //   counts(ids)          -> a counts document (remote sources with a counts URL only)
   //   canSearch            -> whether search() can answer
+  //   prefetch(opens, finds) -> optional: before a path opens, loads at once what page() will be asked for: the first
+  //                           children page of each id in opens, and the page that holds each id in finds; never rejects
 
   /** Pages an array that is already in memory (inline roots and inline children). */
   function slicePage(all, cursor, pageSize) {
@@ -93,18 +95,51 @@
       if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
       return doc.pages;
     });
-    const loadPage = async (ref) => {
+    // Files a path prefetched, held until the next prefetch so the recent-pack cache cannot drop them before use.
+    let pinned = new Map();
+    const pin = (key, promise) => {
+      pinned.set(key, promise);
+      promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
+      return promise;
+    };
+    const packOf = async (ref) => {
       const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
-      const packs = packed ? (await manifest()).packs : undefined;
-      if (packs === undefined) return load(ref);
-      const text = Number(packed[1]) < packs ? (await loadPack(packed[1]))[Number(packed[2])] : undefined;
+      return packed && (await manifest()).packs !== undefined ? packed : null;
+    };
+    const loadPage = async (ref) => {
+      const packed = await packOf(ref);
+      if (!packed) {
+        // A prefetched file of its own holds one page document, which is used once.
+        const doc = pinned.get("file:" + ref);
+        if (doc) pinned.delete("file:" + ref);
+        return doc || load(ref);
+      }
+      const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
       if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
       return JSON.parse(text);
     };
+    // The entries on the paths of the last query's hits, by node id: where their pages are (see "Search Index").
+    const hints = new Map();
     return {
       kind: "sidecar",
       canSearch: true,
       manifest: manifest,
+      /**
+       * Loads at once the files a path will read: the first children page of each node in opens, and the page that
+       * holds each node in finds, as far as the last search told where they are. Never rejects; what fails here fails
+       * again, and is reported, when the path reads it.
+       */
+      async prefetch(opens, finds) {
+        const refs = new Set();
+        opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
+        finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
+        pinned = new Map();
+        await Promise.all(Array.from(refs, async (ref) => {
+          const packed = await packOf(ref);
+          const key = packed ? "pack:" + packed[1] : "file:" + ref;
+          if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+        }).map((pending) => pending.catch(() => {})));
+      },
       async page(node, cursor) {
         const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
         if (!ref) {
@@ -113,7 +148,7 @@
         const doc = checkPage(await loadPage(ref), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
-      search: sidecarSearch(load, manifest)
+      search: sidecarSearch(load, manifest, hints)
     };
   }
 

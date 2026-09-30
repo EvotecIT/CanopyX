@@ -434,17 +434,19 @@
       }
     },
     "searchEntry": {
-      "description": "[parent entry number or -1, leading code units shared with the parent id, id part, trailing code units shared with the parent id, label, optional kind number].",
+      "description": "[parent entry number or -1, leading code units shared with the parent id, id part, trailing code units shared with the parent id, label, kind number or null, reference of the first children page when it is in another file than the page that holds the node, or null; reference of the page that holds the node when it is in another file than the first page of its list]; trailing nulls are left out.",
       "type": "array",
       "minItems": 5,
-      "maxItems": 6,
+      "maxItems": 8,
       "prefixItems": [
         { "type": "integer", "minimum": -1, "maximum": 2147483647 },
         { "$ref": "#/$defs/count" },
         { "type": "string" },
         { "$ref": "#/$defs/count" },
         { "type": "string" },
-        { "$ref": "#/$defs/count" }
+        { "anyOf": [{ "$ref": "#/$defs/count" }, { "type": "null" }] },
+        { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        { "$ref": "#/$defs/identifier" }
       ]
     },
     "searchEntries": {
@@ -461,7 +463,7 @@
           "items": {
             "type": "array",
             "minItems": 6,
-            "maxItems": 7,
+            "maxItems": 9,
             "prefixItems": [
               { "$ref": "#/$defs/count" },
               { "type": "integer", "minimum": -1, "maximum": 2147483647 },
@@ -469,7 +471,9 @@
               { "type": "string" },
               { "$ref": "#/$defs/count" },
               { "type": "string" },
-              { "$ref": "#/$defs/count" }
+              { "anyOf": [{ "$ref": "#/$defs/count" }, { "type": "null" }] },
+              { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+              { "$ref": "#/$defs/identifier" }
             ]
           }
         },

@@ -92,13 +92,6 @@
     return doc;
   }
 
-  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
-  function requireIdentifier(value, name) {
-    if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
-      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
-    }
-  }
-
   /** Search paths must be complete, unambiguous node-id paths before they reach navigation. */
   function validateSearchHit(hit) {
     if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {

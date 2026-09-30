@@ -4,8 +4,11 @@ using System.Text.Json.Nodes;
 
 namespace CanopyX.Tests.Bundles;
 
-/// <summary>One node as a search entry file describes it.</summary>
-internal sealed record SearchEntry(IReadOnlyList<string> Path, string Label, string? Kind);
+/// <summary>
+/// One node as a search entry file describes it, with the reference of its first children page and of the page that
+/// holds it when that is not the first page of its list.
+/// </summary>
+internal sealed record SearchEntry(IReadOnlyList<string> Path, string Label, string? Kind, string? Children, string? Page);
 
 /// <summary>
 /// Reads a bundle's search index the way "Search Index" in docs/data-protocol.md tells a reader to, written out
@@ -83,8 +86,9 @@ internal sealed class SearchIndexReader {
             _entryFiles.Add(file, entries);
         }
 
-        var (path, label, kind) = entries.Resolve(number);
-        return new SearchEntry(path, label, kind is int index ? _kinds[index] : null);
+        var (path, item) = entries.Resolve(number);
+        var kind = item.Count > 5 && item[5] != null ? _kinds[item[5]!.GetValue<int>()] : null;
+        return new SearchEntry(path, item[4]!.GetValue<string>(), kind, item.Count > 6 ? item[6]?.GetValue<string>() : null, item.Count > 7 ? item[7]!.GetValue<string>() : null);
     }
 
     /// <summary>The ascending numbers of the entries that have a word starting with a folded query word.</summary>
@@ -240,11 +244,11 @@ internal sealed class SearchIndexReader {
 
             foreach (var ancestor in document["stem"]!.AsArray()) {
                 var fields = ancestor!.AsArray();
-                _items.Add(fields[0]!.GetValue<int>(), new JsonArray(fields.Skip(1).Select(field => field!.DeepClone()).ToArray()));
+                _items.Add(fields[0]!.GetValue<int>(), new JsonArray(fields.Skip(1).Select(field => field?.DeepClone()).ToArray()));
             }
         }
 
-        internal (List<string> Path, string Label, int? Kind) Resolve(int number) {
+        internal (List<string> Path, JsonArray Item) Resolve(int number) {
             var path = new List<string>();
             for (var current = number; current >= 0; current = Parent(current)) {
                 path.Add(Id(current));
@@ -252,7 +256,9 @@ internal sealed class SearchIndexReader {
 
             path.Reverse();
             var item = _items[number];
-            return (path, item[4]!.GetValue<string>(), item.Count > 5 ? item[5]!.GetValue<int>() : null);
+            Assert.InRange(item.Count, 5, 8);
+            Assert.True(item.Count == 5 || item[item.Count - 1] != null, "Entry " + number + " ends with a null.");
+            return (path, item);
         }
 
         private int Parent(int number) {

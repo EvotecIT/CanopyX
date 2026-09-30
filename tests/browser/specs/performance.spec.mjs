@@ -75,6 +75,41 @@ test("search to an expanded hit stays within budget", async ({ browser }) => {
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
 });
 
+// Budgets that do not depend on how fast the runner is: the pages on a hit's path load in one round, because the
+// index says where they are, and the rows are rebuilt and rendered once for the whole path.
+test("a search hit loads the pages on its path in one round and renders the path once", async ({ page }) => {
+  await openExample(page, "bundle/index.html");
+  const result = await page.evaluate(async () => {
+    const api = document.querySelector(".cx-host").canopyx;
+    const hit = (await api.search("quarterly review")).hits.pop();
+    // A page file is asked for when its script is added, and arrives when the script registers its document.
+    const events = [];
+    const files = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => {
+      if (node.tagName === "SCRIPT" && /\/[pr]\/\d+\.js$/.test(node.src)) events.push("request");
+    })));
+    files.observe(document.head, { childList: true });
+    const register = self.CanopyXSidecar.push;
+    self.CanopyXSidecar.push = function (entry) {
+      if (/^[pr]\//.test(entry[1])) events.push("arrive");
+      return register.apply(this, arguments);
+    };
+    let renders = 0;
+    const rows = new MutationObserver(() => { renders++; });
+    rows.observe(document.querySelector(".cx-canvas"), { childList: true, subtree: true, attributes: true, attributeFilter: ["data-cx-id", "aria-expanded", "data-cx-status"] });
+    const node = await api.expandPath(hit.path);
+    files.disconnect();
+    self.CanopyXSidecar.push = register;
+    return { found: node.id === hit.path[hit.path.length - 1], depth: hit.path.length, events, renders };
+  });
+  console.log("search hit path: " + result.depth + " levels, page files " + result.events.join(" ") + ", renders " + result.renders);
+  expect(result.found).toBe(true);
+  const requests = result.events.filter((event) => event === "request").length;
+  expect(requests).toBeGreaterThan(0);
+  expect(requests).toBeLessThanOrEqual(result.depth);
+  expect(result.events.slice(0, requests).every((event) => event === "request")).toBe(true);
+  expect(result.renders).toBe(1);
+});
+
 test("a repeated search answers from the loaded index within budget", async ({ browser }) => {
   const ms = await measure(browser, "await api.search('quarterly review');", "await api.search('quarterly review');");
   console.log("repeated search: " + ms.toFixed(1) + " ms");

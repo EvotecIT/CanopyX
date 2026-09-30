@@ -1,4 +1,15 @@
   // ---------- protocol node semantics before attachment ----------
+  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
+  function isIdentifier(value) {
+    return typeof value === "string" && /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value);
+  }
+
+  function requireIdentifier(value, name) {
+    if (!isIdentifier(value)) {
+      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
+    }
+  }
+
   function validateNodes(nodes, existing, inlineOnly = false) {
     if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
     const seen = new Set();

@@ -278,6 +278,23 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Fact]
+    public void Write_Search_EntriesTellWhereThePagesOnTheirPathAre() {
+        var reader = new SearchIndexReader(_bundle.Files);
+        var locations = _bundle.Files.Locations();
+
+        var named = 0;
+        for (var number = 0; number < reader.EntryCount; number++) {
+            var entry = reader.Entry(number);
+            var location = locations[entry.Path[entry.Path.Count - 1]];
+            Assert.Equal(location.EntryFields(openedByHits: true), (entry.Children, entry.Page));
+            named += entry.Children != null ? 1 : 0;
+        }
+
+        // Children packed next to the page that holds their parent are read from that file and need no name.
+        Assert.InRange(named, 12, reader.EntryCount / 10);
+    }
+
+    [Fact]
     public void Write_Search_FindsEveryNodeByEachWordEachPrefixAndItsWholeLabel() {
         var reader = new SearchIndexReader(_bundle.Files);
         var nodes = Flatten(_bundle.View.Roots).ToList();

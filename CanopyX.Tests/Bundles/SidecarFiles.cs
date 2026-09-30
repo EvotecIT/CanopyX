@@ -4,6 +4,20 @@ using System.Text.RegularExpressions;
 
 namespace CanopyX.Tests.Bundles;
 
+/// <summary>Where a node is: its first children page (null for a leaf), the page that holds it, and its list's first page.</summary>
+internal sealed record PageLocation(string? Children, string Page, string First) {
+    /// <summary>
+    /// The location fields its search entry has, from "Search Index" in docs/data-protocol.md: each names a file a
+    /// reader would not load anyway. <paramref name="openedByHits"/> says whether a child of the node has an entry.
+    /// </summary>
+    internal (string? Children, string? Page) EntryFields(bool openedByHits) => (
+        openedByHits && Children != null && FileOf(Children) != FileOf(Page) ? Children : null,
+        FileOf(Page) != FileOf(First) ? Page : null);
+
+    /// <summary>The file a page is read from: <c>p/&lt;n&gt;#&lt;slot&gt;</c> is in the pack <c>p/&lt;n&gt;</c>.</summary>
+    internal static string FileOf(string reference) => reference.StartsWith("p/", StringComparison.Ordinal) && reference.Contains('#') ? reference.Substring(0, reference.IndexOf('#')) : reference;
+}
+
 /// <summary>
 /// Reads every sidecar file of a bundle the way a browser does and checks each file's wrapper. A pack file holds its
 /// pages as <c>String.raw</c> templates; they are read as the strings the script produces.
@@ -87,6 +101,33 @@ internal sealed class SidecarFiles {
         var ids = new List<string>();
         Walk(Document("manifest")["root"]!.GetValue<string>(), ids);
         return ids;
+    }
+
+    /// <summary>
+    /// Where each node's pages are, as a reader following the pages finds them: the reference of its first children
+    /// page, of the page that holds it, and of the first page of that list.
+    /// </summary>
+    internal Dictionary<string, PageLocation> Locations() {
+        var locations = new Dictionary<string, PageLocation>(StringComparer.Ordinal);
+        var lists = new Stack<string>();
+        lists.Push(Document("manifest")["root"]!.GetValue<string>());
+        while (lists.Count > 0) {
+            var first = lists.Pop();
+            for (string? reference = first; reference != null;) {
+                var page = Document(reference);
+                foreach (var item in page["items"]!.AsArray()) {
+                    var childRef = item!["ref"]?.GetValue<string>();
+                    locations.Add(item["id"]!.GetValue<string>(), new PageLocation(childRef, reference, first));
+                    if (childRef != null) {
+                        lists.Push(childRef);
+                    }
+                }
+
+                reference = page["next"]?.GetValue<string>();
+            }
+        }
+
+        return locations;
     }
 
     private void Walk(string firstPage, List<string> ids) {

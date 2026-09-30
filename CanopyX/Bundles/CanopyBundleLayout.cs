@@ -25,4 +25,10 @@ internal static class CanopyBundleLayout {
 
     /// <summary>The reference of one children page: its pack file and its position among that file's pages.</summary>
     internal static string PackedPage(int pack, int slot) => Pack(pack) + "#" + slot.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>The file a page reference is read from: the pack of a packed page, or the page's own file.</summary>
+    internal static string FileOf(string pageReference) {
+        var slot = pageReference.IndexOf('#');
+        return slot < 0 ? pageReference : pageReference.Substring(0, slot);
+    }
 }

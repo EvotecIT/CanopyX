@@ -90,13 +90,29 @@ Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
   | 64 KiB | 4,807 / 689 / 182 | 581 to 1,225 KB / 723 KB | 1.4 to 1.8 MB | 218 to 352 / 211 ms | 35 to 43 ms |
 
   The pack size changes the bytes a query loads and the heap it keeps, not its time: the same 512 KiB bundle measured 275 to 371 ms at 4x in an earlier run of the benchmark on the same machine, and a 512 KiB pack loads and runs in 14 ms at 4x (a 128 KiB one in 9 ms). Without grouping, 64 KiB packs put each page of a long list in a file of its own, and reaching a service far down a region read four packs one after another; grouped, it reads one. Expands, first rows, and the directory bundle are unchanged within noise. 128 KiB was chosen as the size that takes most of the saving in bytes and heap while the large bundle stays at about 2,600 files.
+- [x] Location hints on search hits, and one render per opened path. A search entry names the files of the pages on its path that a reader would not load anyway (the node's first children page, and the page that holds it, each when it is in another file), so the runtime loads every file on a hit's path at once; opening any path (search hit, deep link, remembered state, `expandPath`) rebuilds and renders the rows once, moves focus once, and draws the overscan in the frame after the jump. Measured with `search-benchmark.mjs` and `expand-benchmark.mjs` (Edge headless, medians of 9: three interleaved rounds of 3 runs, the machine 77 to 100% busy with other work):
+
+  | Search to expanded hit | Cold 4x | Cold 1x | Warm 4x | Search part 4x (after) |
+  | --- | --- | --- | --- | --- |
+  | examples: quarterly review | 221 → 154 ms | 58 → 30 ms | 11 → 9 ms | 46 ms |
+  | deep: quarterly report 17 | 278 → 128 ms | 45 → 29 ms | 24 → 17 ms | 50 ms |
+  | directory: firewall policy 0022 | 144 → 96 ms | 20 → 21 ms | 10 → 6 ms | 28 ms |
+  | directory: workstations | 182 → 101 ms | 30 → 22 ms | 11 → 8 ms | 33 ms |
+  | catalog: identity gateway | 212 → 209 ms | 43 → 29 ms | 11 → 8 ms | 78 ms |
+  | catalog: release 3 security | 302 → 190 ms | 52 → 35 ms | 23 → 19 ms | 70 ms |
+  | catalog: dana.levi | 294 → 150 ms | 36 → 23 ms | 21 → 15 ms | 44 ms |
+
+  Opening a path by id without a search, 4x: the catalog's deep service 102 → 69 ms and a fresh page on a deep link to it 649 → 449 ms; the example's deep file 533 → 104 ms and its deep link 1,039 → 578 ms; the directory's deep unit 56 → 33 ms. First rows and single expands are the same or faster (first rows at 1x within 11 ms, which is noise here). The index grows about 1% (20.1 → 20.3 MiB and 370 → 371 files on the catalog, 5.52 → 5.58 MiB on the examples, 2.93 → 2.95 MiB on the directory tree) and 17% on the adversarial deep tree; a cold query loads the same number of files. The streamed writer holds the entries of one top-level subtree until it is finished (the catalog's peak working set 163 → about 175 MB).
 
 Left open by that work:
 
 - Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which also maps design tokens onto `--cx-tone-<name>`.
 - Right-to-left layout: row positions, the pinned tree column, and the detail body use physical left offsets.
 - The streamed writer holds one whole child list in memory until its last node is read; a flat list of millions of top-level rows needs pages that are written as they fill.
-- On the packed catalog, a cold search to an expanded hit takes about 200 to 350 ms with the CPU slowed four times (the 250 ms gate is met at normal speed, 30 to 45 ms). It is not the size of the children packs (see the table above): the search is 40 to 90 ms, each level of the path the runtime opens costs 30 to 50 ms whether or not it reads a file (parsing and checking the page, building its rows, a layout forced by focus), and the paint about 50 ms. The levers are fewer levels opened one after another (location hints on hits, below, also for the pages of a long list) and less work per opened level; a trace of `expandPath` at 4x is the place to start.
+- On the packed catalog at 4x, "identity gateway" (a service far down a region of 1,000) stays at about 210 ms on a busy machine, over the 200 ms margin and under the 250 ms budget. A trace (Edge, 4x): the search is 70 to 80 ms (19 index files; inserting their script elements alone costs about 17 ms), attaching the region's 1,000 services from one 229 KB pack about 25 ms, the forced layout of the rows in view about 20 ms, and the paint and commit 30 to 40 ms. What is left is the search (it ranks five times `maxResults` candidates and reads the entry files of all of them) and the size of the list a hit sits in; the path itself already loads in one round and renders once.
+- The pages of a list larger than the file budget, and the top-level pages, that lie between a list's first page and the one that holds a hit still load one after another.
+- The streamed writer holds the search entries of a top-level node's subtree until that node is finished, because the location fields of an entry are known only once the lists on its path are paged: for a tree with one top-level node, the whole entry table (about the size of the entry files, twice in memory as UTF-16). Keeping the pending entries as UTF-8 or spilling them to a file would bound it, if a consumer's tree needs that.
+- While a hit's files are prefetched nothing shows, also past 250 ms; the files stay pinned in the sidecar source until the next path opens.
 - Scroll benchmark numbers for renderers and time zones on a quiet machine; the runs recorded in PR #10 were taken while other builds ran and differ by less than their noise.
 
 Tree grid follow-ups without a milestone yet, each with the consumer that will pull it in:
@@ -104,7 +120,7 @@ Tree grid follow-ups without a milestone yet, each with the consumer that will p
 - Ghost rows for "as of" views: GPO explorer as-of view, once `rp/gpo-collect` stores versioned snapshots.
 - Export of the visible tree to Excel: GPO explorer fallback. The export runs in the host through OfficeIMO from the same rows `visibleRows()` returns; CanopyX only supplies the rows.
 - Sticky parent rows and filter-match highlighting: the GPO explorer scope tree, if the design packet asks for them.
-- Location hints on search hits (the offset of each path segment among its siblings), so expanding to a child deep in a long list loads the pages it needs at once instead of one after another: the GPO explorer at L, with about 1,000 GPOs per domain. The field is optional, so it fits in `canopyx/1`.
+
 - Switching between host-supplied groupings in the toolbar (group by domain, change date, owner, or status): the GPO explorer list view, if the design packet keeps it. Each grouping stays a tree the host builds; CanopyX only switches between them.
 
 ## 0.2 Hosted Protocol
@@ -114,6 +130,7 @@ Consumer: the TestimoX Monitoring service, which serves the GPO explorer live fr
 - [ ] `CanopyX.AspNetCore` (targets `net8.0` and `net10.0`): endpoint helpers that answer children pages, search, and counts with the same `canopyx/1` documents the bundle writer produces, so the runtime's remote data source works unchanged.
 - [ ] The host supplies the query callbacks. Database paging stays in DbaClientX and reaches CanopyX through a bridge in the host, so CanopyX takes no DbaClientX dependency.
 - [ ] Endpoints take the host's authorization policy (there is no anonymous default) and the host's page-size and query-time caps (TestimoX plan section 19.1).
+- [ ] Remote search hits carry no location hints, so a hosted path opens one level after another (one round trip each). The remote source can implement the runtime's optional `prefetch(opens, finds)` once the search document says where a hit's pages are; the bundle index already does (see "Search Index" in data-protocol.md).
 
 Gate: the live GPO explorer answers each expand and search within 400 ms round trip at L (TestimoX plan section 7.2).
 

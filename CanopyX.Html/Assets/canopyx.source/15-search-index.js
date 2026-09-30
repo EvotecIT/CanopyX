@@ -122,10 +122,17 @@
     return "\u0000" + ("0000000" + (hash >>> 0).toString(16)).slice(-8);
   }
 
+  /** An optional reference field of an entry: absent or null, or a reference. */
+  function entryReference(value) {
+    return value === undefined || value === null || isIdentifier(value);
+  }
+
   /**
-   * Looks up entries of a searchEntries document, or of its stem of ancestors, as { parent, id, label, kind }. An
-   * entry is [parent, head, id, tail, label, kind?]; head and tail count the code units its id shares with the
-   * parent's id at the start and at the end.
+   * Looks up entries of a searchEntries document, or of its stem of ancestors, as { parent, id, label, kind, ref, at }.
+   * An entry is [parent, head, id, tail, label, kind, children, page] with trailing nulls left out; head and tail
+   * count the code units its id shares with the parent's id at the start and at the end. children (ref) is the
+   * reference of the node's first children page, and page (at) the page that holds it, each only when that is in a file
+   * a reader would not load anyway.
    */
   function entryFile(doc, first, count) {
     checkDocument(doc, "searchEntries");
@@ -134,9 +141,9 @@
     const records = new Map();
     const raw = (n) => {
       const item = n >= first && n < first + count ? doc.entries[n - first] : stem.get(n);
-      if (!Array.isArray(item) || item.length < 5 || item.length > 6 || !Number.isInteger(item[0]) || item[0] < -1 || item[0] >= n ||
+      if (!Array.isArray(item) || item.length < 5 || item.length > 8 || !Number.isInteger(item[0]) || item[0] < -1 || item[0] >= n ||
           !isCount(item[1]) || typeof item[2] !== "string" || !isCount(item[3]) || typeof item[4] !== "string" ||
-          (item.length > 5 && !isCount(item[5]))) {
+          (item[5] != null && !isCount(item[5])) || !entryReference(item[6]) || !(item[7] === undefined || isIdentifier(item[7]))) {
         throw badIndex("entry " + n);
       }
       return item;
@@ -151,7 +158,8 @@
         const parent = item[0] < 0 ? null : records.get(item[0]);
         const base = parent ? parent.id : "";
         if (item[1] + item[3] > base.length) throw badIndex("entry " + number);
-        records.set(number, { parent: parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4], kind: item[5] });
+        records.set(number, { parent: parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4],
+          kind: item[5] == null ? undefined : item[5], ref: item[6] || null, at: item[7] || null });
       }
       return records.get(n);
     };
@@ -184,8 +192,11 @@
     return low;
   }
 
-  /** Search over a bundle's index; load(ref) resolves a sidecar document, manifest() the checked manifest. */
-  function sidecarSearch(load, manifest) {
+  /**
+   * Search over a bundle's index; load(ref) resolves a sidecar document, manifest() the checked manifest. The entries
+   * on the paths of the hits a query returns are kept in hints by node id, with where their pages are.
+   */
+  function sidecarSearch(load, manifest, hints) {
     const index = async () => (await manifest()).search;
     // An index written with packs keeps its entry files, then its shards in ordinal key order, in "q/<n>" files; the
     // manifest names the first entry file and the first shard key of each pack.
@@ -233,7 +244,7 @@
       return mergePostings(lists);
     }
 
-    async function run(query, queryWords, limit) {
+    async function run(query, queryWords, limit, sequence) {
       const search = await index();
       if (!search) {
         return { hits: [], total: 0, truncated: false };
@@ -252,6 +263,7 @@
       const wanted = limit * SEARCH_CANDIDATES;
       const taken = new Set();
       const hits = [];
+      const records = new Map();
       let next = 0;
       while (next < order.length && hits.length < limit) {
         const files = [];
@@ -272,16 +284,24 @@
           // Two labels can share a token, so the label is compared with the query.
           if (next >= exact.length || trimSeparators(foldText(record.label)) === folded) {
             taken.add(number);
-            hits.push(entryHit(record, search.kinds));
+            const hit = entryHit(record, search.kinds);
+            records.set(hit, record);
+            hits.push(hit);
           }
         }
       }
       const ranked = rankHits(hits, query, limit);
       ranked.total = candidates.length;
       ranked.truncated = candidates.length > ranked.hits.length;
+      // The hints are those of the query issued last, whichever query finished last.
+      if (sequence === latest) {
+        hints.clear();
+        ranked.hits.forEach((hit) => { for (let r = records.get(hit); r; r = r.parent) hints.set(r.id, r); });
+      }
       return ranked;
     }
 
+    let latest = 0;
     return (query, limit) => {
       const queryWords = words(query);
       if (!queryWords.length) {
@@ -293,7 +313,7 @@
         return Promise.reject(error);
       }
       // A file that failed a check must not answer the next query from the cache.
-      return run(query, queryWords, limit).catch((err) => {
+      return run(query, queryWords, limit, ++latest).catch((err) => {
         loadShard.clear();
         loadEntries.clear();
         loadPack.clear();

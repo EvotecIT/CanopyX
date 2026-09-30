@@ -88,12 +88,6 @@
     return doc;
   }
 
-  function requireIdentifier(value, name) {
-    if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
-      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
-    }
-  }
-
   function validateSearchHit(hit) {
     if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
       throw new Error("CanopyX: search hit needs an ID path and string label.");
@@ -601,6 +595,10 @@
     return "\u0000" + ("0000000" + (hash >>> 0).toString(16)).slice(-8);
   }
 
+  function entryReference(value) {
+    return value === undefined || value === null || isIdentifier(value);
+  }
+
   function entryFile(doc, first, count) {
     checkDocument(doc, "searchEntries");
     if (doc.first !== first || !Array.isArray(doc.stem) || !Array.isArray(doc.entries) || doc.entries.length !== count) throw badIndex("entry file");
@@ -608,9 +606,9 @@
     const records = new Map();
     const raw = (n) => {
       const item = n >= first && n < first + count ? doc.entries[n - first] : stem.get(n);
-      if (!Array.isArray(item) || item.length < 5 || item.length > 6 || !Number.isInteger(item[0]) || item[0] < -1 || item[0] >= n ||
+      if (!Array.isArray(item) || item.length < 5 || item.length > 8 || !Number.isInteger(item[0]) || item[0] < -1 || item[0] >= n ||
           !isCount(item[1]) || typeof item[2] !== "string" || !isCount(item[3]) || typeof item[4] !== "string" ||
-          (item.length > 5 && !isCount(item[5]))) {
+          (item[5] != null && !isCount(item[5])) || !entryReference(item[6]) || !(item[7] === undefined || isIdentifier(item[7]))) {
         throw badIndex("entry " + n);
       }
       return item;
@@ -624,7 +622,8 @@
         const parent = item[0] < 0 ? null : records.get(item[0]);
         const base = parent ? parent.id : "";
         if (item[1] + item[3] > base.length) throw badIndex("entry " + number);
-        records.set(number, { parent: parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4], kind: item[5] });
+        records.set(number, { parent: parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4],
+          kind: item[5] == null ? undefined : item[5], ref: item[6] || null, at: item[7] || null });
       }
       return records.get(n);
     };
@@ -655,7 +654,7 @@
     return low;
   }
 
-  function sidecarSearch(load, manifest) {
+  function sidecarSearch(load, manifest, hints) {
     const index = async () => (await manifest()).search;
     const loadPack = recentCache(PACK_CACHE, async (number) => {
       const doc = checkDocument(await load("q/" + number), "pack");
@@ -699,7 +698,7 @@
       return mergePostings(lists);
     }
 
-    async function run(query, queryWords, limit) {
+    async function run(query, queryWords, limit, sequence) {
       const search = await index();
       if (!search) {
         return { hits: [], total: 0, truncated: false };
@@ -715,6 +714,7 @@
       const wanted = limit * SEARCH_CANDIDATES;
       const taken = new Set();
       const hits = [];
+      const records = new Map();
       let next = 0;
       while (next < order.length && hits.length < limit) {
         const files = [];
@@ -733,16 +733,23 @@
           const record = loaded[files.indexOf(entryFileOf(search.entryFiles, number))](number);
           if (next >= exact.length || trimSeparators(foldText(record.label)) === folded) {
             taken.add(number);
-            hits.push(entryHit(record, search.kinds));
+            const hit = entryHit(record, search.kinds);
+            records.set(hit, record);
+            hits.push(hit);
           }
         }
       }
       const ranked = rankHits(hits, query, limit);
       ranked.total = candidates.length;
       ranked.truncated = candidates.length > ranked.hits.length;
+      if (sequence === latest) {
+        hints.clear();
+        ranked.hits.forEach((hit) => { for (let r = records.get(hit); r; r = r.parent) hints.set(r.id, r); });
+      }
       return ranked;
     }
 
+    let latest = 0;
     return (query, limit) => {
       const queryWords = words(query);
       if (!queryWords.length) {
@@ -753,7 +760,7 @@
         error.code = "too-short";
         return Promise.reject(error);
       }
-      return run(query, queryWords, limit).catch((err) => {
+      return run(query, queryWords, limit, ++latest).catch((err) => {
         loadShard.clear();
         loadEntries.clear();
         loadPack.clear();
@@ -843,18 +850,43 @@
       if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
       return doc.pages;
     });
-    const loadPage = async (ref) => {
+    let pinned = new Map();
+    const pin = (key, promise) => {
+      pinned.set(key, promise);
+      promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
+      return promise;
+    };
+    const packOf = async (ref) => {
       const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
-      const packs = packed ? (await manifest()).packs : undefined;
-      if (packs === undefined) return load(ref);
-      const text = Number(packed[1]) < packs ? (await loadPack(packed[1]))[Number(packed[2])] : undefined;
+      return packed && (await manifest()).packs !== undefined ? packed : null;
+    };
+    const loadPage = async (ref) => {
+      const packed = await packOf(ref);
+      if (!packed) {
+        const doc = pinned.get("file:" + ref);
+        if (doc) pinned.delete("file:" + ref);
+        return doc || load(ref);
+      }
+      const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
       if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
       return JSON.parse(text);
     };
+    const hints = new Map();
     return {
       kind: "sidecar",
       canSearch: true,
       manifest: manifest,
+      async prefetch(opens, finds) {
+        const refs = new Set();
+        opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
+        finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
+        pinned = new Map();
+        await Promise.all(Array.from(refs, async (ref) => {
+          const packed = await packOf(ref);
+          const key = packed ? "pack:" + packed[1] : "file:" + ref;
+          if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+        }).map((pending) => pending.catch(() => {})));
+      },
       async page(node, cursor) {
         const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
         if (!ref) {
@@ -863,7 +895,7 @@
         const doc = checkPage(await loadPage(ref), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
-      search: sidecarSearch(load, manifest)
+      search: sidecarSearch(load, manifest, hints)
     };
   }
 
@@ -1274,6 +1306,16 @@
       }
     }
   });
+  function isIdentifier(value) {
+    return typeof value === "string" && /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value);
+  }
+
+  function requireIdentifier(value, name) {
+    if (!isIdentifier(value)) {
+      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
+    }
+  }
+
   function validateNodes(nodes, existing, inlineOnly = false) {
     if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
     const seen = new Set();
@@ -2804,6 +2846,9 @@
       if (cancelled()) return null;
       await this.rootsReady;
       if (cancelled()) return null;
+      const aborted = o.signal ? new Promise((resolve) => o.signal.addEventListener("abort", resolve, { once: true })) : null;
+      await (aborted ? Promise.race([this.prefetchPath(ids, !!o.expandLast), aborted]) : this.prefetchPath(ids, !!o.expandLast));
+      if (cancelled()) return null;
       const release = this.holdLayout();
       let w;
       let rebuilt = false;
@@ -2830,6 +2875,25 @@
         this.ensureVisible(w);
       }
       return w ? w.h : null;
+    },
+
+    async prefetchPath(ids, openLast) {
+      if (typeof this.source.prefetch !== "function") return;
+      const opens = [];
+      const finds = [];
+      let parent = this.root;
+      ids.forEach((id, k) => {
+        if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
+        const w = this.keyMap.get(id);
+        if (!(w && parent && w.parent === parent)) finds.push(id);
+        parent = w && w.parent === parent ? w : null;
+      });
+      if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
+      if (!opens.length && !finds.length) return;
+      try {
+        await this.source.prefetch(opens, finds);
+      } catch (err) {
+      }
     },
 
     async openPath(ids, o, cancelled) {

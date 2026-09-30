@@ -8,6 +8,7 @@
 //   open section     its releases
 //   open release     the detail table of one release
 //   deep service     a service far down the long list, reached by path like a deep link or a search hit
+//   deep link        a fresh page opened on a link to that service, until it shows selected (views with deepLink)
 // The examples bundle (bundle/ of CanopyX.Examples) and the directory bundle (directory/ of --search-bench) have
 // steps of the same kind, listed in STEPS below.
 // Every step after the first is cold: nothing it needs was loaded before, unless the bundle packs it next to data an
@@ -97,6 +98,31 @@ if (!steps) {
   throw new Error("No expand steps for the view of " + bundle + "; add them to STEPS.");
 }
 
+/**
+ * Opens a fresh page on a deep link to the node at the end of a path (the view must have deepLink): the time from
+ * navigation to the painted frame that shows the node selected, with the files the page loaded on the way.
+ */
+async function openDeepLink(cpu, ids) {
+  const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const page = await context.newPage();
+  const loaded = [];
+  page.on("request", (request) => {
+    const url = request.url();
+    if (url.includes("/data/") && url.endsWith(".js")) loaded.push(fs.statSync(fileURLToPath(url)).size);
+  });
+  const cdp = await context.newCDPSession(page);
+  if (cpu > 1) await cdp.send("Emulation.setCPUThrottlingRate", { rate: cpu });
+  const view = viewOf();
+  const target = ids[ids.length - 1];
+  const started = Date.now();
+  await page.goto(pathToFileURL(pageFile).href + "#cx." + encodeURIComponent(view) + "=" + ids.map(encodeURIComponent).join("/"));
+  await page.waitForFunction((id) => Array.from(document.querySelectorAll(".cx-row[aria-selected=true]")).some((row) => row.getAttribute("data-cx-id") === id), target);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const ms = Date.now() - started;
+  await context.close();
+  return { ms, files: loaded.length, bytes: loaded.reduce((sum, bytes) => sum + bytes, 0) };
+}
+
 const size = bundleSize();
 const browser = await chromium.launch({ channel, headless: true });
 const samples = [];
@@ -135,8 +161,10 @@ try {
         sample[step.name] = { ms, files: loaded.length, bytes: loaded.reduce((sum, bytes) => sum + bytes, 0) };
       }
       if (errors.length) throw new Error(errors.join("; "));
-      samples.push(sample);
+      const deepLink = await page.evaluate(() => !!document.querySelector(".cx-host").canopyx.view.deepLink);
       await context.close();
+      if (deepLink) sample["deep link"] = await openDeepLink(cpu, steps[steps.length - 1].path);
+      samples.push(sample);
     }
   }
 } finally {
@@ -145,7 +173,7 @@ try {
 
 console.log("bundle: " + size.files + " files, " + (size.bytes / 1048576).toFixed(1) + " MB (search index " + size.indexFiles + " files, " + (size.indexBytes / 1048576).toFixed(1) + " MB)");
 const rows = [];
-for (const name of ["first rows"].concat(steps.map((step) => step.name))) {
+for (const name of ["first rows"].concat(steps.map((step) => step.name), samples.some((sample) => sample["deep link"]) ? ["deep link"] : [])) {
   const row = { step: name };
   for (const cpu of cpus) {
     const group = samples.filter((sample) => sample.cpu === cpu);

@@ -12,9 +12,12 @@ namespace CanopyX.Bundles;
 /// posting lists refer to entries by number. Every file stays within the bundle's file budget.
 /// </summary>
 /// <remarks>
-/// Entries are written as the bundle writer walks the tree: <see cref="Add"/> takes the next node in depth-first
+/// Entries are numbered as the bundle writer walks the tree: <see cref="Add"/> takes the next node in depth-first
 /// order, and <see cref="Open"/> and <see cref="Close"/> say when the node added last starts and stops being the
-/// parent of the nodes that follow. Only the open ancestors and the entries of the file in progress are held.
+/// parent of the nodes that follow. An entry also carries where the pages on its path are: the reference of its
+/// children's first page, and of the page that holds it, each when it is in a file a reader would not load anyway. Both are known
+/// once its parent's children are paged (<see cref="Close"/>, or <see cref="PlaceTopLevel"/> for a top-level node), so
+/// the entries of a top-level node's subtree are held until that node is finished, and written in number order.
 /// </remarks>
 internal sealed class CanopySearchIndexWriter {
     /// <summary>
@@ -28,7 +31,13 @@ internal sealed class CanopySearchIndexWriter {
     private readonly HashSet<string>? _kinds;
     private readonly List<int> _entryFiles = new List<int>();
     private readonly SortedDictionary<string, int> _shards = new SortedDictionary<string, int>(StringComparer.Ordinal);
-    private readonly List<Node> _open = new List<Node>();
+    private readonly List<Level> _open = new List<Level>();
+    /// <summary>The top level, as the parent of the top-level nodes.</summary>
+    private readonly Level _top = new Level(string.Empty, string.Empty, null, 0);
+    /// <summary>Entries that are not in a file yet, in number order.</summary>
+    private readonly Queue<Entry> _pending = new Queue<Entry>();
+    /// <summary>The entries of top-level nodes whose page is not known yet, in order.</summary>
+    private readonly Queue<Entry> _topEntries = new Queue<Entry>();
     private readonly List<string> _stem = new List<string>();
     private readonly List<string> _items = new List<string>();
     private readonly CanopyBundlePacks? _packs;
@@ -43,8 +52,9 @@ internal sealed class CanopySearchIndexWriter {
     /// fits the file budget.
     /// </summary>
     private readonly int _packOverhead;
-    private Node? _last;
+    private Level? _last;
     private int _numbered;
+    private int _topPlaced;
     private int _count;
     private int _first;
     private int _budget;
@@ -71,9 +81,9 @@ internal sealed class CanopySearchIndexWriter {
     /// <param name="id">The node id.</param>
     /// <param name="label">The node label.</param>
     /// <param name="kind">The node kind, if any.</param>
-    /// <exception cref="InvalidOperationException">The ancestors of the node do not fit one entry file.</exception>
     internal void Add(string id, string label, string? kind) {
-        _last = new Node(id, label, kind);
+        var parent = _open.Count > 0 ? _open[_open.Count - 1] : _top;
+        _last = new Level(id, label, kind, parent.ChildCount++);
         if (_kinds != null && (kind == null || !_kinds.Contains(kind))) {
             return;
         }
@@ -84,48 +94,115 @@ internal sealed class CanopySearchIndexWriter {
             Number(_open[_numbered], _numbered);
         }
 
-        Number(_last, _open.Count);
-        _index.File(_last.Number, label);
+        _index.File(Number(_last, _open.Count).Number, label);
     }
 
     /// <summary>Makes the node added last the parent of the nodes that follow.</summary>
     internal void Open() {
         _open.Add(_last!);
-        if (_last!.Number >= 0) {
+        if (_last!.Entry != null) {
             _numbered = _open.Count;
         }
     }
 
-    /// <summary>Ends the children of the innermost open node.</summary>
-    internal void Close() {
+    /// <summary>
+    /// Ends the children of the innermost open node, once they are paged: the node's entry gets the reference of their
+    /// first page, and each child with an entry the page that holds it (see <see cref="Place"/>). Entries that are
+    /// complete are written.
+    /// </summary>
+    /// <param name="pages">The reference and item count of each children page, first page first; null for no children.</param>
+    /// <exception cref="InvalidOperationException">The ancestors of a node do not fit one entry file.</exception>
+    internal void Close(IReadOnlyList<(string Reference, int Count)>? pages) {
+        var level = _open[_open.Count - 1];
         _open.RemoveAt(_open.Count - 1);
         _numbered = Math.Min(_numbered, _open.Count);
+        // A hit's path opens the node only when one of its children has an entry, and then the node has one too.
+        if (pages != null && level.Children != null) {
+            level.Entry!.ChildrenReference = pages[0].Reference;
+            var page = 0;
+            var end = pages[0].Count;
+            foreach (var child in level.Children) {
+                while (child.Position >= end) {
+                    end += pages[++page].Count;
+                }
+
+                Place(child, pages[page].Reference, pages[0].Reference);
+            }
+        }
+
+        WriteCompleteEntries();
     }
 
-    /// <summary>Gives a node the next entry number and adds its entry to the file in progress.</summary>
+    /// <summary>
+    /// Places the top-level node the bundle writer finished last on the top-level page <paramref name="pageReference"/>.
+    /// Entries that are complete are written.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The ancestors of a node do not fit one entry file.</exception>
+    internal void PlaceTopLevel(string pageReference) {
+        var position = _topPlaced++;
+        if (_topEntries.Count > 0 && _topEntries.Peek().Position == position) {
+            Place(_topEntries.Dequeue(), pageReference, CanopyBundleLayout.RootPage(0));
+            WriteCompleteEntries();
+        }
+    }
+
+    /// <summary>
+    /// Completes an entry once the page that holds its node is known. An entry names only the files a reader would
+    /// not load anyway: the page that holds the node when that is in another file than its list's first page, and
+    /// the node's first children page when that is in another file than the page that holds the node.
+    /// </summary>
+    private static void Place(Entry entry, string holding, string first) {
+        entry.PageReference = CanopyBundleLayout.FileOf(holding) != CanopyBundleLayout.FileOf(first) ? holding : null;
+        if (entry.ChildrenReference != null && CanopyBundleLayout.FileOf(entry.ChildrenReference) == CanopyBundleLayout.FileOf(holding)) {
+            entry.ChildrenReference = null;
+        }
+
+        entry.Placed = true;
+    }
+
+    /// <summary>Gives a node the next entry number and queues its entry until it knows its pages.</summary>
     /// <param name="node">The node.</param>
     /// <param name="depth">How many of the open nodes are its ancestors.</param>
-    private void Number(Node node, int depth) {
-        var parent = depth > 0 ? _open[depth - 1] : null;
-        node.Number = _count++;
-        node.Parent = parent?.Number ?? -1;
-        node.Kind = _index.KindNumber(node.KindName);
-        var item = Serialize(node, parent?.Id ?? string.Empty, withNumber: false);
-        var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
-        if (_items.Count > 0 && (_items.Count >= EntriesPerFile || _bytes + size > _budget)) {
-            WriteEntryFile();
+    private Entry Number(Level node, int depth) {
+        var parent = depth > 0 ? _open[depth - 1] : _top;
+        var entry = node.Entry = new Entry(node.Position, _count++, parent.Entry, _index.KindNumber(node.KindName));
+        entry.Body = Body(entry, node, parent.Id);
+        if (depth > 0) {
+            (parent.Children ??= new List<Entry>()).Add(entry);
+        } else {
+            _topEntries.Enqueue(entry);
         }
 
-        if (_items.Count == 0) {
-            StartEntryFile(node.Number, size, depth);
-        }
+        _pending.Enqueue(entry);
+        return entry;
+    }
 
-        _items.Add(item);
-        _bytes += size;
+    /// <summary>Adds the placed entries at the front of the queue to entry files, writing each file as it fills.</summary>
+    private void WriteCompleteEntries() {
+        while (_pending.Count > 0 && _pending.Peek().Placed) {
+            var entry = _pending.Dequeue();
+            var item = Serialize(entry, withNumber: false);
+            var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
+            if (_items.Count > 0 && (_items.Count >= EntriesPerFile || _bytes + size > _budget)) {
+                WriteEntryFile();
+            }
+
+            if (_items.Count == 0) {
+                StartEntryFile(entry, size);
+            }
+
+            _items.Add(item);
+            _bytes += size;
+        }
     }
 
     /// <summary>Writes the last entry file and the word shards.</summary>
     internal void Write() {
+        WriteCompleteEntries();
+        if (_pending.Count > 0) {
+            throw new InvalidOperationException("Search entries were left without their pages.");
+        }
+
         if (_items.Count > 0) {
             WriteEntryFile();
         }
@@ -180,14 +257,15 @@ internal sealed class CanopySearchIndexWriter {
     /// depth-first order, an ancestor that lies before the file is an ancestor of the file's first entry, so the stem
     /// is exactly what the file needs to rebuild every id path on its own.
     /// </summary>
-    private void StartEntryFile(int first, int firstSize, int depth) {
-        _first = first;
+    private void StartEntryFile(Entry first, int firstSize) {
+        _first = first.Number;
         _bytes = 0;
         _stem.Clear();
-        for (var level = 0; level < depth; level++) {
-            _stem.Add(Serialize(_open[level], level > 0 ? _open[level - 1].Id : string.Empty, withNumber: true));
+        for (var ancestor = first.Parent; ancestor != null; ancestor = ancestor.Parent) {
+            _stem.Add(Serialize(ancestor, withNumber: true));
         }
 
+        _stem.Reverse();
         // A file number and a first entry number no real file reaches, so the measured envelope is never too short.
         const int bound = int.MaxValue;
         var reference = CanopyBundleLayout.EntryFile(bound);
@@ -238,22 +316,48 @@ internal sealed class CanopySearchIndexWriter {
     }
 
     /// <summary>
-    /// An entry as <c>[parent, head, id, tail, label]</c> plus the kind number when it has one; stem entries lead with
-    /// their own number. The id is stored relative to the parent's id: <c>head</c> and <c>tail</c> count the leading
-    /// and trailing code units the two share, and only the part between them is written. Path-style ids share a
-    /// prefix with their parent and distinguished names share a suffix, so neither repeats on every level.
+    /// The fields every entry has, <c>parent, head, id, tail, label</c>, without brackets. The id is stored relative
+    /// to the parent's id: <c>head</c> and <c>tail</c> count the leading and trailing code units the two share, and
+    /// only the part between them is written. Path-style ids share a prefix with their parent and distinguished names
+    /// share a suffix, so neither repeats on every level.
     /// </summary>
-    private static string Serialize(Node entry, string parentId, bool withNumber) {
-        SharedAffixes(parentId, entry.Id, out var head, out var tail);
+    private static string Body(Entry entry, Level node, string parentId) {
+        SharedAffixes(parentId, node.Id, out var head, out var tail);
         var json = new CanopyJsonWriter(96);
+        json.BeginArray().Number(entry.Parent?.Number ?? -1).Number(head).String(node.Id.Substring(head, node.Id.Length - head - tail)).Number(tail).String(node.Label);
+        var body = json.EndArray().ToString();
+        return body.Substring(1, body.Length - 2);
+    }
+
+    /// <summary>
+    /// An entry as <c>[parent, head, id, tail, label, kind, children, page]</c>; stem entries lead with their own
+    /// number. <c>kind</c> is the kind number, <c>children</c> the reference of the node's first children page, and
+    /// <c>page</c> the reference of the page that holds the node, each only when it is in another file (see <see cref="Place"/>). A field
+    /// without a value is null, and trailing nulls are left out.
+    /// </summary>
+    private static string Serialize(Entry entry, bool withNumber) {
+        var json = new CanopyJsonWriter(entry.Body.Length + 48);
         json.BeginArray();
         if (withNumber) {
             json.Number(entry.Number);
         }
 
-        json.Number(entry.Parent).Number(head).String(entry.Id.Substring(head, entry.Id.Length - head - tail)).Number(tail).String(entry.Label);
-        if (entry.Kind >= 0) {
-            json.Number(entry.Kind);
+        json.Raw(entry.Body);
+        var fields = entry.PageReference != null ? 3 : entry.ChildrenReference != null ? 2 : entry.Kind >= 0 ? 1 : 0;
+        if (fields >= 1) {
+            if (entry.Kind >= 0) {
+                json.Number(entry.Kind);
+            } else {
+                json.Null();
+            }
+        }
+
+        if (fields >= 2) {
+            json.String(entry.ChildrenReference);
+        }
+
+        if (fields >= 3) {
+            json.String(entry.PageReference);
         }
 
         return json.EndArray().ToString();
@@ -367,32 +471,75 @@ internal sealed class CanopySearchIndexWriter {
     }
 
     /// <summary>
-    /// A node on the way through the tree. Entries are numbered in depth-first order, so a node's parent always has a
-    /// smaller number than the node, and the runtime rebuilds the id path and context by following parents.
+    /// A node while the writer reads it and, if it has children, while they are read: what its entry and the entries
+    /// of its children are made from. Only the open nodes are kept, so a node's id and label are released with it.
     /// </summary>
-    private sealed class Node {
-        internal Node(string id, string label, string? kindName) {
+    private sealed class Level {
+        internal Level(string id, string label, string? kindName, int position) {
             Id = id;
             Label = label;
             KindName = kindName;
+            Position = position;
         }
 
+        /// <summary>Gets the node id; its children's entries are written relative to it.</summary>
         internal string Id { get; }
 
         internal string Label { get; }
 
         internal string? KindName { get; }
 
-        /// <summary>Gets or sets the entry number, or -1 while the node has no entry.</summary>
-        internal int Number { get; set; } = -1;
+        /// <summary>Gets the position of the node among its siblings, from 0.</summary>
+        internal int Position { get; }
 
-        /// <summary>Gets or sets the parent's entry number, or -1 for a top-level node.</summary>
-        internal int Parent { get; set; } = -1;
+        /// <summary>Gets or sets how many children the writer has read so far.</summary>
+        internal int ChildCount { get; set; }
 
-        /// <summary>Gets or sets the position of the node's kind in the index's kind table, or -1 without a kind.</summary>
-        internal int Kind { get; set; } = -1;
+        /// <summary>Gets or sets the entries of the children read so far, in order; null for none.</summary>
+        internal List<Entry>? Children { get; set; }
+
+        /// <summary>Gets or sets the node's entry, or null while it has none.</summary>
+        internal Entry? Entry { get; set; }
     }
 
+    /// <summary>
+    /// A search entry until it is in a file. Entries are numbered in depth-first order, so a node's parent always has
+    /// a smaller number than the node, and the runtime rebuilds the id path and context by following parents.
+    /// </summary>
+    private sealed class Entry {
+        internal Entry(int position, int number, Entry? parent, int kind) {
+            Position = position;
+            Number = number;
+            Parent = parent;
+            Kind = kind;
+        }
+
+        /// <summary>Gets the position of the node among its siblings, from 0.</summary>
+        internal int Position { get; }
+
+        internal int Number { get; }
+
+        /// <summary>Gets the parent's entry, or null for a top-level node.</summary>
+        internal Entry? Parent { get; }
+
+        /// <summary>Gets the position of the node's kind in the index's kind table, or -1 without a kind.</summary>
+        internal int Kind { get; }
+
+        /// <summary>Gets or sets the fields every entry has, from the parent's number to the label, serialized without brackets.</summary>
+        internal string Body { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the reference of the node's first children page, when a child has an entry and the page is in
+        /// another file than the page that holds the node.
+        /// </summary>
+        internal string? ChildrenReference { get; set; }
+
+        /// <summary>Gets or sets the reference of the page that holds the node, when it is in another file than its list's first page.</summary>
+        internal string? PageReference { get; set; }
+
+        /// <summary>Gets or sets whether the node's page is known, which makes the entry complete.</summary>
+        internal bool Placed { get; set; }
+    }
     /// <summary>The words of one shard file with their serialized posting lists.</summary>
     private sealed class ShardPart {
         internal List<string> Words { get; } = new List<string>();

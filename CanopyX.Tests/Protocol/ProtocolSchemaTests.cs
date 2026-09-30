@@ -64,6 +64,12 @@ public sealed class ProtocolSchemaTests {
     [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,0,\"a\",0,\"A\",\"folder\"]]}", false)]
     [InlineData("{\"first\":4,\"stem\":[[-1,0,\"root\",0,\"Root\"]],\"entries\":[]}", false)]
     [InlineData("{\"stem\":[],\"entries\":[]}", false)]
+    // Where the pages on a hit's path are: the first children page, and the page that holds the node.
+    [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",null,\"p/0#3\"]],\"entries\":[[0,4,\"/a\",0,\"A\",1,\"p/1#0\",\"p/0#4\"],[4,0,\"x\",2,\"B\",null,null,\"r/2\"]]}", true)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0,\"A\",null,\"\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0,\"A\",null,null,null]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0,\"A\",null,\"p/1#0\",\"p/0#4\",\"extra\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",null,7]],\"entries\":[]}", false)]
     public void Schema_SearchEntries_DescribesEntriesAndTheirStem(string body, bool valid) {
         var doc = JsonNode.Parse(body)!.AsObject();
         doc["protocol"] = "canopyx/1"; doc["type"] = "searchEntries";

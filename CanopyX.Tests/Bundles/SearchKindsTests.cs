@@ -17,7 +17,10 @@ public sealed class SearchKindsTests {
             for (var r = 0; r < 300; r++) {
                 var record = new CanopyNode(group.Id + "/r" + r, "Record " + r + " alpha") { Kind = "record" };
                 var releases = new CanopyNode(record.Id + "/releases", "Releases alpha") { Kind = "section" };
-                releases.Children.Add(new CanopyNode(releases.Id + "/1", "Release one alpha") { Kind = "release" });
+                // A release is found, its note is not: no hit's path opens the release.
+                var release = new CanopyNode(releases.Id + "/1", "Release one alpha") { Kind = "release" };
+                release.Children.Add(new CanopyNode(release.Id + "/note", "Note alpha") { Kind = "link" });
+                releases.Children.Add(release);
                 record.Children.Add(releases);
                 var links = new CanopyNode(record.Id + "/links", "Links alpha") { Kind = "section" };
                 links.Children.Add(new CanopyNode(links.Id + "/1", "Link alpha") { Kind = "link" });
@@ -49,7 +52,7 @@ public sealed class SearchKindsTests {
             // Per record: the record, its releases section (an ancestor) and the release, and the two levels above
             // the deep record with that record. Plus the three groups.
             Assert.Equal(3 + 3 * 300 * 6, reader.EntryCount);
-            Assert.Equal(3 * 300 * 9 + 3 + 2, result.NodeCount);
+            Assert.Equal(3 * 300 * 10 + 3 + 2, result.NodeCount);
             Assert.True(reader.EntryFiles.Count > 5, "The entries should span several files, each with its own stem.");
             var alpha = reader.Find("alpha").Select(reader.Entry).ToList();
             Assert.Equal(3 * 300 * 3, alpha.Count);
@@ -61,6 +64,15 @@ public sealed class SearchKindsTests {
             Assert.Empty(reader.Find("quiet"));
             var release = reader.Entry(Assert.Single(reader.Find("one"), number => reader.Entry(number).Path[1] == "g2/r299"));
             Assert.Equal(new[] { "g2", "g2/r299", "g2/r299/releases", "g2/r299/releases/1" }, release.Path);
+            // An entry names its children's first page only when one of them has an entry.
+            var locations = files.Locations();
+            var byId = Enumerable.Range(0, reader.EntryCount).Select(reader.Entry).ToDictionary(entry => entry.Path[entry.Path.Count - 1], StringComparer.Ordinal);
+            Assert.NotNull(locations["g2/r299/releases/1"].Children);
+            Assert.Null(release.Children);
+            var parentsOfEntries = new HashSet<string>(byId.Values.Where(entry => entry.Path.Count > 1).Select(entry => entry.Path[entry.Path.Count - 2]), StringComparer.Ordinal);
+            foreach (var entry in byId) {
+                Assert.Equal(locations[entry.Key].EntryFields(parentsOfEntries.Contains(entry.Key)), (entry.Value.Children, entry.Value.Page));
+            }
             // Every entry rebuilds its path from its own file, parents before children.
             for (var number = 0; number < reader.EntryCount; number++) {
                 var path = reader.Entry(number).Path;
