@@ -23,7 +23,6 @@ public sealed class CanopyHtmlDetail : CanopyDetail {
 
     internal override string Type => "html";
 
-    internal override int AutomaticHeight => 6;
 
     internal override void WriteContent(CanopyJsonWriter writer) {
         writer.Property("html", Html);

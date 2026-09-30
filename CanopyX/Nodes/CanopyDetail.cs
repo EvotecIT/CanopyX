@@ -4,8 +4,8 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>
-/// Content of a detail row: a row that spans several row slots under its parent and holds a table, a property list,
-/// or host markup instead of cells.
+/// Content of a detail row: a row under its parent that holds a table, a property list, or host markup instead of
+/// cells. It is as tall as its content unless <see cref="Height"/> gives it a fixed number of row slots.
 /// </summary>
 /// <remarks>
 /// A node with a detail is a leaf: it cannot have children. Use <see cref="CanopyTableDetail"/>,
@@ -21,8 +21,9 @@ public abstract class CanopyDetail {
     }
 
     /// <summary>
-    /// Gets or sets how many row slots the detail row spans, from 1 to <see cref="MaxHeight"/>.
-    /// Zero (the default) picks a height from the content.
+    /// Gets or sets how many row slots the detail row spans, from 1 to <see cref="MaxHeight"/>; content that needs
+    /// more scrolls inside the row. Zero (the default) makes the row as tall as its content: the browser runtime
+    /// measures it when it is shown, so the host does not have to guess a height from text lengths.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative or above <see cref="MaxHeight"/>.</exception>
     public int Height {
@@ -38,12 +39,12 @@ public abstract class CanopyDetail {
 
     internal abstract string Type { get; }
 
-    internal abstract int AutomaticHeight { get; }
-
-    internal int ResolvedHeight => _height > 0 ? _height : Math.Max(1, Math.Min(MaxHeight, AutomaticHeight));
-
     internal void WriteJson(CanopyJsonWriter writer) {
-        writer.BeginObject().Property("type", Type).Property("height", ResolvedHeight);
+        writer.BeginObject().Property("type", Type);
+        if (_height > 0) {
+            writer.Property("height", _height);
+        }
+
         WriteContent(writer);
         writer.EndObject();
     }

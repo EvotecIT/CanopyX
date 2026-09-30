@@ -136,7 +136,11 @@
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
       this.ensureVisible(w);
-      this.render();
+      // Detail rows measured on the way can move the row out of view again.
+      if (this.render()) {
+        this.ensureVisible(w);
+        this.render();
+      }
       const rowEl = this.rendered.get(w);
       if (rowEl && domFocus !== false) {
         rowEl.focus({ preventScroll: true });
@@ -150,7 +154,7 @@
       }
       const grid = this.grid;
       const y = this.tops[i];
-      const height = w.span * this.rowH;
+      const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       if (y < grid.scrollTop) {
         grid.scrollTop = y;

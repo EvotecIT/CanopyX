@@ -34,7 +34,10 @@
         this.buildRow(rowEl, kind);
       }
       setAttr(rowEl, "aria-level", String(w.level));
-      const height = w.span * this.rowH + "px";
+      // A detail row without a declared height takes the height of its content and is measured after the paint.
+      const auto = kind === "detail" && w.auto;
+      this.observeDetail(rowEl, auto);
+      const height = auto ? "auto" : w.hpx + "px";
       if (rowEl._height !== height) {
         rowEl.style.height = height;
         rowEl._height = height;
@@ -103,16 +106,20 @@
 
     paintDetailRow(rowEl, w) {
       const node = w.h;
-      setClass(rowEl, "cx-row cx-detail" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
+      setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
-      // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
+      // Detail content (and anything a host renderDetail callback put into it) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
       const cell = this.cell(rowEl, 0, this.rowWidth);
       rowEl.replaceChild(cell, old);
       rowEl._cells[0].cell = cell;
       cell.setAttribute("aria-colspan", String(this.cols.length));
-      cell.style.paddingLeft = (w.level - 1) * INDENT + 8 + "px";
+      // The body sticks at the indent while the grid scrolls sideways, and takes the visible width from there.
+      const left = (w.level - 1) * INDENT + 8 + "px";
+      cell.style.paddingLeft = left;
+      cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
+      if (w.auto) this.measureNeeded = true;
     },
 
     paintNodeRow(rowEl, w) {

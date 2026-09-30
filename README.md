@@ -32,7 +32,7 @@ Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 - Search that returns id paths and expands the tree to the match; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
 - "Only matching" filters that keep the ancestors of matching rows.
 - Cells with host-supplied values, display text, tones, and badges; icons declared once per view.
-- Detail rows that span several row slots and hold a table, a property list, or host HTML.
+- Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.
 - Single and multi-select, selection events for a drawer, deep links that expand a path, and expansion state remembered for the session.
 - Light and dark themes from a handful of CSS custom properties.
 - A script-free outline table for email, print, and Word.

@@ -41,9 +41,10 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `30-model.js` | Tree grid constructor, root loading, status rows, and events |
 | `31-wrapping.js` | Iterative node construction and initial expansion |
 | `32-layout.js` | Iterative filtering, visible-row layout, and per-level sorting |
-| `40-render.js` | DOM scaffold, windowed rendering, row pool, DOM order of virtual rows |
+| `40-render.js` | DOM scaffold, header, windowed rendering, row pool |
+| `42-dom-order.js` | DOM order of virtual rows |
 | `45-cells.js` | Row and cell painting, badges, tones, icons |
-| `50-detail.js` | Detail row payloads: table, properties, trusted HTML, or a host `renderDetail` callback |
+| `50-detail.js` | Detail row payloads: table, properties, trusted HTML, or a host `renderDetail` callback; measuring detail rows that size themselves |
 | `60-keyboard.js` | Keyboard model, type-ahead, roving focus |
 | `65-page-focus.js` | Focus ownership across paging and retry |
 | `70-behavior.js` | Expand and collapse, paging, selection, `expandPath`, column resize and visibility |
@@ -58,7 +59,8 @@ Host controls in custom cells and details keep their click and keyboard behavior
 ### Rendering Model
 
 - Loaded nodes keep their children. The visible rows are a flat array rebuilt on each structure change (expand, collapse, page loaded, sort, filter); the cost is proportional to the visible rows, not to the whole tree.
-- Rows have a fixed height. A detail row spans a declared number of row slots, so an offset table gives every row's top position and a binary search finds the first row in the viewport.
+- Rows have a fixed height, so an offset table gives every row's top position and a binary search finds the first row in the viewport. A detail row either spans a declared number of row slots or, without a declared height, is as tall as its content: it enters the offset table with an estimate and is measured when it is rendered, and again when a `ResizeObserver` reports that its content or the grid's width changed. When a row above the viewport turns out taller or shorter than its estimate, the scroll position moves by the difference, so the rows in view stay where they are.
+- A detail row's content sits in a body that sticks at the row's indent and takes the visible width of the grid (`--cx-view-w`, which the runtime keeps up to date), so it stays readable when the columns are wider than the grid.
 - Only the rows in the viewport, a small overscan, and the focused row exist in the DOM.
 - A row that leaves the window is reused for a row that enters it. Its cell elements survive; only text, attributes, badges, and position change. Rows retained in the viewport are not repainted.
 - Positions and attributes are written only when they change, and rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.

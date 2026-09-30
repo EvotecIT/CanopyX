@@ -331,6 +331,7 @@
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
+      if (this.detailObserver) this.detailObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());

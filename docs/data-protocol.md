@@ -110,16 +110,20 @@ Sorting a column compares cell values, falling back to the display text when a c
 
 ## Detail Rows
 
-A detail row spans `height` row slots (1 to 40) under its parent and holds one of three payloads:
+A detail row sits under its parent and holds one of three payloads:
 
 ```json
-{ "type": "table", "height": 6, "caption": "Changed settings", "columns": ["Setting", "Before", "After"],
+{ "type": "table", "caption": "Changed settings", "columns": ["Setting", "Before", "After"], "widths": [2, 3, 3],
   "rows": [["Retention", { "value": "30 days", "tone": "danger" }, { "value": "90 days", "tone": "success" }]] }
 { "type": "properties", "height": 4, "items": [{ "name": "Owner", "value": "Engineering" }] }
-{ "type": "html", "height": 8, "html": "<div class=\"host-widget\">...</div>" }
+{ "type": "html", "html": "<div class=\"host-widget\">...</div>" }
 ```
 
-Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail` callback. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
+- `height` is optional. Without it the row is as tall as its content: the runtime starts from an estimate, measures the row when it is shown, measures it again when its content or the width of the grid changes, and keeps the rows the reader is looking at in place. With `height` (1 to 40) the row spans that many row slots and content that needs more scrolls inside it.
+- The content of a detail row stays inside the visible width of the grid. It does not scroll away sideways with the columns, however wide they are together.
+- A table's `widths` are optional: one share of the table width per column, each 1 to 1,000 (`[2, 3, 3]` makes the first column a quarter). Without them the columns are equally wide. Text that does not fit its column wraps.
+
+Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail(node, element)` callback; `element` is the body of the row, which has the visible width of the grid, and a row without `height` takes the height of what the host puts into it. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
 
 ## Page
 

@@ -217,8 +217,19 @@ public static class CanopyStaticHtml {
                 }
 
                 html.Append("<thead><tr>");
-                foreach (var title in table.Columns) {
-                    html.Append("<th scope=\"col\" style=\"").Append(CanopyStaticStyles.InnerHeader).Append("\">").Append(Encode(title)).Append("</th>");
+                var shares = table.ColumnWidths.Count == table.Columns.Count ? table.ColumnWidths : null;
+                long total = 0;
+                foreach (var share in shares ?? Array.Empty<int>()) {
+                    total += share;
+                }
+
+                for (var column = 0; column < table.Columns.Count; column++) {
+                    html.Append("<th scope=\"col\" style=\"").Append(CanopyStaticStyles.InnerHeader);
+                    if (shares != null) {
+                        html.Append("width:").Append((shares[column] * 100.0 / total).ToString("0.##", CultureInfo.InvariantCulture)).Append("%;");
+                    }
+
+                    html.Append("\">").Append(Encode(table.Columns[column])).Append("</th>");
                 }
 
                 html.Append("</tr></thead><tbody>");

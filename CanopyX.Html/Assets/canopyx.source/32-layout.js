@@ -60,17 +60,7 @@
         }
       }
       this.rows = rows;
-      const tops = new Array(rows.length + 1);
-      let y = 0;
-      for (let i = 0; i < rows.length; i++) {
-        rows[i]._ri = i;
-        tops[i] = y;
-        y += rows[i].span * this.rowH;
-      }
-      tops[rows.length] = y;
-      this.tops = tops;
-      this.total = y;
-      this.canvas.style.height = y + "px";
+      this.retop();
       this.grid.setAttribute("aria-rowcount", rows.some((row) => row.status) ? "-1" : String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
@@ -85,6 +75,22 @@
       }
       this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
+    },
+
+    /** Rebuilds the offset table from the row heights; hpx is a row's height in pixels. */
+    retop() {
+      const rows = this.rows;
+      const tops = new Array(rows.length + 1);
+      let y = 0;
+      for (let i = 0; i < rows.length; i++) {
+        rows[i]._ri = i;
+        tops[i] = y;
+        y += rows[i].hpx;
+      }
+      tops[rows.length] = y;
+      this.tops = tops;
+      this.total = y;
+      this.canvas.style.height = y + "px";
     },
 
     applySort(parent, deep) {

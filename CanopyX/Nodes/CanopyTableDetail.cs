@@ -9,6 +9,9 @@ namespace CanopyX;
 /// values.
 /// </summary>
 public sealed class CanopyTableDetail : CanopyDetail {
+    /// <summary>The largest share a column width can have.</summary>
+    public const int MaxColumnWidth = 1000;
+
     /// <summary>Creates a table detail.</summary>
     /// <param name="caption">An optional caption shown above the table and read by screen readers.</param>
     public CanopyTableDetail(string? caption = null) {
@@ -20,6 +23,13 @@ public sealed class CanopyTableDetail : CanopyDetail {
 
     /// <summary>Gets the column headers.</summary>
     public IList<string> Columns { get; } = new List<string>();
+
+    /// <summary>
+    /// Gets the widths of the columns as shares of the table width, one per column, for example 3, 1, 1 for a first
+    /// column three times as wide as the others. Empty (the default) gives every column the same width. Text that
+    /// does not fit a column wraps.
+    /// </summary>
+    public IList<int> ColumnWidths { get; } = new List<int>();
 
     /// <summary>Gets the rows; each row holds one cell per column.</summary>
     public IList<IList<CanopyCell>> Rows { get; } = new List<IList<CanopyCell>>();
@@ -50,7 +60,6 @@ public sealed class CanopyTableDetail : CanopyDetail {
 
     internal override string Type => "table";
 
-    internal override int AutomaticHeight => Math.Min(16, Rows.Count + (Caption == null ? 1 : 2));
 
     internal override void WriteContent(CanopyJsonWriter writer) {
         writer.OptionalProperty("caption", Caption);
@@ -61,6 +70,23 @@ public sealed class CanopyTableDetail : CanopyDetail {
         }
 
         writer.StringArray("columns", Columns);
+        if (ColumnWidths.Count > 0) {
+            if (ColumnWidths.Count != Columns.Count) {
+                throw new InvalidOperationException("A table detail has " + ColumnWidths.Count + " column widths but " + Columns.Count + " columns.");
+            }
+
+            writer.Name("widths").BeginArray();
+            foreach (var width in ColumnWidths) {
+                if (width < 1 || width > MaxColumnWidth) {
+                    throw new InvalidOperationException("A table detail column width must be a share from 1 to " + MaxColumnWidth + ".");
+                }
+
+                writer.Number(width);
+            }
+
+            writer.EndArray();
+        }
+
         writer.Name("rows").BeginArray();
         foreach (var row in Rows) {
             if (row == null) throw new InvalidOperationException("A table detail cannot contain a null row.");

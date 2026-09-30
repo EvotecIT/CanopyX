@@ -862,7 +862,8 @@
 
   // ---------- tree grid: model ----------
   // Loaded nodes keep their children. The visible rows are a flat array rebuilt on every structure change, in time
-  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots.
+  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots, or is as tall
+  // as its content when it declares no height.
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
@@ -878,7 +879,7 @@
       this.lang = document.documentElement.lang || undefined;
       this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
       this.keyMap = new Map();
-      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null, span: 1 };
+      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {
         this.root.inlineItems = view.roots || [];
       }
@@ -964,7 +965,7 @@
       kind = parent.loading ? "loading" : parent.error ? "error" : kind;
       let row = parent._status;
       if (!row) {
-        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
       const loaded = parent.children ? parent.children.length : 0;
@@ -1016,7 +1017,7 @@
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
           children: null, total: null, next: null, inline: false, loading: false, error: null,
-          span: data.detail ? Math.max(1, data.detail.height || 1) : 1, _v: 0
+          hpx: data.detail ? this.detailHeight(data.detail) : this.rowH, auto: !!data.detail && !(data.detail.height > 0), _v: 0
         };
         this.keyMap.set(data.id, w);
         return w;
@@ -1105,17 +1106,7 @@
         }
       }
       this.rows = rows;
-      const tops = new Array(rows.length + 1);
-      let y = 0;
-      for (let i = 0; i < rows.length; i++) {
-        rows[i]._ri = i;
-        tops[i] = y;
-        y += rows[i].span * this.rowH;
-      }
-      tops[rows.length] = y;
-      this.tops = tops;
-      this.total = y;
-      this.canvas.style.height = y + "px";
+      this.retop();
       this.grid.setAttribute("aria-rowcount", rows.some((row) => row.status) ? "-1" : String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
@@ -1130,6 +1121,22 @@
       }
       this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
+    },
+
+    /** Rebuilds the offset table from the row heights; hpx is a row's height in pixels. */
+    retop() {
+      const rows = this.rows;
+      const tops = new Array(rows.length + 1);
+      let y = 0;
+      for (let i = 0; i < rows.length; i++) {
+        rows[i]._ri = i;
+        tops[i] = y;
+        y += rows[i].hpx;
+      }
+      tops[rows.length] = y;
+      this.tops = tops;
+      this.total = y;
+      this.canvas.style.height = y + "px";
     },
 
     applySort(parent, deep) {
@@ -1274,7 +1281,13 @@
         }
       });
       global.addEventListener("beforeprint", this.onPrint);
-      this.resizeObserver = new ResizeObserver(() => this.scheduleRender());
+      // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.
+      const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
+      viewWidth();
+      this.resizeObserver = new ResizeObserver(() => {
+        viewWidth();
+        this.scheduleRender();
+      });
       this.resizeObserver.observe(grid);
     },
 
@@ -1381,6 +1394,23 @@
      * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
      */
     render() {
+      // A detail row that sizes itself is measured once it is in the document. A new height moves the rows below
+      // it and can change which rows are in the window, so the pass repeats; heights settle within a pass or two.
+      // Returns whether a height changed, so a caller that scrolled to a row can check that it is still in view.
+      let measured = false;
+      for (let pass = 0; !this.destroyed; pass++) {
+        this.renderPass();
+        if (!this.measureDetails()) break;
+        measured = true;
+        if (pass === 3) {
+          this.scheduleRender();
+          break;
+        }
+      }
+      return measured;
+    },
+
+    renderPass() {
       if (this.destroyed) {
         return;
       }
@@ -1407,6 +1437,7 @@
             // Reusing it would leave keyboard focus on a row that now shows another node.
             rowEl.remove();
             rowEl._w = null;
+            this.observeDetail(rowEl, false);
           } else {
             // Repaint a departing row while detached, then insert it in the new window's DOM order. Its cell
             // skeleton survives; retained rows do not need repainting or moving during downward scrolling.
@@ -1459,6 +1490,7 @@
       for (const rowEl of free) {
         rowEl.remove();
         rowEl._w = null;
+        this.observeDetail(rowEl, false);
         if (this.pool.length < 200) {
           this.pool.push(rowEl);
         }
@@ -1469,8 +1501,66 @@
       this.window = { first: first, last: last };
       // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
+    }
+  });
+
+  // ---------- tree grid: column sizing ----------
+  Object.assign(TreeGrid.prototype, {
+    applyWidths() {
+      let sum = 0;
+      this.cols.forEach((column, i) => {
+        this.headCells[i].style.width = column.width + "px";
+        const grip = this.headCells[i].querySelector(".cx-resize");
+        grip.setAttribute("aria-label", "Resize " + column.title);
+        grip.setAttribute("aria-valuenow", String(column.width));
+        grip.setAttribute("aria-valuetext", column.width + " pixels");
+        sum += column.width;
+      });
+      this.rowWidth = sum;
+      this.headRow.style.width = sum + "px";
+      this.canvas.style.width = sum + "px";
+      // Both the original and pooled painters place grid cells directly under the row.
+      // Keep recycled rows in sync without replacing host-owned cell content.
+      const resizeRow = (row) => {
+        row.style.width = sum + "px";
+        if (!row._kind || !row.firstElementChild) return;
+        if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
+        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+      };
+      this.rendered.forEach(resizeRow);
+      this.pool.forEach(resizeRow);
     },
 
+    startResize(e, column) {
+      if (this.destroyed || e.button !== 0) return;
+      if (this.cancelResize) this.cancelResize();
+      e.preventDefault();
+      const x0 = e.clientX;
+      const w0 = column.width;
+      const pointer = e.pointerId;
+      const move = (ev) => {
+        if (ev.pointerId !== pointer) return;
+        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
+        this.applyWidths();
+      };
+      const stop = () => {
+        global.removeEventListener("pointermove", move);
+        global.removeEventListener("pointerup", end);
+        global.removeEventListener("pointercancel", end);
+        global.removeEventListener("blur", stop);
+        if (this.cancelResize === stop) this.cancelResize = null;
+      };
+      const end = (ev) => { if (ev.pointerId === pointer) stop(); };
+      this.cancelResize = stop;
+      global.addEventListener("pointermove", move);
+      global.addEventListener("pointerup", end);
+      global.addEventListener("pointercancel", end);
+      global.addEventListener("blur", stop);
+    }
+  });
+
+  // ---------- tree grid: DOM order of the virtual rows ----------
+  Object.assign(TreeGrid.prototype, {
     // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
     // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
     // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
@@ -1547,61 +1637,6 @@
     }
   });
 
-  // ---------- tree grid: column sizing ----------
-  Object.assign(TreeGrid.prototype, {
-    applyWidths() {
-      let sum = 0;
-      this.cols.forEach((column, i) => {
-        this.headCells[i].style.width = column.width + "px";
-        const grip = this.headCells[i].querySelector(".cx-resize");
-        grip.setAttribute("aria-label", "Resize " + column.title);
-        grip.setAttribute("aria-valuenow", String(column.width));
-        grip.setAttribute("aria-valuetext", column.width + " pixels");
-        sum += column.width;
-      });
-      this.rowWidth = sum;
-      this.headRow.style.width = sum + "px";
-      this.canvas.style.width = sum + "px";
-      // Both the original and pooled painters place grid cells directly under the row.
-      // Keep recycled rows in sync without replacing host-owned cell content.
-      const resizeRow = (row) => {
-        row.style.width = sum + "px";
-        if (!row._kind || !row.firstElementChild) return;
-        if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
-      };
-      this.rendered.forEach(resizeRow);
-      this.pool.forEach(resizeRow);
-    },
-
-    startResize(e, column) {
-      if (this.destroyed || e.button !== 0) return;
-      if (this.cancelResize) this.cancelResize();
-      e.preventDefault();
-      const x0 = e.clientX;
-      const w0 = column.width;
-      const pointer = e.pointerId;
-      const move = (ev) => {
-        if (ev.pointerId !== pointer) return;
-        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
-        this.applyWidths();
-      };
-      const stop = () => {
-        global.removeEventListener("pointermove", move);
-        global.removeEventListener("pointerup", end);
-        global.removeEventListener("pointercancel", end);
-        global.removeEventListener("blur", stop);
-        if (this.cancelResize === stop) this.cancelResize = null;
-      };
-      const end = (ev) => { if (ev.pointerId === pointer) stop(); };
-      this.cancelResize = stop;
-      global.addEventListener("pointermove", move);
-      global.addEventListener("pointerup", end);
-      global.addEventListener("pointercancel", end);
-      global.addEventListener("blur", stop);
-    }
-  });
-
   // ---------- tree grid: row and cell painting ----------
   // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
   // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
@@ -1637,7 +1672,10 @@
         this.buildRow(rowEl, kind);
       }
       setAttr(rowEl, "aria-level", String(w.level));
-      const height = w.span * this.rowH + "px";
+      // A detail row without a declared height takes the height of its content and is measured after the paint.
+      const auto = kind === "detail" && w.auto;
+      this.observeDetail(rowEl, auto);
+      const height = auto ? "auto" : w.hpx + "px";
       if (rowEl._height !== height) {
         rowEl.style.height = height;
         rowEl._height = height;
@@ -1706,16 +1744,20 @@
 
     paintDetailRow(rowEl, w) {
       const node = w.h;
-      setClass(rowEl, "cx-row cx-detail" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
+      setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
-      // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
+      // Detail content (and anything a host renderDetail callback put into it) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
       const cell = this.cell(rowEl, 0, this.rowWidth);
       rowEl.replaceChild(cell, old);
       rowEl._cells[0].cell = cell;
       cell.setAttribute("aria-colspan", String(this.cols.length));
-      cell.style.paddingLeft = (w.level - 1) * INDENT + 8 + "px";
+      // The body sticks at the indent while the grid scrolls sideways, and takes the visible width from there.
+      const left = (w.level - 1) * INDENT + 8 + "px";
+      cell.style.paddingLeft = left;
+      cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
+      if (w.auto) this.measureNeeded = true;
     },
 
     paintNodeRow(rowEl, w) {
@@ -1886,6 +1928,7 @@
 
   // ---------- tree grid: detail rows ----------
   const detailColumn = { kind: "text" };
+  const DETAIL_ESTIMATE_SLOTS = 16;
 
   function detailCell(tag, cell, lang) {
     const element = h(tag);
@@ -1908,13 +1951,16 @@
   }
 
   Object.assign(TreeGrid.prototype, {
-    /** Fills a detail row with its table, property list, or trusted host markup; a host callback can take over. */
+    /**
+     * Fills a detail row with its table, property list, or trusted host markup; a host callback can take over. The
+     * content goes into a body that stays inside the visible width of the grid, however wide the columns are.
+     */
     renderDetail(node, element, plainHtml = false) {
-      if (this.opts.renderDetail && this.opts.renderDetail(node, element) === true) {
+      const body = element.appendChild(h("div", "cx-detail-body"));
+      if (this.opts.renderDetail && this.opts.renderDetail(node, body) === true) {
         return;
       }
       const detail = node.detail;
-      const body = h("div", "cx-detail-body");
       if (detail.type === "table") {
         const table = h("table", "cx-detail-table");
         if (detail.caption) {
@@ -1922,9 +1968,17 @@
           setText(caption, detail.caption);
           table.appendChild(caption);
         }
+        const columns = detail.columns || [];
+        const widths = Array.isArray(detail.widths) && detail.widths.length === columns.length ? detail.widths : null;
+        if (widths) {
+          // Shares of the table width; the table layout is fixed, so the columns keep them whatever the cells hold.
+          const total = widths.reduce((sum, share) => sum + share, 0);
+          const group = table.appendChild(h("colgroup"));
+          widths.forEach((share) => { group.appendChild(h("col")).style.width = (share / total * 100) + "%"; });
+        }
         const head = h("thead");
         const headRow = h("tr");
-        (detail.columns || []).forEach((title) => {
+        columns.forEach((title) => {
           const th = h("th");
           th.scope = "col";
           setText(th, title);
@@ -1953,7 +2007,69 @@
         if (plainHtml) setText(body, detail.html || "");
         else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
       }
-      element.appendChild(body);
+    },
+
+    /**
+     * The height a detail row starts with. A detail with a height spans that many row slots and scrolls inside them.
+     * Without one the row is as tall as its content: it starts from an estimate and is measured when it is shown.
+     */
+    detailHeight(detail) {
+      if (detail.height > 0) {
+        return detail.height * this.rowH;
+      }
+      const slots = detail.type === "table" ? (detail.rows || []).length + (detail.caption ? 2 : 1) : detail.type === "properties" ? (detail.items || []).length : 6;
+      return Math.max(1, Math.min(DETAIL_ESTIMATE_SLOTS, slots)) * this.rowH;
+    },
+
+    /** Watches the detail rows that size themselves, so a change of their content or of the grid's width is measured. */
+    observeDetail(rowEl, auto) {
+      if (!!rowEl._auto === auto) {
+        return;
+      }
+      rowEl._auto = auto;
+      if (!this.detailObserver) {
+        this.detailObserver = new ResizeObserver(() => {
+          this.measureNeeded = true;
+          this.scheduleRender();
+        });
+      }
+      if (auto) {
+        this.detailObserver.observe(rowEl);
+        this.measureNeeded = true;
+      } else {
+        this.detailObserver.unobserve(rowEl);
+      }
+    },
+
+    /**
+     * Reads the height of the rendered detail rows that size themselves and moves the rows below when one changed.
+     * A row that ends above the viewport would push what the reader is looking at, so the scroll position follows.
+     * Returns whether a height changed, in which case the window of rendered rows may have changed too.
+     */
+    measureDetails() {
+      if (!this.measureNeeded) {
+        return false;
+      }
+      this.measureNeeded = false;
+      const top = this.grid.scrollTop;
+      let shift = 0;
+      let changed = false;
+      for (const [w, rowEl] of this.rendered) {
+        if (!w.auto || rowEl._kind !== "detail") continue;
+        // offsetHeight ignores transforms on an ancestor, and is 0 while the grid is hidden: keep what was measured.
+        const measured = rowEl.offsetHeight;
+        const height = Math.max(this.rowH, measured);
+        if (measured && height !== w.hpx) {
+          if (this.tops[this.indexOf(w)] + w.hpx <= top) shift += height - w.hpx;
+          w.hpx = height;
+          changed = true;
+        }
+      }
+      if (changed) {
+        this.retop();
+        if (shift) this.grid.scrollTop = top + shift;
+      }
+      return changed;
     }
   });
 
@@ -2244,7 +2360,11 @@
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
       this.ensureVisible(w);
-      this.render();
+      // Detail rows measured on the way can move the row out of view again.
+      if (this.render()) {
+        this.ensureVisible(w);
+        this.render();
+      }
       const rowEl = this.rendered.get(w);
       if (rowEl && domFocus !== false) {
         rowEl.focus({ preventScroll: true });
@@ -2258,7 +2378,7 @@
       }
       const grid = this.grid;
       const y = this.tops[i];
-      const height = w.span * this.rowH;
+      const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       if (y < grid.scrollTop) {
         grid.scrollTop = y;
@@ -3041,6 +3161,7 @@
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
+      if (this.detailObserver) this.detailObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
@@ -3058,7 +3179,8 @@
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
    *   renderCell(node, columnId, element, context) returns true when it drew the cell itself; context.index is the
-   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row.
+   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row;
+   *   element is the body of the row, which stays inside the visible width of the grid.
    */
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {

@@ -1,7 +1,8 @@
 
   // ---------- tree grid: model ----------
   // Loaded nodes keep their children. The visible rows are a flat array rebuilt on every structure change, in time
-  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots.
+  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots, or is as tall
+  // as its content when it declares no height.
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
@@ -17,7 +18,7 @@
       this.lang = document.documentElement.lang || undefined;
       this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
       this.keyMap = new Map();
-      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null, span: 1 };
+      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {
         this.root.inlineItems = view.roots || [];
       }
@@ -103,7 +104,7 @@
       kind = parent.loading ? "loading" : parent.error ? "error" : kind;
       let row = parent._status;
       if (!row) {
-        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
       const loaded = parent.children ? parent.children.length : 0;
