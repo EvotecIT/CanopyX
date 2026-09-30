@@ -19,10 +19,21 @@ Hosts own everything product-specific. A host maps its records into `CanopyNode`
    - **Single file**: the nodes travel inside the view as inline data. Best for small and medium trees.
    - **Bundle**: `CanopyBundleWriter` splits the tree into sidecar script files: the top level in pages, the children pages of all other nodes packed together into pack files, and a search index that holds every node once next to word shards that refer to it. The page loads them on demand, including from `file://`, where `fetch` of local files is blocked. Packing keeps the file count in the thousands for a tree with hundreds of thousands of rows, so a bundle stays practical to copy and upload. The writer takes the tree complete from the view's roots, or node by node from the host while it walks the tree (`Write(view, directory, roots, children)`), in which case it holds only the rows of the lists on the path it is on, one id per node, and the words of the search index.
    - **Hosted**: the page asks an HTTP endpoint for the same documents.
-4. `CanopyX.Html` renders the fragment: a host element, the view as a JSON configuration script, and optionally a `<noscript>` outline. Assets are inlined or referenced as `canopyx.js` and `canopyx.css`.
+4. `CanopyX.Html` renders the fragment: a host element and the view as a JSON configuration script. Assets are inlined or referenced as files named by their content hash (see [Assets and Caching](#assets-and-caching)).
 5. The runtime finds every `[data-canopyx-host]` element, reads its configuration, creates the data source, and mounts a tree grid.
 
 Every document on the wire carries `"protocol": "canopyx/1"`. The runtime rejects documents with another protocol value instead of guessing.
+
+## Assets and Caching
+
+The runtime and the data it reads come from the same build. A page, the runtime it loads, and its sidecar files are written by one version of CanopyX and published together; an older runtime cannot be expected to read newer data (a runtime from before packs cannot open a packed bundle), and nothing promises the reverse either.
+
+File names keep that rule when files are cached or shared:
+
+- `CanopyHtmlAssets.WriteTo(directory)` and `SaveHtmlBundle` write the runtime and the stylesheet as `canopyx.<hash>.js` and `canopyx.<hash>.css`, where `<hash>` is the first 16 hex digits of the SHA-256 of the file's content, and a page with external assets references those names. The same content always has the same name, so the files can be served with a long `Cache-Control: max-age` and `immutable`.
+- A page written by an older build keeps loading its own runtime. Writing a newer build's assets into the same folder adds files and replaces none, and a file that is already there is never rewritten (a new one appears whole), so several bundles can share one asset folder and be republished one at a time. `SaveHtmlBundle` writes assets only into a folder inside the bundle; for a shared folder outside it (`AssetBaseUrl = "../assets/"`) the host calls `CanopyHtmlAssets.WriteTo(folder, options.AssetNaming)` itself. Removing runtime files no page references any more is the host's job; CanopyX never deletes them.
+- The data folder of a bundle is not named by content: republish a bundle's page and data together, into a folder of their own. A page cached by a browser while its data folder was overwritten by a newer build would pair an old runtime with new data. Serve `index.html` with revalidation (`no-cache`), or write each build into a new folder.
+- A host with an asset pipeline of its own takes the text from `CanopyHtmlAssets.Script` and `Style` and names the files itself; `ScriptHash` and `StyleHash` give it the same content hash for names and cache keys (16 hex digits of the SHA-256; not a subresource integrity digest). `CanopyAssetNaming.Plain` (on `CanopyHtmlOptions.AssetNaming` and `WriteTo`, which take the same value: a page references what the assets were written as) writes and references the fixed names `canopyx.js` and `canopyx.css`; every page that uses them is then republished with each new build.
 
 ## Static Fallback
 

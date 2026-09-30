@@ -38,8 +38,8 @@ public static class CanopyViewHtmlExtensions {
     /// <param name="path">The file path of the page.</param>
     /// <param name="options">Asset mode, theme, title, and language.</param>
     /// <remarks>
-    /// With <see cref="CanopyAssetMode.External"/>, also write the assets with <see cref="CanopyHtmlAssets.WriteTo(string)"/>
-    /// into the folder that <see cref="CanopyHtmlOptions.AssetBaseUrl"/> points to.
+    /// With <see cref="CanopyAssetMode.External"/>, also write the assets with <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming)"/>
+    /// into the folder that <see cref="CanopyHtmlOptions.AssetBaseUrl"/> points to, under the naming of the options.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="path"/> is null or empty.</exception>
     public static void SaveHtmlPage(this CanopyView view, string path, CanopyHtmlOptions? options = null) {
@@ -63,7 +63,8 @@ public static class CanopyViewHtmlExtensions {
     /// <remarks>
     /// The view's <see cref="CanopyView.Roots"/> must carry the complete tree. The method points
     /// <see cref="CanopyView.Source"/> at the written sidecar files before it writes the page. Without
-    /// <paramref name="options"/>, the page references <c>assets/canopyx.js</c> and <c>assets/canopyx.css</c>, which are
+    /// <paramref name="options"/>, the page references the runtime script and stylesheet under <c>assets/</c> by their
+    /// content-hashed names (<see cref="CanopyHtmlAssets.HashedScriptFileName"/>), so it loads the runtime it was written for; they are
     /// written next to it; with options, their asset mode applies, and assets are written when the base URL is a
     /// relative folder inside <paramref name="directory"/>. Local asset and data folders use separate directory trees;
     /// internal dot segments are rejected. A leading <c>./</c> is allowed. Invalid layouts fail before writing.
@@ -127,7 +128,7 @@ public static class CanopyViewHtmlExtensions {
         try {
             if (localAssets) {
                 var assets = assetFolder.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
-                CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets));
+                CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets), pageOptions.AssetNaming);
             }
 
             view.SaveHtmlPage(Path.Combine(directory, "index.html"), pageOptions);
@@ -146,9 +147,11 @@ public static class CanopyViewHtmlExtensions {
             throw new ArgumentException("Bundle folders cannot occupy the index.html page path.");
         }
         if (assetFolder == null) return;
-        if (Under(dataFolder, assetFolder + CanopyHtmlAssets.ScriptFileName + "/")
-            || Under(dataFolder, assetFolder + CanopyHtmlAssets.StyleFileName + "/")) {
-            throw new ArgumentException("The data folder cannot occupy a runtime asset file path.");
+        // Under either naming, so a folder that is fine today does not block the other naming tomorrow.
+        foreach (var file in new[] { CanopyHtmlAssets.ScriptFileName, CanopyHtmlAssets.StyleFileName, CanopyHtmlAssets.HashedScriptFileName, CanopyHtmlAssets.HashedStyleFileName }) {
+            if (Under(dataFolder, assetFolder + file + "/")) {
+                throw new ArgumentException("The data folder cannot occupy a runtime asset file path.");
+            }
         }
         if (assetFolder.Length != 0 && (Under(dataFolder, assetFolder) || Under(assetFolder, dataFolder))) {
             throw new ArgumentException("Local asset and data folders must use separate directory trees.");

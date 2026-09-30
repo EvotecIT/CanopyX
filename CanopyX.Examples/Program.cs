@@ -96,5 +96,5 @@ static void WriteTemplate(string name, string path, string content) {
     using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates." + name)
         ?? throw new InvalidOperationException("Missing template " + name);
     using var reader = new StreamReader(stream);
-    File.WriteAllText(path, reader.ReadToEnd().Replace("{{content}}", content), new UTF8Encoding(false));
+    File.WriteAllText(path, reader.ReadToEnd().Replace("{{content}}", content).Replace("{{style}}", CanopyHtmlAssets.HashedStyleFileName), new UTF8Encoding(false));
 }

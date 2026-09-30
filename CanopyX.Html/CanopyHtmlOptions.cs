@@ -13,7 +13,16 @@ public sealed class CanopyHtmlOptions {
     public CanopyAssetMode AssetMode { get; set; }
 
     /// <summary>
-    /// Gets or sets the folder, relative to the page, that holds <c>canopyx.js</c> and <c>canopyx.css</c> when
+    /// Gets or sets how the asset files a page references are named when <see cref="AssetMode"/> is
+    /// <see cref="CanopyAssetMode.External"/>. Defaults to <see cref="CanopyAssetNaming.ContentHash"/>
+    /// (<c>canopyx.&lt;hash&gt;.js</c>), so a page loads exactly the runtime of the build that wrote it and the files
+    /// can be cached without an expiry. <see cref="CanopyAssetNaming.Plain"/> references <c>canopyx.js</c> and
+    /// <c>canopyx.css</c>, for a host that versions the files itself.
+    /// </summary>
+    public CanopyAssetNaming AssetNaming { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder, relative to the page, that holds the runtime script and stylesheet when
     /// <see cref="AssetMode"/> is <see cref="CanopyAssetMode.External"/>. Backslashes in relative folder paths become
     /// URL slashes so saved bundle assets use the same path as the generated page. Defaults to <c>assets/</c>.
     /// </summary>

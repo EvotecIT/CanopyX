@@ -28,6 +28,11 @@ Require(outline.Contains("Child", StringComparison.Ordinal) && !outline.Contains
 var bundle = view.SaveHtmlBundle(Path.Combine(output, "bundle"));
 Require(bundle.NodeCount == 2 && File.Exists(Path.Combine(output, "bundle", "index.html")), "the bundle was not written");
 Require(File.Exists(Path.Combine(bundle.DataDirectory, "manifest.js")), "the bundle has no manifest");
+// The page references the assets under the names they were written with.
+var bundlePage = File.ReadAllText(Path.Combine(output, "bundle", "index.html"));
+foreach (var name in new[] { CanopyHtmlAssets.HashedScriptFileName, CanopyHtmlAssets.HashedStyleFileName }) {
+    Require(bundlePage.Contains("assets/" + name, StringComparison.Ordinal) && File.Exists(Path.Combine(output, "bundle", "assets", name)), "the bundle page and its assets disagree about " + name);
+}
 
 Console.WriteLine("CanopyX package smoke passed.");
 

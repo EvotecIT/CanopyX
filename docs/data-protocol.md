@@ -261,7 +261,7 @@ A tree with many small child lists would need one file per list: 150,000 parents
 
 A bundle of 379,325 nodes under about 150,000 parents (`CanopyX.Examples --pack-bench`) takes 3,457 files this way, 545 of them packs, instead of 152,601.
 
-A runtime from before packs reads `p/<n>#<slot>` as a file name and cannot open a packed bundle. `SaveHtmlBundle` writes the runtime next to the data; a host that serves one shared copy of `canopyx.js` updates it before it serves packed bundles.
+A runtime from before packs reads `p/<n>#<slot>` as a file name and cannot open a packed bundle. This is one case of a general rule: the runtime and the data it reads come from the same build. `SaveHtmlBundle` writes the runtime next to the data under a name that carries the hash of its content (`canopyx.<hash>.js`), and the page references that name, so a page loads the runtime it was written for, whatever a cache holds and whatever newer bundles put into a shared asset folder. The data folder is not named by content, so a page and its data are published together (see "Assets and Caching" in architecture.md). A host that serves one shared copy under the plain name `canopyx.js` republishes every page and its data with each new build.
 
 The manifest:
 

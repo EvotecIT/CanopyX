@@ -53,8 +53,8 @@ public sealed class HtmlWriterTests {
 
         var html = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "../shared" });
 
-        Assert.Contains("<link rel=\"stylesheet\" href=\"../shared/canopyx.css\">", html);
-        Assert.Contains("<script src=\"../shared/canopyx.js\" defer></script>", html);
+        Assert.Contains("<link rel=\"stylesheet\" href=\"../shared/" + CanopyHtmlAssets.HashedStyleFileName + "\">", html);
+        Assert.Contains("<script src=\"../shared/" + CanopyHtmlAssets.HashedScriptFileName + "\" defer></script>", html);
         Assert.DoesNotContain(CanopyHtmlAssets.Script, html);
     }
 

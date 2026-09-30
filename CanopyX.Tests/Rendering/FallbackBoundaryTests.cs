@@ -149,7 +149,7 @@ public sealed class FallbackBoundaryTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-assets-" + Guid.NewGuid().ToString("N"));
         try {
             var view = View();
-            var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetUrl, Height = "100px" };
+            var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain, AssetBaseUrl = assetUrl, Height = "100px" };
             Assert.DoesNotContain("style=\"height:100px", view.ToHtmlPage(options));
             Assert.Contains("style=\"height:100px", view.ToHtmlFragment(options));
             view.SaveHtmlBundle(directory, options: options);

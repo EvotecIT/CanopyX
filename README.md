@@ -48,7 +48,7 @@ A released consumer references the packages. A consumer that needs work that is 
 
 The package reference restores once that version is published. Until then, and for any API newer than the published package, the checkout is the only source: the version number does not change between releases, so a consumer built against the checkout must not be run against an older published package of the same version.
 
-A consumer with a solution or build list of its own adds the two CanopyX projects to it; otherwise the project reference builds them implicitly. The runtime and the data it reads must come from the same build: a consumer that serves `canopyx.js` as a shared file refreshes it whenever it rebuilds against a newer checkout.
+A consumer with a solution or build list of its own adds the two CanopyX projects to it; otherwise the project reference builds them implicitly. The runtime and the data it reads must come from the same build: pages reference the runtime by a name that carries its content hash, and a consumer that serves it under the plain name `canopyx.js` instead republishes every page and its data whenever it rebuilds against a newer checkout ([Assets and Caching](docs/architecture.md#assets-and-caching)).
 
 ## Tree Grid Features
 
@@ -91,7 +91,7 @@ view.SaveHtmlPage("files.html");
 
 The first column shows each node's label; the other columns show the node's cells by column id.
 
-For large trees, write a bundle instead. The data is split into sidecar files that the page loads on demand, and the page works when opened straight from a file share. Small child lists share pack files, so a tree with hundreds of thousands of rows is a few thousand files:
+For large trees, write a bundle instead. The data is split into sidecar files that the page loads on demand, and the page works when opened straight from a file share. Small child lists share pack files, so a tree with hundreds of thousands of rows is a few thousand files. The page references the runtime under a name that carries its content hash (`assets/canopyx.<hash>.js`), so it always loads the runtime it was written for and the file can be cached for good; publish the page and its data folder together:
 
 ```csharp
 CanopyBundleResult bundle = view.SaveHtmlBundle("report");

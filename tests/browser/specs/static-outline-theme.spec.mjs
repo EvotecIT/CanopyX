@@ -64,7 +64,7 @@ test("a host that sets the runtime's properties from its own tokens themes the o
 
 test("without the stylesheet the literals apply", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.route("**/canopyx.css", (route) => route.abort());
+  await page.route("**/canopyx.*.css", (route) => route.abort());
   await page.goto(exampleUrl("outline-page.html"));
   const seen = await colors(page);
   expect({ surface: seen.surface, text: seen.text }).toEqual(LIGHT);

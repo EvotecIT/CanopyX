@@ -49,8 +49,8 @@ internal static class CanopyHtmlWriter {
 
     private static string Head(CanopyHtmlOptions options) {
         if (options.AssetMode == CanopyAssetMode.External) {
-            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.StyleFileName) + "\">\n"
-                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.ScriptFileName) + "\" defer></script>";
+            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming)) + "\">\n"
+                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming)) + "\" defer></script>";
         }
 
         return "<style>\n" + CanopyHtmlAssets.Style + "</style>\n<script>\n" + CanopyHtmlAssets.Script + "</script>";

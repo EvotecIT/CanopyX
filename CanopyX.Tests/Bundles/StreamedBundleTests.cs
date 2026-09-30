@@ -192,7 +192,7 @@ public sealed class StreamedBundleTests {
             Assert.Same(result.Source, view.Source);
             Assert.Empty(view.Roots);
             Assert.Contains("\"source\":{\"kind\":\"sidecar\"", File.ReadAllText(Path.Combine(directory, "index.html")));
-            Assert.True(File.Exists(Path.Combine(directory, "assets", "canopyx.js")));
+            Assert.True(File.Exists(Path.Combine(directory, "assets", CanopyX.Html.CanopyHtmlAssets.HashedScriptFileName)));
             Assert.True(File.Exists(Path.Combine(result.DataDirectory, "manifest.js")));
         } finally {
             Directory.Delete(directory, recursive: true);
