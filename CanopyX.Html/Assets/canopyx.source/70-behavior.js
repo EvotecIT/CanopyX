@@ -54,6 +54,7 @@
         let info = null;
         let appliedCount = null;
         let removedSelection = null;
+        let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
@@ -91,6 +92,7 @@
             w.total = count;
             if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
+              removed = true;
             } else if (loaded === count) {
               w.next = null;
               w.error = null;
@@ -98,7 +100,8 @@
             if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
-          if (!this.destroyed && !w._invalidated) this.relayout();
+          // Rows of removed nodes go at once, even while an opening path holds back the rest.
+          if (!this.destroyed && !w._invalidated) this.relayout(removed);
         }
         // A newer count can discard an older page during reconciliation. Only announce and notify
         // the host after the page is known to remain attached to the tree.
@@ -156,16 +159,32 @@
       const y = this.tops[i];
       const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      if (y < grid.scrollTop) {
+      const before = grid.scrollTop;
+      if (y < before) {
         grid.scrollTop = y;
-      } else if (y + height > grid.scrollTop + viewHeight) {
+      } else if (y + height > before + viewHeight) {
         grid.scrollTop = y + height - viewHeight;
       }
+      if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+    },
+
+    /**
+     * After a jump to a row far away, every row in view is new: until the frame that shows them is painted, the
+     * rows around the viewport (the overscan) are left out, and they follow in the frame after.
+     */
+    leanReveal() {
+      if (this.lean) return;
+      this.lean = true;
+      requestAnimationFrame(() => setTimeout(() => {
+        this.lean = false;
+        this.scheduleRender();
+      }));
     },
 
     rowFromEvent(e) {
       const rowEl = e.target.closest(".cx-row");
-      return rowEl && rowEl._w ? rowEl._w : null;
+      // A row can still show a node that a count update removed, until the rows are rebuilt.
+      return rowEl && rowEl._w && !rowEl._w._invalidated ? rowEl._w : null;
     },
 
     onClick(e) {
@@ -201,92 +220,6 @@
       if (w && !w.status && !hostControl(e.target)) {
         this.toggle(w);
       }
-    },
-
-    /** Opens a node for expandPath and throws when its children cannot be loaded. */
-    async openForPath(w) {
-      if (this.destroyed || w._invalidated) return false;
-      const wasOpen = w.expanded && !w.filterCollapsed;
-      w.expanded = true;
-      w.filterCollapsed = false;
-      const revision = w.toggleRevision || 0;
-      if (!w.children) {
-        await this.loadPage(w, null);
-        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
-        if (!w.children) {
-          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
-        }
-      } else if (!wasOpen) {
-        await this.expandInitial(w);
-      }
-      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
-    },
-
-    /**
-     * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
-     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node),
-     * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
-     */
-    async expandPath(ids, options) {
-      const o = options || {};
-      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
-      if (cancelled()) return null;
-      await this.rootsReady;
-      if (cancelled()) return null;
-      let parent = this.root;
-      let w = null;
-      const opened = [];
-      for (let k = 0; k < ids.length; k++) {
-        if (parent !== this.root) {
-          try { if (!await this.openForPath(parent)) return null; }
-          catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
-          opened.push([parent, parent.toggleRevision || 0]);
-        }
-        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return null;
-        w = this.keyMap.get(ids[k]);
-        const seenCursors = new Set();
-        while ((!w || w.parent !== parent) && parent.children && parent.next) {
-          const before = parent.children.length;
-          const cursor = parent.next;
-          if (seenCursors.has(cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
-          }
-          seenCursors.add(cursor);
-          await this.loadPage(parent, parent.next);
-          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return null;
-          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
-          }
-          w = this.keyMap.get(ids[k]);
-        }
-        if (!w || w.parent !== parent) {
-          throw new Error("CanopyX: id not found on the path: " + ids[k]);
-        }
-        parent = w;
-      }
-      if (o.expandLast && w && this.expandable(w)) {
-        try { if (!await this.openForPath(w)) return null; }
-        catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
-        opened.push([w, w.toggleRevision || 0]);
-      }
-      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
-        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
-      this.relayout();
-      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.clearDeclaredFilters();
-        this.setFilter(null);
-      }
-      this.relayout();
-      this.stateChanged();
-      if (w && o.select !== false) {
-        this.select(w);
-      }
-      if (w && o.focus !== false) {
-        this.setFocus(w, true);
-      } else if (w && o.reveal !== false) {
-        this.ensureVisible(w);
-      }
-      return w ? w.h : null;
     },
 
     /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */

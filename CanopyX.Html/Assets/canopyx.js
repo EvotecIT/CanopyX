@@ -1120,6 +1120,8 @@
       return root;
     }
   });
+  const LAYOUT_HOLD_MS = 250;
+
   Object.assign(TreeGrid.prototype, {
     matchState(w) {
       const pending = [{ node: w, visited: false }];
@@ -1143,8 +1145,13 @@
       return w._fm;
     },
 
-    relayout() {
+    relayout(now) {
       if (this.destroyed) return;
+      if (this.layoutHolds && !this.layoutLate && !now) {
+        this.layoutDirty = true;
+        return;
+      }
+      this.layoutDirty = false;
       const previousFocus = this.focused;
       const previousIndex = this.indexOf(previousFocus);
       const previousElement = this.rendered.get(previousFocus);
@@ -1194,6 +1201,33 @@
       }
       this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
+    },
+
+    holdLayout() {
+      if (!this.layoutHolds) {
+        this.layoutTimer = setTimeout(() => {
+          this.layoutTimer = 0;
+          this.layoutLate = true;
+          this.flushLayout();
+        }, LAYOUT_HOLD_MS);
+      }
+      this.layoutHolds = (this.layoutHolds || 0) + 1;
+      let held = true;
+      return () => {
+        if (!held) return false;
+        held = false;
+        if (--this.layoutHolds) return false;
+        clearTimeout(this.layoutTimer);
+        this.layoutTimer = 0;
+        this.layoutLate = false;
+        return this.flushLayout();
+      };
+    },
+
+    flushLayout() {
+      if (!this.layoutDirty) return false;
+      this.relayout(true);
+      return true;
     },
 
     retop() {
@@ -1487,8 +1521,9 @@
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
       const n = this.rows.length;
-      const first = n ? Math.max(0, this.rowAt(top) - OVERSCAN) : 0;
-      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + OVERSCAN) : -1;
+      const over = this.lean ? 0 : OVERSCAN;
+      const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
+      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
       const want = new Set();
       for (let i = first; i <= last; i++) {
         want.add(this.rows[i]);
@@ -2461,6 +2496,7 @@
       finally {
         if (this.focusHandoff === status) this.focusHandoff = null;
         if (!this.destroyed) {
+          if (owned) this.flushLayout();
           if (owned && (this.focusRevision || 0) === revision &&
               (document.activeElement === element || document.activeElement === document.body)) {
             let target = parent.error ? this.statusRow(parent, "error") :
@@ -2533,6 +2569,7 @@
         let info = null;
         let appliedCount = null;
         let removedSelection = null;
+        let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
@@ -2569,6 +2606,7 @@
             w.total = count;
             if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
+              removed = true;
             } else if (loaded === count) {
               w.next = null;
               w.error = null;
@@ -2576,7 +2614,7 @@
             if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
-          if (!this.destroyed && !w._invalidated) this.relayout();
+          if (!this.destroyed && !w._invalidated) this.relayout(removed);
         }
         if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
           const loaded = w.children.length;
@@ -2630,16 +2668,27 @@
       const y = this.tops[i];
       const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      if (y < grid.scrollTop) {
+      const before = grid.scrollTop;
+      if (y < before) {
         grid.scrollTop = y;
-      } else if (y + height > grid.scrollTop + viewHeight) {
+      } else if (y + height > before + viewHeight) {
         grid.scrollTop = y + height - viewHeight;
       }
+      if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+    },
+
+    leanReveal() {
+      if (this.lean) return;
+      this.lean = true;
+      requestAnimationFrame(() => setTimeout(() => {
+        this.lean = false;
+        this.scheduleRender();
+      }));
     },
 
     rowFromEvent(e) {
       const rowEl = e.target.closest(".cx-row");
-      return rowEl && rowEl._w ? rowEl._w : null;
+      return rowEl && rowEl._w && !rowEl._w._invalidated ? rowEl._w : null;
     },
 
     onClick(e) {
@@ -2675,86 +2724,6 @@
       if (w && !w.status && !hostControl(e.target)) {
         this.toggle(w);
       }
-    },
-
-    async openForPath(w) {
-      if (this.destroyed || w._invalidated) return false;
-      const wasOpen = w.expanded && !w.filterCollapsed;
-      w.expanded = true;
-      w.filterCollapsed = false;
-      const revision = w.toggleRevision || 0;
-      if (!w.children) {
-        await this.loadPage(w, null);
-        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
-        if (!w.children) {
-          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
-        }
-      } else if (!wasOpen) {
-        await this.expandInitial(w);
-      }
-      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
-    },
-
-    async expandPath(ids, options) {
-      const o = options || {};
-      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
-      if (cancelled()) return null;
-      await this.rootsReady;
-      if (cancelled()) return null;
-      let parent = this.root;
-      let w = null;
-      const opened = [];
-      for (let k = 0; k < ids.length; k++) {
-        if (parent !== this.root) {
-          try { if (!await this.openForPath(parent)) return null; }
-          catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
-          opened.push([parent, parent.toggleRevision || 0]);
-        }
-        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return null;
-        w = this.keyMap.get(ids[k]);
-        const seenCursors = new Set();
-        while ((!w || w.parent !== parent) && parent.children && parent.next) {
-          const before = parent.children.length;
-          const cursor = parent.next;
-          if (seenCursors.has(cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
-          }
-          seenCursors.add(cursor);
-          await this.loadPage(parent, parent.next);
-          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return null;
-          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
-          }
-          w = this.keyMap.get(ids[k]);
-        }
-        if (!w || w.parent !== parent) {
-          throw new Error("CanopyX: id not found on the path: " + ids[k]);
-        }
-        parent = w;
-      }
-      if (o.expandLast && w && this.expandable(w)) {
-        try { if (!await this.openForPath(w)) return null; }
-        catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
-        opened.push([w, w.toggleRevision || 0]);
-      }
-      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
-        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
-      this.relayout();
-      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.clearDeclaredFilters();
-        this.setFilter(null);
-      }
-      this.relayout();
-      this.stateChanged();
-      if (w && o.select !== false) {
-        this.select(w);
-      }
-      if (w && o.focus !== false) {
-        this.setFocus(w, true);
-      } else if (w && o.reveal !== false) {
-        this.ensureVisible(w);
-      }
-      return w ? w.h : null;
     },
 
     setFilter(filter, options) {
@@ -2808,9 +2777,106 @@
       this.relayout();
     }
   });
+
+  Object.assign(TreeGrid.prototype, {
+    async openForPath(w) {
+      if (this.destroyed || w._invalidated) return false;
+      const wasOpen = w.expanded && !w.filterCollapsed;
+      w.expanded = true;
+      w.filterCollapsed = false;
+      if (!wasOpen) this.relayout();
+      const revision = w.toggleRevision || 0;
+      if (!w.children) {
+        await this.loadPage(w, null);
+        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
+        if (!w.children) {
+          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
+        }
+      } else if (!wasOpen) {
+        await this.expandInitial(w);
+      }
+      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
+    },
+
+    async expandPath(ids, options) {
+      const o = options || {};
+      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
+      if (cancelled()) return null;
+      await this.rootsReady;
+      if (cancelled()) return null;
+      const release = this.holdLayout();
+      let w;
+      let rebuilt = false;
+      try {
+        w = await this.openPath(ids, o, cancelled);
+      } finally {
+        rebuilt = release();
+      }
+      if (w === undefined) return null;
+      if (w && (o.focus !== false || o.reveal !== false) && this.flushLayout()) rebuilt = true;
+      if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
+      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
+        this.clearDeclaredFilters();
+        this.setFilter(null);
+        this.flushLayout();
+      }
+      this.stateChanged();
+      if (w && o.select !== false) {
+        this.select(w);
+      }
+      if (w && o.focus !== false) {
+        this.setFocus(w, true);
+      } else if (w && o.reveal !== false) {
+        this.ensureVisible(w);
+      }
+      return w ? w.h : null;
+    },
+
+    async openPath(ids, o, cancelled) {
+      let parent = this.root;
+      let w = null;
+      const opened = [];
+      for (let k = 0; k < ids.length; k++) {
+        if (parent !== this.root) {
+          try { if (!await this.openForPath(parent)) return undefined; }
+          catch (err) { if (cancelled() || parent._invalidated) return undefined; throw err; }
+          opened.push([parent, parent.toggleRevision || 0]);
+        }
+        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return undefined;
+        w = this.keyMap.get(ids[k]);
+        const seenCursors = new Set();
+        while ((!w || w.parent !== parent) && parent.children && parent.next) {
+          const before = parent.children.length;
+          const cursor = parent.next;
+          if (seenCursors.has(cursor)) {
+            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
+          }
+          seenCursors.add(cursor);
+          await this.loadPage(parent, parent.next);
+          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return undefined;
+          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
+            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
+          }
+          w = this.keyMap.get(ids[k]);
+        }
+        if (!w || w.parent !== parent) {
+          throw new Error("CanopyX: id not found on the path: " + ids[k]);
+        }
+        parent = w;
+      }
+      if (o.expandLast && w && this.expandable(w)) {
+        try { if (!await this.openForPath(w)) return undefined; }
+        catch (err) { if (cancelled() || w._invalidated) return undefined; throw err; }
+        opened.push([w, w.toggleRevision || 0]);
+      }
+      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
+        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return undefined;
+      return w;
+    }
+  });
   Object.assign(TreeGrid.prototype, {
     select(w, options) {
-      if (!w || w.status) {
+      if (!w || w.status || w._invalidated) {
         return;
       }
       const o = options || {};
@@ -2840,7 +2906,7 @@
       }
       this.selected = new Set();
       for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
-        if (!this.rows[i].status) {
+        if (!this.rows[i].status && !this.rows[i]._invalidated) {
           this.selected.add(this.rows[i]);
         }
       }
@@ -3133,6 +3199,7 @@
       this.keyMap.forEach((w) => before.set(w, [w.expanded, w.autoExpand, w.filterCollapsed]));
       let restored = 0;
       let fallback = false;
+      const release = this.holdLayout();
       try {
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
@@ -3162,6 +3229,7 @@
           this.relayout();
         }
       } finally {
+        release();
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
@@ -3299,6 +3367,7 @@
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
+      let removed = false;
       doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
@@ -3323,8 +3392,10 @@
             w.h.hasChildren = item.childCount > 0;
             const loaded = w.children ? w.children.length : 0;
             if (w.loading) w.pendingChildCount = item.childCount;
-            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
+            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next)) {
               removedSelection = this.invalidateChildren(w) || removedSelection;
+              removed = true;
+            }
             else if (item.childCount === loaded) {
               w.next = null;
               w.error = null;
@@ -3340,7 +3411,7 @@
         }
       });
       this.applySort(this.root, true);
-      this.relayout();
+      this.relayout(removed);
       if (removedSelection) this.selectionChanged(removedSelection);
     },
 
@@ -3365,6 +3436,7 @@
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
+      clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();

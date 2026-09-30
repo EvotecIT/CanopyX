@@ -97,7 +97,8 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `60-keyboard.js` | Keyboard model, type-ahead, roving focus |
 | `62-cell-focus.js` | Cell navigation: moving focus between the cells and controls of a row |
 | `65-page-focus.js` | Focus ownership across paging and retry |
-| `70-behavior.js` | Expand and collapse, paging, selection, `expandPath`, column resize and visibility |
+| `70-behavior.js` | Expand and collapse, paging, focus and reveal, filters, sorting, column visibility |
+| `71-paths.js` | Opening a path (search hits, deep links, remembered state, `expandPath`) with one row rebuild and one render |
 | `80-toolbar.js` | Built-in search box and filter switches |
 | `85-api.js` | Remembered state, outline and visible rows, counts, teardown |
 | `86-links.js` | Deep links in the default scheme or the host's own |
@@ -125,6 +126,7 @@ A fragment carries only the view document, and the runtime mounts it when the pa
 - A row that leaves the window is reused for a row that enters it. Its cell elements survive; only text, attributes, badges, and position change. Rows retained in the viewport are not repainted.
 - A host can draw columns itself through `renderers`, one function per column id. Only those columns give up cell reuse: their cell is rebuilt from a clean element each time a row is painted, so nothing a renderer left behind leaks into the next node. A renderer that returns false falls back to the default painting for that cell.
 - Positions and attributes are written only when they change, and rendering happens in one `requestAnimationFrame` per change, however many scroll events arrive.
+- Opening a path (a search hit, a deep link, remembered state, `expandPath`) changes the model level by level, but the rows are rebuilt and rendered once, when the path is open, and focus moves once, at the end. Remembered state restores all its paths the same way, together. Until then the grid shows, and `visibleRows()` and `toOutline()` return, the rows it showed before; a path that takes longer than 250 ms, because a level is slow to load, shows its loading rows from then on. After a jump to a row far away, the frame that shows it draws only the rows in view, and the overscan follows in the frame after.
 - Screen readers in browse mode read DOM order, so rows stay in visual order throughout scrolling. Departing rows are updated while detached, retaining their cell skeletons, then inserted in order; rows still visible are retained. The focused row is never moved, because moving a focused element drops its focus.
 
 ### Accessibility Contract

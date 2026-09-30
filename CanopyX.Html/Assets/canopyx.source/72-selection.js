@@ -2,7 +2,7 @@
   Object.assign(TreeGrid.prototype, {
     /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
     select(w, options) {
-      if (!w || w.status) {
+      if (!w || w.status || w._invalidated) {
         return;
       }
       const o = options || {};
@@ -32,7 +32,7 @@
       }
       this.selected = new Set();
       for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
-        if (!this.rows[i].status) {
+        if (!this.rows[i].status && !this.rows[i]._invalidated) {
           this.selected.add(this.rows[i]);
         }
       }

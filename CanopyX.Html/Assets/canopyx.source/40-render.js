@@ -199,8 +199,9 @@
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
       const n = this.rows.length;
-      const first = n ? Math.max(0, this.rowAt(top) - OVERSCAN) : 0;
-      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + OVERSCAN) : -1;
+      const over = this.lean ? 0 : OVERSCAN;
+      const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
+      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
       const want = new Set();
       for (let i = first; i <= last; i++) {
         want.add(this.rows[i]);

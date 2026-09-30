@@ -1,4 +1,7 @@
   // ---------- tree grid: iterative filtering, layout, and sorting ----------
+  // How long an opening path may hold back the rows it changes before they show (the interaction budget).
+  const LAYOUT_HOLD_MS = 250;
+
   Object.assign(TreeGrid.prototype, {
     /** 2 = the node matches (its subtree shows), 1 = kept as an ancestor of matches, 0 = hidden. */
     matchState(w) {
@@ -23,8 +26,17 @@
       return w._fm;
     },
 
-    relayout() {
+    /**
+     * Rebuilds the visible rows from the model and schedules a render. While a path opens (holdLayout), the rebuild
+     * waits for the end of the hold, so the levels the path loads are laid out and rendered once; now rebuilds anyway.
+     */
+    relayout(now) {
       if (this.destroyed) return;
+      if (this.layoutHolds && !this.layoutLate && !now) {
+        this.layoutDirty = true;
+        return;
+      }
+      this.layoutDirty = false;
       const previousFocus = this.focused;
       const previousIndex = this.indexOf(previousFocus);
       const previousElement = this.rendered.get(previousFocus);
@@ -75,6 +87,39 @@
       }
       this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
+    },
+
+    /**
+     * Holds row rebuilds until the returned function is called (once per hold; holds nest); it returns whether the
+     * rows were rebuilt then. The grid keeps showing the rows it showed, and code that reads the rows sees that state.
+     * A hold that lasts longer than LAYOUT_HOLD_MS lets the rebuilds through, so a slow source still shows its loading rows.
+     */
+    holdLayout() {
+      if (!this.layoutHolds) {
+        this.layoutTimer = setTimeout(() => {
+          this.layoutTimer = 0;
+          this.layoutLate = true;
+          this.flushLayout();
+        }, LAYOUT_HOLD_MS);
+      }
+      this.layoutHolds = (this.layoutHolds || 0) + 1;
+      let held = true;
+      return () => {
+        if (!held) return false;
+        held = false;
+        if (--this.layoutHolds) return false;
+        clearTimeout(this.layoutTimer);
+        this.layoutTimer = 0;
+        this.layoutLate = false;
+        return this.flushLayout();
+      };
+    },
+
+    /** Rebuilds the rows now if a hold deferred a rebuild; returns whether it did. */
+    flushLayout() {
+      if (!this.layoutDirty) return false;
+      this.relayout(true);
+      return true;
     },
 
     /** Rebuilds the offset table from the row heights; hpx is a row's height in pixels. */

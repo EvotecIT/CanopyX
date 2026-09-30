@@ -52,6 +52,8 @@
       this.keyMap.forEach((w) => before.set(w, [w.expanded, w.autoExpand, w.filterCollapsed]));
       let restored = 0;
       let fallback = false;
+      // The restored paths are laid out and rendered together, once.
+      const release = this.holdLayout();
       try {
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
@@ -82,6 +84,7 @@
           this.relayout();
         }
       } finally {
+        release();
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
@@ -222,6 +225,7 @@
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
+      let removed = false;
       doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
@@ -246,8 +250,10 @@
             w.h.hasChildren = item.childCount > 0;
             const loaded = w.children ? w.children.length : 0;
             if (w.loading) w.pendingChildCount = item.childCount;
-            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
+            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next)) {
               removedSelection = this.invalidateChildren(w) || removedSelection;
+              removed = true;
+            }
             else if (item.childCount === loaded) {
               w.next = null;
               w.error = null;
@@ -263,7 +269,8 @@
         }
       });
       this.applySort(this.root, true);
-      this.relayout();
+      // Rows of removed nodes go at once, even while an opening path holds back the rest.
+      this.relayout(removed);
       if (removedSelection) this.selectionChanged(removedSelection);
     },
 
@@ -288,6 +295,7 @@
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
+      clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();

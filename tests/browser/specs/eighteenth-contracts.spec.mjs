@@ -47,6 +47,9 @@ test("a user collapse cancels a waiting path expansion", async ({ page }) => {
   }, { ...view, deepLink: true });
   await page.waitForFunction(() => !!window.finishChildren);
   const parent = page.locator('[data-cx-id="parent"]');
+  // A path shows the rows it changes once it is open, or, when a level is slow to load, a moment later.
+  await expect(parent).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator('[data-cx-status="loading"]')).toHaveCount(1);
   await parent.locator('.cx-exp').click();
   await expect(parent).toHaveAttribute("aria-expanded", "false");
   await page.evaluate(() => finishChildren({ items: [{ id: "child", label: "Child" }], total: 1, next: null }));
