@@ -24,6 +24,13 @@ internal static class CanopyJsonNames {
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown column kind.")
     };
 
+    /// <summary>The wire name of a time zone; null for UTC, which is what a view without the field means.</summary>
+    internal static string? TimeZone(CanopyTimeZone zone) => zone switch {
+        CanopyTimeZone.Utc => null,
+        CanopyTimeZone.Local => "local",
+        _ => throw new ArgumentOutOfRangeException(nameof(zone), zone, "Unknown time zone.")
+    };
+
     internal static string Selection(CanopySelectionMode mode) => mode switch {
         CanopySelectionMode.Single => "single",
         CanopySelectionMode.Multiple => "multiple",

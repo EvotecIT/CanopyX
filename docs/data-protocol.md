@@ -43,6 +43,7 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `icons` | object | Optional. Icon key to trusted SVG markup, declared once and referenced by nodes. |
 | `search` | object | Optional. Shows the search box. When present it has all of `minLength` (1 to 16; at least 2 for sidecar sources), `maxResults` (1 to 500), and `placeholder`. |
 | `filters` | array of filters | Optional. "Only matching" switches. |
+| `timeZone` | `utc` or `local` | Optional. The time zone `datetime` columns show at first: UTC (the default), or the reader's own. A host can switch it at run time. |
 | `stateKey` | string | Optional. Session storage key for remembered expanded paths. |
 | `deepLink` | boolean | Optional. Selection writes the id path to the URL hash; a hash expands it on load. |
 | `source` | object | Where nodes come from (see [Sources](#sources)). |
@@ -100,11 +101,13 @@ The runtime and the static outline show a cell without `text` the same way:
 | Value | `number` column | `datetime` column | `text` column |
 | --- | --- | --- | --- |
 | number | thousands separators, up to 3 decimals | as written | as written |
-| string | as written | ISO date shown as `yyyy-MM-dd HH:mm UTC` | as written |
+| string | as written | ISO date shown as `yyyy-MM-dd HH:mm UTC`, or as `yyyy-MM-dd HH:mm` in the reader's time zone | as written |
 | boolean | `Yes` or `No` | `Yes` or `No` | `Yes` or `No` |
 | null or absent | empty | empty | empty |
 
 The runtime uses the page's `lang` for separators; the static outline uses the invariant culture.
+
+The runtime shows a date in UTC or in the reader's own time zone, as the view's `timeZone` says and as the host sets at run time with `grid.setTimeZone("local" | "utc")` (`grid.getTimeZone()` returns the current one). A date the runtime formats gets the other time zone as its tooltip (`2026-09-27 12:15 local time` next to a UTC time, `2026-09-27 10:15 UTC` next to a local one), unless the cell has a `title` of its own. A cell with `text` is shown as written in both modes. The static outline has no reader's time zone and always shows UTC.
 
 Sorting a column compares cell values, falling back to the display text when a cell has no value. `datetime` values are parsed before comparing, so both ISO forms sort correctly. Numbers sort before strings, strings compare naturally ("file2" before "file10"), and empty cells sort last. Sorting reorders siblings only; it never moves a node to another parent.
 

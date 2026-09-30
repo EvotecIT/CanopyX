@@ -244,6 +244,7 @@
           }
         },
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
+        "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
         "source": { "$ref": "#/$defs/source" },

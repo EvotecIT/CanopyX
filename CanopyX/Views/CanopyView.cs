@@ -101,6 +101,13 @@ public sealed class CanopyView {
     /// </summary>
     public string? StateKey { get; set; }
 
+    /// <summary>
+    /// Gets or sets the time zone in which the browser shows date and time columns at first. A host can switch it
+    /// at run time with the grid's <c>setTimeZone</c>. Values are always written as UTC, and the static outline,
+    /// which has no reader's time zone, always shows UTC. Defaults to <see cref="CanopyTimeZone.Utc"/>.
+    /// </summary>
+    public CanopyTimeZone TimeZone { get; set; }
+
     /// <summary>Gets or sets whether selecting a row writes its id path to the URL hash and a hash expands it on load.</summary>
     public bool DeepLink { get; set; }
 
@@ -150,6 +157,7 @@ public sealed class CanopyView {
             writer.EndArray();
         }
 
+        writer.OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         writer.OptionalProperty("stateKey", StateKey);
         if (DeepLink) {
             writer.Property("deepLink", true);

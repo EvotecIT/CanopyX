@@ -13,6 +13,7 @@ internal static class SampleDocuments {
             Selection = CanopySelectionMode.Multiple,
             Search = new CanopySearchOptions { MinLength = 2, MaxResults = 25, Placeholder = "Find a file" },
             StateKey = "files-state",
+            TimeZone = CanopyTimeZone.Local,
             DeepLink = true
         };
         if (source != null) {

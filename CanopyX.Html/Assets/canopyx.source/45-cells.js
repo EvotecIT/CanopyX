@@ -219,7 +219,7 @@
         }
         slot.content.appendChild(slot.textSpan);
       }
-      const text = cellText(value, column, this.lang);
+      const text = cellText(value, column, this.lang, this.local);
       if (slot.text.data !== text) {
         slot.text.data = text;
       }
@@ -234,7 +234,8 @@
         }
         slot.cls = cls;
       }
-      const title = object && value.title ? value.title : null;
+      // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
+      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -278,6 +279,19 @@
       while (slot.badges.length > count) {
         slot.badges.pop().remove();
       }
+    },
+
+    /** Shows dates in the reader's own time zone ("local") or in UTC ("utc"); the tooltip gives the other one. */
+    setTimeZone(zone) {
+      if (zone !== "local" && zone !== "utc") {
+        throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
+      }
+      if (this.local === (zone === "local")) {
+        return;
+      }
+      this.local = zone === "local";
+      this.version++;
+      this.scheduleRender();
     },
 
     cell(rowEl, index, width, kind) {

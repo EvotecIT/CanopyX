@@ -19,6 +19,7 @@
   const ENTRY_CACHE = 32;
   const ENTRY_BATCH = 8;
   const PACK_CACHE = 6;
+  const DATE_CACHE = 4096;
   const SEARCH_CANDIDATES = 5;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
@@ -165,17 +166,42 @@
     return value < 10 ? "0" + value : String(value);
   }
 
-  function formatDate(value) {
-    const time = Date.parse(value);
-    if (isNaN(time)) {
-      return String(value);
+  // A date is parsed and formatted once for both time zones; rows are painted again and again while scrolling.
+  const dateTexts = new Map();
+
+  /** [UTC text, local text] of an ISO date, each as yyyy-MM-dd HH:mm; null when the value is not a date. */
+  function dateText(value) {
+    let texts = dateTexts.get(value);
+    if (texts === undefined) {
+      const time = Date.parse(value);
+      const d = new Date(time);
+      texts = isNaN(time) ? null : [
+        String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()),
+        String(d.getFullYear()).padStart(4, "0") + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes())];
+      if (dateTexts.size >= DATE_CACHE) dateTexts.clear();
+      dateTexts.set(value, texts);
     }
-    const d = new Date(time);
-    return String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
+    return texts;
+  }
+
+  /** In UTC with the suffix "UTC", or in the reader's own time zone without a suffix. */
+  function formatDate(value, local) {
+    const texts = dateText(value);
+    return texts ? (local ? texts[1] : texts[0] + " UTC") : String(value);
+  }
+
+  /** The same moment in the other time zone, as the tooltip of a date the runtime formatted; null for any other cell. */
+  function otherZone(cell, column, local) {
+    const value = cellValue(cell);
+    if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
+      return null;
+    }
+    const texts = dateText(value);
+    return texts ? (local ? texts[0] + " UTC" : texts[1] + " local time") : null;
   }
 
   /** Formats a value without display text, following the protocol's default formatting table. */
-  function formatValue(value, kind, lang) {
+  function formatValue(value, kind, lang, local) {
     if (value === null || value === undefined) {
       return "";
     }
@@ -186,16 +212,16 @@
       return numberFormat(lang).format(value);
     }
     if (typeof value === "string" && kind === "datetime") {
-      return formatDate(value);
+      return formatDate(value, local);
     }
     return String(value);
   }
 
-  function cellText(cell, column, lang) {
+  function cellText(cell, column, lang, local) {
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }
-    return formatValue(cellValue(cell), column.kind, lang);
+    return formatValue(cellValue(cell), column.kind, lang, local);
   }
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -877,6 +903,8 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
+      // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
+      this.local = view.timeZone === "local";
       if (options.renderCell) {
         throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
       }
@@ -1871,7 +1899,7 @@
         }
         slot.content.appendChild(slot.textSpan);
       }
-      const text = cellText(value, column, this.lang);
+      const text = cellText(value, column, this.lang, this.local);
       if (slot.text.data !== text) {
         slot.text.data = text;
       }
@@ -1886,7 +1914,8 @@
         }
         slot.cls = cls;
       }
-      const title = object && value.title ? value.title : null;
+      // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
+      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -1930,6 +1959,19 @@
       while (slot.badges.length > count) {
         slot.badges.pop().remove();
       }
+    },
+
+    /** Shows dates in the reader's own time zone ("local") or in UTC ("utc"); the tooltip gives the other one. */
+    setTimeZone(zone) {
+      if (zone !== "local" && zone !== "utc") {
+        throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
+      }
+      if (this.local === (zone === "local")) {
+        return;
+      }
+      this.local = zone === "local";
+      this.version++;
+      this.scheduleRender();
     },
 
     cell(rowEl, index, width, kind) {
@@ -3071,7 +3113,7 @@
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
-          const text = cellText(value, column, this.lang);
+          const text = cellText(value, column, this.lang, this.local);
           const content = h("span");
           if (!column.render || column.render(w.h, content, { column: column.id, level: w.level, expanded: w.expanded, index }) !== true) {
             const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
@@ -3216,6 +3258,8 @@
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
+      setTimeZone: (zone) => grid.setTimeZone(zone),
+      getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {

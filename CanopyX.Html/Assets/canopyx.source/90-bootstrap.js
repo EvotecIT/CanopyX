@@ -29,6 +29,8 @@
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
+      setTimeZone: (zone) => grid.setTimeZone(zone),
+      getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {

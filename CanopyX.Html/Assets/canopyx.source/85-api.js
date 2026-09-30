@@ -225,7 +225,7 @@
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
-          const text = cellText(value, column, this.lang);
+          const text = cellText(value, column, this.lang, this.local);
           const content = h("span");
           if (!column.render || column.render(w.h, content, { column: column.id, level: w.level, expanded: w.expanded, index }) !== true) {
             const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);

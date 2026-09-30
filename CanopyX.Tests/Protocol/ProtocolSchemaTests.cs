@@ -121,6 +121,19 @@ public sealed class ProtocolSchemaTests {
     }
 
     [Fact]
+    public void ToJson_TimeZone_IsWrittenOnlyWhenTheViewStartsInLocalTime() {
+        var local = SampleDocuments.FullView();
+        var utc = SampleDocuments.FullView();
+        utc.TimeZone = CanopyTimeZone.Utc;
+
+        Assert.Equal("local", JsonNode.Parse(local.ToJson())!["timeZone"]!.GetValue<string>());
+        Assert.Null(JsonNode.Parse(utc.ToJson())!["timeZone"]);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(utc.ToJson(), view => view["timeZone"] = "Europe/Warsaw")).IsValid);
+        utc.TimeZone = (CanopyTimeZone)7;
+        Assert.Throws<ArgumentOutOfRangeException>(() => utc.ToJson());
+    }
+
+    [Fact]
     public void ToJson_InlineSource_WritesRootsAndOtherSourcesDoNot() {
         var inline = JsonNode.Parse(SampleDocuments.FullView().ToJson())!;
         var sidecar = JsonNode.Parse(SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson())!;

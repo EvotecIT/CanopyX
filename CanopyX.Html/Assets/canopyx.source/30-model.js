@@ -16,6 +16,8 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
+      // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
+      this.local = view.timeZone === "local";
       if (options.renderCell) {
         throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
       }
