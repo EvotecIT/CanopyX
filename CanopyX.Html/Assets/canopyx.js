@@ -795,12 +795,14 @@
       search(query, limit) {
         const queryWords = words(query);
         const hits = [];
+        // With kinds on the view's search, only nodes of those kinds are found; the others are still walked.
+        const kinds = view.search && Array.isArray(view.search.kinds) && view.search.kinds.length ? view.search.kinds : null;
         if (queryWords.length) {
           // Paths are linked during traversal and materialized only for matching hits.
           const stack = (view.roots || []).map((node) => ({ node, parent: null })).reverse();
           while (stack.length) {
             const item = stack.pop();
-            if (matchesWords(wordsOf(item.node), queryWords)) {
+            if ((!kinds || kinds.indexOf(item.node.kind) >= 0) && matchesWords(wordsOf(item.node), queryWords)) {
               const path = [];
               const labels = [];
               for (let entry = item; entry; entry = entry.parent) {

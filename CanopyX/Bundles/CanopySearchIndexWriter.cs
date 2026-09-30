@@ -25,12 +25,14 @@ internal sealed class CanopySearchIndexWriter {
 
     private readonly CanopyBundleContext _context;
     private readonly CanopySearchIndex _index;
+    private readonly HashSet<string>? _kinds;
     private readonly List<int> _entryFiles = new List<int>();
     private readonly SortedDictionary<string, int> _shards = new SortedDictionary<string, int>(StringComparer.Ordinal);
-    private readonly List<CanopySearchEntry> _open = new List<CanopySearchEntry>();
+    private readonly List<Node> _open = new List<Node>();
     private readonly List<string> _stem = new List<string>();
     private readonly List<string> _items = new List<string>();
-    private CanopySearchEntry _last;
+    private Node? _last;
+    private int _numbered;
     private int _count;
     private int _first;
     private int _budget;
@@ -39,38 +41,71 @@ internal sealed class CanopySearchIndexWriter {
     internal CanopySearchIndexWriter(CanopyBundleContext context, CanopySearchIndex index) {
         _context = context;
         _index = index;
+        var kinds = context.View.Search?.Kinds;
+        _kinds = kinds != null && kinds.Count > 0 ? new HashSet<string>(kinds, StringComparer.Ordinal) : null;
     }
 
-    /// <summary>Adds the next node in depth-first order as a child of the innermost open entry.</summary>
+    /// <summary>
+    /// Takes the next node in depth-first order as a child of the innermost open node. A node the view's search can
+    /// find gets an entry and its words are filed. Its ancestors get entries too, at that moment if they have none
+    /// yet, because the id path of a hit runs through them; a node that cannot be found and has no such descendant
+    /// gets none.
+    /// </summary>
     /// <param name="id">The node id.</param>
-    /// <param name="label">The node label; its words are filed.</param>
+    /// <param name="label">The node label.</param>
     /// <param name="kind">The node kind, if any.</param>
     /// <exception cref="InvalidOperationException">The ancestors of the node do not fit one entry file.</exception>
     internal void Add(string id, string label, string? kind) {
-        var parentId = _open.Count > 0 ? _open[_open.Count - 1].Id : string.Empty;
-        var entry = new CanopySearchEntry(_count, _open.Count > 0 ? _open[_open.Count - 1].Number : -1, id, label, _index.KindNumber(kind));
-        var item = Serialize(entry, parentId, withNumber: false);
+        _last = new Node(id, label, kind);
+        if (_kinds != null && (kind == null || !_kinds.Contains(kind))) {
+            return;
+        }
+
+        // Ancestors are numbered top down right before the node, so a parent always has the smaller number. The
+        // numbered ones are always the outermost open nodes, so only the rest is visited.
+        for (; _numbered < _open.Count; _numbered++) {
+            Number(_open[_numbered], _numbered);
+        }
+
+        Number(_last, _open.Count);
+        _index.File(_last.Number, label);
+    }
+
+    /// <summary>Makes the node added last the parent of the nodes that follow.</summary>
+    internal void Open() {
+        _open.Add(_last!);
+        if (_last!.Number >= 0) {
+            _numbered = _open.Count;
+        }
+    }
+
+    /// <summary>Ends the children of the innermost open node.</summary>
+    internal void Close() {
+        _open.RemoveAt(_open.Count - 1);
+        _numbered = Math.Min(_numbered, _open.Count);
+    }
+
+    /// <summary>Gives a node the next entry number and adds its entry to the file in progress.</summary>
+    /// <param name="node">The node.</param>
+    /// <param name="depth">How many of the open nodes are its ancestors.</param>
+    private void Number(Node node, int depth) {
+        var parent = depth > 0 ? _open[depth - 1] : null;
+        node.Number = _count++;
+        node.Parent = parent?.Number ?? -1;
+        node.Kind = _index.KindNumber(node.KindName);
+        var item = Serialize(node, parent?.Id ?? string.Empty, withNumber: false);
         var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
         if (_items.Count > 0 && (_items.Count >= EntriesPerFile || _bytes + size > _budget)) {
             WriteEntryFile();
         }
 
         if (_items.Count == 0) {
-            StartEntryFile(entry.Number, size);
+            StartEntryFile(node.Number, size, depth);
         }
 
         _items.Add(item);
         _bytes += size;
-        _index.File(entry.Number, label);
-        _last = entry;
-        _count++;
     }
-
-    /// <summary>Makes the entry added last the parent of the entries that follow.</summary>
-    internal void Open() => _open.Add(_last);
-
-    /// <summary>Ends the children of the innermost open entry.</summary>
-    internal void Close() => _open.RemoveAt(_open.Count - 1);
 
     /// <summary>Writes the last entry file and the word shards.</summary>
     internal void Write() {
@@ -106,11 +141,11 @@ internal sealed class CanopySearchIndexWriter {
     /// depth-first order, an ancestor that lies before the file is an ancestor of the file's first entry, so the stem
     /// is exactly what the file needs to rebuild every id path on its own.
     /// </summary>
-    private void StartEntryFile(int first, int firstSize) {
+    private void StartEntryFile(int first, int firstSize, int depth) {
         _first = first;
         _bytes = 0;
         _stem.Clear();
-        for (var level = 0; level < _open.Count; level++) {
+        for (var level = 0; level < depth; level++) {
             _stem.Add(Serialize(_open[level], level > 0 ? _open[level - 1].Id : string.Empty, withNumber: true));
         }
 
@@ -152,7 +187,7 @@ internal sealed class CanopySearchIndexWriter {
     /// and trailing code units the two share, and only the part between them is written. Path-style ids share a
     /// prefix with their parent and distinguished names share a suffix, so neither repeats on every level.
     /// </summary>
-    private static string Serialize(CanopySearchEntry entry, string parentId, bool withNumber) {
+    private static string Serialize(Node entry, string parentId, bool withNumber) {
         SharedAffixes(parentId, entry.Id, out var head, out var tail);
         var json = new CanopyJsonWriter(96);
         json.BeginArray();
@@ -268,6 +303,33 @@ internal sealed class CanopySearchIndexWriter {
         }
 
         return json.EndArray().EndObject().ToString();
+    }
+
+    /// <summary>
+    /// A node on the way through the tree. Entries are numbered in depth-first order, so a node's parent always has a
+    /// smaller number than the node, and the runtime rebuilds the id path and context by following parents.
+    /// </summary>
+    private sealed class Node {
+        internal Node(string id, string label, string? kindName) {
+            Id = id;
+            Label = label;
+            KindName = kindName;
+        }
+
+        internal string Id { get; }
+
+        internal string Label { get; }
+
+        internal string? KindName { get; }
+
+        /// <summary>Gets or sets the entry number, or -1 while the node has no entry.</summary>
+        internal int Number { get; set; } = -1;
+
+        /// <summary>Gets or sets the parent's entry number, or -1 for a top-level node.</summary>
+        internal int Parent { get; set; } = -1;
+
+        /// <summary>Gets or sets the position of the node's kind in the index's kind table, or -1 without a kind.</summary>
+        internal int Kind { get; set; } = -1;
     }
 
     /// <summary>The words of one shard file with their serialized posting lists.</summary>

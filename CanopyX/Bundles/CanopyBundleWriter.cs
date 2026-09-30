@@ -63,7 +63,7 @@ public sealed class CanopyBundleWriter {
     /// <para>
     /// A node is released once its subtree is written. The writer keeps the serialized rows of the lists on the path
     /// it is on (each list until its last node is read, so one very long list is held whole), one id per node to
-    /// reject duplicates, and the words of the search index with one number per word of every label. The cells and
+    /// reject duplicates, and the words of the search index with one number per word of every label search can find. The cells and
     /// details of the rest of the tree are not held.
     /// </para>
     /// <para>
@@ -138,7 +138,6 @@ public sealed class CanopyBundleWriter {
                     var node = level.Nodes.Current;
                     incoming?.Check(node, level.Node);
                     context.Result.NodeCount++;
-                    // Every node gets an entry, searchable or not, because the id path of a hit runs through its ancestors.
                     index?.Add(node.Id, node.Label, node.Kind);
                     var children = node.HasInlineChildren ? node.ChildNodes : incoming?.ChildrenOf(node);
                     if (children != null) {

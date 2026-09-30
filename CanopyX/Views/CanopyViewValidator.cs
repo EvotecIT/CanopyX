@@ -65,6 +65,12 @@ internal static class CanopyViewValidator {
             }
         }
 
+        foreach (var kind in view.Search?.Kinds ?? (IEnumerable<string>)Array.Empty<string>()) {
+            if (string.IsNullOrEmpty(kind)) {
+                throw new InvalidOperationException("View '" + view.Id + "' has a null or empty search kind.");
+            }
+        }
+
         if (view.Search != null && view.Source.Kind == CanopySourceKind.Sidecar && view.Search.MinLength < 2) {
             throw new InvalidOperationException("View '" + view.Id + "' uses a sidecar source, whose search shards need queries of at least 2 characters.");
         }

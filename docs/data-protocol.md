@@ -41,7 +41,7 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `selection` | `single` or `multiple` | Selection mode. |
 | `columns` | array of columns | The first column is the tree column. At least one. |
 | `icons` | object | Optional. Icon key to trusted SVG markup, declared once and referenced by nodes. |
-| `search` | object | Optional. Shows the search box. When present it has all of `minLength` (1 to 16; at least 2 for sidecar sources), `maxResults` (1 to 500), and `placeholder`. |
+| `search` | object | Optional. Shows the search box. When present it has all of `minLength` (1 to 16; at least 2 for sidecar sources), `maxResults` (1 to 500), and `placeholder`, and optionally `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
 | `filters` | array of filters | Optional. "Only matching" switches. |
 | `timeZone` | `utc` or `local` | Optional. The time zone `datetime` columns show at first: UTC (the default), or the reader's own. A host can switch it at run time. |
 | `stateKey` | string | Optional. Session storage key for remembered expanded paths. |
@@ -178,6 +178,8 @@ Matching is by word prefix: a label matches when every word of the query is the 
 - Folding uses fixed cross-runtime rules for common capitals: `A` to `Z`; Latin-1 U+00C0 to U+00DE except U+00D7; Latin Extended-A U+0100 to U+017F, where each capital is followed by its small letter (capitals are the even code points up to U+0137 and from U+014A to U+0177, the odd ones from U+0139 to U+0148 and from U+0179 to U+017E, and U+0178 folds to U+00FF); Greek U+0391 to U+03A9 except U+03A2, plus the accented capitals U+0386, U+0388 to U+038A, U+038C, U+038E, and U+038F; Cyrillic U+0400 to U+042F; and Armenian U+0531 to U+0556. Remaining single-unit lowercase pairs use one frozen Unicode 16.0 table shared by the C# writer and browser runtime, independent of the host's Unicode version. A lowercase mapping that expands to multiple units, including U+0130, is not applied; U+0131 stays distinct from `i`.
 - Lengths are counted in UTF-16 code units of the folded word. A sidecar query needs at least one word of two or more code units, so that it never reads the shards of a whole first letter on its own. The runtime rejects queries made entirely of shorter words, including `a b`; inline and remote search can handle them according to their source.
 
+When the view's `search.kinds` lists node kinds, only nodes whose `kind` is one of them are found; a node without a kind is then never a hit. The other nodes still open as ancestors on the path to a hit. Inline search applies the list in the browser and the bundle writer applies it to the index; a remote endpoint applies it itself.
+
 Exact label matches rank first, then labels that start with the query, then the rest in natural order. Both sides are folded and compared without the separators at their start and end, so `(Default)` is an exact match for `default`. Remote endpoints may rank differently.
 
 ## Deep Links
@@ -261,9 +263,9 @@ A manifest exceeding `MaxFileBytes` fails with a named budget error; increase th
 
 #### Search Index
 
-The index holds every node once, in an entry table, and refers to nodes by entry number everywhere else. A query reads the shards of its words and the entry files of the matches it shows, never the whole index.
+The index holds every node search can find once, together with its ancestors, in an entry table, and refers to nodes by entry number everywhere else. A query reads the shards of its words and the entry files of the matches it shows, never the whole index.
 
-**Entries.** The bundle writer numbers all nodes in depth-first order, so a parent always has a smaller number than its children. Every node gets an entry, whether or not its label has a searchable word, because the id path of a hit runs through its ancestors. The files `e/0`, `e/1`, and so on hold consecutive entries, at most 256 per file and fewer when the file budget requires it. `search.entryCount` is the number of entries, and `search.entryFiles` lists the number of the first entry of each file in file order, starting with 0.
+**Entries.** The bundle writer numbers the nodes of the index in depth-first order, so a parent always has a smaller number than its children. A node gets an entry when search can find it (every node, or the nodes of the view's `search.kinds`) and when it is an ancestor of such a node, whether or not its own label has a searchable word, because the id path of a hit runs through its ancestors. A node that cannot be found and has no descendant that can is left out, so `search.entryCount` can be smaller than `nodeCount`. The files `e/0`, `e/1`, and so on hold consecutive entries, at most 256 per file and fewer when the file budget requires it. `search.entryCount` is the number of entries, and `search.entryFiles` lists the number of the first entry of each file in file order, starting with 0.
 
 ```json
 { "protocol": "canopyx/1", "type": "searchEntries", "first": 512,

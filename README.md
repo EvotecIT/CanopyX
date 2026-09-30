@@ -29,7 +29,7 @@ Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.
 - Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM.
 - Columns with per-level sort, resize, and hide; dates in UTC or the reader's time zone, switchable at run time.
-- Search that returns id paths and expands the tree to the match; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
+- Search that returns id paths and expands the tree to the match, optionally limited to the node kinds worth finding; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
 - "Only matching" filters that keep the ancestors of matching rows.
 - Cells with host-supplied values, display text, tones, and badges; icons declared once per view. Six tones are built in, and a host adds its own (a severity scale, a maintenance state) with a name and two theme colours.
 - Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.

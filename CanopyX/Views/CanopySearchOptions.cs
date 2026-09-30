@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -44,11 +45,23 @@ public sealed class CanopySearchOptions {
         set => _placeholder = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("Search needs an accessible name.", nameof(value));
     }
 
+    /// <summary>
+    /// Gets the node kinds search can find. Empty (the default) means every node. With kinds, a node is found only
+    /// when its <see cref="CanopyNode.Kind"/> is one of them; other nodes still open as ancestors of a hit. Use it
+    /// to keep rows nobody searches for, such as section headers or repeated detail rows, out of the results and out
+    /// of a bundle's search index. A remote search endpoint applies the list itself.
+    /// </summary>
+    public IList<string> Kinds { get; } = new List<string>();
+
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject()
             .Property("minLength", _minLength)
             .Property("maxResults", _maxResults)
-            .Property("placeholder", Placeholder ?? "Search")
-            .EndObject();
+            .Property("placeholder", Placeholder ?? "Search");
+        if (Kinds.Count > 0) {
+            writer.StringArray("kinds", Kinds);
+        }
+
+        writer.EndObject();
     }
 }

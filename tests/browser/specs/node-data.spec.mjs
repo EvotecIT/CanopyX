@@ -38,6 +38,17 @@ test("host callbacks read a node's data, and the grid neither shows nor searches
   expect((await page.evaluate(() => window.api.search("high"))).hits).toEqual([]);
 });
 
+test("search kinds limit inline search to those kinds and still open the path through other nodes", async ({ page }) => {
+  await open(page, { ...view, search: { ...view.search, kinds: ["file"] }, roots: [
+    { id: "docs", label: "Docs alpha", kind: "folder", children: [{ id: "docs/a", label: "Alpha notes", kind: "file" }, { id: "docs/b", label: "Alpha draft" }] }] });
+  const result = await page.evaluate(() => document.querySelector(".cx-host").canopyx.search("alpha"));
+  expect(result.hits.map((hit) => hit.path)).toEqual([["docs", "docs/a"]]);
+  await page.getByRole("combobox").fill("alpha");
+  await expect(page.getByRole("option")).toHaveCount(1);
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-cx-id="docs/a"]')).toHaveAttribute("aria-selected", "true");
+});
+
 test("data that is not an object of strings is rejected with the page it came in", async ({ page }) => {
   await page.route("https://canopyx.test/children?*", (route) => route.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 1, next: null,
     items: [{ id: "bad", label: "Bad", data: { position: 42 } }] } }));
