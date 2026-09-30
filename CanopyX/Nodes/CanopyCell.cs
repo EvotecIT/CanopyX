@@ -147,7 +147,8 @@ public sealed class CanopyCell {
     /// <summary>Returns the text a reader sees: the display text when set, otherwise the formatted value.</summary>
     internal string DisplayText(CanopyColumnKind kind) => Text ?? FormatValue(kind);
 
-    internal bool HasBadges => _badges != null && _badges.Count > 0;
+    /// <summary>Gets whether <see cref="Badges"/> holds at least one badge, without creating the collection.</summary>
+    public bool HasBadges => _badges != null && _badges.Count > 0;
 
     /// <summary>ISO 8601 UTC, with milliseconds only when they are not zero.</summary>
     private static string FormatIso(DateTime date) =>

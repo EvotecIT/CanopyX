@@ -77,7 +77,8 @@ public sealed class CanopyNode {
 
     /// <summary>
     /// Gets or sets whether the node has children that are not included, so the runtime draws an expander and loads
-    /// them from the data source when the node opens.
+    /// them from the data source when the node opens. It says nothing about inline children; ask
+    /// <see cref="HasInlineChildren"/> for those.
     /// </summary>
     public bool HasChildren { get; set; }
 
@@ -119,15 +120,30 @@ public sealed class CanopyNode {
     /// <summary>Gets or sets extra CSS class names added to the row, for host styling.</summary>
     public string? ClassName { get; set; }
 
-    internal bool HasInlineChildren => _children != null && _children.Count > 0;
+    /// <summary>
+    /// Gets whether <see cref="Children"/> holds at least one node. The collections of a node are created when they
+    /// are first read, so a host that walks a large tree asks this before it reads <see cref="Children"/>, and a
+    /// leaf never gets an empty list. The same holds for <see cref="HasCells"/>, <see cref="HasBadges"/>,
+    /// <see cref="HasFlags"/>, and <see cref="HasData"/>.
+    /// </summary>
+    /// <remarks>
+    /// This is about the children the node carries. <see cref="HasChildren"/> is the host's declaration that
+    /// children load later, and stays false on a node whose children are all inline; a node has children of either
+    /// sort when one of the two is true.
+    /// </remarks>
+    public bool HasInlineChildren => _children != null && _children.Count > 0;
 
-    internal bool HasCells => _cells != null && _cells.Count > 0;
+    /// <summary>Gets whether <see cref="Cells"/> holds at least one cell, without creating the collection.</summary>
+    public bool HasCells => _cells != null && _cells.Count > 0;
 
-    internal bool HasBadges => _badges != null && _badges.Count > 0;
+    /// <summary>Gets whether <see cref="Badges"/> holds at least one badge, without creating the collection.</summary>
+    public bool HasBadges => _badges != null && _badges.Count > 0;
 
-    internal bool HasFlags => _flags != null && _flags.Count > 0;
+    /// <summary>Gets whether <see cref="Flags"/> holds at least one flag, without creating the collection.</summary>
+    public bool HasFlags => _flags != null && _flags.Count > 0;
 
-    internal bool HasData => _data != null && _data.Count > 0;
+    /// <summary>Gets whether <see cref="Data"/> holds at least one item, without creating the collection.</summary>
+    public bool HasData => _data != null && _data.Count > 0;
 
     internal IEnumerable<KeyValuePair<string, CanopyCell>> CellEntries => _cells ?? (IEnumerable<KeyValuePair<string, CanopyCell>>)Array.Empty<KeyValuePair<string, CanopyCell>>();
 

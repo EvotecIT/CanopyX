@@ -268,7 +268,7 @@ public static class CanopyStaticHtml {
             html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
         }
         html.Append('>').Append(Encode(cell?.DisplayText(CanopyColumnKind.Text) ?? string.Empty));
-        if (cell != null) {
+        if (cell != null && cell.HasBadges) {
             AppendBadges(html, cell.Badges, options);
         }
         html.Append("</td>");
