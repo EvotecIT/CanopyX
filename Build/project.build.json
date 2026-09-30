@@ -10,7 +10,8 @@
   "ExpectedVersionMapUseWildcards": false,
   "ExcludeProjects": [
     "CanopyX.Examples",
-    "CanopyX.Tests"
+    "CanopyX.Tests",
+    "CanopyX.Tests.NetFramework"
   ],
   "NugetSource": [],
   "IncludePrerelease": false,
