@@ -17,7 +17,7 @@ Hosts own everything product-specific. A host maps its records into `CanopyNode`
 2. The host builds the tree as `CanopyNode` objects. Each node has an id, a label, optional cells keyed by column id, badges, flags, and either inline children or a lazy-load declaration (`hasChildren`, `childCount`, `ref`).
 3. The host picks a delivery mode:
    - **Single file**: the nodes travel inside the view as inline data. Best for small and medium trees.
-   - **Bundle**: `CanopyBundleWriter` splits the tree into small sidecar script files (top level, children per parent, paged long lists, and a search index sharded by name prefix). The page loads them on demand, including from `file://`, where `fetch` of local files is blocked.
+   - **Bundle**: `CanopyBundleWriter` splits the tree into small sidecar script files (top level, children per parent, paged long lists, and a search index that holds every node once next to word shards that refer to it). The page loads them on demand, including from `file://`, where `fetch` of local files is blocked.
    - **Hosted**: the page asks an HTTP endpoint for the same documents.
 4. `CanopyX.Html` renders the fragment: a host element, the view as a JSON configuration script, and optionally a `<noscript>` outline. Assets are inlined or referenced as `canopyx.js` and `canopyx.css`.
 5. The runtime finds every `[data-canopyx-host]` element, reads its configuration, creates the data source, and mounts a tree grid.
@@ -36,6 +36,7 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | --- | --- |
 | `00-core.js` | Closure start, constants, text and number formatting, DOM helpers |
 | `10-sidecar.js` | Sidecar registry: sidecar files push into a queue, so they work whether they load before or after the runtime |
+| `15-search-index.js` | Sidecar search: word shards, posting lists, and the entry table of a bundle's search index |
 | `20-sources.js` | Inline, sidecar, and remote data sources behind one promise-based interface |
 | `30-model.js` | Tree grid constructor, root loading, status rows, and events |
 | `31-wrapping.js` | Iterative node construction and initial expansion |
@@ -84,7 +85,7 @@ The interaction budgets follow the first consumer's reporting plan for its large
 | First rows painted, cold load | 2.5 s |
 | Expand, page of children, search to expanded path | 250 ms (400 ms with a hosted round trip) |
 | Scrolling a large expanded tree | no blank rows |
-| Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 40 KB |
+| Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 43 KB |
 | Largest sidecar file written by the bundle writer | 1 MB |
 
 The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs`. Search index size and the cold and warm time from a query to an expanded hit are measured at normal and 4x CPU speed with `tests/browser/bench/search-benchmark.mjs`, on the large bundle example and on the two benchmark bundles that `CanopyX.Examples --search-bench` writes (an adversarial deep tree and a directory-shaped tree). Hosted CI runners are too noisy to gate on these timings. Consumers measure their own fixtures against their own budgets.

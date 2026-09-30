@@ -15,9 +15,11 @@ for (const [key, query] of [["ab", "ab"], ["ab-", "ab"], ["_03bba", "λa"]]) {
     const keys = [key, ...Array.from({ length: 11 }, (_, i) => key + "." + (i + 2))];
     const shards = Object.fromEntries(keys.slice().reverse().map(k => [k, 1]));
     const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", nodeCount: 12, pageSize: 100,
-      search: { shards } }, "r/0": { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
-      items: keys.map((k, i) => ({ id: "id" + i, label: query })) } };
-    keys.forEach((k, i) => { docs["s/" + k] = { protocol: "canopyx/1", type: "searchShard", key: k, entries: [{ path: ["id" + i], label: query }] }; });
+      search: { entryCount: 12, entryFiles: [0], kinds: [], shards } }, "r/0": { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
+      items: keys.map((k, i) => ({ id: "id" + i, label: query })) },
+      "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries: keys.map((k, i) => [-1, 0, "id" + i, 0, query]) } };
+    // One word whose posting list continues through every part; each part restarts with a plain entry number.
+    keys.forEach((k, i) => { docs["s/k-" + k] = { protocol: "canopyx/1", type: "searchShard", key: k, words: [query], postings: [[i]] }; });
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice(6, -3);
       return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, docs[ref]])});` });

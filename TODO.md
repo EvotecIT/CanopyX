@@ -36,7 +36,7 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 - [x] Row-cell reuse on recycle, with virtual rows kept in DOM order throughout scrolling. Normal-speed and 4x CPU comparisons for the final renderer are recorded in PR #5; timing depends on the workload and machine.
 - [x] Multi-select (a Should, small: selection set plus `aria-multiselectable`).
 - [x] Column resize and hide (a Should; the spike already has resize, hide is small).
-- [x] Bundle writer: top-level pages, children per parent, paged long lists, and a search index sharded by name prefix (a shard that grows too large splits on a longer prefix), all as sidecar scripts that load from `file://`. It replaces the spike's one-off converter and removes the 7.7 MB single-file problem.
+- [x] Bundle writer: top-level pages, children per parent, paged long lists, and a search index (an entry table that holds every node once, and word shards by prefix that refer to it), all as sidecar scripts that load from `file://`. It replaces the spike's one-off converter and removes the 7.7 MB single-file problem.
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
 - [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
 - [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
@@ -58,7 +58,6 @@ Tree grid follow-ups without a milestone yet, each with the consumer that will p
 - Cell navigation with Left/Right inside a row (the cell-focus half of the ARIA tree grid pattern), and keyboard stops inside detail rows: the accessibility review of the GPO explorer.
 - Sticky parent rows and filter-match highlighting: the GPO explorer scope tree, if the design packet asks for them.
 - Location hints on search hits (the offset of each path segment among its siblings), so expanding to a child deep in a long list loads the pages it needs at once instead of one after another: the GPO explorer at L, with about 1,000 GPOs per domain. The field is optional, so it fits in `canopyx/1`.
-- A compact bundle search index that stores each entry once and lets shards hold references: the GPO explorer bundle at L, before it is pushed to SharePoint. Every file already stays within 512 KiB, but each entry is copied into one shard per word, so a deep tree whose labels share common words (121,000 nodes, eight levels, long path-style ids) writes 341 MB of index next to 27 MB of pages.
 - Switching between host-supplied groupings in the toolbar (group by domain, change date, owner, or status): the GPO explorer list view, if the design packet keeps it. Each grouping stays a tree the host builds; CanopyX only switches between them.
 
 ## 0.2 Hosted Protocol

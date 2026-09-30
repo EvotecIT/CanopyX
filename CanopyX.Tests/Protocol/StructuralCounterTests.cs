@@ -11,6 +11,7 @@ public sealed class StructuralCounterTests {
     [InlineData("searchTotal", 2147483647L)]
     [InlineData("nodeCount", 2147483647L)]
     [InlineData("shardCount", 2147483647L)]
+    [InlineData("entryCount", 2147483647L)]
     [InlineData("width", 2147483647L)]
     [InlineData("manifestPageSize", 10000L)]
     public void StructuralCountersMatchWriterRanges(string counter, long maximum) {
@@ -20,8 +21,8 @@ public sealed class StructuralCounterTests {
     }
 
     [Fact]
-    public void ManifestListsEveryMultipartFileWithItsOwnEntryCount() {
-        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"shards\":{\"ab\":2,\"ab.2\":2,\"ab.3\":1,\"ab-\":1,\"ab-.2\":1}}}")!;
+    public void ManifestListsEveryMultipartFileWithItsOwnPostingCount() {
+        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":7,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":2,\"ab.2\":2,\"ab.3\":1,\"ab-\":1,\"ab-.2\":1}}}")!;
         ProtocolSchema.AssertValid(doc.ToJsonString(), "multipart manifest");
     }
 
@@ -43,8 +44,11 @@ public sealed class StructuralCounterTests {
             case "nodeCount": manifest["nodeCount"] = value; return manifest.ToJsonString();
             case "manifestPageSize": manifest["pageSize"] = value; return manifest.ToJsonString();
             case "shardCount":
-                manifest["search"] = JsonNode.Parse("{\"shards\":{\"ab\":1}}");
+                manifest["search"] = JsonNode.Parse("{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":1}}");
                 manifest["search"]!["shards"]!["ab"] = value; return manifest.ToJsonString();
+            case "entryCount":
+                manifest["search"] = JsonNode.Parse("{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":1}}");
+                manifest["search"]!["entryCount"] = value; return manifest.ToJsonString();
             case "width":
                 return ProtocolSchema.Mutate(SampleDocuments.FullView().ToJson(), v => v["columns"]![0]!["width"] = value);
             default: throw new ArgumentException("Unknown counter", nameof(counter));

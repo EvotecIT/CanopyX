@@ -65,3 +65,67 @@ export function median(values) {
   const sorted = values.slice().sort((a, b) => a - b);
   return sorted[Math.floor((sorted.length - 1) / 2)];
 }
+
+/** The shard key of a folded word prefix: a-z and 0-9 stay, other code units become _ plus four hex digits. */
+export function shardKey(prefix) {
+  let key = "";
+  for (let i = 0; i < prefix.length; i++) {
+    const code = prefix.charCodeAt(i);
+    key += (code >= 97 && code <= 122) || (code >= 48 && code <= 57) ? prefix.charAt(i) : "_" + code.toString(16).padStart(4, "0");
+  }
+  return key;
+}
+
+/**
+ * A search index for a handcrafted sidecar bundle, written the way docs/data-protocol.md describes it: one entry file,
+ * one shard per two-unit word prefix, and a shard of its own for each one-unit word. The hits are
+ * { path, label, kind? }; ancestors that are not hits themselves are labelled with their id. Labels fold by ASCII
+ * case only, which is enough for the labels the tests use.
+ * Returns { search, docs }: the manifest's search object and the documents by reference.
+ */
+export function searchIndex(hits) {
+  const fold = (text) => text.replace(/[A-Z]/g, (letter) => letter.toLowerCase());
+  const entries = [];
+  const numbers = new Map();
+  const kinds = [];
+  const entryOf = (path) => {
+    const key = JSON.stringify(path);
+    if (!numbers.has(key)) {
+      const parent = path.length > 1 ? entryOf(path.slice(0, -1)) : -1;
+      numbers.set(key, entries.length);
+      entries.push([parent, 0, path[path.length - 1], 0, path[path.length - 1]]);
+    }
+    return numbers.get(key);
+  };
+  const postings = new Map();
+  const post = (word, number) => postings.set(word, (postings.get(word) || []).concat(number));
+  for (const hit of hits) {
+    const number = entryOf(hit.path);
+    entries[number][4] = hit.label;
+    if (hit.kind != null) {
+      if (kinds.indexOf(hit.kind) < 0) kinds.push(hit.kind);
+      entries[number][5] = kinds.indexOf(hit.kind);
+    }
+    const separators = "[\\x00-\\x2f\\x3a-\\x40\\x5b-\\x60\\x7b-\\x7f]+";
+    const folded = fold(hit.label);
+    const labelWords = [...new Set(folded.split(new RegExp(separators)))].filter((word) => word.length);
+    labelWords.forEach((word) => post(word, number));
+    if (labelWords.length) {
+      const trimmed = folded.replace(new RegExp("^" + separators + "|" + separators + "$", "g"), "");
+      let hash = 2166136261;
+      for (let i = 0; i < trimmed.length; i++) hash = Math.imul(hash ^ trimmed.charCodeAt(i), 16777619);
+      post("\u0000" + (hash >>> 0).toString(16).padStart(8, "0"), number);
+    }
+  }
+  const docs = { "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries } };
+  const shards = {};
+  for (const word of [...postings.keys()].sort()) {
+    const key = word.length === 1 ? shardKey(word) + "-" : shardKey(word.slice(0, 2));
+    const doc = docs["s/k-" + key] || (docs["s/k-" + key] = { protocol: "canopyx/1", type: "searchShard", key, words: [], postings: [] });
+    const list = postings.get(word);
+    doc.words.push(word);
+    doc.postings.push(list.map((number, i) => (i ? number - list[i - 1] : number)));
+    shards[key] = (shards[key] || 0) + list.length;
+  }
+  return { search: { entryCount: entries.length, entryFiles: entries.length ? [0] : [], kinds, shards }, docs };
+}

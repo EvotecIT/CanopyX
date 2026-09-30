@@ -80,7 +80,7 @@ test("custom source search rejects malformed hits at both API and toolbar bounda
   expect((await page.evaluate(() => window.customApi.search("ab"))).hits).toEqual([{ path: ["b"], label: "Actual B" }]);
 });
 
-test("a malformed sidecar search hit is rejected and a corrected shard can retry", async ({ page }) => {
+test("a malformed sidecar search entry is rejected and a corrected entry file can retry", async ({ page }) => {
   await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage({
     ...view, source: { kind: "inline" }, roots: [] }) }));
   await page.goto("https://canopyx.test/");
@@ -88,14 +88,18 @@ test("a malformed sidecar search hit is rejected and a corrected shard can retry
   const result = await page.evaluate(async () => {
     const id = "bad-shard";
     const source = CanopyX.sources.sidecar({ id, source: { kind: "sidecar", base: "/data/" } });
+    const shard = { protocol: "canopyx/1", type: "searchShard", key: "ab", words: ["abacus"], postings: [[0]] };
     CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: id,
-      root: "r/0", search: { shards: { ab: 1 } } }]);
-    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: "ab",
-      entries: [{ path: "ab", label: "Abacus" }] }]);
+      root: "r/0", search: { entryCount: 1, entryFiles: [0], kinds: [], shards: { ab: 1 } } }]);
+    CanopyXSidecar.push([id, "s/k-ab", shard]);
+    // The entry rebuilds to a lone surrogate, which is not an id a path can hold.
+    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [],
+      entries: [[-1, 0, "\ud800", 0, "Abacus"]] }]);
     let error = null;
     try { await source.search("ab", 10); } catch (caught) { error = caught.message; }
-    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: "ab",
-      entries: [{ path: ["found"], label: "Abacus" }] }]);
+    CanopyXSidecar.push([id, "s/k-ab", shard]);
+    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [],
+      entries: [[-1, 0, "found", 0, "Abacus"]] }]);
     return { error, hits: (await source.search("ab", 10)).hits };
   });
   expect(result.error).toContain("search hit");

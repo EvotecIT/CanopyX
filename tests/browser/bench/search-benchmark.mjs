@@ -41,7 +41,7 @@ function bundleSize(page) {
   const result = { indexBytes: 0, indexFiles: 0, pageBytes: 0, pageFiles: 0 };
   for (const view of fs.readdirSync(data, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
     for (const folder of fs.readdirSync(path.join(data, view.name), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
-      const index = folder.name === "s";
+      const index = folder.name === "s" || folder.name === "e";
       for (const file of fs.readdirSync(path.join(data, view.name, folder.name), { recursive: true, withFileTypes: true })) {
         if (file.isFile()) {
           result[index ? "indexBytes" : "pageBytes"] += fs.statSync(path.join(file.parentPath, file.name)).size;

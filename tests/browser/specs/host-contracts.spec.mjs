@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { nextFrames, viewPage } from "./support.mjs";
+import { nextFrames, searchIndex, viewPage } from "./support.mjs";
 
 const view = { protocol: "canopyx/1", type: "view", id: "hosts", label: "Hosts", rowHeight: 28, pageSize: 100,
   columns: [{ id: "name", title: "Name", width: 300, kind: "text" }, { id: "value", title: "Value", width: 150, kind: "text" }],
@@ -102,8 +102,8 @@ test("sidecar search retains paths whose newline-joined strings collide", async 
   await open(page);
   const data = { ...view, source: { kind: "sidecar", base: "/data/" } };
   const entries = [{ path: ["a\nb", "c"], label: "Abacus one" }, { path: ["a", "b\nc"], label: "Abacus two" }];
-  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0", search: { prefix: "k-", shards: { ab: 2 } } },
-    "s/k-ab": { protocol: "canopyx/1", type: "searchShard", key: "ab", entries } };
+  const index = searchIndex(entries);
+  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0", search: index.search }, ...index.docs };
   await page.route("https://canopyx.test/data/**", route => {
     const ref = new URL(route.request().url()).pathname.slice(6, -3);
     return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([data.id, ref, docs[ref]])});` });

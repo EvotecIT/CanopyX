@@ -1,12 +1,17 @@
 // Performance budgets from docs/architecture.md on the large bundle example (more than 100,000 nodes, opened from disk).
-// The search budget starts when the query runs, after the search box's 150 ms typing pause.
+// The search budget starts when the query runs, after the search box's 150 ms typing pause. Next to the timing, the
+// index files a query loads are counted, which does not depend on how fast the runner is.
 // Interactions are timed in the page, until the result is painted, as the median of three attempts on a fresh page,
 // so one slow sample on a busy CI runner does not decide the result. The timings are printed for pull requests.
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { exampleUrl, median, openExample } from "./support.mjs";
 
 const FIRST_ROWS_MS = 2500;
 const INTERACTION_MS = 250;
+const SEARCH_INDEX_FILES = 32;
+const SEARCH_INDEX_BYTES = 512 * 1024;
 
 /** Runs an async expression in the page and returns the milliseconds until the next painted frame. */
 function timed(page, body) {
@@ -67,6 +72,34 @@ test("search to an expanded hit stays within budget", async ({ browser }) => {
   console.log("search to expanded hit: " + ms.toFixed(1) + " ms");
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
 });
+
+test("a repeated search answers from the loaded index within budget", async ({ browser }) => {
+  const ms = await measure(browser, "await api.search('quarterly review');", "await api.search('quarterly review');");
+  console.log("repeated search: " + ms.toFixed(1) + " ms");
+  expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
+});
+
+// A query reads the shards of its words and the entry files of the matches it ranks, never the whole index: 4,698
+// nodes match "quarterly review", "re" starts the most common words of the example, and the queries with a one-unit
+// word match nothing or little among thousands of candidates.
+for (const query of ["quarterly review", "re", "İstanbul lau", "version 9", "quarterly z", "quarterly r"]) {
+  test(`searching "${query}" loads a bounded part of the index`, async ({ page }) => {
+    const loaded = [];
+    page.on("request", (request) => {
+      const match = /\/data\/[^/]+\/[se]\/[^/]+\.js$/.exec(request.url());
+      if (match) loaded.push(fs.statSync(fileURLToPath(request.url())).size);
+    });
+    await openExample(page, "bundle/index.html");
+    const result = await page.evaluate((text) => document.querySelector(".cx-host").canopyx.search(text), query);
+    const bytes = loaded.reduce((sum, size) => sum + size, 0);
+    console.log("search \"" + query + "\": " + result.hits.length + " of " + result.total + " hits from " + loaded.length + " index files, " + Math.round(bytes / 1024) + " KiB");
+    expect(result.total).toBe(query === "version 9" || query === "quarterly z" ? 0 : result.total);
+    expect(result.truncated).toBe(result.total > result.hits.length);
+    expect(loaded.length).toBeGreaterThan(0);
+    expect(loaded.length).toBeLessThanOrEqual(SEARCH_INDEX_FILES);
+    expect(bytes).toBeLessThanOrEqual(SEARCH_INDEX_BYTES);
+  });
+}
 
 test("scrolling a long expanded list never shows a blank viewport", async ({ page }) => {
   await openExample(page, "bundle/index.html");

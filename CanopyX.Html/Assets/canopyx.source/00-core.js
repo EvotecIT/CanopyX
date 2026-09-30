@@ -16,8 +16,9 @@
   const INDENT = 18;
   const COUNTS_BATCH = 50;
   const SHARD_CACHE = 24;
+  const ENTRY_CACHE = 32;
+  const ENTRY_BATCH = 8;
   const SEARCH_CANDIDATES = 5;
-  const SHARD_BATCH = 4;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
   const activeGrids = new WeakMap();
@@ -68,10 +69,6 @@
       if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
         throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
       }
-    }
-    if (type === "searchShard") {
-      if (!Array.isArray(doc.entries)) throw new Error("CanopyX: search shard entries must be an array.");
-      doc.entries.forEach(validateSearchHit);
     }
     if (type === "counts") {
       if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
@@ -329,7 +326,7 @@
 
   /** Rank of a label against a folded, trimmed query: 0 when equal, 1 when the label starts with it, 2 otherwise. */
   function rankLabel(label, foldedQuery) {
-    const l = foldText(label);
+    const l = trimSeparators(foldText(label));
     return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
   }
 

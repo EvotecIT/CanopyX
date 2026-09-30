@@ -28,10 +28,24 @@ public sealed class BundleEnvelopeTests {
             for (var i = 1; i <= 600; i++) { var child = new CanopyNode("n" + i, i == 600 ? "Target" : "x"); node.Children.Add(child); node = child; }
             var result = new CanopyBundleWriter().Write(view, dir);
             var files = new SidecarFiles(result.DataDirectory, view.Id);
-            Assert.Equal(1, result.SearchShardCount);
-            var hit = files.Document("s/k-ta")["entries"]![0]!;
-            Assert.Equal(Enumerable.Range(0, 601).Select(i => "n" + i), hit["path"]!.AsArray().Select(v => v!.GetValue<string>()));
+            var reader = new SearchIndexReader(files);
+            Assert.Equal(601, reader.Find("x").Count + reader.Find("target").Count);
+            var hit = reader.Entry(Assert.Single(reader.Find("target")));
+            Assert.Equal(Enumerable.Range(0, 601).Select(i => "n" + i), hit.Path);
             Assert.Equal(601, result.NodeCount);
+        } finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void AncestorsThatCannotFitOneSearchEntryFileFailWithTheBudget() {
+        var dir = Path.Combine(Path.GetTempPath(), "canopyx-stem-" + Guid.NewGuid().ToString("N"));
+        try {
+            var view = new CanopyView("view", "View") { Search = new CanopySearchOptions() };
+            view.Columns.Add(new CanopyColumn("name", "Name"));
+            var node = new CanopyNode("n0", "Level"); view.Roots.Add(node);
+            for (var i = 1; i <= 3000; i++) { var child = new CanopyNode("n" + i, "Level"); node.Children.Add(child); node = child; }
+            var error = Assert.Throws<InvalidOperationException>(() => new CanopyBundleWriter(new CanopyBundleOptions { MaxFileBytes = 16 * 1024 }).Write(view, dir));
+            Assert.Contains("ancestors", error.Message); Assert.Contains("MaxFileBytes", error.Message);
         } finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
     }
 }

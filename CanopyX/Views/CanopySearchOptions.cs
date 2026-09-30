@@ -11,7 +11,7 @@ public sealed class CanopySearchOptions {
     private int _maxResults = 20;
     private string _placeholder = "Search";
 
-    /// <summary>Gets or sets how many characters a query needs before it runs. Sharded bundle indexes need at least 2.</summary>
+    /// <summary>Gets or sets how many characters a query needs before it runs. Bundle search indexes need at least 2.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below 1 or above 16.</exception>
     public int MinLength {
         get => _minLength;

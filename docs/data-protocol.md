@@ -23,8 +23,9 @@ Every top-level document carries two fields:
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
-| `manifest` | Bundle writer | A sidecar view loads; it points at the first top-level page and the search shards |
-| `searchShard` | Bundle writer | A sidecar search needs the index entries for a prefix |
+| `manifest` | Bundle writer | A sidecar view loads; it points at the first top-level page and describes the search index |
+| `searchShard` | Bundle writer | A sidecar search needs the words that start with a prefix |
+| `searchEntries` | Bundle writer | A sidecar search needs the nodes its matches refer to |
 
 All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U+2029 as `\u` sequences, so a document can sit inside an HTML `<script>` element unchanged. Hosts writing documents by hand must do the same before inlining one.
 
@@ -147,9 +148,9 @@ Matching is by word prefix: a label matches when every word of the query is the 
 
 - A word is a run of characters that are not separators. Separators are every ASCII character other than `A` to `Z`, `a` to `z`, and `0` to `9`; characters above ASCII are always part of a word.
 - Folding uses fixed cross-runtime rules for common capitals: `A` to `Z`; Latin-1 U+00C0 to U+00DE except U+00D7; Latin Extended-A U+0100 to U+017F, where each capital is followed by its small letter (capitals are the even code points up to U+0137 and from U+014A to U+0177, the odd ones from U+0139 to U+0148 and from U+0179 to U+017E, and U+0178 folds to U+00FF); Greek U+0391 to U+03A9 except U+03A2, plus the accented capitals U+0386, U+0388 to U+038A, U+038C, U+038E, and U+038F; Cyrillic U+0400 to U+042F; and Armenian U+0531 to U+0556. Remaining single-unit lowercase pairs use one frozen Unicode 16.0 table shared by the C# writer and browser runtime, independent of the host's Unicode version. A lowercase mapping that expands to multiple units, including U+0130, is not applied; U+0131 stays distinct from `i`.
-- Lengths are counted in UTF-16 code units of the folded word. A sidecar query needs at least one word of two or more code units to select an indexed shard. The runtime rejects queries made entirely of shorter words, including `a b`; inline and remote search can handle them according to their source.
+- Lengths are counted in UTF-16 code units of the folded word. A sidecar query needs at least one word of two or more code units, so that it never reads the shards of a whole first letter on its own. The runtime rejects queries made entirely of shorter words, including `a b`; inline and remote search can handle them according to their source.
 
-Exact label matches rank first, then labels that start with the query, then the rest in natural order. Remote endpoints may rank differently.
+Exact label matches rank first, then labels that start with the query, then the rest in natural order. Both sides are folded and compared without the separators at their start and end, so `(Default)` is an exact match for `default`. Remote endpoints may rank differently.
 
 ## Deep Links
 
@@ -193,29 +194,56 @@ For sidecar sources, each slash-delimited reference component is a file path com
 
 | Reference | Document | Content |
 | --- | --- | --- |
-| `manifest` | `manifest` | View id, first top-level page, node count, page size, search shard list |
+| `manifest` | `manifest` | View id, first top-level page, node count, page size, search index description |
 | `r/<n>` | `page` | Page `n` of the top-level nodes |
 | `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the exact UTF-16LE code units of the node id (all 64 digits when another id in the bundle already has those 16), `<hh>` its first two digits. |
-| `s/k-<key>` | `searchShard` | Search index entries whose words start with the shard's prefix. The `k-` keeps keys such as `con` or `nul` from becoming Windows device names. |
+| `e/<n>` | `searchEntries` | Entry file `n` of the search index: a run of consecutive entries and the ancestors they need |
+| `s/k-<key>` | `searchShard` | The words that start with the shard's prefix, each with the entries that have it. The `k-` keeps keys such as `con` or `nul` from becoming Windows device names. |
 
 Every page holds at most the writer's page size and stays within its file budget (512 KiB by default), so page sizes vary and `offset` tells where each page starts. Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. Hashing keeps file names short, safe on case-insensitive file systems, and independent of the characters in ids. The two-digit folder keeps any one folder from holding tens of thousands of files.
 
 The manifest:
 
 ```json
-{ "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 120000, "pageSize": 250,
-  "search": { "prefix": "k-", "shards": { "ab": 812, "ac": 90, "pra": 1900, "prb": 12, "pr-": 3, "report": 2000, "report.2": 640 } } }
+{ "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 700, "pageSize": 250,
+  "search": { "entryCount": 700, "entryFiles": [0, 256, 512], "kinds": ["share", "folder", "file"],
+    "shards": { "ab": 81, "ac": 9, "pra": 190, "prb": 12, "pr-": 3, "report-": 410, "report-.2": 230 } } }
 ```
 
-`search.prefix` is optional: `k-` selects the portable `s/k-<key>` layout, while an absent or empty prefix selects the original `s/<key>` layout. A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the exact UTF-16LE code units of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The portable prefix and documented folding rules define the v1 bundle format.
+A manifest exceeding `MaxFileBytes` fails with a named budget error; increase the budget or reduce the index. Default data folders escape Windows device names and include a full SHA-256 suffix of the exact UTF-16LE code units of the view id so distinct views cannot overwrite one another on case-insensitive filesystems. The `search` object is present when the view declares search; all four of its fields are required.
 
-`search.shards` maps each shard key to its entry count. Search entries have the shape of search hits (`path`, `label`, `kind`, `context`, where the bundle writer's context names the nearest two ancestors), and each entry is filed under every distinct word of its label that has at least two code units.
+#### Search Index
 
-A shard covers every word that starts with a given prefix of the folded word. A prefix starts at two code units. When a shard would hold more entries than the bundle writer's limit, it splits into prefixes one code unit longer, and words exactly as long as the old prefix move to a shard for the old prefix marked with a trailing `-`. The shard key is the prefix encoded for file names: `a` to `z` and `0` to `9` stay as they are, and any other code unit becomes `_` followed by its four lowercase hex digits (`é` becomes `_00e9`).
+The index holds every node once, in an entry table, and refers to nodes by entry number everywhere else. A query reads the shards of its words and the entry files of the matches it shows, never the whole index.
 
-A shard can be stored in numbered parts when it exceeds an entry or file budget. The first part uses its base key; subsequent keys append `.2`, `.3`, and so on (including after a terminal `-`, for example `ab-.2`). The manifest lists every part separately in `search.shards`, with that file's entry count, for example `{ "report": 2000, "report.2": 640 }`. Writers include the base key and use consecutive part numbers starting at two. Readers discover parts from this list, not by probing filenames: resolve the base prefix without treating a part suffix as a longer prefix, then load its base file followed by listed parts in ascending numeric order. Each file's `searchShard.key` and entry count equal its manifest key and count; readers reject mismatches. A missing part list means the base file is the complete shard.
+**Entries.** The bundle writer numbers all nodes in depth-first order, so a parent always has a smaller number than its children. Every node gets an entry, whether or not its label has a searchable word, because the id path of a hit runs through its ancestors. The files `e/0`, `e/1`, and so on hold consecutive entries, at most 256 per file and fewer when the file budget requires it. `search.entryCount` is the number of entries, and `search.entryFiles` lists the number of the first entry of each file in file order, starting with 0.
 
-To search, the runtime takes the longest query word (the first one on a tie) and starts with its first two code units. If a shard exists for that prefix, it loads it. If shards exist for longer prefixes that start with it, it adds the next code unit and repeats; if the query word runs out first, it loads every shard under the current prefix, including the `-` shard. It loads the shards and their parts in order, a few files at a time, and stops once it has five times the view's `maxResults` in matches, reporting the result as truncated; a truncated result is not guaranteed to hold the best-ranked matches. Entries are matched against the whole query as described in [Search](#search).
+```json
+{ "protocol": "canopyx/1", "type": "searchEntries", "first": 512,
+  "stem": [[0, -1, 0, "share-a", 0, "\\\\files\\share-a", 0], [3, 0, 7, "/d0", 0, "Finance", 1]],
+  "entries": [[3, 10, "/p4", 0, "Budget", 1], [512, 13, "/f0", 0, "Budget 1.xlsx", 2]] }
+```
+
+An entry is the array `[parent, head, id, tail, label]`, followed by the position of the node's kind in `search.kinds` when the node has one. `parent` is the parent's entry number, or -1 for a top-level node. The id is written relative to the parent's id: `head` and `tail` count the UTF-16 code units the two ids share at the start and at the end, and the array holds only the part between them. In the example, entry 512 has parent 3 (`share-a/d0`), takes the first 10 code units of that id, and adds `/p4`, which makes `share-a/d0/p4`. Path-style ids repeat the parent's id at the start and distinguished names repeat it at the end, so neither is written again on every level. Writers do not split a surrogate pair between the shared and the written part; top-level entries have `head` and `tail` 0; and `head` plus `tail` never exceeds the length of the parent's id.
+
+`stem` lists the ancestors of the file's first entry from the top level down, each as its own entry number followed by the fields of an entry. With depth-first numbers, an ancestor that lies before a file is an ancestor of that file's first entry, so one file is enough to rebuild the id path, label, kind, and context of every entry in it. The context of a hit names its nearest two ancestors (`grandparent / parent`). The stem counts against the file budget: a tree so deep that the ancestors of one node do not fit in a file cannot be written with search, and the writer says so.
+
+**Words.** Each entry is filed under every distinct word of its label (see [Search](#search) for words and folding). Each label with a word is also filed under its label token: U+0000, which no word can contain, followed by the eight lowercase hex digits of the 32-bit FNV-1a hash of the folded label without the separators at its start and end (start with 2166136261; for each UTF-16 code unit, xor it in and multiply by 16777619 modulo 2^32). `Budget (old)` and `budget (OLD` have the token of `budget (old`. The token lets a reader find the labels equal to a query without reading any label. Two labels can share a token, so a reader compares the label with the query.
+
+**Shards.** A shard covers every word that starts with a given prefix of the folded word. A prefix starts at two code units. When a shard would refer to more entries than the bundle writer's limit (20,000 postings by default; 1,000 for the shards of label tokens, because a query reads exactly one token), it splits into prefixes one code unit longer, and the word exactly as long as the old prefix moves to a shard for the old prefix marked with a trailing `-`. Prefixes stop growing at 12 code units. A word of one code unit has a shard of its own, named by that code unit and a trailing `-`. The shard key is the prefix encoded for file names: `a` to `z` and `0` to `9` stay as they are, and any other code unit becomes `_` followed by its four lowercase hex digits (`é` becomes `_00e9`, and the keys of label tokens start with `_0000`).
+
+```json
+{ "protocol": "canopyx/1", "type": "searchShard", "key": "pra",
+  "words": ["practice", "prague"], "postings": [[14, 3, -5, 120], [7]] }
+```
+
+`words` and `postings` run in parallel. A posting list holds the ascending numbers of the entries that have the word: the first value is an entry number, a positive value after it is the gap to the next entry, and a negative value `-n` stands for the `n` entries that follow the previous one without a gap. `[14, 3, -5, 120]` is 14, 17, 18 to 22, and 142.
+
+A shard is stored in numbered parts when it outgrows the file budget. The first part uses its base key; subsequent keys append `.2`, `.3`, and so on (including after a terminal `-`, for example `ab-.2`). A posting list that does not fit continues in the next part under the same word, where it starts again with a plain entry number. The manifest lists every part separately in `search.shards` with the number of entries that file's posting lists refer to, for example `{ "report-": 410, "report-.2": 230 }`. Writers include the base key and use consecutive part numbers starting at two. Readers discover parts from this list, not by probing filenames: resolve the base prefix without treating a part suffix as a longer prefix, then load its base file followed by listed parts in ascending numeric order. Each file's `searchShard.key` and posting count equal its manifest key and count, and no posting refers to an entry at or past `entryCount`; readers reject mismatches. A missing part list means the base file is the complete shard.
+
+**Reading.** To search, the runtime takes each query word and starts with its first two code units. If a shard exists for that prefix, it loads it. If shards exist for longer prefixes that start with it, it adds the next code unit and repeats; if the query word runs out first, it loads every shard under the current prefix, including the `-` shard. A query word of one code unit loads every shard whose prefix starts with it. The entries of a query word are the merged posting lists of the shard words that start with it, and the candidates are the entries that every query word has. A query word that starts another query word is skipped, because the longer one implies it.
+
+The runtime also looks up the label token of the folded query, without the separators at its start and end. It reads the labels equal to the query first and then the other candidates in document order, loading the entry files they fall in, until it has enough matches to fill the result list, and it ranks at most five times the view's `maxResults`. The total is the number of candidates, which is exact. A truncated result holds the labels equal to the query and the first other matches in document order, which are not necessarily the best-ranked of all matches.
 
 ### Remote
 
@@ -240,11 +268,11 @@ A response with a non-success status, invalid JSON, or the wrong `protocol` or `
 
 Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires an explicit lazy-child declaration and cannot accompany inline children. The search placeholder is also its accessible name and must contain non-whitespace text.
 
-Accessible grid, column, filter, and search names contain non-whitespace text. Cell keys identify a non-empty column ID. Expandable nodes with inline children contain at least one child; lazy nodes omit the children array. Search-shard keys contain at least two encoded UTF-16 units (`a-z`, `0-9`, or `_` plus four lowercase hexadecimal digits), with the documented terminal and part suffixes.
+Accessible grid, column, filter, and search names contain non-whitespace text. Cell keys identify a non-empty column ID. Expandable nodes with inline children contain at least one child; lazy nodes omit the children array. Search-shard keys contain at least two encoded UTF-16 units (`a-z`, `0-9`, or `_` plus four lowercase hexadecimal digits), or one such unit followed by `-`, with the documented terminal and part suffixes.
 
 A nonempty inline `children` array cannot declare `hasChildren: false`; an omitted flag remains valid for readers that infer expandability from the array.
 
-Structural counters (`offset`, totals, child counts, manifest node counts, and shard entry counts) range from their declared minimum through 2,147,483,647, matching the C# integer properties and remaining exact in browser JSON. Column widths have the same upper bound; view and manifest page sizes range from 1 through 10,000.
+Structural counters (`offset`, totals, child counts, manifest node counts, entry counts, and shard posting counts) range from their declared minimum through 2,147,483,647, matching the C# integer properties and remaining exact in browser JSON. Column widths have the same upper bound; view and manifest page sizes range from 1 through 10,000.
 
 Readers attach a wire page only when `parent` equals the requested node ID, or `null` for the top level; a node reference is a file/endpoint locator, not its identity. A mismatched parent is a load error for remote and sidecar sources. Sidecar readers also require the manifest's `view` to equal the requested view ID before using its root page or search index.
 

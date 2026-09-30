@@ -189,7 +189,20 @@ test.describe("sidecar bundle", () => {
     await expect(page.locator(".cx-row[data-cx-status=more]")).toContainText("Show more (250 of 3,000 loaded)");
   });
 
-  test("searches the sharded index, including non-ASCII names", async ({ page }) => {
+  test("labels equal to the query come first among thousands of matches", async ({ page }) => {
+    await openExample(page, "bundle/index.html");
+    // The writer files each label under a token that the runtime computes again from the query.
+    for (const [query, label] of [["quarterly REVIEW", "Quarterly review"], ["\u0142\u00f3d\u017a OFFICE", "\u0141\u00f3d\u017a office"]]) {
+      const result = await page.evaluate(`${api(page)}.search(${JSON.stringify(query)})`);
+      expect(result.total).toBeGreaterThan(1000);
+      expect(result.truncated).toBe(true);
+      expect(result.hits).toHaveLength(20);
+      expect(result.hits.map((hit) => hit.label)).toEqual(Array(20).fill(label));
+      expect(result.hits.every((hit) => hit.kind === "folder")).toBe(true);
+    }
+  });
+
+  test("searches the bundle index, including non-ASCII names", async ({ page }) => {
     await openExample(page, "bundle/index.html");
     await page.getByRole("combobox").fill("İstanbul lau");
     await expect(page.getByRole("option").first()).toContainText("İstanbul launch");

@@ -17,6 +17,9 @@ internal sealed class CanopyBundleLayout : IDisposable {
 
     internal static string RootPage(int page) => "r/" + page;
 
+    /// <summary>The reference of a search entry file.</summary>
+    internal static string EntryFile(int number) => "e/" + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary>
     /// The reference of a search shard. The <c>k-</c> prefix keeps a key such as <c>con</c> or <c>nul</c> from becoming a
     /// Windows device name.

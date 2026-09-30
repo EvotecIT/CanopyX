@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { viewPage, nextFrames, repo } from "./support.mjs";
+import { viewPage, nextFrames, repo, searchIndex } from "./support.mjs";
 const view = { protocol: "canopyx/1", type: "view", id: "contracts", label: "Contracts", columns: [{ id: "name", title: "Name", width: 600 }], source: { kind: "inline" }, roots: [] };
 async function open(page, data, setup = "") {
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: viewPage(data).replace("</body>", `<script>${setup}</script></body>`) }));
@@ -21,10 +21,10 @@ for (const kind of ["remote", "sidecar"]) for (const mismatch of ["missing", "ex
 
 for (const query of ["\u00a0folder", "folder\u00a0", "\u3000folder", "folder\u3000"]) for (const kind of ["inline", "remote", "sidecar"]) test(`${kind} preserves non-ASCII boundaries in ${JSON.stringify(query)}`, async ({ page }) => {
   const hit = { path: ["found"], label: query }; const search = { protocol: "canopyx/1", type: "search", query, hits: [hit], total: 1, truncated: false };
-  const shard = [...query].slice(0, 3).map(c => /[a-z0-9]/.test(c) ? c : "_" + c.charCodeAt(0).toString(16).padStart(4, "0")).join("");
+  const index = searchIndex([hit, { path: ["plain"], label: "folder" }]);
   await page.route("https://canopyx.test/search?*", r => r.fulfill({ json: new URL(r.request().url()).searchParams.get("q") === query ? search : { ...search, hits: [], total: 0 } }));
   await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, items: [{ id: "found", label: query }] } }));
-  await page.route("https://canopyx.test/data/**", r => { const key = new URL(r.request().url()).pathname.slice(6, -3); const value = key === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", search: { prefixLength: 3, shards: { [shard]: 2 } } } : key === "r/0" ? { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, items: [{ id: "found", label: query }] } : { protocol: "canopyx/1", type: "searchShard", key: shard, entries: [hit, { path: ["plain"], label: "folder" }] };
+  await page.route("https://canopyx.test/data/**", r => { const key = new URL(r.request().url()).pathname.slice(6, -3); const value = key === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", search: index.search } : key === "r/0" ? { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, items: [{ id: "found", label: query }] } : index.docs[key];
     return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, key, value])});` }); });
   await open(page, { ...view, roots: kind === "inline" ? [{ id: "found", label: query }, { id: "plain", label: "folder" }] : undefined, source: kind === "inline" ? { kind } : kind === "remote" ? { kind, children: "/page?ref={ref}&cursor={cursor}", search: "/search?q={query}&limit={limit}" } : { kind, base: "/data/" }, search: { minLength: 2, maxResults: 20, placeholder: "Search" } });
   const direct = await page.evaluate(async q => (await document.querySelector(".cx-host").canopyx.search(q)).hits.map(h => h.path), query); expect(direct).toEqual([["found"]]);

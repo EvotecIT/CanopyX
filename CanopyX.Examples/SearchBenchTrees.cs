@@ -5,8 +5,8 @@ using CanopyX;
 namespace CanopyX.Examples;
 
 /// <summary>
-/// Deterministic trees for the search benchmark (<c>tests/browser/bench/search-benchmark.mjs</c>). Each one stresses a
-/// bundle's search index the way a real host does.
+/// Deterministic trees for the search benchmark (<c>tests/browser/bench/search-benchmark.mjs</c>) and the index size
+/// contract test in CanopyX.Tests. Each one stresses a bundle's search index the way a real host does.
 /// </summary>
 internal static class SearchBenchTrees {
     private static readonly string[] Regions = { "EMEA", "AMER", "APAC", "LATAM", "ANZ" };

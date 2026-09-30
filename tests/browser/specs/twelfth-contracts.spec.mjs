@@ -84,14 +84,14 @@ for (const mismatch of ["key", "count"]) test(`sidecar shard ${mismatch} mismatc
   const result = await page.evaluate(async mismatch => {
     const id = "shard-" + mismatch;
     const source = CanopyX.sources.sidecar({ id, source: { base: "/data/" } });
-    const hit = { path: ["found"], label: "Abacus" };
     CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: id,
-      root: "r/0", search: { shards: { ab: 1 } } }]);
-    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: mismatch === "key" ? "wrong" : "ab",
-      entries: mismatch === "count" ? [hit, hit] : [hit] }]);
+      root: "r/0", search: { entryCount: 1, entryFiles: [0], kinds: [], shards: { ab: 1 } } }]);
+    CanopyXSidecar.push([id, "s/k-ab", { protocol: "canopyx/1", type: "searchShard", key: mismatch === "key" ? "wrong" : "ab",
+      words: mismatch === "count" ? ["abacus", "abbey"] : ["abacus"], postings: mismatch === "count" ? [[0], [0]] : [[0]] }]);
     let error = null;
     try { await source.search("ab", 10); } catch (caught) { error = caught.message; }
-    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [hit] }]);
+    CanopyXSidecar.push([id, "s/k-ab", { protocol: "canopyx/1", type: "searchShard", key: "ab", words: ["abacus"], postings: [[0]] }]);
+    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries: [[-1, 0, "found", 0, "Abacus"]] }]);
     return { error, hits: (await source.search("ab", 10)).hits };
   }, mismatch);
   expect(result.error).toContain(mismatch === "key" ? "key" : "count");

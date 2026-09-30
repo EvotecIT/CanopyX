@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using CanopyX.Bundles;
+using CanopyX.Examples;
 using CanopyX.Html;
 using CanopyX.Tests.Protocol;
 
@@ -8,8 +9,8 @@ namespace CanopyX.Tests.Bundles;
 
 /// <summary>
 /// A bundle is read by the browser runtime from file:// by following references, so every node must be reachable
-/// from the manifest, every file must be a valid document, no file may blow the sidecar budget, and every search word
-/// must sit in the shard the runtime looks in (docs/data-protocol.md, "Sidecar").
+/// from the manifest, every file must be a valid document, no file may blow the sidecar budget, and the search index
+/// must lead from every word to its nodes the way the runtime reads it (docs/data-protocol.md, "Search Index").
 /// </summary>
 public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     [Theory]
@@ -24,7 +25,9 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
             var result = new CanopyBundleWriter().Write(view, directory);
             var files = new SidecarFiles(result.DataDirectory, view.Id);
             Assert.NotNull(files.Document("manifest")["search"]!["shards"]![key]);
-            Assert.Equal("one", files.Document("s/k-" + key)["entries"]![0]!["path"]![0]!.GetValue<string>());
+            var reader = new SearchIndexReader(files);
+            var folded = reader.Shard(key)["words"]![0]!.GetValue<string>();
+            Assert.Equal(new[] { "one" }, reader.Entry(Assert.Single(reader.Find(folded))).Path);
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
@@ -187,30 +190,102 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Fact]
-    public void Write_Search_FilesEveryWordWhereTheRuntimeLooksForIt() {
-        var shards = _bundle.Files.Document("manifest")["search"]!["shards"]!.AsObject().Select(p => p.Key).ToList();
-        var entries = shards.ToDictionary(key => key, key => _bundle.Files.Document("s/k-" + key)["entries"]!.AsArray()
-            .Select(entry => string.Join("\n", entry!["path"]!.AsArray().Select(id => id!.GetValue<string>()))).ToHashSet());
-        foreach (var shard in entries) {
-            Assert.True(shard.Value.Count <= 500, "Shard '" + shard.Key + "' has " + shard.Value.Count + " entries; the limit is 500.");
+    public void Write_Search_EntryFilesRebuildEveryNodeOnTheirOwn() {
+        var reader = new SearchIndexReader(_bundle.Files);
+        var expected = Flatten(_bundle.View.Roots).ToList();
+
+        Assert.Equal(expected.Count, reader.EntryCount);
+        Assert.Equal(_bundle.Result.SearchEntryFileCount, reader.EntryFiles.Count);
+        for (var number = 0; number < expected.Count; number++) {
+            var entry = reader.Entry(number);
+            Assert.Equal(expected[number].Path, string.Join("\n", entry.Path));
+            Assert.Equal(expected[number].Node.Label, entry.Label);
+            Assert.Equal(expected[number].Node.Kind, entry.Kind);
         }
+    }
 
-        // "archive" is in thousands of labels, so its shard is stored in parts.
-        Assert.Contains("archive-.2", shards);
-
-        var samples = TestTrees.Ids(_bundle.View.Roots).Where((id, index) => index % 37 == 0).ToList();
-        var nodes = Flatten(_bundle.View.Roots).ToDictionary(pair => pair.Node.Id);
-        foreach (var id in samples) {
-            var (node, path) = nodes[id];
-            if (node.Detail != null) {
-                continue;
+    [Fact]
+    public void Write_Search_FindsEveryNodeByEachWordEachPrefixAndItsWholeLabel() {
+        var reader = new SearchIndexReader(_bundle.Files);
+        var nodes = Flatten(_bundle.View.Roots).ToList();
+        var words = nodes.Select(node => SearchIndexReader.Words(node.Node.Label).ToList()).ToList();
+        for (var number = 0; number < nodes.Count; number += 37) {
+            var label = nodes[number].Node.Label;
+            foreach (var word in words[number]) {
+                for (var length = 1; length <= word.Length; length++) {
+                    Assert.True(reader.Find(word.Substring(0, length)).BinarySearch(number) >= 0,
+                        "'" + word.Substring(0, length) + "' does not find '" + label + "' in the shards the runtime loads.");
+                }
             }
 
-            foreach (var word in Words(node.Label).Where(w => w.Length >= 2)) {
-                var found = WithParts(shards, Lookup(shards, word)).Any(key => entries[key].Contains(path));
-                Assert.True(found, "Word '" + word + "' of '" + node.Label + "' is not in the shards the runtime loads.");
-            }
+            Assert.True(reader.Find(SearchIndexReader.LabelToken(label)).BinarySearch(number) >= 0, "The label token does not find '" + label + "'.");
         }
+
+        // And nothing else: a word finds exactly the nodes that have a word starting with it.
+        foreach (var query in new[] { "file", "fi", "7", "29", "budget", "\u0142\u00f3d\u017a", "\u03b1\u03b8", "share", "details", "zz" }) {
+            var expected = Enumerable.Range(0, nodes.Count).Where(number => words[number].Any(word => word.StartsWith(query, StringComparison.Ordinal))).ToList();
+            Assert.Equal(expected, reader.Find(query));
+        }
+    }
+
+    [Theory]
+    [InlineData("Budget 2026", "\0108bf3fa")]
+    [InlineData("  (Budget 2026). ", "\0108bf3fa")]
+    [InlineData("\u0141\u00d3D\u0179 office", "\07b6f5428")]
+    public void Write_Search_FilesEachLabelUnderItsToken(string label, string token) {
+        // The same vectors are pinned for the browser runtime in tests/browser/specs/search-index-contracts.spec.mjs.
+        var view = new CanopyView("token", "Token") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Roots.Add(new CanopyNode("one", label));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-token-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            var reader = new SearchIndexReader(new SidecarFiles(result.DataDirectory, view.Id));
+            var key = Assert.Single(reader.Shards.Keys, shard => shard.StartsWith("_0000", StringComparison.Ordinal));
+            Assert.Equal(token, Assert.Single(reader.Shard(key)["words"]!.AsArray())!.GetValue<string>());
+            Assert.Equal(new[] { 0 }, reader.Find(token));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_SearchWithoutNodes_DescribesAnEmptyIndex() {
+        var view = new CanopyView("empty", "Empty") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-empty-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            var files = new SidecarFiles(result.DataDirectory, view.Id);
+            ProtocolSchema.AssertValid(files.Documents["manifest"], "manifest of an empty index");
+            var reader = new SearchIndexReader(files);
+            Assert.Equal(0, reader.EntryCount);
+            Assert.Empty(reader.EntryFiles);
+            Assert.Empty(reader.Shards);
+            Assert.Equal(0, result.SearchIndexBytes);
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_Search_ShardsMatchTheManifestAndSplitAtTheLimit() {
+        var reader = new SearchIndexReader(_bundle.Files);
+        var written = _bundle.Files.Documents.Keys.Where(reference => reference.StartsWith("s/", StringComparison.Ordinal)).OrderBy(r => r, StringComparer.Ordinal);
+
+        Assert.Equal(reader.Shards.Keys.Select(key => "s/k-" + key).OrderBy(r => r, StringComparer.Ordinal), written);
+        Assert.Equal(reader.Shards.Count, _bundle.Result.SearchShardCount);
+        foreach (var shard in reader.Shards) {
+            var postings = reader.Shard(shard.Key)["postings"]!.AsArray().Sum(list => SearchIndexReader.Decode(list!.AsArray()).Count);
+            Assert.Equal(shard.Value, postings);
+            // A shard over the limit holds one word, which cannot split further, such as "archive" in thousands of labels.
+            Assert.True(postings <= 500 || SearchIndexReader.IsPart(shard.Key) || shard.Key.EndsWith('-'),
+                "Shard '" + shard.Key + "' has " + postings + " postings; the limit is 500.");
+        }
+
+        Assert.Contains("archive-", reader.Shards.Keys);
+        var index = _bundle.Files.Sizes.Where(file => file.Key.StartsWith("s/", StringComparison.Ordinal) || file.Key.StartsWith("e/", StringComparison.Ordinal)).Sum(file => file.Value);
+        Assert.Equal(index, _bundle.Result.SearchIndexBytes);
     }
 
     [Fact]
@@ -227,37 +302,63 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Fact]
-    public void Write_DeepTreeWithLongIds_KeepsEveryFileWithinTheDefaultBudget() {
-        var view = new CanopyView("deep", "Deep tree") { Search = new CanopySearchOptions() };
-        view.Columns.Add(new CanopyColumn("name", "Name"));
-        var root = new CanopyNode("projects", "projects");
-        var level = new List<CanopyNode> { root };
-        for (var depth = 1; depth <= 7; depth++) {
-            var next = new List<CanopyNode>();
-            foreach (var parent in level.Take(4)) {
-                for (var i = 0; i < 12; i++) {
-                    var child = new CanopyNode(parent.Id + "/department-" + depth + "-" + i + "-quarterly-report", "Quarterly report folder " + depth + " " + i + " docx archive");
-                    parent.Children.Add(child);
-                    next.Add(child);
-                }
-            }
-
-            level = next;
-        }
-
-        foreach (var parent in level.Take(3)) {
-            for (var i = 0; i < 4000; i++) {
-                parent.Children.Add(new CanopyNode(parent.Id + "/file-" + i + "-quarterly-report.docx", "Quarterly report " + i + " archive docx"));
-            }
-        }
-
-        view.Roots.Add(root);
+    public void Write_AdversarialDeepTree_KeepsTheIndexSmallerThanThePages() {
+        // 121,000 nodes on eight levels whose labels share four words and whose ids repeat the whole path: an index
+        // that copies each entry into one shard per word is twenty times the pages here.
+        var view = SearchBenchTrees.DeepTree();
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
         try {
             var result = new CanopyBundleWriter().Write(view, directory);
+            var pages = result.TotalBytes - result.SearchIndexBytes;
 
             Assert.True(result.LargestFileBytes <= 512 * 1024, "Largest sidecar file is " + result.LargestFileBytes + " bytes; the default budget is 512 KiB.");
-            Assert.True(result.SearchShardCount > 1);
+            Assert.True(result.SearchIndexBytes * 2 <= pages, "The search index is " + result.SearchIndexBytes + " bytes next to " + pages + " bytes of pages; it must stay under half.");
+            var reader = new SearchIndexReader(new SidecarFiles(result.DataDirectory, view.Id));
+            Assert.Equal(result.NodeCount - 1, reader.Find("quarterly").Count);
+            var hits = reader.Find("quarterly").Intersect(reader.Find("4019")).Select(reader.Entry).ToList();
+            Assert.Equal(30, hits.Count);
+            Assert.All(hits, hit => {
+                Assert.Equal("Quarterly report 4019 archive docx", hit.Label);
+                Assert.Equal(8, hit.Path.Count);
+                Assert.EndsWith("/file-4019-quarterly-report.docx", hit.Path[7]);
+                Assert.StartsWith(hit.Path[6] + "/", hit.Path[7]);
+            });
+        } finally {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_IdsThatShareEndsWithTheirParent_RoundTripThroughTheEntryTable() {
+        var view = new CanopyView("ids", "Ids") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        // Path-style ids share a prefix, distinguished names a suffix; the emoji ids differ inside a surrogate pair.
+        var domain = new CanopyNode("DC=corp,DC=example", "Domain one") { Kind = "domain" };
+        var unit = new CanopyNode("OU=Sales,DC=corp,DC=example", "Unit two") { Kind = "unit" };
+        unit.Children.Add(new CanopyNode("OU=Users,OU=Sales,DC=corp,DC=example", "Leaf three") { Kind = "unit" });
+        unit.Children.Add(new CanopyNode("DC=corp", "Shorter four"));
+        unit.Children.Add(new CanopyNode("OU=Sales,DC=corp,DC=exampleOU=Sales,DC=corp,DC=example", "Doubled five") { Kind = "domain" });
+        domain.Children.Add(unit);
+        var emoji = new CanopyNode("a\uD83D\uDE00z", "Emoji six");
+        emoji.Children.Add(new CanopyNode("a\uD83D\uDE01z", "Emoji seven"));
+        emoji.Children.Add(new CanopyNode("a\uD83D\uDE00", "Emoji eight"));
+        emoji.Children.Add(new CanopyNode("\uD83D\uDE00z", "Emoji nine"));
+        view.Roots.Add(domain);
+        view.Roots.Add(emoji);
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            var reader = new SearchIndexReader(new SidecarFiles(result.DataDirectory, view.Id));
+            var expected = Flatten(view.Roots).ToList();
+
+            Assert.Equal(expected.Count, reader.EntryCount);
+            for (var number = 0; number < expected.Count; number++) {
+                Assert.Equal(expected[number].Path, string.Join("\n", reader.Entry(number).Path));
+                Assert.Equal(expected[number].Node.Kind, reader.Entry(number).Kind);
+            }
+
+            // A pair split between the shared and the written part would reach the file as a replacement character.
+            Assert.DoesNotContain('\uFFFD', File.ReadAllText(Path.Combine(result.DataDirectory, "e", "0.js")));
         } finally {
             Directory.Delete(directory, recursive: true);
         }
@@ -290,62 +391,6 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
         var error = Assert.Throws<InvalidOperationException>(() => new CanopyBundleWriter().Write(view, Path.GetTempPath()));
         Assert.Contains("needs the complete tree", error.Message);
-    }
-
-    private static IEnumerable<string> WithParts(List<string> keys, IEnumerable<string> found) =>
-        found.Concat(keys.Where(k => found.Any(baseKey => k.StartsWith(baseKey + ".", StringComparison.Ordinal)))).Distinct();
-
-    /// <summary>The runtime's shard lookup from docs/data-protocol.md, for one folded query word.</summary>
-    private static IEnumerable<string> Lookup(List<string> keys, string word) {
-        for (var length = 2; length <= word.Length; length++) {
-            var key = Key(word.Substring(0, length));
-            if (keys.Contains(key)) {
-                return new[] { key };
-            }
-
-            var deeper = keys.Where(k => k.Length > key.Length && k.StartsWith(key, StringComparison.Ordinal) && k[key.Length] != '.').ToList();
-            if (deeper.Count == 0) {
-                return Array.Empty<string>();
-            }
-
-            if (length == word.Length) {
-                return deeper;
-            }
-        }
-
-        return Array.Empty<string>();
-    }
-
-    private static string Key(string prefix) {
-        var key = new StringBuilder();
-        foreach (var unit in prefix) {
-            key.Append((unit >= 'a' && unit <= 'z') || (unit >= '0' && unit <= '9') ? unit.ToString() : "_" + ((int)unit).ToString("x4", CultureInfo.InvariantCulture));
-        }
-
-        return key.ToString();
-    }
-
-    /// <summary>Folding from the table in docs/data-protocol.md, written out independently of the writer.</summary>
-    private static IEnumerable<string> Words(string label) {
-        var folded = new StringBuilder();
-        foreach (var unit in label) {
-            folded.Append(unit < 128 && !char.IsAsciiLetterOrDigit(unit) ? ' ' : (char)FoldBySpec(unit));
-        }
-
-        return folded.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries).Distinct();
-    }
-
-    private static int FoldBySpec(int c) {
-        var accented = new Dictionary<int, int> { [0x0386] = 0x03AC, [0x0388] = 0x03AD, [0x0389] = 0x03AE, [0x038A] = 0x03AF, [0x038C] = 0x03CC, [0x038E] = 0x03CD, [0x038F] = 0x03CE };
-        var evenCapitals = (c >= 0x0100 && c <= 0x0137 && c != 0x0130 && c != 0x0131) || (c >= 0x014A && c <= 0x0177);
-        var oddCapitals = (c >= 0x0139 && c <= 0x0148) || (c >= 0x0179 && c <= 0x017E);
-        return c >= 'A' && c <= 'Z' ? c + 32
-            : c >= 0xC0 && c <= 0xDE && c != 0xD7 ? c + 32
-            : evenCapitals && c % 2 == 0 || oddCapitals && c % 2 == 1 ? c + 1
-            : c == 0x0178 ? 0x00FF
-            : (c >= 0x0391 && c <= 0x03A9 && c != 0x03A2) || (c >= 0x0410 && c <= 0x042F) ? c + 32
-            : c >= 0x0400 && c <= 0x040F ? c + 0x50
-            : accented.TryGetValue(c, out var small) ? small : c;
     }
 
     [Theory]

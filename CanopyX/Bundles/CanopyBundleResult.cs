@@ -30,6 +30,12 @@ public sealed class CanopyBundleResult {
     /// <summary>Gets the number of page files written.</summary>
     public int PageCount { get; internal set; }
 
-    /// <summary>Gets the number of search shards written; zero when the view has no search.</summary>
+    /// <summary>Gets the number of search shard files written; zero when the view has no search.</summary>
     public int SearchShardCount { get; internal set; }
+
+    /// <summary>Gets the number of search entry files written; zero when the view has no search.</summary>
+    public int SearchEntryFileCount { get; internal set; }
+
+    /// <summary>Gets the total size of the search entry and shard files, in bytes; zero when the view has no search.</summary>
+    public long SearchIndexBytes { get; internal set; }
 }

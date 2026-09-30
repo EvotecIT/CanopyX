@@ -95,6 +95,33 @@ internal static class CanopySearchFolding {
         }
     }
 
+    /// <summary>The first code unit of every label token. It is a separator, so no word can contain it.</summary>
+    internal const char LabelTokenMark = '\0';
+
+    /// <summary>
+    /// Returns the label token the index files a label under besides its words: <see cref="LabelTokenMark"/> followed
+    /// by eight lowercase hex digits of the 32-bit FNV-1a hash of the label's folded UTF-16 code units, without the
+    /// separators at its start and end. The runtime looks up the token of a query to find the labels equal to it.
+    /// </summary>
+    internal static string LabelToken(string label) {
+        var start = 0;
+        var end = label.Length;
+        while (start < end && IsSeparator(label[start])) {
+            start++;
+        }
+
+        while (end > start && IsSeparator(label[end - 1])) {
+            end--;
+        }
+
+        var hash = 2166136261u;
+        for (var index = start; index < end; index++) {
+            hash = unchecked((hash ^ Fold(label[index])) * 16777619u);
+        }
+
+        return LabelTokenMark + hash.ToString("x8", CultureInfo.InvariantCulture);
+    }
+
     /// <summary>Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits.</summary>
     internal static string ShardKey(string prefix) {
         var key = new StringBuilder(prefix.Length);

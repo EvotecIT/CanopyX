@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { nextFrames, row, viewPage } from "./support.mjs";
+import { nextFrames, row, searchIndex, viewPage } from "./support.mjs";
 
 const view = (roots = []) => ({ protocol: "canopyx/1", type: "view", id: "lifecycle", label: "Lifecycle", rowHeight: 28,
   pageSize: 100, selection: "single", columns: [{ id: "name", title: "Name", width: 300, kind: "text" }],
@@ -178,17 +178,16 @@ test("revealing a child already visible under a matching parent retains filters"
   await expect(row(page, "unrelated")).toHaveCount(0);
 });
 
-for (const invalidFile of ["manifest", "shard"]) {
+for (const invalidFile of ["manifest", "s/k-ab", "e/0"]) {
   test(`sidecar retries recover after invalid ${invalidFile} content is corrected`, async ({ page }) => {
     await open(page, view());
-    const attempts = { manifest: 0, shard: 0 };
+    const index = searchIndex([{ path: ["ab"], label: "Abacus" }]);
+    const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: "retry", root: "r/0", search: index.search }, ...index.docs };
+    let attempts = 0;
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice(6, -3);
-      const file = ref === "manifest" ? "manifest" : "shard";
-      const bad = file === invalidFile && ++attempts[file] === 1;
-      const doc = bad ? { protocol: "wrong", type: file } : file === "manifest"
-        ? { protocol: "canopyx/1", type: "manifest", view: "retry", root: "r/0", search: { shards: { ab: 1 } } }
-        : { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [{ path: ["ab"], label: "Abacus" }] };
+      const bad = ref === invalidFile && ++attempts === 1;
+      const doc = bad ? { protocol: "wrong", type: docs[ref].type } : docs[ref];
       return route.fulfill({ contentType: "application/javascript", body: `CanopyXSidecar.push(${JSON.stringify(["retry", ref, doc])});` });
     });
     const result = await page.evaluate(async () => {
@@ -199,6 +198,6 @@ for (const invalidFile of ["manifest", "shard"]) {
     });
     expect(result.failed).toBe(true);
     expect(result.hits[0].label).toBe("Abacus");
-    expect(attempts[invalidFile]).toBe(2);
+    expect(attempts).toBe(2);
   });
 }

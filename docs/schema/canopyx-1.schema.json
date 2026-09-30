@@ -9,7 +9,8 @@
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
     { "$ref": "#/$defs/manifest" },
-    { "$ref": "#/$defs/searchShard" }
+    { "$ref": "#/$defs/searchShard" },
+    { "$ref": "#/$defs/searchEntries" }
   ],
   "$defs": {
     "protocol": { "const": "canopyx/1" },
@@ -321,28 +322,94 @@
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "search": {
           "type": "object",
-          "required": ["shards"],
+          "required": ["entryCount", "entryFiles", "kinds", "shards"],
           "additionalProperties": false,
           "properties": {
-            "prefix": { "enum": ["", "k-"] },
+            "entryCount": { "$ref": "#/$defs/count" },
+            "entryFiles": {
+              "description": "The number of the first entry in each e/<n> file, in file order.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/count" }
+            },
+            "kinds": { "type": "array", "items": { "type": "string" } },
             "shards": {
+              "description": "Each shard file's key and the number of entries its posting lists refer to.",
               "type": "object",
-              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
+              "propertyNames": { "$ref": "#/$defs/shardKey" },
               "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
             }
           }
         }
       }
     },
+    "count": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+    "shardKey": {
+      "description": "A prefix of at least two encoded code units, with a trailing - for the word exactly that long, or one encoded code unit and - for a one-unit word; numbered parts append .2, .3, and so on.",
+      "type": "string",
+      "pattern": "^(?:(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?|(?:[a-z0-9]|_[0-9a-f]{4})-)(\\.(?:[2-9]|[1-9][0-9]+))?$"
+    },
     "searchShard": {
       "type": "object",
-      "required": ["protocol", "type", "key", "entries"],
+      "required": ["protocol", "type", "key", "words", "postings"],
       "additionalProperties": false,
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "searchShard" },
-        "key": { "type": "string", "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
-        "entries": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
+        "key": { "$ref": "#/$defs/shardKey" },
+        "words": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "postings": {
+          "description": "One list per word. A list starts with an entry number; after it a positive value is the gap to the next entry and a negative value -n stands for the n entries that follow without a gap.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "prefixItems": [{ "$ref": "#/$defs/count" }],
+            "items": { "type": "integer", "minimum": -2147483647, "maximum": 2147483647, "not": { "const": 0 } }
+          }
+        }
+      }
+    },
+    "searchEntry": {
+      "description": "[parent entry number or -1, leading code units shared with the parent id, id part, trailing code units shared with the parent id, label, optional kind number].",
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 6,
+      "prefixItems": [
+        { "type": "integer", "minimum": -1, "maximum": 2147483647 },
+        { "$ref": "#/$defs/count" },
+        { "type": "string" },
+        { "$ref": "#/$defs/count" },
+        { "type": "string" },
+        { "$ref": "#/$defs/count" }
+      ]
+    },
+    "searchEntries": {
+      "type": "object",
+      "required": ["protocol", "type", "first", "stem", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "searchEntries" },
+        "first": { "$ref": "#/$defs/count" },
+        "stem": {
+          "description": "The ancestors of the first entry from the top level down, each as its entry number followed by the fields of an entry.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 6,
+            "maxItems": 7,
+            "prefixItems": [
+              { "$ref": "#/$defs/count" },
+              { "type": "integer", "minimum": -1, "maximum": 2147483647 },
+              { "$ref": "#/$defs/count" },
+              { "type": "string" },
+              { "$ref": "#/$defs/count" },
+              { "type": "string" },
+              { "$ref": "#/$defs/count" }
+            ]
+          }
+        },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/searchEntry" } }
       }
     }
   }

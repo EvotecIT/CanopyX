@@ -8,15 +8,41 @@ namespace CanopyX.Tests.Protocol;
 /// </summary>
 public sealed class ProtocolSchemaTests {
     [Theory]
-    [InlineData("")]
-    [InlineData("k-")]
-    public void Schema_ManifestAcceptsBothSearchShardLayouts(string prefix) {
-        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"shards\":{\"ab\":1}}}")!;
-        Assert.True(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
-        doc["search"]!["prefix"] = prefix;
-        Assert.True(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
-        doc["search"]!["prefix"] = "other";
+    [InlineData("entryCount")]
+    [InlineData("entryFiles")]
+    [InlineData("kinds")]
+    [InlineData("shards")]
+    public void Schema_ManifestSearch_NeedsEveryPartOfTheIndexDescription(string field) {
+        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[\"folder\"],\"shards\":{\"ab\":1}}}")!;
+        ProtocolSchema.AssertValid(doc.ToJsonString(), "manifest with a search index");
+        doc["search"]!.AsObject().Remove(field);
         Assert.False(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+    }
+
+    [Theory]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[0,2,-3]]}", true)]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[]]}", false)]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[-1]]}", false)]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[3,0]]}", false)]
+    [InlineData("{\"words\":[\"\"],\"postings\":[[3]]}", false)]
+    [InlineData("{\"words\":[\"ab\"]}", false)]
+    public void Schema_SearchShard_DescribesWordsAndPostingLists(string body, bool valid) {
+        var doc = JsonNode.Parse(body)!.AsObject();
+        doc["protocol"] = "canopyx/1"; doc["type"] = "searchShard"; doc["key"] = "ab";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+    }
+
+    [Theory]
+    [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",1]],\"entries\":[[0,4,\"/a\",0,\"A\"],[4,0,\"x\",2,\"B\",0]]}", true)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[-2,0,\"a\",0,\"A\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,0,\"a\",0,\"A\",\"folder\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[[-1,0,\"root\",0,\"Root\"]],\"entries\":[]}", false)]
+    [InlineData("{\"stem\":[],\"entries\":[]}", false)]
+    public void Schema_SearchEntries_DescribesEntriesAndTheirStem(string body, bool valid) {
+        var doc = JsonNode.Parse(body)!.AsObject();
+        doc["protocol"] = "canopyx/1"; doc["type"] = "searchEntries";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
     }
 
     [Theory]
