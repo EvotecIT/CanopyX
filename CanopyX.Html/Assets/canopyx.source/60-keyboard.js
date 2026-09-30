@@ -2,15 +2,22 @@
   // ---------- tree grid: keyboard ----------
   // Row-focus model: Up/Down move, Right expands then enters, Left collapses then goes to the parent, Home/End,
   // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
-  // printable keys run type-ahead on labels. Tab leaves the grid.
+  // printable keys run type-ahead on labels. Tab leaves the grid. Right on a row that cannot open further, and F2 on
+  // any row, move into the row's cells when one holds a control (see 62-cell-focus.js).
   function hostControl(target) {
     const row = target.closest(".cx-row");
     const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
-    return control && row && row !== control && row.contains(control) ? control : null;
+    // A cell or a detail body that cell navigation made focusable is not a control of the host's.
+    return control && row && row !== control && row.contains(control) && !control.matches(".cx-cell,.cx-detail-body") ? control : null;
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (this.head.contains(e.target) || hostControl(e.target)) {
+      if (this.head.contains(e.target)) {
+        return;
+      }
+      // Focus in a cell, on the cell or on a control in it: cell navigation, or the control's own keys.
+      const rowEl = e.target.closest(".cx-row");
+      if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -32,13 +39,17 @@
         case "Home": target = this.rows[0]; break;
         case "End": target = this.rows[last]; break;
         case "ArrowRight":
-          if (!w.status && this.expandable(w)) {
-            if (!w._open) {
-              this.toggle(w, true);
-            } else if (this.rows[i + 1] && this.rows[i + 1].parent === w) {
-              target = this.rows[i + 1];
-            }
+          if (!w.status && this.expandable(w) && !w._open) {
+            this.toggle(w, true);
+          } else if (!w.status && this.expandable(w) && this.rows[i + 1] && this.rows[i + 1].parent === w) {
+            target = this.rows[i + 1];
+          } else if (!w.status) {
+            // Nothing to open or enter below: the row's cells, when one of them holds a control.
+            this.enterCells(w);
           }
+          break;
+        case "F2":
+          if (!w.status) this.enterCells(w);
           break;
         case "ArrowLeft":
           if (!w.status && w._open) {

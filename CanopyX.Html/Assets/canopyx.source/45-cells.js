@@ -120,6 +120,8 @@
       cell.style.paddingLeft = left;
       cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
+      // As in node rows, the controls of the detail are reached with cell navigation, not with Tab.
+      quietControls(cell);
       if (w.auto) this.measureNeeded = true;
     },
 
@@ -215,7 +217,10 @@
           slot.content = fresh;
         }
         slot.badges = [];
-        if (render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true) {
+        const drawn = render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+        // The grid is one Tab stop; the host's controls in the cell are reached with cell navigation.
+        quietControls(slot.content);
+        if (drawn) {
           return;
         }
         slot.content.appendChild(slot.textSpan);

@@ -40,7 +40,7 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
 - [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
 - [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
-- [ ] A screen-reader pass (NVDA and Narrator) over the tree grid, including DOM order during scrolling. Automated checks cover roles, states, focus, and order, not what a reader announces.
+- [ ] A screen-reader pass (NVDA and Narrator) over the tree grid, including DOM order during scrolling and cell navigation: run `docs/screen-reader-test.md`. Automated checks cover roles, states, focus, and order, not what a reader announces.
 
 Gate:
 
@@ -75,7 +75,6 @@ Tree grid follow-ups without a milestone yet, each with the consumer that will p
 
 - Ghost rows for "as of" views: GPO explorer as-of view, once `rp/gpo-collect` stores versioned snapshots.
 - Export of the visible tree to Excel: GPO explorer fallback. The export runs in the host through OfficeIMO from the same rows `visibleRows()` returns; CanopyX only supplies the rows.
-- Cell navigation with Left/Right inside a row (the cell-focus half of the ARIA tree grid pattern), and keyboard stops inside detail rows: the accessibility review of the GPO explorer.
 - Sticky parent rows and filter-match highlighting: the GPO explorer scope tree, if the design packet asks for them.
 - Location hints on search hits (the offset of each path segment among its siblings), so expanding to a child deep in a long list loads the pages it needs at once instead of one after another: the GPO explorer at L, with about 1,000 GPOs per domain. The field is optional, so it fits in `canopyx/1`.
 - Switching between host-supplied groupings in the toolbar (group by domain, change date, owner, or status): the GPO explorer list view, if the design packet keeps it. Each grouping stays a tree the host builds; CanopyX only switches between them.

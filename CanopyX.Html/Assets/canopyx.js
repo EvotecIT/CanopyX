@@ -1450,6 +1450,7 @@
         return;
       }
       const grid = this.grid;
+      const held = this.heldCell();
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
       const n = this.rows.length;
@@ -1531,6 +1532,7 @@
       }
       this.window = { first: first, last: last };
       this.keepDomOrder(first, last);
+      if (held) this.restoreCell(held);
     }
   });
 
@@ -1784,6 +1786,7 @@
       cell.style.paddingLeft = left;
       cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
+      quietControls(cell);
       if (w.auto) this.measureNeeded = true;
     },
 
@@ -1872,7 +1875,9 @@
           slot.content = fresh;
         }
         slot.badges = [];
-        if (render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true) {
+        const drawn = render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+        quietControls(slot.content);
+        if (drawn) {
           return;
         }
         slot.content.appendChild(slot.textSpan);
@@ -1988,6 +1993,7 @@
   Object.assign(TreeGrid.prototype, {
     renderDetail(node, element, plainHtml = false) {
       const body = element.appendChild(h("div", "cx-detail-body"));
+      if (!plainHtml) body.setAttribute("tabindex", "-1");
       if (this.opts.renderDetail && this.opts.renderDetail(node, body) === true) {
         return;
       }
@@ -2095,11 +2101,15 @@
   function hostControl(target) {
     const row = target.closest(".cx-row");
     const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
-    return control && row && row !== control && row.contains(control) ? control : null;
+    return control && row && row !== control && row.contains(control) && !control.matches(".cx-cell,.cx-detail-body") ? control : null;
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (this.head.contains(e.target) || hostControl(e.target)) {
+      if (this.head.contains(e.target)) {
+        return;
+      }
+      const rowEl = e.target.closest(".cx-row");
+      if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -2120,13 +2130,16 @@
         case "Home": target = this.rows[0]; break;
         case "End": target = this.rows[last]; break;
         case "ArrowRight":
-          if (!w.status && this.expandable(w)) {
-            if (!w._open) {
-              this.toggle(w, true);
-            } else if (this.rows[i + 1] && this.rows[i + 1].parent === w) {
-              target = this.rows[i + 1];
-            }
+          if (!w.status && this.expandable(w) && !w._open) {
+            this.toggle(w, true);
+          } else if (!w.status && this.expandable(w) && this.rows[i + 1] && this.rows[i + 1].parent === w) {
+            target = this.rows[i + 1];
+          } else if (!w.status) {
+            this.enterCells(w);
           }
+          break;
+        case "F2":
+          if (!w.status) this.enterCells(w);
           break;
         case "ArrowLeft":
           if (!w.status && w._open) {
@@ -2200,6 +2213,175 @@
 
     announce(message) {
       setText(this.live, message);
+    }
+  });
+
+  const CELL_CONTROLS = "a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])," +
+    "[role=button],[role=checkbox],[role=radio],[role=link],[role=switch],[role=tab],[role=menuitem],[role=textbox],[role=combobox]";
+  const OWN_ARROWS = ".cx-detail-body,textarea,select,[contenteditable]:not([contenteditable=false]),[aria-activedescendant]," +
+    "[role=textbox],[role=combobox],[role=spinbutton],[role=slider],[role=radio],[role=tab],[role=menuitem],[role=listbox],[role=tree],[role=grid]," +
+    "input:not([type=button]):not([type=checkbox]):not([type=submit]):not([type=reset]):not([type=image]):not([type=file]):not([type=color])";
+
+  function reachable(control) {
+    return !control.matches(":disabled") && !control.closest("[inert],[aria-hidden=true]") &&
+      (control.checkVisibility ? control.checkVisibility({ visibilityProperty: true }) : control.getClientRects().length > 0);
+  }
+
+  function cellControls(cell) {
+    const controls = Array.prototype.filter.call(cell.querySelectorAll(CELL_CONTROLS), (control) =>
+      !control.classList.contains("cx-detail-body") && reachable(control));
+    const body = cell.querySelector(":scope > .cx-detail-body");
+    if (body && (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)) controls.push(body);
+    return controls;
+  }
+
+  function quietControls(cell) {
+    cell.querySelectorAll(CELL_CONTROLS).forEach((control) => {
+      if (control.tabIndex >= 0) control.tabIndex = -1;
+    });
+  }
+
+  Object.assign(TreeGrid.prototype, {
+    rowCells(rowEl) {
+      return rowEl && rowEl._cells && rowEl._kind !== "status" ? rowEl._cells.map((slot) => slot.cell) : [];
+    },
+
+    enterCells(w) {
+      const cells = this.rowCells(this.rendered.get(w));
+      const index = cells.findIndex((cell) => cellControls(cell).length > 0);
+      if (index < 0) return false;
+      this.focusCell(w, index, 0);
+      return true;
+    },
+
+    focusCell(w, index, control, enter) {
+      this.setFocus(w, false);
+      const cells = this.rowCells(this.rendered.get(w));
+      if (!cells.length) {
+        this.setFocus(w, true);
+        return;
+      }
+      const cell = cells[Math.max(0, Math.min(cells.length - 1, index))];
+      const controls = cellControls(cell);
+      let target = cell;
+      if (typeof control === "number" && controls.length) target = controls[control < 0 ? controls.length - 1 : Math.min(control, controls.length - 1)];
+      else if (control === undefined && controls.length === 1) target = controls[0];
+      let parked = -1;
+      if (target !== cell && !enter && !target.classList.contains("cx-detail-body") && target.matches(OWN_ARROWS)) {
+        parked = controls.indexOf(target);
+        target = cell;
+      }
+      cell._cxAt = parked;
+      if (target === cell) cell.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+      this.revealInRow(cell, target, cells[0]);
+    },
+
+    revealInRow(cell, target, treeCell) {
+      const grid = this.grid;
+      if (cell.parentNode && cell.parentNode._kind === "node") {
+        const pinned = cell !== treeCell && this.host.classList.contains("cx-pin-tree") ? treeCell.offsetWidth : 0;
+        const left = grid.getBoundingClientRect().left + grid.clientLeft;
+        const box = cell.getBoundingClientRect();
+        if (box.left < left + pinned) grid.scrollLeft -= left + pinned - box.left;
+        else if (box.right > left + grid.clientWidth) grid.scrollLeft += Math.min(box.right - left - grid.clientWidth, box.left - left - pinned);
+      }
+      const body = target.closest(".cx-detail-body");
+      if (body && body !== target) {
+        const outer = body.getBoundingClientRect();
+        const inner = target.getBoundingClientRect();
+        if (inner.top < outer.top) body.scrollTop -= outer.top - inner.top;
+        else if (inner.bottom > outer.bottom) body.scrollTop += Math.min(inner.bottom - outer.bottom, inner.top - outer.top);
+      }
+      const frame = grid.getBoundingClientRect();
+      const top = frame.top + grid.clientTop + this.head.offsetHeight;
+      const bottom = frame.top + grid.clientTop + grid.clientHeight;
+      const box = target.getBoundingClientRect();
+      if (box.top < top) grid.scrollTop -= top - box.top;
+      else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+    },
+
+    heldCell() {
+      const active = document.activeElement;
+      const rowEl = active && active.closest ? active.closest(".cx-row") : null;
+      if (!rowEl || rowEl === active || !rowEl._w || !this.canvas.contains(rowEl)) return null;
+      const cells = this.rowCells(rowEl);
+      const index = cells.findIndex((cell) => cell.contains(active));
+      if (index < 0) return null;
+      return { w: rowEl._w, index: index, control: active === cells[index] ? -1 : Array.prototype.indexOf.call(cells[index].querySelectorAll(CELL_CONTROLS), active) };
+    },
+
+    restoreCell(held) {
+      const active = document.activeElement;
+      if (!held || this.destroyed || (active && active !== document.body) || !this.rendered.has(held.w)) return;
+      const cell = this.rowCells(this.rendered.get(held.w))[held.index];
+      if (!cell) return;
+      const candidate = held.control >= 0 ? cell.querySelectorAll(CELL_CONTROLS)[held.control] : null;
+      const target = candidate && reachable(candidate) ? candidate : cell;
+      if (target === cell) cell.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    },
+
+    onCellKey(e) {
+      const rowEl = e.target.closest(".cx-row");
+      const w = rowEl && rowEl._w;
+      const cells = this.rowCells(rowEl);
+      const index = cells.findIndex((cell) => cell.contains(e.target));
+      if (!w || w.status || index < 0 || e.isComposing || e.defaultPrevented) return index >= 0;
+      const cell = cells[index];
+      const control = e.target !== cell ? e.target : null;
+      if (control && control.matches(OWN_ARROWS)) {
+        if (e.key !== "Escape") return true;
+        const from = cellControls(cell).indexOf(control);
+        this.focusCell(w, index, null);
+        cell._cxAt = from;
+        e.preventDefault();
+        e.stopPropagation();
+        return true;
+      }
+      const controls = cellControls(cell);
+      const at = control ? controls.indexOf(control) : cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
+      const detail = rowEl._kind === "detail";
+      switch (e.key) {
+        case "ArrowRight":
+          if (at >= 0 && at < controls.length - 1) this.focusCell(w, index, at + 1);
+          else if (!detail && index < cells.length - 1) this.focusCell(w, index + 1, 0);
+          break;
+        case "ArrowLeft":
+          if (at > 0) this.focusCell(w, index, at - 1);
+          else if (!detail && index > 0) this.focusCell(w, index - 1, -1);
+          else this.setFocus(w, true);
+          break;
+        case "Home":
+          this.focusCell(w, 0, 0);
+          break;
+        case "End":
+          this.focusCell(w, cells.length - 1, -1);
+          break;
+        case "ArrowUp":
+        case "ArrowDown": {
+          const next = this.rows[this.indexOf(w) + (e.key === "ArrowUp" ? -1 : 1)];
+          if (!next) break;
+          if (!detail && !next.status && !next.h.detail) this.focusCell(next, index);
+          else this.setFocus(next, true);
+          break;
+        }
+        case "Escape":
+        case "F2":
+          this.setFocus(w, true);
+          break;
+        case "Enter":
+        case " ":
+          if (control) return true;
+          if (e.key === "Enter" && controls.length) this.focusCell(w, index, Math.max(0, at), true);
+          else this.activate(w, e.key === "Enter");
+          break;
+        default:
+          return !!control;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return true;
     }
   });
   Object.assign(TreeGrid.prototype, {

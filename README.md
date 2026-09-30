@@ -1,6 +1,6 @@
 # CanopyX
 
-CanopyX renders large interactive data views from .NET without runtime dependencies. The first view is a virtualized tree grid: a tree with columns, lazy children loaded in pages, search that expands to any node, detail rows, and ARIA tree grid semantics with a row-focus keyboard model. A data grid and a 2D matrix view are planned (see [TODO.md](TODO.md)).
+CanopyX renders large interactive data views from .NET without runtime dependencies. The first view is a virtualized tree grid: a tree with columns, lazy children loaded in pages, search that expands to any node, detail rows, and ARIA tree grid semantics with a row-focus keyboard model and cell navigation for rows whose cells hold controls. A data grid and a 2D matrix view are planned (see [TODO.md](TODO.md)).
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
 

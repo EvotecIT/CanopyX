@@ -31,6 +31,8 @@
      */
     renderDetail(node, element, plainHtml = false) {
       const body = element.appendChild(h("div", "cx-detail-body"));
+      // A body that scrolls would be a Tab stop of its own; cell navigation reaches it instead.
+      if (!plainHtml) body.setAttribute("tabindex", "-1");
       if (this.opts.renderDetail && this.opts.renderDetail(node, body) === true) {
         return;
       }

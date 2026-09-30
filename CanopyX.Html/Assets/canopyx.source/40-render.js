@@ -192,6 +192,8 @@
         return;
       }
       const grid = this.grid;
+      // A repaint can replace the cell that holds focus (host-drawn cells and details are rebuilt); focus goes back.
+      const held = this.heldCell();
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
       const n = this.rows.length;
@@ -278,5 +280,6 @@
       this.window = { first: first, last: last };
       // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
+      if (held) this.restoreCell(held);
     }
   });
