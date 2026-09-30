@@ -28,6 +28,43 @@ Every document on the wire carries `"protocol": "canopyx/1"`. The runtime reject
 
 `CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints. The live browser view can render host-trusted HTML details; the built-in print outline encodes that markup as text. A host `renderDetail` callback can supply its own formatted print content. The script-free C# fallback also preserves arbitrary HTML details as text.
 
+### Theming the Outline
+
+The outline is themed when it is rendered, not by script. `CanopyStaticHtmlOptions.Theme` holds the same base colours the runtime is themed with (surface, text, accent, line, and the four coloured tones), and the renderer mixes muted text, header and detail backgrounds, strong lines, and badge tints from them with the formulas of `canopyx.css`. The table, its caption, and the note in its last row carry the surface, so a dark outline is complete on a white page. The host chooses the colours by where the outline goes:
+
+| Where the outline goes | What the host sets | What is written |
+| --- | --- | --- |
+| Email, Word, print, a light page | nothing (the light theme) | literal light colours |
+| A dark document | `Theme = CanopyStaticTheme.Dark()` | literal dark colours |
+| A document with a palette of its own | the colours its design tokens resolve to, on `Theme`, and its tone colours in `ToneColors` | those literals |
+| A page whose theme is decided in the browser | `UseThemeVariables = true`, plus any of the above for the fallback | each literal, then the same property as `var(--cx-…, literal)` |
+
+A host passes token colours in one of two forms. Resolved: it reads the hex values of its tokens for the theme it renders (for example surface `#10141a`, text `#e6edf3`, and the ink of each status) and assigns them to `Theme` and `ToneColors`; colours are `#` plus three or six hex digits, because they go into inline styles. Live: it sets `UseThemeVariables` and lets its stylesheet define the runtime's custom properties for an element around the outline, exactly as it does for the grid:
+
+```css
+/* One rule themes the grid and the outline from the host's tokens, in whichever theme the page is in. */
+.report .cx-host.cx-host, .report .report-outline {
+  --cx-surface: var(--token-surface-card); --cx-text: var(--token-text); --cx-accent: var(--token-accent); --cx-line: var(--token-line);
+  --cx-tone-critical: var(--token-critical-ink); --cx-tone-critical-bg: var(--token-critical-tint);
+}
+```
+
+```html
+<noscript><div class="report-outline"><!-- CanopyStaticHtml.Render(view, options) --></div></noscript>
+```
+
+The element around the outline is the host's own, so nothing in `canopyx.css` competes with the rule. (On the grid, the palettes of `canopyx.css` are selected by `data-cx-theme` and weigh as much as one class plus one attribute; a host rule outweighs them with a repeated class, as above, whatever the order of the stylesheets.) `ToneColors` are literals of one theme, so a page that can turn dark defines `--cx-tone-<name>` for its own tones as well.
+
+A page that uses only the CanopyX stylesheet wraps the outline in an element with the class `cx-static` instead: `canopyx.css` gives it the light or dark palette by its `data-cx-theme` (`light`, `dark`, or `auto` for the reader's system preference), and the light palette for print.
+
+```html
+<div class="cx-static" data-cx-theme="auto"><!-- CanopyStaticHtml.Render(view, options) --></div>
+```
+
+Every declaration with a custom property comes after the literal for the same property: a client that does not know custom properties keeps the literal, and so does a page that defines none. A browser that knows custom properties but not `color-mix()` (before 2023) loses the mixed colours only: muted text and tints fall back to the inherited colour and no background. Literal-only output stays the default because some mail clients handle unknown declarations poorly.
+
+Compared with the outline before themes: the table now paints its surface (white in the light theme) instead of showing the page through; the note is the table's last row instead of a paragraph after it; and muted text, strong lines, and badge tints are mixed from the base colours as in the runtime, which moves them a few shades from the literals used before.
+
 ## Browser Runtime
 
 The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`. The first part opens a single closure and the last part closes it, so parts share private helpers without globals.

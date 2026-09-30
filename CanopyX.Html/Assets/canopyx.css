@@ -1,9 +1,10 @@
 /*
  * CanopyX theme. Hosts theme a view by setting the base colours (--cx-surface, --cx-text, --cx-accent, --cx-line and
  * one colour per tone); hover, selection, alternate rows, and muted text are derived with color-mix(). A host adds
- * tones of its own by defining --cx-tone-<name> and, for badges, --cx-tone-<name>-bg.
+ * tones of its own by defining --cx-tone-<name> and, for badges, --cx-tone-<name>-bg. A static outline written with
+ * theme variables reads the same base colours: inside a .cx-static element it takes these palettes without script.
  */
-.cx-host {
+.cx-host, .cx-static {
   --cx-surface: #ffffff;
   --cx-text: #1f2328;
   --cx-accent: #0a58ca;
@@ -15,7 +16,7 @@
   color-scheme: light;
 }
 
-.cx-host[data-cx-theme="dark"] {
+.cx-host[data-cx-theme="dark"], .cx-static[data-cx-theme="dark"] {
   color-scheme: dark;
   --cx-surface: #0d1117;
   --cx-text: #e6edf3;
@@ -28,7 +29,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .cx-host[data-cx-theme="auto"] {
+  .cx-host[data-cx-theme="auto"], .cx-static[data-cx-theme="auto"] {
     color-scheme: dark;
     --cx-surface: #0d1117;
     --cx-text: #e6edf3;
@@ -210,7 +211,7 @@
 .cx-outline-table td, .cx-outline-table th { border: 1px solid #999999; padding: 1px 4px; text-align: left; }
 @media print {
   /* Paper is white whatever the screen theme is. */
-  .cx-host, .cx-host[data-cx-theme] {
+  .cx-host, .cx-host[data-cx-theme], .cx-static, .cx-static[data-cx-theme] {
     --cx-surface: #ffffff; --cx-text: #1f2328; --cx-accent: #0a58ca; --cx-line: #d1d9e0;
     --cx-tone-info: #0550ae; --cx-tone-success: #116329; --cx-tone-warning: #7d4e00; --cx-tone-danger: #b3261e;
     color-scheme: light; height: auto !important; color: #000000; background: #ffffff;

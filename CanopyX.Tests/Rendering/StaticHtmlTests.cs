@@ -128,7 +128,7 @@ public sealed class StaticHtmlTests {
     public void Render_MoreRowsThanTheLimit_SaysHowManyWereLeftOut() {
         var html = CanopyStaticHtml.Render(SmallView(), new CanopyStaticHtmlOptions { MaxRows = 3, FullReportUrl = "https://reports.example/files?id=1&v=2" });
 
-        Assert.Equal(3, Regex.Matches(html, "<tr><td").Count);
+        Assert.Equal(3, Regex.Matches(Body(html), "<tr><td").Count);
         Assert.Contains("Showing 3 of 7 rows.", html);
         Assert.Contains("<a href=\"https://reports.example/files?id=1&amp;v=2\"", html);
     }
@@ -145,7 +145,7 @@ public sealed class StaticHtmlTests {
         view.Roots.Add(new CanopyNode("second", "Second"));
 
         var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { MaxRows = 1 });
-        Assert.Single(Regex.Matches(html, "<tr><td"));
+        Assert.Single(Regex.Matches(Body(html), "<tr><td"));
         Assert.Contains("(+3)</span>", html);
         Assert.Contains("Showing 1 of 5 rows.", html);
     }
@@ -174,11 +174,14 @@ public sealed class StaticHtmlTests {
         var html = CanopyStaticHtml.Render(SmallView());
 
         Assert.Contains("color:#b3261e;", html); // danger tone
-        Assert.Contains("background:#fff8c5;color:#7d4e00;", html); // warning badge
-        Assert.Contains("<caption style=\"text-align:left;color:#59636e;padding:0 0 2px 0;\">Changed settings</caption>", html);
+        Assert.Contains("background:#efeae0;color:#7d4e00;", html); // warning badge: the tone on a tint of it
+        Assert.Contains("<caption style=\"text-align:left;color:#5e6164;padding:0 0 2px 0;\">Changed settings</caption>", html);
         Assert.Contains(">30 days</td>", html);
         Assert.Contains("text-align:right;", html); // number column
     }
+
+    /// <summary>The rows of the outline, without the note in its last row.</summary>
+    private static string Body(string html) => html.Substring(0, html.LastIndexOf("</tbody><tbody>", StringComparison.Ordinal));
 
     private static CanopyView SmallView() {
         var view = new CanopyView("files", "File shares");

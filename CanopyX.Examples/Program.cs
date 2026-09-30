@@ -10,6 +10,8 @@ using CanopyX.Rendering;
 //   inline.html        a single-file page with inline data (about 1,400 nodes)
 //   bundle/index.html  a sidecar bundle of a large tree (more than 100,000 nodes), loadable from file://
 //   outline.html       the static outline for email, print, and Word
+//   outline-dark.html  the same outline in the dark theme, as literal colours
+//   outline-page.html  the same outline following the theme of the page it is in, without script
 //   index.html         links to the pages above
 // With --search-bench it writes the search benchmark bundles instead (deep/ and directory/, see SearchBenchTrees).
 // With --pack-bench it writes the packing benchmark bundle instead (catalog/, see PackBenchTree) and reports the
@@ -68,8 +70,16 @@ WriteBundle(bundleView, "bundle", "CanopyX file shares bundle");
 
 var outlineTree = new SyntheticFileTree();
 var outlineView = ExampleViews.FileShares("files-outline", outlineTree.Build(shares: 3, departments: 4, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 5));
-var outline = CanopyStaticHtml.Render(outlineView, new CanopyStaticHtmlOptions { MaxRows = 200, MaxDepth = 4, FullReportUrl = "index.html", FullReportText = "Back to the examples" });
-WriteTemplate("outline.html", Path.Combine(output, "outline.html"), outline);
+CanopyStaticHtmlOptions OutlineOptions() => new() { MaxRows = 200, MaxDepth = 4, FullReportUrl = "index.html", FullReportText = "Back to the examples" };
+WriteTemplate("outline.html", Path.Combine(output, "outline.html"), CanopyStaticHtml.Render(outlineView, OutlineOptions()));
+// The dark theme as literal colours, which is what a dark email or document gets: the page around it stays white.
+var darkOutline = OutlineOptions();
+darkOutline.Theme = CanopyStaticTheme.Dark();
+WriteTemplate("outline.html", Path.Combine(output, "outline-dark.html"), CanopyStaticHtml.Render(outlineView, darkOutline));
+// In a page, the outline can follow the page's theme instead: its colours are the custom properties of canopyx.css.
+var pageOutline = OutlineOptions();
+pageOutline.UseThemeVariables = true;
+WriteTemplate("outline-page.html", Path.Combine(output, "outline-page.html"), CanopyStaticHtml.Render(outlineView, pageOutline));
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 

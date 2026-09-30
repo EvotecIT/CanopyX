@@ -11,6 +11,7 @@ public sealed class CanopyStaticHtmlOptions {
     private int _maxRows = 1000;
     private int _maxDepth = int.MaxValue;
     private CultureInfo _culture = CultureInfo.InvariantCulture;
+    private CanopyStaticTheme _theme = new CanopyStaticTheme();
 
     /// <summary>Gets or sets the most rows the outline shows; later rows are counted in the overflow note. Defaults to 1,000.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below 1.</exception>
@@ -56,10 +57,36 @@ public sealed class CanopyStaticHtmlOptions {
     public string HiddenRowsTitle { get; set; } = "{count} rows below are not shown";
 
     /// <summary>
+    /// Gets or sets the colours of the outline. Defaults to the light theme; assign
+    /// <see cref="CanopyStaticTheme.Dark"/> for a dark document, or set the colours a host's design tokens resolve to.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">The value is null.</exception>
+    public CanopyStaticTheme Theme {
+        get => _theme;
+        set => _theme = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>
+    /// Gets or sets whether each colour is also written as the CSS custom property the browser runtime is themed
+    /// with (<c>--cx-surface</c>, <c>--cx-text</c>, <c>--cx-accent</c>, <c>--cx-line</c>, <c>--cx-tone-&lt;name&gt;</c>,
+    /// and <c>--cx-tone-&lt;name&gt;-bg</c>), after the literal from <see cref="Theme"/> and <see cref="ToneColors"/>.
+    /// The outline then follows the theme of the page it is in, without script: inside an element with the class
+    /// <c>cx-static</c> it takes the light or dark palette of <c>canopyx.css</c> by the element's
+    /// <c>data-cx-theme</c> (<c>light</c>, <c>dark</c>, or <c>auto</c> for the reader's system preference), and a
+    /// host that sets those properties from its design tokens for the grid sets them for the outline with the same
+    /// rule. Where the properties are not defined, and in clients that do not know custom properties (email, Word),
+    /// the literals apply. Colours in <see cref="ToneColors"/> are literals of one theme: a page that can turn dark
+    /// defines <c>--cx-tone-&lt;name&gt;</c> for its own tones. Defaults to false, which writes literals only: the
+    /// safest form for email.
+    /// </summary>
+    public bool UseThemeVariables { get; set; }
+
+    /// <summary>
     /// Gets the text colours of the host's own tones (see <see cref="CanopyTone.Named"/>), each as a hex colour such
-    /// as <c>#b3261e</c>. The outline cannot read a theme, so a host tone without an entry keeps the normal text
-    /// colour. The six tones CanopyX ships have fixed colours. Rendering rejects a colour that is not <c>#</c>
-    /// followed by three or six hex digits, because the value goes into an inline style.
+    /// as <c>#b3261e</c>, to go with <see cref="Theme"/>. A host tone without an entry keeps the normal text colour,
+    /// unless <see cref="UseThemeVariables"/> is on and the page defines it. The colours of the tones CanopyX ships
+    /// belong to the theme. Rendering rejects a colour that is not <c>#</c> followed by three or six hex digits,
+    /// because the value goes into an inline style.
     /// </summary>
     public IDictionary<CanopyTone, string> ToneColors { get; } = new Dictionary<CanopyTone, string>();
 

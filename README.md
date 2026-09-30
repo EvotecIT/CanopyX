@@ -61,7 +61,7 @@ A consumer with a solution or build list of its own adds the two CanopyX project
 - Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.
 - Single and multi-select, selection events for a drawer, deep links that expand a path (in the default scheme or the host's own), and expansion state remembered for the session.
 - Light and dark themes from a handful of CSS custom properties.
-- A script-free outline table for email, print, and Word.
+- A script-free outline table for email, print, and Word, in the light or dark palette or the host's own colours.
 
 ## Quick Start
 
@@ -116,6 +116,8 @@ using CanopyX.Rendering;
 
 string outline = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { MaxRows = 500 });
 ```
+
+The outline is light by default. `Theme = CanopyStaticTheme.Dark()` writes the dark palette, a host sets the colours of its own design tokens on the theme, and `UseThemeVariables` lets an outline inside a page follow that page's theme without script ([Theming the Outline](docs/architecture.md#theming-the-outline)).
 
 JavaScript hosts can create a tree grid directly from a view document:
 

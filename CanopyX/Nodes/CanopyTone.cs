@@ -13,7 +13,8 @@ namespace CanopyX;
 /// tone per step of a severity scale, names its own with <see cref="Named"/> and supplies their colours in its theme:
 /// the browser runtime reads the text colour of tone <c>high</c> from the CSS custom property
 /// <c>--cx-tone-high</c> and the badge background from <c>--cx-tone-high-bg</c> (when that is missing, a tint of the
-/// text colour). The static outline takes them from <c>CanopyStaticHtmlOptions.ToneColors</c>.
+/// text colour). The static outline takes them from <c>CanopyStaticHtmlOptions.ToneColors</c>, and with
+/// <c>UseThemeVariables</c> also from those properties.
 /// </para>
 /// <para>
 /// The well-known tones are static properties, so <c>CanopyTone.Danger</c> reads as it did when this type was an
