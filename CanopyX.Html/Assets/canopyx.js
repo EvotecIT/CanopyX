@@ -18,6 +18,7 @@
   const SHARD_CACHE = 24;
   const ENTRY_CACHE = 32;
   const ENTRY_BATCH = 8;
+  const PACK_CACHE = 6;
   const SEARCH_CANDIDATES = 5;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
@@ -763,11 +764,27 @@
       checkDocument(doc, "manifest");
       if (doc.view !== view.id) throw new Error("CanopyX: manifest view does not match the requested view.");
       if (doc.search !== undefined) checkSearchIndex(doc.search);
+      if (doc.packs !== undefined && !isCount(doc.packs)) throw new Error("CanopyX: manifest packs must be a count.");
       return doc;
     }).catch((err) => {
       manifestPromise = null;
       throw err;
     }));
+    // A pack file holds the children pages of many nodes as JSON text, and only the page a node asks for is parsed.
+    // The pages of a subtree sit next to each other, so the last few packs stay loaded.
+    const loadPack = recentCache(PACK_CACHE, async (number) => {
+      const doc = checkDocument(await load("p/" + number), "pack");
+      if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
+      return doc.pages;
+    });
+    const loadPage = async (ref) => {
+      const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
+      const packs = packed ? (await manifest()).packs : undefined;
+      if (packs === undefined) return load(ref);
+      const text = Number(packed[1]) < packs ? (await loadPack(packed[1]))[Number(packed[2])] : undefined;
+      if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
+      return JSON.parse(text);
+    };
     return {
       kind: "sidecar",
       canSearch: true,
@@ -777,7 +794,7 @@
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
-        const doc = checkPage(await load(ref), node);
+        const doc = checkPage(await loadPage(ref), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
       search: sidecarSearch(load, manifest)

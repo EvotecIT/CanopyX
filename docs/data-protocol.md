@@ -23,11 +23,12 @@ Every top-level document carries two fields:
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
-| `manifest` | Bundle writer | A sidecar view loads; it points at the first top-level page and describes the search index |
+| `manifest` | Bundle writer | A sidecar view loads; it points at the first top-level page and describes the packs and the search index |
+| `pack` | Bundle writer | A node opens whose children page is stored in a pack file next to the pages of other nodes |
 | `searchShard` | Bundle writer | A sidecar search needs the words that start with a prefix |
 | `searchEntries` | Bundle writer | A sidecar search needs the nodes its matches refer to |
 
-All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U+2029 as `\u` sequences, so a document can sit inside an HTML `<script>` element unchanged. Hosts writing documents by hand must do the same before inlining one.
+All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U+2029 as `\u` sequences, so a document can sit inside an HTML `<script>` element unchanged. Hosts writing documents by hand must do the same before inlining one. The C# writer also escapes the backtick, and a `$` that is followed by `{`, so a document can sit inside a JavaScript template literal unchanged (see [Packs](#packs)).
 
 ## View
 
@@ -124,7 +125,7 @@ Table and property cells follow the cell rules above. In the interactive browser
 
 ```json
 { "protocol": "canopyx/1", "type": "page", "parent": "projects", "offset": 0, "total": 1234,
-  "items": [ { "id": "projects/plans", "label": "plans" } ], "next": "c/3f/3f2a9c01d4e5b6a7-1" }
+  "items": [ { "id": "projects/plans", "label": "plans" } ], "next": "p/12#3" }
 ```
 
 - `parent` is the id of the node whose children these are, or `null` for the top level. It must not occur among the page items or their inline descendants.
@@ -183,7 +184,7 @@ The view's `roots` carry the whole tree with inline `children`. Long child lists
 { "kind": "sidecar", "base": "data/files/" }
 ```
 
-The bundle writer splits the tree into small script files under `base`. Script files are used instead of JSON files because browsers block `fetch` of local files on `file://`; a script tag loads from a file share, a web server, or SharePoint alike. Every file has the same wrapper:
+The bundle writer splits the tree into script files under `base`. Script files are used instead of JSON files because browsers block `fetch` of local files on `file://`; a script tag loads from a file share, a web server, or SharePoint alike. Every file has the same wrapper:
 
 ```js
 (self.CanopyXSidecar = self.CanopyXSidecar || []).push(["files", "r/0", { "protocol": "canopyx/1", "type": "page", ... }]);
@@ -194,18 +195,37 @@ For sidecar sources, each slash-delimited reference component is a file path com
 
 | Reference | Document | Content |
 | --- | --- | --- |
-| `manifest` | `manifest` | View id, first top-level page, node count, page size, search index description |
+| `manifest` | `manifest` | View id, first top-level page, node count, page size, number of packs, search index description |
 | `r/<n>` | `page` | Page `n` of the top-level nodes |
-| `c/<hh>/<hash>-<n>` | `page` | Page `n` of one node's children. `<hash>` is the first 16 hex digits of the SHA-256 of the exact UTF-16LE code units of the node id (all 64 digits when another id in the bundle already has those 16), `<hh>` its first two digits. |
+| `p/<n>` | `pack` | Pack `n`: the children pages of many nodes. A page inside it has the reference `p/<n>#<slot>`. |
 | `e/<n>` | `searchEntries` | Entry file `n` of the search index: a run of consecutive entries and the ancestors they need |
 | `s/k-<key>` | `searchShard` | The words that start with the shard's prefix, each with the entries that have it. The `k-` keeps keys such as `con` or `nul` from becoming Windows device names. |
 
-Every page holds at most the writer's page size and stays within its file budget (512 KiB by default), so page sizes vary and `offset` tells where each page starts. Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. Hashing keeps file names short, safe on case-insensitive file systems, and independent of the characters in ids. The two-digit folder keeps any one folder from holding tens of thousands of files.
+Every page holds at most the writer's page size and fits the file budget (512 KiB by default), so page sizes vary and `offset` tells where each page starts. Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. File names are numbers, so they are short, safe on case-insensitive file systems, and independent of the characters in ids.
+
+#### Packs
+
+A tree with many small child lists would need one file per list: 150,000 parents make 150,000 files, which is slow to write and impractical to copy or upload. The bundle writer therefore stores the children pages of many nodes together in pack files, each filled up to the file budget:
+
+```js
+(self.CanopyXSidecar = self.CanopyXSidecar || []).push(["files", "p/12", { "protocol": "canopyx/1", "type": "pack",
+  "pages": [ String.raw`{"protocol":"canopyx/1","type":"page","parent":"projects","offset":0,"total":2,"items":[...],"next":null}`, ... ] }]);
+```
+
+- `pages` holds page documents as JSON text, one string per page. The runtime parses only the page a node asks for and keeps the last six packs it read, so a pack costs little to load however many pages it holds.
+- The reference `p/<n>#<slot>` names the page at position `<slot>` (from 0) of pack `<n>`. `<n>` and `<slot>` are decimal numbers without leading zeros. A node's `ref` and a page's `next` use this form; the node that owns a child list is therefore what maps it to its file and slice, and no central table has to be loaded first.
+- The manifest's `packs` is the number of pack files. The runtime reads a reference as a packed page only when the manifest has `packs` and the reference has exactly this form; it rejects a pack number at or past `packs` and a slot the pack does not have. Every other reference, and every reference in a bundle without `packs`, names a file of its own that holds one `page` document, as in a bundle written by hand.
+- The C# writer finishes a node's pages after the pages of its descendants, so the pages of one subtree are next to each other. Opening a small subtree level by level usually reads one pack. The pages of one child list are added last to first, because each page names the next.
+- The C# writer puts each page in a `String.raw` template, which keeps the JSON text as it is: the file is not larger than the pages it holds, and the browser scans the text without building objects. This is why the writer escapes the backtick and `${`. A host that writes packs by hand can use ordinary JSON string literals instead; the document is the same.
+
+A bundle of 379,325 nodes under about 150,000 parents (`CanopyX.Examples --pack-bench`) takes 3,460 files this way, 550 of them packs, instead of 152,601.
+
+A runtime from before packs reads `p/<n>#<slot>` as a file name and cannot open a packed bundle. `SaveHtmlBundle` writes the runtime next to the data; a host that serves one shared copy of `canopyx.js` updates it before it serves packed bundles.
 
 The manifest:
 
 ```json
-{ "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 700, "pageSize": 250,
+{ "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 700, "pageSize": 250, "packs": 1,
   "search": { "entryCount": 700, "entryFiles": [0, 256, 512], "kinds": ["share", "folder", "file"],
     "shards": { "ab": 81, "ac": 9, "pra": 190, "prb": 12, "pr-": 3, "report-": 410, "report-.2": 230 } } }
 ```

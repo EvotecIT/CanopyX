@@ -12,12 +12,33 @@ using CanopyX.Rendering;
 //   outline.html       the static outline for email, print, and Word
 //   index.html         links to the pages above
 // With --search-bench it writes the search benchmark bundles instead (deep/ and directory/, see SearchBenchTrees).
-// Usage: CanopyX.Examples [output folder] [--search-bench]
+// With --pack-bench it writes the packing benchmark bundle instead (catalog/, see PackBenchTree) and reports the
+// generation time and the peak memory of the process; --services <n> sets the services per region (default 1,000).
+// Usage: CanopyX.Examples [output folder] [--search-bench | --pack-bench [--services <n>]]
 var searchBench = args.Contains("--search-bench");
-var positional = args.Where(arg => !arg.StartsWith("--", StringComparison.Ordinal)).ToArray();
-var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.BaseDirectory, searchBench ? "search-bench" : "output");
+var packBench = args.Contains("--pack-bench");
+var servicesAt = Array.IndexOf(args, "--services");
+var services = servicesAt >= 0 && servicesAt + 1 < args.Length ? int.Parse(args[servicesAt + 1], CultureInfo.InvariantCulture) : PackBenchTree.DefaultServicesPerRegion;
+var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparison.Ordinal) && (servicesAt < 0 || index != servicesAt + 1)).ToArray();
+var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.BaseDirectory, searchBench ? "search-bench" : packBench ? "pack-bench" : "output");
 Directory.CreateDirectory(output);
 var clock = Stopwatch.StartNew();
+
+if (packBench) {
+    var catalog = PackBenchTree.View();
+    foreach (var region in PackBenchTree.RegionNodes(services)) {
+        foreach (var service in PackBenchTree.Services(PackBenchTree.RegionNumber(region), services)) {
+            region.Children.Add(service);
+        }
+
+        catalog.Roots.Add(region);
+    }
+
+    WriteBundle(catalog, "catalog", "CanopyX service catalog bundle");
+    using var process = Process.GetCurrentProcess();
+    Report($"Packing benchmark bundle written to {output} in {clock.Elapsed.TotalSeconds:N1} s, peak working set {process.PeakWorkingSet64 / 1048576.0:N0} MB");
+    return;
+}
 
 if (searchBench) {
     WriteBundle(SearchBenchTrees.DeepTree(), "deep", "CanopyX deep tree bundle");

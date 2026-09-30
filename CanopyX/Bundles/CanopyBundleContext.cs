@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using CanopyX.Json;
@@ -7,16 +8,15 @@ namespace CanopyX.Bundles;
 
 /// <summary>
 /// The state of one bundle write, shared by the page writer and the search index writer: where files go, the file
-/// budget, and the running totals. Every sidecar file is written through <see cref="WriteFile"/>.
+/// budget, and the running totals. Every sidecar file is written through one of the <c>WriteFile</c> overloads.
 /// </summary>
 internal sealed class CanopyBundleContext {
     internal static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
-    internal CanopyBundleContext(CanopyView view, CanopyBundleOptions options, string dataDirectory, CanopyBundleLayout layout, CanopyBundleResult result) {
+    internal CanopyBundleContext(CanopyView view, CanopyBundleOptions options, string dataDirectory, CanopyBundleResult result) {
         View = view;
         Options = options;
         DataDirectory = dataDirectory;
-        Layout = layout;
         Result = result;
     }
 
@@ -25,8 +25,6 @@ internal sealed class CanopyBundleContext {
     internal CanopyBundleOptions Options { get; }
 
     internal string DataDirectory { get; }
-
-    internal CanopyBundleLayout Layout { get; }
 
     internal CanopyBundleResult Result { get; }
 
@@ -54,19 +52,51 @@ internal sealed class CanopyBundleContext {
             throw new InvalidOperationException("Sidecar '" + reference + "' exceeds MaxFileBytes (" + bytes.Length + " bytes). Increase the budget or reduce the search index.");
         }
 
-        var path = Path.Combine(DataDirectory, reference.Replace('/', Path.DirectorySeparatorChar) + ".js");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllBytes(path, bytes);
-        Result.FileCount++;
-        Result.TotalBytes += bytes.Length;
-        Result.LargestFileBytes = Math.Max(Result.LargestFileBytes, bytes.Length);
+        File.WriteAllBytes(PathOf(reference), bytes);
+        Count(bytes.Length);
         return bytes.Length;
     }
 
+    /// <summary>
+    /// Writes one sidecar script from the parts of its document, in order, without building the whole file in memory.
+    /// </summary>
+    internal void WriteFile(string reference, IEnumerable<string> documentParts) {
+        long length;
+        using (var stream = new FileStream(PathOf(reference), FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16))
+        using (var writer = new StreamWriter(stream, Utf8, 1 << 15)) {
+            writer.Write(WrapperStart(reference));
+            foreach (var part in documentParts) {
+                writer.Write(part);
+            }
+
+            writer.Write(WrapperEnd);
+            writer.Flush();
+            length = stream.Length;
+        }
+
+        Count(length);
+    }
+
+    private const string WrapperEnd = "]);\n";
+
+    private string PathOf(string reference) {
+        var path = Path.Combine(DataDirectory, reference.Replace('/', Path.DirectorySeparatorChar) + ".js");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        return path;
+    }
+
+    private void Count(long bytes) {
+        Result.FileCount++;
+        Result.TotalBytes += bytes;
+        Result.LargestFileBytes = Math.Max(Result.LargestFileBytes, bytes);
+    }
+
     /// <summary>The sidecar script: it pushes the view id, the file's own reference, and the document onto the queue.</summary>
-    private string Wrap(string reference, string document) {
+    private string Wrap(string reference, string document) => WrapperStart(reference) + document + WrapperEnd;
+
+    private string WrapperStart(string reference) {
         var header = new CanopyJsonWriter(128);
-        header.BeginArray().String(View.Id).String(reference).Raw(document).EndArray();
-        return "(self.CanopyXSidecar = self.CanopyXSidecar || []).push(" + header.ToString() + ");\n";
+        header.BeginArray().String(View.Id).String(reference);
+        return "(self.CanopyXSidecar = self.CanopyXSidecar || []).push(" + header.ToString() + ",";
     }
 }

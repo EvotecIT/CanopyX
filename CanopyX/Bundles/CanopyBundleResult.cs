@@ -27,8 +27,11 @@ public sealed class CanopyBundleResult {
     /// <summary>Gets the number of nodes written.</summary>
     public int NodeCount { get; internal set; }
 
-    /// <summary>Gets the number of page files written.</summary>
+    /// <summary>Gets the number of pages written: the top-level page files and the children pages inside the packs.</summary>
     public int PageCount { get; internal set; }
+
+    /// <summary>Gets the number of pack files written. Each holds the children pages of many nodes.</summary>
+    public int PackCount { get; internal set; }
 
     /// <summary>Gets the number of search shard files written; zero when the view has no search.</summary>
     public int SearchShardCount { get; internal set; }

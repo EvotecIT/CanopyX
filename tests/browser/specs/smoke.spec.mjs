@@ -173,12 +173,12 @@ test.describe("sidecar bundle", () => {
     const before = await page.evaluate(() => window.__scripts.length);
     await row(page, "share-b").locator(".cx-exp").click();
     await expect(row(page, "share-b/d0")).toBeVisible();
-    // Opening the share loaded exactly its first children page, a hashed sidecar script.
+    // Opening the share loaded exactly the pack file that holds its first children page.
     const loaded = await page.evaluate((from) => window.__scripts.slice(from), before);
     expect(loaded).toHaveLength(1);
     const base = await page.evaluate(() => new URL(document.querySelector(".cx-host").canopyx.view.source.base, location.href).href);
     expect(loaded[0].startsWith(base)).toBe(true);
-    expect(loaded[0].slice(base.length)).toMatch(/^c\/[0-9a-f]{2}\/[0-9a-f]{16}-0\.js$/);
+    expect(loaded[0].slice(base.length)).toMatch(/^p\/\d+\.js$/);
   });
 
   test("pages 3,000 files 250 at a time", async ({ page }) => {

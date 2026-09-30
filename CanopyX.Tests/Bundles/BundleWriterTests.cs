@@ -175,6 +175,78 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         foreach (var document in _bundle.Files.Documents) {
             ProtocolSchema.AssertValid(document.Value, document.Key);
         }
+
+        // The schema sees a packed page as text, so the pages inside the packs are checked one by one.
+        foreach (var page in _bundle.Files.Pages()) {
+            ProtocolSchema.AssertValid(page.Value, page.Key);
+        }
+    }
+
+    [Fact]
+    public void Write_LargeTree_PacksTheChildrenPagesIntoFewFiles() {
+        var parents = Flatten(_bundle.View.Roots).Count(item => item.Node.Children.Count > 0);
+        var packs = _bundle.Files.Documents.Keys.Where(reference => reference.StartsWith("p/", StringComparison.Ordinal)).ToList();
+
+        // 372 parents have children; with one file per child list the bundle would hold at least as many files.
+        Assert.True(parents > 300);
+        Assert.Equal(_bundle.Result.PackCount, packs.Count);
+        Assert.Equal(packs.Count, _bundle.Files.Document("manifest")["packs"]!.GetValue<int>());
+        Assert.InRange(packs.Count, 1, 4);
+        Assert.Equal(_bundle.Result.PageCount, _bundle.Files.Pages().Count());
+        // A pack is full before the next one starts: every pack but the last is within a page of the file budget.
+        Assert.All(packs.Where(reference => reference != "p/" + (packs.Count - 1)), reference =>
+            Assert.InRange(_bundle.Files.Sizes[reference], 512 * 1024 - 80 * 1024, 512 * 1024));
+    }
+
+    [Fact]
+    public void Write_NodeLargerThanTheBudget_GetsAPackOfItsOwn() {
+        var view = new CanopyView("oversized", "Oversized");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var parent = new CanopyNode("parent", "Parent");
+        for (var index = 0; index < 40; index++) {
+            parent.Children.Add(new CanopyNode("child-" + index, index == 20 ? new string('x', 40000) : new string('y', 600)));
+        }
+
+        view.Roots.Add(parent);
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter(new CanopyBundleOptions { MaxFileBytes = 16 * 1024 }).Write(view, directory);
+            var files = new SidecarFiles(result.DataDirectory, view.Id);
+
+            Assert.Equal(TestTrees.Ids(view.Roots), files.WalkIds());
+            var over = Assert.Single(files.Sizes, file => file.Value > 16 * 1024);
+            var page = System.Text.Json.Nodes.JsonNode.Parse(Assert.Single(System.Text.Json.Nodes.JsonNode.Parse(files.Documents[over.Key])!["pages"]!.AsArray())!.GetValue<string>())!;
+            Assert.Equal("child-20", Assert.Single(page["items"]!.AsArray())!["id"]!.GetValue<string>());
+        } finally {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_LabelsWithTemplateSyntax_SurviveInsideAPack() {
+        var view = new CanopyView("templates", "Templates");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var parent = new CanopyNode("parent", "Parent");
+        var labels = new[] { "a `quoted` name", "cost ${amount} and $ {x} and $", "back\\slash \\` \\${ end\\", "line\nbreak \r\n tab\t", "`", "${", "$" };
+        for (var index = 0; index < labels.Length; index++) {
+            parent.Children.Add(new CanopyNode("child-" + index + "-`${" + index + "}", labels[index]));
+        }
+
+        view.Roots.Add(parent);
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            // A pack stores each page in a String.raw template; a backtick or ${ in the file would end or break it.
+            var script = File.ReadAllText(Path.Combine(result.DataDirectory, "p", "0.js"));
+            Assert.Equal(2, script.Count(ch => ch == '`'));
+            Assert.DoesNotContain("${", script);
+            var files = new SidecarFiles(result.DataDirectory, view.Id);
+            var items = files.Document(files.Document("r/0")["items"]![0]!["ref"]!.GetValue<string>())["items"]!.AsArray();
+            Assert.Equal(labels, items.Select(item => item!["label"]!.GetValue<string>()));
+            Assert.Equal(parent.Children.Select(child => child.Id), items.Select(item => item!["id"]!.GetValue<string>()));
+        } finally {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]
@@ -182,8 +254,8 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         Assert.True(_bundle.Result.LargestFileBytes <= 1024 * 1024, "Largest sidecar file is " + _bundle.Result.LargestFileBytes + " bytes; the budget is 1 MB.");
         Assert.Equal(_bundle.Files.Sizes.Values.Max(), _bundle.Result.LargestFileBytes);
         // The 3,000 files of the big folder are split into pages of 250 instead of one large file.
-        var bigFolderPages = _bundle.Files.Documents.Values.Select(text => System.Text.Json.Nodes.JsonNode.Parse(text)!)
-            .Where(document => document["type"]!.GetValue<string>() == "page" && document["parent"]?.GetValue<string>() == "s0/f0")
+        var bigFolderPages = _bundle.Files.Pages().Select(page => System.Text.Json.Nodes.JsonNode.Parse(page.Value)!)
+            .Where(document => document["parent"]?.GetValue<string>() == "s0/f0")
             .ToList();
         Assert.Equal(12, bigFolderPages.Count);
         Assert.All(bigFolderPages, page => Assert.Equal(3000, page["total"]!.GetValue<int>()));

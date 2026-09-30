@@ -9,6 +9,7 @@
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
     { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/pack" },
     { "$ref": "#/$defs/searchShard" },
     { "$ref": "#/$defs/searchEntries" }
   ],
@@ -320,6 +321,7 @@
         "root": { "$ref": "#/$defs/identifier" },
         "nodeCount": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "packs": { "description": "The number of p/<n> pack files. When present, a reference p/<n>#<slot> names page <slot> of pack <n>.", "$ref": "#/$defs/count" },
         "search": {
           "type": "object",
           "required": ["entryCount", "entryFiles", "kinds", "shards"],
@@ -339,6 +341,20 @@
               "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
             }
           }
+        }
+      }
+    },
+    "pack": {
+      "type": "object",
+      "required": ["protocol", "type", "pages"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "pack" },
+        "pages": {
+          "description": "The children pages of many nodes, each as the JSON text of a page document. A reader parses only the page it needs.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 2, "contentMediaType": "application/json", "contentSchema": { "$ref": "#/$defs/page" } }
         }
       }
     },

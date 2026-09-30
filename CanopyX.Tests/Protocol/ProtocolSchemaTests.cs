@@ -20,6 +20,19 @@ public sealed class ProtocolSchemaTests {
     }
 
     [Theory]
+    [InlineData("{\"pages\":[\"{}\"]}", "0", true)]
+    [InlineData("{\"pages\":[]}", "0", true)]
+    [InlineData("{\"pages\":[{\"protocol\":\"canopyx/1\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"items\":[],\"next\":null}]}", "1", false)]
+    [InlineData("{}", "1", false)]
+    [InlineData("{\"pages\":[\"{}\"]}", "-1", false)]
+    public void Schema_Pack_HoldsPagesAsTextAndTheManifestCountsThePacks(string body, string packs, bool valid) {
+        var pack = JsonNode.Parse(body)!.AsObject();
+        pack["protocol"] = "canopyx/1"; pack["type"] = "pack";
+        var manifest = "{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"packs\":" + packs + "}";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(pack.ToJsonString()).IsValid && ProtocolSchema.Evaluate(manifest).IsValid);
+    }
+
+    [Theory]
     [InlineData("{\"words\":[\"ab\"],\"postings\":[[0,2,-3]]}", true)]
     [InlineData("{\"words\":[\"ab\"],\"postings\":[[]]}", false)]
     [InlineData("{\"words\":[\"ab\"],\"postings\":[[-1]]}", false)]

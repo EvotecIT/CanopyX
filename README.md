@@ -65,11 +65,11 @@ view.SaveHtmlPage("files.html");
 
 The first column shows each node's label; the other columns show the node's cells by column id.
 
-For large trees, write a bundle instead. The data is split into small sidecar files that the page loads on demand, and the page works when opened straight from a file share:
+For large trees, write a bundle instead. The data is split into sidecar files that the page loads on demand, and the page works when opened straight from a file share. Small child lists share pack files, so a tree with hundreds of thousands of rows is a few thousand files:
 
 ```csharp
 CanopyBundleResult bundle = view.SaveHtmlBundle("report");
-Console.WriteLine($"{bundle.FileCount} files, largest {bundle.LargestFileBytes:N0} bytes");
+Console.WriteLine($"{bundle.NodeCount:N0} nodes in {bundle.FileCount:N0} files ({bundle.PackCount:N0} packs), largest {bundle.LargestFileBytes:N0} bytes");
 ```
 
 Local external assets in an HTML bundle use a separate directory tree from its sidecar data. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset folders use portable names without internal `.` or `..` segments; a leading `./` is allowed. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.

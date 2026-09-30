@@ -69,6 +69,16 @@ node bench/search-benchmark.mjs --runs 5 --cpu 1,4
 
 Write the bundles of the version before the change into another folder and pass it with `--examples` and `--bench` to measure both sides on the same machine.
 
+Changes to the bundle layout (pages, packs, the file budget) need the expand benchmark. It reports the files and bytes of a large bundle, the time to the first rows, and cold expands level by level; `--pack-bench` prints the generation time and the peak memory of the writer:
+
+```powershell
+dotnet run --project CanopyX.Examples -c Release -- --pack-bench
+cd tests/browser
+node bench/expand-benchmark.mjs --runs 5 --cpu 1,4
+```
+
+Pass `--bundle <folder>` to measure a bundle written by the version before the change.
+
 ## Change Expectations
 
 - Add or update contract tests for new behavior.

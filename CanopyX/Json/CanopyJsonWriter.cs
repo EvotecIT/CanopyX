@@ -12,7 +12,8 @@ namespace CanopyX.Json;
 /// CanopyX targets <c>net472</c> and <c>netstandard2.0</c> without runtime package dependencies, so it cannot use
 /// <c>System.Text.Json</c>. The writer is deterministic (invariant culture, no whitespace) and HTML-safe: it escapes
 /// <c>&lt;</c>, <c>&gt;</c>, <c>&amp;</c>, U+2028 and U+2029 so the output can be embedded in a
-/// <c>&lt;script&gt;</c> element or a sidecar script without further encoding.
+/// <c>&lt;script&gt;</c> element or a sidecar script without further encoding. It also escapes the backtick and a
+/// <c>$</c> before <c>{</c>, so a document can sit inside a JavaScript template literal unchanged (bundle packs).
 /// </remarks>
 internal sealed class CanopyJsonWriter {
     private readonly StringBuilder _builder;
@@ -229,7 +230,16 @@ internal sealed class CanopyJsonWriter {
                 case '&':
                 case (char)0x2028:
                 case (char)0x2029:
+                case '`':
                     AppendUnicodeEscape(ch);
+                    break;
+                case '$':
+                    if (index + 1 < value.Length && value[index + 1] == '{') {
+                        AppendUnicodeEscape(ch);
+                    } else {
+                        _builder.Append(ch);
+                    }
+
                     break;
                 default:
                     if (ch < ' ') {
