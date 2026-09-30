@@ -44,12 +44,32 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 
 Gate:
 
-- In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling.
+- In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within 48 KB gzip.
 - With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was patched Wunderbaum's median in the spike (56 of about 900).
 - In TestimoX, measured there on its own fixture: the GPO explorer design packet renders both views on CanopyX with the L fixture (5 domains, 5,000 GPOs, 200,000 links) within the TestimoX plan section 7.2 budgets.
 - Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) renders on CanopyX with the same content.
 
 If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the TestimoX plan. Its fallback, patched Wunderbaum, would live in the consumer behind its own API; CanopyX does not vendor a third-party grid.
+
+Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-30), each as a generic API:
+
+- [x] Bundle packing: children pages share pack files up to the file budget (152,601 files became 3,457 on the packing benchmark).
+- [x] Streaming bundle writer: `Write(view, directory, roots, children)` reads the tree from the host node by node.
+- [x] Detail rows as tall as their content (measured), inside the visible width, with wrapping tables and column width shares.
+- [x] Host renderers per column (`renderers`), so the other columns keep their cell reuse.
+- [x] Dates in UTC or the reader's time zone (`timeZone`, `setTimeZone`), the other zone in the tooltip.
+- [x] Tones as names: six built in, any other from the host theme (`--cx-tone-<name>`).
+- [x] Host data on a node (`data`), and search limited to node kinds (`search.kinds`).
+- [x] Host-driven filters (`hidden`, `canopyx:filter`), a pinned tree column, `setColumnWidth`.
+- [x] `CanopyX.configure` for auto-mounted fragments, manual mounting, and a host link scheme (`formatLink`, `parseLink`).
+
+Left open by that work:
+
+- Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which also maps design tokens onto `--cx-tone-<name>`.
+- Right-to-left layout: row positions, the pinned tree column, and the detail body use physical left offsets.
+- The streamed writer holds one whole child list in memory until its last node is read; a flat list of millions of top-level rows needs pages that are written as they fill.
+- Packing the search index: on the packing benchmark 2,910 of the 3,457 files are entry files and shards.
+- Scroll benchmark numbers for renderers and time zones on a quiet machine; the runs recorded in PR #10 were taken while other builds ran and differ by less than their noise.
 
 Tree grid follow-ups without a milestone yet, each with the consumer that will pull it in:
 

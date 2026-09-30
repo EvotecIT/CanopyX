@@ -257,7 +257,7 @@ A tree with many small child lists would need one file per list: 150,000 parents
 - The C# writer finishes a node's pages after the pages of its descendants, so the pages of one subtree are next to each other. Opening a small subtree level by level usually reads one pack. The pages of one child list are added last to first, because each page names the next.
 - The C# writer puts each page in a `String.raw` template, which keeps the JSON text as it is: the file is not larger than the pages it holds, and the browser scans the text without building objects. This is why the writer escapes the backtick and `${`. A host that writes packs by hand can use ordinary JSON string literals instead; the document is the same.
 
-A bundle of 379,325 nodes under about 150,000 parents (`CanopyX.Examples --pack-bench`) takes 3,460 files this way, 548 of them packs, instead of 152,601.
+A bundle of 379,325 nodes under about 150,000 parents (`CanopyX.Examples --pack-bench`) takes 3,457 files this way, 545 of them packs, instead of 152,601.
 
 A runtime from before packs reads `p/<n>#<slot>` as a file name and cannot open a packed bundle. `SaveHtmlBundle` writes the runtime next to the data; a host that serves one shared copy of `canopyx.js` updates it before it serves packed bundles.
 
