@@ -89,10 +89,29 @@ A cell is either a bare value (string, number, boolean, or null) or an object:
 
 - `value` is used for sorting and, when `text` is absent, for display. Dates are ISO 8601 UTC strings, `yyyy-MM-ddTHH:mm:ssZ` or with milliseconds `yyyy-MM-ddTHH:mm:ss.fffZ`.
 - `text` replaces the formatted value. Hosts use it for units, localisation, and phrases like "not collected".
-- `tone` is one of `neutral`, `info`, `success`, `warning`, `danger`, `muted`. The theme maps tones to colours; hosts never send colours.
+- `tone` is a name: a lowercase letter followed by lowercase letters, digits, and hyphens, at most 32 characters, not ending in `-bg`. The theme maps tones to colours; hosts never send colours. See [Tones](#tones).
 - Every string is inserted as text, never as HTML.
 
 A badge has `text`, an optional `tone`, and an optional `title` (tooltip).
+
+### Tones
+
+The CanopyX stylesheet has colours for six tones: `neutral`, `info`, `success`, `warning`, `danger`, and `muted`. Six are not enough for every host: a severity scale alone has five steps, next to states such as passing, neutral, or under maintenance. So any other tone name is the host's own, and its colours come from the host's theme:
+
+| Custom property | Used for |
+| --- | --- |
+| `--cx-tone-<name>` | Text colour of cells and badges with the tone |
+| `--cx-tone-<name>-bg` | Background of badges with the tone. Optional; without it the badge gets a tint of the text colour. |
+
+```css
+.cx-host {
+  --cx-tone-critical: #8f1d1d;  --cx-tone-critical-bg: #fde8e8;
+  --cx-tone-high: #9a3412;      --cx-tone-medium: #854d0e;      --cx-tone-low: #3f6212;
+  --cx-tone-maintenance: #3730a3;
+}
+```
+
+A host maps its states onto names once, for example `critical`, `high`, `medium`, `low`, and `info` for a severity scale, `success` for passing, `neutral` for no state, and `maintenance` for planned work, and sets the properties from its design tokens for the light and the dark theme. An element with a host tone has the classes `cx-tone-<name>` and `cx-toned`, so a host stylesheet can also style it directly. A cell with a tone the theme has no colour for is shown as normal text (a badge with one gets a tint of the text colour), and a value that is not a valid name is ignored. The contrast of a host tone, also on a selected row, is the host's to check. For print the stylesheet resets its own colours to the light theme, because paper is white; a host whose theme can be dark does the same for its tones under `@media print`. The static outline cannot read a theme; it takes host tone colours from `CanopyStaticHtmlOptions.ToneColors`.
 
 ### Default Formatting and Sorting
 

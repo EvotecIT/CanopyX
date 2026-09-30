@@ -147,6 +147,47 @@
     return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
   }
 
+  // ---------- tones ----------
+  // The stylesheet has colours for six tones. Any other tone is the host's: its colours come from the theme's
+  // --cx-tone-<name> (text) and --cx-tone-<name>-bg (badge background), through two properties set on the element.
+  const NO_TONE = { cls: "", host: null };
+  const tones = new Map();
+
+  /** The class names of a tone (with a leading space) and, for a host tone, its name; a malformed tone has neither. */
+  function toneOf(name) {
+    let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
+    if (!tone) {
+      // A name ending in -bg would read its text colour from the badge background of another tone.
+      if (!/^[a-z][a-z0-9-]{0,31}$/.test(name) || name.endsWith("-bg")) {
+        return NO_TONE;
+      }
+      const host = !/^(neutral|info|success|warning|danger|muted)$/.test(name);
+      tone = { cls: " cx-tone-" + name + (host ? " cx-toned" : ""), host: host ? name : null };
+      if (tones.size < 256) tones.set(name, tone);
+    }
+    return tone;
+  }
+
+  /** Gives an element the classes of a tone after its base classes, and points it at the theme colours of a host tone. */
+  function applyTone(element, base, tone) {
+    element.className = base + tone.cls;
+    toneColors(element, tone);
+  }
+
+  function toneColors(element, tone) {
+    if ((element._tone || null) === tone.host) {
+      return;
+    }
+    element._tone = tone.host;
+    if (tone.host) {
+      element.style.setProperty("--cx-t", "var(--cx-tone-" + tone.host + ")");
+      element.style.setProperty("--cx-t-bg", "var(--cx-tone-" + tone.host + "-bg)");
+    } else {
+      element.style.removeProperty("--cx-t");
+      element.style.removeProperty("--cx-t-bg");
+    }
+  }
+
   const numberFormats = new Map();
   function numberFormat(lang) {
     const key = lang || "";

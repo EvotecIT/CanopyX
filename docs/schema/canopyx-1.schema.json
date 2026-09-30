@@ -18,7 +18,7 @@
     "accessibleLabel": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "identifier": { "type": "string", "minLength": 1, "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$" },
-    "tone": { "enum": ["neutral", "info", "success", "warning", "danger", "muted"] },
+    "tone": { "description": "neutral, info, success, warning, danger, muted, or a tone the host theme defines.", "type": "string", "pattern": "^(?!.*-bg$)[a-z][a-z0-9-]{0,31}$" },
     "badge": {
       "type": "object",
       "required": ["text"],

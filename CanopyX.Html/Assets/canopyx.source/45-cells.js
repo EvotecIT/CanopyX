@@ -202,6 +202,7 @@
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
         slot.title = null;
+        toneColors(slot.cell, NO_TONE);
         if (slot.content === slot.cell) {
           const old = slot.cell;
           const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
@@ -224,16 +225,18 @@
         slot.text.data = text;
       }
       const object = isCellObject(value);
-      const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
+      const tone = object ? toneOf(value.tone) : NO_TONE;
+      const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
         if (render) {
           // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
-          if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
+          if (tone.cls) slot.cell.className += tone.cls;
         } else {
           slot.cell.className = cls;
         }
         slot.cls = cls;
       }
+      toneColors(slot.cell, tone);
       // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
       const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
       if (slot.title !== title) {
@@ -258,10 +261,10 @@
           span._text = span.appendChild(document.createTextNode(""));
           slot.badges.push(span);
         }
-        const cls = "cx-badge cx-tone-" + (badge.tone || "neutral");
-        if (span._cls !== cls) {
-          span.className = cls;
-          span._cls = cls;
+        const tone = toneOf(badge.tone || "neutral");
+        if (span._cls !== tone.cls) {
+          applyTone(span, "cx-badge", tone);
+          span._cls = tone.cls;
         }
         if (span._text.data !== badge.text) {
           span._text.data = badge.text;

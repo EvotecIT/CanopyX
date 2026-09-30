@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace CanopyX.Rendering;
@@ -53,6 +54,14 @@ public sealed class CanopyStaticHtmlOptions {
     /// by the number of hidden rows. Defaults to "{count} rows below are not shown".
     /// </summary>
     public string HiddenRowsTitle { get; set; } = "{count} rows below are not shown";
+
+    /// <summary>
+    /// Gets the text colours of the host's own tones (see <see cref="CanopyTone.Named"/>), each as a hex colour such
+    /// as <c>#b3261e</c>. The outline cannot read a theme, so a host tone without an entry keeps the normal text
+    /// colour. The six tones CanopyX ships have fixed colours. Rendering rejects a colour that is not <c>#</c>
+    /// followed by three or six hex digits, because the value goes into an inline style.
+    /// </summary>
+    public IDictionary<CanopyTone, string> ToneColors { get; } = new Dictionary<CanopyTone, string>();
 
     /// <summary>Gets or sets an address added to the overflow note. Relative URLs and HTTP, HTTPS, or mailto links are allowed; other schemes are omitted.</summary>
     public string? FullReportUrl { get; set; }

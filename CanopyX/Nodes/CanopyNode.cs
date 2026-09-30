@@ -161,7 +161,6 @@ public sealed class CanopyNode {
                 if (badge == null) {
                     throw new InvalidOperationException("Node '" + Id + "' has a null badge.");
                 }
-                badge.ValidateShape();
             }
         }
 

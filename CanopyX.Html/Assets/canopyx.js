@@ -147,6 +147,47 @@
     return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
   }
 
+  // ---------- tones ----------
+  // The stylesheet has colours for six tones. Any other tone is the host's: its colours come from the theme's
+  // --cx-tone-<name> (text) and --cx-tone-<name>-bg (badge background), through two properties set on the element.
+  const NO_TONE = { cls: "", host: null };
+  const tones = new Map();
+
+  /** The class names of a tone (with a leading space) and, for a host tone, its name; a malformed tone has neither. */
+  function toneOf(name) {
+    let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
+    if (!tone) {
+      // A name ending in -bg would read its text colour from the badge background of another tone.
+      if (!/^[a-z][a-z0-9-]{0,31}$/.test(name) || name.endsWith("-bg")) {
+        return NO_TONE;
+      }
+      const host = !/^(neutral|info|success|warning|danger|muted)$/.test(name);
+      tone = { cls: " cx-tone-" + name + (host ? " cx-toned" : ""), host: host ? name : null };
+      if (tones.size < 256) tones.set(name, tone);
+    }
+    return tone;
+  }
+
+  /** Gives an element the classes of a tone after its base classes, and points it at the theme colours of a host tone. */
+  function applyTone(element, base, tone) {
+    element.className = base + tone.cls;
+    toneColors(element, tone);
+  }
+
+  function toneColors(element, tone) {
+    if ((element._tone || null) === tone.host) {
+      return;
+    }
+    element._tone = tone.host;
+    if (tone.host) {
+      element.style.setProperty("--cx-t", "var(--cx-tone-" + tone.host + ")");
+      element.style.setProperty("--cx-t-bg", "var(--cx-tone-" + tone.host + "-bg)");
+    } else {
+      element.style.removeProperty("--cx-t");
+      element.style.removeProperty("--cx-t-bg");
+    }
+  }
+
   const numberFormats = new Map();
   function numberFormat(lang) {
     const key = lang || "";
@@ -1882,6 +1923,7 @@
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
         slot.title = null;
+        toneColors(slot.cell, NO_TONE);
         if (slot.content === slot.cell) {
           const old = slot.cell;
           const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
@@ -1904,16 +1946,18 @@
         slot.text.data = text;
       }
       const object = isCellObject(value);
-      const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
+      const tone = object ? toneOf(value.tone) : NO_TONE;
+      const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
         if (render) {
           // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
-          if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
+          if (tone.cls) slot.cell.className += tone.cls;
         } else {
           slot.cell.className = cls;
         }
         slot.cls = cls;
       }
+      toneColors(slot.cell, tone);
       // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
       const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
       if (slot.title !== title) {
@@ -1938,10 +1982,10 @@
           span._text = span.appendChild(document.createTextNode(""));
           slot.badges.push(span);
         }
-        const cls = "cx-badge cx-tone-" + (badge.tone || "neutral");
-        if (span._cls !== cls) {
-          span.className = cls;
-          span._cls = cls;
+        const tone = toneOf(badge.tone || "neutral");
+        if (span._cls !== tone.cls) {
+          applyTone(span, "cx-badge", tone);
+          span._cls = tone.cls;
         }
         if (span._text.data !== badge.text) {
           span._text.data = badge.text;
@@ -1993,13 +2037,14 @@
     setText(element, cellText(cell, detailColumn, lang));
     if (isCellObject(cell)) {
       if (cell.tone) {
-        element.className = "cx-tone-" + cell.tone;
+        applyTone(element, "", toneOf(cell.tone));
       }
       if (cell.title) {
         element.title = cell.title;
       }
       (cell.badges || []).forEach((badge) => {
-        const span = h("span", "cx-badge cx-tone-" + (badge.tone || "neutral"));
+        const span = h("span");
+        applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
         setText(span, badge.text);
         if (badge.title) span.title = badge.title;
         element.appendChild(span);

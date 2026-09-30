@@ -22,24 +22,48 @@ public sealed class StaticHtmlTests {
     }
 
     [Fact]
-    public void UndefinedCellAndBadgeTonesAreRejectedByBothRenderers() {
+    public void HostTones_AreWrittenByNameAndColouredFromTheOptions() {
         var view = SmallView();
         var node = view.Roots[0];
-        var cell = new CanopyCell("value") { Tone = (CanopyTone)999 };
-        node.Cells["size"] = cell;
-        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyStaticHtml.Render(view));
-        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+        var high = CanopyTone.Named("severity-high");
+        node.Cells["size"] = new CanopyCell("value") { Tone = high, Badges = { new CanopyBadge("High", high), new CanopyBadge("Planned", CanopyTone.Named("maintenance")) } };
 
-        cell.Tone = CanopyTone.None;
-        var badge = new CanopyBadge("Unknown", (CanopyTone)999);
-        node.Badges.Add(badge);
-        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyStaticHtml.Render(view));
-        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+        var json = System.Text.Json.Nodes.JsonNode.Parse(view.ToJson())!["roots"]![0]!["cells"]!["size"]!;
+        Assert.Equal("severity-high", json["tone"]!.GetValue<string>());
+        Assert.Equal("maintenance", json["badges"]![1]!["tone"]!.GetValue<string>());
+        CanopyX.Tests.Protocol.ProtocolSchema.AssertValid(view.ToJson(), "view with host tones");
 
-        node.Badges.Remove(badge);
-        cell.Badges.Add(badge);
-        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyStaticHtml.Render(view));
-        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+        var options = new CanopyStaticHtmlOptions();
+        options.ToneColors[high] = "#9a3412";
+        var html = CanopyStaticHtml.Render(view, options);
+        // The cell and its badge take the host's colour; a host tone without one keeps the normal text colour.
+        Assert.Equal(2, Regex.Matches(html, "color:#9a3412;").Count);
+        Assert.Contains("color:#1f2328;\">Planned</span>", html);
+
+        options.ToneColors[high] = "red;background:url(x)";
+        Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.Render(view, options));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("High")]
+    [InlineData("1st")]
+    [InlineData("two words")]
+    [InlineData("a_b")]
+    [InlineData("high-bg")]
+    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefg")]
+    public void Named_NameThatCouldNotBeACssClass_Throws(string name) {
+        Assert.Throws<ArgumentException>(() => CanopyTone.Named(name));
+    }
+
+    [Fact]
+    public void Named_BuiltInName_IsTheWellKnownTone() {
+        Assert.Equal(CanopyTone.Danger, CanopyTone.Named("danger"));
+        Assert.True(CanopyTone.Named("danger").IsBuiltIn);
+        Assert.False(CanopyTone.Named("critical").IsBuiltIn);
+        Assert.Equal(CanopyTone.None, default(CanopyTone));
+        Assert.Null(new CanopyCell("x").Tone.Name);
+        Assert.Equal(CanopyTone.Neutral, new CanopyBadge("x").Tone);
     }
 
     [Fact]

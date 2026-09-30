@@ -1,6 +1,7 @@
 /*
  * CanopyX theme. Hosts theme a view by setting the base colours (--cx-surface, --cx-text, --cx-accent, --cx-line and
- * the four tones); hover, selection, alternate rows, and muted text are derived with color-mix().
+ * one colour per tone); hover, selection, alternate rows, and muted text are derived with color-mix(). A host adds
+ * tones of its own by defining --cx-tone-<name> and, for badges, --cx-tone-<name>-bg.
  */
 .cx-host {
   --cx-surface: #ffffff;
@@ -170,6 +171,9 @@
 .cx-badge.cx-tone-warning { color: var(--cx-tone-warning); background: color-mix(in srgb, var(--cx-tone-warning) 12%, var(--cx-surface)); border-color: transparent; }
 .cx-badge.cx-tone-danger { color: var(--cx-tone-danger); background: color-mix(in srgb, var(--cx-tone-danger) 12%, var(--cx-surface)); border-color: transparent; }
 .cx-badge.cx-tone-muted { color: var(--cx-muted); }
+/* Any other tone is the host's: the runtime points --cx-t at the theme's --cx-tone-<name>, and --cx-t-bg at its -bg. */
+.cx-toned { color: var(--cx-t, inherit); }
+.cx-badge.cx-toned { color: var(--cx-t, var(--cx-text)); background: var(--cx-t-bg, color-mix(in srgb, var(--cx-t, var(--cx-text)) 12%, var(--cx-surface))); border-color: transparent; }
 /* Muted text on a selected row falls back to the normal colour to keep 4.5:1 contrast in both themes. */
 .cx-row[aria-selected="true"] :is(.cx-tone-muted, .cx-badge.cx-tone-muted) { color: var(--cx-text); }
 

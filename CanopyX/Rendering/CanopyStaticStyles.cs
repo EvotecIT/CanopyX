@@ -1,3 +1,5 @@
+using System;
+
 namespace CanopyX.Rendering;
 
 /// <summary>
@@ -17,24 +19,64 @@ internal static class CanopyStaticStyles {
     internal const string Link = "color:#0a58ca;";
     internal const string Hidden = "color:#59636e;font-weight:400;font-size:11px;";
 
-    internal static string ToneColor(CanopyTone tone) => tone switch {
-        CanopyTone.Info => "#0550ae",
-        CanopyTone.Success => "#116329",
-        CanopyTone.Warning => "#7d4e00",
-        CanopyTone.Danger => "#b3261e",
-        CanopyTone.Muted => "#59636e",
-        _ => string.Empty
-    };
+    /// <summary>The <c>color</c> declaration of a toned cell, or an empty string for a tone without a colour.</summary>
+    internal static string ToneColor(CanopyTone tone, CanopyStaticHtmlOptions options) {
+        var color = Text(tone, options);
+        return color == null ? string.Empty : "color:" + color + ";";
+    }
 
-    internal static string Badge(CanopyTone tone) {
-        var (background, color) = tone switch {
-            CanopyTone.Info => ("#ddf4ff", "#0550ae"),
-            CanopyTone.Success => ("#dafbe1", "#116329"),
-            CanopyTone.Warning => ("#fff8c5", "#7d4e00"),
-            CanopyTone.Danger => ("#ffebe9", "#b3261e"),
-            CanopyTone.Muted => ("#f6f8fa", "#59636e"),
-            _ => ("#f6f8fa", "#1f2328")
+    internal static string Badge(CanopyTone tone, CanopyStaticHtmlOptions options) {
+        var background = tone.Name switch {
+            "info" => "#ddf4ff",
+            "success" => "#dafbe1",
+            "warning" => "#fff8c5",
+            "danger" => "#ffebe9",
+            _ => "#f6f8fa"
         };
-        return "display:inline-block;margin-left:6px;padding:0 6px;border:1px solid #d1d9e0;border-radius:9px;font-size:11px;background:" + background + ";color:" + color + ";";
+        return "display:inline-block;margin-left:6px;padding:0 6px;border:1px solid #d1d9e0;border-radius:9px;font-size:11px;background:" + background + ";color:" + (Text(tone, options) ?? "#1f2328") + ";";
+    }
+
+    /// <summary>The text colour of a tone: a literal for the tones CanopyX ships, the host's colour for its own.</summary>
+    private static string? Text(CanopyTone tone, CanopyStaticHtmlOptions options) {
+        switch (tone.Name) {
+            case null:
+            case "neutral":
+                return null;
+            case "info":
+                return "#0550ae";
+            case "success":
+                return "#116329";
+            case "warning":
+                return "#7d4e00";
+            case "danger":
+                return "#b3261e";
+            case "muted":
+                return "#59636e";
+            default:
+                if (!options.ToneColors.TryGetValue(tone, out var color)) {
+                    return null;
+                }
+
+                if (!IsHexColor(color)) {
+                    throw new InvalidOperationException("The colour of tone '" + tone.Name + "' must be # followed by three or six hex digits.");
+                }
+
+                return color;
+        }
+    }
+
+    private static bool IsHexColor(string? color) {
+        if (color == null || (color.Length != 4 && color.Length != 7) || color[0] != '#') {
+            return false;
+        }
+
+        for (var index = 1; index < color.Length; index++) {
+            var ch = color[index];
+            if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

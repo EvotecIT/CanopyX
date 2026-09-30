@@ -99,7 +99,7 @@ public sealed class ProtocolSchemaTests {
         "empty continuation",
         "roots in a sidecar view",
         "remote source without cursor placeholder",
-        "unknown tone"
+        "tone that is not a name"
     };
 
     [Theory]
@@ -113,7 +113,7 @@ public sealed class ProtocolSchemaTests {
             "empty continuation" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["next"] = ""),
             "roots in a sidecar view" => ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson(), view => view["roots"] = new JsonArray()),
             "remote source without cursor placeholder" => ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Remote("c?ref={ref}&cursor={cursor}", "s?q={query}&limit={limit}")).ToJson(), view => view["source"]!["children"] = "c?ref={ref}"),
-            "unknown tone" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["badges"] = JsonNode.Parse("[{\"text\":\"x\",\"tone\":\"red\"}]")),
+            "tone that is not a name" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["badges"] = JsonNode.Parse("[{\"text\":\"x\",\"tone\":\"Red alert\"}]")),
             _ => throw new ArgumentOutOfRangeException(nameof(rule))
         };
 

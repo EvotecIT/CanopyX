@@ -50,7 +50,7 @@ public static class CanopyStaticHtml {
         html.Append("</tr></thead><tbody>");
         foreach (var (node, level) in rows) {
             if (node.Detail != null) {
-                AppendDetail(html, node, level, columns.Count);
+                AppendDetail(html, node, level, columns.Count, o);
             } else {
                 AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o);
             }
@@ -163,10 +163,7 @@ public static class CanopyStaticHtml {
                 style += "padding-left:" + ((level - 1) * IndentPixels + 8) + "px;" + (node.Group ? "font-weight:600;" : string.Empty);
             }
 
-            var tone = cell?.Tone ?? CanopyTone.None;
-            if (tone != CanopyTone.None) {
-                style += "color:" + CanopyStaticStyles.ToneColor(tone) + ";";
-            }
+            style += CanopyStaticStyles.ToneColor(cell?.Tone ?? CanopyTone.None, options);
 
             html.Append("<td style=\"").Append(style).Append('"');
             if (!string.IsNullOrEmpty(cell?.Title)) {
@@ -175,7 +172,7 @@ public static class CanopyStaticHtml {
 
             html.Append('>').Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind) ?? string.Empty));
             if (index == 0 && node.HasBadges) {
-                AppendBadges(html, node.Badges);
+                AppendBadges(html, node.Badges, options);
             }
 
             if (index == 0 && hiddenBelow != 0) {
@@ -186,7 +183,7 @@ public static class CanopyStaticHtml {
             }
 
             if (cell != null && cell.HasBadges) {
-                AppendBadges(html, cell.Badges);
+                AppendBadges(html, cell.Badges, options);
             }
 
             html.Append("</td>");
@@ -195,9 +192,9 @@ public static class CanopyStaticHtml {
         html.Append("</tr>");
     }
 
-    private static void AppendBadges(StringBuilder html, IEnumerable<CanopyBadge> badges) {
+    private static void AppendBadges(StringBuilder html, IEnumerable<CanopyBadge> badges, CanopyStaticHtmlOptions options) {
         foreach (var badge in badges) {
-            html.Append("<span style=\"").Append(CanopyStaticStyles.Badge(badge.Tone)).Append('"');
+            html.Append("<span style=\"").Append(CanopyStaticStyles.Badge(badge.Tone, options)).Append('"');
             if (!string.IsNullOrEmpty(badge.Title)) {
                 html.Append(" title=\"").Append(Encode(badge.Title!)).Append('"');
             }
@@ -206,7 +203,7 @@ public static class CanopyStaticHtml {
         }
     }
 
-    private static void AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount) {
+    private static void AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount, CanopyStaticHtmlOptions options) {
         html.Append("<tr><td colspan=\"").Append(columnCount).Append("\" style=\"").Append(CanopyStaticStyles.Detail)
             .Append("padding-left:").Append((level - 1) * IndentPixels + 8).Append("px;\">");
         switch (node.Detail) {
@@ -236,7 +233,7 @@ public static class CanopyStaticHtml {
                 foreach (var row in table.Rows) {
                     html.Append("<tr>");
                     foreach (var cell in row) {
-                        AppendInnerCell(html, cell);
+                        AppendInnerCell(html, cell, options);
                     }
 
                     html.Append("</tr>");
@@ -249,7 +246,7 @@ public static class CanopyStaticHtml {
                 foreach (var item in properties.Items) {
                     html.Append("<tr><th scope=\"row\" style=\"").Append(CanopyStaticStyles.InnerHeader).Append("color:#59636e;font-weight:400;border-bottom:0;\">")
                         .Append(Encode(item.Name)).Append("</th>");
-                    AppendInnerCell(html, item.Value);
+                    AppendInnerCell(html, item.Value, options);
                     html.Append("</tr>");
                 }
 
@@ -265,20 +262,14 @@ public static class CanopyStaticHtml {
         html.Append("</td></tr>");
     }
 
-    private static void AppendInnerCell(StringBuilder html, CanopyCell? cell) {
-        var tone = cell?.Tone ?? CanopyTone.None;
-        html.Append("<td style=\"").Append(CanopyStaticStyles.InnerCell);
-        if (tone != CanopyTone.None) {
-            html.Append("color:").Append(CanopyStaticStyles.ToneColor(tone)).Append(';');
-        }
-
-        html.Append('"');
+    private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticHtmlOptions options) {
+        html.Append("<td style=\"").Append(CanopyStaticStyles.InnerCell).Append(CanopyStaticStyles.ToneColor(cell?.Tone ?? CanopyTone.None, options)).Append('"');
         if (!string.IsNullOrEmpty(cell?.Title)) {
             html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
         }
         html.Append('>').Append(Encode(cell?.DisplayText(CanopyColumnKind.Text) ?? string.Empty));
         if (cell != null) {
-            AppendBadges(html, cell.Badges);
+            AppendBadges(html, cell.Badges, options);
         }
         html.Append("</td>");
     }

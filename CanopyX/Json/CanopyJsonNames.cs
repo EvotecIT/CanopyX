@@ -6,16 +6,6 @@ namespace CanopyX.Json;
 /// Maps CanopyX enums to their <c>canopyx/1</c> wire names. Keep in step with <c>docs/schema/canopyx-1.schema.json</c>.
 /// </summary>
 internal static class CanopyJsonNames {
-    internal static string? Tone(CanopyTone tone) => tone switch {
-        CanopyTone.None => null,
-        CanopyTone.Neutral => "neutral",
-        CanopyTone.Info => "info",
-        CanopyTone.Success => "success",
-        CanopyTone.Warning => "warning",
-        CanopyTone.Danger => "danger",
-        CanopyTone.Muted => "muted",
-        _ => throw new ArgumentOutOfRangeException(nameof(tone), tone, "Unknown tone.")
-    };
 
     internal static string ColumnKind(CanopyColumnKind kind) => kind switch {
         CanopyColumnKind.Text => "text",
