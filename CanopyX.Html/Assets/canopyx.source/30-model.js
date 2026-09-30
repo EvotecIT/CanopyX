@@ -16,8 +16,11 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
+      // Every text the grid writes itself: English, then the view's translations, then the host's.
+      this.labels = labelsFor(view.labels, options.labels);
       // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
       if (options.renderCell) {
         throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
       }
@@ -128,10 +131,11 @@
         row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
-      const loaded = parent.children ? parent.children.length : 0;
       const format = numberFormat(this.lang);
-      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
-        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
+      const loaded = format.format(parent.children ? parent.children.length : 0);
+      const labels = this.labels;
+      row.h.label = kind === "loading" ? labels.loading : kind === "error" ? fill(labels.loadError, { error: parent.error }) :
+        parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.format(parent.total) }) : fill(labels.showMoreUnknownTotal, { loaded: loaded });
       row._v = 0;
       return row;
     }

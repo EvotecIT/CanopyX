@@ -45,7 +45,7 @@ public sealed class JsonEncodingTests {
         const string expected = "{\"protocol\":\"canopyx/1\",\"type\":\"view\",\"id\":\"v\",\"label\":\"Files\",\"rowHeight\":28,\"pageSize\":100,"
             + "\"selection\":\"single\",\"columns\":[{\"id\":\"name\",\"title\":\"Name\",\"width\":160,\"kind\":\"text\",\"sortable\":true},"
             + "{\"id\":\"size\",\"title\":\"Size\",\"width\":90,\"kind\":\"number\"}],"
-            + "\"search\":{\"minLength\":2,\"maxResults\":20,\"placeholder\":\"Search\"},\"source\":{\"kind\":\"inline\"},"
+            + "\"search\":{\"minLength\":2,\"maxResults\":20},\"source\":{\"kind\":\"inline\"},"
             + "\"roots\":[{\"id\":\"a\",\"label\":\"Folder\",\"cells\":{\"size\":1536},\"hasChildren\":true,\"childCount\":1,\"expanded\":true,"
             + "\"children\":[{\"id\":\"a/b\",\"label\":\"File\",\"cells\":{\"size\":{\"value\":512,\"text\":\"512 B\",\"tone\":\"muted\"}}}]}]}";
         Assert.Equal(expected, view.ToJson());

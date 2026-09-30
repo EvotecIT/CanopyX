@@ -6,9 +6,9 @@
       this.cols.forEach((column, i) => {
         this.headCells[i].style.width = column.width + "px";
         const grip = this.headCells[i].querySelector(".cx-resize");
-        grip.setAttribute("aria-label", "Resize " + column.title);
+        grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
         grip.setAttribute("aria-valuenow", String(column.width));
-        grip.setAttribute("aria-valuetext", column.width + " pixels");
+        grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
         sum += column.width;
       });
       this.rowWidth = sum;

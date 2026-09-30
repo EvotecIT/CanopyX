@@ -16,6 +16,7 @@ public sealed class CanopyView {
     private int _rowHeight = 28;
     private int _pageSize = 100;
     private CanopySource _source = CanopySource.Inline();
+    private CanopyLabels _labels = new CanopyLabels();
 
     /// <summary>Creates a view.</summary>
     /// <param name="id">The view id, unique within a page. It scopes element ids, remembered state, and deep links.</param>
@@ -118,6 +119,17 @@ public sealed class CanopyView {
     /// <summary>Gets or sets whether selecting a row writes its id path to the URL hash and a hash expands it on load.</summary>
     public bool DeepLink { get; set; }
 
+    /// <summary>
+    /// Gets or sets the texts CanopyX writes itself for this view, in the browser and in the static outline. English
+    /// by default; set translations once here. Assign one <see cref="CanopyLabels"/> to several views, or
+    /// <see cref="CanopyLabels.Clone"/> it, to share them.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">The value is null.</exception>
+    public CanopyLabels Labels {
+        get => _labels;
+        set => _labels = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
     /// <summary>Writes the <c>view</c> document of the <c>canopyx/1</c> protocol.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
@@ -167,6 +179,11 @@ public sealed class CanopyView {
         writer.OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         if (PinTreeColumn) {
             writer.Property("pinTreeColumn", true);
+        }
+
+        if (_labels.HasRuntimeLabels) {
+            writer.Name("labels");
+            _labels.WriteJson(writer);
         }
 
         writer.OptionalProperty("stateKey", StateKey);

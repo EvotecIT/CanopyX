@@ -26,6 +26,8 @@ internal static class SampleDocuments {
         view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });
         view.Icons["folder"] = FolderIcon;
+        view.Labels.Columns = "Kolumny";
+        view.Labels.ShowMore = "Pokaż więcej ({loaded} z {total})";
         view.Filters.Add(new CanopyFilter("changed", "Only changed", "changed") { AncestorFlag = "changed-below" });
         view.Filters.Add(new CanopyFilter("changed-30d", "Changed in 30 days", "changed-30d") { Hidden = true });
 

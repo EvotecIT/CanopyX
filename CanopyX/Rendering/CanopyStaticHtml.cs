@@ -52,22 +52,22 @@ public static class CanopyStaticHtml {
         html.Append("</tr></thead><tbody>");
         foreach (var (node, level) in rows) {
             if (node.Detail != null) {
-                AppendDetail(html, node, level, columns.Count, styles);
+                AppendDetail(html, node, level, columns.Count, styles, view.Labels);
             } else {
-                AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles);
+                AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles, view.Labels);
             }
         }
 
         html.Append("</tbody>");
         if (unknown || total > rows.Count) {
-            var note = o.OverflowNote
+            var note = (o.OverflowNote ?? view.Labels.OverflowNote)
                 .Replace("{shown}", rows.Count.ToString("N0", o.Culture))
-                .Replace("{total}", unknown ? "unknown" : total.ToString("N0", o.Culture));
+                .Replace("{total}", unknown ? view.Labels.UnknownTotal : total.ToString("N0", o.Culture));
             // The note is the last row of the table, so it sits on the theme's surface like the rows above it. It has
             // a row group of its own rather than a tfoot, which browsers repeat at the bottom of every printed page.
             html.Append("<tbody><tr><td colspan=\"").Append(columns.Count).Append("\" style=\"").Append(styles.Note).Append("\">").Append(Encode(note));
             if (IsSafeReportUrl(o.FullReportUrl)) {
-                html.Append(" <a href=\"").Append(Encode(o.FullReportUrl!)).Append("\" style=\"").Append(styles.Link).Append("\">").Append(Encode(o.FullReportText)).Append("</a>");
+                html.Append(" <a href=\"").Append(Encode(o.FullReportUrl!)).Append("\" style=\"").Append(styles.Link).Append("\">").Append(Encode(o.FullReportText ?? view.Labels.FullReport)).Append("</a>");
             }
 
             html.Append("</td></tr></tbody>");
@@ -155,7 +155,7 @@ public static class CanopyStaticHtml {
         return count;
     }
 
-    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles) {
+    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels) {
         html.Append("<tr>");
         for (var index = 0; index < columns.Count; index++) {
             var column = columns[index];
@@ -174,7 +174,7 @@ public static class CanopyStaticHtml {
                 html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
             }
 
-            html.Append('>').Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind) ?? string.Empty));
+            html.Append('>').Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty));
             if (index == 0 && node.HasBadges) {
                 AppendBadges(html, node.Badges, styles);
             }
@@ -182,7 +182,7 @@ public static class CanopyStaticHtml {
             if (index == 0 && hiddenBelow != 0) {
                 // -1 marks children a source would load without a declared count.
                 var count = hiddenBelow > 0 ? hiddenBelow.ToString("N0", options.Culture) : "?";
-                html.Append(" <span style=\"").Append(styles.Hidden).Append("\" title=\"").Append(Encode(options.HiddenRowsTitle.Replace("{count}", count))).Append("\">(+")
+                html.Append(" <span style=\"").Append(styles.Hidden).Append("\" title=\"").Append(Encode((options.HiddenRowsTitle ?? labels.HiddenRows).Replace("{count}", count))).Append("\">(+")
                     .Append(hiddenBelow > 0 ? Encode(count) : string.Empty).Append(")</span>");
             }
 
@@ -207,7 +207,7 @@ public static class CanopyStaticHtml {
         }
     }
 
-    private static void AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount, CanopyStaticStyles styles) {
+    private static void AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount, CanopyStaticStyles styles, CanopyLabels labels) {
         html.Append("<tr><td colspan=\"").Append(columnCount).Append("\" style=\"").Append(styles.Detail)
             .Append("padding-left:").Append((level - 1) * IndentPixels + 8).Append("px;\">");
         switch (node.Detail) {
@@ -237,7 +237,7 @@ public static class CanopyStaticHtml {
                 foreach (var row in table.Rows) {
                     html.Append("<tr>");
                     foreach (var cell in row) {
-                        AppendInnerCell(html, cell, styles);
+                        AppendInnerCell(html, cell, styles, labels);
                     }
 
                     html.Append("</tr>");
@@ -250,7 +250,7 @@ public static class CanopyStaticHtml {
                 foreach (var item in properties.Items) {
                     html.Append("<tr><th scope=\"row\" style=\"").Append(styles.PropertyName).Append("\">")
                         .Append(Encode(item.Name)).Append("</th>");
-                    AppendInnerCell(html, item.Value, styles);
+                    AppendInnerCell(html, item.Value, styles, labels);
                     html.Append("</tr>");
                 }
 
@@ -266,12 +266,12 @@ public static class CanopyStaticHtml {
         html.Append("</td></tr>");
     }
 
-    private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticStyles styles) {
+    private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticStyles styles, CanopyLabels labels) {
         html.Append("<td style=\"").Append(styles.InnerCell).Append(styles.ToneColor(cell?.Tone ?? CanopyTone.None)).Append('"');
         if (!string.IsNullOrEmpty(cell?.Title)) {
             html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
         }
-        html.Append('>').Append(Encode(cell?.DisplayText(CanopyColumnKind.Text) ?? string.Empty));
+        html.Append('>').Append(Encode(cell?.DisplayText(CanopyColumnKind.Text, labels) ?? string.Empty));
         if (cell != null && cell.HasBadges) {
             AppendBadges(html, cell.Badges, styles);
         }

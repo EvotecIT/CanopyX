@@ -41,16 +41,47 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `selection` | `single` or `multiple` | Selection mode. |
 | `columns` | array of columns | The first column is the tree column. At least one. |
 | `icons` | object | Optional. Icon key to trusted SVG markup, declared once and referenced by nodes. |
-| `search` | object | Optional. Shows the search box. When present it has all of `minLength` (1 to 16; at least 2 for sidecar sources), `maxResults` (1 to 500), and `placeholder`, and optionally `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
+| `search` | object | Optional. Shows the search box. When present it has `minLength` (1 to 16; at least 2 for sidecar sources) and `maxResults` (1 to 500), and optionally `placeholder` (the box's placeholder and accessible name; `labels.searchPlaceholder` when absent) and `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
 | `filters` | array of filters | Optional. "Only matching" switches. |
 | `timeZone` | `utc` or `local` | Optional. The time zone `datetime` columns show at first: UTC (the default), or the reader's own. A host can switch it at run time. |
 | `pinTreeColumn` | boolean | Optional. The tree column stays in view while the other columns scroll sideways. A host can change it at run time with `grid.setTreeColumnPinned(pinned)`. |
 | `stateKey` | string | Optional. Session storage key for remembered expanded paths. |
 | `deepLink` | boolean | Optional. Selection writes the id path to the URL hash; a hash expands it on load. |
+| `labels` | object | Optional. Translations of the texts the runtime writes itself (see [Labels](#labels)); English where a name is absent. |
 | `source` | object | Where nodes come from (see [Sources](#sources)). |
 | `roots` | array of nodes | Top-level nodes; present only for inline sources. |
 
 A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable` and `hidden`. The tree column cannot be hidden. Widths are initial: the reader drags a column edge, and a host sets one with `grid.setColumnWidth(columnId, pixels)`, for example to narrow the tree column on a small screen. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
+
+### Labels
+
+The runtime writes some text of its own: the search box's hints and announcements, the "show more", loading, and error rows, the column chooser, the names of the column resize handles, the announcements after a page of children, `true` and `false` without display text, the UTC mark on dates and the local-time tooltip, and the notice of a view that failed to mount. `labels` translates them. Every name is optional and English applies where it is missing; a value is a string with visible text. `{name}` placeholders are replaced, numbers formatted in the page language.
+
+| Name | English | Placeholders |
+| --- | --- | --- |
+| `searchPlaceholder` | Search (when `search.placeholder` is absent) | |
+| `searchResultCount` | {count} results | `count` |
+| `searchResultCountOfTotal` | {count} of {total} results | `count`, `total` |
+| `searchResultCountOfMany` | {count} of many results | `count` |
+| `searchNoResults` | No results | |
+| `searchTooShort` | Type at least {min} characters | `min` |
+| `searchFailed` | Search failed: {error} | `error` |
+| `columns` | Columns | |
+| `visibleColumns` | Visible columns | |
+| `resizeColumn` | Resize {column} | `column` |
+| `columnWidth` | {width} pixels | `width` |
+| `loading` | Loading… | |
+| `loadError` | Could not load: {error} (Enter to retry) | `error` |
+| `showMore` | Show more ({loaded} of {total} loaded) | `loaded`, `total` |
+| `showMoreUnknownTotal` | Show more ({loaded} loaded) | `loaded` |
+| `pageLoaded` | {loaded} of {total} loaded | `loaded`, `total` |
+| `itemsLoaded` | {count} items | `count` |
+| `yes`, `no` | Yes, No | |
+| `utcTime` | {time} UTC | `time`, required |
+| `localTime` | {time} local time | `time`, required |
+| `mountError` | This view could not be displayed: {error} | `error` |
+
+`{error}` is the technical message of what failed, which stays in English. The first `{time}` of a date label is where the date goes. A host that builds pages from C# sets `CanopyView.Labels` once, and the view document carries the names that differ from English; the static outline reads its own texts (the overflow note, the unknown total, the hidden-rows tooltip, and the full-report link) from the same object. A browser host can also pass `labels` to `createTreeGrid` or `CanopyX.configure`, on top of the view's; `CanopyX.labels` holds the English texts by name, and a name the runtime does not know is an error. For a language with plural forms, phrase a label so that its number stands on its own, for example `Wyniki: {count}`. Host data (node labels, column titles, cells, badges) is the host's own text and is never translated by CanopyX.
 
 ### Filter Semantics
 

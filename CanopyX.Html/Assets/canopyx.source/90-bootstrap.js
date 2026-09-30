@@ -3,9 +3,10 @@
   /**
    * Creates a tree grid in a host element.
    * @param {HTMLElement} host The element that receives the grid.
-   * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
+   * @param {{ view: object, source?: object, labels?: Object<string, string>, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function, formatLink?: Function, parseLink?: Function }} options
-   *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
+   *   `view` is a canopyx/1 view document. `labels` translates the texts the grid writes itself, on top of the view's
+   *   own `labels` (names and placeholders as in docs/data-protocol.md). Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
    *   the ids of the active declared filters whenever they change.
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
@@ -94,16 +95,21 @@
   function mount(root, automatic) {
     const scope = root || document;
     const created = [];
-    const showError = (host, err, api) => {
+    const showError = (host, err, api, view) => {
       if (api) {
         api.destroy();
         if (host.canopyx === api) delete host.canopyx;
       }
       const message = err && err.message ? err.message : String(err);
+      // In the view's language when its labels could be read; the labels themselves may be what is wrong.
+      let labels = DEFAULT_LABELS;
+      for (const attempt of [() => labelsFor(view && view.labels, view && configured.has(view.id) ? configured.get(view.id).labels : null), () => labelsFor(view && view.labels)]) {
+        try { labels = attempt(); break; } catch (e) { labels = DEFAULT_LABELS; }
+      }
       const notice = document.createElement("div");
       notice.className = "cx-mount-error";
       notice.setAttribute("role", "alert");
-      setText(notice, "This view could not be displayed: " + message);
+      setText(notice, fill(labels.mountError, { error: message }));
       host.classList.add("cx-host");
       host.setAttribute("data-canopyx-mounted", "true");
       host.setAttribute("data-cx-error", message);
@@ -116,15 +122,16 @@
         return;
       }
       host.setAttribute("data-canopyx-mounted", "true");
+      let view = null;
       try {
-        const view = JSON.parse(config.textContent);
+        view = JSON.parse(config.textContent);
         const api = createTreeGrid(host, Object.assign({}, view && configured.get(view.id), { view: view }));
         created.push(api);
         api.ready.catch((err) => {
-          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api);
+          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
         });
       } catch (err) {
-        showError(host, err);
+        showError(host, err, null, view);
       }
     });
     return created;
@@ -135,7 +142,9 @@
     createTreeGrid: createTreeGrid,
     configure: configure,
     mount: (root) => mount(root, false),
-    sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource })
+    sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
+    // The English texts and their names, for a host that builds its translations from them.
+    labels: DEFAULT_LABELS
   });
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and

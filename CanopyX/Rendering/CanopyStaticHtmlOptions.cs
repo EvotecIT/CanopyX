@@ -39,9 +39,11 @@ public sealed class CanopyStaticHtmlOptions {
     /// <summary>
     /// Gets or sets the note shown when rows were left out, whether by <see cref="MaxRows"/>, <see cref="MaxDepth"/>,
     /// <see cref="OnlyExpanded"/>, or children a sidecar or remote source would load. <c>{shown}</c> is replaced by the
-    /// rows shown and <c>{total}</c> by the rows in the tree. Defaults to "Showing {shown} of {total} rows.".
+    /// rows shown and <c>{total}</c> by the rows in the tree. <see langword="null"/> (the default) takes
+    /// <see cref="CanopyLabels.OverflowNote"/> from the view, which is where a host puts its translations; set it here
+    /// only for a note that differs in this one outline.
     /// </summary>
-    public string OverflowNote { get; set; } = "Showing {shown} of {total} rows.";
+    public string? OverflowNote { get; set; }
 
     /// <summary>Gets or sets the culture that formats the counts in the note and the row markers. Defaults to the invariant culture.</summary>
     /// <exception cref="ArgumentNullException">The value is null.</exception>
@@ -52,9 +54,10 @@ public sealed class CanopyStaticHtmlOptions {
 
     /// <summary>
     /// Gets or sets the tooltip of the "(+N)" marker on a row whose children are not shown. <c>{count}</c> is replaced
-    /// by the number of hidden rows. Defaults to "{count} rows below are not shown".
+    /// by the number of hidden rows. <see langword="null"/> (the default) takes <see cref="CanopyLabels.HiddenRows"/>
+    /// from the view.
     /// </summary>
-    public string HiddenRowsTitle { get; set; } = "{count} rows below are not shown";
+    public string? HiddenRowsTitle { get; set; }
 
     /// <summary>
     /// Gets or sets the colours of the outline. Defaults to the light theme; assign
@@ -93,6 +96,9 @@ public sealed class CanopyStaticHtmlOptions {
     /// <summary>Gets or sets an address added to the overflow note. Relative URLs and HTTP, HTTPS, or mailto links are allowed; other schemes are omitted.</summary>
     public string? FullReportUrl { get; set; }
 
-    /// <summary>Gets or sets the text of the link to <see cref="FullReportUrl"/>. Defaults to "Open the full report".</summary>
-    public string FullReportText { get; set; } = "Open the full report";
+    /// <summary>
+    /// Gets or sets the text of the link to <see cref="FullReportUrl"/>. <see langword="null"/> (the default) takes
+    /// <see cref="CanopyLabels.FullReport"/> from the view.
+    /// </summary>
+    public string? FullReportText { get; set; }
 }

@@ -220,7 +220,7 @@
         }
         slot.content.appendChild(slot.textSpan);
       }
-      const text = cellText(value, column, this.lang, this.local);
+      const text = cellText(value, column, this.fmt);
       if (slot.text.data !== text) {
         slot.text.data = text;
       }
@@ -238,7 +238,7 @@
       }
       toneColors(slot.cell, tone);
       // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
-      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
+      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.fmt);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -293,6 +293,7 @@
         return;
       }
       this.local = zone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
       this.version++;
       this.scheduleRender();
     },

@@ -237,7 +237,7 @@
         "icons": { "type": "object", "propertyNames": { "minLength": 1 }, "additionalProperties": { "type": "string", "pattern": "^\\s*<[sS][vV][gG][ \\t\\r\\n\\f/>]" } },
         "search": {
           "type": "object",
-          "required": ["minLength", "maxResults", "placeholder"],
+          "required": ["minLength", "maxResults"],
           "additionalProperties": false,
           "properties": {
             "minLength": { "type": "integer", "minimum": 1, "maximum": 16 },
@@ -251,6 +251,37 @@
         "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
+        "labels": {
+          "description": "Translations of the texts the runtime writes itself; English where a name is absent. {placeholders} are replaced.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "searchPlaceholder": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResults": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResultCount": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResultCountOfTotal": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResultCountOfMany": { "$ref": "#/$defs/accessibleLabel" },
+            "searchNoResults": { "$ref": "#/$defs/accessibleLabel" },
+            "searchTooShort": { "$ref": "#/$defs/accessibleLabel" },
+            "searchWordTooShort": { "$ref": "#/$defs/accessibleLabel" },
+            "searchFailed": { "$ref": "#/$defs/accessibleLabel" },
+            "columns": { "$ref": "#/$defs/accessibleLabel" },
+            "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
+            "loading": { "$ref": "#/$defs/accessibleLabel" },
+            "loadError": { "$ref": "#/$defs/accessibleLabel" },
+            "showMore": { "$ref": "#/$defs/accessibleLabel" },
+            "showMoreUnknownTotal": { "$ref": "#/$defs/accessibleLabel" },
+            "pageLoaded": { "$ref": "#/$defs/accessibleLabel" },
+            "itemsLoaded": { "$ref": "#/$defs/accessibleLabel" },
+            "yes": { "$ref": "#/$defs/accessibleLabel" },
+            "no": { "$ref": "#/$defs/accessibleLabel" },
+            "utcTime": { "type": "string", "pattern": "\\{time\\}" },
+            "localTime": { "type": "string", "pattern": "\\{time\\}" },
+            "mountError": { "$ref": "#/$defs/accessibleLabel" }
+          }
+        },
         "source": { "$ref": "#/$defs/source" },
         "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },

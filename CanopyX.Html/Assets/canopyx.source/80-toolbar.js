@@ -49,11 +49,13 @@
       const status = h("span", "cx-sr-only");
       list.id = this.id + "-results";
       list.hidden = true;
+      const labels = this.labels;
+      const count = (value) => numberFormat(this.lang).format(value);
       list.setAttribute("role", "listbox");
-      list.setAttribute("aria-label", "Search results");
+      list.setAttribute("aria-label", labels.searchResults);
       input.type = "search";
-      input.placeholder = options.placeholder || "Search";
-      input.setAttribute("aria-label", options.placeholder || "Search");
+      input.placeholder = options.placeholder || labels.searchPlaceholder;
+      input.setAttribute("aria-label", options.placeholder || labels.searchPlaceholder);
       input.setAttribute("role", "combobox");
       input.setAttribute("aria-autocomplete", "list");
       input.setAttribute("aria-expanded", "false");
@@ -83,7 +85,7 @@
         try {
           await this.expandPath(hit.path, { select: true, focus: true, signal: current.signal });
         } catch (err) {
-          if (!this.destroyed && !current.signal.aborted) setText(status, err.message);
+          if (!this.destroyed && !current.signal.aborted) setText(status, fill(labels.searchFailed, { error: err.message }));
         }
       };
       const show = (result) => {
@@ -115,7 +117,8 @@
         });
         list.hidden = !hits.length;
         input.setAttribute("aria-expanded", hits.length ? "true" : "false");
-        setText(status, hits.length ? hits.length + (result.truncated ? " of " + (result.total || "many") : "") + " results" : "No results");
+        setText(status, !hits.length ? labels.searchNoResults : !result.truncated ? fill(labels.searchResultCount, { count: count(hits.length) }) :
+          result.total ? fill(labels.searchResultCountOfTotal, { count: count(hits.length), total: count(result.total) }) : fill(labels.searchResultCountOfMany, { count: count(hits.length) }));
       };
       const run = async () => {
         if (this.destroyed) return;
@@ -123,7 +126,7 @@
         if (query.length < options.minLength) {
           sequence++;
           close();
-          setText(status, query ? "Type at least " + options.minLength + " characters" : "");
+          setText(status, query ? fill(labels.searchTooShort, { min: count(options.minLength) }) : "");
           return;
         }
         const mine = ++sequence;
@@ -134,7 +137,9 @@
           }
         } catch (err) {
           if (!this.destroyed && mine === sequence) {
-            setText(status, "Search failed: " + (err && err.message ? err.message : err));
+            // A bundle's index cannot answer a query whose words are all one character long: say what to type.
+            setText(status, err && err.code === "too-short" ? fill(labels.searchWordTooShort, { min: count(2) }) :
+              fill(labels.searchFailed, { error: err && err.message ? err.message : err }));
           }
         }
       };
@@ -200,10 +205,10 @@
     buildColumnChooser(bar) {
       const details = h("details", "cx-columns");
       const summary = h("summary");
-      setText(summary, "Columns");
+      setText(summary, this.labels.columns);
       const group = h("fieldset", "cx-columns-list");
       const legend = h("legend", "cx-sr-only");
-      setText(legend, "Visible columns");
+      setText(legend, this.labels.visibleColumns);
       group.appendChild(legend);
       this.columns.slice(1).forEach((column) => {
         const label = h("label");

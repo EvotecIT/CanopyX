@@ -253,7 +253,9 @@
         return Promise.resolve({ hits: [], total: 0, truncated: false });
       }
       if (!queryWords.some((word) => word.length >= 2)) {
-        return Promise.reject(new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units."));
+        const error = new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
+        error.code = "too-short";
+        return Promise.reject(error);
       }
       // A file that failed a check must not answer the next query from the cache.
       return run(query, queryWords, limit).catch((err) => {

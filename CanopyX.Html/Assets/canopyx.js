@@ -208,41 +208,77 @@
     return texts;
   }
 
-  function formatDate(value, local) {
-    const texts = dateText(value);
-    return texts ? (local ? texts[1] : texts[0] + " UTC") : String(value);
+  const DEFAULT_LABELS = Object.freeze({
+    searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
+    searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
+    searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
+    searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
+    columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
+    loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+    showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
+    pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
+    utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
+  });
+
+  function labelsFor(...sources) {
+    const labels = Object.assign({}, DEFAULT_LABELS);
+    for (const source of sources) {
+      if (source == null) continue;
+      if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
+      Object.keys(source).forEach((name) => {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
+        if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
+        labels[name] = source[name];
+      });
+    }
+    return Object.freeze(labels);
   }
 
-  function otherZone(cell, column, local) {
+  function fill(template, values) {
+    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
+  }
+
+  function formatting(lang, local, labels) {
+    const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
+    return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
+  }
+
+  function formatDate(value, fmt) {
+    const texts = dateText(value);
+    return texts ? (fmt.local ? texts[1] : fmt.utc[0] + texts[0] + fmt.utc[1]) : String(value);
+  }
+
+  function otherZone(cell, column, fmt) {
     const value = cellValue(cell);
     if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
       return null;
     }
     const texts = dateText(value);
-    return texts ? (local ? texts[0] + " UTC" : texts[1] + " local time") : null;
+    return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
   }
 
-  function formatValue(value, kind, lang, local) {
+  function formatValue(value, kind, fmt) {
     if (value === null || value === undefined) {
       return "";
     }
     if (typeof value === "boolean") {
-      return value ? "Yes" : "No";
+      return value ? fmt.labels.yes : fmt.labels.no;
     }
     if (typeof value === "number" && kind === "number") {
-      return numberFormat(lang).format(value);
+      return numberFormat(fmt.lang).format(value);
     }
     if (typeof value === "string" && kind === "datetime") {
-      return formatDate(value, local);
+      return formatDate(value, fmt);
     }
     return String(value);
   }
 
-  function cellText(cell, column, lang, local) {
+  function cellText(cell, column, fmt) {
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }
-    return formatValue(cellValue(cell), column.kind, lang, local);
+    return formatValue(cellValue(cell), column.kind, fmt);
   }
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -682,7 +718,9 @@
         return Promise.resolve({ hits: [], total: 0, truncated: false });
       }
       if (!queryWords.some((word) => word.length >= 2)) {
-        return Promise.reject(new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units."));
+        const error = new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
+        error.code = "too-short";
+        return Promise.reject(error);
       }
       return run(query, queryWords, limit).catch((err) => {
         loadShard.clear();
@@ -868,7 +906,9 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
+      this.labels = labelsFor(view.labels, options.labels);
       this.local = view.timeZone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
       if (options.renderCell) {
         throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
       }
@@ -974,10 +1014,11 @@
         row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
-      const loaded = parent.children ? parent.children.length : 0;
       const format = numberFormat(this.lang);
-      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
-        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
+      const loaded = format.format(parent.children ? parent.children.length : 0);
+      const labels = this.labels;
+      row.h.label = kind === "loading" ? labels.loading : kind === "error" ? fill(labels.loadError, { error: parent.error }) :
+        parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.format(parent.total) }) : fill(labels.showMoreUnknownTotal, { loaded: loaded });
       row._v = 0;
       return row;
     }
@@ -1499,9 +1540,9 @@
       this.cols.forEach((column, i) => {
         this.headCells[i].style.width = column.width + "px";
         const grip = this.headCells[i].querySelector(".cx-resize");
-        grip.setAttribute("aria-label", "Resize " + column.title);
+        grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
         grip.setAttribute("aria-valuenow", String(column.width));
-        grip.setAttribute("aria-valuetext", column.width + " pixels");
+        grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
         sum += column.width;
       });
       this.rowWidth = sum;
@@ -1836,7 +1877,7 @@
         }
         slot.content.appendChild(slot.textSpan);
       }
-      const text = cellText(value, column, this.lang, this.local);
+      const text = cellText(value, column, this.fmt);
       if (slot.text.data !== text) {
         slot.text.data = text;
       }
@@ -1852,7 +1893,7 @@
         slot.cls = cls;
       }
       toneColors(slot.cell, tone);
-      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
+      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.fmt);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -1905,6 +1946,7 @@
         return;
       }
       this.local = zone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
       this.version++;
       this.scheduleRender();
     },
@@ -1922,9 +1964,9 @@
   const detailColumn = { kind: "text" };
   const DETAIL_ESTIMATE_SLOTS = 16;
 
-  function detailCell(tag, cell, lang) {
+  function detailCell(tag, cell, fmt) {
     const element = h(tag);
-    setText(element, cellText(cell, detailColumn, lang));
+    setText(element, cellText(cell, detailColumn, fmt));
     if (isCellObject(cell)) {
       if (cell.tone) {
         applyTone(element, "", toneOf(cell.tone));
@@ -1977,7 +2019,7 @@
         const tbody = h("tbody");
         (detail.rows || []).forEach((row) => {
           const tr = h("tr");
-          row.forEach((cell) => tr.appendChild(detailCell("td", cell, this.lang)));
+          row.forEach((cell) => tr.appendChild(detailCell("td", cell, this.fmt)));
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -1988,7 +2030,7 @@
           const term = h("dt");
           setText(term, item.name);
           list.appendChild(term);
-          list.appendChild(detailCell("dd", item.value, this.lang));
+          list.appendChild(detailCell("dd", item.value, this.fmt));
         });
         body.appendChild(list);
       } else if (detail.type === "html") {
@@ -2291,7 +2333,7 @@
         if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
-          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
+          this.announce(w.total != null && loaded < w.total ? fill(this.labels.pageLoaded, { loaded: format.format(loaded), total: format.format(w.total) }) : fill(this.labels.itemsLoaded, { count: format.format(loaded) }));
           info = { node: w.h, count: appliedCount, total: w.total, ms: performance.now() - started };
         }
         if (removedSelection) this.selectionChanged(removedSelection);
@@ -2618,11 +2660,13 @@
       const status = h("span", "cx-sr-only");
       list.id = this.id + "-results";
       list.hidden = true;
+      const labels = this.labels;
+      const count = (value) => numberFormat(this.lang).format(value);
       list.setAttribute("role", "listbox");
-      list.setAttribute("aria-label", "Search results");
+      list.setAttribute("aria-label", labels.searchResults);
       input.type = "search";
-      input.placeholder = options.placeholder || "Search";
-      input.setAttribute("aria-label", options.placeholder || "Search");
+      input.placeholder = options.placeholder || labels.searchPlaceholder;
+      input.setAttribute("aria-label", options.placeholder || labels.searchPlaceholder);
       input.setAttribute("role", "combobox");
       input.setAttribute("aria-autocomplete", "list");
       input.setAttribute("aria-expanded", "false");
@@ -2652,7 +2696,7 @@
         try {
           await this.expandPath(hit.path, { select: true, focus: true, signal: current.signal });
         } catch (err) {
-          if (!this.destroyed && !current.signal.aborted) setText(status, err.message);
+          if (!this.destroyed && !current.signal.aborted) setText(status, fill(labels.searchFailed, { error: err.message }));
         }
       };
       const show = (result) => {
@@ -2684,7 +2728,8 @@
         });
         list.hidden = !hits.length;
         input.setAttribute("aria-expanded", hits.length ? "true" : "false");
-        setText(status, hits.length ? hits.length + (result.truncated ? " of " + (result.total || "many") : "") + " results" : "No results");
+        setText(status, !hits.length ? labels.searchNoResults : !result.truncated ? fill(labels.searchResultCount, { count: count(hits.length) }) :
+          result.total ? fill(labels.searchResultCountOfTotal, { count: count(hits.length), total: count(result.total) }) : fill(labels.searchResultCountOfMany, { count: count(hits.length) }));
       };
       const run = async () => {
         if (this.destroyed) return;
@@ -2692,7 +2737,7 @@
         if (query.length < options.minLength) {
           sequence++;
           close();
-          setText(status, query ? "Type at least " + options.minLength + " characters" : "");
+          setText(status, query ? fill(labels.searchTooShort, { min: count(options.minLength) }) : "");
           return;
         }
         const mine = ++sequence;
@@ -2703,7 +2748,8 @@
           }
         } catch (err) {
           if (!this.destroyed && mine === sequence) {
-            setText(status, "Search failed: " + (err && err.message ? err.message : err));
+            setText(status, err && err.code === "too-short" ? fill(labels.searchWordTooShort, { min: count(2) }) :
+              fill(labels.searchFailed, { error: err && err.message ? err.message : err }));
           }
         }
       };
@@ -2767,10 +2813,10 @@
     buildColumnChooser(bar) {
       const details = h("details", "cx-columns");
       const summary = h("summary");
-      setText(summary, "Columns");
+      setText(summary, this.labels.columns);
       const group = h("fieldset", "cx-columns-list");
       const legend = h("legend", "cx-sr-only");
-      setText(legend, "Visible columns");
+      setText(legend, this.labels.visibleColumns);
       group.appendChild(legend);
       this.columns.slice(1).forEach((column) => {
         const label = h("label");
@@ -2969,11 +3015,11 @@
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
-          const text = cellText(value, column, this.lang, this.local);
+          const text = cellText(value, column, this.fmt);
           const content = h("span");
           if (!column.render || column.render(w.h, content, { column: column.id, level: w.level, expanded: w.expanded, index }) !== true) {
             const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
-            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.lang));
+            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.fmt));
           }
           out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
@@ -3226,16 +3272,20 @@
   function mount(root, automatic) {
     const scope = root || document;
     const created = [];
-    const showError = (host, err, api) => {
+    const showError = (host, err, api, view) => {
       if (api) {
         api.destroy();
         if (host.canopyx === api) delete host.canopyx;
       }
       const message = err && err.message ? err.message : String(err);
+      let labels = DEFAULT_LABELS;
+      for (const attempt of [() => labelsFor(view && view.labels, view && configured.has(view.id) ? configured.get(view.id).labels : null), () => labelsFor(view && view.labels)]) {
+        try { labels = attempt(); break; } catch (e) { labels = DEFAULT_LABELS; }
+      }
       const notice = document.createElement("div");
       notice.className = "cx-mount-error";
       notice.setAttribute("role", "alert");
-      setText(notice, "This view could not be displayed: " + message);
+      setText(notice, fill(labels.mountError, { error: message }));
       host.classList.add("cx-host");
       host.setAttribute("data-canopyx-mounted", "true");
       host.setAttribute("data-cx-error", message);
@@ -3248,15 +3298,16 @@
         return;
       }
       host.setAttribute("data-canopyx-mounted", "true");
+      let view = null;
       try {
-        const view = JSON.parse(config.textContent);
+        view = JSON.parse(config.textContent);
         const api = createTreeGrid(host, Object.assign({}, view && configured.get(view.id), { view: view }));
         created.push(api);
         api.ready.catch((err) => {
-          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api);
+          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
         });
       } catch (err) {
-        showError(host, err);
+        showError(host, err, null, view);
       }
     });
     return created;
@@ -3267,7 +3318,8 @@
     createTreeGrid: createTreeGrid,
     configure: configure,
     mount: (root) => mount(root, false),
-    sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource })
+    sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
+    labels: DEFAULT_LABELS
   });
 
   const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;

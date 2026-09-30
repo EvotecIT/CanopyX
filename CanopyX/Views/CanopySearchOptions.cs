@@ -10,7 +10,7 @@ namespace CanopyX;
 public sealed class CanopySearchOptions {
     private int _minLength = 2;
     private int _maxResults = 20;
-    private string _placeholder = "Search";
+    private string? _placeholder;
 
     /// <summary>Gets or sets how many characters a query needs before it runs. Bundle search indexes need at least 2.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below 1 or above 16.</exception>
@@ -38,11 +38,14 @@ public sealed class CanopySearchOptions {
         }
     }
 
-    /// <summary>Gets or sets the placeholder and accessible name of the search box.</summary>
+    /// <summary>
+    /// Gets or sets the placeholder and accessible name of the search box, for example "Search files and folders".
+    /// <see langword="null"/> (the default) takes <see cref="CanopyLabels.SearchPlaceholder"/>, from the view or from the labels a host passes in the browser.
+    /// </summary>
     /// <exception cref="ArgumentException">The value has no accessible text.</exception>
-    public string Placeholder {
+    public string? Placeholder {
         get => _placeholder;
-        set => _placeholder = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("Search needs an accessible name.", nameof(value));
+        set => _placeholder = value == null || !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("Search needs an accessible name.", nameof(value));
     }
 
     /// <summary>
@@ -57,7 +60,7 @@ public sealed class CanopySearchOptions {
         writer.BeginObject()
             .Property("minLength", _minLength)
             .Property("maxResults", _maxResults)
-            .Property("placeholder", Placeholder ?? "Search");
+            .OptionalProperty("placeholder", _placeholder);
         if (Kinds.Count > 0) {
             writer.StringArray("kinds", Kinds);
         }

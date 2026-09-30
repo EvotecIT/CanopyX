@@ -3,9 +3,9 @@
   const detailColumn = { kind: "text" };
   const DETAIL_ESTIMATE_SLOTS = 16;
 
-  function detailCell(tag, cell, lang) {
+  function detailCell(tag, cell, fmt) {
     const element = h(tag);
-    setText(element, cellText(cell, detailColumn, lang));
+    setText(element, cellText(cell, detailColumn, fmt));
     if (isCellObject(cell)) {
       if (cell.tone) {
         applyTone(element, "", toneOf(cell.tone));
@@ -63,7 +63,7 @@
         const tbody = h("tbody");
         (detail.rows || []).forEach((row) => {
           const tr = h("tr");
-          row.forEach((cell) => tr.appendChild(detailCell("td", cell, this.lang)));
+          row.forEach((cell) => tr.appendChild(detailCell("td", cell, this.fmt)));
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -74,7 +74,7 @@
           const term = h("dt");
           setText(term, item.name);
           list.appendChild(term);
-          list.appendChild(detailCell("dd", item.value, this.lang));
+          list.appendChild(detailCell("dd", item.value, this.fmt));
         });
         body.appendChild(list);
       } else if (detail.type === "html") {

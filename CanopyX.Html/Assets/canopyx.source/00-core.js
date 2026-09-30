@@ -225,44 +225,90 @@
     return texts;
   }
 
-  /** In UTC with the suffix "UTC", or in the reader's own time zone without a suffix. */
-  function formatDate(value, local) {
+  // ---------- labels ----------
+  // Every text the runtime writes itself, in English. A view document can carry translations in "labels", and a host
+  // can pass more in the options; placeholders such as {count} are replaced. Host data (labels of nodes, column
+  // titles, cells) is never translated here.
+  const DEFAULT_LABELS = Object.freeze({
+    searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
+    searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
+    searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
+    searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
+    columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
+    loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+    showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
+    pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
+    utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
+  });
+
+  /** The labels of a grid: the English defaults, then the view's, then the host's. A name CanopyX does not know is a mistake. */
+  function labelsFor(...sources) {
+    const labels = Object.assign({}, DEFAULT_LABELS);
+    for (const source of sources) {
+      if (source == null) continue;
+      if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
+      Object.keys(source).forEach((name) => {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
+        if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
+        labels[name] = source[name];
+      });
+    }
+    return Object.freeze(labels);
+  }
+
+  /** A label with its {placeholders} replaced; a placeholder without a value stays as it is. */
+  function fill(template, values) {
+    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
+  }
+
+  /**
+   * What formatting a grid's cells needs: the page language, the time zone, and the labels, with the date labels
+   * split around {time} once, because dates are formatted again on every paint.
+   */
+  function formatting(lang, local, labels) {
+    const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
+    return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
+  }
+
+  /** In UTC, marked as UTC by the label, or in the reader's own time zone without a mark. */
+  function formatDate(value, fmt) {
     const texts = dateText(value);
-    return texts ? (local ? texts[1] : texts[0] + " UTC") : String(value);
+    return texts ? (fmt.local ? texts[1] : fmt.utc[0] + texts[0] + fmt.utc[1]) : String(value);
   }
 
   /** The same moment in the other time zone, as the tooltip of a date the runtime formatted; null for any other cell. */
-  function otherZone(cell, column, local) {
+  function otherZone(cell, column, fmt) {
     const value = cellValue(cell);
     if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
       return null;
     }
     const texts = dateText(value);
-    return texts ? (local ? texts[0] + " UTC" : texts[1] + " local time") : null;
+    return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
   }
 
   /** Formats a value without display text, following the protocol's default formatting table. */
-  function formatValue(value, kind, lang, local) {
+  function formatValue(value, kind, fmt) {
     if (value === null || value === undefined) {
       return "";
     }
     if (typeof value === "boolean") {
-      return value ? "Yes" : "No";
+      return value ? fmt.labels.yes : fmt.labels.no;
     }
     if (typeof value === "number" && kind === "number") {
-      return numberFormat(lang).format(value);
+      return numberFormat(fmt.lang).format(value);
     }
     if (typeof value === "string" && kind === "datetime") {
-      return formatDate(value, local);
+      return formatDate(value, fmt);
     }
     return String(value);
   }
 
-  function cellText(cell, column, lang, local) {
+  function cellText(cell, column, fmt) {
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }
-    return formatValue(cellValue(cell), column.kind, lang, local);
+    return formatValue(cellValue(cell), column.kind, fmt);
   }
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });

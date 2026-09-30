@@ -61,6 +61,7 @@ A consumer with a solution or build list of its own adds the two CanopyX project
 - Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.
 - Single and multi-select, selection events for a drawer, deep links that expand a path (in the default scheme or the host's own), and expansion state remembered for the session.
 - Light and dark themes from a handful of CSS custom properties.
+- Every text CanopyX writes itself (search hints, "show more" and error rows, the column chooser, screen-reader announcements, date marks, the outline's notes) comes from `CanopyView.Labels`: English by default, translated once per view.
 - A script-free outline table for email, print, and Word, in the light or dark palette or the host's own colours.
 
 ## Quick Start
