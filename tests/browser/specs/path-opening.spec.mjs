@@ -33,6 +33,8 @@ async function open(page, delay) {
       return { items, total: items.length, next: null, offset: 0 };
     } } });
     await api.ready;
+    // The top level is painted before the renders of a path are counted.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   }, { data: view, delay });
 }
 
