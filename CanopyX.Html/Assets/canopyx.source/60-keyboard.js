@@ -2,8 +2,8 @@
   // ---------- tree grid: keyboard ----------
   // Row-focus model: Up/Down move, Right expands then enters, Left collapses then goes to the parent, Home/End,
   // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
-  // printable keys run type-ahead on labels. Tab leaves the grid. Right on a row that cannot open further, and F2 on
-  // any row, move into the row's cells when one holds a control (see 62-cell-focus.js).
+  // printable keys run type-ahead on labels. Tab and Shift+Tab leave the grid, also from a cell. Right on a row that
+  // cannot open further, and F2 on any row, move into the row's cells when one holds a control (see 62-cell-focus.js).
   function hostControl(target) {
     const row = target.closest(".cx-row");
     const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
@@ -17,6 +17,10 @@
       }
       // Focus in a cell, on the cell or on a control in it: cell navigation, or the control's own keys.
       const rowEl = e.target.closest(".cx-row");
+      if (rowEl && rowEl !== e.target && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
+        this.skipRowTabStop(rowEl);
+        return;
+      }
       if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
         return;
       }

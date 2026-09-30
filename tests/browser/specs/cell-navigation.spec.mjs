@@ -187,6 +187,75 @@ test("a click after cell navigation is a row click again, and a repaint keeps fo
   expect(await focused(page)).toBe("History r2");
 });
 
+test("a control a narrow cell clips scrolls into view inside its cell, and the cell scrolls back when focus leaves", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setColumnWidth("links", 90));
+  const cell = row(page, "r1").locator('[aria-colindex="3"]');
+  /** How far the focused control lies outside the cell's visible box (under a pixel when it is inside), and the cell's scroll. */
+  const clipping = () => cell.evaluate((element) => {
+    const outer = element.getBoundingClientRect();
+    const inner = document.activeElement.getBoundingClientRect();
+    const start = outer.left + element.clientLeft;
+    return { outside: Math.max(0, start - inner.left) + Math.max(0, inner.right - (start + element.clientWidth)), scroll: element.scrollLeft };
+  });
+  await row(page, "r1").locator(".cx-text").first().click();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  expect(await focused(page)).toBe("Open r1");
+  expect((await clipping()).outside).toBeLessThan(1);
+  // The second link starts past the 90 pixels of the cell.
+  await page.keyboard.press("ArrowRight");
+  expect(await focused(page)).toBe("History r1");
+  const shown = await clipping();
+  expect(shown.outside).toBeLessThan(1);
+  expect(shown.scroll).toBeGreaterThan(0);
+  // Back to the first link: the cell scrolls back far enough to show it.
+  await page.keyboard.press("ArrowLeft");
+  expect(await focused(page)).toBe("Open r1");
+  expect((await clipping()).outside).toBeLessThan(1);
+  await page.keyboard.press("ArrowRight");
+  expect((await clipping()).scroll).toBeGreaterThan(0);
+  // Leaving the cell, to the next cell or to the row, shows it from its start again.
+  await page.keyboard.press("ArrowRight");
+  expect(await focused(page)).toBe("cell r1 4");
+  expect(await cell.evaluate((element) => element.scrollLeft)).toBe(0);
+  await page.keyboard.press("ArrowLeft");
+  expect(await focused(page)).toBe("History r1");
+  await page.keyboard.press("Escape");
+  expect(await focused(page)).toBe("row r1");
+  expect(await cell.evaluate((element) => element.scrollLeft)).toBe(0);
+});
+
+test("Shift+Tab from a cell or a control in a row leaves the grid in one step, as from the row", async ({ page }) => {
+  await open(page);
+  const outsideRows = () => page.evaluate(() => !document.activeElement.closest(".cx-row"));
+  const describe = () => page.evaluate(() => { const active = document.activeElement; return active.className + "|" + (active.closest(".cx-hcell") || {}).dataset?.cxColumn; });
+  // From the row: the element before the grid's tab stop.
+  await row(page, "r1").locator(".cx-text").first().click();
+  await page.keyboard.press("Shift+Tab");
+  expect(await outsideRows()).toBe(true);
+  const fromRow = await describe();
+  // From a control, and from a cell, focus lands on that same element, not on the row.
+  for (const keys of [["ArrowRight"], ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]]) {
+    await row(page, "r1").locator(".cx-text").first().click();
+    for (const key of keys) await page.keyboard.press(key);
+    expect(await focused(page)).toBe(keys.length === 1 ? "State ok" : "cell r1 4");
+    await page.keyboard.press("Shift+Tab");
+    expect(await outsideRows()).toBe(true);
+    expect(await describe()).toBe(fromRow);
+  }
+  // The row is still the grid's tab stop: Tab comes back to it.
+  await page.keyboard.press("Tab");
+  expect(await focused(page)).toBe("row r1");
+  // The same from a control in a detail row.
+  await row(page, "detail").click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("ArrowRight");
+  expect(await focused(page)).toBe("Revert");
+  await page.keyboard.press("Shift+Tab");
+  expect(await outsideRows()).toBe(true);
+  expect(await describe()).toBe(fromRow);
+});
+
 test("a control after a text box, in the same cell or the same detail, can be reached", async ({ page }) => {
   await open(page);
   await row(page, "r2").locator(".cx-text").first().click();

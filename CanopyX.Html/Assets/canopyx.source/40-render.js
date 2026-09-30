@@ -51,6 +51,8 @@
           this.scheduleRender();
         }
       });
+      // A cell scrolled to show a control it clipped starts at its first content again once focus leaves it.
+      this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
       // A link followed inside the page, or a fragment typed into the address bar, opens its row as on load.
       this.onHash = () => {

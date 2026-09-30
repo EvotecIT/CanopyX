@@ -79,7 +79,7 @@ Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
   | 512 KiB packs | 42 | 12 files, 6,090 KB | 13 to 20 ms | 58 to 81 ms | 43 to 51 ms | 259 to 295 ms |
 
   The ranges span the three catalog queries; the machine ran other work, so differences of 20 ms are noise. The search part stays far inside the 250 ms budget at 4x either way. 64 KiB packs were chosen because 512 KiB packs load three to six megabytes per cold query and hold two to three times the heap for a few hundred files fewer. The expand benchmark is unchanged within noise (first rows 86 ms at 1x, the manifest grows from 30 to 32 KB).
-- [x] Cell navigation (the cell half of the ARIA tree grid pattern) for rows whose cells hold controls; controls in cells and detail rows are no longer Tab stops. `docs/screen-reader-test.md` is the manual reader pass.
+- [x] Cell navigation (the cell half of the ARIA tree grid pattern) for rows whose cells hold controls; controls in cells and detail rows are no longer Tab stops. `docs/screen-reader-test.md` is the manual reader pass. A control its cell clips scrolls into view inside the cell, and Shift+Tab from a cell leaves the grid in one step.
 
 Left open by that work:
 

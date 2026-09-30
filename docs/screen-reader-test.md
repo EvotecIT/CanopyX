@@ -39,7 +39,7 @@ Build a page whose rows have controls in their cells, for example the host rende
 | 17 | From a control, press Down. | The same column in the next row: its control when that is a button or a link, otherwise the cell's text, with the new row's context. |
 | 18 | On an open folder row, press F2, then Escape. | The first control of the row; then the row again. |
 | 19 | Move with Right onto a cell with a text box, press Enter, type, press Left and Right, then Escape. | Right stops on the cell (its column and value); Enter enters the text box ("edit"); the caret moves in it and the grid does not; Escape announces the cell again. |
-| 20 | Press Tab from a cell's control, then Shift+Tab twice. | Tab leaves the grid: the controls in cells are not Tab stops. The first Shift+Tab returns to the grid's row, the second leaves the grid backwards. |
+| 20 | Press Tab from a cell's control, then Shift+Tab twice. Enter the cells again and press Shift+Tab from a control. | Tab leaves the grid: the controls in cells are not Tab stops. The first Shift+Tab returns to the grid's row, the second leaves the grid backwards. Shift+Tab from a control also leaves the grid at once, without announcing its row. |
 | 21 | On a detail row with a button, press Right. | The button inside the detail; Left returns to the detail row. On a detail whose content scrolls, Right past the last control announces the scrolling region, and Down scrolls it. |
 
 ### Translated Labels

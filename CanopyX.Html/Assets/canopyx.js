@@ -1353,6 +1353,7 @@
           this.scheduleRender();
         }
       });
+      this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
       this.onHash = () => {
         if (this.initializing) this.linkChanged = true;
@@ -2141,6 +2142,10 @@
         return;
       }
       const rowEl = e.target.closest(".cx-row");
+      if (rowEl && rowEl !== e.target && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
+        this.skipRowTabStop(rowEl);
+        return;
+      }
       if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
         return;
       }
@@ -2312,6 +2317,7 @@
     revealInRow(cell, target, treeCell) {
       const grid = this.grid;
       if (cell.parentNode && cell.parentNode._kind === "node") {
+        this.revealInCell(cell, target);
         const pinned = cell !== treeCell && this.host.classList.contains("cx-pin-tree") ? treeCell.offsetWidth : 0;
         const left = grid.getBoundingClientRect().left + grid.clientLeft;
         const box = cell.getBoundingClientRect();
@@ -2333,6 +2339,33 @@
       else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
     },
 
+    revealInCell(cell, target) {
+      if (target === cell || !cell.contains(target) || !cell.parentNode || cell.parentNode._kind !== "node") return;
+      const outer = cell.getBoundingClientRect();
+      const inner = target.getBoundingClientRect();
+      const start = outer.left + cell.clientLeft;
+      const end = start + cell.clientWidth;
+      if (inner.left < start) cell.scrollLeft -= start - inner.left;
+      else if (inner.right > end) cell.scrollLeft += Math.min(inner.right - end, inner.left - start);
+      if (cell.scrollLeft) this.scrolledCell = cell;
+    },
+
+    settleCell(next) {
+      const cell = this.scrolledCell;
+      if (cell && !cell.contains(next || document.activeElement)) {
+        cell.scrollLeft = 0;
+        this.scrolledCell = null;
+      }
+    },
+
+    skipRowTabStop(rowEl) {
+      if (rowEl.tabIndex < 0) return;
+      rowEl.tabIndex = -1;
+      setTimeout(() => {
+        if (!this.destroyed && rowEl._tab === 0) rowEl.tabIndex = 0;
+      }, 0);
+    },
+
     heldCell() {
       const active = document.activeElement;
       const rowEl = active && active.closest ? active.closest(".cx-row") : null;
@@ -2352,6 +2385,7 @@
       const target = candidate && reachable(candidate) ? candidate : cell;
       if (target === cell) cell.setAttribute("tabindex", "-1");
       target.focus({ preventScroll: true });
+      this.revealInCell(cell, target);
     },
 
     onCellKey(e) {

@@ -93,6 +93,7 @@
     revealInRow(cell, target, treeCell) {
       const grid = this.grid;
       if (cell.parentNode && cell.parentNode._kind === "node") {
+        this.revealInCell(cell, target);
         const pinned = cell !== treeCell && this.host.classList.contains("cx-pin-tree") ? treeCell.offsetWidth : 0;
         const left = grid.getBoundingClientRect().left + grid.clientLeft;
         const box = cell.getBoundingClientRect();
@@ -113,6 +114,46 @@
       const box = target.getBoundingClientRect();
       if (box.top < top) grid.scrollTop -= top - box.top;
       else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+    },
+
+    /**
+     * Scrolls a control that the cell clips (cells hide what does not fit their width) into view inside the cell. The
+     * cell scrolls back to its start once focus leaves it (see the focusout handler in 40-render.js), so the row it
+     * shows next, or the same row without focus, starts at its first content.
+     */
+    revealInCell(cell, target) {
+      // Only the cells of node rows clip; a detail row's cell shows all of its body.
+      if (target === cell || !cell.contains(target) || !cell.parentNode || cell.parentNode._kind !== "node") return;
+      const outer = cell.getBoundingClientRect();
+      const inner = target.getBoundingClientRect();
+      const start = outer.left + cell.clientLeft;
+      const end = start + cell.clientWidth;
+      if (inner.left < start) cell.scrollLeft -= start - inner.left;
+      else if (inner.right > end) cell.scrollLeft += Math.min(inner.right - end, inner.left - start);
+      if (cell.scrollLeft) this.scrolledCell = cell;
+    },
+
+    /** Scrolls a cell that revealInCell scrolled back to its start, once focus is no longer inside it. */
+    settleCell(next) {
+      const cell = this.scrolledCell;
+      // Without a next element, focus may only have left the window: the control keeps it, and the cell its scroll.
+      if (cell && !cell.contains(next || document.activeElement)) {
+        cell.scrollLeft = 0;
+        this.scrolledCell = null;
+      }
+    },
+
+    /**
+     * Shift+Tab from a cell or a control in a row goes where it goes from the row: before the grid. The row, the
+     * grid's tab stop, comes before its cells in document order and would take the step; it is skipped once.
+     */
+    skipRowTabStop(rowEl) {
+      if (rowEl.tabIndex < 0) return;
+      rowEl.tabIndex = -1;
+      // The browser moves focus right after this keydown; the row is the tab stop again after that.
+      setTimeout(() => {
+        if (!this.destroyed && rowEl._tab === 0) rowEl.tabIndex = 0;
+      }, 0);
     },
 
     /** Where focus is inside a rendered row's cells, so a repaint that replaces the cell can put it back. */
@@ -138,6 +179,7 @@
       const target = candidate && reachable(candidate) ? candidate : cell;
       if (target === cell) cell.setAttribute("tabindex", "-1");
       target.focus({ preventScroll: true });
+      this.revealInCell(cell, target);
     },
 
     /**
