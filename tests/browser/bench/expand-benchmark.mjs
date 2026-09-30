@@ -51,7 +51,7 @@ function bundleSize() {
     const folder = path.relative(data, file.parentPath).split(path.sep)[1];
     result.files++;
     result.bytes += size;
-    if (folder === "s" || folder === "e") {
+    if (folder === "s" || folder === "e" || folder === "q") {
       result.indexFiles++;
       result.indexBytes += size;
     }

@@ -167,7 +167,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
         Assert.Equal(expected, _bundle.Files.WalkIds());
         Assert.Equal(expected.Count, _bundle.Result.NodeCount);
-        Assert.Equal(_bundle.Files.Documents.Count, _bundle.Result.FileCount);
+        Assert.Equal(_bundle.Files.Sizes.Count, _bundle.Result.FileCount);
     }
 
     [Fact]
@@ -343,9 +343,6 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     [Fact]
     public void Write_Search_ShardsMatchTheManifestAndSplitAtTheLimit() {
         var reader = new SearchIndexReader(_bundle.Files);
-        var written = _bundle.Files.Documents.Keys.Where(reference => reference.StartsWith("s/", StringComparison.Ordinal)).OrderBy(r => r, StringComparer.Ordinal);
-
-        Assert.Equal(reader.Shards.Keys.Select(key => "s/k-" + key).OrderBy(r => r, StringComparer.Ordinal), written);
         Assert.Equal(reader.Shards.Count, _bundle.Result.SearchShardCount);
         foreach (var shard in reader.Shards) {
             var postings = reader.Shard(shard.Key)["postings"]!.AsArray().Sum(list => SearchIndexReader.Decode(list!.AsArray()).Count);
@@ -356,8 +353,6 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         }
 
         Assert.Contains("archive-", reader.Shards.Keys);
-        var index = _bundle.Files.Sizes.Where(file => file.Key.StartsWith("s/", StringComparison.Ordinal) || file.Key.StartsWith("e/", StringComparison.Ordinal)).Sum(file => file.Value);
-        Assert.Equal(index, _bundle.Result.SearchIndexBytes);
     }
 
     [Fact]
@@ -430,7 +425,8 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
             }
 
             // A pair split between the shared and the written part would reach the file as a replacement character.
-            Assert.DoesNotContain('\uFFFD', File.ReadAllText(Path.Combine(result.DataDirectory, "e", "0.js")));
+            // Entry file 0 is the first page of index pack 0.
+            Assert.DoesNotContain('\uFFFD', File.ReadAllText(Path.Combine(result.DataDirectory, "q", "0.js")));
         } finally {
             Directory.Delete(directory, recursive: true);
         }

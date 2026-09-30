@@ -18,12 +18,17 @@ using CanopyX.Rendering;
 // generation time and the peak memory of the process; --services <n> sets the services per region (default 1,000).
 // The bundle is streamed: each service is built when the writer asks for it and released once it is written. With
 // --in-memory the whole tree is built first, which is how a host without a streaming source writes a bundle.
-// Usage: CanopyX.Examples [output folder] [--search-bench | --pack-bench [--services <n>] [--in-memory]]
+// --search-pack <bytes> packs the search index of every bundle into files of up to that size (default 64 KiB; 0 writes
+// each index file on its own).
+// Usage: CanopyX.Examples [output folder] [--search-bench | --pack-bench [--services <n>] [--in-memory]] [--search-pack <bytes>]
 var searchBench = args.Contains("--search-bench");
 var packBench = args.Contains("--pack-bench");
 var servicesAt = Array.IndexOf(args, "--services");
 var services = servicesAt >= 0 && servicesAt + 1 < args.Length ? int.Parse(args[servicesAt + 1], CultureInfo.InvariantCulture) : PackBenchTree.DefaultServicesPerRegion;
-var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparison.Ordinal) && (servicesAt < 0 || index != servicesAt + 1)).ToArray();
+var searchPackAt = Array.IndexOf(args, "--search-pack");
+var bundleOptions = new CanopyX.Bundles.CanopyBundleOptions();
+if (searchPackAt >= 0 && searchPackAt + 1 < args.Length) bundleOptions.SearchPackBytes = int.Parse(args[searchPackAt + 1], CultureInfo.InvariantCulture);
+var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparison.Ordinal) && (servicesAt < 0 || index != servicesAt + 1) && (searchPackAt < 0 || index != searchPackAt + 1)).ToArray();
 var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.BaseDirectory, searchBench ? "search-bench" : packBench ? "pack-bench" : "output");
 Directory.CreateDirectory(output);
 var clock = Stopwatch.StartNew();
@@ -40,11 +45,11 @@ if (packBench) {
             catalog.Roots.Add(region);
         }
 
-        ReportBundle("catalog", catalog.SaveHtmlBundle(Path.Combine(output, "catalog"), options));
+        ReportBundle("catalog", catalog.SaveHtmlBundle(Path.Combine(output, "catalog"), options, bundleOptions));
     } else {
         // A service arrives with its own subtree inline; only the regions ask for their children.
         ReportBundle("catalog", catalog.SaveHtmlBundle(Path.Combine(output, "catalog"), PackBenchTree.RegionNodes(services),
-            node => node.Kind == "region" ? PackBenchTree.Services(PackBenchTree.RegionNumber(node), services) : null, options));
+            node => node.Kind == "region" ? PackBenchTree.Services(PackBenchTree.RegionNumber(node), services) : null, options, bundleOptions));
     }
 
     using var process = Process.GetCurrentProcess();
@@ -84,7 +89,7 @@ WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 
 void WriteBundle(CanopyX.CanopyView view, string folder, string title) {
-    ReportBundle(folder, view.SaveHtmlBundle(Path.Combine(output, folder), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = title }));
+    ReportBundle(folder, view.SaveHtmlBundle(Path.Combine(output, folder), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = title }, bundleOptions));
 }
 
 static void ReportBundle(string folder, CanopyX.Bundles.CanopyBundleResult bundle) =>

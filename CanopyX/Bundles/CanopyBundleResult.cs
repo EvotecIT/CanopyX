@@ -33,12 +33,15 @@ public sealed class CanopyBundleResult {
     /// <summary>Gets the number of pack files written. Each holds the children pages of many nodes.</summary>
     public int PackCount { get; internal set; }
 
-    /// <summary>Gets the number of search shard files written; zero when the view has no search.</summary>
+    /// <summary>Gets the number of search shards (and shard parts) written, as files of their own or in index packs; zero when the view has no search.</summary>
     public int SearchShardCount { get; internal set; }
 
-    /// <summary>Gets the number of search entry files written; zero when the view has no search.</summary>
+    /// <summary>Gets the number of search entry files written, as files of their own or in index packs; zero when the view has no search.</summary>
     public int SearchEntryFileCount { get; internal set; }
 
-    /// <summary>Gets the total size of the search entry and shard files, in bytes; zero when the view has no search.</summary>
+    /// <summary>Gets the number of search index packs written; zero when <see cref="CanopyBundleOptions.SearchPackBytes"/> is 0, the view has no search, or the index is empty.</summary>
+    public int SearchPackCount { get; internal set; }
+
+    /// <summary>Gets the size of the search index in bytes: of its files, or, packed, of its documents inside the packs; zero when the view has no search.</summary>
     public long SearchIndexBytes { get; internal set; }
 }

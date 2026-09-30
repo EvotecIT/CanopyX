@@ -20,6 +20,18 @@ public sealed class ProtocolSchemaTests {
     }
 
     [Theory]
+    [InlineData("\"entryPacks\":[0],\"shardPacks\":[\"ab\"]", true)]
+    [InlineData("\"entryPacks\":[],\"shardPacks\":[]", true)]
+    [InlineData("\"entryPacks\":[0]", false)]
+    [InlineData("\"shardPacks\":[\"ab\"]", false)]
+    [InlineData("\"entryPacks\":[-1],\"shardPacks\":[\"ab\"]", false)]
+    [InlineData("\"entryPacks\":[0],\"shardPacks\":[\"AB\"]", false)]
+    public void Schema_ManifestSearch_NamesIndexPacksWithBothLists(string packs, bool valid) {
+        var doc = "{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":1}," + packs + "}}";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(doc).IsValid);
+    }
+
+    [Theory]
     [InlineData("{\"pages\":[\"{}\"]}", "0", true)]
     [InlineData("{\"pages\":[]}", "0", true)]
     [InlineData("{\"pages\":[{\"protocol\":\"canopyx/1\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"items\":[],\"next\":null}]}", "1", false)]

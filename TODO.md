@@ -63,12 +63,30 @@ Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-3
 - [x] Host-driven filters (`hidden`, `canopyx:filter`), a pinned tree column, `setColumnWidth`.
 - [x] `CanopyX.configure` for auto-mounted fragments, manual mounting, and a host link scheme (`formatLink`, `parseLink`).
 
+Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
+
+- [x] Labels: every text CanopyX writes itself comes from `CanopyView.Labels` (English by default), carried to the browser in the view's `labels`; `createTreeGrid` and `configure` take `labels` too.
+- [x] Deep links are written onto the page's own address, so a `<base href>` (SharePoint viewers) does not move them.
+- [x] The static outline in light, dark, or the host's colours (`CanopyStaticTheme`), and with `UseThemeVariables` following the page's theme without script.
+- [x] `CanopyNode.HasInlineChildren`, `HasCells`, `HasBadges`, `HasFlags`, `HasData` ask what a node holds without creating its collections.
+- [x] Runtime files named by their content hash (`canopyx.<hash>.js`), and `CanopyHtmlAssets.ScriptHash` and `StyleHash` for hosts with their own asset pipeline.
+- [x] The search index packed into `q/<n>` files of up to 64 KiB (`CanopyBundleOptions.SearchPackBytes`): on the packing benchmark 2,910 index files became 370, and the bundle 917 files instead of 3,457. Measured with `search-benchmark.mjs` on the packed catalog (medians of 5; the search part of a cold query, then the whole cold query to a painted, expanded hit):
+
+  | Index | Files | Cold query loads ("identity gateway") | Search 1x | Search 4x | To expanded hit 1x | To expanded hit 4x |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Separate files | 2,910 | 24 files, 736 KB | 17 to 39 ms | 61 to 94 ms | 40 to 82 ms | 234 to 371 ms |
+  | 64 KiB packs | 370 | 19 files, 1,503 KB | 13 to 23 ms | 44 to 81 ms | 48 to 79 ms | 265 to 301 ms |
+  | 512 KiB packs | 42 | 12 files, 6,090 KB | 13 to 20 ms | 58 to 81 ms | 43 to 51 ms | 259 to 295 ms |
+
+  The ranges span the three catalog queries; the machine ran other work, so differences of 20 ms are noise. The search part stays far inside the 250 ms budget at 4x either way. 64 KiB packs were chosen because 512 KiB packs load three to six megabytes per cold query and hold two to three times the heap for a few hundred files fewer. The expand benchmark is unchanged within noise (first rows 86 ms at 1x, the manifest grows from 30 to 32 KB).
+- [x] Cell navigation (the cell half of the ARIA tree grid pattern) for rows whose cells hold controls; controls in cells and detail rows are no longer Tab stops. `docs/screen-reader-test.md` is the manual reader pass.
+
 Left open by that work:
 
 - Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which also maps design tokens onto `--cx-tone-<name>`.
 - Right-to-left layout: row positions, the pinned tree column, and the detail body use physical left offsets.
 - The streamed writer holds one whole child list in memory until its last node is read; a flat list of millions of top-level rows needs pages that are written as they fill.
-- Packing the search index: on the packing benchmark 2,910 of the 3,457 files are entry files and shards.
+- On the packed catalog, a cold search to an expanded hit takes 230 to 370 ms with the CPU slowed four times, with or without index packs: the index is 44 to 94 ms of it, the rest is loading and parsing 512 KB children packs on the hit's path. Smaller children packs, or location hints on hits (below), are the levers; the 250 ms gate is met at normal speed (40 to 80 ms).
 - Scroll benchmark numbers for renderers and time zones on a quiet machine; the runs recorded in PR #10 were taken while other builds ran and differ by less than their noise.
 
 Tree grid follow-ups without a milestone yet, each with the consumer that will pull it in:

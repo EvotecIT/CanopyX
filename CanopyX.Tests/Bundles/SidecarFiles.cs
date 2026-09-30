@@ -22,7 +22,7 @@ internal sealed class SidecarFiles {
             var match = Wrapper.Match(text);
             Assert.True(match.Success, "Sidecar file has an unexpected wrapper: " + reference);
             var body = match.Groups[1].Value;
-            if (reference.StartsWith("p/", StringComparison.Ordinal)) {
+            if (reference.StartsWith("p/", StringComparison.Ordinal) || reference.StartsWith("q/", StringComparison.Ordinal)) {
                 // String.raw keeps every character between the backticks, and ${ would start a substitution.
                 body = RawTemplate.Replace(body, template => {
                     Assert.DoesNotContain("${", template.Groups[1].Value);
@@ -35,6 +35,13 @@ internal sealed class SidecarFiles {
             Assert.Equal(reference, entry[1]!.GetValue<string>());
             Documents[reference] = entry[2]!.ToJsonString();
             Sizes[reference] = new FileInfo(path).Length;
+            if (reference.StartsWith("q/", StringComparison.Ordinal)) {
+                // The documents of an index pack are checked like files of their own, as "q/<n>#<slot>".
+                var pages = entry[2]!["pages"]!.AsArray();
+                for (var slot = 0; slot < pages.Count; slot++) {
+                    Documents[reference + "#" + slot] = pages[slot]!.GetValue<string>();
+                }
+            }
         }
     }
 

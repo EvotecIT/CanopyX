@@ -10,6 +10,7 @@ public sealed class CanopyBundleOptions {
     private int _searchShardLimit = 20000;
     private int _maxFileBytes = 512 * 1024;
     private string? _dataPath;
+    private int _searchPackBytes = 64 * 1024;
 
     /// <summary>
     /// Gets or sets the folder for the sidecar files, relative to the output folder and to the page, with forward
@@ -51,6 +52,25 @@ public sealed class CanopyBundleOptions {
             }
 
             _maxFileBytes = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the size up to which the search index's entry files and shards are packed into shared files, from
+    /// 16 KiB to 16 MiB (a size above <see cref="MaxFileBytes"/> packs up to the file budget), or 0 to write each as
+    /// a file of its own. Defaults to 64 KiB, which turns the 2,910 index files of the packing benchmark into 370
+    /// while a query loads about twice the bytes it did; larger packs mean fewer files and more bytes per query
+    /// (see "Search Index" in docs/data-protocol.md).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is neither 0 nor from 16 KiB to 16 MiB.</exception>
+    public int SearchPackBytes {
+        get => _searchPackBytes;
+        set {
+            if (value != 0 && (value < 16 * 1024 || value > 16 * 1024 * 1024)) {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The search pack size is 0 or between 16 KiB and 16 MiB.");
+            }
+
+            _searchPackBytes = value;
         }
     }
 

@@ -19,6 +19,8 @@ internal sealed class SearchIndexReader {
     private readonly Dictionary<int, EntryFile> _entryFiles = new();
     private readonly Dictionary<string, JsonNode> _shardFiles = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<int>> _found = new(StringComparer.Ordinal);
+    private readonly List<int>? _entryPacks;
+    private readonly List<string>? _shardPacks;
 
     internal SearchIndexReader(SidecarFiles files) {
         _files = files;
@@ -27,6 +29,41 @@ internal sealed class SearchIndexReader {
         _starts = search["entryFiles"]!.AsArray().Select(first => first!.GetValue<int>()).ToList();
         _kinds = search["kinds"]!.AsArray().Select(kind => kind!.GetValue<string>()).ToList();
         _shards = search["shards"]!.AsObject().ToDictionary(shard => shard.Key, shard => shard.Value!.GetValue<int>(), StringComparer.Ordinal);
+        _entryPacks = search["entryPacks"]?.AsArray().Select(first => first!.GetValue<int>()).ToList();
+        _shardPacks = search["shardPacks"]?.AsArray().Select(first => first!.GetValue<string>()).ToList();
+        Assert.Equal(_entryPacks == null, _shardPacks == null);
+    }
+
+    /// <summary>Gets whether the index files are packed, and the first entry file and shard key of every pack.</summary>
+    internal IReadOnlyList<int>? EntryPacks => _entryPacks;
+
+    internal IReadOnlyList<string>? ShardPacks => _shardPacks;
+
+    /// <summary>
+    /// Reads an entry file or a shard: a file of its own, or, in a packed index, the page of an index pack that the
+    /// manifest's first names lead to. Entry packs come first, then shard packs, each shard pack holding consecutive
+    /// keys in ordinal order.
+    /// </summary>
+    internal JsonNode IndexDocument(bool entries, string name) {
+        if (_entryPacks == null) {
+            return _files.Document(entries ? "e/" + name : "s/k-" + name);
+        }
+
+        int pack, slot;
+        if (entries) {
+            var file = int.Parse(name, CultureInfo.InvariantCulture);
+            pack = _entryPacks.FindLastIndex(first => first <= file);
+            slot = file - _entryPacks[pack];
+        } else {
+            var keys = _shards.Keys.OrderBy(key => key, StringComparer.Ordinal).ToList();
+            var at = _shardPacks!.FindLastIndex(first => string.CompareOrdinal(first, name) <= 0);
+            pack = _entryPacks.Count + at;
+            slot = keys.IndexOf(name) - keys.IndexOf(_shardPacks[at]);
+        }
+
+        var pages = _files.Document("q/" + pack.ToString(CultureInfo.InvariantCulture))["pages"]!.AsArray();
+        Assert.InRange(slot, 0, pages.Count - 1);
+        return JsonNode.Parse(pages[slot]!.GetValue<string>())!;
     }
 
     internal int EntryCount { get; }
@@ -42,7 +79,7 @@ internal sealed class SearchIndexReader {
         var file = _starts.FindLastIndex(first => first <= number);
         if (!_entryFiles.TryGetValue(file, out var entries)) {
             var count = (file + 1 < _starts.Count ? _starts[file + 1] : EntryCount) - _starts[file];
-            entries = new EntryFile(_files.Document("e/" + file.ToString(CultureInfo.InvariantCulture)), _starts[file], count);
+            entries = new EntryFile(IndexDocument(true, file.ToString(CultureInfo.InvariantCulture)), _starts[file], count);
             _entryFiles.Add(file, entries);
         }
 
@@ -96,7 +133,7 @@ internal sealed class SearchIndexReader {
 
     internal JsonNode Shard(string key) {
         if (!_shardFiles.TryGetValue(key, out var shard)) {
-            shard = _files.Document("s/k-" + key);
+            shard = IndexDocument(false, key);
             Assert.Equal(key, shard["key"]!.GetValue<string>());
             _shardFiles.Add(key, shard);
         }

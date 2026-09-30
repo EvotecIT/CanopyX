@@ -31,6 +31,18 @@ internal sealed class CanopySearchIndexWriter {
     private readonly List<Node> _open = new List<Node>();
     private readonly List<string> _stem = new List<string>();
     private readonly List<string> _items = new List<string>();
+    private readonly CanopyBundlePacks? _packs;
+    private readonly List<int> _entryPacks = new List<int>();
+    private readonly List<string> _shardPacks = new List<string>();
+    /// <summary>The shard documents of a packed index, held until the last so they go into packs in ordinal key order; about the size of the shards.</summary>
+    private readonly SortedDictionary<string, string>? _packedShards;
+
+    /// <summary>
+    /// The bytes a document costs more inside a pack than as a file of its own: the pack's envelope and the template
+    /// around the document, less the wrapper of a file. Budgets leave room for it, so a document alone in a pack still
+    /// fits the file budget.
+    /// </summary>
+    private readonly int _packOverhead;
     private Node? _last;
     private int _numbered;
     private int _count;
@@ -43,6 +55,11 @@ internal sealed class CanopySearchIndexWriter {
         _index = index;
         var kinds = context.View.Search?.Kinds;
         _kinds = kinds != null && kinds.Count > 0 ? new HashSet<string>(kinds, StringComparer.Ordinal) : null;
+        if (context.Options.SearchPackBytes > 0) {
+            _packs = new CanopyBundlePacks(context, CanopyBundleLayout.IndexPack, context.Options.SearchPackBytes);
+            _packedShards = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            _packOverhead = (int)CanopyBundlePacks.SizeOf(string.Empty) + (context.Options.MaxFileBytes - _packs.FileBudget);
+        }
     }
 
     /// <summary>
@@ -117,6 +134,18 @@ internal sealed class CanopySearchIndexWriter {
             WriteShard(shard.Key, shard.Value);
         }
 
+        if (_packs != null) {
+            // Entry files and shards never share a pack, and shards go in ordinal key order, so a reader finds each
+            // one from the first file or key of every pack.
+            _packs.Flush();
+            foreach (var shard in _packedShards!) {
+                AddToPack(shard.Value, _shardPacks, shard.Key);
+            }
+
+            _packs.Flush();
+            _context.Result.SearchPackCount = _packs.Count;
+        }
+
         _context.Result.SearchEntryFileCount = _entryFiles.Count;
         _context.Result.SearchShardCount = _shards.Count;
     }
@@ -133,7 +162,17 @@ internal sealed class CanopySearchIndexWriter {
             json.Property(shard.Key, shard.Value);
         }
 
-        json.EndObject().EndObject();
+        json.EndObject();
+        if (_packs != null) {
+            json.Name("entryPacks").BeginArray();
+            foreach (var first in _entryPacks) {
+                json.Number(first);
+            }
+
+            json.EndArray().StringArray("shardPacks", _shardPacks);
+        }
+
+        json.EndObject();
     }
 
     /// <summary>
@@ -152,18 +191,35 @@ internal sealed class CanopySearchIndexWriter {
         // A file number and a first entry number no real file reaches, so the measured envelope is never too short.
         const int bound = int.MaxValue;
         var reference = CanopyBundleLayout.EntryFile(bound);
-        _budget = _context.RemainingBytes(reference, EntriesDocument(bound, _stem, _items));
+        _budget = _context.RemainingBytes(reference, EntriesDocument(bound, _stem, _items)) - _packOverhead;
         // An entry larger than the budget on its own still gets a file; a stem that crowds out an ordinary entry does not.
-        if (firstSize > _budget && firstSize <= _context.RemainingBytes(reference, EntriesDocument(bound, new List<string>(), _items))) {
+        if (firstSize > _budget && firstSize <= _context.RemainingBytes(reference, EntriesDocument(bound, new List<string>(), _items)) - _packOverhead) {
             throw new InvalidOperationException("The search entries of view '" + _context.View.Id + "' need more than MaxFileBytes for the "
                 + _stem.Count.ToString(CultureInfo.InvariantCulture) + " ancestors of one node; increase the budget or write the bundle without search.");
         }
     }
 
     private void WriteEntryFile() {
-        _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.EntryFile(_entryFiles.Count), EntriesDocument(_first, _stem, _items));
+        var document = EntriesDocument(_first, _stem, _items);
+        if (_packs != null) {
+            AddToPack(document, _entryPacks, _entryFiles.Count);
+        } else {
+            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.EntryFile(_entryFiles.Count), document);
+        }
+
         _entryFiles.Add(_first);
         _items.Clear();
+    }
+
+    /// <summary>Adds an index document to the packs and records the first file or key of every pack it starts.</summary>
+    private void AddToPack<T>(string document, List<T> firsts, T name) {
+        var before = _packs!.Count;
+        var pending = _packs.Pending;
+        _packs.Add(document);
+        _context.Result.SearchIndexBytes += CanopyBundlePacks.SizeOf(document);
+        if (pending == 0 || _packs.Count != before) {
+            firsts.Add(name);
+        }
     }
 
     private static string EntriesDocument(int first, List<string> stem, List<string> entries) {
@@ -231,7 +287,7 @@ internal sealed class CanopySearchIndexWriter {
     /// </summary>
     private void WriteShard(string key, List<string> words) {
         var bound = key + "." + int.MaxValue.ToString(CultureInfo.InvariantCulture);
-        var budget = _context.ItemBudget(CanopyBundleLayout.Shard(bound), ShardDocument(bound, new ShardPart()));
+        var budget = _context.ItemBudget(CanopyBundleLayout.Shard(bound), ShardDocument(bound, new ShardPart())) - _packOverhead;
         var part = new ShardPart();
         var partNumber = 1;
         foreach (var word in words) {
@@ -286,7 +342,12 @@ internal sealed class CanopySearchIndexWriter {
 
     private void WritePart(string key, int number, ShardPart part) {
         var partKey = number == 1 ? key : key + "." + number.ToString(CultureInfo.InvariantCulture);
-        _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.Shard(partKey), ShardDocument(partKey, part));
+        if (_packedShards != null) {
+            _packedShards[partKey] = ShardDocument(partKey, part);
+        } else {
+            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.Shard(partKey), ShardDocument(partKey, part));
+        }
+
         _shards[partKey] = part.Postings;
     }
 

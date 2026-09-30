@@ -267,11 +267,12 @@ For sidecar sources, each slash-delimited reference component is a file path com
 
 | Reference | Document | Content |
 | --- | --- | --- |
-| `manifest` | `manifest` | View id, first top-level page, node count, page size, number of packs, search index description |
+| `manifest` | `manifest` | View id, first top-level page, node count, page size, number of children packs, search index description |
 | `r/<n>` | `page` | Page `n` of the top-level nodes |
 | `p/<n>` | `pack` | Pack `n`: the children pages of many nodes. A page inside it has the reference `p/<n>#<slot>`. |
 | `e/<n>` | `searchEntries` | Entry file `n` of the search index: a run of consecutive entries and the ancestors they need |
 | `s/k-<key>` | `searchShard` | The words that start with the shard's prefix, each with the entries that have it. The `k-` keeps keys such as `con` or `nul` from becoming Windows device names. |
+| `q/<n>` | `pack` | Index pack `n`: entry files or shards stored together (see [Index Packs](#index-packs)). A packed index has no `e/` or `s/` files. |
 
 Every page holds at most the writer's page size and fits the file budget (512 KiB by default), so page sizes vary and `offset` tells where each page starts. Nodes written into pages have no inline children; they carry `hasChildren`, `childCount`, and `ref` pointing at their first children page. File names are numbers, so they are short, safe on case-insensitive file systems, and independent of the characters in ids.
 
@@ -336,6 +337,22 @@ A shard is stored in numbered parts when it outgrows the file budget. The first 
 **Reading.** To search, the runtime takes each query word and starts with its first two code units. If a shard exists for that prefix, it loads it. If shards exist for longer prefixes that start with it, it adds the next code unit and repeats; if the query word runs out first, it loads every shard under the current prefix, including the `-` shard. A query word of one code unit loads every shard whose prefix starts with it. The entries of a query word are the merged posting lists of the shard words that start with it, and the candidates are the entries that every query word has. A query word that starts another query word is skipped, because the longer one implies it.
 
 The runtime also looks up the label token of the folded query, without the separators at its start and end. It reads the labels equal to the query first and then the other candidates in document order, loading the entry files they fall in, until it has enough matches to fill the result list, and it ranks at most five times the view's `maxResults`. The total is the number of candidates, which is exact. A truncated result holds the labels equal to the query and the first other matches in document order, which are not necessarily the best-ranked of all matches.
+
+#### Index Packs
+
+An index has an entry file per 256 entries and a shard per word prefix, so a large tree has thousands of small index files: 2,910 of the 3,457 files of the packing benchmark. The bundle writer therefore packs them by default, into `q/<n>` files that hold up to 64 KiB of documents each (`CanopyBundleOptions.SearchPackBytes`; 0 writes separate files). A pack is a `pack` document like the children packs: `pages` holds the documents as JSON text, and a reader parses only the one it needs.
+
+```json
+"search": { "entryCount": 700, "entryFiles": [0, 256, 512], "kinds": ["share", "folder", "file"],
+  "shards": { "ab": 81, "ac": 9, "pra": 190, "prb": 12 }, "entryPacks": [0, 2], "shardPacks": ["ab", "prb"] }
+```
+
+- The entry files come first, in file order, then the shards in ordinal order of their keys (UTF-16 code units, the order of `Object.keys(shards).sort()`); an entry file and a shard never share a pack.
+- `entryPacks` lists the number of the first entry file in each entry pack, starting with 0; `shardPacks` lists the first shard key of each shard pack, starting with the smallest key. Entry packs are `q/0` up to `q/<entryPacks.length - 1>`, and the shard packs follow them.
+- Entry file `n` is in the last entry pack whose first file is at most `n`, at the position `n` minus that first. Shard `key` is in the last shard pack whose first key is at most `key`, at its position among the ordinal sorted keys minus the position of that pack's first key. In the example, `e/2` is page 0 of `q/1`, and `prb` is page 0 of `q/3`.
+- The two lists come together or not at all; readers reject lists that are not ascending, that name a file or a key the index does not have, or that do not start at the first file and the first key.
+
+A pack is filled up to its size and a document larger than that gets a pack of its own; every file stays within the file budget. On the packing benchmark (380,000 rows), 64 KiB packs turn the 2,910 index files into 370 and the bundle's 3,457 files into 917. A cold query then reads about twice the bytes it read from separate files (1.5 MB instead of 0.7 MB for "identity gateway") in fewer files, and its search part stays at 44 to 81 ms with the CPU slowed four times (61 to 94 ms before); 512 KiB packs leave 589 files but read 3 to 6 MB per cold query. The numbers of each size are in `TODO.md`. As with children packs, a runtime from before index packs asks for `e/0` and cannot search a packed bundle: the runtime and the data come from the same build.
 
 ### Remote
 

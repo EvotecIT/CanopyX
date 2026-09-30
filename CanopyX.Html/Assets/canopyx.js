@@ -505,6 +505,14 @@
           !isCount(first) || first >= index.entryCount || (i ? first <= index.entryFiles[i - 1] : first))) {
       throw badIndex("index");
     }
+    if (index.entryPacks === undefined && index.shardPacks === undefined) return;
+    const keys = Object.keys(index.shards).sort();
+    if (!Array.isArray(index.entryPacks) || !Array.isArray(index.shardPacks) ||
+        (index.entryFiles.length > 0) !== (index.entryPacks.length > 0) || (keys.length > 0) !== (index.shardPacks.length > 0) ||
+        index.entryPacks.some((first, i) => !isCount(first) || first >= index.entryFiles.length || (i ? first <= index.entryPacks[i - 1] : first)) ||
+        index.shardPacks.some((key, i) => typeof key !== "string" || !Object.prototype.hasOwnProperty.call(index.shards, key) || (i ? key <= index.shardPacks[i - 1] : key !== keys[0]))) {
+      throw badIndex("index packs");
+    }
   }
 
   function resolveShards(shards, keys, word) {
@@ -649,15 +657,38 @@
 
   function sidecarSearch(load, manifest) {
     const index = async () => (await manifest()).search;
+    const loadPack = recentCache(PACK_CACHE, async (number) => {
+      const doc = checkDocument(await load("q/" + number), "pack");
+      if (!Array.isArray(doc.pages)) throw badIndex("pack");
+      return doc.pages;
+    });
+    const sortedKeys = new WeakMap();
+    const packed = async (pack, slot) => {
+      const text = (await loadPack(pack))[slot];
+      if (typeof text !== "string") throw badIndex("pack");
+      return JSON.parse(text);
+    };
+    const loadIndexDoc = async (search, kind, name) => {
+      if (!search.entryPacks) return load(kind === "e" ? "e/" + name : "s/k-" + name);
+      if (kind === "e") {
+        const pack = entryFileOf(search.entryPacks, name);
+        return packed(pack, name - search.entryPacks[pack]);
+      }
+      let keys = sortedKeys.get(search);
+      if (!keys) sortedKeys.set(search, keys = Object.keys(search.shards).sort());
+      let pack = 0;
+      while (pack + 1 < search.shardPacks.length && search.shardPacks[pack + 1] <= name) pack++;
+      return packed(search.entryPacks.length + pack, keys.indexOf(name) - keys.indexOf(search.shardPacks[pack]));
+    };
     const loadShard = recentCache(SHARD_CACHE, async (key) => {
       const search = await index();
-      return checkShard(await load("s/k-" + key), key, search.shards[key], search.entryCount);
+      return checkShard(await loadIndexDoc(search, "s", key), key, search.shards[key], search.entryCount);
     });
     const loadEntries = recentCache(ENTRY_CACHE, async (file) => {
       const search = await index();
       const first = search.entryFiles[file];
       const end = file + 1 < search.entryFiles.length ? search.entryFiles[file + 1] : search.entryCount;
-      return entryFile(await load("e/" + file), first, end - first);
+      return entryFile(await loadIndexDoc(search, "e", file), first, end - first);
     });
 
     async function postingsOf(search, keys, word) {
@@ -725,6 +756,7 @@
       return run(query, queryWords, limit).catch((err) => {
         loadShard.clear();
         loadEntries.clear();
+        loadPack.clear();
         throw err;
       });
     };

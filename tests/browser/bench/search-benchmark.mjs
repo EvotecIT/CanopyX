@@ -6,9 +6,10 @@
 //
 //   dotnet run --project CanopyX.Examples -c Release                      (the examples: bundle/)
 //   dotnet run --project CanopyX.Examples -c Release -- --search-bench    (the benchmark bundles: deep/ and directory/)
+//   dotnet run --project CanopyX.Examples -c Release -- --pack-bench      (the packed catalog: catalog/, 380,000 rows)
 //   node bench/search-benchmark.mjs --runs 5 --cpu 1,4
 //
-// Options: --examples <folder> and --bench <folder> point at other outputs (for a before/after comparison),
+// Options: --examples <folder>, --bench <folder>, and --pack <folder> point at other outputs (for a before/after comparison),
 // --channel msedge uses an installed browser, --out <file> writes the raw samples as JSON.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
@@ -24,13 +25,18 @@ const cpus = option("cpu", "1,4").split(",").map(Number);
 const channel = option("channel", process.env.CANOPYX_BROWSER_CHANNEL || undefined);
 const examples = path.resolve(option("examples", path.join(repo, "CanopyX.Examples/bin/Release/net10.0/output")));
 const bench = path.resolve(option("bench", path.join(repo, "CanopyX.Examples/bin/Release/net10.0/search-bench")));
+const pack = path.resolve(option("pack", path.join(repo, "CanopyX.Examples/bin/Release/net10.0/pack-bench")));
 const out = option("out", null);
 
 const scenarios = [
   { name: "examples: quarterly review", page: path.join(examples, "bundle/index.html"), query: "quarterly review" },
   { name: "deep: quarterly report 17", page: path.join(bench, "deep/index.html"), query: "quarterly report 17" },
   { name: "directory: firewall policy 0022", page: path.join(bench, "directory/index.html"), query: "firewall policy 0022" },
-  { name: "directory: workstations", page: path.join(bench, "directory/index.html"), query: "workstations" }
+  { name: "directory: workstations", page: path.join(bench, "directory/index.html"), query: "workstations" },
+  // The packed catalog: services by product and tier (spread over the tree), releases, and people in access lists.
+  { name: "catalog: identity gateway", page: path.join(pack, "catalog/index.html"), query: "identity gateway" },
+  { name: "catalog: release 3 security", page: path.join(pack, "catalog/index.html"), query: "release 3 security" },
+  { name: "catalog: dana.levi", page: path.join(pack, "catalog/index.html"), query: "dana.levi" }
 ];
 
 const median = (values) => values.slice().sort((a, b) => a - b)[Math.floor((values.length - 1) / 2)];
@@ -41,7 +47,7 @@ function bundleSize(page) {
   const result = { indexBytes: 0, indexFiles: 0, pageBytes: 0, pageFiles: 0 };
   for (const view of fs.readdirSync(data, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
     for (const folder of fs.readdirSync(path.join(data, view.name), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
-      const index = folder.name === "s" || folder.name === "e";
+      const index = folder.name === "s" || folder.name === "e" || folder.name === "q";
       for (const file of fs.readdirSync(path.join(data, view.name, folder.name), { recursive: true, withFileTypes: true })) {
         if (file.isFile()) {
           result[index ? "indexBytes" : "pageBytes"] += fs.statSync(path.join(file.parentPath, file.name)).size;

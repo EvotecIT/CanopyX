@@ -11,7 +11,9 @@ import { exampleUrl, median, openExample } from "./support.mjs";
 const FIRST_ROWS_MS = 2500;
 const INTERACTION_MS = 250;
 const SEARCH_INDEX_FILES = 32;
-const SEARCH_INDEX_BYTES = 512 * 1024;
+// The index is packed into files of up to 64 KiB, so a query reads a few whole packs: about 11% of the example's
+// 5.5 MB index for the widest query, against 4% with separate files (see "Index Packs" in docs/data-protocol.md).
+const SEARCH_INDEX_BYTES = 1024 * 1024;
 
 /** Runs an async expression in the page and returns the milliseconds until the next painted frame. */
 function timed(page, body) {
@@ -86,7 +88,7 @@ for (const query of ["quarterly review", "re", "İstanbul lau", "version 9", "qu
   test(`searching "${query}" loads a bounded part of the index`, async ({ page }) => {
     const loaded = [];
     page.on("request", (request) => {
-      const match = /\/data\/[^/]+\/[se]\/[^/]+\.js$/.exec(request.url());
+      const match = /\/data\/[^/]+\/[seq]\/[^/]+\.js$/.exec(request.url());
       if (match) loaded.push(fs.statSync(fileURLToPath(request.url())).size);
     });
     await openExample(page, "bundle/index.html");

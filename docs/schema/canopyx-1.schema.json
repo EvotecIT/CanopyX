@@ -376,8 +376,19 @@
               "type": "object",
               "propertyNames": { "$ref": "#/$defs/shardKey" },
               "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+            },
+            "entryPacks": {
+              "description": "With shardPacks: the index is packed into q/<n> files. The number of the first entry file in each entry pack, in pack order, starting with 0.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/count" }
+            },
+            "shardPacks": {
+              "description": "The first shard key, in ordinal order, of each shard pack; shard packs follow the entry packs.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/shardKey" }
             }
-          }
+          },
+          "dependentRequired": { "entryPacks": ["shardPacks"], "shardPacks": ["entryPacks"] }
         }
       }
     },
@@ -389,9 +400,9 @@
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "pack" },
         "pages": {
-          "description": "The children pages of many nodes, each as the JSON text of a page document. A reader parses only the page it needs.",
+          "description": "In a p/<n> pack, the children pages of many nodes, each as the JSON text of a page document; in a q/<n> pack, the search entry files or shards of an index, each as the JSON text of its document. A reader parses only the one it needs.",
           "type": "array",
-          "items": { "type": "string", "minLength": 2, "contentMediaType": "application/json", "contentSchema": { "$ref": "#/$defs/page" } }
+          "items": { "type": "string", "minLength": 2, "contentMediaType": "application/json", "contentSchema": { "anyOf": [{ "$ref": "#/$defs/page" }, { "$ref": "#/$defs/searchEntries" }, { "$ref": "#/$defs/searchShard" }] } }
         }
       }
     },

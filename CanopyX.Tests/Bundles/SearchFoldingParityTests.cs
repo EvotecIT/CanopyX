@@ -42,7 +42,8 @@ public sealed class SearchFoldingParityTests {
         AddNode(view, label);
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-fold-" + Guid.NewGuid().ToString("N"));
         try {
-            var result = new CanopyBundleWriter().Write(view, directory);
+            // Shard files of their own, so the words can be read straight from the s/ folder.
+            var result = new CanopyBundleWriter(new CanopyBundleOptions { SearchPackBytes = 0 }).Write(view, directory);
             var folded = new Dictionary<int, string>();
             foreach (var file in Directory.EnumerateFiles(Path.Combine(result.DataDirectory, "s"), "*.js")) {
                 // Label tokens start with U+0000; every other word starts with its code unit number.

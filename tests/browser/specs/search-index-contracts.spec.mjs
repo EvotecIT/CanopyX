@@ -172,3 +172,56 @@ for (const [name, change, message] of [
     expect(error).toContain(message);
   });
 }
+
+/**
+ * Packs an index the way the bundle writer does: entry files first, then shards in ordinal key order, a few to a
+ * q/<n> file, with the first entry file and the first shard key of each pack in the manifest.
+ */
+function pack(docs, perPack) {
+  const search = docs.manifest.search;
+  const packed = { manifest: { ...docs.manifest, search: { ...search, entryPacks: [], shardPacks: [] } } };
+  const files = search.entryFiles.map((_, i) => ["e/" + i, i]).concat(Object.keys(search.shards).sort().map((key) => ["s/k-" + key, key]));
+  let number = -1;
+  files.forEach(([ref, name], i) => {
+    const entry = ref.startsWith("e/");
+    // Entry files and shards never share a pack.
+    if (i % perPack === 0 || (!entry && files[i - 1][0].startsWith("e/"))) {
+      number++;
+      packed["q/" + number] = { protocol: "canopyx/1", type: "pack", pages: [] };
+      packed.manifest.search[entry ? "entryPacks" : "shardPacks"].push(name);
+    }
+    packed["q/" + number].pages.push(JSON.stringify(docs[ref]));
+  });
+  return packed;
+}
+
+test("a packed index answers like separate files and loads only the packs its documents are in", async ({ page }) => {
+  // Depth first, as the writer numbers entries: the items of a folder follow it.
+  const hits = Array.from({ length: 60 }, (_, i) => ({ path: ["folder-" + Math.floor(i / 10), "item-" + i], label: (i % 3 ? "Report " : "Budget ") + i }));
+  const { search: index, docs } = searchIndex(hits);
+  // Several entry files, so the entry packs are more than one.
+  index.entryFiles = [0, 20, 40];
+  docs["e/0"] = { ...docs["e/0"], entries: docs["e/0"].entries.slice(0, 20) };
+  const all = searchIndex(hits).docs["e/0"].entries;
+  const stem = (first) => { const out = []; for (let n = all[first][0]; n >= 0; n = all[n][0]) out.unshift([n].concat(all[n])); return out; };
+  docs["e/1"] = { protocol: "canopyx/1", type: "searchEntries", first: 20, stem: stem(20), entries: all.slice(20, 40) };
+  docs["e/2"] = { protocol: "canopyx/1", type: "searchEntries", first: 40, stem: stem(40), entries: all.slice(40) };
+  const separate = { manifest: manifest(index), ...docs };
+  const requested = await serve(page, pack(separate, 2));
+
+  const found = await search(page, "budget 3");
+  expect(found.hits.map((hit) => hit.label)).toEqual(["Budget 3", "Budget 30", "Budget 33", "Budget 36", "Budget 39"]);
+  expect(requested.every((ref) => ref === "manifest" || ref.startsWith("q/"))).toBe(true);
+  expect(requested.filter((ref) => ref.startsWith("q/")).length).toBeLessThan(Object.keys(pack(separate, 2)).length - 1);
+});
+
+test("a pack map that does not match the index is rejected before a pack is read", async ({ page }) => {
+  const { search: index, docs } = searchIndex([{ path: ["a"], label: "Alpha beta" }, { path: ["b"], label: "Beta gamma" }]);
+  const packed = pack({ manifest: manifest(index), ...docs }, 2);
+  // The first shard pack must start at the first shard key.
+  packed.manifest.search.shardPacks[0] = Object.keys(index.shards).sort()[1];
+  const requested = await serve(page, packed);
+  expect(await page.evaluate(({ id }) => CanopyX.sources.sidecar({ id, source: { kind: "sidecar", base: "/data/" } }).search("beta", 20).then(() => "found", (e) => e.message), { id: view.id }))
+    .toContain("does not match the manifest");
+  expect(requested.some((ref) => ref.startsWith("q/"))).toBe(false);
+});

@@ -20,6 +20,9 @@ internal static class CanopyBundleLayout {
     /// <summary>The reference of a pack file, which holds the children pages of many nodes.</summary>
     internal static string Pack(int number) => "p/" + number.ToString(CultureInfo.InvariantCulture);
 
+    /// <summary>The reference of a search index pack, which holds entry files or shards.</summary>
+    internal static string IndexPack(int number) => "q/" + number.ToString(CultureInfo.InvariantCulture);
+
     /// <summary>The reference of one children page: its pack file and its position among that file's pages.</summary>
     internal static string PackedPage(int pack, int slot) => Pack(pack) + "#" + slot.ToString(CultureInfo.InvariantCulture);
 }

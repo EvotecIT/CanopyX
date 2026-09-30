@@ -63,7 +63,7 @@ public sealed class CanopyBundleWriter {
     /// <para>
     /// A node is released once its subtree is written. The writer keeps the serialized rows of the lists on the path
     /// it is on (each list until its last node is read, so one very long list is held whole), one id per node to
-    /// reject duplicates, and the words of the search index with one number per word of every label search can find. The cells and
+    /// reject duplicates, the words of the search index with one number per word of every label search can find, and, when the index is packed, its serialized shards until the end. The cells and
     /// details of the rest of the tree are not held.
     /// </para>
     /// <para>
