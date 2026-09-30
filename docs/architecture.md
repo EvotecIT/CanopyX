@@ -78,7 +78,7 @@ Compared with the outline before themes: the table now paints its surface (white
 
 ## Browser Runtime
 
-The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`. The first part opens a single closure and the last part closes it, so parts share private helpers without globals.
+The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out their whole-line comments: the parts are documented, the shipped file stays within its size budget. The first part opens a single closure and the last part closes it, so parts share private helpers without globals.
 
 | Part | Responsibility |
 | --- | --- |

@@ -18,7 +18,7 @@ public sealed class RuntimeAssetTests {
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
             .ToArray();
 
-        var expected = string.Join("\n", parts) + "\n";
+        var expected = WithoutCommentLines(string.Join("\n", parts) + "\n");
         const string marker = "__CANOPYX_FOLD_PAIRS__";
         Assert.Contains(marker, expected);
         var tableSource = File.ReadAllText(Path.Combine(root, "CanopyX", "Search", "CanopySearchFoldingTable.cs"));
@@ -124,6 +124,49 @@ public sealed class RuntimeAssetTests {
         } finally {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void Script_ShipsWithoutTheCommentsOfItsSourceParts() {
+        var script = Normalize(CanopyHtmlAssets.Script);
+        var lines = script.Split('\n');
+
+        // The header that says what the file is stays; the documentation of the parts does not ship.
+        Assert.StartsWith("/*\n * CanopyX browser runtime", script);
+        Assert.DoesNotContain(lines, line => line.TrimStart().StartsWith("//", StringComparison.Ordinal));
+        Assert.Single(lines, line => line.TrimStart().StartsWith("/*", StringComparison.Ordinal));
+    }
+
+    /// <summary>The comment stripping of Build/Sync-Assets.ps1: whole // lines and /* */ blocks, except the first block.</summary>
+    private static string WithoutCommentLines(string content) {
+        var kept = new List<string>();
+        var inBlock = false;
+        var header = content.StartsWith("/*", StringComparison.Ordinal);
+        foreach (var line in content.Split('\n')) {
+            var text = line.Trim();
+            if (inBlock || text.StartsWith("/*", StringComparison.Ordinal)) {
+                var end = text.IndexOf("*/", inBlock ? 0 : 2, StringComparison.Ordinal);
+                Assert.True(end < 0 || end + 2 == text.Length, "Code shares a line with a comment: " + text);
+                inBlock = end < 0;
+                if (header) {
+                    kept.Add(line);
+                    header = inBlock;
+                }
+
+                continue;
+            }
+
+            if (text.StartsWith("//", StringComparison.Ordinal)) {
+                continue;
+            }
+
+            var opens = text.IndexOf("/*", StringComparison.Ordinal);
+            Assert.False(text.Contains('`') || text.EndsWith('\\') || (opens > 0 && text.IndexOf("*/", opens, StringComparison.Ordinal) < 0),
+                "A line the comment rule could misread: " + text);
+            kept.Add(line);
+        }
+
+        return string.Join("\n", kept);
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");

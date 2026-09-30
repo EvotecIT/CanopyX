@@ -5,7 +5,6 @@
 (function (global) {
   "use strict";
 
-  // A second copy of the runtime on the same page would take over the sidecar queue from the first; keep the first.
   if (global.CanopyX) {
     return;
   }
@@ -26,7 +25,6 @@
   const activeGrids = new WeakMap();
   let instanceSeq = 0;
 
-  /** Creates an element with an optional class name. */
   function h(tag, className) {
     const element = document.createElement(tag);
     if (className) {
@@ -35,7 +33,6 @@
     return element;
   }
 
-  /** Sets text safely; every host string goes through textContent, never innerHTML. */
   function setText(element, value) {
     element.textContent = value == null ? "" : String(value);
   }
@@ -54,7 +51,6 @@
     }
   }
 
-  /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
       throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
@@ -92,14 +88,12 @@
     return doc;
   }
 
-  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
   function requireIdentifier(value, name) {
     if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
       throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
     }
   }
 
-  /** Search paths must be complete, unambiguous node-id paths before they reach navigation. */
   function validateSearchHit(hit) {
     if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
       throw new Error("CanopyX: search hit needs an ID path and string label.");
@@ -116,14 +110,12 @@
     }
   }
 
-  /** Built-in and host-provided search results share the same hit boundary before navigation. */
   function validateSearchResult(result) {
     if (!result || !Array.isArray(result.hits)) throw new Error("CanopyX: search hits must be an array.");
     result.hits.forEach(validateSearchHit);
     return result;
   }
 
-  /** Verifies wire page ownership and required structural counters. */
   function checkPage(doc, node) {
     checkDocument(doc, "page");
     if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
@@ -138,7 +130,6 @@
     return doc;
   }
 
-  // ---------- cells ----------
   function isCellObject(cell) {
     return cell !== null && typeof cell === "object";
   }
@@ -147,17 +138,12 @@
     return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
   }
 
-  // ---------- tones ----------
-  // The stylesheet has colours for six tones. Any other tone is the host's: its colours come from the theme's
-  // --cx-tone-<name> (text) and --cx-tone-<name>-bg (badge background), through two properties set on the element.
   const NO_TONE = { cls: "", host: null };
   const tones = new Map();
 
-  /** The class names of a tone (with a leading space) and, for a host tone, its name; a malformed tone has neither. */
   function toneOf(name) {
     let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
     if (!tone) {
-      // A name ending in -bg would read its text colour from the badge background of another tone.
       if (!/^[a-z][a-z0-9-]{0,31}$/.test(name) || name.endsWith("-bg")) {
         return NO_TONE;
       }
@@ -168,7 +154,6 @@
     return tone;
   }
 
-  /** Gives an element the classes of a tone after its base classes, and points it at the theme colours of a host tone. */
   function applyTone(element, base, tone) {
     element.className = base + tone.cls;
     toneColors(element, tone);
@@ -207,10 +192,8 @@
     return value < 10 ? "0" + value : String(value);
   }
 
-  // A date is parsed and formatted once for both time zones; rows are painted again and again while scrolling.
   const dateTexts = new Map();
 
-  /** [UTC text, local text] of an ISO date, each as yyyy-MM-dd HH:mm; null when the value is not a date. */
   function dateText(value) {
     let texts = dateTexts.get(value);
     if (texts === undefined) {
@@ -225,13 +208,11 @@
     return texts;
   }
 
-  /** In UTC with the suffix "UTC", or in the reader's own time zone without a suffix. */
   function formatDate(value, local) {
     const texts = dateText(value);
     return texts ? (local ? texts[1] : texts[0] + " UTC") : String(value);
   }
 
-  /** The same moment in the other time zone, as the tooltip of a date the runtime formatted; null for any other cell. */
   function otherZone(cell, column, local) {
     const value = cellValue(cell);
     if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
@@ -241,7 +222,6 @@
     return texts ? (local ? texts[0] + " UTC" : texts[1] + " local time") : null;
   }
 
-  /** Formats a value without display text, following the protocol's default formatting table. */
   function formatValue(value, kind, lang, local) {
     if (value === null || value === undefined) {
       return "";
@@ -267,7 +247,6 @@
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-  /** Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. */
   function sortKey(cell, column) {
     let value = cellValue(cell);
     if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
@@ -302,8 +281,6 @@
     return order * direction;
   }
 
-  // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  // Common ranges use direct rules. The remaining one-unit pairs come from the C# writer's frozen table.
   const EXTRA_FOLD_PAIRS = "QQBhAEIAYgBDAGMARABkAEUAZQBGAGYARwBnAEgAaABJAGkASgBqAEsAawBMAGwATQBtAE4AbgBPAG8AUABwAFEAcQBSAHIAUwBzAFQAdABVAHUAVgB2AFcAdwBYAHgAWQB5AFoAegDAAOAAwQDhAMIA4gDDAOMAxADkAMUA5QDGAOYAxwDnAMgA6ADJAOkAygDqAMsA6wDMAOwAzQDtAM4A7gDPAO8A0ADwANEA8QDSAPIA0wDzANQA9ADVAPUA1gD2ANgA+ADZAPkA2gD6ANsA+wDcAPwA3QD9AN4A/gAAAQEBAgEDAQQBBQEGAQcBCAEJAQoBCwEMAQ0BDgEPARABEQESARMBFAEVARYBFwEYARkBGgEbARwBHQEeAR8BIAEhASIBIwEkASUBJgEnASgBKQEqASsBLAEtAS4BLwEyATMBNAE1ATYBNwE5AToBOwE8AT0BPgE/AUABQQFCAUMBRAFFAUYBRwFIAUoBSwFMAU0BTgFPAVABUQFSAVMBVAFVAVYBVwFYAVkBWgFbAVwBXQFeAV8BYAFhAWIBYwFkAWUBZgFnAWgBaQFqAWsBbAFtAW4BbwFwAXEBcgFzAXQBdQF2AXcBeAH/AHkBegF7AXwBfQF+AYEBUwKCAYMBhAGFAYYBVAKHAYgBiQFWAooBVwKLAYwBjgHdAY8BWQKQAVsCkQGSAZMBYAKUAWMClgFpApcBaAKYAZkBnAFvAp0BcgKfAXUCoAGhAaIBowGkAaUBpgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwBywHMAc0BzgHPAdAB0QHSAdMB1AHVAdYB1wHYAdkB2gHbAdwB3gHfAeAB4QHiAeMB5AHlAeYB5wHoAekB6gHrAewB7QHuAe8B8QHzAfIB8wH0AfUB9gGVAfcBvwH4AfkB+gH7AfwB/QH+Af8BAAIBAgICAwIEAgUCBgIHAggCCQIKAgsCDAINAg4CDwIQAhECEgITAhQCFQIWAhcCGAIZAhoCGwIcAh0CHgIfAiACngEiAiMCJAIlAiYCJwIoAikCKgIrAiwCLQIuAi8CMAIxAjICMwI6AmUsOwI8Aj0CmgE+AmYsQQJCAkMCgAFEAokCRQKMAkYCRwJIAkkCSgJLAkwCTQJOAk8CcANxA3IDcwN2A3cDfwPzA4YDrAOIA60DiQOuA4oDrwOMA8wDjgPNA48DzgORA7EDkgOyA5MDswOUA7QDlQO1A5YDtgOXA7cDmAO4A5kDuQOaA7oDmwO7A5wDvAOdA70DngO+A58DvwOgA8ADoQPBA6MDwwOkA8QDpQPFA6YDxgOnA8cDqAPIA6kDyQOqA8oDqwPLA88D1wPYA9kD2gPbA9wD3QPeA98D4APhA+ID4wPkA+UD5gPnA+gD6QPqA+sD7APtA+4D7wP0A7gD9wP4A/kD8gP6A/sD/QN7A/4DfAP/A30DAARQBAEEUQQCBFIEAwRTBAQEVAQFBFUEBgRWBAcEVwQIBFgECQRZBAoEWgQLBFsEDARcBA0EXQQOBF4EDwRfBBAEMAQRBDEEEgQyBBMEMwQUBDQEFQQ1BBYENgQXBDcEGAQ4BBkEOQQaBDoEGwQ7BBwEPAQdBD0EHgQ+BB8EPwQgBEAEIQRBBCIEQgQjBEMEJAREBCUERQQmBEYEJwRHBCgESAQpBEkEKgRKBCsESwQsBEwELQRNBC4ETgQvBE8EYARhBGIEYwRkBGUEZgRnBGgEaQRqBGsEbARtBG4EbwRwBHEEcgRzBHQEdQR2BHcEeAR5BHoEewR8BH0EfgR/BIAEgQSKBIsEjASNBI4EjwSQBJEEkgSTBJQElQSWBJcEmASZBJoEmwScBJ0EngSfBKAEoQSiBKMEpASlBKYEpwSoBKkEqgSrBKwErQSuBK8EsASxBLIEswS0BLUEtgS3BLgEuQS6BLsEvAS9BL4EvwTABM8EwQTCBMMExATFBMYExwTIBMkEygTLBMwEzQTOBNAE0QTSBNME1ATVBNYE1wTYBNkE2gTbBNwE3QTeBN8E4AThBOIE4wTkBOUE5gTnBOgE6QTqBOsE7ATtBO4E7wTwBPEE8gTzBPQE9QT2BPcE+AT5BPoE+wT8BP0E/gT/BAAFAQUCBQMFBAUFBQYFBwUIBQkFCgULBQwFDQUOBQ8FEAURBRIFEwUUBRUFFgUXBRgFGQUaBRsFHAUdBR4FHwUgBSEFIgUjBSQFJQUmBScFKAUpBSoFKwUsBS0FLgUvBTEFYQUyBWIFMwVjBTQFZAU1BWUFNgVmBTcFZwU4BWgFOQVpBToFagU7BWsFPAVsBT0FbQU+BW4FPwVvBUAFcAVBBXEFQgVyBUMFcwVEBXQFRQV1BUYFdgVHBXcFSAV4BUkFeQVKBXoFSwV7BUwFfAVNBX0FTgV+BU8FfwVQBYAFUQWBBVIFggVTBYMFVAWEBVUFhQVWBYYFoBAALaEQAS2iEAItoxADLaQQBC2lEAUtphAGLacQBy2oEAgtqRAJLaoQCi2rEAstrBAMLa0QDS2uEA4trxAPLbAQEC2xEBEtshASLbMQEy20EBQttRAVLbYQFi23EBctuBAYLbkQGS26EBotuxAbLbwQHC29EB0tvhAeLb8QHy3AECAtwRAhLcIQIi3DECMtxBAkLcUQJS3HECctzRAtLaATcKuhE3GrohNyq6MTc6ukE3SrpRN1q6YTdqunE3erqBN4q6kTeauqE3qrqxN7q6wTfKutE32rrhN+q68Tf6uwE4CrsROBq7ITgquzE4OrtBOEq7UThau2E4artxOHq7gTiKu5E4mruhOKq7sTi6u8E4yrvRONq74Tjqu/E4+rwBOQq8ETkavCE5KrwxOTq8QTlKvFE5WrxhOWq8cTl6vIE5iryROZq8oTmqvLE5urzBOcq80TnavOE56rzxOfq9AToKvRE6Gr0hOiq9MTo6vUE6Sr1ROlq9YTpqvXE6er2BOoq9kTqavaE6qr2xOrq9wTrKvdE62r3hOuq98Tr6vgE7Cr4ROxq+ITsqvjE7Or5BO0q+UTtavmE7ar5xO3q+gTuKvpE7mr6hO6q+sTu6vsE7yr7RO9q+4TvqvvE7+r8BP4E/ET+RPyE/oT8xP7E/QT/BP1E/0TiRyKHJAc0BCRHNEQkhzSEJMc0xCUHNQQlRzVEJYc1hCXHNcQmBzYEJkc2RCaHNoQmxzbEJwc3BCdHN0QnhzeEJ8c3xCgHOAQoRzhEKIc4hCjHOMQpBzkEKUc5RCmHOYQpxznEKgc6BCpHOkQqhzqEKsc6xCsHOwQrRztEK4c7hCvHO8QsBzwELEc8RCyHPIQsxzzELQc9BC1HPUQthz2ELcc9xC4HPgQuRz5ELoc+hC9HP0Qvhz+EL8c/xAAHgEeAh4DHgQeBR4GHgceCB4JHgoeCx4MHg0eDh4PHhAeER4SHhMeFB4VHhYeFx4YHhkeGh4bHhweHR4eHh8eIB4hHiIeIx4kHiUeJh4nHigeKR4qHiseLB4tHi4eLx4wHjEeMh4zHjQeNR42HjceOB45HjoeOx48Hj0ePh4/HkAeQR5CHkMeRB5FHkYeRx5IHkkeSh5LHkweTR5OHk8eUB5RHlIeUx5UHlUeVh5XHlgeWR5aHlseXB5dHl4eXx5gHmEeYh5jHmQeZR5mHmceaB5pHmoeax5sHm0ebh5vHnAecR5yHnMedB51HnYedx54Hnkeeh57HnwefR5+Hn8egB6BHoIegx6EHoUehh6HHogeiR6KHosejB6NHo4ejx6QHpEekh6THpQelR6eHt8AoB6hHqIeox6kHqUeph6nHqgeqR6qHqserB6tHq4erx6wHrEesh6zHrQetR62HrceuB65Hroeux68Hr0evh6/HsAewR7CHsMexB7FHsYexx7IHskeyh7LHswezR7OHs8e0B7RHtIe0x7UHtUe1h7XHtge2R7aHtse3B7dHt4e3x7gHuEe4h7jHuQe5R7mHuce6B7pHuoe6x7sHu0e7h7vHvAe8R7yHvMe9B71HvYe9x74Hvke+h77Hvwe/R7+Hv8eCB8AHwkfAR8KHwIfCx8DHwwfBB8NHwUfDh8GHw8fBx8YHxAfGR8RHxofEh8bHxMfHB8UHx0fFR8oHyAfKR8hHyofIh8rHyMfLB8kHy0fJR8uHyYfLx8nHzgfMB85HzEfOh8yHzsfMx88HzQfPR81Hz4fNh8/HzcfSB9AH0kfQR9KH0IfSx9DH0wfRB9NH0UfWR9RH1sfUx9dH1UfXx9XH2gfYB9pH2Efah9iH2sfYx9sH2QfbR9lH24fZh9vH2cfiB+AH4kfgR+KH4Ifix+DH4wfhB+NH4Ufjh+GH48fhx+YH5AfmR+RH5ofkh+bH5MfnB+UH50flR+eH5Yfnx+XH6gfoB+pH6Efqh+iH6sfox+sH6QfrR+lH64fph+vH6cfuB+wH7kfsR+6H3Afux9xH7wfsx/IH3IfyR9zH8ofdB/LH3UfzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIWAhcCFhIXEhYiFyIWMhcyFkIXQhZSF1IWYhdiFnIXchaCF4IWkheSFqIXohayF7IWwhfCFtIX0hbiF+IW8hfyGDIYQhtiTQJLck0SS4JNIkuSTTJLok1CS7JNUkvCTWJL0k1yS+JNgkvyTZJMAk2iTBJNskwiTcJMMk3STEJN4kxSTfJMYk4CTHJOEkyCTiJMkk4yTKJOQkyyTlJMwk5iTNJOckziToJM8k6SQALDAsASwxLAIsMiwDLDMsBCw0LAUsNSwGLDYsByw3LAgsOCwJLDksCiw6LAssOywMLDwsDSw9LA4sPiwPLD8sECxALBEsQSwSLEIsEyxDLBQsRCwVLEUsFixGLBcsRywYLEgsGSxJLBosSiwbLEssHCxMLB0sTSweLE4sHyxPLCAsUCwhLFEsIixSLCMsUywkLFQsJSxVLCYsViwnLFcsKCxYLCksWSwqLFosKyxbLCwsXCwtLF0sLixeLC8sXyxgLGEsYixrAmMsfR1kLH0CZyxoLGksaixrLGwsbSxRAm4scQJvLFACcCxSAnIscyx1LHYsfiw/An8sQAKALIEsgiyDLIQshSyGLIcsiCyJLIosiyyMLI0sjiyPLJAskSySLJMslCyVLJYslyyYLJksmiybLJwsnSyeLJ8soCyhLKIsoyykLKUspiynLKgsqSyqLKssrCytLK4sryywLLEssiyzLLQstSy2LLcsuCy5LLosuyy8LL0sviy/LMAswSzCLMMsxCzFLMYsxyzILMksyizLLMwszSzOLM8s0CzRLNIs0yzULNUs1izXLNgs2SzaLNss3CzdLN4s3yzgLOEs4izjLOss7CztLO4s8izzLECmQaZCpkOmRKZFpkamR6ZIpkmmSqZLpkymTaZOpk+mUKZRplKmU6ZUplWmVqZXplimWaZaplumXKZdpl6mX6ZgpmGmYqZjpmSmZaZmpmemaKZppmqma6Zspm2mgKaBpoKmg6aEpoWmhqaHpoimiaaKpoumjKaNpo6mj6aQppGmkqaTppSmlaaWppemmKaZppqmm6YipyOnJKclpyanJ6copymnKqcrpyynLacupy+nMqczpzSnNac2pzenOKc5pzqnO6c8pz2nPqc/p0CnQadCp0OnRKdFp0anR6dIp0mnSqdLp0ynTadOp0+nUKdRp1KnU6dUp1WnVqdXp1inWadap1unXKddp16nX6dgp2GnYqdjp2SnZadmp2enaKdpp2qna6dsp22nbqdvp3mneqd7p3ynfad5HX6nf6eAp4GngqeDp4SnhaeGp4eni6eMp42nZQKQp5GnkqeTp5anl6eYp5mnmqebp5ynnaeep5+noKehp6Kno6ekp6Wnpqenp6inqaeqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6u0p7Wntqe3p7inuae6p7unvKe9p76nv6fAp8GnwqfDp8SnlKfFp4ICxqeOHcenyKfJp8qny6dkAsynzafQp9Gn1qfXp9in2afap9un3KebAfWn9qch/0H/Iv9C/yP/Q/8k/0T/Jf9F/yb/Rv8n/0f/KP9I/yn/Sf8q/0r/K/9L/yz/TP8t/03/Lv9O/y//T/8w/1D/Mf9R/zL/Uv8z/1P/NP9U/zX/Vf82/1b/N/9X/zj/WP85/1n/Ov9a/w==";
   const EXTRA_LOWERCASE = new Map();
   const extraBytes = atob(EXTRA_FOLD_PAIRS);
@@ -359,7 +336,6 @@
     return out;
   }
 
-  /** Splits text into folded words. */
   function words(text) {
     const folded = foldText(text);
     const out = [];
@@ -384,7 +360,6 @@
     return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
   }
 
-  /** Trims only protocol separators; all non-ASCII code units remain word characters. */
   function trimSeparators(text) {
     let start = 0, end = text.length;
     while (start < end && isSeparator(text.charCodeAt(start))) start++;
@@ -392,13 +367,11 @@
     return text.slice(start, end);
   }
 
-  /** Rank of a label against a folded, trimmed query: 0 when equal, 1 when the label starts with it, 2 otherwise. */
   function rankLabel(label, foldedQuery) {
     const l = trimSeparators(foldText(label));
     return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
   }
 
-  /** Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits. */
   function shardKey(prefix) {
     let out = "";
     for (let i = 0; i < prefix.length; i++) {
@@ -408,10 +381,6 @@
     return out;
   }
 
-  // ---------- sidecar registry ----------
-  // Sidecar files run (self.CanopyXSidecar = self.CanopyXSidecar || []).push([viewId, ref, document]). Files that ran
-  // before the runtime left entries in a plain array; the runtime drains it and replaces push, so load order does not
-  // matter. Script tags are used because browsers block fetch() of local files on file://.
   const sidecarDocs = new Map();
   const sidecarWaiters = new Map();
 
@@ -443,7 +412,6 @@
     return 0;
   };
 
-  /** Loads one sidecar document by injecting its script; resolves with the document the script registers. */
   function loadSidecar(base, view, ref) {
     if (ref.split("/").some((part) => part === "." || part === "..")) {
       return Promise.reject(new Error("Sidecar reference cannot contain a dot path component: " + ref));
@@ -465,8 +433,6 @@
     });
     sidecarWaiters.set(key, waiter);
     const script = document.createElement("script");
-    // A wire reference is an opaque path, not a URL suffix. Encode each component so ? and #
-    // remain part of the file name while the separators between bundle folders stay intact.
     script.src = base + ref.split("/").map(encodeURIComponent).join("/") + ".js";
     script.async = true;
     script.onload = () => {
@@ -487,9 +453,6 @@
     return waiter.promise;
   }
 
-  // ---------- sidecar search index (see "Search Index" in docs/data-protocol.md) ----------
-  // Entry files hold every node once; word shards list the entry numbers of each folded word. A query intersects the
-  // lists of its words, then loads only the entry files of its first matches.
 
   function badIndex(what) {
     return new Error("CanopyX: search " + what + " does not match the manifest or is malformed.");
@@ -499,7 +462,6 @@
     return Number.isInteger(value) && value >= 0;
   }
 
-  /** Checks the manifest's search object; entry files cover the entry numbers from 0 without gaps. */
   function checkSearchIndex(index) {
     if (!index || !isCount(index.entryCount) || !Array.isArray(index.entryFiles) || !Array.isArray(index.kinds) ||
         !index.shards || typeof index.shards !== "object" || (index.entryCount > 0) !== (index.entryFiles.length > 0) ||
@@ -509,12 +471,10 @@
     }
   }
 
-  /** Picks the search shards for one folded query word, each followed by its parts in numeric order. */
   function resolveShards(shards, keys, word) {
     const bases = keys.filter((key) => !/\.\d+$/.test(key));
     const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
       .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
-    // A shard prefix has at least two code units; a one-unit word finds the shards of every prefix it starts.
     for (let length = Math.min(2, word.length); length <= word.length; length++) {
       const key = shardKey(word.slice(0, length));
       if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
@@ -525,7 +485,6 @@
     return [];
   }
 
-  /** Keeps the most recently used documents only. Failed loads are not kept, so a retry can succeed. */
   function recentCache(limit, loadDoc) {
     const cache = new Map();
     const get = (key) => {
@@ -544,7 +503,6 @@
     return get;
   }
 
-  /** Checks a shard against the manifest. A posting list is an entry number, then gaps; -n is a run of n entries. */
   function checkShard(doc, key, count, entryCount) {
     checkDocument(doc, "searchShard");
     if (doc.key !== key) throw badIndex("shard key");
@@ -565,7 +523,6 @@
     return doc;
   }
 
-  /** Decodes posting lists into one ascending list of distinct entry numbers. */
   function mergePostings(lists) {
     const out = [];
     let ascending = true;
@@ -592,7 +549,6 @@
     });
   }
 
-  /** A label's own index word: U+0000 and the FNV-1a hash of its folded, separator-trimmed code units. */
   function labelToken(folded) {
     let hash = 2166136261;
     for (let i = 0; i < folded.length; i++) {
@@ -601,11 +557,6 @@
     return "\u0000" + ("0000000" + (hash >>> 0).toString(16)).slice(-8);
   }
 
-  /**
-   * Looks up entries of a searchEntries document, or of its stem of ancestors, as { parent, id, label, kind }. An
-   * entry is [parent, head, id, tail, label, kind?]; head and tail count the code units its id shares with the
-   * parent's id at the start and at the end.
-   */
   function entryFile(doc, first, count) {
     checkDocument(doc, "searchEntries");
     if (doc.first !== first || !Array.isArray(doc.stem) || !Array.isArray(doc.entries) || doc.entries.length !== count) throw badIndex("entry file");
@@ -620,7 +571,6 @@
       }
       return item;
     };
-    // Ancestors first, without recursion, so a deep tree cannot exhaust the stack.
     return (n) => {
       const pending = [];
       for (let k = n; k >= 0 && !records.has(k); k = raw(k)[0]) pending.push(k);
@@ -636,7 +586,6 @@
     };
   }
 
-  /** Builds a search hit: the id path follows the parents, the context names the nearest two. */
   function entryHit(record, kinds) {
     const path = [];
     for (let r = record; r; r = r.parent) path.unshift(r.id);
@@ -651,7 +600,6 @@
     return hit;
   }
 
-  /** The entry file that holds entry n: the last one that starts at or before n. */
   function entryFileOf(starts, n) {
     let low = 0;
     let high = starts.length - 1;
@@ -663,7 +611,6 @@
     return low;
   }
 
-  /** Search over a bundle's index; load(ref) resolves a sidecar document, manifest() the checked manifest. */
   function sidecarSearch(load, manifest) {
     const index = async () => (await manifest()).search;
     const loadShard = recentCache(SHARD_CACHE, async (key) => {
@@ -677,7 +624,6 @@
       return entryFile(await load("e/" + file), first, end - first);
     });
 
-    /** The entries whose labels have a word that starts with the folded query word. */
     async function postingsOf(search, keys, word) {
       const lists = [];
       for (const shard of await Promise.all(resolveShards(search.shards, keys, word).map(loadShard))) {
@@ -691,7 +637,6 @@
       if (!search) {
         return { hits: [], total: 0, truncated: false };
       }
-      // A word that starts another query word adds nothing to match.
       const keyWords = queryWords.filter((word, i) => queryWords.indexOf(word) === i &&
         !queryWords.some((other) => other.length > word.length && other.startsWith(word)));
       const keys = Object.keys(search.shards);
@@ -699,8 +644,6 @@
       const [exact, lists] = await Promise.all([postingsOf(search, keys, labelToken(folded)),
         Promise.all(keyWords.map((word) => postingsOf(search, keys, word)))]);
       const candidates = lists.sort((a, b) => a.length - b.length).reduce(intersectPostings);
-      // Labels equal to the query are read first, then the other candidates in document order, until the result
-      // list is full. At most SEARCH_CANDIDATES times the limit are ranked, so a query never reads the whole index.
       const order = exact.concat(candidates);
       const wanted = limit * SEARCH_CANDIDATES;
       const taken = new Set();
@@ -712,7 +655,6 @@
         for (; end < order.length && hits.length + end - next < wanted; end++) {
           const file = entryFileOf(search.entryFiles, order[end]);
           if (files.indexOf(file) < 0) {
-            // One round reads the files that fill the result list, however spread out; more only while they are few.
             if (files.length >= ENTRY_BATCH && hits.length + end - next >= limit) break;
             files.push(file);
           }
@@ -722,7 +664,6 @@
           const number = order[next];
           if (taken.has(number)) continue;
           const record = loaded[files.indexOf(entryFileOf(search.entryFiles, number))](number);
-          // Two labels can share a token, so the label is compared with the query.
           if (next >= exact.length || trimSeparators(foldText(record.label)) === folded) {
             taken.add(number);
             hits.push(entryHit(record, search.kinds));
@@ -743,7 +684,6 @@
       if (!queryWords.some((word) => word.length >= 2)) {
         return Promise.reject(new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units."));
       }
-      // A file that failed a check must not answer the next query from the cache.
       return run(query, queryWords, limit).catch((err) => {
         loadShard.clear();
         loadEntries.clear();
@@ -752,14 +692,7 @@
     };
   }
 
-  // ---------- data sources ----------
-  // Every source has the same promise-based interface:
-  //   page(node, cursor)   -> { items, total, next, offset }   node is null for the top level, cursor null for page one
-  //   search(query, limit) -> { hits, total, truncated }
-  //   counts(ids)          -> a counts document (remote sources with a counts URL only)
-  //   canSearch            -> whether search() can answer
 
-  /** Pages an array that is already in memory (inline roots and inline children). */
   function slicePage(all, cursor, pageSize) {
     const offset = cursor ? Number(cursor) || 0 : 0;
     const items = all.slice(offset, offset + pageSize);
@@ -767,7 +700,6 @@
     return { items: items, total: all.length, next: end < all.length ? String(end) : null, offset: offset };
   }
 
-  /** Orders hits as the protocol ranks them. Each label is folded once, not once per comparison. */
   function rankHits(hits, query, limit) {
     const folded = trimSeparators(foldText(query));
     const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
@@ -795,10 +727,8 @@
       search(query, limit) {
         const queryWords = words(query);
         const hits = [];
-        // With kinds on the view's search, only nodes of those kinds are found; the others are still walked.
         const kinds = view.search && Array.isArray(view.search.kinds) && view.search.kinds.length ? view.search.kinds : null;
         if (queryWords.length) {
-          // Paths are linked during traversal and materialized only for matching hits.
           const stack = (view.roots || []).map((node) => ({ node, parent: null })).reverse();
           while (stack.length) {
             const item = stack.pop();
@@ -828,7 +758,6 @@
     const base = supplied.endsWith("/") ? supplied : supplied + "/";
     const load = (ref) => loadSidecar(base, view.id, ref);
     let manifestPromise = null;
-    // Failed loads are not cached, so a retry can succeed once the file is back.
     const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => {
       checkDocument(doc, "manifest");
       if (doc.view !== view.id) throw new Error("CanopyX: manifest view does not match the requested view.");
@@ -839,8 +768,6 @@
       manifestPromise = null;
       throw err;
     }));
-    // A pack file holds the children pages of many nodes as JSON text, and only the page a node asks for is parsed.
-    // The pages of a subtree sit next to each other, so the last few packs stay loaded.
     const loadPack = recentCache(PACK_CACHE, async (number) => {
       const doc = checkDocument(await load("p/" + number), "pack");
       if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
@@ -904,7 +831,6 @@
       counts: source.counts ? async (ids) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
-          // The host's normal query parser decodes once; retain encoded components for its split-then-decode step.
           const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
           const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
           items.push.apply(items, doc.items);
@@ -929,10 +855,6 @@
     throw new Error("CanopyX: unknown source kind '" + kind + "'.");
   }
 
-  // ---------- tree grid: model ----------
-  // Loaded nodes keep their children. The visible rows are a flat array rebuilt on every structure change, in time
-  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots, or is as tall
-  // as its content when it declares no height.
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
@@ -946,12 +868,10 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
-      // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
       if (options.renderCell) {
         throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
       }
-      // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
       const renderers = options.renderers || {};
       if (typeof renderers !== "object" || (Object.getPrototypeOf(renderers) !== Object.prototype && Object.getPrototypeOf(renderers) !== null)) {
         throw new Error("CanopyX: renderers must be a plain object of functions by column id.");
@@ -1014,8 +934,6 @@
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
         await this.restoreState();
-        // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
-        // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
         await this.expandInitial(this.root);
         await this.openDeepLink();
       } finally {
@@ -1023,7 +941,6 @@
       }
       if (this.destroyed) return;
       await this.flushPendingToggles();
-      // A fragment that changed while the view was loading is opened now.
       if (this.linkChanged) await this.openDeepLink();
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
@@ -1031,7 +948,6 @@
       }
     }
 
-    /** Shows the first page of top-level nodes: synchronously for inline data, from the source otherwise. */
     loadRoots() {
       if (!this.root.inlineItems) {
         return this.loadPage(this.root, null);
@@ -1066,7 +982,6 @@
       return row;
     }
 
-    /** The cell for a column; the tree column falls back to the label. */
     cellOf(node, column, index) {
       const cells = node.cells;
       if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
@@ -1080,9 +995,7 @@
       this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
     }
   }
-  // ---------- tree grid: iterative construction and initial expansion ----------
   Object.assign(TreeGrid.prototype, {
-    /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
       if (this.restoring) return;
       const generation = this.restoreGeneration || 0;
@@ -1134,9 +1047,7 @@
       return root;
     }
   });
-  // ---------- tree grid: iterative filtering, layout, and sorting ----------
   Object.assign(TreeGrid.prototype, {
-    /** 2 = the node matches (its subtree shows), 1 = kept as an ancestor of matches, 0 = hidden. */
     matchState(w) {
       const pending = [{ node: w, visited: false }];
       while (pending.length) {
@@ -1188,7 +1099,6 @@
           const parent = frame.parent;
           parent.visibleCount = frame.pos;
           parent.childrenFiltered = frame.filtered;
-          // Unloaded matches remain reachable through their parent status row.
           if (parent.loading) rows.push(this.statusRow(parent, "loading"));
           else if (parent.error) rows.push(this.statusRow(parent, "error"));
           else if (parent.next) rows.push(this.statusRow(parent, "more"));
@@ -1213,7 +1123,6 @@
       this.scheduleRender();
     },
 
-    /** Rebuilds the offset table from the row heights; hpx is a row's height in pixels. */
     retop() {
       const rows = this.rows;
       const tops = new Array(rows.length + 1);
@@ -1258,7 +1167,6 @@
       }
     }
   });
-  // ---------- protocol node semantics before attachment ----------
   function validateNodes(nodes, existing, inlineOnly = false) {
     if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
     const seen = new Set();
@@ -1303,7 +1211,6 @@
     }
   }
 
-  /** Validates the entire incoming page before its wrappers or key map can change. */
   function validatePage(page, existing, expectedOffset) {
     if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
     const items = page.items;
@@ -1323,7 +1230,6 @@
     return items;
   }
 
-  // ---------- tree grid: DOM scaffold and windowed rendering ----------
   Object.assign(TreeGrid.prototype, {
     build() {
       const host = this.host;
@@ -1366,7 +1272,6 @@
       grid.addEventListener("click", (e) => this.onClick(e));
       grid.addEventListener("dblclick", (e) => this.onDblClick(e));
       grid.addEventListener("keydown", (e) => this.onKey(e));
-      // Tabbing into the grid lands on the tab-stop row; adopt it so arrows start there and recycling keeps it.
       this.canvas.addEventListener("focusin", (e) => {
         const rowEl = e.target.closest(".cx-row");
         if (rowEl && rowEl._w && this.focused !== rowEl._w) {
@@ -1376,13 +1281,11 @@
         }
       });
       global.addEventListener("beforeprint", this.onPrint);
-      // A link followed inside the page, or a fragment typed into the address bar, opens its row as on load.
       this.onHash = () => {
         if (this.initializing) this.linkChanged = true;
         else this.openDeepLink();
       };
       global.addEventListener("hashchange", this.onHash);
-      // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.
       const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
       viewWidth();
       this.resizeObserver = new ResizeObserver(() => {
@@ -1397,7 +1300,6 @@
     },
 
     buildHeader() {
-      // Rebuilding the header replaces its buttons; keep keyboard focus on the same column's sort button.
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       const focusedResize = active && active.classList.contains("cx-resize");
@@ -1405,7 +1307,6 @@
       const layoutChanged = !this.cols || this.cols.length !== nextCols.length || nextCols.some((column, i) => column !== this.cols[i]);
       this.cols = nextCols;
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
-      // Visibility changes alter the cell skeleton; width-only changes do not.
       if (layoutChanged) {
         this.layout = (this.layout || 0) + 1;
         this.version++;
@@ -1489,15 +1390,7 @@
       return i !== undefined && this.rows[i] === w ? i : -1;
     },
 
-    /**
-     * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
-     * reused for a row that enters it: its cells survive, content is updated while detached, and it is inserted in
-     * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
-     */
     render() {
-      // A detail row that sizes itself is measured once it is in the document. A new height moves the rows below
-      // it and can change which rows are in the window, so the pass repeats; heights settle within a pass or two.
-      // Returns whether a height changed, so a caller that scrolled to a row can check that it is still in view.
       let measured = false;
       for (let pass = 0; !this.destroyed; pass++) {
         this.renderPass();
@@ -1535,19 +1428,15 @@
         if (!want.has(w)) {
           this.rendered.delete(w);
           if (rowEl.contains(active)) {
-            // Reusing it would leave keyboard focus on a row that now shows another node.
             rowEl.remove();
             rowEl._w = null;
             this.observeDetail(rowEl, false);
           } else {
-            // Repaint a departing row while detached, then insert it in the new window's DOM order. Its cell
-            // skeleton survives; retained rows do not need repainting or moving during downward scrolling.
             rowEl.remove();
             free.push(rowEl);
           }
         }
       }
-      // With nothing focused, the tab stop is the first row inside the viewport (not an overscan row).
       const tabRow = visibleFocus || this.rows[n ? this.rowAt(top) : 0] || null;
       const fragment = document.createDocumentFragment();
       for (const w of want) {
@@ -1600,12 +1489,10 @@
         this.canvas.appendChild(fragment);
       }
       this.window = { first: first, last: last };
-      // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
     }
   });
 
-  // ---------- tree grid: column sizing ----------
   Object.assign(TreeGrid.prototype, {
     applyWidths() {
       let sum = 0;
@@ -1620,8 +1507,6 @@
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
       this.canvas.style.width = sum + "px";
-      // Both the original and pooled painters place grid cells directly under the row.
-      // Keep recycled rows in sync without replacing host-owned cell content.
       const resizeRow = (row) => {
         row.style.width = sum + "px";
         if (!row._kind || !row.firstElementChild) return;
@@ -1632,19 +1517,16 @@
       this.pool.forEach(resizeRow);
     },
 
-    /** Sets a column's width in CSS pixels, within the limits a user has when dragging its edge. */
     setColumnWidth(columnId, width) {
       const column = this.columns.find((c) => c.id === columnId);
       if (!column || !Number.isFinite(width)) {
         throw new Error("CanopyX: setColumnWidth needs a column of the view and a width in pixels.");
       }
-      // A drag in progress would put its own width back on the next pointer move.
       if (this.cancelResize) this.cancelResize();
       column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
       this.applyWidths();
     },
 
-    /** Keeps the tree column in view while the other columns scroll sideways, or lets it scroll with them. */
     setTreeColumnPinned(pinned) {
       this.host.classList.toggle("cx-pin-tree", !!pinned);
     },
@@ -1677,11 +1559,7 @@
     }
   });
 
-  // ---------- tree grid: DOM order of the virtual rows ----------
   Object.assign(TreeGrid.prototype, {
-    // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
-    // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
-    // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
     keepDomOrder(first, last) {
       const ordered = [];
       const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
@@ -1755,12 +1633,6 @@
     }
   });
 
-  // ---------- tree grid: row and cell painting ----------
-  // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
-  // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
-  // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
-  // (node, detail, status) or the columns change. A column the host draws itself (options.renderers) is the exception:
-  // its cell is rebuilt on every paint, and only that column pays for it.
   function setAttr(element, name, value) {
     const cache = element._attrs || (element._attrs = {});
     if (cache[name] === value) {
@@ -1783,7 +1655,6 @@
   }
 
   Object.assign(TreeGrid.prototype, {
-    /** Paints a row for a node or a status row. The row element may be recycled from another node. */
     fillRow(rowEl, w) {
       rowEl._w = w;
       const kind = w.status ? "status" : w.h.detail ? "detail" : "node";
@@ -1791,7 +1662,6 @@
         this.buildRow(rowEl, kind);
       }
       setAttr(rowEl, "aria-level", String(w.level));
-      // A detail row without a declared height takes the height of its content and is measured after the paint.
       const auto = kind === "detail" && w.auto;
       this.observeDetail(rowEl, auto);
       const height = auto ? "auto" : w.hpx + "px";
@@ -1810,7 +1680,6 @@
 
     buildRow(rowEl, kind) {
       rowEl.textContent = "";
-      // The attribute cache is reset with the skeleton, so drop what a node row of another kind left behind.
       ["aria-expanded", "aria-busy", "aria-setsize", "aria-posinset", "aria-selected", "data-cx-id", "data-cx-status", "data-kind"].forEach((name) => rowEl.removeAttribute(name));
       rowEl._attrs = {};
       rowEl._cls = null;
@@ -1865,13 +1734,11 @@
       const node = w.h;
       setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
-      // Detail content (and anything a host renderDetail callback put into it) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
       const cell = this.cell(rowEl, 0, this.rowWidth);
       rowEl.replaceChild(cell, old);
       rowEl._cells[0].cell = cell;
       cell.setAttribute("aria-colspan", String(this.cols.length));
-      // The body sticks at the indent while the grid scrolls sideways, and takes the visible width from there.
       const left = (w.level - 1) * INDENT + 8 + "px";
       cell.style.paddingLeft = left;
       cell.style.setProperty("--cx-detail-left", left);
@@ -1895,7 +1762,6 @@
       }
     },
 
-    /** Attributes shared by node and detail rows. */
     paintRowState(rowEl, w) {
       const node = w.h;
       setAttr(rowEl, "data-cx-id", node.id);
@@ -1905,7 +1771,6 @@
       this.setPosition(rowEl, w);
     },
 
-    /** Updates paging metadata without replacing a retained host control or its DOM state. */
     refreshRowState(rowEl, w) {
       setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
       setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
@@ -1913,10 +1778,6 @@
       if (rowEl._kind === "node") this.paintTreeSlot(rowEl._cells[0], w);
     },
 
-    /**
-     * aria-posinset is the position among the visible siblings in display (sorted) order. aria-setsize counts children
-     * that are not loaded yet; -1 means the total is unknown.
-     */
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
@@ -1953,7 +1814,6 @@
       const value = this.cellOf(node, column, index);
       const render = column.render;
       if (render) {
-        // A host-rendered cell owns its content, so it is rebuilt on every paint, from a clean cell.
         slot.cell.className = slot.base;
         slot.cell.removeAttribute("title");
         slot.cls = slot.base;
@@ -1985,7 +1845,6 @@
       const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
         if (render) {
-          // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
           if (tone.cls) slot.cell.className += tone.cls;
         } else {
           slot.cell.className = cls;
@@ -1993,7 +1852,6 @@
         slot.cls = cls;
       }
       toneColors(slot.cell, tone);
-      // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
       const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.local);
       if (slot.title !== title) {
         if (title) {
@@ -2006,7 +1864,6 @@
       this.paintBadges(slot, (index === 0 && node.badges) || null, object && value.badges ? value.badges : null);
     },
 
-    /** Reuses badge elements: updates the ones that exist, adds missing ones, removes extras. */
     paintBadges(slot, first, second) {
       const count = (first ? first.length : 0) + (second ? second.length : 0);
       for (let k = 0; k < count; k++) {
@@ -2040,7 +1897,6 @@
       }
     },
 
-    /** Shows dates in the reader's own time zone ("local") or in UTC ("utc"); the tooltip gives the other one. */
     setTimeZone(zone) {
       if (zone !== "local" && zone !== "utc") {
         throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
@@ -2063,7 +1919,6 @@
     }
   });
 
-  // ---------- tree grid: detail rows ----------
   const detailColumn = { kind: "text" };
   const DETAIL_ESTIMATE_SLOTS = 16;
 
@@ -2089,10 +1944,6 @@
   }
 
   Object.assign(TreeGrid.prototype, {
-    /**
-     * Fills a detail row with its table, property list, or trusted host markup; a host callback can take over. The
-     * content goes into a body that stays inside the visible width of the grid, however wide the columns are.
-     */
     renderDetail(node, element, plainHtml = false) {
       const body = element.appendChild(h("div", "cx-detail-body"));
       if (this.opts.renderDetail && this.opts.renderDetail(node, body) === true) {
@@ -2109,7 +1960,6 @@
         const columns = detail.columns || [];
         const widths = Array.isArray(detail.widths) && detail.widths.length === columns.length ? detail.widths : null;
         if (widths) {
-          // Shares of the table width; the table layout is fixed, so the columns keep them whatever the cells hold.
           const total = widths.reduce((sum, share) => sum + share, 0);
           const group = table.appendChild(h("colgroup"));
           widths.forEach((share) => { group.appendChild(h("col")).style.width = (share / total * 100) + "%"; });
@@ -2147,10 +1997,6 @@
       }
     },
 
-    /**
-     * The height a detail row starts with. A detail with a height spans that many row slots and scrolls inside them.
-     * Without one the row is as tall as its content: it starts from an estimate and is measured when it is shown.
-     */
     detailHeight(detail) {
       if (detail.height > 0) {
         return detail.height * this.rowH;
@@ -2159,7 +2005,6 @@
       return Math.max(1, Math.min(DETAIL_ESTIMATE_SLOTS, slots)) * this.rowH;
     },
 
-    /** Watches the detail rows that size themselves, so a change of their content or of the grid's width is measured. */
     observeDetail(rowEl, auto) {
       if (!!rowEl._auto === auto) {
         return;
@@ -2179,11 +2024,6 @@
       }
     },
 
-    /**
-     * Reads the height of the rendered detail rows that size themselves and moves the rows below when one changed.
-     * A row that ends above the viewport would push what the reader is looking at, so the scroll position follows.
-     * Returns whether a height changed, in which case the window of rendered rows may have changed too.
-     */
     measureDetails() {
       if (!this.measureNeeded) {
         return false;
@@ -2194,7 +2034,6 @@
       let changed = false;
       for (const [w, rowEl] of this.rendered) {
         if (!w.auto || rowEl._kind !== "detail") continue;
-        // offsetHeight ignores transforms on an ancestor, and is 0 while the grid is hidden: keep what was measured.
         const measured = rowEl.offsetHeight;
         const height = Math.max(this.rowH, measured);
         if (measured && height !== w.hpx) {
@@ -2211,10 +2050,6 @@
     }
   });
 
-  // ---------- tree grid: keyboard ----------
-  // Row-focus model: Up/Down move, Right expands then enters, Left collapses then goes to the parent, Home/End,
-  // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
-  // printable keys run type-ahead on labels. Tab leaves the grid.
   function hostControl(target) {
     const row = target.closest(".cx-row");
     const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
@@ -2232,7 +2067,6 @@
       const i = this.indexOf(w);
       const pageHeight = Math.max(this.rowH, this.grid.clientHeight - this.head.offsetHeight - this.rowH);
       const last = this.rows.length - 1;
-      // A space inside a running type-ahead term continues the term ("lab c").
       const key = e.key === " " && this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS ? "typeahead" : e.key;
       let target = null;
       let handled = true;
@@ -2279,7 +2113,6 @@
       }
     },
 
-    /** Enter or Space on a row: retry, show more, or select (and with Enter, toggle). */
     activate(w, enter) {
       if (w.status === "more") {
         this.loadMore(w.parent);
@@ -2327,7 +2160,6 @@
       setText(this.live, message);
     }
   });
-  // ---------- tree grid: focus ownership across status-row page requests ----------
   Object.assign(TreeGrid.prototype, {
     async loadStatusPage(parent, status, cursor) {
       const previous = new Set(parent.children || []);
@@ -2354,16 +2186,13 @@
               this.grid.focus({ preventScroll: true });
             }
           }
-          // Also retire removed status rows when another control took focus during the request.
           this.relayout();
         }
       }
     }
   });
 
-  // ---------- tree grid: behavior ----------
   Object.assign(TreeGrid.prototype, {
-    /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
     async toggle(w, expand, automatic = false) {
       if (this.destroyed || !w || w._invalidated || w.status || !this.expandable(w)) {
         return;
@@ -2390,7 +2219,6 @@
           if (want) await this.expandInitial(w);
         }
       } finally {
-        // A host load callback may throw after the page was applied; its expansion still belongs in saved state.
         if (!this.destroyed && !w._invalidated && w.toggleRevision === revision) this.stateChanged();
       }
       if (this.destroyed || w._invalidated || w.toggleRevision !== revision) return;
@@ -2400,7 +2228,6 @@
       }
     },
 
-    /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
     loadPage(w, cursor) {
       if (this.destroyed || w._invalidated) return Promise.resolve();
       if (w.loading) {
@@ -2438,7 +2265,6 @@
             w.expanded = false;
           }
           this.applySort(w, false);
-          // Paging changes sibling metadata, not retained host cell content.
           appliedCount = items.length;
         } catch (err) {
           if (this.destroyed || w._invalidated) return;
@@ -2462,8 +2288,6 @@
           }
           if (!this.destroyed && !w._invalidated) this.relayout();
         }
-        // A newer count can discard an older page during reconciliation. Only announce and notify
-        // the host after the page is known to remain attached to the tree.
         if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
@@ -2471,7 +2295,6 @@
           info = { node: w.h, count: appliedCount, total: w.total, ms: performance.now() - started };
         }
         if (removedSelection) this.selectionChanged(removedSelection);
-        // Host callback failures do not turn an applied page into a source failure.
         try {
           if (info && !this.destroyed && !w._invalidated) {
             this.emit("load", info);
@@ -2498,7 +2321,6 @@
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
       this.ensureVisible(w);
-      // Detail rows measured on the way can move the row out of view again.
       if (this.render()) {
         this.ensureVisible(w);
         this.render();
@@ -2565,7 +2387,6 @@
       }
     },
 
-    /** Opens a node for expandPath and throws when its children cannot be loaded. */
     async openForPath(w) {
       if (this.destroyed || w._invalidated) return false;
       const wasOpen = w.expanded && !w.filterCollapsed;
@@ -2584,11 +2405,6 @@
       return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
     },
 
-    /**
-     * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
-     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node),
-     * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
-     */
     async expandPath(ids, options) {
       const o = options || {};
       const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
@@ -2651,7 +2467,6 @@
       return w ? w.h : null;
     },
 
-    /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */
     setFilter(filter, options) {
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
       this.filterExpand = !!(options && options.autoExpand);
@@ -2659,7 +2474,6 @@
       this.relayout();
     },
 
-    /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
       if (!(this.view.filters || []).some((f) => f.id === id)) {
         throw new Error("CanopyX: the view declares no filter '" + id + "'.");
@@ -2680,7 +2494,6 @@
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
-      // A host that draws its own control for a hidden filter keeps it in step through this event.
       if (changed) this.emit("filter", { active: Array.from(this.activeFilters) });
     },
 
@@ -2705,9 +2518,7 @@
       this.relayout();
     }
   });
-  // ---------- tree grid: selection and deep-link ownership ----------
   Object.assign(TreeGrid.prototype, {
-    /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
     select(w, options) {
       if (!w || w.status) {
         return;
@@ -2764,7 +2575,6 @@
     }
   });
 
-  // ---------- tree grid: toolbar (search box, filter switches, column chooser) ----------
   Object.assign(TreeGrid.prototype, {
     buildToolbar() {
       const bar = this.toolbar;
@@ -2774,7 +2584,6 @@
         any = true;
       }
       (this.view.filters || []).forEach((filter) => {
-        // A hidden filter has no switch here: the host draws the control and calls setFilterActive.
         if (filter.hidden) return;
         const label = h("label", "cx-switch");
         const input = h("input");
@@ -2793,10 +2602,6 @@
       bar.hidden = !any;
     },
 
-    /**
-     * Turns the declared filters off, for a host predicate that replaces them or to reveal a row they hide, and
-     * tells the host when that changed something.
-     */
     clearDeclaredFilters() {
       if (!this.activeFilters.size) {
         return;
@@ -2806,7 +2611,6 @@
       this.emit("filter", { active: [] });
     },
 
-    /** Combobox search: typing lists hits, arrows move through them, Enter expands the tree to the chosen hit. */
     buildSearch(bar, options) {
       const box = h("div", "cx-search");
       const input = h("input", "cx-search-input");
@@ -2919,7 +2723,6 @@
       input.addEventListener("input", () => {
         cancelNavigation();
         sequence++;
-        // Results for the previous text are stale as soon as the text changes; Enter waits for the new ones.
         clearTimeout(timer);
         hits = [];
         close();
@@ -2961,7 +2764,6 @@
       this.searchInput = input;
     },
 
-    /** A native disclosure with one checkbox per hideable column; the tree column always stays. */
     buildColumnChooser(bar) {
       const details = h("details", "cx-columns");
       const summary = h("summary");
@@ -2987,7 +2789,6 @@
     }
   });
 
-  // ---------- tree grid: remembered state, deep links, outline, counts ----------
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
   }
@@ -3020,7 +2821,6 @@
       if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
-      // Invalid or obsolete stored state must not clear current expansion or reject ready.
       try {
         for (const path of state.expanded) {
           if (!Array.isArray(path) || !path.length) return;
@@ -3032,7 +2832,6 @@
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
-      // Clicks queued for an older restoration cannot override this state.
       this.pendingRestorationToggles = null;
       this.restoring = true;
       clearTimeout(this.saveTimer);
@@ -3051,7 +2850,6 @@
             const wrapper = node && this.keyMap.get(node.id);
             if (wrapper && wrapper.expanded) restored++;
           } catch (e) {
-            // A missing node is obsolete; a failed lazy load still owns its open error row.
             const last = this.keyMap.get(path[path.length - 1]);
             if ((last && last.expanded) || path.some((id) => {
               const node = this.keyMap.get(id);
@@ -3128,7 +2926,6 @@
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
-          // Storage can be unavailable (private mode, blocked storage).
         }
       }, 250);
     },
@@ -3151,7 +2948,6 @@
       return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
     },
 
-    /** An indented outline table of the rows that are open, for print and hosts that export what the user sees. */
     toOutline() {
       const cols = this.visibleColumns();
       const out = ["<table class=\"cx-outline-table\"><thead><tr>"];
@@ -3187,7 +2983,6 @@
       return out.join("");
     },
 
-    /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
     invalidateChildren(w) {
       const pending = (w.children || []).slice();
       let removedSelection = null;
@@ -3291,10 +3086,6 @@
     }
   });
 
-  // ---------- tree grid: deep links ----------
-  // With deepLink on the view, the selected row is written to the URL fragment, and a fragment expands its row on load
-  // and whenever it changes. By default the fragment is "cx.<view id>=<id path>" next to any other "&" parameters. A
-  // host with a scheme of its own, such as "#record/42", supplies formatLink and parseLink and owns the whole fragment.
   Object.assign(TreeGrid.prototype, {
     deepLinkName() {
       return "cx." + encodeURIComponent(this.view.id);
@@ -3304,7 +3095,6 @@
       return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
     },
 
-    /** The part of the current fragment that is this view's link: the whole fragment with a host scheme. */
     currentLink() {
       if (this.opts.parseLink) {
         return (global.location.hash || "").replace(/^#/, "");
@@ -3314,10 +3104,6 @@
       return param ? param.slice(prefix.length) : null;
     },
 
-    /**
-     * Expands and selects the row the fragment names. A fragment this grid wrote or already opened is left alone,
-     * and a newer fragment cancels the one that is still being opened.
-     */
     async openDeepLink() {
       const link = this.view.deepLink ? this.currentLink() : null;
       if (link == null || link === this.link) {
@@ -3329,14 +3115,12 @@
       const current = this.linkOpening = new AbortController();
       try {
         const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
-        // A host's parseLink returns null for a fragment that does not name a row of this view.
         if (Array.isArray(ids) && ids.length && !this.destroyed && !current.signal.aborted &&
             !await this.expandPath(ids, { select: true, focus: false, signal: current.signal }) && !current.signal.aborted) {
           this.link = null;
         }
       } catch (e) {
         if (!current.signal.aborted) {
-          // The same fragment can be tried again once whatever failed is back.
           this.link = null;
           this.announce(e && e.message ? e.message : String(e));
         }
@@ -3349,8 +3133,6 @@
       }
       let hash;
       if (this.opts.formatLink) {
-        // The host decides what a selection looks like in the URL; null leaves the URL as it is. With nothing
-        // selected it gets an empty path and no node. A failing host callback must not break selection.
         let link = null;
         try {
           link = this.opts.formatLink(w ? this.pathOf(w) : [], w ? w.h : null);
@@ -3368,35 +3150,14 @@
         hash = "#" + params.join("&");
       }
       try {
-        // A bare "#fragment" resolves against the document's base URL, and a host page can carry a <base href> that
-        // points somewhere else: the address would leave the page. The page's own address is the base here.
         global.history.replaceState(global.history.state, "", global.location.href.replace(/#.*$/, "") + hash);
       } catch (e) {
         global.location.hash = hash;
       }
-      // Read back, because the browser may have encoded what was written.
       this.link = this.currentLink();
     }
   });
 
-  // ---------- public API and auto-mount ----------
-  /**
-   * Creates a tree grid in a host element.
-   * @param {HTMLElement} host The element that receives the grid.
-   * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
-   *           onSelect?: Function, onToggle?: Function, onLoad?: Function, formatLink?: Function, parseLink?: Function }} options
-   *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
-   *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
-   *   the ids of the active declared filters whenever they change.
-   *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
-   *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
-   *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling.
-   *   renderDetail(node, element) returns true when it drew the detail row;
-   *   element is the body of the row, which stays inside the visible width of the grid.
-   *   With deepLink on the view, formatLink(path, node) returns the URL fragment for a selected row (without "#";
-   *   null leaves the URL alone; with nothing selected path is empty and node null) and parseLink(fragment) returns
-   *   the id path it names, a promise of it, or null. The two are given together.
-   */
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {
       throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
@@ -3409,7 +3170,6 @@
       view: grid.view,
       ready: grid.ready,
       expandPath: (ids, o) => grid.expandPath(ids, o),
-      // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
       setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
       getActiveFilters: () => Array.from(grid.activeFilters),
@@ -3450,12 +3210,8 @@
     return api;
   }
 
-  // Options a host registers for a view before its fragment is mounted. A fragment carries only the view document,
-  // and the automatic mount runs before host code could call createTreeGrid, so this is how renderers, callbacks,
-  // link hooks, or a data source reach a fragment.
   const configured = new Map();
 
-  /** Registers createTreeGrid options (everything but the view) for the fragment of a view id; a later call replaces the options it names. */
   function configure(viewId, options) {
     requireIdentifier(viewId, "view ID");
     if (!options || typeof options !== "object") {
@@ -3467,10 +3223,6 @@
     configured.set(viewId, Object.assign({}, configured.get(viewId), options, { view: undefined }));
   }
 
-  /**
-   * Mounts every [data-canopyx-host] element under root that has a JSON configuration script. The automatic mount
-   * when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by the host.
-   */
   function mount(root, automatic) {
     const scope = root || document;
     const created = [];
@@ -3518,9 +3270,6 @@
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource })
   });
 
-  // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
-  // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it
-  // has not been dispatched yet, and mount at once only when the runtime is added to a page that is already loaded.
   const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
   if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
     document.addEventListener("DOMContentLoaded", () => mount(document, true));
