@@ -87,7 +87,7 @@ The interaction budgets follow the first consumer's reporting plan for its large
 | Runtime assets (`canopyx.js` plus `canopyx.css`), gzip | 40 KB |
 | Largest sidecar file written by the bundle writer | 1 MB |
 
-The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs`. Cold sidecar-search latency and shard requests can be compared at normal and 4x CPU speed with `tests/browser/bench/search-benchmark.mjs`; its synthetic fixture covers both dense early matches and sparse late matches. Hosted CI runners are too noisy to gate on these timings. Consumers measure their own fixtures against their own budgets.
+The Playwright suite in `tests/browser` enforces the interaction and blank-row budgets in CI on the large bundle example, a synthetic file-system-like tree of more than 100,000 nodes. The asset and sidecar budgets are contract tests in `CanopyX.Tests`. Scroll smoothness at a 4x CPU slowdown is measured with `tests/browser/bench/scroll-benchmark.mjs`. Search index size and the cold and warm time from a query to an expanded hit are measured at normal and 4x CPU speed with `tests/browser/bench/search-benchmark.mjs`, on the large bundle example and on the two benchmark bundles that `CanopyX.Examples --search-bench` writes (an adversarial deep tree and a directory-shaped tree). Hosted CI runners are too noisy to gate on these timings. Consumers measure their own fixtures against their own budgets.
 
 ## Build Standards
 

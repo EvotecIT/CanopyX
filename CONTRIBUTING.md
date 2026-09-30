@@ -57,6 +57,16 @@ node bench/scroll-benchmark.mjs --runs 5 --cpu 1,4
 
 Put the median results in the pull request description. The benchmark records frames over 50 ms and 33 ms, the 95th percentile frame time, and blank viewport samples while scrolling a large expanded tree. For changes to loading, expanding, or search, report the timings the Playwright performance tests print for the large bundle example before and after the change.
 
+Changes to the bundle search index or to sidecar search also need the search benchmark. It reports the index size next to the pages, and the cold and warm time from a query to an expanded hit, on the large bundle example and on two benchmark bundles (an adversarial deep tree and a directory-shaped tree):
+
+```powershell
+dotnet run --project CanopyX.Examples -c Release -- --search-bench
+cd tests/browser
+node bench/search-benchmark.mjs --runs 5 --cpu 1,4
+```
+
+Write the bundles of the version before the change into another folder and pass it with `--examples` and `--bench` to measure both sides on the same machine.
+
 ## Change Expectations
 
 - Add or update contract tests for new behavior.
