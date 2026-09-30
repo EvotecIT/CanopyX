@@ -22,6 +22,10 @@ internal static class CanopyHtmlWriter {
         var json = view.ToJson();
         var builder = new StringBuilder(json.Length + 160);
         builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        if (!options.AutoMount) {
+            builder.Append(" data-cx-mount=\"manual\"");
+        }
+
         if (!string.IsNullOrEmpty(options.Height)) {
             builder.Append(" style=\"height:").Append(WebUtility.HtmlEncode(ValidateCssLength(options.Height!))).Append('"');
         }
@@ -32,7 +36,7 @@ internal static class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount };
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",

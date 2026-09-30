@@ -961,6 +961,9 @@
           throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
         }
       });
+      if (!options.formatLink !== !options.parseLink) {
+        throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
+      }
       const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
       this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
@@ -1020,6 +1023,8 @@
       }
       if (this.destroyed) return;
       await this.flushPendingToggles();
+      // A fragment that changed while the view was loading is opened now.
+      if (this.linkChanged) await this.openDeepLink();
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
         this.emit("ready", {});
@@ -1371,6 +1376,12 @@
         }
       });
       global.addEventListener("beforeprint", this.onPrint);
+      // A link followed inside the page, or a fragment typed into the address bar, opens its row as on load.
+      this.onHash = () => {
+        if (this.initializing) this.linkChanged = true;
+        else this.openDeepLink();
+      };
+      global.addEventListener("hashchange", this.onHash);
       // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.
       const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
       viewWidth();
@@ -3136,46 +3147,6 @@
       await this.setState(state);
     },
 
-    deepLinkName() {
-      return "cx." + encodeURIComponent(this.view.id);
-    },
-
-    hashParams() {
-      return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
-    },
-
-    async openDeepLink() {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const param = this.hashParams().find((p) => p.startsWith(prefix));
-      if (!param) {
-        return;
-      }
-      try {
-        const ids = param.slice(prefix.length).split("/").filter(Boolean).map(decodeURIComponent);
-        await this.expandPath(ids, { select: true, focus: false });
-      } catch (e) {
-        this.announce(e.message);
-      }
-    },
-
-    writeDeepLink(w) {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const params = this.hashParams().filter((p) => !p.startsWith(prefix));
-      if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
-      const hash = "#" + params.join("&");
-      try {
-        global.history.replaceState(global.history.state, "", hash);
-      } catch (e) {
-        global.location.hash = hash;
-      }
-    },
-
     visibleRows() {
       return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
     },
@@ -3311,10 +3282,98 @@
       if (this.detailObserver) this.detailObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
+      global.removeEventListener("hashchange", this.onHash);
+      if (this.linkOpening) this.linkOpening.abort();
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
       this.host.classList.remove("cx-pin-tree");
       this.host.removeAttribute("data-cx-ready");
       this.host.removeAttribute("data-canopyx-mounted");
+    }
+  });
+
+  // ---------- tree grid: deep links ----------
+  // With deepLink on the view, the selected row is written to the URL fragment, and a fragment expands its row on load
+  // and whenever it changes. By default the fragment is "cx.<view id>=<id path>" next to any other "&" parameters. A
+  // host with a scheme of its own, such as "#record/42", supplies formatLink and parseLink and owns the whole fragment.
+  Object.assign(TreeGrid.prototype, {
+    deepLinkName() {
+      return "cx." + encodeURIComponent(this.view.id);
+    },
+
+    hashParams() {
+      return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
+    },
+
+    /** The part of the current fragment that is this view's link: the whole fragment with a host scheme. */
+    currentLink() {
+      if (this.opts.parseLink) {
+        return (global.location.hash || "").replace(/^#/, "");
+      }
+      const prefix = this.deepLinkName() + "=";
+      const param = this.hashParams().find((p) => p.startsWith(prefix));
+      return param ? param.slice(prefix.length) : null;
+    },
+
+    /**
+     * Expands and selects the row the fragment names. A fragment this grid wrote or already opened is left alone,
+     * and a newer fragment cancels the one that is still being opened.
+     */
+    async openDeepLink() {
+      const link = this.view.deepLink ? this.currentLink() : null;
+      if (link == null || link === this.link) {
+        if (link == null) this.link = null;
+        return;
+      }
+      this.link = link;
+      if (this.linkOpening) this.linkOpening.abort();
+      const current = this.linkOpening = new AbortController();
+      try {
+        const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
+        // A host's parseLink returns null for a fragment that does not name a row of this view.
+        if (Array.isArray(ids) && ids.length && !this.destroyed && !current.signal.aborted &&
+            !await this.expandPath(ids, { select: true, focus: false, signal: current.signal }) && !current.signal.aborted) {
+          this.link = null;
+        }
+      } catch (e) {
+        if (!current.signal.aborted) {
+          // The same fragment can be tried again once whatever failed is back.
+          this.link = null;
+          this.announce(e && e.message ? e.message : String(e));
+        }
+      }
+    },
+
+    writeDeepLink(w) {
+      if (!this.view.deepLink) {
+        return;
+      }
+      let hash;
+      if (this.opts.formatLink) {
+        // The host decides what a selection looks like in the URL; null leaves the URL as it is. With nothing
+        // selected it gets an empty path and no node. A failing host callback must not break selection.
+        let link = null;
+        try {
+          link = this.opts.formatLink(w ? this.pathOf(w) : [], w ? w.h : null);
+        } catch (e) {
+          if (global.console) global.console.error(e);
+        }
+        if (link == null) {
+          return;
+        }
+        hash = "#" + String(link).replace(/^#/, "");
+      } else {
+        const prefix = this.deepLinkName() + "=";
+        const params = this.hashParams().filter((p) => !p.startsWith(prefix));
+        if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
+        hash = "#" + params.join("&");
+      }
+      try {
+        global.history.replaceState(global.history.state, "", hash);
+      } catch (e) {
+        global.location.hash = hash;
+      }
+      // Read back, because the browser may have encoded what was written.
+      this.link = this.currentLink();
     }
   });
 
@@ -3323,7 +3382,7 @@
    * Creates a tree grid in a host element.
    * @param {HTMLElement} host The element that receives the grid.
    * @param {{ view: object, source?: object, renderers?: Object<string, Function>, renderDetail?: Function,
-   *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
+   *           onSelect?: Function, onToggle?: Function, onLoad?: Function, formatLink?: Function, parseLink?: Function }} options
    *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
    *   the ids of the active declared filters whenever they change.
@@ -3332,6 +3391,9 @@
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling.
    *   renderDetail(node, element) returns true when it drew the detail row;
    *   element is the body of the row, which stays inside the visible width of the grid.
+   *   With deepLink on the view, formatLink(path, node) returns the URL fragment for a selected row (without "#";
+   *   null leaves the URL alone; with nothing selected path is empty and node null) and parseLink(fragment) returns
+   *   the id path it names, a promise of it, or null. The two are given together.
    */
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {
@@ -3386,8 +3448,28 @@
     return api;
   }
 
-  /** Mounts every [data-canopyx-host] element under root that has a JSON configuration script. */
-  function mount(root) {
+  // Options a host registers for a view before its fragment is mounted. A fragment carries only the view document,
+  // and the automatic mount runs before host code could call createTreeGrid, so this is how renderers, callbacks,
+  // link hooks, or a data source reach a fragment.
+  const configured = new Map();
+
+  /** Registers createTreeGrid options (everything but the view) for the fragment of a view id; a later call replaces the options it names. */
+  function configure(viewId, options) {
+    requireIdentifier(viewId, "view ID");
+    if (!options || typeof options !== "object") {
+      throw new Error("CanopyX: configure needs a view id and an options object.");
+    }
+    if (Array.from(document.querySelectorAll("[data-canopyx-mounted]")).some((host) => host.canopyx && host.canopyx.view.id === viewId)) {
+      throw new Error("CanopyX: view '" + viewId + "' is already mounted; configure it before the page has loaded, or mark its fragment data-cx-mount=\"manual\" and call CanopyX.mount.");
+    }
+    configured.set(viewId, Object.assign({}, configured.get(viewId), options, { view: undefined }));
+  }
+
+  /**
+   * Mounts every [data-canopyx-host] element under root that has a JSON configuration script. The automatic mount
+   * when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by the host.
+   */
+  function mount(root, automatic) {
     const scope = root || document;
     const created = [];
     const showError = (host, err, api) => {
@@ -3408,12 +3490,13 @@
     };
     scope.querySelectorAll("[data-canopyx-host]:not([data-canopyx-mounted])").forEach((host) => {
       const config = host.querySelector("script.cx-config");
-      if (!config) {
+      if (!config || (automatic === true && host.getAttribute("data-cx-mount") === "manual")) {
         return;
       }
       host.setAttribute("data-canopyx-mounted", "true");
       try {
-        const api = createTreeGrid(host, { view: JSON.parse(config.textContent) });
+        const view = JSON.parse(config.textContent);
+        const api = createTreeGrid(host, Object.assign({}, view && configured.get(view.id), { view: view }));
         created.push(api);
         api.ready.catch((err) => {
           if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api);
@@ -3428,13 +3511,18 @@
   global.CanopyX = Object.freeze({
     protocol: PROTOCOL,
     createTreeGrid: createTreeGrid,
-    mount: mount,
+    configure: configure,
+    mount: (root) => mount(root, false),
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource })
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => mount(document));
+  // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
+  // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it
+  // has not been dispatched yet, and mount at once only when the runtime is added to a page that is already loaded.
+  const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
+  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
+    document.addEventListener("DOMContentLoaded", () => mount(document, true));
   } else {
-    mount(document);
+    mount(document, true);
   }
 })(typeof window !== "undefined" ? window : this);

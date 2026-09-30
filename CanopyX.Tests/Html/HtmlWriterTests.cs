@@ -23,6 +23,15 @@ public sealed class HtmlWriterTests {
     }
 
     [Fact]
+    public void ToHtmlFragment_WithoutAutoMount_IsMarkedForTheHostToMount() {
+        var view = SampleDocuments.FullView();
+
+        Assert.DoesNotContain("data-cx-mount", view.ToHtmlFragment());
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"auto\" data-cx-mount=\"manual\">", view.ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false }));
+        Assert.Contains(" data-cx-mount=\"manual\"", view.ToHtmlPage(new CanopyHtmlOptions { AutoMount = false, AssetMode = CanopyAssetMode.External }));
+    }
+
+    [Fact]
     public void ToHtmlPage_InlineAssets_IsSelfContained() {
         var view = new CanopyView("v", "Files & <folders>");
         view.Columns.Add(new CanopyColumn("name", "Name"));

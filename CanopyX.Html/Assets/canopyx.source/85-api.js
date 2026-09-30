@@ -159,46 +159,6 @@
       await this.setState(state);
     },
 
-    deepLinkName() {
-      return "cx." + encodeURIComponent(this.view.id);
-    },
-
-    hashParams() {
-      return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
-    },
-
-    async openDeepLink() {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const param = this.hashParams().find((p) => p.startsWith(prefix));
-      if (!param) {
-        return;
-      }
-      try {
-        const ids = param.slice(prefix.length).split("/").filter(Boolean).map(decodeURIComponent);
-        await this.expandPath(ids, { select: true, focus: false });
-      } catch (e) {
-        this.announce(e.message);
-      }
-    },
-
-    writeDeepLink(w) {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const params = this.hashParams().filter((p) => !p.startsWith(prefix));
-      if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
-      const hash = "#" + params.join("&");
-      try {
-        global.history.replaceState(global.history.state, "", hash);
-      } catch (e) {
-        global.location.hash = hash;
-      }
-    },
-
     visibleRows() {
       return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
     },
@@ -334,6 +294,8 @@
       if (this.detailObserver) this.detailObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
+      global.removeEventListener("hashchange", this.onHash);
+      if (this.linkOpening) this.linkOpening.abort();
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
       this.host.classList.remove("cx-pin-tree");
       this.host.removeAttribute("data-cx-ready");

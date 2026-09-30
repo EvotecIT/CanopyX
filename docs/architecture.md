@@ -34,7 +34,8 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 
 | Part | Responsibility |
 | --- | --- |
-| `00-core.js` | Closure start, constants, text and number formatting, DOM helpers |
+| `00-core.js` | Closure start, constants, tones, text, number and date formatting, DOM helpers |
+| `05-search-folding.js` | Search text folding shared with the C# bundle writer |
 | `10-sidecar.js` | Sidecar registry: sidecar files push into a queue, so they work whether they load before or after the runtime |
 | `15-search-index.js` | Sidecar search: word shards, posting lists, and the entry table of a bundle's search index |
 | `20-sources.js` | Inline, sidecar, and remote data sources behind one promise-based interface; packed pages of a bundle |
@@ -49,10 +50,20 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `65-page-focus.js` | Focus ownership across paging and retry |
 | `70-behavior.js` | Expand and collapse, paging, selection, `expandPath`, column resize and visibility |
 | `80-toolbar.js` | Built-in search box and filter switches |
-| `85-api.js` | Public instance API, remembered state, deep links, outline and visible rows |
+| `85-api.js` | Remembered state, outline and visible rows, counts, teardown |
+| `86-links.js` | Deep links in the default scheme or the host's own |
 | `90-bootstrap.js` | Auto-mount from JSON configuration, `window.CanopyX`, closure end |
 
-`window.CanopyX` exposes `createTreeGrid(element, options)`, `mount(root)`, and the data source factories, so JavaScript hosts can build views without the C# side.
+`window.CanopyX` exposes `createTreeGrid(element, options)`, `configure(viewId, options)`, `mount(root)`, and the data source factories, so JavaScript hosts can build views without the C# side.
+
+### Host Pages
+
+`ToHtmlPage` and `SaveHtmlBundle` write a page that holds the view and nothing else. A host with chrome of its own (a header, a toolbar, a side panel) writes its own page and puts the fragment from `ToHtmlFragment` and the assets into it; page layout and slots belong to the host, and for HtmlForgeX documents to the `HtmlForgeX.CanopyX` bridge. CanopyX does not grow a page template language.
+
+A fragment carries only the view document, and the runtime mounts it when the page has loaded. Host code reaches it in one of two ways:
+
+- `CanopyX.configure(viewId, options)`, called from a script that runs before the page has loaded (for example a deferred script after `canopyx.js`), registers every `createTreeGrid` option except the view: `renderers`, `renderDetail`, `onSelect`, `onToggle`, `onLoad`, `formatLink`, `parseLink`, or a `source`. The automatic mount applies them. Configuring a view that is already mounted is an error, because it would silently do nothing.
+- `CanopyHtmlOptions.AutoMount = false` marks the fragment `data-cx-mount="manual"`. The runtime leaves it alone until the host calls `CanopyX.mount(root)`, which also applies configured options. Use it when the host's scripts load late or the view starts hidden.
 
 `createTreeGrid` rejects the `renderCell` option of earlier revisions, which drew every column through one callback and so gave up cell reuse for the whole grid. Host controls in custom cells and details keep their click and keyboard behavior. Paging updates metadata on retained rows without rebuilding their host content. `focus()` enters the current visible row or the empty grid. Restoring saved expansion suppresses declarative expansion defaults on newly loaded pages. `onLoad` runs after the page is applied; a callback exception rejects the operation without marking that page as a source failure or changing its continuation cursor.
 

@@ -33,7 +33,7 @@ Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 - "Only matching" filters that keep the ancestors of matching rows.
 - Cells with host-supplied values, display text, tones, and badges; icons declared once per view. Six tones are built in, and a host adds its own (a severity scale, a maintenance state) with a name and two theme colours.
 - Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.
-- Single and multi-select, selection events for a drawer, deep links that expand a path, and expansion state remembered for the session.
+- Single and multi-select, selection events for a drawer, deep links that expand a path (in the default scheme or the host's own), and expansion state remembered for the session.
 - Light and dark themes from a handful of CSS custom properties.
 - A script-free outline table for email, print, and Word.
 
@@ -105,6 +105,14 @@ await grid.expandPath(["projects", "projects/plans"]);
 ```
 
 A renderer gets the node, the element to fill, and `{ column, level, expanded, index }`. Name only the columns the host really draws: their cells are rebuilt whenever a row is painted, while the other columns reuse theirs, which is what keeps scrolling smooth on slow machines.
+
+A page that embeds a fragment from `ToHtmlFragment` hands it the same options before the runtime mounts it, from a script that runs before the page has loaded:
+
+```js
+CanopyX.configure("files", { renderers: { owner: drawOwnerChip }, onSelect: showDrawer });
+```
+
+With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
 
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 

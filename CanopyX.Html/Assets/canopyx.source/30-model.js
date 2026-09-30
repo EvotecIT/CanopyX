@@ -31,6 +31,9 @@
           throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
         }
       });
+      if (!options.formatLink !== !options.parseLink) {
+        throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
+      }
       const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
       this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
@@ -90,6 +93,8 @@
       }
       if (this.destroyed) return;
       await this.flushPendingToggles();
+      // A fragment that changed while the view was loading is opened now.
+      if (this.linkChanged) await this.openDeepLink();
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
         this.emit("ready", {});

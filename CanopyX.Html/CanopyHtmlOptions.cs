@@ -26,6 +26,16 @@ public sealed class CanopyHtmlOptions {
         }
     }
 
+    /// <summary>
+    /// Gets or sets whether the runtime mounts the view by itself when the page has loaded. Defaults to true. Set it
+    /// to false when the host page mounts the view later with <c>CanopyX.mount(root)</c>, for example after its own
+    /// scripts have loaded. A host that only needs to hand the view its renderers or callbacks can leave this on and
+    /// call <c>CanopyX.configure(viewId, options)</c> from a script that runs before the page has loaded. A page from
+    /// <c>ToHtmlPage</c> or <c>SaveHtmlBundle</c> has no script of its own, so with false it shows nothing until a
+    /// script the host adds calls <c>CanopyX.mount()</c>.
+    /// </summary>
+    public bool AutoMount { get; set; } = true;
+
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }
 

@@ -52,6 +52,12 @@
         }
       });
       global.addEventListener("beforeprint", this.onPrint);
+      // A link followed inside the page, or a fragment typed into the address bar, opens its row as on load.
+      this.onHash = () => {
+        if (this.initializing) this.linkChanged = true;
+        else this.openDeepLink();
+      };
+      global.addEventListener("hashchange", this.onHash);
       // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.
       const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
       viewWidth();

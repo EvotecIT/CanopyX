@@ -187,7 +187,14 @@ Exact label matches rank first, then labels that start with the query, then the 
 
 ## Deep Links
 
-With `deepLink` on, selecting a row writes `#cx.<encoded view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded by `encodeURIComponent` and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report.
+With `deepLink` on, selecting a row writes `#cx.<encoded view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded by `encodeURIComponent` and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report. A change of the fragment while the page is open, for example a link followed inside the page, opens its row the same way.
+
+A host with a link scheme of its own passes two callbacks to the runtime and then owns the whole fragment:
+
+- `formatLink(path, node)` returns the fragment for a selected row, without the `#`, for example `record/42` or `record/42/rev/3`. Returning `null` leaves the URL as it is, for a row the scheme has no link for. When the selection becomes empty it is called with an empty path and `null`; an empty string then clears the fragment.
+- `parseLink(fragment)` returns the id path the fragment names, or a promise of it when the host has to look the path up, or `null` when the fragment is not a link into this view. It also gets the empty fragment of a page opened without one.
+
+The two callbacks are given together. One view per page can own the fragment this way; views with the default scheme share it through their `cx.<view id>` parameters. A newer fragment cancels one that is still being opened, and a fragment that could not be opened can be tried again.
 
 ## Counts
 
