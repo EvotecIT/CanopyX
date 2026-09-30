@@ -79,7 +79,7 @@ cd tests/browser
 node bench/expand-benchmark.mjs --runs 5 --cpu 1,4
 ```
 
-Pass `--bundle <folder>` to measure a bundle written by the version before the change.
+Pass `--bundle <folder>` to measure a bundle written by the version before the change, or the `bundle` folder of the examples and the `directory` folder of `--search-bench`, which have expand steps of their own. `--child-pack <bytes>` and `--search-pack <bytes>` on `CanopyX.Examples` write the bundles with other pack sizes (write each into an empty folder: the writer leaves files it did not write, and the benchmarks count every file), and `--only catalog` limits the search benchmark to the scenarios whose names start with it.
 
 ## Change Expectations
 

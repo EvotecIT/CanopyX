@@ -80,13 +80,23 @@ Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
 
   The ranges span the three catalog queries; the machine ran other work, so differences of 20 ms are noise. The search part stays far inside the 250 ms budget at 4x either way. 64 KiB packs were chosen because 512 KiB packs load three to six megabytes per cold query and hold two to three times the heap for a few hundred files fewer. The expand benchmark is unchanged within noise (first rows 86 ms at 1x, the manifest grows from 30 to 32 KB).
 - [x] Cell navigation (the cell half of the ARIA tree grid pattern) for rows whose cells hold controls; controls in cells and detail rows are no longer Tab stops. `docs/screen-reader-test.md` is the manual reader pass. A control its cell clips scrolls into view inside the cell, and Shift+Tab from a cell leaves the grid in one step.
+- [x] A children pack size of its own (`CanopyBundleOptions.ChildPackBytes`, 128 KiB), with the pages of one child list kept together up to the file budget. Measured with `search-benchmark.mjs` and `expand-benchmark.mjs` (Edge, busy machine, medians of 9: three interleaved rounds of 3 runs; ranges over the three catalog queries):
+
+  | Children packs | Files: catalog / examples / directory | Cold query loads: catalog / examples | Heap after it: catalog | To expanded hit 4x: catalog / examples | To expanded hit 1x: catalog |
+  | --- | --- | --- | --- | --- | --- |
+  | 512 KiB (before) | 917 / 172 / 69 | 1,312 to 1,663 KB / 1,619 KB | 2.0 to 2.5 MB | 192 to 254 / 201 ms | 36 to 46 ms |
+  | 256 KiB | 1,465 / 246 / 85 | 801 to 1,248 KB / 1,100 KB | 1.6 to 2.0 MB | 202 to 315 / 249 ms | 29 to 42 ms |
+  | 128 KiB (default) | 2,568 / 392 / 117 | 645 to 1,224 KB / 851 KB | 1.4 to 1.9 MB | 244 to 249 / 193 ms | 32 to 40 ms |
+  | 64 KiB | 4,807 / 689 / 182 | 581 to 1,225 KB / 723 KB | 1.4 to 1.8 MB | 218 to 352 / 211 ms | 35 to 43 ms |
+
+  The pack size changes the bytes a query loads and the heap it keeps, not its time: the same 512 KiB bundle measured 275 to 371 ms at 4x in an earlier run of the benchmark on the same machine, and a 512 KiB pack loads and runs in 14 ms at 4x (a 128 KiB one in 9 ms). Without grouping, 64 KiB packs put each page of a long list in a file of its own, and reaching a service far down a region read four packs one after another; grouped, it reads one. Expands, first rows, and the directory bundle are unchanged within noise. 128 KiB was chosen as the size that takes most of the saving in bytes and heap while the large bundle stays at about 2,600 files.
 
 Left open by that work:
 
 - Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which also maps design tokens onto `--cx-tone-<name>`.
 - Right-to-left layout: row positions, the pinned tree column, and the detail body use physical left offsets.
 - The streamed writer holds one whole child list in memory until its last node is read; a flat list of millions of top-level rows needs pages that are written as they fill.
-- On the packed catalog, a cold search to an expanded hit takes 230 to 370 ms with the CPU slowed four times, with or without index packs: the index is 44 to 94 ms of it, the rest is loading and parsing 512 KB children packs on the hit's path. Smaller children packs, or location hints on hits (below), are the levers; the 250 ms gate is met at normal speed (40 to 80 ms).
+- On the packed catalog, a cold search to an expanded hit takes about 200 to 350 ms with the CPU slowed four times (the 250 ms gate is met at normal speed, 30 to 45 ms). It is not the size of the children packs (see the table above): the search is 40 to 90 ms, each level of the path the runtime opens costs 30 to 50 ms whether or not it reads a file (parsing and checking the page, building its rows, a layout forced by focus), and the paint about 50 ms. The levers are fewer levels opened one after another (location hints on hits, below, also for the pages of a long list) and less work per opened level; a trace of `expandPath` at 4x is the place to start.
 - Scroll benchmark numbers for renderers and time zones on a quiet machine; the runs recorded in PR #10 were taken while other builds ran and differ by less than their noise.
 
 Tree grid follow-ups without a milestone yet, each with the consumer that will pull it in:

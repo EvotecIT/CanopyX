@@ -15,7 +15,8 @@ namespace CanopyX.Bundles;
 /// host node by node while the writer walks it (see
 /// <see cref="Write(CanopyView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>), so a
 /// tree that does not fit in memory can be written from a database or a file. The layout is specified under
-/// "Sidecar" in docs/data-protocol.md. Every file stays within <see cref="CanopyBundleOptions.MaxFileBytes"/>, apart
+/// "Sidecar" in docs/data-protocol.md. Children packs are filled to <see cref="CanopyBundleOptions.ChildPackBytes"/>.
+/// Every file stays within <see cref="CanopyBundleOptions.MaxFileBytes"/>, apart
 /// from a file that holds a single node or search entry larger than the budget. Files are written into the data folder
 /// and existing files are not removed, so write each bundle into an empty folder. <c>CanopyX.Html</c> adds
 /// <c>SaveHtmlBundle</c>, which also writes the page and the runtime assets.
@@ -114,7 +115,7 @@ public sealed class CanopyBundleWriter {
         var result = new CanopyBundleResult(CanopySource.Sidecar(dataPath), dataDirectory);
         var context = new CanopyBundleContext(view, Options, dataDirectory, result);
         var index = view.Search != null ? new CanopySearchIndexWriter(context, new CanopySearchIndex()) : null;
-        var packs = new CanopyBundlePacks(context);
+        var packs = new CanopyBundlePacks(context, CanopyBundleLayout.Pack, Options.ChildPackBytes);
         WriteTree(context, packs, index, roots, incoming);
         packs.Flush();
         result.PackCount = packs.Count;
@@ -183,7 +184,7 @@ public sealed class CanopyBundleWriter {
     /// <summary>Writes the top-level nodes as the files <c>r/0</c>, <c>r/1</c>, and so on.</summary>
     private void WriteRootPages(CanopyBundleContext context, List<string> items) {
         var budget = context.ItemBudget(CanopyBundleLayout.RootPage(0), Page(null, items.Count, items.Count, null, CanopyBundleLayout.RootPage(Math.Max(items.Count, 1))));
-        var pages = Split(items, Options.PageSize, budget);
+        var pages = Split(items, Options.PageSize, budget, out _);
         var offset = 0;
         for (var page = 0; page < pages.Count; page++) {
             var next = page + 1 < pages.Count ? CanopyBundleLayout.RootPage(page + 1) : null;
@@ -195,22 +196,25 @@ public sealed class CanopyBundleWriter {
 
     /// <summary>
     /// Adds the pages of one node's children to the packs and returns the reference of the first page. The pages are
-    /// added last to first, because each page names the one after it.
+    /// added last to first, because each page names the one after it. Pages are split to fit the file budget, not the
+    /// pack size, so the pack size changes which pages share a file and never how a list is paged. The pages of one
+    /// list stay together (see <see cref="CanopyBundlePacks.StartList"/>).
     /// </summary>
     private string WritePackedPages(CanopyBundleContext context, CanopyBundlePacks packs, string parentId, List<string> items) {
         // A continuation no bundle reaches, so the measured envelope is never too short.
         var envelope = Page(parentId, items.Count, items.Count, null, CanopyBundleLayout.PackedPage(int.MaxValue, int.MaxValue));
-        var budget = packs.Budget - CanopyBundlePacks.SizeOf(envelope);
+        var budget = packs.FileBudget - CanopyBundlePacks.SizeOf(envelope);
         if (budget <= 0) {
             throw new InvalidOperationException("The children page of '" + parentId + "' has a fixed envelope that exceeds MaxFileBytes; shorten identifiers or increase the budget.");
         }
 
-        var pages = Split(items, Options.PageSize, (int)budget);
+        var pages = Split(items, Options.PageSize, (int)budget, out var itemBytes);
+        packs.StartList(itemBytes + pages.Count * CanopyBundlePacks.SizeOf(envelope));
         var offset = items.Count;
         string? next = null;
         for (var page = pages.Count - 1; page >= 0; page--) {
             offset -= pages[page].Count;
-            next = packs.Add(Page(parentId, offset, items.Count, pages[page], next));
+            next = packs.AddListPage(Page(parentId, offset, items.Count, pages[page], next));
             context.Result.PageCount++;
         }
 
@@ -232,14 +236,16 @@ public sealed class CanopyBundleWriter {
     /// <summary>
     /// Groups serialized items into runs of at most <paramref name="maxCount"/> whose UTF-8 size fits
     /// <paramref name="budget"/>. An item larger than the budget on its own still gets a page of its own, and a list
-    /// without items still gets one empty page.
+    /// without items still gets one empty page. <paramref name="totalBytes"/> is the size of all items with a comma each.
     /// </summary>
-    private static List<List<string>> Split(List<string> items, int maxCount, int budget) {
+    private static List<List<string>> Split(List<string> items, int maxCount, int budget, out long totalBytes) {
         var pages = new List<List<string>>();
         var current = new List<string>();
         long bytes = 0;
+        totalBytes = 0;
         foreach (var item in items) {
             var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
+            totalBytes += size;
             if (current.Count > 0 && (current.Count >= maxCount || bytes + size > budget)) {
                 pages.Add(current);
                 current = new List<string>();

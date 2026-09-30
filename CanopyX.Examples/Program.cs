@@ -19,16 +19,22 @@ using CanopyX.Rendering;
 // The bundle is streamed: each service is built when the writer asks for it and released once it is written. With
 // --in-memory the whole tree is built first, which is how a host without a streaming source writes a bundle.
 // --search-pack <bytes> packs the search index of every bundle into files of up to that size (default 64 KiB; 0 writes
-// each index file on its own).
-// Usage: CanopyX.Examples [output folder] [--search-bench | --pack-bench [--services <n>] [--in-memory]] [--search-pack <bytes>]
+// each index file on its own), and --child-pack <bytes> packs the children pages into files of up to that size
+// (default 128 KiB).
+// Usage: CanopyX.Examples [output folder] [--search-bench | --pack-bench [--services <n>] [--in-memory]] [--search-pack <bytes>] [--child-pack <bytes>]
 var searchBench = args.Contains("--search-bench");
 var packBench = args.Contains("--pack-bench");
-var servicesAt = Array.IndexOf(args, "--services");
-var services = servicesAt >= 0 && servicesAt + 1 < args.Length ? int.Parse(args[servicesAt + 1], CultureInfo.InvariantCulture) : PackBenchTree.DefaultServicesPerRegion;
-var searchPackAt = Array.IndexOf(args, "--search-pack");
+var valueOptions = new[] { "--services", "--search-pack", "--child-pack" };
+int? Number(string name) {
+    var at = Array.IndexOf(args, name);
+    return at >= 0 && at + 1 < args.Length ? int.Parse(args[at + 1], CultureInfo.InvariantCulture) : null;
+}
+
+var services = Number("--services") ?? PackBenchTree.DefaultServicesPerRegion;
 var bundleOptions = new CanopyX.Bundles.CanopyBundleOptions();
-if (searchPackAt >= 0 && searchPackAt + 1 < args.Length) bundleOptions.SearchPackBytes = int.Parse(args[searchPackAt + 1], CultureInfo.InvariantCulture);
-var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparison.Ordinal) && (servicesAt < 0 || index != servicesAt + 1) && (searchPackAt < 0 || index != searchPackAt + 1)).ToArray();
+if (Number("--search-pack") is int searchPack) bundleOptions.SearchPackBytes = searchPack;
+if (Number("--child-pack") is int childPack) bundleOptions.ChildPackBytes = childPack;
+var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparison.Ordinal) && (index == 0 || !valueOptions.Contains(args[index - 1]))).ToArray();
 var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.BaseDirectory, searchBench ? "search-bench" : packBench ? "pack-bench" : "output");
 Directory.CreateDirectory(output);
 var clock = Stopwatch.StartNew();

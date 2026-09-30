@@ -191,11 +191,12 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         Assert.True(parents > 300);
         Assert.Equal(_bundle.Result.PackCount, packs.Count);
         Assert.Equal(packs.Count, _bundle.Files.Document("manifest")["packs"]!.GetValue<int>());
-        Assert.InRange(packs.Count, 1, 4);
+        Assert.InRange(packs.Count, 1, parents / 10);
         Assert.Equal(_bundle.Result.PageCount, _bundle.Files.Pages().Count());
-        // A pack is full before the next one starts: every pack but the last is within a page of the file budget.
-        Assert.All(packs.Where(reference => reference != "p/" + (packs.Count - 1)), reference =>
-            Assert.InRange(_bundle.Files.Sizes[reference], 512 * 1024 - 80 * 1024, 512 * 1024));
+        // Packs are filled to the children pack size; only the pages of one long list make a larger pack.
+        var size = new CanopyBundleOptions().ChildPackBytes;
+        Assert.All(packs, reference => Assert.True(_bundle.Files.Sizes[reference] <= size || System.Text.Json.Nodes.JsonNode.Parse(_bundle.Files.Documents[reference])!["pages"]!.AsArray()
+            .Select(page => System.Text.Json.Nodes.JsonNode.Parse(page!.GetValue<string>())!["parent"]!.GetValue<string>()).Distinct().Count() == 1, reference + " is over the pack size."));
     }
 
     [Fact]

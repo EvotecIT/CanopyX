@@ -36,7 +36,7 @@ public sealed class SearchPackTests {
             for (var number = 0; number < reader.EntryCount; number += 97) Assert.NotEmpty(reader.Entry(number).Path);
             foreach (var pack in packs) {
                 var pages = JsonNode.Parse(files.Documents[pack])!["pages"]!.AsArray().Count;
-                Assert.True(pages == 1 || files.Sizes[pack] <= 64 * 1024 + 256, pack + " holds " + pages + " documents in " + files.Sizes[pack] + " bytes.");
+                Assert.True(pages == 1 || files.Sizes[pack] <= 64 * 1024, pack + " holds " + pages + " documents in " + files.Sizes[pack] + " bytes.");
             }
 
             var plain = new SearchIndexReader(new SidecarFiles(separate.Result.DataDirectory, view.Id));

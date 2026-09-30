@@ -10,6 +10,7 @@
 //   node bench/search-benchmark.mjs --runs 5 --cpu 1,4
 //
 // Options: --examples <folder>, --bench <folder>, and --pack <folder> point at other outputs (for a before/after comparison),
+// --only <names> runs the scenarios whose names start with one of the comma-separated names (for example "catalog"),
 // --channel msedge uses an installed browser, --out <file> writes the raw samples as JSON.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
@@ -27,8 +28,9 @@ const examples = path.resolve(option("examples", path.join(repo, "CanopyX.Exampl
 const bench = path.resolve(option("bench", path.join(repo, "CanopyX.Examples/bin/Release/net10.0/search-bench")));
 const pack = path.resolve(option("pack", path.join(repo, "CanopyX.Examples/bin/Release/net10.0/pack-bench")));
 const out = option("out", null);
+const only = option("only", null);
 
-const scenarios = [
+const allScenarios = [
   { name: "examples: quarterly review", page: path.join(examples, "bundle/index.html"), query: "quarterly review" },
   { name: "deep: quarterly report 17", page: path.join(bench, "deep/index.html"), query: "quarterly report 17" },
   { name: "directory: firewall policy 0022", page: path.join(bench, "directory/index.html"), query: "firewall policy 0022" },
@@ -38,6 +40,7 @@ const scenarios = [
   { name: "catalog: release 3 security", page: path.join(pack, "catalog/index.html"), query: "release 3 security" },
   { name: "catalog: dana.levi", page: path.join(pack, "catalog/index.html"), query: "dana.levi" }
 ];
+const scenarios = only ? allScenarios.filter((scenario) => only.split(",").some((part) => scenario.name.startsWith(part))) : allScenarios;
 
 const median = (values) => values.slice().sort((a, b) => a - b)[Math.floor((values.length - 1) / 2)];
 

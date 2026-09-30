@@ -1,20 +1,23 @@
-// Expand benchmark over the packing benchmark bundle (CanopyX.Examples --pack-bench), opened from disk like a report
-// on a file share. It reports the size of the bundle, and for a fresh page: the time to the first painted rows and
-// the time from asking for a node's children to a painted frame, with the data files and bytes each step loaded.
+// Expand benchmark over a written bundle, opened from disk like a report on a file share. It reports the size of the
+// bundle, and for a fresh page: the time to the first painted rows and the time from asking for a node's children to
+// a painted frame, with the data files and bytes each step loaded. The steps depend on the bundle's view; for the
+// packing benchmark bundle (CanopyX.Examples --pack-bench, the default):
 //   first rows       navigation to the first painted row (manifest and the first top-level page)
 //   open region      the first page of a long child list (1,000 services)
 //   open service     one service: its five sections
 //   open section     its releases
 //   open release     the detail table of one release
 //   deep service     a service far down the long list, reached by path like a deep link or a search hit
+// The examples bundle (bundle/ of CanopyX.Examples) and the directory bundle (directory/ of --search-bench) have
+// steps of the same kind, listed in STEPS below.
 // Every step after the first is cold: nothing it needs was loaded before, unless the bundle packs it next to data an
 // earlier step already read.
 //
 //   dotnet run --project CanopyX.Examples -c Release -- --pack-bench
 //   node bench/expand-benchmark.mjs --runs 5 --cpu 1,4
 //
-// Options: --bundle <folder> points at another bundle folder (for a before/after comparison), --channel msedge uses
-// an installed browser, --out <file> writes the raw samples as JSON.
+// Options: --bundle <folder> points at another bundle folder (for a before/after comparison, or at bundle/ or
+// directory/), --channel msedge uses an installed browser, --out <file> writes the raw samples as JSON.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,13 +34,40 @@ const bundle = path.resolve(option("bundle", path.join(repo, "CanopyX.Examples/b
 const out = option("out", null);
 const pageFile = path.join(bundle, "index.html");
 
-const steps = [
-  { name: "open region", path: ["region-1"] },
-  { name: "open service", path: ["region-1", "svc-1-0003"] },
-  { name: "open section", path: ["region-1", "svc-1-0003", "svc-1-0003/releases"] },
-  { name: "open release", path: ["region-1", "svc-1-0003", "svc-1-0003/releases", "svc-1-0003/releases/2"] },
-  { name: "deep service", path: ["region-3", "svc-3-0870"] }
-];
+const dn = (...parts) => parts.join(",");
+const corp = (n) => dn("DC=corp" + n, "DC=example", "DC=com");
+// The steps of each benchmark bundle, by view id. Each path opens one level more than the step before it.
+const STEPS = {
+  catalog: [
+    { name: "open region", path: ["region-1"] },
+    { name: "open service", path: ["region-1", "svc-1-0003"] },
+    { name: "open section", path: ["region-1", "svc-1-0003", "svc-1-0003/releases"] },
+    { name: "open release", path: ["region-1", "svc-1-0003", "svc-1-0003/releases", "svc-1-0003/releases/2"] },
+    { name: "deep service", path: ["region-3", "svc-3-0870"] }
+  ],
+  // share-a starts expanded, so the first rows include its departments.
+  files: [
+    { name: "open share", path: ["share-m"] },
+    { name: "open department", path: ["share-m", "share-m/d3"] },
+    { name: "open project", path: ["share-m", "share-m/d3", "share-m/d3/p4"] },
+    { name: "open file", path: ["share-m", "share-m/d3", "share-m/d3/p4", "share-m/d3/p4/f0"] },
+    { name: "open history", path: ["share-m", "share-m/d3", "share-m/d3/p4", "share-m/d3/p4/f0", "share-m/d3/p4/f0/history"] },
+    { name: "deep file", path: ["share-a", "share-a/d0", "share-a/d0/p0", "share-a/d0/p0/f2700"] }
+  ],
+  directory: [
+    { name: "open domain", path: [corp(2)] },
+    { name: "open policies", path: [corp(2), dn("CN=Policies", "CN=System", corp(2))] },
+    { name: "open region", path: [corp(2), dn("OU=EMEA", corp(2))] },
+    { name: "open site", path: [corp(2), dn("OU=EMEA", corp(2)), dn("OU=Krakow", "OU=EMEA", corp(2))] },
+    { name: "deep unit", path: [corp(5), dn("OU=ANZ", corp(5)), dn("OU=Amsterdam", "OU=ANZ", corp(5)), dn("OU=Support", "OU=Amsterdam", "OU=ANZ", corp(5))] }
+  ]
+};
+
+/** The view id of the bundle: its data folder is named <safe view id>-<SHA-256>. */
+function viewOf() {
+  const folder = fs.readdirSync(path.join(bundle, "data"), { withFileTypes: true }).find((entry) => entry.isDirectory());
+  return folder ? folder.name.replace(/-[0-9a-f]{64}$/, "") : null;
+}
 
 const median = (values) => values.slice().sort((a, b) => a - b)[Math.floor((values.length - 1) / 2)];
 
@@ -61,6 +91,10 @@ function bundleSize() {
 
 if (!fs.existsSync(pageFile)) {
   throw new Error("Bundle page missing: " + pageFile + ". Run CanopyX.Examples --pack-bench, or pass --bundle.");
+}
+const steps = STEPS[viewOf()];
+if (!steps) {
+  throw new Error("No expand steps for the view of " + bundle + "; add them to STEPS.");
 }
 
 const size = bundleSize();

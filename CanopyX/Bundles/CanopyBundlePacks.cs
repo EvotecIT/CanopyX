@@ -5,10 +5,10 @@ using CanopyX.Json;
 namespace CanopyX.Bundles;
 
 /// <summary>
-/// Collects children pages into pack files (see "Packs" in docs/data-protocol.md). A pack holds the pages of many
-/// nodes up to the bundle's file budget, so a tree with a hundred thousand small child lists becomes a few hundred
-/// files instead of a hundred thousand. Pages are appended in the order the writer finishes them, which keeps the
-/// pages of one subtree next to each other.
+/// Collects documents into pack files (see "Packs" and "Index Packs" in docs/data-protocol.md): the children pages
+/// of a bundle, or the documents of its search index. A pack holds many documents up to its target size, so a tree
+/// with a hundred thousand small child lists becomes a few thousand files instead of a hundred thousand. Documents
+/// are appended in the order the writer finishes them, which keeps the pages of one subtree next to each other.
 /// </summary>
 /// <remarks>
 /// A page is stored as the text of its JSON document, and the runtime parses only the page it shows. In the script
@@ -28,11 +28,11 @@ internal sealed class CanopyBundlePacks {
     private int _pack;
 
     /// <param name="context">The bundle write.</param>
-    /// <param name="fileOf">The reference of pack n; children packs by default.</param>
-    /// <param name="targetBytes">A pack size below the file budget, or null for the budget.</param>
-    internal CanopyBundlePacks(CanopyBundleContext context, Func<int, string>? fileOf = null, int? targetBytes = null) {
+    /// <param name="fileOf">The reference of pack n.</param>
+    /// <param name="targetBytes">The file size packs are filled to; a size above the file budget fills them to the budget.</param>
+    internal CanopyBundlePacks(CanopyBundleContext context, Func<int, string> fileOf, int targetBytes) {
         _context = context;
-        _fileOf = fileOf ?? CanopyBundleLayout.Pack;
+        _fileOf = fileOf;
         var envelope = new CanopyJsonWriter(64);
         envelope.BeginObject().Envelope("pack").Name("pages").BeginArray().EndArray().EndObject();
         var document = envelope.ToString();
@@ -41,7 +41,8 @@ internal sealed class CanopyBundlePacks {
         // A pack number no bundle reaches, so the measured envelope is never too short.
         var budget = context.ItemBudget(_fileOf(int.MaxValue), document);
         FileBudget = budget;
-        Budget = targetBytes.HasValue ? Math.Max(1, Math.Min(budget, targetBytes.Value)) : budget;
+        // The target is the size of the file: its wrapper and envelope come off it, as they come off the file budget.
+        Budget = Math.Max(1, Math.Min(budget, targetBytes - (context.Options.MaxFileBytes - budget)));
     }
 
     /// <summary>Gets the bytes a pack has for its pages, each with the overhead <see cref="SizeOf"/> counts.</summary>
@@ -60,9 +61,28 @@ internal sealed class CanopyBundlePacks {
     internal static long SizeOf(string pageJson) => CanopyBundleContext.Utf8.GetByteCount(pageJson) + PageStart.Length + PageEnd.Length + 1;
 
     /// <summary>Adds a page and returns its reference. A page that does not fit the current pack starts the next one.</summary>
-    internal string Add(string pageJson) {
+    internal string Add(string pageJson) => Add(pageJson, Budget);
+
+    /// <summary>
+    /// Starts the pages of one child list: closes the open pack unless the whole list fits what is left of the pack
+    /// size, so a list that does not share a pack with the lists before it starts a pack of its own.
+    /// </summary>
+    /// <param name="bytes">The size of the list's pages as <see cref="SizeOf"/> counts them, or more.</param>
+    internal void StartList(long bytes) {
+        if (_pages.Count > 0 && _bytes + bytes > Budget) {
+            Flush();
+        }
+    }
+
+    /// <summary>
+    /// Adds a page of the list started last and returns its reference. The pages of one list fill a pack up to the
+    /// file budget, not the pack size, so reaching a node far down a long list reads few files one after another.
+    /// </summary>
+    internal string AddListPage(string pageJson) => Add(pageJson, FileBudget);
+
+    private string Add(string pageJson, long limit) {
         var size = SizeOf(pageJson);
-        if (_pages.Count > 0 && _bytes + size > Budget) {
+        if (_pages.Count > 0 && _bytes + size > limit) {
             Flush();
         }
 

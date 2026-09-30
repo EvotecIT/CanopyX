@@ -11,6 +11,7 @@ public sealed class CanopyBundleOptions {
     private int _maxFileBytes = 512 * 1024;
     private string? _dataPath;
     private int _searchPackBytes = 64 * 1024;
+    private int _childPackBytes = 128 * 1024;
 
     /// <summary>
     /// Gets or sets the folder for the sidecar files, relative to the output folder and to the page, with forward
@@ -52,6 +53,28 @@ public sealed class CanopyBundleOptions {
             }
 
             _maxFileBytes = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the size up to which the children pages of different nodes are packed into shared files, from
+    /// 16 KiB to 16 MiB (a size above <see cref="MaxFileBytes"/> packs up to the file budget). The pages of one child
+    /// list stay together up to <see cref="MaxFileBytes"/>, so a list larger than this size gets a pack of its own;
+    /// pages are split by <see cref="PageSize"/> and <see cref="MaxFileBytes"/> only, so this size never changes where
+    /// a page ends. Opening a node reads the whole pack its page is in, so smaller packs mean fewer bytes loaded and
+    /// held per expand, and more files. Defaults to 128 KiB, which on the packing benchmark cuts what a cold search
+    /// to a hit loads by a fifth to a half and keeps the bundle at about 2,600 files (see "Packs" in
+    /// docs/data-protocol.md).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is outside 16 KiB to 16 MiB.</exception>
+    public int ChildPackBytes {
+        get => _childPackBytes;
+        set {
+            if (value < 16 * 1024 || value > 16 * 1024 * 1024) {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The children pack size must be between 16 KiB and 16 MiB.");
+            }
+
+            _childPackBytes = value;
         }
     }
 
