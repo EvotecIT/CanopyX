@@ -11,6 +11,11 @@ namespace CanopyX.Bundles;
 /// files, each carrying the ancestors its entries need, and the word shards in <c>s/k-&lt;key&gt;</c> files, whose
 /// posting lists refer to entries by number. Every file stays within the bundle's file budget.
 /// </summary>
+/// <remarks>
+/// Entries are written as the bundle writer walks the tree: <see cref="Add"/> takes the next node in depth-first
+/// order, and <see cref="Open"/> and <see cref="Close"/> say when the node added last starts and stops being the
+/// parent of the nodes that follow. Only the open ancestors and the entries of the file in progress are held.
+/// </remarks>
 internal sealed class CanopySearchIndexWriter {
     /// <summary>
     /// The most entries one entry file holds. A query loads the files of its first matches only, so small files keep
@@ -22,15 +27,57 @@ internal sealed class CanopySearchIndexWriter {
     private readonly CanopySearchIndex _index;
     private readonly List<int> _entryFiles = new List<int>();
     private readonly SortedDictionary<string, int> _shards = new SortedDictionary<string, int>(StringComparer.Ordinal);
+    private readonly List<CanopySearchEntry> _open = new List<CanopySearchEntry>();
+    private readonly List<string> _stem = new List<string>();
+    private readonly List<string> _items = new List<string>();
+    private CanopySearchEntry _last;
+    private int _count;
+    private int _first;
+    private int _budget;
+    private long _bytes;
 
     internal CanopySearchIndexWriter(CanopyBundleContext context, CanopySearchIndex index) {
         _context = context;
         _index = index;
     }
 
-    /// <summary>Writes the entry files and the word shards.</summary>
+    /// <summary>Adds the next node in depth-first order as a child of the innermost open entry.</summary>
+    /// <param name="id">The node id.</param>
+    /// <param name="label">The node label; its words are filed.</param>
+    /// <param name="kind">The node kind, if any.</param>
+    /// <exception cref="InvalidOperationException">The ancestors of the node do not fit one entry file.</exception>
+    internal void Add(string id, string label, string? kind) {
+        var parentId = _open.Count > 0 ? _open[_open.Count - 1].Id : string.Empty;
+        var entry = new CanopySearchEntry(_count, _open.Count > 0 ? _open[_open.Count - 1].Number : -1, id, label, _index.KindNumber(kind));
+        var item = Serialize(entry, parentId, withNumber: false);
+        var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
+        if (_items.Count > 0 && (_items.Count >= EntriesPerFile || _bytes + size > _budget)) {
+            WriteEntryFile();
+        }
+
+        if (_items.Count == 0) {
+            StartEntryFile(entry.Number, size);
+        }
+
+        _items.Add(item);
+        _bytes += size;
+        _index.File(entry.Number, label);
+        _last = entry;
+        _count++;
+    }
+
+    /// <summary>Makes the entry added last the parent of the entries that follow.</summary>
+    internal void Open() => _open.Add(_last);
+
+    /// <summary>Ends the children of the innermost open entry.</summary>
+    internal void Close() => _open.RemoveAt(_open.Count - 1);
+
+    /// <summary>Writes the last entry file and the word shards.</summary>
     internal void Write() {
-        WriteEntries();
+        if (_items.Count > 0) {
+            WriteEntryFile();
+        }
+
         foreach (var shard in _index.BuildShards(_context.Options.SearchShardLimit)) {
             WriteShard(shard.Key, shard.Value);
         }
@@ -41,7 +88,7 @@ internal sealed class CanopySearchIndexWriter {
 
     /// <summary>Writes the manifest's <c>search</c> object.</summary>
     internal void WriteManifest(CanopyJsonWriter json) {
-        json.Name("search").BeginObject().Property("entryCount", _index.Entries.Count).Name("entryFiles").BeginArray();
+        json.Name("search").BeginObject().Property("entryCount", _count).Name("entryFiles").BeginArray();
         foreach (var first in _entryFiles) {
             json.Number(first);
         }
@@ -55,46 +102,33 @@ internal sealed class CanopySearchIndexWriter {
     }
 
     /// <summary>
-    /// Writes the entries in runs of consecutive numbers. Each file also carries its stem: the ancestors of its first
-    /// entry. In depth-first order, an ancestor that lies before the file is an ancestor of the file's first entry, so
-    /// the stem is exactly what the file needs to rebuild every id path on its own.
+    /// Starts a file of consecutive entries. Each file carries its stem: the ancestors of its first entry. In
+    /// depth-first order, an ancestor that lies before the file is an ancestor of the file's first entry, so the stem
+    /// is exactly what the file needs to rebuild every id path on its own.
     /// </summary>
-    private void WriteEntries() {
-        var entries = _index.Entries;
-        // A file number and a first entry number no real file reaches, so the measured envelope is never too short.
-        var bound = Math.Max(entries.Count, 1);
-        var first = 0;
-        while (first < entries.Count) {
-            var stem = new List<string>();
-            for (var parent = entries[first].Parent; parent >= 0; parent = entries[parent].Parent) {
-                stem.Add(Serialize(parent, withNumber: true));
-            }
-
-            stem.Reverse();
-            var budget = _context.RemainingBytes(CanopyBundleLayout.EntryFile(bound), EntriesDocument(bound, stem, new List<string>()));
-            var items = new List<string>();
-            long bytes = 0;
-            while (first + items.Count < entries.Count && items.Count < EntriesPerFile) {
-                var item = Serialize(first + items.Count, withNumber: false);
-                var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
-                if (items.Count > 0 && bytes + size > budget) {
-                    break;
-                }
-
-                // An entry larger than the budget on its own still gets a file; a stem that crowds out an ordinary entry does not.
-                if (size > budget && size <= _context.RemainingBytes(CanopyBundleLayout.EntryFile(bound), EntriesDocument(bound, new List<string>(), new List<string>()))) {
-                    throw new InvalidOperationException("The search entries of view '" + _context.View.Id + "' need more than MaxFileBytes for the "
-                        + stem.Count.ToString(CultureInfo.InvariantCulture) + " ancestors of one node; increase the budget or write the bundle without search.");
-                }
-
-                items.Add(item);
-                bytes += size;
-            }
-
-            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.EntryFile(_entryFiles.Count), EntriesDocument(first, stem, items));
-            _entryFiles.Add(first);
-            first += items.Count;
+    private void StartEntryFile(int first, int firstSize) {
+        _first = first;
+        _bytes = 0;
+        _stem.Clear();
+        for (var level = 0; level < _open.Count; level++) {
+            _stem.Add(Serialize(_open[level], level > 0 ? _open[level - 1].Id : string.Empty, withNumber: true));
         }
+
+        // A file number and a first entry number no real file reaches, so the measured envelope is never too short.
+        const int bound = int.MaxValue;
+        var reference = CanopyBundleLayout.EntryFile(bound);
+        _budget = _context.RemainingBytes(reference, EntriesDocument(bound, _stem, _items));
+        // An entry larger than the budget on its own still gets a file; a stem that crowds out an ordinary entry does not.
+        if (firstSize > _budget && firstSize <= _context.RemainingBytes(reference, EntriesDocument(bound, new List<string>(), _items))) {
+            throw new InvalidOperationException("The search entries of view '" + _context.View.Id + "' need more than MaxFileBytes for the "
+                + _stem.Count.ToString(CultureInfo.InvariantCulture) + " ancestors of one node; increase the budget or write the bundle without search.");
+        }
+    }
+
+    private void WriteEntryFile() {
+        _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.EntryFile(_entryFiles.Count), EntriesDocument(_first, _stem, _items));
+        _entryFiles.Add(_first);
+        _items.Clear();
     }
 
     private static string EntriesDocument(int first, List<string> stem, List<string> entries) {
@@ -118,14 +152,12 @@ internal sealed class CanopySearchIndexWriter {
     /// and trailing code units the two share, and only the part between them is written. Path-style ids share a
     /// prefix with their parent and distinguished names share a suffix, so neither repeats on every level.
     /// </summary>
-    private string Serialize(int number, bool withNumber) {
-        var entry = _index.Entries[number];
-        var parentId = entry.Parent < 0 ? string.Empty : _index.Entries[entry.Parent].Id;
+    private static string Serialize(CanopySearchEntry entry, string parentId, bool withNumber) {
         SharedAffixes(parentId, entry.Id, out var head, out var tail);
         var json = new CanopyJsonWriter(96);
         json.BeginArray();
         if (withNumber) {
-            json.Number(number);
+            json.Number(entry.Number);
         }
 
         json.Number(entry.Parent).Number(head).String(entry.Id.Substring(head, entry.Id.Length - head - tail)).Number(tail).String(entry.Label);

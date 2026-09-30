@@ -5,12 +5,16 @@ namespace CanopyX.Bundles;
 /// a smaller number than the node, and the runtime rebuilds the id path and context by following parents.
 /// </summary>
 internal readonly struct CanopySearchEntry {
-    internal CanopySearchEntry(int parent, string id, string label, int kind) {
+    internal CanopySearchEntry(int number, int parent, string id, string label, int kind) {
+        Number = number;
         Parent = parent;
         Id = id;
         Label = label;
         Kind = kind;
     }
+
+    /// <summary>Gets the entry number.</summary>
+    internal int Number { get; }
 
     /// <summary>Gets the parent's entry number, or -1 for a top-level node.</summary>
     internal int Parent { get; }

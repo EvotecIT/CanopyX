@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using CanopyX.Bundles;
@@ -75,7 +76,30 @@ public static class CanopyViewHtmlExtensions {
     /// <returns>What the bundle writer wrote, for checking sizes against budgets.</returns>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or the tree is incomplete.</exception>
-    public static CanopyBundleResult SaveHtmlBundle(this CanopyView view, string directory, CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) {
+    public static CanopyBundleResult SaveHtmlBundle(this CanopyView view, string directory, CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
+        SaveBundle(view, directory, options, bundleOptions, writer => writer.Write(view, directory));
+
+    /// <summary>
+    /// Saves the view as a bundle from nodes the host supplies while the tree is written, so the tree never has to be
+    /// in memory as a whole. The page, assets, and layout rules are those of
+    /// <see cref="SaveHtmlBundle(CanopyView, string, CanopyHtmlOptions, CanopyBundleOptions)"/>; how the nodes are read
+    /// is described at <see cref="CanopyBundleWriter.Write(CanopyView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>.
+    /// </summary>
+    /// <param name="view">The view. Its <see cref="CanopyView.Roots"/> must be empty.</param>
+    /// <param name="directory">The folder for the page, the <c>assets</c> folder, and the data folder.</param>
+    /// <param name="roots">The top-level nodes in display order.</param>
+    /// <param name="children">Returns the children of a node in display order, or null or an empty sequence for a leaf.</param>
+    /// <param name="options">Page options; defaults to external assets under <c>assets/</c>.</param>
+    /// <param name="bundleOptions">Page size, search shard limit, and data folder.</param>
+    /// <returns>What the bundle writer wrote, for checking sizes against budgets.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/>, <paramref name="roots"/>, or <paramref name="children"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty, or the view has roots of its own.</exception>
+    /// <exception cref="InvalidOperationException">The view or a node breaks a protocol rule.</exception>
+    public static CanopyBundleResult SaveHtmlBundle(this CanopyView view, string directory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children,
+        CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
+        SaveBundle(view, directory, options, bundleOptions, writer => writer.Write(view, directory, roots, children));
+
+    private static CanopyBundleResult SaveBundle(CanopyView view, string directory, CanopyHtmlOptions? options, CanopyBundleOptions? bundleOptions, Func<CanopyBundleWriter, CanopyBundleResult> write) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
@@ -98,7 +122,7 @@ public static class CanopyViewHtmlExtensions {
         }
         ValidateBundleLayout(CanopyX.Bundles.BundlePaths.DataPath(view.Id, bundleOptions?.DataPath), localAssets ? assetFolder : null);
         var previousSource = view.Source;
-        var result = new CanopyBundleWriter(bundleOptions).Write(view, directory);
+        var result = write(new CanopyBundleWriter(bundleOptions));
         view.Source = result.Source;
         try {
             if (localAssets) {

@@ -133,11 +133,11 @@ public sealed class CanopyNode {
         if (_ref != null && !HasChildren && !HasInlineChildren) {
             throw new InvalidOperationException("Node '" + Id + "' has a reference but no children; set HasChildren for children that load later.");
         }
-        CanopyCell.ValidateEntries(CellEntries);
         if (Detail != null && (HasInlineChildren || HasChildren)) {
             throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
         }
 
+        ValidateContent();
         if (_childCount.HasValue) {
             if (HasInlineChildren && _childCount.Value != _children!.Count) {
                 throw new InvalidOperationException("Node '" + Id + "' has " + _children.Count + " inline children but a child count of " + _childCount.Value + "; inline children must be complete.");
@@ -151,7 +151,11 @@ public sealed class CanopyNode {
                 throw new InvalidOperationException("Node '" + Id + "' declares children with a child count of zero.");
             }
         }
+    }
 
+    /// <summary>Checks the cells, badges, and flags, which do not depend on how the node's children are delivered.</summary>
+    internal void ValidateContent() {
+        CanopyCell.ValidateEntries(CellEntries);
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) {
@@ -171,11 +175,32 @@ public sealed class CanopyNode {
     }
 
     /// <summary>
-    /// Writes the node. With <paramref name="includeChildren"/> the inline children are written iteratively;
-    /// otherwise only the lazy-load declaration is written, optionally with a reference and count chosen by the caller.
+    /// Writes the node for a bundle page. The bundle writer, not the node, says whether there are children and where
+    /// their first page is, so <see cref="HasChildren"/>, <see cref="ChildCount"/>, and <see cref="Ref"/> are not read.
     /// </summary>
-    internal void WriteJson(CanopyJsonWriter writer, bool includeChildren, string? refOverride = null, int? childCountOverride = null) {
-        if (!WriteStart(writer, includeChildren, refOverride, childCountOverride)) {
+    /// <param name="writer">The writer.</param>
+    /// <param name="childrenReference">The reference of the first children page, or null for a leaf.</param>
+    /// <param name="childCount">The number of children; zero for a leaf.</param>
+    /// <exception cref="InvalidOperationException">The node breaks a protocol rule, or a detail row has children.</exception>
+    internal void WriteBundleItem(CanopyJsonWriter writer, string? childrenReference, int childCount) {
+        if (Detail != null && childCount > 0) {
+            throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
+        }
+
+        // Writing the detail checks it, so it is not serialized a second time just to validate it.
+        ValidateContent();
+        WriteHead(writer);
+        if (childCount > 0) {
+            writer.Property("hasChildren", true).Property("childCount", childCount).Property("ref", childrenReference);
+        }
+
+        WriteTail(writer);
+        writer.EndObject();
+    }
+
+    /// <summary>Writes the node with its inline children, iteratively, or with its declaration of children that load later.</summary>
+    internal void WriteJson(CanopyJsonWriter writer) {
+        if (!WriteStart(writer)) {
             writer.EndObject();
             return;
         }
@@ -188,14 +213,34 @@ public sealed class CanopyNode {
             } else {
                 pending.Push((node, index + 1));
                 var child = node.ChildNodes[index];
-                if (child.WriteStart(writer, true, null, null)) pending.Push((child, 0));
+                if (child.WriteStart(writer)) pending.Push((child, 0));
                 else writer.EndObject();
             }
         }
     }
 
-    private bool WriteStart(CanopyJsonWriter writer, bool includeChildren, string? refOverride, int? childCountOverride) {
-        ValidateShape(replacingInlineRef: !includeChildren && HasInlineChildren && refOverride != null);
+    /// <summary>Writes the node up to its inline children; returns whether the children array was opened.</summary>
+    private bool WriteStart(CanopyJsonWriter writer) {
+        ValidateShape();
+        WriteHead(writer);
+        var inline = HasInlineChildren;
+        if (inline || HasChildren) {
+            writer.Property("hasChildren", true);
+            writer.OptionalProperty("childCount", _childCount ?? (inline ? _children!.Count : (int?)null));
+            if (!inline) {
+                writer.OptionalProperty("ref", _ref);
+            }
+        }
+
+        WriteTail(writer);
+        if (inline) {
+            writer.Name("children").BeginArray();
+        }
+
+        return inline;
+    }
+
+    private void WriteHead(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", _label);
         writer.OptionalProperty("kind", Kind);
         writer.OptionalProperty("icon", Icon);
@@ -230,16 +275,9 @@ public sealed class CanopyNode {
             writer.StringArray("flags", _flags!);
         }
 
-        var inline = includeChildren && HasInlineChildren;
-        var childCount = childCountOverride ?? _childCount ?? (HasInlineChildren ? _children!.Count : (int?)null);
-        if (inline || HasChildren || HasInlineChildren || childCountOverride > 0) {
-            writer.Property("hasChildren", true);
-            writer.OptionalProperty("childCount", childCount);
-            if (!inline) {
-                writer.OptionalProperty("ref", refOverride ?? _ref);
-            }
-        }
+    }
 
+    private void WriteTail(CanopyJsonWriter writer) {
         if (Expanded) {
             writer.Property("expanded", true);
         }
@@ -250,9 +288,5 @@ public sealed class CanopyNode {
         }
 
         writer.OptionalProperty("className", ClassName);
-        if (inline) {
-            writer.Name("children").BeginArray();
-        }
-        return inline;
     }
 }

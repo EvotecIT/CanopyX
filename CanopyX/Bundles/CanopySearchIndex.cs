@@ -4,9 +4,10 @@ using System.Collections.Generic;
 namespace CanopyX.Bundles;
 
 /// <summary>
-/// Collects the search index of a bundle: an entry table that holds every node once, and for each folded word the
-/// ascending numbers of the entries whose label has that word (its postings). A label with a word is also filed
-/// under its label token, so the runtime finds the labels equal to a query without reading them.
+/// Collects the words of a bundle's search index: for each folded word the ascending numbers of the entries whose
+/// label has that word (its postings). A label with a word is also filed under its label token, so the runtime finds
+/// the labels equal to a query without reading them. The entries themselves are written as they arrive, by
+/// <see cref="CanopySearchIndexWriter"/>, so this class holds numbers and distinct words, not nodes.
 /// </summary>
 /// <remarks>
 /// Words are grouped into shards by prefix. A shard covers the words that start with one prefix of at least two code
@@ -25,13 +26,10 @@ internal sealed class CanopySearchIndex {
     /// </summary>
     internal const int TokenShardLimit = 1000;
 
-    private readonly List<CanopySearchEntry> _entries = new List<CanopySearchEntry>();
     private readonly List<string> _kinds = new List<string>();
     private readonly Dictionary<string, int> _kindNumbers = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly Dictionary<string, List<int>> _postings = new Dictionary<string, List<int>>(StringComparer.Ordinal);
 
-    /// <summary>Gets the entries by number.</summary>
-    internal IReadOnlyList<CanopySearchEntry> Entries => _entries;
 
     /// <summary>Gets the distinct node kinds in order of first appearance; entries refer to them by position.</summary>
     internal IReadOnlyList<string> Kinds => _kinds;
@@ -39,14 +37,10 @@ internal sealed class CanopySearchIndex {
     /// <summary>Gets the ascending entry numbers filed under a word.</summary>
     internal IReadOnlyList<int> Postings(string word) => _postings[word];
 
-    /// <summary>Adds the next node in depth-first order and returns its entry number.</summary>
-    /// <param name="parent">The parent's entry number, or -1 for a top-level node.</param>
-    /// <param name="id">The node id.</param>
-    /// <param name="label">The node label; its words are filed.</param>
-    /// <param name="kind">The node kind, if any.</param>
-    internal int Add(int parent, string id, string label, string? kind) {
-        var number = _entries.Count;
-        _entries.Add(new CanopySearchEntry(parent, id, label, KindNumber(kind)));
+    /// <summary>Files the words of a label under an entry number. Numbers must arrive in ascending order.</summary>
+    /// <param name="number">The entry number.</param>
+    /// <param name="label">The node label.</param>
+    internal void File(int number, string label) {
         // The words of one label are distinct, so every posting list stays strictly ascending.
         var words = CanopySearchFolding.Words(label);
         foreach (var word in words) {
@@ -56,8 +50,6 @@ internal sealed class CanopySearchIndex {
         if (words.Count > 0) {
             Post(CanopySearchFolding.LabelToken(label), number);
         }
-
-        return number;
     }
 
     private void Post(string word, int number) {
@@ -91,7 +83,8 @@ internal sealed class CanopySearchIndex {
         return shards;
     }
 
-    private int KindNumber(string? kind) {
+    /// <summary>Returns the position of a kind in <see cref="Kinds"/>, adding it on first use; -1 for no kind.</summary>
+    internal int KindNumber(string? kind) {
         if (kind == null) {
             return -1;
         }

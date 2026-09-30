@@ -76,7 +76,7 @@ public sealed class CanopyPage {
     /// <exception cref="InvalidOperationException">A node breaks a protocol rule, or the total is below the items shown.</exception>
     public string ToJson() {
         var writer = new CanopyJsonWriter(4096);
-        WriteJson(writer, static (node, w) => node.WriteJson(w, includeChildren: true));
+        WriteJson(writer, static (node, w) => node.WriteJson(w));
         return writer.ToString();
     }
 

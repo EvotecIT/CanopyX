@@ -160,7 +160,7 @@ public sealed class CanopyView {
         if (_source.Kind == CanopySourceKind.Inline) {
             writer.Name("roots").BeginArray();
             foreach (var root in Roots) {
-                root.WriteJson(writer, includeChildren: true);
+                root.WriteJson(writer);
             }
 
             writer.EndArray();
