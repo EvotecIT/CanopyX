@@ -327,10 +327,10 @@
     return text.slice(start, end);
   }
 
-  function rankLabel(label, query) {
+  /** Rank of a label against a folded, trimmed query: 0 when equal, 1 when the label starts with it, 2 otherwise. */
+  function rankLabel(label, foldedQuery) {
     const l = foldText(label);
-    const q = trimSeparators(foldText(query));
-    return l === q ? 0 : l.startsWith(q) ? 1 : 2;
+    return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
   }
 
   /** Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits. */

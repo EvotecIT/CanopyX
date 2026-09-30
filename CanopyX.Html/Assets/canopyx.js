@@ -327,10 +327,10 @@
     return text.slice(start, end);
   }
 
-  function rankLabel(label, query) {
+  /** Rank of a label against a folded, trimmed query: 0 when equal, 1 when the label starts with it, 2 otherwise. */
+  function rankLabel(label, foldedQuery) {
     const l = foldText(label);
-    const q = trimSeparators(foldText(query));
-    return l === q ? 0 : l.startsWith(q) ? 1 : 2;
+    return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
   }
 
   /** Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits. */
@@ -437,9 +437,12 @@
     return { items: items, total: all.length, next: end < all.length ? String(end) : null, offset: offset };
   }
 
+  /** Orders hits as the protocol ranks them. Each label is folded once, not once per comparison. */
   function rankHits(hits, query, limit) {
-    hits.sort((a, b) => rankLabel(a.label, query) - rankLabel(b.label, query) || collator.compare(a.label, b.label));
-    return { hits: hits.slice(0, limit), total: hits.length, truncated: hits.length > limit };
+    const folded = trimSeparators(foldText(query));
+    const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
+    ranked.sort((a, b) => a.rank - b.rank || collator.compare(a.hit.label, b.hit.label));
+    return { hits: ranked.slice(0, limit).map((item) => item.hit), total: hits.length, truncated: hits.length > limit };
   }
 
   function inlineSource(view) {
