@@ -4,7 +4,7 @@
 //   node bench/scroll-benchmark.mjs [--runs 5] [--cpu 1,4] [--rows 5000] [--runtime path/to/canopyx.js]
 //                                   [--style path/to/canopyx.css] [--channel msedge] [--label name] [--out file.json]
 //                                   [--pause-every 6 --pause-ms 700] [--host-columns status,changes,links,finding]
-//                                   [--host-api renderers|renderCell]
+//                                   [--host-api renderers|renderCell] [--host-share 0.2]
 //
 // Method (same as the D21 spike): a fresh browser per run, viewport 1680 x 950, 500 px wheel steps 16 ms apart, each
 // step awaited. Frames over 50 ms and 33 ms, the 95th percentile and the maximum frame time come from a
@@ -16,7 +16,8 @@
 // order restore) is measured too.
 // With --host-columns, a host draws those columns itself through the runtime's renderers option, which is what a
 // report with its own chips does; --host-api renderCell uses the single callback of runtimes before renderers, to
-// measure such a runtime (pass it with --runtime).
+// measure such a runtime (pass it with --runtime). --host-share 0.2 has the host draw a fifth of the rows and return
+// false for the others, as a report that draws chips only for some rows does.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 import os from "node:os";
@@ -41,8 +42,9 @@ const label = option("label", "current");
 const pauseEvery = Number(option("pause-every", "0"));
 const pauseMs = Number(option("pause-ms", "700"));
 const hostColumns = option("host-columns", "");
-const host = hostColumns ? { columns: hostColumns.split(","), api: option("host-api", "renderers") } : null;
+const host = hostColumns ? { columns: hostColumns.split(","), api: option("host-api", "renderers"), share: Number(option("host-share", "1")) } : null;
 if (host && host.api !== "renderers" && host.api !== "renderCell") throw new Error("--host-api is renderers or renderCell.");
+if (host && !(host.share >= 0 && host.share <= 1)) throw new Error("--host-share is a number from 0 to 1.");
 const outDir = path.join(here, "..", "bench-results");
 const out = path.resolve(option("out", path.join(outDir, "scroll-" + label + ".json")));
 

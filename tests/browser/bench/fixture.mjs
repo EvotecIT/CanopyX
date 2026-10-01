@@ -70,12 +70,14 @@ export function scrollView(groups, perGroup) {
 
 /**
  * Mounts the view with a host that draws some columns itself, the way a report draws its own chips. api is
- * "renderers" (one function per column) or "renderCell" (the single callback of runtimes before renderers).
+ * "renderers" (one function per column) or "renderCell" (the single callback of runtimes before renderers). With a
+ * share below 1, the host draws that share of the rows (chosen by node id) and leaves the others to the default.
  */
-function hostMount(columns, api) {
+function hostMount(columns, api, share) {
   return "(function () {"
-    + "var view = JSON.parse(document.getElementById('bench-view').textContent), columns = " + JSON.stringify(columns) + ";"
-    + "function draw(node, id, element) { var cell = node.cells && node.cells[id]; var chip = document.createElement('span'); chip.className = 'cx-badge';"
+    + "var view = JSON.parse(document.getElementById('bench-view').textContent), columns = " + JSON.stringify(columns) + ", share = " + JSON.stringify(share) + ";"
+    + "function picked(id) { var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 1000; return h < share * 1000; }"
+    + "function draw(node, id, element) { if (share < 1 && !picked(node.id)) return false; var cell = node.cells && node.cells[id]; var chip = document.createElement('span'); chip.className = 'cx-badge';"
     + " chip.textContent = cell && typeof cell === 'object' ? String(cell.text || cell.value) : String(cell == null ? '' : cell); element.appendChild(chip); return true; }"
     + "var options = { view: view };"
     + (api === "renderCell"
@@ -91,7 +93,7 @@ export function pageHtml(script, style, view, host) {
     + "</style><script>" + script + "</script></head><body class=\"cx-page\">";
   if (host) {
     return head + "<div class=\"cx-host\" id=\"bench\" data-cx-theme=\"light\"></div><script type=\"application/json\" id=\"bench-view\">" + json
-      + "</script><script>" + hostMount(host.columns, host.api) + "</script></body></html>";
+      + "</script><script>" + hostMount(host.columns, host.api, host.share == null ? 1 : host.share) + "</script></body></html>";
   }
   return head + "<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\">"
     + "<script type=\"application/json\" class=\"cx-config\">" + json + "</script></div></body></html>";
