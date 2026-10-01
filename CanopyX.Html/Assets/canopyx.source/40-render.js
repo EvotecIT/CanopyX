@@ -54,12 +54,12 @@
       // A cell scrolled to show a control it clipped starts at its first content again once focus leaves it.
       this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
-      // A link followed inside the page, or a fragment typed into the address bar, opens its row as on load.
-      this.onHash = () => {
-        if (this.initializing) this.linkChanged = true;
-        else this.openDeepLink();
-      };
+      // A link followed inside the page, a fragment typed into the address bar, Back and Forward, or a router that
+      // announces its own address change with popstate open their row as on load. A host that changes the address
+      // itself with replaceState or pushState, which fire neither event, calls readLocation.
+      this.onHash = () => { this.readLocation(); };
       global.addEventListener("hashchange", this.onHash);
+      global.addEventListener("popstate", this.onHash);
       // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.
       const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
       viewWidth();

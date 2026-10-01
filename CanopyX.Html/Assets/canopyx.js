@@ -1432,11 +1432,9 @@
       });
       this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
-      this.onHash = () => {
-        if (this.initializing) this.linkChanged = true;
-        else this.openDeepLink();
-      };
+      this.onHash = () => { this.readLocation(); };
       global.addEventListener("hashchange", this.onHash);
+      global.addEventListener("popstate", this.onHash);
       const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
       viewWidth();
       this.resizeObserver = new ResizeObserver(() => {
@@ -3561,6 +3559,7 @@
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
       global.removeEventListener("hashchange", this.onHash);
+      global.removeEventListener("popstate", this.onHash);
       if (this.linkOpening) this.linkOpening.abort();
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
       this.host.classList.remove("cx-pin-tree");
@@ -3585,6 +3584,15 @@
       const prefix = this.deepLinkName() + "=";
       const param = this.hashParams().find((p) => p.startsWith(prefix));
       return param ? param.slice(prefix.length) : null;
+    },
+
+    readLocation() {
+      if (this.destroyed) return Promise.resolve();
+      if (this.initializing) {
+        this.linkChanged = true;
+        return this.ready.then(() => undefined, () => undefined);
+      }
+      return this.openDeepLink();
     },
 
     async openDeepLink() {
@@ -3664,6 +3672,7 @@
       setTimeZone: (zone) => grid.setTimeZone(zone),
       getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
+      readLocation: () => grid.readLocation(),
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {
         if (grid.destroyed) return;

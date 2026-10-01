@@ -17,7 +17,8 @@
    *   element is the body of the row, which stays inside the visible width of the grid.
    *   With deepLink on the view, formatLink(path, node) returns the URL fragment for a selected row (without "#";
    *   null leaves the URL alone; with nothing selected path is empty and node null) and parseLink(fragment) returns
-   *   the id path it names, a promise of it, or null. The two are given together.
+   *   the id path it names, a promise of it, or null. The two are given together. The grid follows hashchange and
+   *   popstate; a host that writes the address itself with history.replaceState or pushState calls readLocation().
    */
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {
@@ -43,6 +44,8 @@
       setTimeZone: (zone) => grid.setTimeZone(zone),
       getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
+      // For a host that changed the address itself (history.replaceState or pushState fire no event).
+      readLocation: () => grid.readLocation(),
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {
         if (grid.destroyed) return;

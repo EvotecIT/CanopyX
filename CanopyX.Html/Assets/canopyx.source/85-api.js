@@ -303,6 +303,7 @@
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
       global.removeEventListener("hashchange", this.onHash);
+      global.removeEventListener("popstate", this.onHash);
       if (this.linkOpening) this.linkOpening.abort();
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
       this.host.classList.remove("cx-pin-tree");

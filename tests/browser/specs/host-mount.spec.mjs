@@ -112,3 +112,37 @@ test("the default link scheme also follows a change of the fragment", async ({ p
   await row(page, "r1").click();
   expect(await hash(page)).toBe("#other=1&cx.records=group/r1");
 });
+
+test("a fragment the host writes itself is opened through readLocation or popstate, and Back and Forward reopen theirs", async ({ page }) => {
+  await open(page);
+  const api = "document.querySelector('.cx-host').canopyx";
+  // replaceState and pushState fire no event: the grid sees the new fragment only when the host asks it to read it.
+  await page.evaluate(() => history.replaceState(history.state, "", "#record/r2"));
+  await page.waitForTimeout(100);
+  await expect(row(page, "r2")).toHaveCount(0);
+  expect(await page.evaluate(`${api}.readLocation().then(() => "done")`)).toBe("done");
+  await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
+  // Reading the same address again changes nothing.
+  await page.evaluate(`${api}.readLocation()`);
+  expect(await page.evaluate(() => window.selected)).toEqual(["r2"]);
+  // Entries the host pushed are opened again on Back and Forward, which dispatch popstate but no hashchange.
+  await page.evaluate(() => history.pushState(null, "", "#record/r1/rev/2"));
+  await page.evaluate(`${api}.readLocation()`);
+  await expect(row(page, "r1/rev/2")).toHaveAttribute("aria-selected", "true");
+  await page.evaluate(() => history.pushState(null, "", "#record/r1"));
+  await page.evaluate(`${api}.readLocation()`);
+  await expect(row(page, "r1")).toHaveAttribute("aria-selected", "true");
+  await page.evaluate(() => history.back());
+  await expect(row(page, "r1/rev/2")).toHaveAttribute("aria-selected", "true");
+  await page.evaluate(() => history.forward());
+  await expect(row(page, "r1")).toHaveAttribute("aria-selected", "true");
+  // A router that announces its own address changes with popstate, as history libraries do, is followed too.
+  await page.evaluate(() => {
+    history.replaceState(history.state, "", "#record/r1/rev/1");
+    window.dispatchEvent(new PopStateEvent("popstate", { state: history.state }));
+  });
+  await expect(row(page, "r1/rev/1")).toHaveAttribute("aria-selected", "true");
+  // A destroyed grid stops following the address, and readLocation resolves without doing anything.
+  await page.evaluate(`(() => { const grid = ${api}; grid.destroy(); window.destroyedRead = grid.readLocation(); })()`);
+  expect(await page.evaluate(() => window.destroyedRead.then(() => "resolved"))).toBe("resolved");
+});

@@ -23,6 +23,19 @@
     },
 
     /**
+     * Reads the address again and opens the row its fragment names, as when the fragment changes. While the view is
+     * still loading, the fragment is opened once it has loaded. Resolves when the row is open or the fragment names none.
+     */
+    readLocation() {
+      if (this.destroyed) return Promise.resolve();
+      if (this.initializing) {
+        this.linkChanged = true;
+        return this.ready.then(() => undefined, () => undefined);
+      }
+      return this.openDeepLink();
+    },
+
+    /**
      * Expands and selects the row the fragment names. A fragment this grid wrote or already opened is left alone,
      * and a newer fragment cancels the one that is still being opened.
      */
