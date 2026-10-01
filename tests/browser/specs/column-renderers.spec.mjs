@@ -69,6 +69,48 @@ test("a host draws the column it names, and the other columns reuse their cells 
   expect(after.callCount).toBe(after.rows);
 });
 
+test("rows a renderer leaves to the default keep their cells while rows are recycled", async ({ page }) => {
+  await open(page);
+  // The renderer draws one node and leaves the element it gets untouched for every other node.
+  await remount(page, `{ view: data, renderers: { state(node, element) {
+    if (node.id !== "n0") return false;
+    const chip = document.createElement("span");
+    chip.className = "host-chip";
+    chip.textContent = "DRAWN";
+    element.appendChild(chip);
+    return true;
+  } } }`);
+  await nextFrames(page);
+  await expect(page.locator('[data-cx-id="n0"] .host-chip')).toHaveText("DRAWN");
+  await expect(page.locator('[data-cx-id="n1"] [aria-colindex="2"]')).toHaveText("ok");
+  await page.evaluate(() => {
+    const cells = [...document.querySelectorAll(".cx-row [aria-colindex=\"2\"]")];
+    window.seen = new WeakSet(cells);
+    window.before = cells.length;
+    document.querySelector(".cx-grid").scrollTop = 6000;
+  });
+  await nextFrames(page);
+  const after = await page.evaluate(() => {
+    const cells = [...document.querySelectorAll(".cx-row [aria-colindex=\"2\"]")];
+    const late = cells.find((cell) => Number(cell.closest(".cx-row").getAttribute("data-cx-id").slice(1)) % 3 === 0);
+    return { reused: cells.filter((cell) => window.seen.has(cell)).length, before: window.before, chips: document.querySelectorAll(".host-chip").length,
+      texts: cells.every((cell) => /^(ok|late)$/.test(cell.textContent)), late: late && late.textContent, lateTone: late && late.classList.contains("cx-tone-warning") };
+  });
+  // Every cell that showed a default painting before is still there; only the row that showed n0 got a new cell.
+  expect(after.before).toBeGreaterThan(20);
+  expect(after.reused).toBe(after.before - 1);
+  expect(after.chips).toBe(0);
+  expect(after.texts).toBe(true);
+  expect(after.late).toBe("late");
+  expect(after.lateTone).toBe(true);
+  // Back at the top the renderer draws n0 again, without the default text, and its neighbours keep the default.
+  await page.evaluate(() => { document.querySelector(".cx-grid").scrollTop = 0; });
+  await nextFrames(page);
+  await expect(page.locator('[data-cx-id="n0"] [aria-colindex="2"]')).toHaveText("DRAWN");
+  await expect(page.locator('[data-cx-id="n0"] [aria-colindex="2"]')).not.toHaveClass(/cx-tone-warning/);
+  await expect(page.locator('[data-cx-id="n3"] [aria-colindex="2"]')).toHaveText("late");
+});
+
 test("a renderer that returns false leaves the default painting, tone included", async ({ page }) => {
   await open(page);
   await remount(page, "{ view: data, renderers: { state(node, element) { element.classList.add('host-mark'); return node.id === 'n1'; } } }");

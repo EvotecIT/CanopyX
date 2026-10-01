@@ -1857,7 +1857,7 @@
       }
       rowEl._cells = this.cols.map((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
-        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null };
+        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
         cell.className = slot.base;
         if (i === 0) {
           slot.indent = cell.appendChild(h("span", "cx-indent"));
@@ -1967,32 +1967,11 @@
 
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
-      const render = column.render;
-      if (render) {
-        slot.cell.className = slot.base;
-        slot.cell.removeAttribute("title");
-        slot.cls = slot.base;
-        slot.title = null;
-        toneColors(slot.cell, NO_TONE);
-        if (slot.content === slot.cell) {
-          const old = slot.cell;
-          const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
-          old.replaceWith(fresh);
-          slot.cell = fresh;
-          slot.content = fresh;
-        } else {
-          const fresh = h("span", "cx-content");
-          slot.content.replaceWith(fresh);
-          slot.content = fresh;
-        }
-        slot.badges = [];
-        const drawn = render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
-        quietControls(slot.content);
-        if (drawn) {
-          return;
-        }
-        slot.content.appendChild(slot.textSpan);
+      const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
+      if (hosted === "host") {
+        return;
       }
+      const decorated = hosted === "decorated";
       const text = cellText(value, column, this.fmt);
       if (slot.text.data !== text) {
         slot.text.data = text;
@@ -2001,7 +1980,7 @@
       const tone = object ? toneOf(value.tone) : NO_TONE;
       const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
-        if (render) {
+        if (decorated) {
           if (tone.cls) slot.cell.className += tone.cls;
         } else {
           slot.cell.className = cls;
@@ -2009,7 +1988,7 @@
         slot.cls = cls;
       }
       toneColors(slot.cell, tone);
-      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.fmt);
+      const title = object && value.title ? value.title : decorated ? null : otherZone(value, column, this.fmt);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -2068,12 +2047,67 @@
     },
 
     cell(rowEl, index, width, kind) {
+      const cell = this.newCell(index, width, kind);
+      rowEl.appendChild(cell);
+      return cell;
+    },
+
+    newCell(index, width, kind) {
       const cell = h("div", "cx-cell" + (kind ? " cx-kind-" + kind : ""));
       cell.setAttribute("role", "gridcell");
       cell.setAttribute("aria-colindex", String(index + 1));
       cell.style.width = width + "px";
-      rowEl.appendChild(cell);
       return cell;
+    }
+  });
+
+
+  function attributeShape(element) {
+    let shape = "";
+    for (const attribute of element.attributes) {
+      shape += attribute.name + "=" + attribute.value + "\n";
+    }
+    return shape;
+  }
+
+  Object.assign(TreeGrid.prototype, {
+    paintHostSlot(slot, node, column, index, w) {
+      const tree = slot.content !== slot.cell;
+      const previous = slot.content;
+      const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
+      const shape = attributeShape(fresh);
+      previous.replaceWith(fresh);
+      this.setSlotContent(slot, fresh, tree);
+      const drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+      const untouched = !drawn && !fresh.firstChild && attributeShape(fresh) === shape;
+      if (untouched && slot.mode === "default") {
+        fresh.replaceWith(previous);
+        this.setSlotContent(slot, previous, tree);
+        return "default";
+      }
+      if (tree) {
+        slot.cell.className = slot.base;
+        slot.cell.removeAttribute("title");
+        toneColors(slot.cell, NO_TONE);
+      }
+      slot.cls = slot.base;
+      slot.title = null;
+      slot.badges = [];
+      slot.mode = drawn ? "host" : untouched ? "default" : "decorated";
+      if (!untouched) {
+        quietControls(fresh);
+      }
+      if (!drawn) {
+        fresh.appendChild(slot.textSpan);
+      }
+      return slot.mode;
+    },
+
+    setSlotContent(slot, element, tree) {
+      slot.content = element;
+      if (!tree) {
+        slot.cell = element;
+      }
     }
   });
 

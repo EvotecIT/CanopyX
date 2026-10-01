@@ -3,8 +3,8 @@
   // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
   // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
   // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
-  // (node, detail, status) or the columns change. A column the host draws itself (options.renderers) is the exception:
-  // its cell is rebuilt on every paint, and only that column pays for it.
+  // (node, detail, status) or the columns change. A column the host draws itself (options.renderers) gives its renderer
+  // a fresh element on every paint (46-host-cells.js); rows the renderer leaves to the default keep the reused cell.
   function setAttr(element, name, value) {
     const cache = element._attrs || (element._attrs = {});
     if (cache[name] === value) {
@@ -78,7 +78,7 @@
       }
       rowEl._cells = this.cols.map((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
-        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null };
+        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
         cell.className = slot.base;
         if (i === 0) {
           slot.indent = cell.appendChild(h("span", "cx-indent"));
@@ -197,34 +197,12 @@
 
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
-      const render = column.render;
-      if (render) {
-        // A host-rendered cell owns its content, so it is rebuilt on every paint, from a clean cell.
-        slot.cell.className = slot.base;
-        slot.cell.removeAttribute("title");
-        slot.cls = slot.base;
-        slot.title = null;
-        toneColors(slot.cell, NO_TONE);
-        if (slot.content === slot.cell) {
-          const old = slot.cell;
-          const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
-          old.replaceWith(fresh);
-          slot.cell = fresh;
-          slot.content = fresh;
-        } else {
-          const fresh = h("span", "cx-content");
-          slot.content.replaceWith(fresh);
-          slot.content = fresh;
-        }
-        slot.badges = [];
-        const drawn = render(node, slot.content, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
-        // The grid is one Tab stop; the host's controls in the cell are reached with cell navigation.
-        quietControls(slot.content);
-        if (drawn) {
-          return;
-        }
-        slot.content.appendChild(slot.textSpan);
+      // "host" when the renderer drew the cell, "decorated" when it changed the element and left the text to the default.
+      const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
+      if (hosted === "host") {
+        return;
       }
+      const decorated = hosted === "decorated";
       const text = cellText(value, column, this.fmt);
       if (slot.text.data !== text) {
         slot.text.data = text;
@@ -233,7 +211,7 @@
       const tone = object ? toneOf(value.tone) : NO_TONE;
       const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
-        if (render) {
+        if (decorated) {
           // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
           if (tone.cls) slot.cell.className += tone.cls;
         } else {
@@ -243,7 +221,7 @@
       }
       toneColors(slot.cell, tone);
       // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
-      const title = object && value.title ? value.title : render ? null : otherZone(value, column, this.fmt);
+      const title = object && value.title ? value.title : decorated ? null : otherZone(value, column, this.fmt);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -304,11 +282,17 @@
     },
 
     cell(rowEl, index, width, kind) {
+      const cell = this.newCell(index, width, kind);
+      rowEl.appendChild(cell);
+      return cell;
+    },
+
+    /** A grid cell that is not in a row yet. */
+    newCell(index, width, kind) {
       const cell = h("div", "cx-cell" + (kind ? " cx-kind-" + kind : ""));
       cell.setAttribute("role", "gridcell");
       cell.setAttribute("aria-colindex", String(index + 1));
       cell.style.width = width + "px";
-      rowEl.appendChild(cell);
       return cell;
     }
   });
