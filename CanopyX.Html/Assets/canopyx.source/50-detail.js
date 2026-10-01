@@ -13,13 +13,7 @@
       if (cell.title) {
         element.title = cell.title;
       }
-      (cell.badges || []).forEach((badge) => {
-        const span = h("span");
-        applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
-        setText(span, badge.text);
-        if (badge.title) span.title = badge.title;
-        element.appendChild(span);
-      });
+      (cell.badges || []).forEach((badge) => element.appendChild(badgeElement(badge)));
     }
     return element;
   }

@@ -133,6 +133,16 @@ await grid.expandPath(["projects", "projects/plans"]);
 // Pass { signal: controller.signal } to cancel navigation before selection and focus.
 ```
 
+A renderer that draws badges or chips uses `CanopyX.badge({ text, tone, title })`, which returns the badge element the grid itself draws (the `cx-badge` class, the classes of a named tone, and for a host tone its `--cx-tone-<name>` colours), so a host cell matches the cells CanopyX paints:
+
+```js
+renderers: { finding: (node, element) => {
+  if (!node.data || !node.data.severity) return false;
+  element.append(CanopyX.badge({ text: node.data.severity, tone: node.data.severity.toLowerCase() }), " " + node.label);
+  return true;
+} }
+```
+
 A renderer gets the node, a fresh element to fill, and `{ column, level, expanded, index }`. Name only the columns the host really draws: a cell the renderer draws (returns true) or decorates is rebuilt whenever its row is painted, while the other columns, and the rows where the renderer returns false without touching the element, reuse their cells, which is what keeps scrolling smooth on slow machines.
 
 A page that embeds a fragment from `ToHtmlFragment` hands it the same options before the runtime mounts it, from a script that runs before the page has loaded:

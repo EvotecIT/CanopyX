@@ -145,6 +145,8 @@
     configure: configure,
     mount: (root) => mount(root, false),
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
+    // A badge ({ text, tone?, title? }) drawn as the grid draws one, for cells and details a host renderer draws.
+    badge: hostBadge,
     // The English texts and their names, for a host that builds its translations from them.
     labels: DEFAULT_LABELS
   });

@@ -71,3 +71,35 @@ test("a cell that changes from a host tone to a shipped one drops the host colou
   expect(await cell.evaluate((element) => element.style.getPropertyValue("--cx-t"))).toBe("");
   expect(await style(cell, "color")).toBe(await style(stateCell(page, "built-in"), "color"));
 });
+
+test("CanopyX.badge draws a badge in a host renderer as the grid draws one, host tones included", async ({ page }) => {
+  await open(page);
+  // The renderer draws the node's own badges with the exported helper into the state column.
+  await page.evaluate(() => {
+    const host = document.querySelector(".cx-host");
+    const data = host.canopyx.view;
+    host.canopyx.destroy();
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { state(node, element) {
+      if (!node.badges) return false;
+      node.badges.forEach((badge) => element.appendChild(CanopyX.badge(Object.assign({ title: "from the host" }, badge))));
+      return true;
+    } } });
+    return window.api.ready;
+  });
+  await nextFrames(page);
+  const look = (locator) => locator.evaluate((element) => {
+    const computed = getComputedStyle(element);
+    return { className: element.className, text: element.textContent, color: computed.color, background: computed.backgroundColor,
+      radius: computed.borderRadius, padding: computed.padding, font: computed.fontSize };
+  });
+  for (const tone of ["critical", "maintenance"]) {
+    const drawn = page.locator('[data-cx-id="critical"] [aria-colindex="2"] .cx-badge.cx-tone-' + tone);
+    const painted = page.locator('[data-cx-id="critical"] [aria-colindex="1"] .cx-badge.cx-tone-' + tone);
+    expect(await look(drawn)).toEqual(await look(painted));
+    await expect(drawn).toHaveAttribute("title", "from the host");
+  }
+  expect(await look(page.locator('[data-cx-id="built-in"] [aria-colindex="2"] .cx-badge'))).toEqual(await look(page.locator('[data-cx-id="built-in"] [aria-colindex="1"] .cx-badge')));
+  // A badge without a tone is neutral, and a badge without text is a mistake the host hears about at once.
+  expect(await page.evaluate(() => CanopyX.badge({ text: "plain" }).className)).toBe("cx-badge cx-tone-neutral");
+  expect(await page.evaluate(() => { try { CanopyX.badge({ tone: "success" }); return null; } catch (e) { return e.message; } })).toContain("badge needs");
+});

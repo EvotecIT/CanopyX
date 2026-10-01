@@ -2062,6 +2062,22 @@
   });
 
 
+  function badgeElement(badge) {
+    const span = h("span");
+    applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
+    setText(span, badge.text);
+    if (badge.title) span.title = badge.title;
+    return span;
+  }
+
+  function hostBadge(badge) {
+    if (!badge || typeof badge !== "object" || typeof badge.text !== "string" ||
+        (badge.tone != null && typeof badge.tone !== "string") || (badge.title != null && typeof badge.title !== "string")) {
+      throw new Error("CanopyX: badge needs { text, tone?, title? } with string values.");
+    }
+    return badgeElement(badge);
+  }
+
   function attributeShape(element) {
     let shape = "";
     for (const attribute of element.attributes) {
@@ -2124,13 +2140,7 @@
       if (cell.title) {
         element.title = cell.title;
       }
-      (cell.badges || []).forEach((badge) => {
-        const span = h("span");
-        applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
-        setText(span, badge.text);
-        if (badge.title) span.title = badge.title;
-        element.appendChild(span);
-      });
+      (cell.badges || []).forEach((badge) => element.appendChild(badgeElement(badge)));
     }
     return element;
   }
@@ -3747,6 +3757,7 @@
     configure: configure,
     mount: (root) => mount(root, false),
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
+    badge: hostBadge,
     labels: DEFAULT_LABELS
   });
 

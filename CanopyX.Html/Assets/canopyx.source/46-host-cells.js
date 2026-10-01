@@ -9,6 +9,27 @@
   //   before is put back, so rows a renderer leaves to the default keep their cell, text node, and badges while rows
   //   are recycled, as the columns without a renderer do.
 
+  /**
+   * A badge as the runtime draws one: the "cx-badge" class, the classes of its tone, the theme colours of a host tone
+   * (--cx-tone-<name> and --cx-tone-<name>-bg), its text, and its tooltip. Exported as CanopyX.badge for renderers.
+   */
+  function badgeElement(badge) {
+    const span = h("span");
+    applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
+    setText(span, badge.text);
+    if (badge.title) span.title = badge.title;
+    return span;
+  }
+
+  /** CanopyX.badge: checks what a host passes, then draws the badge as the runtime does. */
+  function hostBadge(badge) {
+    if (!badge || typeof badge !== "object" || typeof badge.text !== "string" ||
+        (badge.tone != null && typeof badge.tone !== "string") || (badge.title != null && typeof badge.title !== "string")) {
+      throw new Error("CanopyX: badge needs { text, tone?, title? } with string values.");
+    }
+    return badgeElement(badge);
+  }
+
   /** The attributes of an element as one string, to tell whether a renderer changed the element it was given. */
   function attributeShape(element) {
     let shape = "";
