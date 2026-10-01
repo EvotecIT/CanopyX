@@ -146,3 +146,28 @@ test("a fragment the host writes itself is opened through readLocation or popsta
   await page.evaluate(`(() => { const grid = ${api}; grid.destroy(); window.destroyedRead = grid.readLocation(); })()`);
   expect(await page.evaluate(() => window.destroyedRead.then(() => "resolved"))).toBe("resolved");
 });
+
+test("readLocation waits for a fragment that is already being opened", async ({ page }) => {
+  // The lookup takes a while, so the row is still being opened when the host asks.
+  await open(page, { script: hostScript.replace("setTimeout(resolve, 20)", "setTimeout(resolve, 300)") });
+  const selected = await page.evaluate(async () => {
+    history.replaceState(history.state, "", "#record/r2");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    const grid = document.querySelector(".cx-host").canopyx;
+    await grid.readLocation();
+    return grid.getSelected().map((node) => node.id);
+  });
+  expect(selected).toEqual(["r2"]);
+});
+
+test("a fragment navigation that fires popstate and hashchange is read once, also when it opens no row", async ({ page }) => {
+  // The lookup answers at once, so a fragment that names no row fails before the hashchange that follows popstate.
+  await open(page, { script: hostScript.replace("async parseLink(fragment) {", "async parseLink(fragment) { (window.parsed = window.parsed || []).push(fragment);")
+    .replace("await new Promise((resolve) => setTimeout(resolve, 20));", "") });
+  await page.evaluate(() => { location.hash = "#record/missing"; });
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.parsed.filter((fragment) => fragment === "record/missing").length)).toBe(1);
+  // The same fragment can still be tried again on request, once whatever was missing is there.
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.readLocation());
+  expect(await page.evaluate(() => window.parsed.filter((fragment) => fragment === "record/missing").length)).toBe(2);
+});

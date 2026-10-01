@@ -143,7 +143,7 @@ renderers: { finding: (node, element) => {
 } }
 ```
 
-A renderer gets the node, a fresh element to fill, and `{ column, level, expanded, index }`. Name only the columns the host really draws: a cell the renderer draws (returns true) or decorates is rebuilt whenever its row is painted, while the other columns, and the rows where the renderer returns false without touching the element, reuse their cells, which is what keeps scrolling smooth on slow machines.
+A renderer gets the node, a fresh element to fill, and `{ column, level, expanded, index }`. Name only the columns the host really draws: a cell the renderer draws (returns true) or decorates is rebuilt whenever its row is painted, while the other columns, and the rows where the renderer returns false without adding children or attributes to the element (which is then dropped, so put listeners on content you add, or on the grid), reuse their cells, which is what keeps scrolling smooth on slow machines.
 
 A page that embeds a fragment from `ToHtmlFragment` hands it the same options before the runtime mounts it, from a script that runs before the page has loaded:
 

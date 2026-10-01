@@ -1432,7 +1432,12 @@
       });
       this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
-      this.onHash = () => { this.readLocation(); };
+      this.onHash = (e) => {
+        const href = global.location.href;
+        const last = this.locationEvent;
+        this.locationEvent = last && last.href === href && last.type !== e.type ? null : { href: href, type: e.type };
+        if (this.locationEvent) this.readLocation();
+      };
       global.addEventListener("hashchange", this.onHash);
       global.addEventListener("popstate", this.onHash);
       const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
@@ -2092,7 +2097,14 @@
       const shape = attributeShape(fresh);
       previous.replaceWith(fresh);
       this.setSlotContent(slot, fresh, tree);
-      const drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+      let drawn;
+      try {
+        drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+      } catch (e) {
+        if (fresh.parentNode) fresh.replaceWith(previous);
+        this.setSlotContent(slot, previous, tree);
+        throw e;
+      }
       const untouched = !drawn && !fresh.firstChild && attributeShape(fresh) === shape;
       if (untouched && slot.mode === "default") {
         fresh.replaceWith(previous);
@@ -3595,15 +3607,24 @@
       return this.openDeepLink();
     },
 
-    async openDeepLink() {
+    openDeepLink() {
       const link = this.view.deepLink ? this.currentLink() : null;
       if (link == null || link === this.link) {
         if (link == null) this.link = null;
-        return;
+        return link != null && this.linkTask && this.linkTask.link === link ? this.linkTask.promise : Promise.resolve();
       }
       this.link = link;
       if (this.linkOpening) this.linkOpening.abort();
       const current = this.linkOpening = new AbortController();
+      const promise = this.openLink(link, current);
+      this.linkTask = { link: link, promise: promise };
+      promise.then(() => {
+        if (this.linkTask && this.linkTask.promise === promise) this.linkTask = null;
+      });
+      return promise;
+    },
+
+    async openLink(link, current) {
       try {
         const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
         if (Array.isArray(ids) && ids.length && !this.destroyed && !current.signal.aborted &&
@@ -3646,6 +3667,7 @@
         global.location.hash = hash;
       }
       this.link = this.currentLink();
+      this.locationEvent = null;
     }
   });
 

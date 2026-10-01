@@ -111,6 +111,52 @@ test("rows a renderer leaves to the default keep their cells while rows are recy
   await expect(page.locator('[data-cx-id="n3"] [aria-colindex="2"]')).toHaveText("late");
 });
 
+test("the tree column keeps its content for rows its renderer leaves to the default, and is cleaned when the host draws", async ({ page }) => {
+  await open(page);
+  await remount(page, `{ view: data, renderers: { name(node, element) {
+    if (node.id !== "n0") return false;
+    element.textContent = "HOST";
+    return true;
+  } } }`);
+  await nextFrames(page);
+  await expect(page.locator('[data-cx-id="n0"] [aria-colindex="1"] .cx-content')).toHaveText("HOST");
+  await page.evaluate(() => {
+    window.seen = new WeakSet(document.querySelectorAll(".cx-row [aria-colindex=\"1\"] .cx-content"));
+    window.before = document.querySelectorAll(".cx-row").length;
+    document.querySelector(".cx-grid").scrollTop = 6000;
+  });
+  await nextFrames(page);
+  const after = await page.evaluate(() => {
+    const cells = [...document.querySelectorAll(".cx-row [aria-colindex=\"1\"]")];
+    return { reused: cells.filter((cell) => window.seen.has(cell.querySelector(".cx-content"))).length, before: window.before,
+      labels: cells.every((cell) => /^Node \d+$/.test(cell.querySelector(".cx-content").textContent)),
+      shape: cells.every((cell) => cell.querySelector(".cx-indent") && cell.querySelector(".cx-exp") && cell.querySelectorAll(".cx-content").length === 1) };
+  });
+  expect(after.reused).toBe(after.before - 1);
+  expect(after.labels).toBe(true);
+  expect(after.shape).toBe(true);
+});
+
+test("a renderer that throws once leaves the cell as it was for the next nodes", async ({ page }) => {
+  await open(page);
+  await remount(page, `{ view: data, renderers: { state(node) {
+    if (window.failNext) { window.failNext = false; throw new Error("host failure"); }
+    return false;
+  } } }`);
+  await nextFrames(page);
+  await expect(page.locator('[data-cx-id="n1"] [aria-colindex="2"]')).toHaveText("ok");
+  // One paint fails; the rows painted after it, recycled for other nodes, still show their default text.
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.evaluate(() => { window.failNext = true; window.api.refresh(); });
+  await nextFrames(page);
+  await page.evaluate(() => { document.querySelector(".cx-grid").scrollTop = 6000; });
+  await nextFrames(page);
+  const texts = await page.evaluate(() => [...document.querySelectorAll(".cx-row [aria-colindex=\"2\"]")].map((cell) => cell.textContent));
+  expect(texts.length).toBeGreaterThan(20);
+  expect(texts.every((text) => text === "ok" || text === "late")).toBe(true);
+});
+
 test("a renderer that returns false leaves the default painting, tone included", async ({ page }) => {
   await open(page);
   await remount(page, "{ view: data, renderers: { state(node, element) { element.classList.add('host-mark'); return node.id === 'n1'; } } }");

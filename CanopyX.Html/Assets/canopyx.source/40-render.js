@@ -57,7 +57,14 @@
       // A link followed inside the page, a fragment typed into the address bar, Back and Forward, or a router that
       // announces its own address change with popstate open their row as on load. A host that changes the address
       // itself with replaceState or pushState, which fire neither event, calls readLocation.
-      this.onHash = () => { this.readLocation(); };
+      this.onHash = (e) => {
+        // Following a fragment fires popstate and then hashchange for the same address: one navigation, read once, so
+        // a fragment that fails to open is not tried and announced twice.
+        const href = global.location.href;
+        const last = this.locationEvent;
+        this.locationEvent = last && last.href === href && last.type !== e.type ? null : { href: href, type: e.type };
+        if (this.locationEvent) this.readLocation();
+      };
       global.addEventListener("hashchange", this.onHash);
       global.addEventListener("popstate", this.onHash);
       // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.

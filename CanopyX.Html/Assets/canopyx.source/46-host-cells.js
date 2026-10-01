@@ -7,7 +7,8 @@
   //   default text, tone, and badges are painted after the decoration;
   // - it left the element as it was and returned false: the element is dropped and the cell the runtime painted
   //   before is put back, so rows a renderer leaves to the default keep their cell, text node, and badges while rows
-  //   are recycled, as the columns without a renderer do.
+  //   are recycled, as the columns without a renderer do. Only children and attributes the renderer leaves on the
+  //   element when it returns count as changes; listeners and properties do not.
 
   /**
    * A badge as the runtime draws one: the "cx-badge" class, the classes of its tone, the theme colours of a host tone
@@ -48,7 +49,15 @@
       const shape = attributeShape(fresh);
       previous.replaceWith(fresh);
       this.setSlotContent(slot, fresh, tree);
-      const drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+      let drawn;
+      try {
+        drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+      } catch (e) {
+        // The cell keeps what it showed, so a renderer that fails once does not leave it empty for later nodes.
+        if (fresh.parentNode) fresh.replaceWith(previous);
+        this.setSlotContent(slot, previous, tree);
+        throw e;
+      }
       const untouched = !drawn && !fresh.firstChild && attributeShape(fresh) === shape;
       if (untouched && slot.mode === "default") {
         fresh.replaceWith(previous);

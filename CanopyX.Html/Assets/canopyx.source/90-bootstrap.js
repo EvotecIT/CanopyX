@@ -12,7 +12,8 @@
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
    *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling, and so do the rows
-   *   where a renderer returns false without changing the element it was given.
+   *   where a renderer returns false without adding children or attributes to the element it was given (then that
+   *   element is dropped, with any listener put on it: put listeners on content the renderer adds, or on the grid).
    *   renderDetail(node, element) returns true when it drew the detail row;
    *   element is the body of the row, which stays inside the visible width of the grid.
    *   With deepLink on the view, formatLink(path, node) returns the URL fragment for a selected row (without "#";

@@ -24,7 +24,8 @@
 
     /**
      * Reads the address again and opens the row its fragment names, as when the fragment changes. While the view is
-     * still loading, the fragment is opened once it has loaded. Resolves when the row is open or the fragment names none.
+     * still loading, the fragment is opened once it has loaded. Resolves when the row is open or the fragment names none,
+     * also when that fragment was already being opened; a call whose fragment a newer one replaces settles without it.
      */
     readLocation() {
       if (this.destroyed) return Promise.resolve();
@@ -39,15 +40,26 @@
      * Expands and selects the row the fragment names. A fragment this grid wrote or already opened is left alone,
      * and a newer fragment cancels the one that is still being opened.
      */
-    async openDeepLink() {
+    openDeepLink() {
       const link = this.view.deepLink ? this.currentLink() : null;
       if (link == null || link === this.link) {
         if (link == null) this.link = null;
-        return;
+        // The same fragment may still be opening; whoever asks again waits for it.
+        return link != null && this.linkTask && this.linkTask.link === link ? this.linkTask.promise : Promise.resolve();
       }
       this.link = link;
       if (this.linkOpening) this.linkOpening.abort();
       const current = this.linkOpening = new AbortController();
+      const promise = this.openLink(link, current);
+      this.linkTask = { link: link, promise: promise };
+      promise.then(() => {
+        if (this.linkTask && this.linkTask.promise === promise) this.linkTask = null;
+      });
+      return promise;
+    },
+
+    /** Opens the row of one fragment; never rejects, a failure is announced. */
+    async openLink(link, current) {
       try {
         const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
         // A host's parseLink returns null for a fragment that does not name a row of this view.
@@ -97,5 +109,6 @@
       }
       // Read back, because the browser may have encoded what was written.
       this.link = this.currentLink();
+      this.locationEvent = null;
     }
   });
