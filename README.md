@@ -53,7 +53,7 @@ A consumer with a solution or build list of its own adds the two CanopyX project
 ## Tree Grid Features
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.
-- Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM.
+- Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM. Large logical heights map to a bounded native scrollbar, keeping every loaded row reachable through scrolling, keyboard navigation, and saved anchors.
 - Columns with per-level sort, resize, and hide, and a tree column that can stay pinned while the others scroll; dates in UTC or the reader's time zone, switchable at run time.
 - Search that returns id paths and expands the tree to the match, optionally limited to the node kinds worth finding; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
 - "Only matching" filters that keep the ancestors of matching rows.
@@ -69,6 +69,8 @@ JavaScript hosts can save a view with `const state = api.getState()` and restore
 Use `await api.reload()` to reread roots, or `await api.reload(parentId, { signal })` to reread a loaded parent's children. Reload reads through the range already loaded, validates the replacement before applying it, and preserves surviving selection, expansion, focus, and scroll position. A newer reload supersedes an older one. Failed validation retains the old data; cancellation returns `false`. `api.refresh()` repaints the current nodes, and `api.refreshCounts()` updates rollup values and child counts.
 
 The generated `live-records.html` example replaces an inline snapshot and provides save and restore controls for the view. An inline host can assign a new array to `api.view.roots` and then call `await api.reload()`; stable node IDs retain the reader's selection and open branches.
+
+The generated `long-document.html` example loads 20,000 tall sections and provides jumps and saved positions across their full range. The height mapping preserves each section's size; it does not load additional pages or bound the memory of rows the host has already supplied.
 
 Sorting an inline list orders its complete sibling array before choosing the loaded page. Selected and expanded identities remain available when they move outside that prefix. `retainedNodeLimit` is a JavaScript host option, defaulting to 1,024 nodes, that bounds unpinned wrappers retained after inline reordering. Selection, expansion, focus, anchors, and pending operations pin their subtrees. The host's inline arrays remain unchanged. For remote and sidecar lists this API orders loaded siblings; ordering the complete dataset remains the host's responsibility.
 

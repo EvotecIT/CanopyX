@@ -173,13 +173,14 @@
     },
 
     captureScrollAnchor() {
-      const index = this.rowAt(this.grid.scrollTop);
+      const top = this.logicalTop();
+      const index = this.rowAt(top);
       const w = this.rows[Math.min(index, this.rows.length - 1)];
-      return w && !w.status ? { id: w.key, offset: this.grid.scrollTop - this.tops[this.indexOf(w)] } : null;
+      return w && !w.status ? { id: w.key, offset: top - this.tops[this.indexOf(w)] } : null;
     },
 
     restoreScrollAnchor(anchor) {
       const w = anchor && this.keyMap.get(anchor.id), index = this.indexOf(w);
-      if (index >= 0) this.grid.scrollTop = Math.max(0, this.tops[index] + anchor.offset);
+      if (index >= 0) this.setLogicalTop(Math.max(0, this.tops[index] + anchor.offset));
     }
   });

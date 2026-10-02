@@ -124,6 +124,7 @@
 
     /** Rebuilds the offset table from the row heights; hpx is a row's height in pixels. */
     retop() {
+      const top = this.logicalTop();
       const rows = this.rows;
       const tops = new Array(rows.length + 1);
       let y = 0;
@@ -135,7 +136,7 @@
       tops[rows.length] = y;
       this.tops = tops;
       this.total = y;
-      this.canvas.style.height = y + "px";
+      this.syncScrollRange(top);
     },
 
     applySort(parent, deep) {

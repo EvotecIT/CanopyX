@@ -5,6 +5,7 @@
 //                                   [--style path/to/canopyx.css] [--channel msedge] [--label name] [--out file.json]
 //                                   [--pause-every 6 --pause-ms 700] [--host-columns status,changes,links,finding]
 //                                   [--host-api renderers|renderCell] [--host-share 0.2]
+//                                   [--profile-dir path] (diagnostic runs; do not compare their timings)
 //
 // Method (same as the D21 spike): a fresh browser per run, viewport 1680 x 950, 500 px wheel steps 16 ms apart, each
 // step awaited. Frames over 50 ms and 33 ms, the 95th percentile and the maximum frame time come from a
@@ -39,6 +40,7 @@ const runtime = path.resolve(option("runtime", path.join(repo, "CanopyX.Html/Ass
 const stylesheet = path.resolve(option("style", path.join(repo, "CanopyX.Html/Assets/canopyx.css")));
 const channel = option("channel", process.env.CANOPYX_BROWSER_CHANNEL || undefined);
 const label = option("label", "current");
+const profileDir = option("profile-dir", null);
 const pauseEvery = Number(option("pause-every", "0"));
 const pauseMs = Number(option("pause-ms", "700"));
 const hostColumns = option("host-columns", "");
@@ -53,7 +55,7 @@ function median(values) {
   return sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : null;
 }
 
-async function scrollOnce(pageUrl, cpu) {
+async function scrollOnce(pageUrl, cpu, run) {
   const browser = await chromium.launch({ channel: channel, headless: true });
   try {
     const context = await browser.newContext({ viewport: { width: 1680, height: 950 }, deviceScaleFactor: 1 });
@@ -123,6 +125,10 @@ async function scrollOnce(pageUrl, cpu) {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     const started = Date.now();
     const startedAt = await page.evaluate(() => window.__beginCapture());
+    if (profileDir) {
+      await cdp.send("Profiler.enable");
+      await cdp.send("Profiler.start");
+    }
     let steps = 0;
     for (;;) {
       await page.mouse.wheel(0, 500);
@@ -164,6 +170,11 @@ async function scrollOnce(pageUrl, cpu) {
         wheelSteps: wheelSteps
       };
     }, { wheelSteps: steps, startedAt: startedAt });
+    if (profileDir) {
+      const { profile } = await cdp.send("Profiler.stop");
+      fs.mkdirSync(profileDir, { recursive: true });
+      fs.writeFileSync(path.join(profileDir, "scroll-cpu" + cpu + "-run" + (run + 1) + ".cpuprofile"), JSON.stringify(profile));
+    }
     if (errors.length) {
       throw new Error("Scroll benchmark encountered page errors: " + errors.join("; "));
     }
@@ -182,7 +193,7 @@ const report = { label: label, host: host, pauseEvery: pauseEvery, pauseMs: paus
 for (const cpu of cpus) {
   const all = [];
   for (let run = 0; run < runs; run++) {
-    const result = await scrollOnce(pageUrl, cpu);
+    const result = await scrollOnce(pageUrl, cpu, run);
     all.push(result);
     process.stdout.write(label + " cpu" + cpu + " run " + (run + 1) + ": frames " + result.frames + ", over 50 ms " + result.over50 + ", over 33 ms " + result.over33 + ", p95 " + (result.p95 || 0).toFixed(1) + " ms, blank " + result.blank + "/" + result.samples + (result.errors.length ? ", errors " + result.errors.join("; ") : "") + "\n");
   }

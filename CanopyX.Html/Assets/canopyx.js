@@ -1329,6 +1329,7 @@ return true;
 },
 
 retop() {
+const top = this.logicalTop();
 const rows = this.rows;
 const tops = new Array(rows.length + 1);
 let y = 0;
@@ -1340,7 +1341,7 @@ y += rows[i].hpx;
 tops[rows.length] = y;
 this.tops = tops;
 this.total = y;
-this.canvas.style.height = y + "px";
+this.syncScrollRange(top);
 },
 
 applySort(parent, deep) {
@@ -1753,7 +1754,8 @@ return;
 const grid = this.grid;
 const held = this.heldCell();
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
-const top = grid.scrollTop;
+const top = this.logicalTop();
+const shift = this.scaledScroll ? top - grid.scrollTop : 0;
 const n = this.rows.length;
 const over = this.lean ? 0 : OVERSCAN;
 const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
@@ -1776,7 +1778,6 @@ rowEl.remove();
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 } else {
-rowEl.remove();
 free.push(rowEl);
 }
 }
@@ -1790,7 +1791,7 @@ continue;
 }
 let rowEl = this.rendered.get(w);
 if (!rowEl) {
-rowEl = free.pop() || this.pool.pop() || h("div");
+rowEl = free.shift() || this.pool.pop() || h("div");
 if (!rowEl.parentNode) {
 fragment.appendChild(rowEl);
 }
@@ -1801,7 +1802,8 @@ if (w._v !== this.version || rowEl._w !== w) {
 this.fillRow(rowEl, w);
 w._v = this.version;
 } else if (!w.status) this.refreshRowState(rowEl, w);
-const y = this.tops[index];
+const y = this.scaledScroll && (index < first || index > last) ?
+(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.tops[index] - shift;
 if (rowEl._top !== y) {
 rowEl.style.transform = "translateY(" + y + "px)";
 rowEl._top = y;
@@ -1978,6 +1980,90 @@ this.canvas.insertBefore(ordered[k], prev.nextSibling);
 }
 prev = ordered[k];
 }
+}
+});
+const NATIVE_HEIGHT = 8000000;
+
+Object.assign(TreeGrid.prototype, {
+scrollRange() {
+const view = Math.max(0, this.grid.clientHeight - this.head.offsetHeight);
+return { logical: Math.max(0, this.total - view), native: Math.max(0, NATIVE_HEIGHT - view) };
+},
+
+logicalTop() {
+const physical = this.grid.scrollTop;
+if (!this.scaledScroll) return physical;
+const range = this.scrollRange();
+const point = this.scrollPosition;
+return Math.min(range.logical, point && point.native === physical ? point.logical :
+range.native ? physical * range.logical / range.native : 0);
+},
+
+setLogicalTop(value) {
+if (!this.scaledScroll) { this.grid.scrollTop = value; this.scrollPosition = null; return; }
+const range = this.scrollRange(), logical = Math.max(0, Math.min(range.logical, value));
+this.grid.scrollTop = range.logical ? logical * range.native / range.logical : 0;
+this.scrollPosition = { native: this.grid.scrollTop, logical };
+this.scheduleRender(); this.stateChanged();
+},
+
+syncScrollRange(top) {
+const scaled = this.total > NATIVE_HEIGHT;
+this.canvas.style.height = Math.min(this.total, NATIVE_HEIGHT) + "px";
+if (scaled !== !!this.scaledScroll) {
+this.scaledScroll = scaled;
+this.canvas.toggleAttribute("data-cx-scaled", scaled);
+if (!this.onScaledWheel) {
+this.onScaledWheel = event => this.scaledWheel(event);
+this.onScaledTouchStart = event => {
+if (!event.defaultPrevented && event.touches.length === 1 && !hostControl(event.target)) {
+const touch = event.touches[0];
+this.touchScroll = { x: touch.clientX, y: touch.clientY, top: this.logicalTop(), left: this.grid.scrollLeft };
+} else this.touchScroll = null;
+};
+this.onScaledTouchMove = event => this.scaledTouch(event);
+this.onScaledTouchEnd = () => { this.touchScroll = null; };
+}
+const method = scaled ? "addEventListener" : "removeEventListener";
+this.grid[method]("wheel", this.onScaledWheel, { passive: false });
+this.grid[method]("touchstart", this.onScaledTouchStart, { passive: true });
+this.grid[method]("touchmove", this.onScaledTouchMove, { passive: false });
+this.grid[method]("touchend", this.onScaledTouchEnd);
+this.grid[method]("touchcancel", this.onScaledTouchEnd);
+this.touchScroll = null;
+}
+this.setLogicalTop(top);
+},
+
+scaledWheel(event) {
+if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable || hostControl(event.target)) return;
+if (this.nestedScroll(event.target, event.deltaY)) return;
+const unit = event.deltaMode === 1 ? this.rowH : event.deltaMode === 2 ? this.grid.clientHeight - this.head.offsetHeight : 1;
+const top = this.logicalTop(), next = Math.max(0, Math.min(this.scrollRange().logical, top + event.deltaY * unit));
+if (next === top) return; // Preserve native scroll chaining at either boundary.
+event.preventDefault();
+this.grid.scrollLeft += event.deltaX * unit;
+this.setLogicalTop(next);
+},
+
+scaledTouch(event) {
+const start = this.touchScroll;
+if (!start || event.defaultPrevented || event.touches.length !== 1 || !event.cancelable) { this.touchScroll = null; return; }
+const touch = event.touches[0], dy = start.y - touch.clientY, dx = start.x - touch.clientX;
+if (Math.abs(dx) > Math.abs(dy)) return;
+if (this.nestedScroll(event.target, dy)) { this.touchScroll = null; return; }
+const next = Math.max(0, Math.min(this.scrollRange().logical, start.top + dy));
+if (next === this.logicalTop()) return;
+event.preventDefault(); this.grid.scrollLeft = start.left + dx; this.setLogicalTop(next);
+},
+
+nestedScroll(target, delta) {
+for (let element = target; element && element !== this.grid; element = element.parentElement) {
+if (element.clientHeight && element.scrollHeight > element.clientHeight &&
+/^(auto|scroll)$/.test(getComputedStyle(element).overflowY) &&
+(delta > 0 ? element.scrollTop + element.clientHeight < element.scrollHeight - 1 : element.scrollTop > 0)) return true;
+}
+return false;
 }
 });
 
@@ -2434,7 +2520,7 @@ if (!this.measureNeeded) {
 return false;
 }
 this.measureNeeded = false;
-const top = this.grid.scrollTop;
+const top = this.logicalTop();
 let shift = 0;
 let changed = false;
 for (const [w, rowEl] of this.rendered) {
@@ -2449,7 +2535,7 @@ changed = true;
 }
 if (changed) {
 this.retop();
-if (shift) this.grid.scrollTop = top + shift;
+this.setLogicalTop(top + shift);
 }
 return changed;
 }
@@ -2985,13 +3071,13 @@ const grid = this.grid;
 const y = this.tops[i];
 const height = w.hpx;
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
-const before = grid.scrollTop;
+const before = this.logicalTop();
 if (y < before) {
-grid.scrollTop = y;
+this.setLogicalTop(y);
 } else if (y + height > before + viewHeight) {
-grid.scrollTop = y + height - viewHeight;
+this.setLogicalTop(y + height - viewHeight);
 }
-if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+if (Math.abs(this.logicalTop() - before) > viewHeight) this.leanReveal();
 },
 
 leanReveal() {
@@ -3530,14 +3616,15 @@ if (parent.reloadController === controller) parent.reloadController = null;
 },
 
 captureScrollAnchor() {
-const index = this.rowAt(this.grid.scrollTop);
+const top = this.logicalTop();
+const index = this.rowAt(top);
 const w = this.rows[Math.min(index, this.rows.length - 1)];
-return w && !w.status ? { id: w.key, offset: this.grid.scrollTop - this.tops[this.indexOf(w)] } : null;
+return w && !w.status ? { id: w.key, offset: top - this.tops[this.indexOf(w)] } : null;
 },
 
 restoreScrollAnchor(anchor) {
 const w = anchor && this.keyMap.get(anchor.id), index = this.indexOf(w);
-if (index >= 0) this.grid.scrollTop = Math.max(0, this.tops[index] + anchor.offset);
+if (index >= 0) this.setLogicalTop(Math.max(0, this.tops[index] + anchor.offset));
 }
 });
 Object.assign(TreeGrid.prototype, {
@@ -3586,7 +3673,7 @@ this.filter = null; this.declaredFilter = null;
 this.buildHeader(); this.syncQueryControls();
 this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
 this.rootsReady = Promise.resolve();
-if (anchor) this.restoreScrollAnchor(anchor); else this.grid.scrollTop = 0;
+if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
 const count = numberFormat(this.lang);
 this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
 fill(this.labels.itemsLoaded, { count: count.format(items.length) }));

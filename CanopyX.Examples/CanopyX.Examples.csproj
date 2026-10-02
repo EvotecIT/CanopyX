@@ -18,5 +18,6 @@
     <EmbeddedResource Include="Templates\filter-bar.html" LogicalName="CanopyX.Examples.Templates.filter-bar.html" />
     <EmbeddedResource Include="Templates\live-records.html" LogicalName="CanopyX.Examples.Templates.live-records.html" />
     <EmbeddedResource Include="Templates\query-records.html" LogicalName="CanopyX.Examples.Templates.query-records.html" />
+    <EmbeddedResource Include="Templates\long-document.html" LogicalName="CanopyX.Examples.Templates.long-document.html" />
   </ItemGroup>
 </Project>

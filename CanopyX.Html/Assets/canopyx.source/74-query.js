@@ -47,7 +47,7 @@
         // Old lazy lists belong to the old query even when their parent identity survives.
         this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
         this.rootsReady = Promise.resolve();
-        if (anchor) this.restoreScrollAnchor(anchor); else this.grid.scrollTop = 0;
+        if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
         const count = numberFormat(this.lang);
         this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
           fill(this.labels.itemsLoaded, { count: count.format(items.length) }));

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX long document</title>
+<link rel="stylesheet" href="bundle/assets/{{style}}">
+<script src="bundle/assets/{{script}}" defer></script>
+<style>
+body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1 { margin: 0 0 8px; font-size: 22px; }
+p { max-width: 75ch; }
+.document-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.document-controls button { min-height: 32px; }
+.section-card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 16px; }
+</style>
+</head>
+<body class="cx-page">
+<h1>Long document</h1>
+<p>Browse 20,000 tall sections. Jump to the middle or the end, use Home and End inside the view, and save a position to return to it. Each section keeps its full height while the scrollbar spans the whole document.</p>
+<div class="document-controls">
+<button id="jump-start" disabled>First section</button>
+<button id="jump-middle" disabled>Middle section</button>
+<button id="jump-end" disabled>Last section</button>
+<button id="save-position" disabled>Save position</button>
+<button id="restore-position" disabled>Restore position</button>
+<label><input id="dark-theme" type="checkbox"> Dark theme</label>
+</div>
+<p id="document-status" role="status">Loading sections.</p>
+{{content}}
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const host = document.querySelector("[data-canopyx-host]");
+  const api = CanopyX.createTreeGrid(host, { view: JSON.parse(host.querySelector(".cx-config").textContent) });
+  await api.ready; await api.loadMore(null);
+  const status = document.getElementById("document-status");
+  let saved;
+  document.getElementById("jump-start").onclick = () => api.expandPath(["section-0"], { select: false });
+  document.getElementById("jump-middle").onclick = () => api.expandPath(["section-10000"], { select: false });
+  document.getElementById("jump-end").onclick = () => api.expandPath(["section-19999"], { select: false });
+  document.getElementById("save-position").onclick = () => { saved = api.getState(); document.getElementById("restore-position").disabled = false; status.textContent = "Position saved."; };
+  document.getElementById("restore-position").onclick = async () => { await api.setState(saved); status.textContent = "Position restored."; };
+  document.getElementById("dark-theme").onchange = event => host.setAttribute("data-cx-theme", event.target.checked ? "dark" : "light");
+  for (const id of ["jump-start", "jump-middle", "jump-end", "save-position"]) document.getElementById(id).disabled = false;
+  status.textContent = "20,000 sections loaded.";
+});
+</script>
+</body>
+</html>

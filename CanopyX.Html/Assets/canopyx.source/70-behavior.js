@@ -184,13 +184,13 @@
       const y = this.tops[i];
       const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      const before = grid.scrollTop;
+      const before = this.logicalTop();
       if (y < before) {
-        grid.scrollTop = y;
+        this.setLogicalTop(y);
       } else if (y + height > before + viewHeight) {
-        grid.scrollTop = y + height - viewHeight;
+        this.setLogicalTop(y + height - viewHeight);
       }
-      if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+      if (Math.abs(this.logicalTop() - before) > viewHeight) this.leanReveal();
     },
 
     /**

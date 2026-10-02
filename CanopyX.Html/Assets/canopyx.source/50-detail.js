@@ -121,7 +121,7 @@
         return false;
       }
       this.measureNeeded = false;
-      const top = this.grid.scrollTop;
+      const top = this.logicalTop();
       let shift = 0;
       let changed = false;
       for (const [w, rowEl] of this.rendered) {
@@ -137,7 +137,7 @@
       }
       if (changed) {
         this.retop();
-        if (shift) this.grid.scrollTop = top + shift;
+        this.setLogicalTop(top + shift);
       }
       return changed;
     }

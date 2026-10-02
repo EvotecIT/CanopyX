@@ -61,6 +61,8 @@ node bench/scroll-benchmark.mjs --runs 5 --cpu 1,4
 
 Add `--host-columns status,changes,links,finding` to measure a host that draws some columns itself through `renderers`. Put the median results in the pull request description. The benchmark records frames over 50 ms and 33 ms, the 95th percentile frame time, and blank viewport samples while scrolling a large expanded tree. For changes to loading, expanding, or search, report the timings the Playwright performance tests print for the large bundle example before and after the change.
 
+For a diagnostic run, `--profile-dir <folder>` saves a Chrome DevTools CPU profile for each run and slowdown. Keep these runs separate from timing comparisons: profiling changes their overhead. Use a task-owned output folder, retain the summary needed to explain the result, and clean superseded generated benchmark pages and traces.
+
 Changes to the bundle search index or to sidecar search also need the search benchmark. It reports the index size next to the pages, and the cold and warm time from a query to an expanded hit, on the large bundle example, on two benchmark bundles (an adversarial deep tree and a directory-shaped tree), and on the packed catalog of the packing benchmark (write it with `--pack-bench` first):
 
 ```powershell

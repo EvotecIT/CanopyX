@@ -177,7 +177,7 @@
 
     /**
      * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
-     * reused for a row that enters it: its cells survive, content is updated while detached, and it is inserted in
+     * reused for a row that enters it: its cells survive, content is updated in place, and it is moved into
      * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
      */
     render() {
@@ -205,7 +205,8 @@
       // A repaint can replace the cell that holds focus (host-drawn cells and details are rebuilt); focus goes back.
       const held = this.heldCell();
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      const top = grid.scrollTop;
+      const top = this.logicalTop();
+      const shift = this.scaledScroll ? top - grid.scrollTop : 0;
       const n = this.rows.length;
       const over = this.lean ? 0 : OVERSCAN;
       const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
@@ -229,9 +230,8 @@
             rowEl._w = null;
             this.observeDetail(rowEl, false);
           } else {
-            // Repaint a departing row while detached, then insert it in the new window's DOM order. Its cell
-            // skeleton survives; retained rows do not need repainting or moving during downward scrolling.
-            rowEl.remove();
+            // Reuse in departure order, then rotate these rows into visual DOM order. Keeping them attached
+            // avoids discarding and rebuilding their browser style/layout state before reinsertion.
             free.push(rowEl);
           }
         }
@@ -246,7 +246,7 @@
         }
         let rowEl = this.rendered.get(w);
         if (!rowEl) {
-          rowEl = free.pop() || this.pool.pop() || h("div");
+          rowEl = free.shift() || this.pool.pop() || h("div");
           if (!rowEl.parentNode) {
             fragment.appendChild(rowEl);
           }
@@ -257,7 +257,8 @@
           this.fillRow(rowEl, w);
           w._v = this.version;
         } else if (!w.status) this.refreshRowState(rowEl, w);
-        const y = this.tops[index];
+        const y = this.scaledScroll && (index < first || index > last) ?
+          (index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.tops[index] - shift;
         if (rowEl._top !== y) {
           rowEl.style.transform = "translateY(" + y + "px)";
           rowEl._top = y;
