@@ -90,14 +90,15 @@
       } else if (w.status === "error") {
         this.retryPage(w);
       } else if (!w.status) {
+        let accepted;
         if (this.multi && !enter) {
-          this.select(w, { toggle: true });
+          accepted = this.select(w, { toggle: true });
         } else {
-          this.select(w, { deferNotify: enter && this.expandable(w) });
+          accepted = this.select(w, { deferNotify: enter && this.expandable(w) });
         }
         if (enter && this.expandable(w)) {
           this.toggle(w);
-          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
+          if (accepted) this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
         }
       }
     },

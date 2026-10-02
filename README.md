@@ -160,6 +160,10 @@ Registered fragment options persist for remounting until their disposer is calle
 
 Built-in remote requests have a 30-second deadline, including reading the response body. Set `requestTimeoutMs` in grid options to change it; destroying the grid cancels its built-in requests. A separately owned source created with `CanopyX.sources.remote(view, { timeoutMs, signal })` follows its owner's signal, and `page(node, cursor, { signal })`, `search(query, limit, { signal })`, and `counts(ids, { signal })` accept individual request signals. Cancelling navigation releases that caller without cancelling a shared page load. Custom sources own their transport cancellation and deadlines.
 
+Selection is independent of focus. `grid.setSelection(["projects", "archive"])` replaces the selection with loaded node ids, `grid.clearSelection()` clears it, and `grid.selectAll({ scope: "visible" })` selects eligible rows in the current expanded/filtered view. The alternative `scope: "loaded"` includes loaded collapsed descendants. Select-all requires multiple selection and never fetches unloaded data; invalid ids and single-selection overflow leave the existing selection intact. Call `expandPath` to load an id before selecting it directly.
+
+Hosts can pass `isSelectable(node)` to keep rows focusable while preventing selection additions, and `beforeSelect(node, nodes, { previous, reason })` to synchronously veto a whole proposal by returning false. The cancelable `canopyx:beforeselect` event offers the same veto. Reasons are `row`, `range`, `api`, `clear`, or `all`. Selection methods return whether their proposal was accepted. A successful clear emits `canopyx:select` and calls `onSelect` with `null` and an empty array; hosts that handle clearing should account for that nullable node. Removal of data reconciles selection directly and cannot be vetoed.
+
 Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
 
 ## Documentation

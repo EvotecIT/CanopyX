@@ -4,11 +4,15 @@
    * Creates a tree grid in a host element.
    * @param {HTMLElement} host The element that receives the grid.
    * @param {{ view: object, source?: object, labels?: Object<string, string>, renderers?: Object<string, Function>, renderDetail?: Function,
-   *           onSelect?: Function, onToggle?: Function, onLoad?: Function, formatLink?: Function, parseLink?: Function, requestTimeoutMs?: number }} options
+   *           onSelect?: Function, onToggle?: Function, onLoad?: Function, isSelectable?: Function, beforeSelect?: Function,
+   *           formatLink?: Function, parseLink?: Function, requestTimeoutMs?: number }} options
    *   `view` is a canopyx/2 view document. `labels` translates the texts the grid writes itself, on top of the view's
    *   own `labels` (names and placeholders as in docs/data-protocol.md). Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
    *   the ids of the active declared filters whenever they change.
+   *   isSelectable(node) returning false prevents adding that node; it remains focusable. beforeSelect(node, nodes,
+   *   { previous, reason }) is a synchronous veto: false rejects the entire proposal. The cancelable
+   *   canopyx:beforeselect event offers the same veto. Clearing selection notifies onSelect with node null and nodes [].
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
    *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling, and so do the rows
@@ -48,6 +52,9 @@
       // For a host that changed the address itself (history.replaceState or pushState fire no event).
       readLocation: () => grid.readLocation(),
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
+      setSelection: (ids) => grid.setSelection(ids),
+      clearSelection: () => grid.setSelection([]),
+      selectAll: (options) => grid.selectAll(options),
       focus: () => {
         if (grid.destroyed) return;
         const target = grid.indexOf(grid.focused) >= 0 ? grid.focused : grid.rows[0];

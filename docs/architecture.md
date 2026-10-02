@@ -121,6 +121,8 @@ A fragment carries only the view document, and the runtime mounts it when the pa
 
 Fragment configuration belongs to the host. `configure(viewId, options)` returns a disposer for that registration, and `unconfigure(viewId)` removes the current registration for future mounts. Destroying a grid leaves its configuration available for remounting. Removing configuration does not change a mounted grid; disposing an older registration cannot remove a newer one.
 
+Selection proposals share one owner across clicks, keyboard ranges, path navigation, and the host APIs. `setSelection(ids)` validates the entire loaded-id set before changing it; single selection permits at most one distinct id. `clearSelection()` proposes an empty set. `selectAll({ scope })` requires `visible` or `loaded` and never fetches more data. `isSelectable(node)` governs additions and filters ranges/select-all. Existing selection can be removed even if eligibility later changes. `beforeSelect(node, nodes, { previous, reason })` is synchronous and can veto the full set; returning a promise is an error. Hosts can also cancel `canopyx:beforeselect`. A nested host selection supersedes the older proposal, and a node removed by a host callback cannot be reattached through selection. Vetoes leave the selection, its URL fragment, and selection notifications intact. Focus and expansion remain separate. Accepted data removal reconciles selection without a veto.
+
 ### Rendering Model
 
 - Loaded nodes keep their children. The visible rows are a flat array rebuilt on each structure change (expand, collapse, page loaded, sort, filter); the cost is proportional to the visible rows, not to the whole tree.
