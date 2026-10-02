@@ -37,7 +37,7 @@
         if (!this.onScaledWheel) {
           this.onScaledWheel = event => this.scaledWheel(event);
           this.onScaledTouchStart = event => {
-            if (!event.defaultPrevented && event.touches.length === 1 && !hostControl(event.target)) {
+            if (!event.defaultPrevented && event.touches.length === 1) {
               const touch = event.touches[0];
               this.touchScroll = { x: touch.clientX, y: touch.clientY, top: this.logicalTop(), left: this.grid.scrollLeft };
             } else this.touchScroll = null;
@@ -57,7 +57,7 @@
     },
 
     scaledWheel(event) {
-      if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable || hostControl(event.target)) return;
+      if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable) return;
       if (this.nestedScroll(event.target, event.deltaY)) return;
       const unit = event.deltaMode === 1 ? this.rowH : event.deltaMode === 2 ? this.grid.clientHeight - this.head.offsetHeight : 1;
       const top = this.logicalTop(), next = Math.max(0, Math.min(this.scrollRange().logical, top + event.deltaY * unit));

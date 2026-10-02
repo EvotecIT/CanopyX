@@ -7,8 +7,8 @@ const view = { protocol: "canopyx/2", type: "view", id: "tall-view", label: "Lon
   source: { kind: "inline" }, roots: Array.from({ length: count }, (_, i) => ({ id: "section-" + i, label: "Section " + i,
     detail: { type: "html", html: "<p>Section " + i + "</p>", height: 40 } })) };
 
-async function open(page) {
-  await page.route("https://tall.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+async function open(page, documentView = view) {
+  await page.route("https://tall.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(documentView) }));
   await page.goto("https://tall.test/"); await page.waitForSelector("[data-cx-ready]");
   await page.evaluate(async () => { await document.querySelector(".cx-host").canopyx.loadMore(null); });
   await nextFrames(page);
@@ -29,6 +29,62 @@ test("End reaches the final row beyond the native height range and Home returns"
   expect(geometry.logicalRows).toBe(String(count + 1)); expect(geometry.index).toBe(String(count + 1));
   await page.keyboard.press("Home"); await nextFrames(page); await expect(page.locator('[data-cx-id="section-0"]')).toBeFocused();
   expect(await page.locator(".cx-grid").evaluate(grid => grid.scrollTop)).toBe(0);
+});
+
+function controlsView() {
+  return { ...view, roots: view.roots.map((node, i) => i === 15000 ? { ...node, detail: { ...node.detail,
+    html: '<div style="height:2300px"></div><button type="button">Host action</button>' } } : node) };
+}
+
+test("entering a control in a tall scaled detail keeps keyboard focus visible", async ({ page }) => {
+  await open(page, controlsView());
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.expandPath(["section-15000"], { select: false }));
+  await page.keyboard.press("F2"); await nextFrames(page);
+  const button = page.getByRole("button", { name: "Host action", exact: true });
+  await expect(button).toBeFocused(); await expect(button).toBeInViewport();
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.getState().anchor.path)).toEqual(["section-15000"]);
+});
+
+async function showControl(page) {
+  await open(page, controlsView());
+  return page.evaluate(async () => {
+    const api = document.querySelector(".cx-host").canopyx;
+    await api.expandPath(["section-15000"], { select: false });
+    const state = api.getState(); state.anchor.offset = 2200; await api.setState(state);
+    return api.getState().anchor;
+  });
+}
+
+test("wheel over an ordinary host button uses logical distance and honors its veto", async ({ page }) => {
+  const before = await showControl(page); await nextFrames(page);
+  const button = page.getByRole("button", { name: "Host action", exact: true }); await expect(button).toBeInViewport();
+  const box = await button.boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, 120); await page.waitForTimeout(100); await nextFrames(page);
+  const after = await page.evaluate(() => document.querySelector(".cx-host").canopyx.getState().anchor);
+  expect(after.path).toEqual(before.path); expect(after.offset - before.offset).toBeCloseTo(120, 0);
+  const beforeVeto = await page.evaluate(async () => {
+    const api = document.querySelector(".cx-host").canopyx, state = api.getState();
+    state.anchor.offset = 2200; await api.setState(state); return api.getState().anchor;
+  }); await nextFrames(page);
+  await button.evaluate(element => element.addEventListener("wheel", event => event.preventDefault(), { passive: false }));
+  const vetoBox = await button.boundingBox(); await page.mouse.move(vetoBox.x + vetoBox.width / 2, vetoBox.y + vetoBox.height / 2);
+  await page.mouse.wheel(0, 120); await page.waitForTimeout(100); await nextFrames(page);
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.getState().anchor)).toEqual(beforeVeto);
+});
+
+test("touch over an ordinary host button uses logical distance", async ({ page }) => {
+  const before = await showControl(page);
+  const result = await page.getByRole("button", { name: "Host action", exact: true }).evaluate(button => {
+    const touch = (type, y) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "touches", { value: [{ clientX: 150, clientY: y }] });
+      button.dispatchEvent(event); return event.defaultPrevented;
+    };
+    touch("touchstart", 500); const handled = touch("touchmove", 420); touch("touchend", 420);
+    return { handled, anchor: document.querySelector(".cx-host").canopyx.getState().anchor };
+  });
+  expect(result.handled).toBe(true); expect(result.anchor.path).toEqual(before.path);
+  expect(result.anchor.offset - before.offset).toBeCloseTo(80, 0);
 });
 
 test("the native scrollbar spans the whole logical view without out-of-range transforms", async ({ page }) => {

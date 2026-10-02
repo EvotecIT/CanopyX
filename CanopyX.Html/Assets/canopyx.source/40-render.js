@@ -177,7 +177,7 @@
 
     /**
      * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
-     * reused for a row that enters it: its cells survive, content is updated in place, and it is moved into
+     * reused for a row that enters it: its cells survive, content is updated while detached, and it is inserted in
      * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
      */
     render() {
@@ -230,8 +230,9 @@
             rowEl._w = null;
             this.observeDetail(rowEl, false);
           } else {
-            // Reuse in departure order, then rotate these rows into visual DOM order. Keeping them attached
-            // avoids discarding and rebuilding their browser style/layout state before reinsertion.
+            // Repaint a departing row while detached, then insert it in the new window's DOM order. Its cell
+            // skeleton survives; retained rows do not need repainting or moving during downward scrolling.
+            rowEl.remove();
             free.push(rowEl);
           }
         }
@@ -246,7 +247,7 @@
         }
         let rowEl = this.rendered.get(w);
         if (!rowEl) {
-          rowEl = free.shift() || this.pool.pop() || h("div");
+          rowEl = free.pop() || this.pool.pop() || h("div");
           if (!rowEl.parentNode) {
             fragment.appendChild(rowEl);
           }
@@ -279,7 +280,6 @@
         }
       }
       for (const rowEl of free) {
-        rowEl.remove();
         rowEl._w = null;
         this.observeDetail(rowEl, false);
         if (this.pool.length < 200) {

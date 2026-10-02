@@ -1778,6 +1778,7 @@ rowEl.remove();
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 } else {
+rowEl.remove();
 free.push(rowEl);
 }
 }
@@ -1791,7 +1792,7 @@ continue;
 }
 let rowEl = this.rendered.get(w);
 if (!rowEl) {
-rowEl = free.shift() || this.pool.pop() || h("div");
+rowEl = free.pop() || this.pool.pop() || h("div");
 if (!rowEl.parentNode) {
 fragment.appendChild(rowEl);
 }
@@ -1824,7 +1825,6 @@ rowEl._tab = tab;
 }
 }
 for (const rowEl of free) {
-rowEl.remove();
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 if (this.pool.length < 200) {
@@ -2016,7 +2016,7 @@ this.canvas.toggleAttribute("data-cx-scaled", scaled);
 if (!this.onScaledWheel) {
 this.onScaledWheel = event => this.scaledWheel(event);
 this.onScaledTouchStart = event => {
-if (!event.defaultPrevented && event.touches.length === 1 && !hostControl(event.target)) {
+if (!event.defaultPrevented && event.touches.length === 1) {
 const touch = event.touches[0];
 this.touchScroll = { x: touch.clientX, y: touch.clientY, top: this.logicalTop(), left: this.grid.scrollLeft };
 } else this.touchScroll = null;
@@ -2036,7 +2036,7 @@ this.setLogicalTop(top);
 },
 
 scaledWheel(event) {
-if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable || hostControl(event.target)) return;
+if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable) return;
 if (this.nestedScroll(event.target, event.deltaY)) return;
 const unit = event.deltaMode === 1 ? this.rowH : event.deltaMode === 2 ? this.grid.clientHeight - this.head.offsetHeight : 1;
 const top = this.logicalTop(), next = Math.max(0, Math.min(this.scrollRange().logical, top + event.deltaY * unit));
@@ -2748,8 +2748,8 @@ const frame = grid.getBoundingClientRect();
 const top = frame.top + grid.clientTop + this.head.offsetHeight;
 const bottom = frame.top + grid.clientTop + grid.clientHeight;
 const box = target.getBoundingClientRect();
-if (box.top < top) grid.scrollTop -= top - box.top;
-else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+if (box.top < top) this.setLogicalTop(this.logicalTop() - (top - box.top));
+else if (box.bottom > bottom) this.setLogicalTop(this.logicalTop() + Math.min(box.bottom - bottom, box.top - top));
 },
 
 revealInCell(cell, target) {

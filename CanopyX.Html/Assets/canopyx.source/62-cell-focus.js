@@ -112,8 +112,8 @@
       const top = frame.top + grid.clientTop + this.head.offsetHeight;
       const bottom = frame.top + grid.clientTop + grid.clientHeight;
       const box = target.getBoundingClientRect();
-      if (box.top < top) grid.scrollTop -= top - box.top;
-      else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+      if (box.top < top) this.setLogicalTop(this.logicalTop() - (top - box.top));
+      else if (box.bottom > bottom) this.setLogicalTop(this.logicalTop() + Math.min(box.bottom - bottom, box.top - top));
     },
 
     /**
