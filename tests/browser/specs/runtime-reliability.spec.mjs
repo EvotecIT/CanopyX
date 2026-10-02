@@ -205,13 +205,11 @@ for (const outcome of ["deadline", "caller", "lifetime", "body"]) {
   });
 }
 
-test("remote transport closes an unread streaming HTTP error body", async ({ page }) => {
-  let closed = false;
+test("remote transport cancels an unread streaming HTTP error response", async ({ page }) => {
   const server = http.createServer((request, response) => {
     if (request.url.startsWith("/failure")) {
       response.writeHead(503, "Service Unavailable", { "Content-Type": "application/json" });
       response.write('{"unfinished":');
-      response.once("close", () => { closed = true; });
     } else {
       response.writeHead(200, { "Content-Type": "text/html" }); response.end(viewPage(view));
     }
@@ -219,14 +217,25 @@ test("remote transport closes an unread streaming HTTP error body", async ({ pag
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
   try {
     await page.goto("http://127.0.0.1:" + server.address().port);
-    const error = await page.evaluate(async () => {
+    const cancelled = page.waitForEvent("requestfailed", { predicate: request => request.url().includes("/failure?"), timeout: 3000 });
+    const result = await page.evaluate(async () => {
+      const original = window.fetch;
+      let response, signal, error;
+      window.fetch = async (url, options) => {
+        signal = options.signal; response = await original(url, options); return response;
+      };
       try {
         await CanopyX.sources.remote({ source: { children: "/failure?ref={ref}&cursor={cursor}" } }).page(null, null);
-        return "unexpected success";
-      } catch (error) { return error.message; }
+        error = "unexpected success";
+      } catch (failure) { error = failure.message; }
+      finally { window.fetch = original; }
+      let retired = false;
+      try { retired = (await response.body.getReader().read()).done; }
+      catch (failure) { retired = failure.name === "AbortError"; }
+      return { error, aborted: signal.aborted, retired };
     });
-    expect(error).toBe("503 Service Unavailable");
-    await expect.poll(() => closed, { timeout: 3000 }).toBe(true);
+    expect(result).toEqual({ error: "503 Service Unavailable", aborted: true, retired: true });
+    expect((await cancelled).failure().errorText).toContain("ABORTED");
   } finally {
     server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
   }
