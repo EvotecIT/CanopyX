@@ -73,7 +73,8 @@
             const prefix = cursor ? w.children || [] : [];
             const combined = prefix.map(child => child.h).concat(items);
             validateNodes(combined, existing, this.root.inlineItems != null);
-            this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true);
+            this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true,
+              suppressInitial || restoration !== (this.restoreGeneration || 0));
           } else {
             if (!cursor || !w.children) {
               w.children = [];

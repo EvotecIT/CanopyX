@@ -81,10 +81,14 @@
     /** Loads saved paths within restoration ownership, without selecting, revealing, or taking DOM focus. */
     async loadStatePaths(state, current) {
       const paths = state.selection.concat(state.focus ? [state.focus] : [], state.anchor ? [state.anchor.path] : []);
+      const attached = new Set([state.focus, state.anchor && state.anchor.path].filter(Boolean).map(path => JSON.stringify(path)));
       for (const path of paths) {
         if (this.destroyed || current.signal.aborted) return;
         const existing = this.keyMap.get(path[path.length - 1]);
-        if (existing && this.pathOf(existing).join("\u0000") === path.join("\u0000")) continue;
+        let cached = false;
+        for (let node = existing; node; node = node.parent) if (node._cached) cached = true;
+        if (existing && JSON.stringify(this.pathOf(existing)) === JSON.stringify(path) &&
+            (!attached.has(JSON.stringify(path)) || !cached)) continue;
         try { await this.expandPath(path, { select: false, focus: false, reveal: false, signal: current.signal }); }
         catch (error) { /* Nodes removed since the snapshot are skipped. */ }
       }
@@ -94,7 +98,7 @@
       if (!state.version) return;
       const valid = path => {
         const w = path && this.keyMap.get(path[path.length - 1]);
-        return w && this.pathOf(w).join("\u0000") === path.join("\u0000") ? w : null;
+        return w && JSON.stringify(this.pathOf(w)) === JSON.stringify(path) ? w : null;
       };
       this.setSelection(state.selection.map(valid).filter(Boolean).map(w => w.key));
       if (this.destroyed || current.signal.aborted) return;

@@ -2814,7 +2814,8 @@ if (inlineItems) {
 const prefix = cursor ? w.children || [] : [];
 const combined = prefix.map(child => child.h).concat(items);
 validateNodes(combined, existing, this.root.inlineItems != null);
-this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true);
+this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true,
+suppressInitial || restoration !== (this.restoreGeneration || 0));
 } else {
 if (!cursor || !w.children) {
 w.children = [];
@@ -3308,14 +3309,14 @@ if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController
 if (clearDeferred) w.pendingChildCount = null;
 },
 
-reconcileList(parent, items, total, next, positions, ordering = false) {
+reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false) {
 const old = this.descendants(parent), retained = new Set(), incoming = new Set();
 const pendingData = items.slice();
 while (pendingData.length) {
 const data = pendingData.pop(); incoming.add(data.id);
 for (const child of data.children || []) pendingData.push(child);
 }
-if (this.countRevisions) {
+if (!ordering && this.countRevisions) {
 const ids = new Set([...old.keys(), ...incoming]);
 if (parent.key != null) ids.add(parent.key);
 for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
@@ -3345,7 +3346,7 @@ const count = Math.max(this.pageSize, reused && w.children ? w.children.length :
 this.retirePage(w); w.inline = true;
 const first = this.inlinePage(w, null, count);
 pending.push({ owner: w, items: first.items, total: first.total, next: first.next, positions: first.positions });
-if (!reused) w.expanded = !!data.expanded && first.items.length > 0;
+if (!reused) w.expanded = !suppressExpansion && !this.restoring && !!data.expanded && first.items.length > 0;
 } else if (!data.hasChildren || data.detail) {
 this.retirePage(w); w.inline = false; w.children = null; w.inlineCache = null; w.next = null; w.total = null; w.expanded = false;
 } else {
@@ -3359,7 +3360,7 @@ this.retirePage(w); w.children = null; w.inlineCache = null; w.next = null;
 for (const child of cached.values()) { child.level = child.parent.level + 1; retained.add(child); }
 }
 w.total = data.childCount == null ? w.total : data.childCount;
-if (!reused) w.autoExpand = !!data.expanded;
+if (!reused) w.autoExpand = !suppressExpansion && !this.restoring && !!data.expanded;
 }
 return w;
 });
@@ -3405,12 +3406,13 @@ const old = this.descendants(parent), outside = new Map(this.keyMap);
 for (const key of old.keys()) outside.delete(key);
 const items = [], positions = [], seen = new Set();
 const inlineOnly = this.root.inlineItems != null;
-const inline = parent === this.root ? inlineOnly ? this.view.roots : null : parent.inline ? parent.h.children : null;
-if (inlineOnly) validateNodes(inline, outside, true);
+const isInline = parent === this.root ? inlineOnly : parent.inline;
+const inline = isInline ? parent === this.root ? this.view.roots : parent.h.children : null;
+if (isInline) validateNodes(inline, outside, inlineOnly);
 let cursor = null, total = null, next = null;
 do {
 if (navigation.cancelled() || parent._invalidated) return false;
-const page = inline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
+const page = isInline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
 await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
 if (navigation.cancelled() || parent._invalidated) return false;
 validatePage(page, outside, items.length);
@@ -3428,11 +3430,11 @@ cursor = next;
 if (navigation.cancelled() || parent._invalidated) return false;
 const current = new Map(this.keyMap);
 for (const key of this.descendants(parent).keys()) current.delete(key);
-validateNodes(items, current, inlineOnly);
+validateNodes(isInline ? inline : items, current, inlineOnly);
 const anchor = this.captureScrollAnchor();
 this.retirePage(parent, controller);
 if (parent === this.root && inlineOnly) parent.inlineItems = inline;
-this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next, inline ? positions : null);
+this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next, isInline ? positions : null);
 this.restoreScrollAnchor(anchor);
 this.stateChanged();
 this.emit("reload", { node: parent.h, count: items.length, total: parent.total, ms: performance.now() - started });
@@ -3787,10 +3789,14 @@ this.setActiveFilters(state.filters);
 
 async loadStatePaths(state, current) {
 const paths = state.selection.concat(state.focus ? [state.focus] : [], state.anchor ? [state.anchor.path] : []);
+const attached = new Set([state.focus, state.anchor && state.anchor.path].filter(Boolean).map(path => JSON.stringify(path)));
 for (const path of paths) {
 if (this.destroyed || current.signal.aborted) return;
 const existing = this.keyMap.get(path[path.length - 1]);
-if (existing && this.pathOf(existing).join("\u0000") === path.join("\u0000")) continue;
+let cached = false;
+for (let node = existing; node; node = node.parent) if (node._cached) cached = true;
+if (existing && JSON.stringify(this.pathOf(existing)) === JSON.stringify(path) &&
+(!attached.has(JSON.stringify(path)) || !cached)) continue;
 try { await this.expandPath(path, { select: false, focus: false, reveal: false, signal: current.signal }); }
 catch (error) { /* Nodes removed since the snapshot are skipped. */ }
 }
@@ -3800,7 +3806,7 @@ applyStatePosition(state, current) {
 if (!state.version) return;
 const valid = path => {
 const w = path && this.keyMap.get(path[path.length - 1]);
-return w && this.pathOf(w).join("\u0000") === path.join("\u0000") ? w : null;
+return w && JSON.stringify(this.pathOf(w)) === JSON.stringify(path) ? w : null;
 };
 this.setSelection(state.selection.map(valid).filter(Boolean).map(w => w.key));
 if (this.destroyed || current.signal.aborted) return;
