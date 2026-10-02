@@ -1,22 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/schema/canopyx-1.schema.json",
-  "title": "CanopyX data protocol, version 1 (canopyx/1)",
-  "description": "Every canopyx/1 document. The schema lists every field of the current revision and rejects unknown ones, so it doubles as a writer check. Readers must ignore unknown fields so documents from a newer canopyx/1 writer still load.",
+  "$id": "https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/schema/canopyx-2.schema.json",
+  "title": "CanopyX data protocol, version 2 (canopyx/2)",
+  "description": "Every canopyx/2 document. The schema lists every field of the current revision and rejects unknown ones, so it doubles as a writer check. Readers must ignore unknown fields so documents from a newer canopyx/2 writer still load.",
   "oneOf": [
     { "$ref": "#/$defs/view" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
     { "$ref": "#/$defs/manifest" },
-    { "$ref": "#/$defs/searchShard" }
+    { "$ref": "#/$defs/pack" },
+    { "$ref": "#/$defs/searchShard" },
+    { "$ref": "#/$defs/searchEntries" }
   ],
   "$defs": {
-    "protocol": { "const": "canopyx/1" },
+    "protocol": { "const": "canopyx/2" },
     "accessibleLabel": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "identifier": { "type": "string", "minLength": 1, "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$" },
-    "tone": { "enum": ["neutral", "info", "success", "warning", "danger", "muted"] },
+    "tone": { "description": "neutral, info, success, warning, danger, muted, or a tone the host theme defines.", "type": "string", "pattern": "^(?!.*-bg$)[a-z][a-z0-9-]{0,31}$" },
     "badge": {
       "type": "object",
       "required": ["text"],
@@ -52,10 +54,10 @@
     },
     "detail": {
       "type": "object",
-      "required": ["type", "height"],
+      "required": ["type"],
       "properties": {
         "type": { "enum": ["table", "properties", "html"] },
-        "height": { "type": "integer", "minimum": 1, "maximum": 40 }
+        "height": { "description": "Row slots the detail row spans; without it the row is as tall as its content.", "type": "integer", "minimum": 1, "maximum": 40 }
       },
       "oneOf": [
         {
@@ -64,6 +66,7 @@
             "height": true,
             "caption": { "type": "string" },
             "columns": { "type": "array", "items": { "type": "string" } },
+            "widths": { "description": "Column widths as shares of the table width, one per column.", "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1, "maximum": 1000 } },
             "rows": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/cell" } } }
           },
           "required": ["columns", "rows"],
@@ -113,6 +116,7 @@
         "cells": { "$ref": "#/$defs/cells" },
         "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
+        "data": { "description": "Host facts handed to host callbacks; not shown and not searched.", "type": "object", "propertyNames": { "type": "string", "minLength": 1, "not": { "const": "__proto__" } }, "additionalProperties": { "type": "string" } },
         "hasChildren": { "type": "boolean" },
         "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647, "$comment": "When children is present, readers require this value to equal its length; this cross-field equality is a semantic protocol constraint." },
         "ref": { "$ref": "#/$defs/identifier" },
@@ -202,7 +206,8 @@
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "flag": { "$ref": "#/$defs/nonEmptyString" },
-        "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" }
+        "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" },
+        "hidden": { "description": "The toolbar draws no switch; the host controls the filter.", "type": "boolean" }
       }
     },
     "searchHit": {
@@ -232,17 +237,51 @@
         "icons": { "type": "object", "propertyNames": { "minLength": 1 }, "additionalProperties": { "type": "string", "pattern": "^\\s*<[sS][vV][gG][ \\t\\r\\n\\f/>]" } },
         "search": {
           "type": "object",
-          "required": ["minLength", "maxResults", "placeholder"],
+          "required": ["minLength", "maxResults"],
           "additionalProperties": false,
           "properties": {
             "minLength": { "type": "integer", "minimum": 1, "maximum": 16 },
             "maxResults": { "type": "integer", "minimum": 1, "maximum": 500 },
-            "placeholder": { "type": "string", "minLength": 1, "pattern": "\\S" }
+            "placeholder": { "type": "string", "minLength": 1, "pattern": "\\S" },
+            "kinds": { "description": "The node kinds search can find; every node when absent.", "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonEmptyString" } }
           }
         },
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
+        "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
+        "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
+        "labels": {
+          "description": "Translations of the texts the runtime writes itself; English where a name is absent. {placeholders} are replaced.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "searchPlaceholder": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResults": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResultCount": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResultCountOfTotal": { "$ref": "#/$defs/accessibleLabel" },
+            "searchResultCountOfMany": { "$ref": "#/$defs/accessibleLabel" },
+            "searchNoResults": { "$ref": "#/$defs/accessibleLabel" },
+            "searchTooShort": { "$ref": "#/$defs/accessibleLabel" },
+            "searchWordTooShort": { "$ref": "#/$defs/accessibleLabel" },
+            "searchFailed": { "$ref": "#/$defs/accessibleLabel" },
+            "columns": { "$ref": "#/$defs/accessibleLabel" },
+            "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
+            "loading": { "$ref": "#/$defs/accessibleLabel" },
+            "loadError": { "$ref": "#/$defs/accessibleLabel" },
+            "showMore": { "$ref": "#/$defs/accessibleLabel" },
+            "showMoreUnknownTotal": { "$ref": "#/$defs/accessibleLabel" },
+            "pageLoaded": { "$ref": "#/$defs/accessibleLabel" },
+            "itemsLoaded": { "$ref": "#/$defs/accessibleLabel" },
+            "yes": { "$ref": "#/$defs/accessibleLabel" },
+            "no": { "$ref": "#/$defs/accessibleLabel" },
+            "utcTime": { "type": "string", "pattern": "\\{time\\}" },
+            "localTime": { "type": "string", "pattern": "\\{time\\}" },
+            "mountError": { "$ref": "#/$defs/accessibleLabel" }
+          }
+        },
         "source": { "$ref": "#/$defs/source" },
         "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } }
       },
@@ -319,30 +358,126 @@
         "root": { "$ref": "#/$defs/identifier" },
         "nodeCount": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "packs": { "description": "The number of p/<n> pack files. When present, a reference p/<n>#<slot> names page <slot> of pack <n>.", "$ref": "#/$defs/count" },
         "search": {
           "type": "object",
-          "required": ["shards"],
+          "required": ["entryCount", "entryFiles", "kinds", "shards"],
           "additionalProperties": false,
           "properties": {
-            "prefix": { "enum": ["", "k-"] },
+            "entryCount": { "$ref": "#/$defs/count" },
+            "entryFiles": {
+              "description": "The number of the first entry in each e/<n> file, in file order.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/count" }
+            },
+            "kinds": { "type": "array", "items": { "type": "string" } },
             "shards": {
+              "description": "Each shard file's key and the number of entries its posting lists refer to.",
               "type": "object",
-              "propertyNames": { "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
+              "propertyNames": { "$ref": "#/$defs/shardKey" },
               "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+            },
+            "entryPacks": {
+              "description": "With shardPacks: the index is packed into q/<n> files. The number of the first entry file in each entry pack, in pack order, starting with 0.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/count" }
+            },
+            "shardPacks": {
+              "description": "The first shard key, in ordinal order, of each shard pack; shard packs follow the entry packs.",
+              "type": "array",
+              "items": { "$ref": "#/$defs/shardKey" }
             }
-          }
+          },
+          "dependentRequired": { "entryPacks": ["shardPacks"], "shardPacks": ["entryPacks"] }
         }
       }
     },
+    "pack": {
+      "type": "object",
+      "required": ["protocol", "type", "pages"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "pack" },
+        "pages": {
+          "description": "In a p/<n> pack, the children pages of many nodes, each as the JSON text of a page document; in a q/<n> pack, the search entry files or shards of an index, each as the JSON text of its document. A reader parses only the one it needs.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 2, "contentMediaType": "application/json", "contentSchema": { "anyOf": [{ "$ref": "#/$defs/page" }, { "$ref": "#/$defs/searchEntries" }, { "$ref": "#/$defs/searchShard" }] } }
+        }
+      }
+    },
+    "count": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+    "shardKey": {
+      "description": "A prefix of at least two encoded code units, with a trailing - for the word exactly that long, or one encoded code unit and - for a one-unit word; numbered parts append .2, .3, and so on.",
+      "type": "string",
+      "pattern": "^(?:(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?|(?:[a-z0-9]|_[0-9a-f]{4})-)(\\.(?:[2-9]|[1-9][0-9]+))?$"
+    },
     "searchShard": {
       "type": "object",
-      "required": ["protocol", "type", "key", "entries"],
+      "required": ["protocol", "type", "key", "words", "postings"],
       "additionalProperties": false,
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "searchShard" },
-        "key": { "type": "string", "pattern": "^(?:[a-z0-9]|_[0-9a-f]{4}){2,}-?(\\.(?:[2-9]|[1-9][0-9]+))?$" },
-        "entries": { "type": "array", "items": { "$ref": "#/$defs/searchHit" } }
+        "key": { "$ref": "#/$defs/shardKey" },
+        "words": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "postings": {
+          "description": "One list per word. A list starts with an entry number; after it a positive value is the gap to the next entry and a negative value -n stands for the n entries that follow without a gap.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "prefixItems": [{ "$ref": "#/$defs/count" }],
+            "items": { "type": "integer", "minimum": -2147483647, "maximum": 2147483647, "not": { "const": 0 } }
+          }
+        }
+      }
+    },
+    "searchEntry": {
+      "description": "[parent entry number or -1, leading code units shared with the parent id, id part, trailing code units shared with the parent id, label, kind number or null, reference of the first children page when it is in another file than the page that holds the node, or null; reference of the page that holds the node when it is in another file than the first page of its list]; trailing nulls are left out.",
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 8,
+      "prefixItems": [
+        { "type": "integer", "minimum": -1, "maximum": 2147483647 },
+        { "$ref": "#/$defs/count" },
+        { "type": "string" },
+        { "$ref": "#/$defs/count" },
+        { "type": "string" },
+        { "anyOf": [{ "$ref": "#/$defs/count" }, { "type": "null" }] },
+        { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        { "$ref": "#/$defs/identifier" }
+      ]
+    },
+    "searchEntries": {
+      "type": "object",
+      "required": ["protocol", "type", "first", "stem", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "searchEntries" },
+        "first": { "$ref": "#/$defs/count" },
+        "stem": {
+          "description": "The ancestors of the first entry from the top level down, each as its entry number followed by the fields of an entry.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 6,
+            "maxItems": 9,
+            "prefixItems": [
+              { "$ref": "#/$defs/count" },
+              { "type": "integer", "minimum": -1, "maximum": 2147483647 },
+              { "$ref": "#/$defs/count" },
+              { "type": "string" },
+              { "$ref": "#/$defs/count" },
+              { "type": "string" },
+              { "anyOf": [{ "$ref": "#/$defs/count" }, { "type": "null" }] },
+              { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+              { "$ref": "#/$defs/identifier" }
+            ]
+          }
+        },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/searchEntry" } }
       }
     }
   }

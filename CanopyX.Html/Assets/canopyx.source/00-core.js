@@ -1,5 +1,5 @@
 /*
- * CanopyX browser runtime: a virtualized tree grid over the canopyx/1 data protocol. No dependencies.
+ * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
  */
 (function (global) {
@@ -10,14 +10,17 @@
     return;
   }
 
-  const PROTOCOL = "canopyx/1";
+  const PROTOCOL = "canopyx/2";
   const OVERSCAN = 8;
   const TYPEAHEAD_MS = 600;
   const INDENT = 18;
   const COUNTS_BATCH = 50;
   const SHARD_CACHE = 24;
+  const ENTRY_CACHE = 32;
+  const ENTRY_BATCH = 8;
+  const PACK_CACHE = 6;
+  const DATE_CACHE = 4096;
   const SEARCH_CANDIDATES = 5;
-  const SHARD_BATCH = 4;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
   const activeGrids = new WeakMap();
@@ -69,10 +72,6 @@
         throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
       }
     }
-    if (type === "searchShard") {
-      if (!Array.isArray(doc.entries)) throw new Error("CanopyX: search shard entries must be an array.");
-      doc.entries.forEach(validateSearchHit);
-    }
     if (type === "counts") {
       if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
       const ids = new Set();
@@ -91,13 +90,6 @@
       }
     }
     return doc;
-  }
-
-  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
-  function requireIdentifier(value, name) {
-    if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
-      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
-    }
   }
 
   /** Search paths must be complete, unambiguous node-id paths before they reach navigation. */
@@ -148,6 +140,47 @@
     return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
   }
 
+  // ---------- tones ----------
+  // The stylesheet has colours for six tones. Any other tone is the host's: its colours come from the theme's
+  // --cx-tone-<name> (text) and --cx-tone-<name>-bg (badge background), through two properties set on the element.
+  const NO_TONE = { cls: "", host: null };
+  const tones = new Map();
+
+  /** The class names of a tone (with a leading space) and, for a host tone, its name; a malformed tone has neither. */
+  function toneOf(name) {
+    let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
+    if (!tone) {
+      // A name ending in -bg would read its text colour from the badge background of another tone.
+      if (!/^[a-z][a-z0-9-]{0,31}$/.test(name) || name.endsWith("-bg")) {
+        return NO_TONE;
+      }
+      const host = !/^(neutral|info|success|warning|danger|muted)$/.test(name);
+      tone = { cls: " cx-tone-" + name + (host ? " cx-toned" : ""), host: host ? name : null };
+      if (tones.size < 256) tones.set(name, tone);
+    }
+    return tone;
+  }
+
+  /** Gives an element the classes of a tone after its base classes, and points it at the theme colours of a host tone. */
+  function applyTone(element, base, tone) {
+    element.className = base + tone.cls;
+    toneColors(element, tone);
+  }
+
+  function toneColors(element, tone) {
+    if ((element._tone || null) === tone.host) {
+      return;
+    }
+    element._tone = tone.host;
+    if (tone.host) {
+      element.style.setProperty("--cx-t", "var(--cx-tone-" + tone.host + ")");
+      element.style.setProperty("--cx-t-bg", "var(--cx-tone-" + tone.host + "-bg)");
+    } else {
+      element.style.removeProperty("--cx-t");
+      element.style.removeProperty("--cx-t-bg");
+    }
+  }
+
   const numberFormats = new Map();
   function numberFormat(lang) {
     const key = lang || "";
@@ -167,37 +200,108 @@
     return value < 10 ? "0" + value : String(value);
   }
 
-  function formatDate(value) {
-    const time = Date.parse(value);
-    if (isNaN(time)) {
-      return String(value);
+  // A date is parsed and formatted once for both time zones; rows are painted again and again while scrolling.
+  const dateTexts = new Map();
+
+  /** [UTC text, local text] of an ISO date, each as yyyy-MM-dd HH:mm; null when the value is not a date. */
+  function dateText(value) {
+    let texts = dateTexts.get(value);
+    if (texts === undefined) {
+      const time = Date.parse(value);
+      const d = new Date(time);
+      texts = isNaN(time) ? null : [
+        String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()),
+        String(d.getFullYear()).padStart(4, "0") + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes())];
+      if (dateTexts.size >= DATE_CACHE) dateTexts.clear();
+      dateTexts.set(value, texts);
     }
-    const d = new Date(time);
-    return String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
+    return texts;
+  }
+
+  // ---------- labels ----------
+  // Every text the runtime writes itself, in English. A view document can carry translations in "labels", and a host
+  // can pass more in the options; placeholders such as {count} are replaced. Host data (labels of nodes, column
+  // titles, cells) is never translated here.
+  const DEFAULT_LABELS = Object.freeze({
+    searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
+    searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
+    searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
+    searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
+    columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
+    loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+    showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
+    pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
+    utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
+  });
+
+  /** The labels of a grid: the English defaults, then the view's, then the host's. A name CanopyX does not know is a mistake. */
+  function labelsFor(...sources) {
+    const labels = Object.assign({}, DEFAULT_LABELS);
+    for (const source of sources) {
+      if (source == null) continue;
+      if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
+      Object.keys(source).forEach((name) => {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
+        if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
+        labels[name] = source[name];
+      });
+    }
+    return Object.freeze(labels);
+  }
+
+  /** A label with its {placeholders} replaced; a placeholder without a value stays as it is. */
+  function fill(template, values) {
+    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
+  }
+
+  /**
+   * What formatting a grid's cells needs: the page language, the time zone, and the labels, with the date labels
+   * split around {time} once, because dates are formatted again on every paint.
+   */
+  function formatting(lang, local, labels) {
+    const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
+    return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
+  }
+
+  /** In UTC, marked as UTC by the label, or in the reader's own time zone without a mark. */
+  function formatDate(value, fmt) {
+    const texts = dateText(value);
+    return texts ? (fmt.local ? texts[1] : fmt.utc[0] + texts[0] + fmt.utc[1]) : String(value);
+  }
+
+  /** The same moment in the other time zone, as the tooltip of a date the runtime formatted; null for any other cell. */
+  function otherZone(cell, column, fmt) {
+    const value = cellValue(cell);
+    if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
+      return null;
+    }
+    const texts = dateText(value);
+    return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
   }
 
   /** Formats a value without display text, following the protocol's default formatting table. */
-  function formatValue(value, kind, lang) {
+  function formatValue(value, kind, fmt) {
     if (value === null || value === undefined) {
       return "";
     }
     if (typeof value === "boolean") {
-      return value ? "Yes" : "No";
+      return value ? fmt.labels.yes : fmt.labels.no;
     }
     if (typeof value === "number" && kind === "number") {
-      return numberFormat(lang).format(value);
+      return numberFormat(fmt.lang).format(value);
     }
     if (typeof value === "string" && kind === "datetime") {
-      return formatDate(value);
+      return formatDate(value, fmt);
     }
     return String(value);
   }
 
-  function cellText(cell, column, lang) {
+  function cellText(cell, column, fmt) {
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }
-    return formatValue(cellValue(cell), column.kind, lang);
+    return formatValue(cellValue(cell), column.kind, fmt);
   }
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -235,110 +339,4 @@
     }
     const order = a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : collator.compare(a.value, b.value);
     return order * direction;
-  }
-
-  // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  // Common ranges use direct rules. The remaining one-unit pairs come from the C# writer's frozen table.
-  const EXTRA_FOLD_PAIRS = "__CANOPYX_FOLD_PAIRS__";
-  const EXTRA_LOWERCASE = new Map();
-  const extraBytes = atob(EXTRA_FOLD_PAIRS);
-  for (let i = 0; i < extraBytes.length; i += 4) {
-    EXTRA_LOWERCASE.set(extraBytes.charCodeAt(i) | (extraBytes.charCodeAt(i + 1) << 8),
-      extraBytes.charCodeAt(i + 2) | (extraBytes.charCodeAt(i + 3) << 8));
-  }
-  const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
-
-  function foldCode(c) {
-    if (c < 0x80) {
-      return c >= 65 && c <= 90 ? c + 32 : c;
-    }
-    if (c >= 0xC0 && c <= 0xDE && c !== 0xD7) {
-      return c + 0x20;
-    }
-    if (c >= 0x0100 && c <= 0x017F) {
-      if ((c <= 0x012F || (c >= 0x0132 && c <= 0x0137) || (c >= 0x014A && c <= 0x0177)) && c % 2 === 0) {
-        return c + 1;
-      }
-      if (((c >= 0x0139 && c <= 0x0148) || (c >= 0x0179 && c <= 0x017E)) && c % 2 === 1) {
-        return c + 1;
-      }
-      return c === 0x0178 ? 0x00FF : c;
-    }
-    if ((c >= 0x0391 && c <= 0x03A9 && c !== 0x03A2) || (c >= 0x0410 && c <= 0x042F)) {
-      return c + 0x20;
-    }
-    if (c >= 0x0400 && c <= 0x040F) {
-      return c + 0x50;
-    }
-    if (c >= 0x0531 && c <= 0x0556) {
-      return c + 0x30;
-    }
-    if (GREEK_ACCENTED[c]) return GREEK_ACCENTED[c];
-    return EXTRA_LOWERCASE.get(c) || c;
-  }
-
-  function foldUnit(unit) {
-    return String.fromCharCode(foldCode(unit.charCodeAt(0)));
-  }
-
-  function isSeparator(code) {
-    return code < 128 && !((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122));
-  }
-
-  function foldText(text) {
-    const source = String(text == null ? "" : text);
-    let out = "";
-    for (let i = 0; i < source.length; i++) {
-      out += foldUnit(source.charAt(i));
-    }
-    return out;
-  }
-
-  /** Splits text into folded words. */
-  function words(text) {
-    const folded = foldText(text);
-    const out = [];
-    let current = "";
-    for (let i = 0; i < folded.length; i++) {
-      if (isSeparator(folded.charCodeAt(i))) {
-        if (current) {
-          out.push(current);
-          current = "";
-        }
-      } else {
-        current += folded.charAt(i);
-      }
-    }
-    if (current) {
-      out.push(current);
-    }
-    return out;
-  }
-
-  function matchesWords(labelWords, queryWords) {
-    return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
-  }
-
-  /** Trims only protocol separators; all non-ASCII code units remain word characters. */
-  function trimSeparators(text) {
-    let start = 0, end = text.length;
-    while (start < end && isSeparator(text.charCodeAt(start))) start++;
-    while (end > start && isSeparator(text.charCodeAt(end - 1))) end--;
-    return text.slice(start, end);
-  }
-
-  function rankLabel(label, query) {
-    const l = foldText(label);
-    const q = trimSeparators(foldText(query));
-    return l === q ? 0 : l.startsWith(q) ? 1 : 2;
-  }
-
-  /** Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits. */
-  function shardKey(prefix) {
-    let out = "";
-    for (let i = 0; i < prefix.length; i++) {
-      const code = prefix.charCodeAt(i);
-      out += (code >= 97 && code <= 122) || (code >= 48 && code <= 57) ? prefix.charAt(i) : "_" + ("000" + code.toString(16)).slice(-4);
-    }
-    return out;
   }

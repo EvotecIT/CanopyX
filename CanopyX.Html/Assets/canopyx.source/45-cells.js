@@ -3,7 +3,8 @@
   // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
   // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
   // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
-  // (node, detail, status) or the columns change.
+  // (node, detail, status) or the columns change. A column the host draws itself (options.renderers) gives its renderer
+  // a fresh element on every paint (46-host-cells.js); rows the renderer leaves to the default keep the reused cell.
   function setAttr(element, name, value) {
     const cache = element._attrs || (element._attrs = {});
     if (cache[name] === value) {
@@ -34,7 +35,10 @@
         this.buildRow(rowEl, kind);
       }
       setAttr(rowEl, "aria-level", String(w.level));
-      const height = w.span * this.rowH + "px";
+      // A detail row without a declared height takes the height of its content and is measured after the paint.
+      const auto = kind === "detail" && w.auto;
+      this.observeDetail(rowEl, auto);
+      const height = auto ? "auto" : w.hpx + "px";
       if (rowEl._height !== height) {
         rowEl.style.height = height;
         rowEl._height = height;
@@ -74,7 +78,7 @@
       }
       rowEl._cells = this.cols.map((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
-        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null };
+        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
         cell.className = slot.base;
         if (i === 0) {
           slot.indent = cell.appendChild(h("span", "cx-indent"));
@@ -103,16 +107,22 @@
 
     paintDetailRow(rowEl, w) {
       const node = w.h;
-      setClass(rowEl, "cx-row cx-detail" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
+      setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
-      // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
+      // Detail content (and anything a host renderDetail callback put into it) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
       const cell = this.cell(rowEl, 0, this.rowWidth);
       rowEl.replaceChild(cell, old);
       rowEl._cells[0].cell = cell;
       cell.setAttribute("aria-colspan", String(this.cols.length));
-      cell.style.paddingLeft = (w.level - 1) * INDENT + 8 + "px";
+      // The body sticks at the indent while the grid scrolls sideways, and takes the visible width from there.
+      const left = (w.level - 1) * INDENT + 8 + "px";
+      cell.style.paddingLeft = left;
+      cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
+      // As in node rows, the controls of the detail are reached with cell navigation, not with Tab.
+      quietControls(cell);
+      if (w.auto) this.measureNeeded = true;
     },
 
     paintNodeRow(rowEl, w) {
@@ -187,45 +197,31 @@
 
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
-      if (this.opts.renderCell) {
-        // Host-rendered cells own their content, so they are rebuilt on every paint, from a clean cell.
-        slot.cell.className = slot.base;
-        slot.cell.removeAttribute("title");
-        slot.cls = slot.base;
-        slot.title = null;
-        if (slot.content === slot.cell) {
-          const old = slot.cell;
-          const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
-          old.replaceWith(fresh);
-          slot.cell = fresh;
-          slot.content = fresh;
-        } else {
-          const fresh = h("span", "cx-content");
-          slot.content.replaceWith(fresh);
-          slot.content = fresh;
-        }
-        slot.badges = [];
-        if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
-          return;
-        }
-        slot.content.appendChild(slot.textSpan);
+      // "host" when the renderer drew the cell, "decorated" when it changed the element and left the text to the default.
+      const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
+      if (hosted === "host") {
+        return;
       }
-      const text = cellText(value, column, this.lang);
+      const decorated = hosted === "decorated";
+      const text = cellText(value, column, this.fmt);
       if (slot.text.data !== text) {
         slot.text.data = text;
       }
       const object = isCellObject(value);
-      const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
+      const tone = object ? toneOf(value.tone) : NO_TONE;
+      const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
-        if (this.opts.renderCell) {
+        if (decorated) {
           // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
-          if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
+          if (tone.cls) slot.cell.className += tone.cls;
         } else {
           slot.cell.className = cls;
         }
         slot.cls = cls;
       }
-      const title = object && value.title ? value.title : null;
+      toneColors(slot.cell, tone);
+      // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
+      const title = object && value.title ? value.title : decorated ? null : otherZone(value, column, this.fmt);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -248,10 +244,10 @@
           span._text = span.appendChild(document.createTextNode(""));
           slot.badges.push(span);
         }
-        const cls = "cx-badge cx-tone-" + (badge.tone || "neutral");
-        if (span._cls !== cls) {
-          span.className = cls;
-          span._cls = cls;
+        const tone = toneOf(badge.tone || "neutral");
+        if (span._cls !== tone.cls) {
+          applyTone(span, "cx-badge", tone);
+          span._cls = tone.cls;
         }
         if (span._text.data !== badge.text) {
           span._text.data = badge.text;
@@ -271,12 +267,32 @@
       }
     },
 
+    /** Shows dates in the reader's own time zone ("local") or in UTC ("utc"); the tooltip gives the other one. */
+    setTimeZone(zone) {
+      if (zone !== "local" && zone !== "utc") {
+        throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
+      }
+      if (this.local === (zone === "local")) {
+        return;
+      }
+      this.local = zone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
+      this.version++;
+      this.scheduleRender();
+    },
+
     cell(rowEl, index, width, kind) {
+      const cell = this.newCell(index, width, kind);
+      rowEl.appendChild(cell);
+      return cell;
+    },
+
+    /** A grid cell that is not in a row yet. */
+    newCell(index, width, kind) {
       const cell = h("div", "cx-cell" + (kind ? " cx-kind-" + kind : ""));
       cell.setAttribute("role", "gridcell");
       cell.setAttribute("aria-colindex", String(index + 1));
       cell.style.width = width + "px";
-      rowEl.appendChild(cell);
       return cell;
     }
   });

@@ -173,12 +173,12 @@ test.describe("sidecar bundle", () => {
     const before = await page.evaluate(() => window.__scripts.length);
     await row(page, "share-b").locator(".cx-exp").click();
     await expect(row(page, "share-b/d0")).toBeVisible();
-    // Opening the share loaded exactly its first children page, a hashed sidecar script.
+    // Opening the share loaded exactly the pack file that holds its first children page.
     const loaded = await page.evaluate((from) => window.__scripts.slice(from), before);
     expect(loaded).toHaveLength(1);
     const base = await page.evaluate(() => new URL(document.querySelector(".cx-host").canopyx.view.source.base, location.href).href);
     expect(loaded[0].startsWith(base)).toBe(true);
-    expect(loaded[0].slice(base.length)).toMatch(/^c\/[0-9a-f]{2}\/[0-9a-f]{16}-0\.js$/);
+    expect(loaded[0].slice(base.length)).toMatch(/^p\/\d+\.js$/);
   });
 
   test("pages 3,000 files 250 at a time", async ({ page }) => {
@@ -189,7 +189,20 @@ test.describe("sidecar bundle", () => {
     await expect(page.locator(".cx-row[data-cx-status=more]")).toContainText("Show more (250 of 3,000 loaded)");
   });
 
-  test("searches the sharded index, including non-ASCII names", async ({ page }) => {
+  test("labels equal to the query come first among thousands of matches", async ({ page }) => {
+    await openExample(page, "bundle/index.html");
+    // The writer files each label under a token that the runtime computes again from the query.
+    for (const [query, label] of [["quarterly REVIEW", "Quarterly review"], ["\u0142\u00f3d\u017a OFFICE", "\u0141\u00f3d\u017a office"]]) {
+      const result = await page.evaluate(`${api(page)}.search(${JSON.stringify(query)})`);
+      expect(result.total).toBeGreaterThan(1000);
+      expect(result.truncated).toBe(true);
+      expect(result.hits).toHaveLength(20);
+      expect(result.hits.map((hit) => hit.label)).toEqual(Array(20).fill(label));
+      expect(result.hits.every((hit) => hit.kind === "folder")).toBe(true);
+    }
+  });
+
+  test("searches the bundle index, including non-ASCII names", async ({ page }) => {
     await openExample(page, "bundle/index.html");
     await page.getByRole("combobox").fill("İstanbul lau");
     await expect(page.getByRole("option").first()).toContainText("İstanbul launch");
@@ -212,7 +225,7 @@ test.describe("remote source", () => {
   test("pages children, searches, and refreshes counts through the endpoint templates", async ({ page }) => {
     const requests = [];
     const view = {
-      protocol: "canopyx/1", type: "view", id: "remote", label: "Remote tree", rowHeight: 28, pageSize: 100, selection: "single",
+      protocol: "canopyx/2", type: "view", id: "remote", label: "Remote tree", rowHeight: 28, pageSize: 100, selection: "single",
       columns: [{ id: "name", title: "Name", width: 300, kind: "text" }, { id: "size", title: "Size", width: 100, kind: "number" }],
       search: { minLength: 2, maxResults: 20, placeholder: "Search" },
       source: { kind: "remote", children: "api/children?ref={ref}&cursor={cursor}", search: "api/search?q={query}&limit={limit}", counts: "api/counts?ids={ids}" }
@@ -228,11 +241,11 @@ test.describe("remote source", () => {
         const all = children(url.searchParams.get("ref"));
         const offset = Number(url.searchParams.get("cursor") || 0);
         const items = all.slice(offset, offset + 50);
-        body = { protocol: "canopyx/1", type: "page", parent: url.searchParams.get("ref") || null, offset, total: all.length, items, next: offset + 50 < all.length ? String(offset + 50) : null };
+        body = { protocol: "canopyx/2", type: "page", parent: url.searchParams.get("ref") || null, offset, total: all.length, items, next: offset + 50 < all.length ? String(offset + 50) : null };
       } else if (url.pathname === "/api/search") {
-        body = { protocol: "canopyx/1", type: "search", query: url.searchParams.get("q"), truncated: false, hits: [{ path: ["r1", "r1/110"], label: "Item 110 of r1" }] };
+        body = { protocol: "canopyx/2", type: "search", query: url.searchParams.get("q"), truncated: false, hits: [{ path: ["r1", "r1/110"], label: "Item 110 of r1" }] };
       } else {
-        body = { protocol: "canopyx/1", type: "counts", items: url.searchParams.get("ids").split(",").map((id) => ({ id, cells: { size: 999 } })) };
+        body = { protocol: "canopyx/2", type: "counts", items: url.searchParams.get("ids").split(",").map((id) => ({ id, cells: { size: 999 } })) };
       }
       return route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
     });

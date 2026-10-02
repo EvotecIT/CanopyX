@@ -1,70 +1,144 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace CanopyX.Bundles;
 
 /// <summary>
-/// Builds the sharded search index of a bundle. Every entry is filed under each distinct word of its label that has
-/// at least two code units. A shard covers the words that start with one prefix; a shard with more entries than the
-/// limit splits on a prefix one code unit longer, and words exactly as long as the old prefix move to a "-" shard.
-/// A shard can still hold more entries than the limit (a very common word, or the longest prefix); the bundle writer
-/// stores such a shard in parts.
+/// Collects the words of a bundle's search index: for each folded word the ascending numbers of the entries whose
+/// label has that word (its postings). A label with a word is also filed under its label token, so the runtime finds
+/// the labels equal to a query without reading them. The entries themselves are written as they arrive, by
+/// <see cref="CanopySearchIndexWriter"/>, so this class holds numbers and distinct words, not nodes.
 /// </summary>
+/// <remarks>
+/// Words are grouped into shards by prefix. A shard covers the words that start with one prefix of at least two code
+/// units; a shard with more postings than the limit splits on a prefix one code unit longer, and the word exactly as
+/// long as the old prefix moves to a "-" shard. A word of one code unit always has a "-" shard of its own. A shard
+/// can still hold more postings than the limit (a very common word, or the longest prefix);
+/// <see cref="CanopySearchIndexWriter"/> stores a shard in parts when it outgrows the file budget.
+/// </remarks>
 internal sealed class CanopySearchIndex {
-    /// <summary>Prefixes stop growing here, so a pathological set of equal words cannot split forever.</summary>
+    /// <summary>Prefixes stop growing here, so a pathological set of equal prefixes cannot split forever.</summary>
     internal const int MaxPrefixLength = 12;
 
-    private readonly List<CanopySearchHit> _entries = new List<CanopySearchHit>();
-    private readonly List<KeyValuePair<string, int>> _words = new List<KeyValuePair<string, int>>();
+    /// <summary>
+    /// The most postings a shard of label tokens holds before it splits. A query reads the shard of exactly one
+    /// token, so these shards stay small whatever the limit for words is.
+    /// </summary>
+    internal const int TokenShardLimit = 1000;
 
-    internal int EntryCount => _entries.Count;
+    private readonly List<string> _kinds = new List<string>();
+    private readonly Dictionary<string, int> _kindNumbers = new Dictionary<string, int>(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<int>> _postings = new Dictionary<string, List<int>>(StringComparer.Ordinal);
 
-    internal void Add(string label, Func<CanopySearchHit> createEntry) {
-        var words = CanopySearchFolding.Words(label).Where(word => word.Length >= 2).ToArray();
-        if (words.Length == 0) return;
-        var index = _entries.Count;
-        _entries.Add(createEntry());
-        foreach (var word in words) _words.Add(new KeyValuePair<string, int>(word, index));
+
+    /// <summary>Gets the distinct node kinds in order of first appearance; entries refer to them by position.</summary>
+    internal IReadOnlyList<string> Kinds => _kinds;
+
+    /// <summary>Gets the ascending entry numbers filed under a word.</summary>
+    internal IReadOnlyList<int> Postings(string word) => _postings[word];
+
+    /// <summary>Files the words of a label under an entry number. Numbers must arrive in ascending order.</summary>
+    /// <param name="number">The entry number.</param>
+    /// <param name="label">The node label.</param>
+    internal void File(int number, string label) {
+        // The words of one label are distinct, so every posting list stays strictly ascending.
+        var words = CanopySearchFolding.Words(label);
+        foreach (var word in words) {
+            Post(word, number);
+        }
+
+        if (words.Count > 0) {
+            Post(CanopySearchFolding.LabelToken(label), number);
+        }
     }
 
-    internal CanopySearchHit Entry(int index) => _entries[index];
+    private void Post(string word, int number) {
+        if (!_postings.TryGetValue(word, out var postings)) {
+            postings = new List<int>();
+            _postings.Add(word, postings);
+        }
 
-    /// <summary>Returns shard keys, in ordinal order, with the entry indexes of each shard in document order.</summary>
-    internal SortedDictionary<string, List<int>> Build(int limit) {
-        var shards = new SortedDictionary<string, List<int>>(StringComparer.Ordinal);
-        foreach (var group in _words.GroupBy(w => w.Key.Substring(0, 2), StringComparer.Ordinal)) {
-            Split(group.Key, group.ToList(), limit, shards);
+        postings.Add(number);
+    }
+
+    /// <summary>Returns the shard keys in ordinal order, each with its words in ordinal order.</summary>
+    /// <param name="limit">The most postings a shard holds before it splits on a longer prefix.</param>
+    internal SortedDictionary<string, List<string>> BuildShards(int limit) {
+        var words = new List<string>(_postings.Keys);
+        words.Sort(StringComparer.Ordinal);
+        var shards = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
+        var longer = new List<string>(words.Count);
+        foreach (var word in words) {
+            if (word.Length == 1) {
+                shards[CanopySearchFolding.ShardKey(word) + "-"] = new List<string> { word };
+            } else {
+                longer.Add(word);
+            }
+        }
+
+        foreach (var group in GroupByPrefix(longer, 2)) {
+            Split(group.Key, group.Value, group.Key[0] == CanopySearchFolding.LabelTokenMark ? Math.Min(limit, TokenShardLimit) : limit, shards);
         }
 
         return shards;
     }
 
-    private static void Split(string prefix, List<KeyValuePair<string, int>> words, int limit, SortedDictionary<string, List<int>> shards) {
-        var entries = Distinct(words);
+    /// <summary>Returns the position of a kind in <see cref="Kinds"/>, adding it on first use; -1 for no kind.</summary>
+    internal int KindNumber(string? kind) {
+        if (kind == null) {
+            return -1;
+        }
+
+        if (!_kindNumbers.TryGetValue(kind, out var number)) {
+            number = _kinds.Count;
+            _kinds.Add(kind);
+            _kindNumbers.Add(kind, number);
+        }
+
+        return number;
+    }
+
+    private void Split(string prefix, List<string> words, int limit, SortedDictionary<string, List<string>> shards) {
+        long postings = 0;
+        foreach (var word in words) {
+            postings += _postings[word].Count;
+        }
+
         var key = CanopySearchFolding.ShardKey(prefix);
-        if (entries.Count <= limit || prefix.Length >= MaxPrefixLength) {
-            shards[key] = entries;
+        if (postings <= limit || prefix.Length >= MaxPrefixLength) {
+            shards[key] = words;
             return;
         }
 
-        var exact = words.Where(w => w.Key.Length == prefix.Length).ToList();
-        if (exact.Count > 0) {
-            shards[key + "-"] = Distinct(exact);
+        var longer = new List<string>(words.Count);
+        foreach (var word in words) {
+            if (word.Length == prefix.Length) {
+                shards[key + "-"] = new List<string> { word };
+            } else {
+                longer.Add(word);
+            }
         }
 
-        var longer = words.Where(w => w.Key.Length > prefix.Length);
-        foreach (var group in longer.GroupBy(w => w.Key.Substring(0, prefix.Length + 1), StringComparer.Ordinal)) {
-            Split(group.Key, group.ToList(), limit, shards);
+        foreach (var group in GroupByPrefix(longer, prefix.Length + 1)) {
+            Split(group.Key, group.Value, limit, shards);
         }
     }
 
-    private static List<int> Distinct(List<KeyValuePair<string, int>> words) {
-        var entries = new SortedSet<int>();
+    /// <summary>Groups ordinally sorted words of at least <paramref name="length"/> code units by their first ones.</summary>
+    private static List<KeyValuePair<string, List<string>>> GroupByPrefix(List<string> words, int length) {
+        var groups = new List<KeyValuePair<string, List<string>>>();
+        List<string>? current = null;
+        string? prefix = null;
         foreach (var word in words) {
-            entries.Add(word.Value);
+            if (prefix == null || string.CompareOrdinal(word, 0, prefix, 0, length) != 0) {
+                prefix = word.Substring(0, length);
+                current = new List<string>();
+                groups.Add(new KeyValuePair<string, List<string>>(prefix, current));
+            }
+
+            current!.Add(word);
         }
 
-        return entries.ToList();
+        return groups;
     }
 }

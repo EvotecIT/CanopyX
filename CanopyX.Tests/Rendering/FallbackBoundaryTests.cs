@@ -16,13 +16,13 @@ public sealed class FallbackBoundaryTests {
                 view.Roots.Add(parent);
             }
             var result = new CanopyBundleWriter().Write(view, directory);
-            var root = File.ReadAllText(Path.Combine(result.DataDirectory, "r", "0.js"));
-            var references = System.Text.RegularExpressions.Regex.Matches(root, "\"ref\":\"([^\"]+)\"");
-            Assert.Equal(3, references.Count);
-            Assert.Equal(3, references.Select(m => m.Groups[1].Value).Distinct().Count());
+            var files = new CanopyX.Tests.Bundles.SidecarFiles(result.DataDirectory, view.Id);
+            var parents = files.Document("r/0")["items"]!.AsArray();
+            Assert.Equal(3, parents.Select(parent => parent!["ref"]!.GetValue<string>()).Distinct().Count());
             for (var index = 0; index < 3; index++) {
-                var page = File.ReadAllText(Path.Combine(result.DataDirectory, references[index].Groups[1].Value + ".js"));
-                Assert.Contains("\"id\":\"child" + index + "\"", page);
+                var page = files.Document(parents[index]!["ref"]!.GetValue<string>());
+                Assert.Equal(view.Roots[index].Id, page["parent"]!.GetValue<string>());
+                Assert.Equal("child" + index, page["items"]![0]!["id"]!.GetValue<string>());
             }
         } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
@@ -149,7 +149,7 @@ public sealed class FallbackBoundaryTests {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-assets-" + Guid.NewGuid().ToString("N"));
         try {
             var view = View();
-            var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetUrl, Height = "100px" };
+            var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain, AssetBaseUrl = assetUrl, Height = "100px" };
             Assert.DoesNotContain("style=\"height:100px", view.ToHtmlPage(options));
             Assert.Contains("style=\"height:100px", view.ToHtmlFragment(options));
             view.SaveHtmlBundle(directory, options: options);

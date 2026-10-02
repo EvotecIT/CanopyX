@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "twentieth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "twentieth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 300, sortable: true }, { id: "value", title: "Value", width: 160 }],
   source: { kind: "inline" }, roots: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
 
@@ -17,11 +17,10 @@ test("selection and sorting retain edited controls in surviving rows", async ({ 
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, cell) {
-      if (column !== "value") return false;
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { value(node, cell) {
       const input = document.createElement("input"); input.setAttribute("aria-label", "Edit " + node.id);
       cell.appendChild(input); return true;
-    } });
+    } } });
     await api.ready;
   });
   const edit = page.getByRole("textbox", { name: "Edit a" });
@@ -97,8 +96,8 @@ test("direct counts supersede an older pending refresh", async ({ page }) => {
     } });
     await api.ready;
     const pending = api.refreshCounts(["parent"]);
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
-    finishOldCount({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 1 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    finishOldCount({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1 }] });
     await pending;
     return api.visibleRows()[0].node.childCount;
   }, view);

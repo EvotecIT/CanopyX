@@ -52,6 +52,8 @@
       this.keyMap.forEach((w) => before.set(w, [w.expanded, w.autoExpand, w.filterCollapsed]));
       let restored = 0;
       let fallback = false;
+      // The restored paths are laid out and rendered together, once.
+      const release = this.holdLayout();
       try {
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
@@ -82,6 +84,7 @@
           this.relayout();
         }
       } finally {
+        release();
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
@@ -159,46 +162,6 @@
       await this.setState(state);
     },
 
-    deepLinkName() {
-      return "cx." + encodeURIComponent(this.view.id);
-    },
-
-    hashParams() {
-      return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
-    },
-
-    async openDeepLink() {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const param = this.hashParams().find((p) => p.startsWith(prefix));
-      if (!param) {
-        return;
-      }
-      try {
-        const ids = param.slice(prefix.length).split("/").filter(Boolean).map(decodeURIComponent);
-        await this.expandPath(ids, { select: true, focus: false });
-      } catch (e) {
-        this.announce(e.message);
-      }
-    },
-
-    writeDeepLink(w) {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const params = this.hashParams().filter((p) => !p.startsWith(prefix));
-      if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
-      const hash = "#" + params.join("&");
-      try {
-        global.history.replaceState(global.history.state, "", hash);
-      } catch (e) {
-        global.location.hash = hash;
-      }
-    },
-
     visibleRows() {
       return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
     },
@@ -225,11 +188,11 @@
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
-          const text = cellText(value, column, this.lang);
+          const text = cellText(value, column, this.fmt);
           const content = h("span");
-          if (!this.opts.renderCell || this.opts.renderCell(w.h, column.id, content, { level: w.level, expanded: w.expanded, index }) !== true) {
+          if (!column.render || column.render(w.h, content, { column: column.id, level: w.level, expanded: w.expanded, index }) !== true) {
             const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
-            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.lang));
+            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.fmt));
           }
           out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
@@ -262,6 +225,7 @@
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
+      let removed = false;
       doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
@@ -286,8 +250,10 @@
             w.h.hasChildren = item.childCount > 0;
             const loaded = w.children ? w.children.length : 0;
             if (w.loading) w.pendingChildCount = item.childCount;
-            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
+            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next)) {
               removedSelection = this.invalidateChildren(w) || removedSelection;
+              removed = true;
+            }
             else if (item.childCount === loaded) {
               w.next = null;
               w.error = null;
@@ -303,7 +269,8 @@
         }
       });
       this.applySort(this.root, true);
-      this.relayout();
+      // Rows of removed nodes go at once, even while an opening path holds back the rest.
+      this.relayout(removed);
       if (removedSelection) this.selectionChanged(removedSelection);
     },
 
@@ -328,12 +295,18 @@
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
+      clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
+      if (this.detailObserver) this.detailObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
+      global.removeEventListener("hashchange", this.onHash);
+      global.removeEventListener("popstate", this.onHash);
+      if (this.linkOpening) this.linkOpening.abort();
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
+      this.host.classList.remove("cx-pin-tree");
       this.host.removeAttribute("data-cx-ready");
       this.host.removeAttribute("data-canopyx-mounted");
     }

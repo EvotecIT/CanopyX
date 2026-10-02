@@ -104,9 +104,14 @@ internal sealed class SyntheticFileTree {
             version.Cells["modified"] = modified.AddDays(-(versions - v) * 3);
             version.Cells["owner"] = Owners[(v + versions) % Owners.Length];
             var detail = new CanopyTableDetail("Changes in version " + v).AddColumns("Property", "Before", "After");
+            detail.ColumnWidths.Add(2);
+            detail.ColumnWidths.Add(3);
+            detail.ColumnWidths.Add(3);
             detail.AddRow("Size", FormatSize(1_000_000L * v), new CanopyCell(FormatSize(1_200_000L * v)) { Tone = CanopyTone.Success });
             detail.AddRow("Retention", new CanopyCell("30 days") { Tone = CanopyTone.Danger }, new CanopyCell("90 days") { Tone = CanopyTone.Success });
             detail.AddRow("Sharing", "Team", new CanopyCell("Everyone") { Tone = CanopyTone.Warning });
+            // A backtick and ${ are the two sequences a bundle pack has to escape (see "Packs" in docs/data-protocol.md).
+            detail.AddRow("Path template", "`share`/${team}", "`share`/${team}/${year}");
             version.Children.Add(new CanopyNode(version.Id + "/changes", "Changes") { Detail = detail });
             history.Children.Add(version);
         }

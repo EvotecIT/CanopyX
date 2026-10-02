@@ -51,7 +51,7 @@ public sealed class CanopySource {
         return new CanopySource(CanopySourceKind.Sidecar, baseUrl.EndsWith("/", StringComparison.Ordinal) ? baseUrl : baseUrl + "/", null, null, null);
     }
 
-    /// <summary>Nodes come from HTTP endpoints that answer with <c>canopyx/1</c> documents.</summary>
+    /// <summary>Nodes come from HTTP endpoints that answer with <c>canopyx/2</c> documents.</summary>
     /// <param name="childrenUrl">
     /// Template for a page of children, for example <c>api/tree/children?ref={ref}&amp;cursor={cursor}</c>. The root
     /// level is requested with an empty <c>{ref}</c>; <c>{cursor}</c> is empty for the first page and otherwise the

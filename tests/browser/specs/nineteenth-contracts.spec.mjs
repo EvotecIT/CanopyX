@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "nineteenth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "nineteenth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 300, sortable: true }, { id: "value", title: "Value", width: 160 }],
   source: { kind: "inline" }, roots: [{ id: "keep", label: "Keep" }, { id: "other", label: "Other" }] };
 
@@ -17,13 +17,12 @@ test("filtering retains a matching row's edited host control", async ({ page }) 
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, cell) {
-      if (column !== "value") return false;
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { value(node, cell) {
       const input = document.createElement("input");
       input.setAttribute("aria-label", "Host edit " + node.id);
       cell.appendChild(input);
       return true;
-    } });
+    } } });
     await api.ready;
   });
   const edit = page.getByRole("textbox", { name: "Host edit keep" });

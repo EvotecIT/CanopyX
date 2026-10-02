@@ -5,6 +5,8 @@
   //   search(query, limit) -> { hits, total, truncated }
   //   counts(ids)          -> a counts document (remote sources with a counts URL only)
   //   canSearch            -> whether search() can answer
+  //   prefetch(opens, finds) -> optional: before a path opens, loads at once what page() will be asked for: the first
+  //                           children page of each id in opens, and the page that holds each id in finds; never rejects
 
   /** Pages an array that is already in memory (inline roots and inline children). */
   function slicePage(all, cursor, pageSize) {
@@ -14,9 +16,12 @@
     return { items: items, total: all.length, next: end < all.length ? String(end) : null, offset: offset };
   }
 
+  /** Orders hits as the protocol ranks them. Each label is folded once, not once per comparison. */
   function rankHits(hits, query, limit) {
-    hits.sort((a, b) => rankLabel(a.label, query) - rankLabel(b.label, query) || collator.compare(a.label, b.label));
-    return { hits: hits.slice(0, limit), total: hits.length, truncated: hits.length > limit };
+    const folded = trimSeparators(foldText(query));
+    const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
+    ranked.sort((a, b) => a.rank - b.rank || collator.compare(a.hit.label, b.hit.label));
+    return { hits: ranked.slice(0, limit).map((item) => item.hit), total: hits.length, truncated: hits.length > limit };
   }
 
   function inlineSource(view) {
@@ -39,12 +44,14 @@
       search(query, limit) {
         const queryWords = words(query);
         const hits = [];
+        // With kinds on the view's search, only nodes of those kinds are found; the others are still walked.
+        const kinds = view.search && Array.isArray(view.search.kinds) && view.search.kinds.length ? view.search.kinds : null;
         if (queryWords.length) {
           // Paths are linked during traversal and materialized only for matching hits.
           const stack = (view.roots || []).map((node) => ({ node, parent: null })).reverse();
           while (stack.length) {
             const item = stack.pop();
-            if (matchesWords(wordsOf(item.node), queryWords)) {
+            if ((!kinds || kinds.indexOf(item.node.kind) >= 0) && matchesWords(wordsOf(item.node), queryWords)) {
               const path = [];
               const labels = [];
               for (let entry = item; entry; entry = entry.parent) {
@@ -64,116 +71,84 @@
     };
   }
 
-  /** Picks the search shards for one folded query word (see "Sidecar" in docs/data-protocol.md). */
-  function resolveShards(shards, keys, word) {
-    const bases = keys.filter((key) => !/\.\d+$/.test(key));
-    const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
-      .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
-    for (let length = 2; length <= word.length; length++) {
-      const key = shardKey(word.slice(0, length));
-      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
-      const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
-      if (!deeper.length) return [];
-      if (length === word.length) return parts(deeper);
-    }
-    return [];
-  }
-
   function sidecarSource(view) {
     const supplied = view.source.base;
     if (typeof supplied !== "string" || !supplied || /[?#]/.test(supplied)) throw new Error("CanopyX: sidecar base must be a folder path without a query or fragment.");
     const base = supplied.endsWith("/") ? supplied : supplied + "/";
     const load = (ref) => loadSidecar(base, view.id, ref);
-    const shardCache = new Map();
     let manifestPromise = null;
     // Failed loads are not cached, so a retry can succeed once the file is back.
     const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => {
       checkDocument(doc, "manifest");
       if (doc.view !== view.id) throw new Error("CanopyX: manifest view does not match the requested view.");
+      if (doc.search !== undefined) checkSearchIndex(doc.search);
+      if (doc.packs !== undefined && !isCount(doc.packs)) throw new Error("CanopyX: manifest packs must be a count.");
       return doc;
     }).catch((err) => {
       manifestPromise = null;
       throw err;
     }));
-    // Shards stay cached for repeated queries, but only the most recent ones, so a few broad queries cannot keep
-    // megabytes of index alive.
-    const loadShard = (key) => {
-      let pending = shardCache.get(key);
-      if (pending) {
-        shardCache.delete(key);
-      } else {
-        pending = manifest().then(async (m) => {
-          const doc = checkDocument(await load("s/" + (m.search.prefix || "") + key), "searchShard");
-          if (doc.key !== key) throw new Error("CanopyX: search shard key does not match the manifest.");
-          if (!Array.isArray(doc.entries) || doc.entries.length !== m.search.shards[key]) {
-            throw new Error("CanopyX: search shard entry count does not match the manifest.");
-          }
-          return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
-        }).catch((err) => {
-          shardCache.delete(key);
-          throw err;
-        });
-      }
-      shardCache.set(key, pending);
-      if (shardCache.size > SHARD_CACHE) {
-        shardCache.delete(shardCache.keys().next().value);
-      }
-      return pending;
+    // A pack file holds the children pages of many nodes as JSON text, and only the page a node asks for is parsed.
+    // The pages of a subtree sit next to each other, so the last few packs stay loaded.
+    const loadPack = recentCache(PACK_CACHE, async (number) => {
+      const doc = checkDocument(await load("p/" + number), "pack");
+      if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
+      return doc.pages;
+    });
+    // Files a path prefetched, held until the next prefetch so the recent-pack cache cannot drop them before use.
+    let pinned = new Map();
+    const pin = (key, promise) => {
+      pinned.set(key, promise);
+      promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
+      return promise;
     };
+    const packOf = async (ref) => {
+      const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
+      return packed && (await manifest()).packs !== undefined ? packed : null;
+    };
+    const loadPage = async (ref) => {
+      const packed = await packOf(ref);
+      if (!packed) {
+        // A prefetched file of its own holds one page document, which is used once.
+        const doc = pinned.get("file:" + ref);
+        if (doc) pinned.delete("file:" + ref);
+        return doc || load(ref);
+      }
+      const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
+      if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
+      return JSON.parse(text);
+    };
+    // The entries on the paths of the last query's hits, by node id: where their pages are (see "Search Index").
+    const hints = new Map();
     return {
       kind: "sidecar",
       canSearch: true,
       manifest: manifest,
+      /**
+       * Loads at once the files a path will read: the first children page of each node in opens, and the page that
+       * holds each node in finds, as far as the last search told where they are. Never rejects; what fails here fails
+       * again, and is reported, when the path reads it.
+       */
+      async prefetch(opens, finds) {
+        const refs = new Set();
+        opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
+        finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
+        pinned = new Map();
+        await Promise.all(Array.from(refs, async (ref) => {
+          const packed = await packOf(ref);
+          const key = packed ? "pack:" + packed[1] : "file:" + ref;
+          if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+        }).map((pending) => pending.catch(() => {})));
+      },
       async page(node, cursor) {
         const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
-        const doc = checkPage(await load(ref), node);
+        const doc = checkPage(await loadPage(ref), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
-      async search(query, limit) {
-        const queryWords = words(query);
-        if (queryWords.length && !queryWords.some((word) => word.length >= 2)) {
-          throw new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
-        }
-        const m = await manifest();
-        if (!m.search || !queryWords.length) {
-          return { hits: [], total: 0, truncated: false };
-        }
-        const longest = queryWords.reduce((a, b) => (b.length > a.length ? b : a));
-        const shards = m.search.shards;
-        const all = Object.keys(shards);
-        // Parts use the same canonical resolver as ordinary shards and load in numeric order.
-        const order = resolveShards(shards, all, longest);
-        const seen = new Set();
-        const hits = [];
-        let stopped = false;
-        // Files load a few at a time: parallel enough for HTTP, and the candidate check between batches keeps a
-        // broad query from pulling in every part.
-        for (let i = 0; i < order.length; i += SHARD_BATCH) {
-          if (hits.length >= limit * SEARCH_CANDIDATES) {
-            stopped = true;
-            break;
-          }
-          const batch = await Promise.all(order.slice(i, i + SHARD_BATCH).map(loadShard));
-          for (const shard of batch) {
-            for (const item of shard) {
-              const pathKey = JSON.stringify(item.entry.path);
-              if (!seen.has(pathKey) && matchesWords(item.words, queryWords)) {
-                seen.add(pathKey);
-                hits.push(item.entry);
-              }
-            }
-          }
-        }
-        const ranked = rankHits(hits, query, limit);
-        if (stopped) {
-          ranked.truncated = true;
-          ranked.total = undefined;
-        }
-        return ranked;
-      }
+      search: sidecarSearch(load, manifest, hints)
     };
   }
 

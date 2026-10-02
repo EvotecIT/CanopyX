@@ -19,9 +19,13 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        var json = view.ToJson();
+        var json = view.ToJson(options.HiddenFilterIds);
         var builder = new StringBuilder(json.Length + 160);
         builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        if (!options.AutoMount) {
+            builder.Append(" data-cx-mount=\"manual\"");
+        }
+
         if (!string.IsNullOrEmpty(options.Height)) {
             builder.Append(" style=\"height:").Append(WebUtility.HtmlEncode(ValidateCssLength(options.Height!))).Append('"');
         }
@@ -32,7 +36,8 @@ internal static class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount };
+        fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
@@ -45,8 +50,8 @@ internal static class CanopyHtmlWriter {
 
     private static string Head(CanopyHtmlOptions options) {
         if (options.AssetMode == CanopyAssetMode.External) {
-            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.StyleFileName) + "\">\n"
-                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.ScriptFileName) + "\" defer></script>";
+            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming)) + "\">\n"
+                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming)) + "\" defer></script>";
         }
 
         return "<style>\n" + CanopyHtmlAssets.Style + "</style>\n<script>\n" + CanopyHtmlAssets.Script + "</script>";

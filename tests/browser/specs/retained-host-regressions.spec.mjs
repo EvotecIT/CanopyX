@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
-const view = { protocol: "canopyx/1", type: "view", id: "retained-host", label: "Retained host",
+const view = { protocol: "canopyx/2", type: "view", id: "retained-host", label: "Retained host",
   columns: [{ id: "name", title: "Name", width: 500 }], source: { kind: "inline" }, roots: [] };
 async function open(page) {
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: viewPage(view) }));
@@ -21,7 +21,7 @@ for (const [level, detail] of [["root", false], ["root", true], ["child", false]
         if (level !== "root" && !node) return { items: [{ id: "parent", label: "Parent", hasChildren: true, expanded: true }] };
         if (++calls === 1) return { items: [{ id: "existing", label: "Existing", ...(detail ? { detail: { type: "html", html: "", height: 1 } } : {}) }], next: "second" };
         return new Promise(resolve => { window.finishPage = resolve; });
-      } }, renderCell: (node, col, el) => render(node, el), renderDetail: render }); await api.ready;
+      } }, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])), renderDetail: render }); await api.ready;
     }, { level, detail });
     await page.locator("[data-cx-status=more]").focus(); await page.keyboard.press("Enter");
     await page.waitForFunction(() => !!window.finishPage);

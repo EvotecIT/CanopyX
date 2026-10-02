@@ -1,26 +1,27 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Text;
 using CanopyX.Json;
 
 namespace CanopyX.Bundles;
 
 /// <summary>
-/// Splits a view's tree into small sidecar script files that a page loads on demand, including from <c>file://</c>:
-/// the top level in pages, each node's children in pages, a manifest, and a search index sharded by name prefix.
+/// Splits a view's tree into sidecar script files that a page loads on demand, including from <c>file://</c>: the top
+/// level in pages, the children pages of all other nodes packed together into pack files, a manifest, and a search
+/// index that holds every node once next to word shards that refer to it.
 /// </summary>
 /// <remarks>
-/// The view's <see cref="CanopyView.Roots"/> must carry the complete tree as inline children. The layout is specified
-/// under "Sidecar" in docs/data-protocol.md. Every page and shard file holds at most a set number of items and stays
-/// within <see cref="CanopyBundleOptions.MaxFileBytes"/>. Files are written into the data folder and existing files are
-/// not removed, so write each bundle into an empty folder. <c>CanopyX.Html</c> adds <c>SaveHtmlBundle</c>, which also
-/// writes the page and the runtime assets.
+/// The tree comes either from the view's <see cref="CanopyView.Roots"/>, complete with inline children, or from the
+/// host node by node while the writer walks it (see
+/// <see cref="Write(CanopyView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>), so a
+/// tree that does not fit in memory can be written from a database or a file. The layout is specified under
+/// "Sidecar" in docs/data-protocol.md. Children packs are filled to <see cref="CanopyBundleOptions.ChildPackBytes"/>.
+/// Every file stays within <see cref="CanopyBundleOptions.MaxFileBytes"/>, apart
+/// from a file that holds a single node or search entry larger than the budget. Files are written into the data folder
+/// and existing files are not removed, so write each bundle into an empty folder. <c>CanopyX.Html</c> adds
+/// <c>SaveHtmlBundle</c>, which also writes the page and the runtime assets.
 /// </remarks>
 public sealed class CanopyBundleWriter {
-    private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
-
     /// <summary>Creates a writer.</summary>
     /// <param name="options">Page size, search shard limit, file budget, and data folder; defaults apply when null.</param>
     public CanopyBundleWriter(CanopyBundleOptions? options = null) {
@@ -30,23 +31,83 @@ public sealed class CanopyBundleWriter {
     /// <summary>Gets the options.</summary>
     public CanopyBundleOptions Options { get; }
 
-    /// <summary>Writes the bundle.</summary>
+    /// <summary>Writes the bundle of a tree that is complete in memory.</summary>
     /// <param name="view">The view; its roots carry the complete tree.</param>
     /// <param name="outputDirectory">The folder the page lives in; the data folder is created inside it.</param>
     /// <returns>The sidecar source to assign to the view, and the sizes written.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="outputDirectory"/> is null or empty.</exception>
-    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or a node declares children that are not in the tree.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, a node declares children that are not in the tree, or the fixed part of a file exceeds the file budget.</exception>
     public CanopyBundleResult Write(CanopyView view, string outputDirectory) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
 
+        // The whole tree is checked before the first file is written.
+        CanopyViewValidator.Validate(view, requireCompleteTree: true);
+        return WriteBundle(view, outputDirectory, view.Roots, null);
+    }
+
+    /// <summary>
+    /// Writes the bundle of a tree the host supplies while the writer walks it, so the tree never has to be in memory
+    /// as a whole.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The writer reads <paramref name="roots"/> once. For every node that has no inline
+    /// <see cref="CanopyNode.Children"/> and is not a detail row, it calls <paramref name="children"/> once, right
+    /// after it read the node, and reads the returned sequence once, to its end, before it reads the node's next
+    /// sibling. A node with inline children is walked as it is. The writer decides whether a node has children from
+    /// what it read, so <see cref="CanopyNode.HasChildren"/>, <see cref="CanopyNode.ChildCount"/>, and
+    /// <see cref="CanopyNode.Ref"/> are ignored.
+    /// </para>
+    /// <para>
+    /// A node is released once its subtree is written. The writer keeps the serialized rows of the lists on the path
+    /// it is on (each list until its last node is read, so one very long list is held whole), one id per node to
+    /// reject duplicates, the words of the search index with one number per word of every label search can find, the
+    /// search entries of the top-level node it is in until that node is finished (an entry names the pages on its
+    /// path, which are known once each list on it is complete), and, when the index is packed, its serialized shards
+    /// until the end. The cells and details of the rest of the tree are not held.
+    /// </para>
+    /// <para>
+    /// A node's id, icon, cells, badges, and flags are checked when it arrives, and its detail when its row is
+    /// written, which is after its subtree. After a failure the data folder holds the files written so far and no
+    /// manifest, so nothing can open it; delete the folder before writing again.
+    /// </para>
+    /// </remarks>
+    /// <param name="view">The view. Its <see cref="CanopyView.Roots"/> must be empty.</param>
+    /// <param name="outputDirectory">The folder the page lives in; the data folder is created inside it.</param>
+    /// <param name="roots">The top-level nodes in display order.</param>
+    /// <param name="children">Returns the children of a node in display order, or null or an empty sequence for a leaf.</param>
+    /// <returns>The sidecar source to assign to the view, and the sizes written.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/>, <paramref name="roots"/>, or <paramref name="children"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="outputDirectory"/> is null or empty, or the view has roots of its own.</exception>
+    /// <exception cref="InvalidOperationException">The view or a node breaks a protocol rule, two nodes have the same id, or the fixed part of a file exceeds the file budget.</exception>
+    public CanopyBundleResult Write(CanopyView view, string outputDirectory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children) {
+        if (view == null) {
+            throw new ArgumentNullException(nameof(view));
+        }
+
+        if (roots == null) {
+            throw new ArgumentNullException(nameof(roots));
+        }
+
+        if (children == null) {
+            throw new ArgumentNullException(nameof(children));
+        }
+
+        if (view.Roots.Count > 0) {
+            throw new ArgumentException("The view has roots of its own; pass the top-level nodes either on the view or as the roots argument, not both.", nameof(view));
+        }
+
+        return WriteBundle(view, outputDirectory, roots, new Incoming(view, children, CanopyViewValidator.ValidateDefinition(view, bundle: true)));
+    }
+
+    private CanopyBundleResult WriteBundle(CanopyView view, string outputDirectory, IEnumerable<CanopyNode> roots, Incoming? incoming) {
         if (string.IsNullOrEmpty(outputDirectory)) {
             throw new ArgumentException("Output directory is required.", nameof(outputDirectory));
         }
 
-        CanopyViewValidator.Validate(view, requireCompleteTree: true);
         if (view.Search != null && view.Search.MinLength < 2) {
             throw new InvalidOperationException("View '" + view.Id + "' is written as a bundle, whose search shards need queries of at least 2 characters.");
         }
@@ -54,226 +115,260 @@ public sealed class CanopyBundleWriter {
         var dataPath = BundlePaths.DataPath(view.Id, Options.DataPath);
         var dataDirectory = Path.GetFullPath(Path.Combine(outputDirectory, dataPath.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar)));
         var result = new CanopyBundleResult(CanopySource.Sidecar(dataPath), dataDirectory);
-        using var layout = new CanopyBundleLayout();
-        var context = new WriteContext(view, dataDirectory, layout, result);
-        WritePages(context, null, new List<CanopyNode>(view.Roots), CanopyBundleLayout.RootPage);
-        var search = view.Search != null ? new CanopySearchIndex() : null;
-        WriteDescendants(context, search);
-        SortedDictionary<string, int>? shards = null;
-        if (search != null) {
-            shards = new SortedDictionary<string, int>(StringComparer.Ordinal);
-            foreach (var shard in search.Build(Options.SearchShardLimit)) {
-                WriteShard(context, search, shard.Key, shard.Value, shards);
-            }
-
-            result.SearchShardCount = shards.Count;
-        }
-
-        WriteManifest(context, shards);
+        var context = new CanopyBundleContext(view, Options, dataDirectory, result);
+        var index = view.Search != null ? new CanopySearchIndexWriter(context, new CanopySearchIndex()) : null;
+        var packs = new CanopyBundlePacks(context, CanopyBundleLayout.Pack, Options.ChildPackBytes);
+        WriteTree(context, packs, index, roots, incoming);
+        packs.Flush();
+        result.PackCount = packs.Count;
+        index?.Write();
+        WriteManifest(context, index);
         return result;
     }
 
-    /// <summary>Walks the tree depth first without recursion: writes every node's children pages and collects search entries.</summary>
-    private void WriteDescendants(WriteContext context, CanopySearchIndex? search) {
-        var pending = new Stack<(CanopyNode Node, SearchPath? Path, string? Parent, string? Grandparent)>();
-        for (var index = context.View.Roots.Count - 1; index >= 0; index--) {
-            pending.Push((context.View.Roots[index], search == null ? null : new SearchPath(context.View.Roots[index].Id, null), null, null));
-        }
+    /// <summary>
+    /// Walks the tree depth first without recursion. A node is serialized once the pages of its children are written,
+    /// because it carries the reference of their first page; so the pages of a subtree end up next to each other in
+    /// the packs, and only the serialized children of the nodes on the current path are held in memory.
+    /// </summary>
+    private void WriteTree(CanopyBundleContext context, CanopyBundlePacks packs, CanopySearchIndexWriter? index, IEnumerable<CanopyNode> roots, Incoming? incoming) {
+        var open = new Stack<Level>();
+        // Top-level nodes are paged as they are finished, so the search index learns the page of each at once.
+        var top = new Pager(Options.PageSize, RootPageBudget(context));
+        try {
+            open.Push(new Level(null, roots.GetEnumerator()));
+            while (open.Count > 0) {
+                var level = open.Peek();
+                if (level.Nodes.MoveNext()) {
+                    var node = level.Nodes.Current;
+                    incoming?.Check(node, level.Node);
+                    context.Result.NodeCount++;
+                    index?.Add(node.Id, node.Label, node.Kind);
+                    var children = node.HasInlineChildren ? node.ChildNodes : incoming?.ChildrenOf(node);
+                    if (children != null) {
+                        index?.Open();
+                        open.Push(new Level(node, children.GetEnumerator()));
+                    } else {
+                        AddItem(level, Serialize(node, null, 0), top, index);
+                    }
 
-        while (pending.Count > 0) {
-            var (node, path, parent, grandparent) = pending.Pop();
-            context.Result.NodeCount++;
-            if (search != null) {
-                // The context names the nearest two ancestors; the full chain would repeat in every shard the entry is in.
-                var where = parent == null ? null : grandparent == null ? parent : grandparent + " / " + parent;
-                search.Add(node.Label, () => new CanopySearchHit(path!.ToArray(), node.Label) { Kind = node.Kind, Context = where });
+                    continue;
+                }
+
+                open.Pop();
+                level.Nodes.Dispose();
+                if (level.Node == null) {
+                    WriteRootPages(context, top.Pages);
+                } else {
+                    // A node whose children turned out to be an empty sequence is a leaf.
+                    var pages = level.Items.Count > 0 ? WritePackedPages(context, packs, level.Node.Id, level.Items) : null;
+                    index?.Close(pages);
+                    AddItem(open.Peek(), Serialize(level.Node, pages?[0].Reference, level.Items.Count), top, index);
+                }
             }
-
-            var children = node.ChildNodes;
-            if (children.Count == 0) {
-                continue;
-            }
-
-            var parentId = node.Id;
-            WritePages(context, parentId, children, page => context.Layout.ChildrenPage(parentId, page));
-            for (var index = children.Count - 1; index >= 0; index--) {
-                var child = children[index];
-                var childPath = search == null ? null : new SearchPath(child.Id, path);
-                pending.Push((child, childPath, node.Label, parent));
+        } finally {
+            // Levels are still open only after a failure. Their enumerators belong to the host and are released;
+            // one that fails to close must not replace the failure being reported or keep the others open.
+            while (open.Count > 0) {
+                try {
+                    open.Pop().Nodes.Dispose();
+                } catch (Exception) {
+                    // The original exception is already on its way to the caller.
+                }
             }
         }
     }
 
-    /// <summary>Writes a list of nodes as pages of at most <see cref="CanopyBundleOptions.PageSize"/> nodes within the file budget.</summary>
-    private void WritePages(WriteContext context, string? parentId, IReadOnlyList<CanopyNode> nodes, Func<int, string> reference) {
-        var envelope = new CanopyJsonWriter(256);
-        envelope.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", nodes.Count).Property("total", nodes.Count)
-            .Name("items").BeginArray().EndArray().Name("next").String(reference(PageNumberBound(nodes.Count))).EndObject();
-        using var pages = Pack(SerializeNodes(context, nodes), Options.PageSize, ItemBudget(context, reference(0), envelope.ToString())).GetEnumerator();
-        var hasPage = pages.MoveNext();
+    private static string Serialize(CanopyNode node, string? childrenReference, int childCount) {
+        var item = new CanopyJsonWriter(256);
+        node.WriteBundleItem(item, childrenReference, childCount);
+        return item.ToString();
+    }
+
+    /// <summary>Adds a finished node's item to its parent's list; a top-level item goes to its page at once.</summary>
+    private static void AddItem(Level level, string item, Pager top, CanopySearchIndexWriter? index) {
+        if (level.Node != null) {
+            level.Items.Add(item);
+            return;
+        }
+
+        var page = top.Add(item);
+        index?.PlaceTopLevel(CanopyBundleLayout.RootPage(page));
+    }
+
+    /// <summary>The bytes a top-level page has for its items, with an envelope as long as any top-level page can get.</summary>
+    private static int RootPageBudget(CanopyBundleContext context) =>
+        context.ItemBudget(CanopyBundleLayout.RootPage(int.MaxValue), Page(null, int.MaxValue, int.MaxValue, null, CanopyBundleLayout.RootPage(int.MaxValue)));
+
+    /// <summary>Writes the top-level nodes as the files <c>r/0</c>, <c>r/1</c>, and so on.</summary>
+    private void WriteRootPages(CanopyBundleContext context, List<List<string>> pages) {
+        var total = 0;
+        foreach (var page in pages) {
+            total += page.Count;
+        }
+
         var offset = 0;
-        var page = 0;
-        while (hasPage) {
-            var current = pages.Current;
-            hasPage = pages.MoveNext();
-            var json = new CanopyJsonWriter(16384);
-            json.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", offset).Property("total", nodes.Count).Name("items").BeginArray();
-            foreach (var item in current) {
-                json.Raw(item);
-            }
-
-            json.EndArray().Name("next").String(hasPage ? reference(page + 1) : null).EndObject();
-            WriteFile(context, reference(page), json.ToString());
+        for (var page = 0; page < pages.Count; page++) {
+            var next = page + 1 < pages.Count ? CanopyBundleLayout.RootPage(page + 1) : null;
+            context.WriteFile(CanopyBundleLayout.RootPage(page), Page(null, offset, total, pages[page], next));
             context.Result.PageCount++;
-            offset += current.Count;
-            page++;
-        }
-    }
-
-    /// <summary>Serializes nodes only as the bounded page packer consumes them.</summary>
-    private static IEnumerable<string> SerializeNodes(WriteContext context, IReadOnlyList<CanopyNode> nodes) {
-        foreach (var node in nodes) {
-            var item = new CanopyJsonWriter(256);
-            node.WriteJson(
-                item,
-                includeChildren: false,
-                refOverride: node.HasInlineChildren ? context.Layout.ChildrenPage(node.Id, 0) : null,
-                childCountOverride: node.HasInlineChildren ? node.ChildNodes.Count : (int?)null);
-            yield return item.ToString();
-        }
-
-    }
-
-    /// <summary>Writes one shard, in parts (key, key.2, key.3, ...) when it exceeds the entry limit or the file budget.</summary>
-    private void WriteShard(WriteContext context, CanopySearchIndex search, string key, List<int> entries, SortedDictionary<string, int> written) {
-        IEnumerable<string> SerializeEntries() {
-            foreach (var entry in entries) {
-                var item = new CanopyJsonWriter(128);
-                search.Entry(entry).WriteJson(item);
-                yield return item.ToString();
-            }
-        }
-        var longestKey = key + "." + Math.Max(2, entries.Count).ToString(CultureInfo.InvariantCulture);
-        var envelope = new CanopyJsonWriter(128);
-        envelope.BeginObject().Envelope("searchShard").Property("key", longestKey).Name("entries").BeginArray().EndArray().EndObject();
-        var parts = Pack(SerializeEntries(), Options.SearchShardLimit, ItemBudget(context, CanopyBundleLayout.Shard(longestKey), envelope.ToString()));
-        var part = 0;
-        foreach (var current in parts) {
-            var partKey = part == 0 ? key : key + "." + (part + 1).ToString(CultureInfo.InvariantCulture);
-            var json = new CanopyJsonWriter(16384);
-            json.BeginObject().Envelope("searchShard").Property("key", partKey).Name("entries").BeginArray();
-            foreach (var item in current) json.Raw(item);
-            json.EndArray().EndObject();
-            WriteFile(context, CanopyBundleLayout.Shard(partKey), json.ToString());
-            written[partKey] = current.Count;
-            part++;
+            offset += pages[page].Count;
         }
     }
 
     /// <summary>
-    /// Groups serialized items into runs of at most <paramref name="maxCount"/> whose UTF-8 size fits
-    /// <paramref name="budget"/>. An item larger than the budget on its own still gets a file of its own.
+    /// Adds the pages of one node's children to the packs and returns the reference and item count of each page, first
+    /// page first. The pages are added last to first, because each page names the one after it. Pages are split to fit
+    /// the file budget, not the pack size, so the pack size changes which pages share a file and never how a list is
+    /// paged. The pages of one list stay together (see <see cref="CanopyBundlePacks.StartList"/>).
     /// </summary>
-    private static IEnumerable<List<string>> Pack(IEnumerable<string> items, int maxCount, int budget) {
-        var emitted = false;
-        var current = new List<string>();
-        long bytes = 0;
-        foreach (var item in items) {
-            var size = Utf8.GetByteCount(item) + 1;
-            if (current.Count > 0 && (current.Count >= maxCount || bytes + size > budget)) {
-                yield return current;
-                emitted = true;
-                current = new List<string>();
-                bytes = 0;
-            }
-
-            current.Add(item);
-            bytes += size;
+    private List<(string Reference, int Count)> WritePackedPages(CanopyBundleContext context, CanopyBundlePacks packs, string parentId, List<string> items) {
+        // A continuation no bundle reaches, so the measured envelope is never too short.
+        var envelope = Page(parentId, items.Count, items.Count, null, CanopyBundleLayout.PackedPage(int.MaxValue, int.MaxValue));
+        var budget = packs.FileBudget - CanopyBundlePacks.SizeOf(envelope);
+        if (budget <= 0) {
+            throw new InvalidOperationException("The children page of '" + parentId + "' has a fixed envelope that exceeds MaxFileBytes; shorten identifiers or increase the budget.");
         }
 
-        if (current.Count > 0 || !emitted) yield return current;
+        var pages = Split(items, Options.PageSize, (int)budget, out var itemBytes);
+        packs.StartList(itemBytes + pages.Count * CanopyBundlePacks.SizeOf(envelope));
+        var written = new (string Reference, int Count)[pages.Count];
+        var offset = items.Count;
+        string? next = null;
+        for (var page = pages.Count - 1; page >= 0; page--) {
+            offset -= pages[page].Count;
+            next = packs.AddListPage(Page(parentId, offset, items.Count, pages[page], next));
+            written[page] = (next, pages[page].Count);
+            context.Result.PageCount++;
+        }
+
+        return new List<(string Reference, int Count)>(written);
     }
 
-    private int ItemBudget(WriteContext context, string reference, string envelope) {
-        var budget = Options.MaxFileBytes - FileOverhead(context, reference, envelope);
-        if (budget <= 0) throw new InvalidOperationException("Sidecar '" + reference + "' fixed envelope exceeds MaxFileBytes; shorten identifiers or increase the budget.");
-        return budget;
+    private static string Page(string? parentId, int offset, int total, List<string>? items, string? next) {
+        var json = new CanopyJsonWriter(items == null ? 256 : 16384);
+        json.BeginObject().Envelope("page").Name("parent").String(parentId).Property("offset", offset).Property("total", total).Name("items").BeginArray();
+        if (items != null) {
+            foreach (var item in items) {
+                json.Raw(item);
+            }
+        }
+
+        return json.EndArray().Name("next").String(next).EndObject().ToString();
     }
 
-    /// <summary>The bytes a file needs around its items: the sidecar wrapper plus the document envelope, measured exactly.</summary>
-    private static int FileOverhead(WriteContext context, string reference, string emptyDocument) {
-        var header = new CanopyJsonWriter(128);
-        header.BeginArray().String(context.View.Id).String(reference).Raw(emptyDocument).EndArray();
-        return Utf8.GetByteCount("(self.CanopyXSidecar = self.CanopyXSidecar || []).push(" + header.ToString() + ");\n") + 16;
+    /// <summary>
+    /// Groups serialized items into runs of at most <paramref name="maxCount"/> whose UTF-8 size fits
+    /// <paramref name="budget"/>. An item larger than the budget on its own still gets a page of its own, and a list
+    /// without items still gets one empty page. <paramref name="totalBytes"/> is the size of all items with a comma each.
+    /// </summary>
+    private static List<List<string>> Split(List<string> items, int maxCount, int budget, out long totalBytes) {
+        var pager = new Pager(maxCount, budget);
+        foreach (var item in items) {
+            pager.Add(item);
+        }
+
+        totalBytes = pager.Bytes;
+        return pager.Pages;
     }
 
-    /// <summary>A reference number no page list reaches, so the measured "next" is at least as long as any real one.</summary>
-    private static int PageNumberBound(int count) => Math.Max(count, 1);
-
-    private void WriteManifest(WriteContext context, SortedDictionary<string, int>? shards) {
-        var json = new CanopyJsonWriter(shards == null ? 256 : 256 + shards.Count * 16);
+    private void WriteManifest(CanopyBundleContext context, CanopySearchIndexWriter? index) {
+        var json = new CanopyJsonWriter(1024);
         json.BeginObject().Envelope("manifest")
             .Property("view", context.View.Id)
             .Property("root", CanopyBundleLayout.RootPage(0))
             .Property("nodeCount", context.Result.NodeCount)
-            .Property("pageSize", Options.PageSize);
-        if (shards != null) {
-            json.Name("search").BeginObject().Property("prefix", "k-").Name("shards").BeginObject();
-            foreach (var shard in shards) {
-                json.Property(shard.Key, shard.Value);
+            .Property("pageSize", Options.PageSize)
+            .Property("packs", context.Result.PackCount);
+        index?.WriteManifest(json);
+        json.EndObject();
+        context.WriteFile(CanopyBundleLayout.Manifest, json.ToString());
+    }
+
+    /// <summary>
+    /// Pages a list as its items arrive: a page ends before the item that would take it past the item count or the
+    /// byte budget. An item larger than the budget on its own still gets a page of its own.
+    /// </summary>
+    private sealed class Pager {
+        private readonly int _maxCount;
+        private readonly int _budget;
+        private readonly List<List<string>> _pages = new List<List<string>>();
+        private List<string>? _current;
+        private long _pageBytes;
+
+        internal Pager(int maxCount, int budget) {
+            _maxCount = maxCount;
+            _budget = budget;
+        }
+
+        /// <summary>Gets the size of all items so far, with a comma each.</summary>
+        internal long Bytes { get; private set; }
+
+        /// <summary>Gets the pages; a list without items has one empty page.</summary>
+        internal List<List<string>> Pages => _pages.Count > 0 ? _pages : new List<List<string>> { new List<string>() };
+
+        /// <summary>Adds an item and returns the number of its page, from 0.</summary>
+        internal int Add(string item) {
+            var size = CanopyBundleContext.Utf8.GetByteCount(item) + 1;
+            Bytes += size;
+            if (_current == null || _current.Count >= _maxCount || _pageBytes + size > _budget) {
+                _current = new List<string>();
+                _pages.Add(_current);
+                _pageBytes = 0;
             }
 
-            json.EndObject().EndObject();
-        }
-
-        json.EndObject();
-        WriteFile(context, CanopyBundleLayout.Manifest, json.ToString());
-    }
-
-    /// <summary>Writes one sidecar script: it pushes the view id, its own reference, and the document onto the queue.</summary>
-    private void WriteFile(WriteContext context, string reference, string document) {
-        var header = new CanopyJsonWriter(128);
-        header.BeginArray().String(context.View.Id).String(reference).Raw(document).EndArray();
-        var content = "(self.CanopyXSidecar = self.CanopyXSidecar || []).push(" + header.ToString() + ");\n";
-        var path = Path.Combine(context.DataDirectory, reference.Replace('/', Path.DirectorySeparatorChar) + ".js");
-        var bytes = Utf8.GetBytes(content);
-        if (reference == CanopyBundleLayout.Manifest && bytes.Length > Options.MaxFileBytes) {
-            throw new InvalidOperationException("Sidecar '" + reference + "' exceeds MaxFileBytes (" + bytes.Length + " bytes). Increase the budget or reduce the search index.");
-        }
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllBytes(path, bytes);
-        context.Result.FileCount++;
-        context.Result.TotalBytes += bytes.Length;
-        context.Result.LargestFileBytes = Math.Max(context.Result.LargestFileBytes, bytes.Length);
-    }
-
-    /// <summary>Shares ancestor links until a searchable hit needs its complete path.</summary>
-    private sealed class SearchPath {
-        internal SearchPath(string id, SearchPath? parent) { Id = id; Parent = parent; Depth = (parent?.Depth ?? 0) + 1; }
-        private string Id { get; }
-        private SearchPath? Parent { get; }
-        private int Depth { get; }
-        internal string[] ToArray() {
-            var result = new string[Depth];
-            for (SearchPath? path = this; path != null; path = path.Parent) result[path.Depth - 1] = path.Id;
-            return result;
+            _current.Add(item);
+            _pageBytes += size;
+            return _pages.Count - 1;
         }
     }
 
-    private sealed class WriteContext {
-        internal WriteContext(CanopyView view, string dataDirectory, CanopyBundleLayout layout, CanopyBundleResult result) {
-            View = view;
-            DataDirectory = dataDirectory;
-            Layout = layout;
-            Result = result;
+    /// <summary>The children of one open node (or the top level) while their subtrees are written.</summary>
+    private sealed class Level {
+        internal Level(CanopyNode? node, IEnumerator<CanopyNode> nodes) {
+            Node = node;
+            Nodes = nodes;
         }
 
-        internal CanopyView View { get; }
+        /// <summary>Gets the node whose children these are, or null for the top level.</summary>
+        internal CanopyNode? Node { get; }
 
-        internal string DataDirectory { get; }
+        internal IEnumerator<CanopyNode> Nodes { get; }
 
-        internal CanopyBundleLayout Layout { get; }
+        /// <summary>Gets the serialized children finished so far.</summary>
+        internal List<string> Items { get; } = new List<string>();
+    }
 
-        internal CanopyBundleResult Result { get; }
+    /// <summary>
+    /// The host's side of a streamed write: where children come from, and the checks a complete tree gets up front
+    /// from <see cref="CanopyViewValidator"/>, made here on each node as it arrives.
+    /// </summary>
+    private sealed class Incoming {
+        private readonly CanopyView _view;
+        private readonly Func<CanopyNode, IEnumerable<CanopyNode>?> _children;
+        private readonly HashSet<string> _columns;
+        private readonly HashSet<string> _ids = new HashSet<string>(StringComparer.Ordinal);
+
+        internal Incoming(CanopyView view, Func<CanopyNode, IEnumerable<CanopyNode>?> children, HashSet<string> columns) {
+            _view = view;
+            _children = children;
+            _columns = columns;
+        }
+
+        internal void Check(CanopyNode? node, CanopyNode? parent) {
+            if (node == null) {
+                throw new InvalidOperationException(parent == null ? "The top level of view '" + _view.Id + "' has a null node." : "Node '" + parent.Id + "' has a null child.");
+            }
+
+            if (!_ids.Add(node.Id)) {
+                throw new InvalidOperationException("View '" + _view.Id + "' has more than one node with id '" + node.Id + "'.");
+            }
+
+            CanopyViewValidator.ValidateNodeAgainstView(_view, _columns, node);
+            node.ValidateContent();
+        }
+
+        /// <summary>A detail row is a leaf, so the host is not asked for its children.</summary>
+        internal IEnumerable<CanopyNode>? ChildrenOf(CanopyNode node) => node.Detail == null ? _children(node) : null;
     }
 }

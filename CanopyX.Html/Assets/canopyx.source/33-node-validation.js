@@ -1,4 +1,15 @@
   // ---------- protocol node semantics before attachment ----------
+  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
+  function isIdentifier(value) {
+    return typeof value === "string" && /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value);
+  }
+
+  function requireIdentifier(value, name) {
+    if (!isIdentifier(value)) {
+      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
+    }
+  }
+
   function validateNodes(nodes, existing, inlineOnly = false) {
     if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
     const seen = new Set();
@@ -8,6 +19,10 @@
       requireIdentifier(node && node.id, "node ID");
       if (typeof node.label !== "string") throw new Error("CanopyX: node label must be a string.");
       if (Object.prototype.hasOwnProperty.call(node, "flags")) requireFlags(node.flags, "node flags");
+      if (Object.prototype.hasOwnProperty.call(node, "data") && (!node.data || typeof node.data !== "object" || Array.isArray(node.data) ||
+          Object.keys(node.data).some((name) => !name || name === "__proto__" || typeof node.data[name] !== "string"))) {
+        throw new Error("CanopyX: node data must be an object of strings with nonempty names.");
+      }
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");

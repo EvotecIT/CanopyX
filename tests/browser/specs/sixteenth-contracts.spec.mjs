@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "sixteenth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "sixteenth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "inline" }, roots: [] };
 
 async function open(page, data = view) {
@@ -27,7 +27,7 @@ for (const kind of ["cell", "detail"]) {
         return true;
       };
       window.api = CanopyX.createTreeGrid(host, { view: data,
-        ...(kind === "cell" ? { renderCell: (node, _column, element) => render(node, element) } : { renderDetail: render }) });
+        ...(kind === "cell" ? { renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) } : { renderDetail: render }) });
       await api.ready;
     }, kind);
     const input = page.getByRole("textbox", { name: "Host edit" });
@@ -82,7 +82,7 @@ test("new child counts make a terminal remote cache reloadable", async ({ page }
     await api.ready;
     await api.expandPath(["parent"], { select: false, focus: false, expandLast: true });
     await api.expandPath(["parent", "old"]);
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     const staleSelection = api.getSelected().length || location.hash.includes("old");
     try { await api.expandPath(["parent", "new"], { select: false, focus: false }); return { childLoads, found: true, staleSelection }; }
     catch (error) { return { childLoads, found: false, error: error.message }; }
@@ -106,7 +106,7 @@ test("a count received during a stale terminal page invalidates that page", asyn
     await api.ready;
     const first = api.expandPath(["parent"], { select: false, focus: false, expandLast: true }).catch(() => null);
     await new Promise(resolve => { const untilStarted = () => window.finishOldPage ? resolve() : setTimeout(untilStarted, 0); untilStarted(); });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     finishOldPage({ items: [{ id: "old", label: "Old" }], total: 1, next: null });
     await first;
     try { await api.expandPath(["parent", "new"], { select: false, focus: false }); return { childLoads, found: true }; }
@@ -137,7 +137,7 @@ test("a detached child load cannot reinsert orphan IDs after a parent count refr
     await api.expandPath(["parent"], { select: false, focus: false, expandLast: true });
     const oldExpansion = api.expandPath(["parent", "child"], { select: false, focus: false, expandLast: true }).catch(error => error.message);
     await new Promise(resolve => { const started = () => window.finishDetachedChild ? resolve() : setTimeout(started, 0); started(); });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     finishDetachedChild({ items: [{ id: "grand", label: "Grandchild" }], total: 1, next: null });
     await oldExpansion;
     try {
@@ -162,7 +162,7 @@ test("a count refresh reports when it removes the selected subtree", async ({ pa
         : { items: [{ id: "parent", label: "Parent", hasChildren: true }] } } });
     await api.ready;
     await api.expandPath(["parent", "old"]);
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     return { callbacks, events, selected: api.getSelected().map(node => node.id), hash: location.hash };
   });
   expect(result).toEqual({ callbacks: [["old"], []], events: [["old"], []], selected: [], hash: "" });

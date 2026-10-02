@@ -1,29 +1,30 @@
 /*
- * CanopyX browser runtime: a virtualized tree grid over the canopyx/1 data protocol. No dependencies.
+ * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
  */
 (function (global) {
   "use strict";
 
-  // A second copy of the runtime on the same page would take over the sidecar queue from the first; keep the first.
   if (global.CanopyX) {
     return;
   }
 
-  const PROTOCOL = "canopyx/1";
+  const PROTOCOL = "canopyx/2";
   const OVERSCAN = 8;
   const TYPEAHEAD_MS = 600;
   const INDENT = 18;
   const COUNTS_BATCH = 50;
   const SHARD_CACHE = 24;
+  const ENTRY_CACHE = 32;
+  const ENTRY_BATCH = 8;
+  const PACK_CACHE = 6;
+  const DATE_CACHE = 4096;
   const SEARCH_CANDIDATES = 5;
-  const SHARD_BATCH = 4;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
   const activeGrids = new WeakMap();
   let instanceSeq = 0;
 
-  /** Creates an element with an optional class name. */
   function h(tag, className) {
     const element = document.createElement(tag);
     if (className) {
@@ -32,7 +33,6 @@
     return element;
   }
 
-  /** Sets text safely; every host string goes through textContent, never innerHTML. */
   function setText(element, value) {
     element.textContent = value == null ? "" : String(value);
   }
@@ -51,7 +51,6 @@
     }
   }
 
-  /** Throws unless a document has the expected protocol, type, and required envelope fields. */
   function checkDocument(doc, type) {
     if (!doc || typeof doc !== "object") {
       throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
@@ -68,10 +67,6 @@
       if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
         throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
       }
-    }
-    if (type === "searchShard") {
-      if (!Array.isArray(doc.entries)) throw new Error("CanopyX: search shard entries must be an array.");
-      doc.entries.forEach(validateSearchHit);
     }
     if (type === "counts") {
       if (!Array.isArray(doc.items)) throw new Error("CanopyX: counts items must be an array.");
@@ -93,14 +88,6 @@
     return doc;
   }
 
-  /** URL-bound identifiers must be nonempty and contain complete UTF-16 surrogate pairs. */
-  function requireIdentifier(value, name) {
-    if (typeof value !== "string" || !/^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value)) {
-      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
-    }
-  }
-
-  /** Search paths must be complete, unambiguous node-id paths before they reach navigation. */
   function validateSearchHit(hit) {
     if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
       throw new Error("CanopyX: search hit needs an ID path and string label.");
@@ -117,14 +104,12 @@
     }
   }
 
-  /** Built-in and host-provided search results share the same hit boundary before navigation. */
   function validateSearchResult(result) {
     if (!result || !Array.isArray(result.hits)) throw new Error("CanopyX: search hits must be an array.");
     result.hits.forEach(validateSearchHit);
     return result;
   }
 
-  /** Verifies wire page ownership and required structural counters. */
   function checkPage(doc, node) {
     checkDocument(doc, "page");
     if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
@@ -139,13 +124,47 @@
     return doc;
   }
 
-  // ---------- cells ----------
   function isCellObject(cell) {
     return cell !== null && typeof cell === "object";
   }
 
   function cellValue(cell) {
     return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
+  }
+
+  const NO_TONE = { cls: "", host: null };
+  const tones = new Map();
+
+  function toneOf(name) {
+    let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
+    if (!tone) {
+      if (!/^[a-z][a-z0-9-]{0,31}$/.test(name) || name.endsWith("-bg")) {
+        return NO_TONE;
+      }
+      const host = !/^(neutral|info|success|warning|danger|muted)$/.test(name);
+      tone = { cls: " cx-tone-" + name + (host ? " cx-toned" : ""), host: host ? name : null };
+      if (tones.size < 256) tones.set(name, tone);
+    }
+    return tone;
+  }
+
+  function applyTone(element, base, tone) {
+    element.className = base + tone.cls;
+    toneColors(element, tone);
+  }
+
+  function toneColors(element, tone) {
+    if ((element._tone || null) === tone.host) {
+      return;
+    }
+    element._tone = tone.host;
+    if (tone.host) {
+      element.style.setProperty("--cx-t", "var(--cx-tone-" + tone.host + ")");
+      element.style.setProperty("--cx-t-bg", "var(--cx-tone-" + tone.host + "-bg)");
+    } else {
+      element.style.removeProperty("--cx-t");
+      element.style.removeProperty("--cx-t-bg");
+    }
   }
 
   const numberFormats = new Map();
@@ -167,42 +186,97 @@
     return value < 10 ? "0" + value : String(value);
   }
 
-  function formatDate(value) {
-    const time = Date.parse(value);
-    if (isNaN(time)) {
-      return String(value);
+  const dateTexts = new Map();
+
+  function dateText(value) {
+    let texts = dateTexts.get(value);
+    if (texts === undefined) {
+      const time = Date.parse(value);
+      const d = new Date(time);
+      texts = isNaN(time) ? null : [
+        String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()),
+        String(d.getFullYear()).padStart(4, "0") + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes())];
+      if (dateTexts.size >= DATE_CACHE) dateTexts.clear();
+      dateTexts.set(value, texts);
     }
-    const d = new Date(time);
-    return String(d.getUTCFullYear()).padStart(4, "0") + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + " UTC";
+    return texts;
   }
 
-  /** Formats a value without display text, following the protocol's default formatting table. */
-  function formatValue(value, kind, lang) {
+  const DEFAULT_LABELS = Object.freeze({
+    searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
+    searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
+    searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
+    searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
+    columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
+    loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+    showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
+    pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
+    utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
+  });
+
+  function labelsFor(...sources) {
+    const labels = Object.assign({}, DEFAULT_LABELS);
+    for (const source of sources) {
+      if (source == null) continue;
+      if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
+      Object.keys(source).forEach((name) => {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
+        if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
+        labels[name] = source[name];
+      });
+    }
+    return Object.freeze(labels);
+  }
+
+  function fill(template, values) {
+    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
+  }
+
+  function formatting(lang, local, labels) {
+    const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
+    return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
+  }
+
+  function formatDate(value, fmt) {
+    const texts = dateText(value);
+    return texts ? (fmt.local ? texts[1] : fmt.utc[0] + texts[0] + fmt.utc[1]) : String(value);
+  }
+
+  function otherZone(cell, column, fmt) {
+    const value = cellValue(cell);
+    if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
+      return null;
+    }
+    const texts = dateText(value);
+    return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
+  }
+
+  function formatValue(value, kind, fmt) {
     if (value === null || value === undefined) {
       return "";
     }
     if (typeof value === "boolean") {
-      return value ? "Yes" : "No";
+      return value ? fmt.labels.yes : fmt.labels.no;
     }
     if (typeof value === "number" && kind === "number") {
-      return numberFormat(lang).format(value);
+      return numberFormat(fmt.lang).format(value);
     }
     if (typeof value === "string" && kind === "datetime") {
-      return formatDate(value);
+      return formatDate(value, fmt);
     }
     return String(value);
   }
 
-  function cellText(cell, column, lang) {
+  function cellText(cell, column, fmt) {
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }
-    return formatValue(cellValue(cell), column.kind, lang);
+    return formatValue(cellValue(cell), column.kind, fmt);
   }
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-  /** Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. */
   function sortKey(cell, column) {
     let value = cellValue(cell);
     if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
@@ -237,8 +311,6 @@
     return order * direction;
   }
 
-  // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
-  // Common ranges use direct rules. The remaining one-unit pairs come from the C# writer's frozen table.
   const EXTRA_FOLD_PAIRS = "QQBhAEIAYgBDAGMARABkAEUAZQBGAGYARwBnAEgAaABJAGkASgBqAEsAawBMAGwATQBtAE4AbgBPAG8AUABwAFEAcQBSAHIAUwBzAFQAdABVAHUAVgB2AFcAdwBYAHgAWQB5AFoAegDAAOAAwQDhAMIA4gDDAOMAxADkAMUA5QDGAOYAxwDnAMgA6ADJAOkAygDqAMsA6wDMAOwAzQDtAM4A7gDPAO8A0ADwANEA8QDSAPIA0wDzANQA9ADVAPUA1gD2ANgA+ADZAPkA2gD6ANsA+wDcAPwA3QD9AN4A/gAAAQEBAgEDAQQBBQEGAQcBCAEJAQoBCwEMAQ0BDgEPARABEQESARMBFAEVARYBFwEYARkBGgEbARwBHQEeAR8BIAEhASIBIwEkASUBJgEnASgBKQEqASsBLAEtAS4BLwEyATMBNAE1ATYBNwE5AToBOwE8AT0BPgE/AUABQQFCAUMBRAFFAUYBRwFIAUoBSwFMAU0BTgFPAVABUQFSAVMBVAFVAVYBVwFYAVkBWgFbAVwBXQFeAV8BYAFhAWIBYwFkAWUBZgFnAWgBaQFqAWsBbAFtAW4BbwFwAXEBcgFzAXQBdQF2AXcBeAH/AHkBegF7AXwBfQF+AYEBUwKCAYMBhAGFAYYBVAKHAYgBiQFWAooBVwKLAYwBjgHdAY8BWQKQAVsCkQGSAZMBYAKUAWMClgFpApcBaAKYAZkBnAFvAp0BcgKfAXUCoAGhAaIBowGkAaUBpgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwBywHMAc0BzgHPAdAB0QHSAdMB1AHVAdYB1wHYAdkB2gHbAdwB3gHfAeAB4QHiAeMB5AHlAeYB5wHoAekB6gHrAewB7QHuAe8B8QHzAfIB8wH0AfUB9gGVAfcBvwH4AfkB+gH7AfwB/QH+Af8BAAIBAgICAwIEAgUCBgIHAggCCQIKAgsCDAINAg4CDwIQAhECEgITAhQCFQIWAhcCGAIZAhoCGwIcAh0CHgIfAiACngEiAiMCJAIlAiYCJwIoAikCKgIrAiwCLQIuAi8CMAIxAjICMwI6AmUsOwI8Aj0CmgE+AmYsQQJCAkMCgAFEAokCRQKMAkYCRwJIAkkCSgJLAkwCTQJOAk8CcANxA3IDcwN2A3cDfwPzA4YDrAOIA60DiQOuA4oDrwOMA8wDjgPNA48DzgORA7EDkgOyA5MDswOUA7QDlQO1A5YDtgOXA7cDmAO4A5kDuQOaA7oDmwO7A5wDvAOdA70DngO+A58DvwOgA8ADoQPBA6MDwwOkA8QDpQPFA6YDxgOnA8cDqAPIA6kDyQOqA8oDqwPLA88D1wPYA9kD2gPbA9wD3QPeA98D4APhA+ID4wPkA+UD5gPnA+gD6QPqA+sD7APtA+4D7wP0A7gD9wP4A/kD8gP6A/sD/QN7A/4DfAP/A30DAARQBAEEUQQCBFIEAwRTBAQEVAQFBFUEBgRWBAcEVwQIBFgECQRZBAoEWgQLBFsEDARcBA0EXQQOBF4EDwRfBBAEMAQRBDEEEgQyBBMEMwQUBDQEFQQ1BBYENgQXBDcEGAQ4BBkEOQQaBDoEGwQ7BBwEPAQdBD0EHgQ+BB8EPwQgBEAEIQRBBCIEQgQjBEMEJAREBCUERQQmBEYEJwRHBCgESAQpBEkEKgRKBCsESwQsBEwELQRNBC4ETgQvBE8EYARhBGIEYwRkBGUEZgRnBGgEaQRqBGsEbARtBG4EbwRwBHEEcgRzBHQEdQR2BHcEeAR5BHoEewR8BH0EfgR/BIAEgQSKBIsEjASNBI4EjwSQBJEEkgSTBJQElQSWBJcEmASZBJoEmwScBJ0EngSfBKAEoQSiBKMEpASlBKYEpwSoBKkEqgSrBKwErQSuBK8EsASxBLIEswS0BLUEtgS3BLgEuQS6BLsEvAS9BL4EvwTABM8EwQTCBMMExATFBMYExwTIBMkEygTLBMwEzQTOBNAE0QTSBNME1ATVBNYE1wTYBNkE2gTbBNwE3QTeBN8E4AThBOIE4wTkBOUE5gTnBOgE6QTqBOsE7ATtBO4E7wTwBPEE8gTzBPQE9QT2BPcE+AT5BPoE+wT8BP0E/gT/BAAFAQUCBQMFBAUFBQYFBwUIBQkFCgULBQwFDQUOBQ8FEAURBRIFEwUUBRUFFgUXBRgFGQUaBRsFHAUdBR4FHwUgBSEFIgUjBSQFJQUmBScFKAUpBSoFKwUsBS0FLgUvBTEFYQUyBWIFMwVjBTQFZAU1BWUFNgVmBTcFZwU4BWgFOQVpBToFagU7BWsFPAVsBT0FbQU+BW4FPwVvBUAFcAVBBXEFQgVyBUMFcwVEBXQFRQV1BUYFdgVHBXcFSAV4BUkFeQVKBXoFSwV7BUwFfAVNBX0FTgV+BU8FfwVQBYAFUQWBBVIFggVTBYMFVAWEBVUFhQVWBYYFoBAALaEQAS2iEAItoxADLaQQBC2lEAUtphAGLacQBy2oEAgtqRAJLaoQCi2rEAstrBAMLa0QDS2uEA4trxAPLbAQEC2xEBEtshASLbMQEy20EBQttRAVLbYQFi23EBctuBAYLbkQGS26EBotuxAbLbwQHC29EB0tvhAeLb8QHy3AECAtwRAhLcIQIi3DECMtxBAkLcUQJS3HECctzRAtLaATcKuhE3GrohNyq6MTc6ukE3SrpRN1q6YTdqunE3erqBN4q6kTeauqE3qrqxN7q6wTfKutE32rrhN+q68Tf6uwE4CrsROBq7ITgquzE4OrtBOEq7UThau2E4artxOHq7gTiKu5E4mruhOKq7sTi6u8E4yrvRONq74Tjqu/E4+rwBOQq8ETkavCE5KrwxOTq8QTlKvFE5WrxhOWq8cTl6vIE5iryROZq8oTmqvLE5urzBOcq80TnavOE56rzxOfq9AToKvRE6Gr0hOiq9MTo6vUE6Sr1ROlq9YTpqvXE6er2BOoq9kTqavaE6qr2xOrq9wTrKvdE62r3hOuq98Tr6vgE7Cr4ROxq+ITsqvjE7Or5BO0q+UTtavmE7ar5xO3q+gTuKvpE7mr6hO6q+sTu6vsE7yr7RO9q+4TvqvvE7+r8BP4E/ET+RPyE/oT8xP7E/QT/BP1E/0TiRyKHJAc0BCRHNEQkhzSEJMc0xCUHNQQlRzVEJYc1hCXHNcQmBzYEJkc2RCaHNoQmxzbEJwc3BCdHN0QnhzeEJ8c3xCgHOAQoRzhEKIc4hCjHOMQpBzkEKUc5RCmHOYQpxznEKgc6BCpHOkQqhzqEKsc6xCsHOwQrRztEK4c7hCvHO8QsBzwELEc8RCyHPIQsxzzELQc9BC1HPUQthz2ELcc9xC4HPgQuRz5ELoc+hC9HP0Qvhz+EL8c/xAAHgEeAh4DHgQeBR4GHgceCB4JHgoeCx4MHg0eDh4PHhAeER4SHhMeFB4VHhYeFx4YHhkeGh4bHhweHR4eHh8eIB4hHiIeIx4kHiUeJh4nHigeKR4qHiseLB4tHi4eLx4wHjEeMh4zHjQeNR42HjceOB45HjoeOx48Hj0ePh4/HkAeQR5CHkMeRB5FHkYeRx5IHkkeSh5LHkweTR5OHk8eUB5RHlIeUx5UHlUeVh5XHlgeWR5aHlseXB5dHl4eXx5gHmEeYh5jHmQeZR5mHmceaB5pHmoeax5sHm0ebh5vHnAecR5yHnMedB51HnYedx54Hnkeeh57HnwefR5+Hn8egB6BHoIegx6EHoUehh6HHogeiR6KHosejB6NHo4ejx6QHpEekh6THpQelR6eHt8AoB6hHqIeox6kHqUeph6nHqgeqR6qHqserB6tHq4erx6wHrEesh6zHrQetR62HrceuB65Hroeux68Hr0evh6/HsAewR7CHsMexB7FHsYexx7IHskeyh7LHswezR7OHs8e0B7RHtIe0x7UHtUe1h7XHtge2R7aHtse3B7dHt4e3x7gHuEe4h7jHuQe5R7mHuce6B7pHuoe6x7sHu0e7h7vHvAe8R7yHvMe9B71HvYe9x74Hvke+h77Hvwe/R7+Hv8eCB8AHwkfAR8KHwIfCx8DHwwfBB8NHwUfDh8GHw8fBx8YHxAfGR8RHxofEh8bHxMfHB8UHx0fFR8oHyAfKR8hHyofIh8rHyMfLB8kHy0fJR8uHyYfLx8nHzgfMB85HzEfOh8yHzsfMx88HzQfPR81Hz4fNh8/HzcfSB9AH0kfQR9KH0IfSx9DH0wfRB9NH0UfWR9RH1sfUx9dH1UfXx9XH2gfYB9pH2Efah9iH2sfYx9sH2QfbR9lH24fZh9vH2cfiB+AH4kfgR+KH4Ifix+DH4wfhB+NH4Ufjh+GH48fhx+YH5AfmR+RH5ofkh+bH5MfnB+UH50flR+eH5Yfnx+XH6gfoB+pH6Efqh+iH6sfox+sH6QfrR+lH64fph+vH6cfuB+wH7kfsR+6H3Afux9xH7wfsx/IH3IfyR9zH8ofdB/LH3UfzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIWAhcCFhIXEhYiFyIWMhcyFkIXQhZSF1IWYhdiFnIXchaCF4IWkheSFqIXohayF7IWwhfCFtIX0hbiF+IW8hfyGDIYQhtiTQJLck0SS4JNIkuSTTJLok1CS7JNUkvCTWJL0k1yS+JNgkvyTZJMAk2iTBJNskwiTcJMMk3STEJN4kxSTfJMYk4CTHJOEkyCTiJMkk4yTKJOQkyyTlJMwk5iTNJOckziToJM8k6SQALDAsASwxLAIsMiwDLDMsBCw0LAUsNSwGLDYsByw3LAgsOCwJLDksCiw6LAssOywMLDwsDSw9LA4sPiwPLD8sECxALBEsQSwSLEIsEyxDLBQsRCwVLEUsFixGLBcsRywYLEgsGSxJLBosSiwbLEssHCxMLB0sTSweLE4sHyxPLCAsUCwhLFEsIixSLCMsUywkLFQsJSxVLCYsViwnLFcsKCxYLCksWSwqLFosKyxbLCwsXCwtLF0sLixeLC8sXyxgLGEsYixrAmMsfR1kLH0CZyxoLGksaixrLGwsbSxRAm4scQJvLFACcCxSAnIscyx1LHYsfiw/An8sQAKALIEsgiyDLIQshSyGLIcsiCyJLIosiyyMLI0sjiyPLJAskSySLJMslCyVLJYslyyYLJksmiybLJwsnSyeLJ8soCyhLKIsoyykLKUspiynLKgsqSyqLKssrCytLK4sryywLLEssiyzLLQstSy2LLcsuCy5LLosuyy8LL0sviy/LMAswSzCLMMsxCzFLMYsxyzILMksyizLLMwszSzOLM8s0CzRLNIs0yzULNUs1izXLNgs2SzaLNss3CzdLN4s3yzgLOEs4izjLOss7CztLO4s8izzLECmQaZCpkOmRKZFpkamR6ZIpkmmSqZLpkymTaZOpk+mUKZRplKmU6ZUplWmVqZXplimWaZaplumXKZdpl6mX6ZgpmGmYqZjpmSmZaZmpmemaKZppmqma6Zspm2mgKaBpoKmg6aEpoWmhqaHpoimiaaKpoumjKaNpo6mj6aQppGmkqaTppSmlaaWppemmKaZppqmm6YipyOnJKclpyanJ6copymnKqcrpyynLacupy+nMqczpzSnNac2pzenOKc5pzqnO6c8pz2nPqc/p0CnQadCp0OnRKdFp0anR6dIp0mnSqdLp0ynTadOp0+nUKdRp1KnU6dUp1WnVqdXp1inWadap1unXKddp16nX6dgp2GnYqdjp2SnZadmp2enaKdpp2qna6dsp22nbqdvp3mneqd7p3ynfad5HX6nf6eAp4GngqeDp4SnhaeGp4eni6eMp42nZQKQp5GnkqeTp5anl6eYp5mnmqebp5ynnaeep5+noKehp6Kno6ekp6Wnpqenp6inqaeqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6u0p7Wntqe3p7inuae6p7unvKe9p76nv6fAp8GnwqfDp8SnlKfFp4ICxqeOHcenyKfJp8qny6dkAsynzafQp9Gn1qfXp9in2afap9un3KebAfWn9qch/0H/Iv9C/yP/Q/8k/0T/Jf9F/yb/Rv8n/0f/KP9I/yn/Sf8q/0r/K/9L/yz/TP8t/03/Lv9O/y//T/8w/1D/Mf9R/zL/Uv8z/1P/NP9U/zX/Vf82/1b/N/9X/zj/WP85/1n/Ov9a/w==";
   const EXTRA_LOWERCASE = new Map();
   const extraBytes = atob(EXTRA_FOLD_PAIRS);
@@ -294,7 +366,6 @@
     return out;
   }
 
-  /** Splits text into folded words. */
   function words(text) {
     const folded = foldText(text);
     const out = [];
@@ -319,7 +390,6 @@
     return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
   }
 
-  /** Trims only protocol separators; all non-ASCII code units remain word characters. */
   function trimSeparators(text) {
     let start = 0, end = text.length;
     while (start < end && isSeparator(text.charCodeAt(start))) start++;
@@ -327,13 +397,11 @@
     return text.slice(start, end);
   }
 
-  function rankLabel(label, query) {
-    const l = foldText(label);
-    const q = trimSeparators(foldText(query));
-    return l === q ? 0 : l.startsWith(q) ? 1 : 2;
+  function rankLabel(label, foldedQuery) {
+    const l = trimSeparators(foldText(label));
+    return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
   }
 
-  /** Encodes a folded prefix as a shard key: a-z and 0-9 stay, other code units become _ plus four hex digits. */
   function shardKey(prefix) {
     let out = "";
     for (let i = 0; i < prefix.length; i++) {
@@ -343,10 +411,6 @@
     return out;
   }
 
-  // ---------- sidecar registry ----------
-  // Sidecar files run (self.CanopyXSidecar = self.CanopyXSidecar || []).push([viewId, ref, document]). Files that ran
-  // before the runtime left entries in a plain array; the runtime drains it and replaces push, so load order does not
-  // matter. Script tags are used because browsers block fetch() of local files on file://.
   const sidecarDocs = new Map();
   const sidecarWaiters = new Map();
 
@@ -378,7 +442,6 @@
     return 0;
   };
 
-  /** Loads one sidecar document by injecting its script; resolves with the document the script registers. */
   function loadSidecar(base, view, ref) {
     if (ref.split("/").some((part) => part === "." || part === "..")) {
       return Promise.reject(new Error("Sidecar reference cannot contain a dot path component: " + ref));
@@ -400,8 +463,6 @@
     });
     sidecarWaiters.set(key, waiter);
     const script = document.createElement("script");
-    // A wire reference is an opaque path, not a URL suffix. Encode each component so ? and #
-    // remain part of the file name while the separators between bundle folders stay intact.
     script.src = base + ref.split("/").map(encodeURIComponent).join("/") + ".js";
     script.async = true;
     script.onload = () => {
@@ -422,14 +483,293 @@
     return waiter.promise;
   }
 
-  // ---------- data sources ----------
-  // Every source has the same promise-based interface:
-  //   page(node, cursor)   -> { items, total, next, offset }   node is null for the top level, cursor null for page one
-  //   search(query, limit) -> { hits, total, truncated }
-  //   counts(ids)          -> a counts document (remote sources with a counts URL only)
-  //   canSearch            -> whether search() can answer
 
-  /** Pages an array that is already in memory (inline roots and inline children). */
+  function badIndex(what) {
+    return new Error("CanopyX: search " + what + " does not match the manifest or is malformed.");
+  }
+
+  function isCount(value) {
+    return Number.isInteger(value) && value >= 0;
+  }
+
+  function checkSearchIndex(index) {
+    if (!index || !isCount(index.entryCount) || !Array.isArray(index.entryFiles) || !Array.isArray(index.kinds) ||
+        !index.shards || typeof index.shards !== "object" || (index.entryCount > 0) !== (index.entryFiles.length > 0) ||
+        index.kinds.some((kind) => typeof kind !== "string") || index.entryFiles.some((first, i) =>
+          !isCount(first) || first >= index.entryCount || (i ? first <= index.entryFiles[i - 1] : first))) {
+      throw badIndex("index");
+    }
+    if (index.entryPacks === undefined && index.shardPacks === undefined) return;
+    const keys = Object.keys(index.shards).sort();
+    if (!Array.isArray(index.entryPacks) || !Array.isArray(index.shardPacks) ||
+        (index.entryFiles.length > 0) !== (index.entryPacks.length > 0) || (keys.length > 0) !== (index.shardPacks.length > 0) ||
+        index.entryPacks.some((first, i) => !isCount(first) || first >= index.entryFiles.length || (i ? first <= index.entryPacks[i - 1] : first)) ||
+        index.shardPacks.some((key, i) => typeof key !== "string" || !Object.prototype.hasOwnProperty.call(index.shards, key) || (i ? key <= index.shardPacks[i - 1] : key !== keys[0]))) {
+      throw badIndex("index packs");
+    }
+  }
+
+  function resolveShards(shards, keys, word) {
+    const bases = keys.filter((key) => !/\.\d+$/.test(key));
+    const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
+      .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
+    for (let length = Math.min(2, word.length); length <= word.length; length++) {
+      const key = shardKey(word.slice(0, length));
+      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
+      const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
+      if (!deeper.length) return [];
+      if (length === word.length) return parts(deeper);
+    }
+    return [];
+  }
+
+  function recentCache(limit, loadDoc) {
+    const cache = new Map();
+    const get = (key) => {
+      let pending = cache.get(key);
+      if (pending) {
+        cache.delete(key);
+      } else {
+        pending = loadDoc(key);
+        pending.catch(() => cache.get(key) === pending && cache.delete(key));
+      }
+      cache.set(key, pending);
+      if (cache.size > limit) cache.delete(cache.keys().next().value);
+      return pending;
+    };
+    get.clear = () => cache.clear();
+    return get;
+  }
+
+  function checkShard(doc, key, count, entryCount) {
+    checkDocument(doc, "searchShard");
+    if (doc.key !== key) throw badIndex("shard key");
+    if (!Array.isArray(doc.words) || !Array.isArray(doc.postings) || doc.words.length !== doc.postings.length) throw badIndex("shard");
+    let total = 0;
+    doc.postings.forEach((list, i) => {
+      if (typeof doc.words[i] !== "string" || !Array.isArray(list) || !isCount(list[0])) throw badIndex("shard");
+      let last = list[0];
+      for (let j = 1; j < list.length; j++) {
+        if (!Number.isInteger(list[j]) || !list[j]) throw badIndex("shard");
+        last += Math.abs(list[j]);
+        total += list[j] < 0 ? -list[j] - 1 : 0;
+      }
+      total += list.length;
+      if (last >= entryCount) throw badIndex("shard");
+    });
+    if (total !== count) throw badIndex("shard posting count");
+    return doc;
+  }
+
+  function mergePostings(lists) {
+    const out = [];
+    let ascending = true;
+    for (const list of lists) {
+      let value = 0;
+      list.forEach((step, i) => {
+        for (let n = i && step < 0 ? -step : 1; n > 0; n--) {
+          value = i ? value + (step < 0 ? 1 : step) : step;
+          if (out.length && value <= out[out.length - 1]) ascending = false;
+          out.push(value);
+        }
+      });
+    }
+    if (ascending) return out;
+    out.sort((a, b) => a - b);
+    return out.filter((value, i) => !i || value !== out[i - 1]);
+  }
+
+  function intersectPostings(a, b) {
+    let j = 0;
+    return a.filter((value) => {
+      while (j < b.length && b[j] < value) j++;
+      return b[j] === value;
+    });
+  }
+
+  function labelToken(folded) {
+    let hash = 2166136261;
+    for (let i = 0; i < folded.length; i++) {
+      hash = Math.imul(hash ^ folded.charCodeAt(i), 16777619);
+    }
+    return "\u0000" + ("0000000" + (hash >>> 0).toString(16)).slice(-8);
+  }
+
+  function entryReference(value) {
+    return value === undefined || value === null || isIdentifier(value);
+  }
+
+  function entryFile(doc, first, count) {
+    checkDocument(doc, "searchEntries");
+    if (doc.first !== first || !Array.isArray(doc.stem) || !Array.isArray(doc.entries) || doc.entries.length !== count) throw badIndex("entry file");
+    const stem = new Map(doc.stem.map((item) => (Array.isArray(item) ? [item[0], item.slice(1)] : [])));
+    const records = new Map();
+    const raw = (n) => {
+      const item = n >= first && n < first + count ? doc.entries[n - first] : stem.get(n);
+      if (!Array.isArray(item) || item.length < 5 || item.length > 8 || !Number.isInteger(item[0]) || item[0] < -1 || item[0] >= n ||
+          !isCount(item[1]) || typeof item[2] !== "string" || !isCount(item[3]) || typeof item[4] !== "string" ||
+          (item[5] != null && !isCount(item[5])) || !entryReference(item[6]) || !(item[7] === undefined || isIdentifier(item[7]))) {
+        throw badIndex("entry " + n);
+      }
+      return item;
+    };
+    return (n) => {
+      const pending = [];
+      for (let k = n; k >= 0 && !records.has(k); k = raw(k)[0]) pending.push(k);
+      while (pending.length) {
+        const number = pending.pop();
+        const item = raw(number);
+        const parent = item[0] < 0 ? null : records.get(item[0]);
+        const base = parent ? parent.id : "";
+        if (item[1] + item[3] > base.length) throw badIndex("entry " + number);
+        records.set(number, { parent: parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4],
+          kind: item[5] == null ? undefined : item[5], ref: item[6] || null, at: item[7] || null });
+      }
+      return records.get(n);
+    };
+  }
+
+  function entryHit(record, kinds) {
+    const path = [];
+    for (let r = record; r; r = r.parent) path.unshift(r.id);
+    const hit = { path: path, label: record.label };
+    if (record.kind !== undefined) {
+      if (record.kind >= kinds.length) throw badIndex("entry kind");
+      hit.kind = kinds[record.kind];
+    }
+    const parent = record.parent;
+    if (parent) hit.context = parent.parent ? parent.parent.label + " / " + parent.label : parent.label;
+    validateSearchHit(hit);
+    return hit;
+  }
+
+  function entryFileOf(starts, n) {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if (starts[mid] <= n) low = mid;
+      else high = mid - 1;
+    }
+    return low;
+  }
+
+  function sidecarSearch(load, manifest, hints) {
+    const index = async () => (await manifest()).search;
+    const loadPack = recentCache(PACK_CACHE, async (number) => {
+      const doc = checkDocument(await load("q/" + number), "pack");
+      if (!Array.isArray(doc.pages)) throw badIndex("pack");
+      return doc.pages;
+    });
+    const sortedKeys = new WeakMap();
+    const packed = async (pack, slot) => {
+      const text = (await loadPack(pack))[slot];
+      if (typeof text !== "string") throw badIndex("pack");
+      return JSON.parse(text);
+    };
+    const loadIndexDoc = async (search, kind, name) => {
+      if (!search.entryPacks) return load(kind === "e" ? "e/" + name : "s/k-" + name);
+      if (kind === "e") {
+        const pack = entryFileOf(search.entryPacks, name);
+        return packed(pack, name - search.entryPacks[pack]);
+      }
+      let keys = sortedKeys.get(search);
+      if (!keys) sortedKeys.set(search, keys = Object.keys(search.shards).sort());
+      let pack = 0;
+      while (pack + 1 < search.shardPacks.length && search.shardPacks[pack + 1] <= name) pack++;
+      return packed(search.entryPacks.length + pack, keys.indexOf(name) - keys.indexOf(search.shardPacks[pack]));
+    };
+    const loadShard = recentCache(SHARD_CACHE, async (key) => {
+      const search = await index();
+      return checkShard(await loadIndexDoc(search, "s", key), key, search.shards[key], search.entryCount);
+    });
+    const loadEntries = recentCache(ENTRY_CACHE, async (file) => {
+      const search = await index();
+      const first = search.entryFiles[file];
+      const end = file + 1 < search.entryFiles.length ? search.entryFiles[file + 1] : search.entryCount;
+      return entryFile(await loadIndexDoc(search, "e", file), first, end - first);
+    });
+
+    async function postingsOf(search, keys, word) {
+      const lists = [];
+      for (const shard of await Promise.all(resolveShards(search.shards, keys, word).map(loadShard))) {
+        shard.words.forEach((indexed, i) => indexed.startsWith(word) && lists.push(shard.postings[i]));
+      }
+      return mergePostings(lists);
+    }
+
+    async function run(query, queryWords, limit, sequence) {
+      const search = await index();
+      if (!search) {
+        return { hits: [], total: 0, truncated: false };
+      }
+      const keyWords = queryWords.filter((word, i) => queryWords.indexOf(word) === i &&
+        !queryWords.some((other) => other.length > word.length && other.startsWith(word)));
+      const keys = Object.keys(search.shards);
+      const folded = trimSeparators(foldText(query));
+      const [exact, lists] = await Promise.all([postingsOf(search, keys, labelToken(folded)),
+        Promise.all(keyWords.map((word) => postingsOf(search, keys, word)))]);
+      const candidates = lists.sort((a, b) => a.length - b.length).reduce(intersectPostings);
+      const order = exact.concat(candidates);
+      const wanted = limit * SEARCH_CANDIDATES;
+      const taken = new Set();
+      const hits = [];
+      const records = new Map();
+      let next = 0;
+      while (next < order.length && hits.length < limit) {
+        const files = [];
+        let end = next;
+        for (; end < order.length && hits.length + end - next < wanted; end++) {
+          const file = entryFileOf(search.entryFiles, order[end]);
+          if (files.indexOf(file) < 0) {
+            if (files.length >= ENTRY_BATCH && hits.length + end - next >= limit) break;
+            files.push(file);
+          }
+        }
+        const loaded = await Promise.all(files.map(loadEntries));
+        for (; next < end; next++) {
+          const number = order[next];
+          if (taken.has(number)) continue;
+          const record = loaded[files.indexOf(entryFileOf(search.entryFiles, number))](number);
+          if (next >= exact.length || trimSeparators(foldText(record.label)) === folded) {
+            taken.add(number);
+            const hit = entryHit(record, search.kinds);
+            records.set(hit, record);
+            hits.push(hit);
+          }
+        }
+      }
+      const ranked = rankHits(hits, query, limit);
+      ranked.total = candidates.length;
+      ranked.truncated = candidates.length > ranked.hits.length;
+      if (sequence === latest) {
+        hints.clear();
+        ranked.hits.forEach((hit) => { for (let r = records.get(hit); r; r = r.parent) hints.set(r.id, r); });
+      }
+      return ranked;
+    }
+
+    let latest = 0;
+    return (query, limit) => {
+      const queryWords = words(query);
+      if (!queryWords.length) {
+        return Promise.resolve({ hits: [], total: 0, truncated: false });
+      }
+      if (!queryWords.some((word) => word.length >= 2)) {
+        const error = new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
+        error.code = "too-short";
+        return Promise.reject(error);
+      }
+      return run(query, queryWords, limit, ++latest).catch((err) => {
+        loadShard.clear();
+        loadEntries.clear();
+        loadPack.clear();
+        throw err;
+      });
+    };
+  }
+
+
   function slicePage(all, cursor, pageSize) {
     const offset = cursor ? Number(cursor) || 0 : 0;
     const items = all.slice(offset, offset + pageSize);
@@ -438,8 +778,10 @@
   }
 
   function rankHits(hits, query, limit) {
-    hits.sort((a, b) => rankLabel(a.label, query) - rankLabel(b.label, query) || collator.compare(a.label, b.label));
-    return { hits: hits.slice(0, limit), total: hits.length, truncated: hits.length > limit };
+    const folded = trimSeparators(foldText(query));
+    const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
+    ranked.sort((a, b) => a.rank - b.rank || collator.compare(a.hit.label, b.hit.label));
+    return { hits: ranked.slice(0, limit).map((item) => item.hit), total: hits.length, truncated: hits.length > limit };
   }
 
   function inlineSource(view) {
@@ -462,12 +804,12 @@
       search(query, limit) {
         const queryWords = words(query);
         const hits = [];
+        const kinds = view.search && Array.isArray(view.search.kinds) && view.search.kinds.length ? view.search.kinds : null;
         if (queryWords.length) {
-          // Paths are linked during traversal and materialized only for matching hits.
           const stack = (view.roots || []).map((node) => ({ node, parent: null })).reverse();
           while (stack.length) {
             const item = stack.pop();
-            if (matchesWords(wordsOf(item.node), queryWords)) {
+            if ((!kinds || kinds.indexOf(item.node.kind) >= 0) && matchesWords(wordsOf(item.node), queryWords)) {
               const path = [];
               const labels = [];
               for (let entry = item; entry; entry = entry.parent) {
@@ -487,116 +829,73 @@
     };
   }
 
-  /** Picks the search shards for one folded query word (see "Sidecar" in docs/data-protocol.md). */
-  function resolveShards(shards, keys, word) {
-    const bases = keys.filter((key) => !/\.\d+$/.test(key));
-    const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
-      .sort((a, b) => Number(a.slice(a.lastIndexOf(".") + 1)) - Number(b.slice(b.lastIndexOf(".") + 1)))));
-    for (let length = 2; length <= word.length; length++) {
-      const key = shardKey(word.slice(0, length));
-      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
-      const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
-      if (!deeper.length) return [];
-      if (length === word.length) return parts(deeper);
-    }
-    return [];
-  }
-
   function sidecarSource(view) {
     const supplied = view.source.base;
     if (typeof supplied !== "string" || !supplied || /[?#]/.test(supplied)) throw new Error("CanopyX: sidecar base must be a folder path without a query or fragment.");
     const base = supplied.endsWith("/") ? supplied : supplied + "/";
     const load = (ref) => loadSidecar(base, view.id, ref);
-    const shardCache = new Map();
     let manifestPromise = null;
-    // Failed loads are not cached, so a retry can succeed once the file is back.
     const manifest = () => manifestPromise || (manifestPromise = load("manifest").then((doc) => {
       checkDocument(doc, "manifest");
       if (doc.view !== view.id) throw new Error("CanopyX: manifest view does not match the requested view.");
+      if (doc.search !== undefined) checkSearchIndex(doc.search);
+      if (doc.packs !== undefined && !isCount(doc.packs)) throw new Error("CanopyX: manifest packs must be a count.");
       return doc;
     }).catch((err) => {
       manifestPromise = null;
       throw err;
     }));
-    // Shards stay cached for repeated queries, but only the most recent ones, so a few broad queries cannot keep
-    // megabytes of index alive.
-    const loadShard = (key) => {
-      let pending = shardCache.get(key);
-      if (pending) {
-        shardCache.delete(key);
-      } else {
-        pending = manifest().then(async (m) => {
-          const doc = checkDocument(await load("s/" + (m.search.prefix || "") + key), "searchShard");
-          if (doc.key !== key) throw new Error("CanopyX: search shard key does not match the manifest.");
-          if (!Array.isArray(doc.entries) || doc.entries.length !== m.search.shards[key]) {
-            throw new Error("CanopyX: search shard entry count does not match the manifest.");
-          }
-          return doc.entries.map((entry) => ({ entry: entry, words: words(entry.label) }));
-        }).catch((err) => {
-          shardCache.delete(key);
-          throw err;
-        });
-      }
-      shardCache.set(key, pending);
-      if (shardCache.size > SHARD_CACHE) {
-        shardCache.delete(shardCache.keys().next().value);
-      }
-      return pending;
+    const loadPack = recentCache(PACK_CACHE, async (number) => {
+      const doc = checkDocument(await load("p/" + number), "pack");
+      if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
+      return doc.pages;
+    });
+    let pinned = new Map();
+    const pin = (key, promise) => {
+      pinned.set(key, promise);
+      promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
+      return promise;
     };
+    const packOf = async (ref) => {
+      const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
+      return packed && (await manifest()).packs !== undefined ? packed : null;
+    };
+    const loadPage = async (ref) => {
+      const packed = await packOf(ref);
+      if (!packed) {
+        const doc = pinned.get("file:" + ref);
+        if (doc) pinned.delete("file:" + ref);
+        return doc || load(ref);
+      }
+      const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
+      if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
+      return JSON.parse(text);
+    };
+    const hints = new Map();
     return {
       kind: "sidecar",
       canSearch: true,
       manifest: manifest,
+      async prefetch(opens, finds) {
+        const refs = new Set();
+        opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
+        finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
+        pinned = new Map();
+        await Promise.all(Array.from(refs, async (ref) => {
+          const packed = await packOf(ref);
+          const key = packed ? "pack:" + packed[1] : "file:" + ref;
+          if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+        }).map((pending) => pending.catch(() => {})));
+      },
       async page(node, cursor) {
         const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
         if (!ref) {
           throw new Error("Node '" + node.id + "' has no sidecar reference for its children.");
         }
-        const doc = checkPage(await load(ref), node);
+        const doc = checkPage(await loadPage(ref), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
-      async search(query, limit) {
-        const queryWords = words(query);
-        if (queryWords.length && !queryWords.some((word) => word.length >= 2)) {
-          throw new Error("CanopyX: sidecar search needs a word of at least two UTF-16 units.");
-        }
-        const m = await manifest();
-        if (!m.search || !queryWords.length) {
-          return { hits: [], total: 0, truncated: false };
-        }
-        const longest = queryWords.reduce((a, b) => (b.length > a.length ? b : a));
-        const shards = m.search.shards;
-        const all = Object.keys(shards);
-        // Parts use the same canonical resolver as ordinary shards and load in numeric order.
-        const order = resolveShards(shards, all, longest);
-        const seen = new Set();
-        const hits = [];
-        let stopped = false;
-        // Files load a few at a time: parallel enough for HTTP, and the candidate check between batches keeps a
-        // broad query from pulling in every part.
-        for (let i = 0; i < order.length; i += SHARD_BATCH) {
-          if (hits.length >= limit * SEARCH_CANDIDATES) {
-            stopped = true;
-            break;
-          }
-          const batch = await Promise.all(order.slice(i, i + SHARD_BATCH).map(loadShard));
-          for (const shard of batch) {
-            for (const item of shard) {
-              const pathKey = JSON.stringify(item.entry.path);
-              if (!seen.has(pathKey) && matchesWords(item.words, queryWords)) {
-                seen.add(pathKey);
-                hits.push(item.entry);
-              }
-            }
-          }
-        }
-        const ranked = rankHits(hits, query, limit);
-        if (stopped) {
-          ranked.truncated = true;
-          ranked.total = undefined;
-        }
-        return ranked;
-      }
+      search: sidecarSearch(load, manifest, hints)
     };
   }
 
@@ -634,7 +933,6 @@
       counts: source.counts ? async (ids) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
-          // The host's normal query parser decodes once; retain encoded components for its split-then-decode step.
           const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
           const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
           items.push.apply(items, doc.items);
@@ -659,9 +957,6 @@
     throw new Error("CanopyX: unknown source kind '" + kind + "'.");
   }
 
-  // ---------- tree grid: model ----------
-  // Loaded nodes keep their children. The visible rows are a flat array rebuilt on every structure change, in time
-  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots.
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
@@ -675,9 +970,28 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
-      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
+      this.labels = labelsFor(view.labels, options.labels);
+      this.local = view.timeZone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
+      if (options.renderCell) {
+        throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
+      }
+      const renderers = options.renderers || {};
+      if (typeof renderers !== "object" || (Object.getPrototypeOf(renderers) !== Object.prototype && Object.getPrototypeOf(renderers) !== null)) {
+        throw new Error("CanopyX: renderers must be a plain object of functions by column id.");
+      }
+      Object.keys(renderers).forEach((id) => {
+        if (typeof renderers[id] !== "function" || !view.columns.some((column) => column.id === id)) {
+          throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
+        }
+      });
+      if (!options.formatLink !== !options.parseLink) {
+        throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
+      }
+      const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
+      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
-      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null, span: 1 };
+      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {
         this.root.inlineItems = view.roots || [];
       }
@@ -691,6 +1005,7 @@
       this.selected = new Set();
       this.anchor = null;
       this.filter = null;
+      this.declaredFilter = null;
       this.filterExpand = false;
       this.activeFilters = new Set();
       this.sortState = null;
@@ -724,8 +1039,6 @@
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
         await this.restoreState();
-        // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
-        // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
         await this.expandInitial(this.root);
         await this.openDeepLink();
       } finally {
@@ -733,13 +1046,13 @@
       }
       if (this.destroyed) return;
       await this.flushPendingToggles();
+      if (this.linkChanged) await this.openDeepLink();
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
         this.emit("ready", {});
       }
     }
 
-    /** Shows the first page of top-level nodes: synchronously for inline data, from the source otherwise. */
     loadRoots() {
       if (!this.root.inlineItems) {
         return this.loadPage(this.root, null);
@@ -763,18 +1076,18 @@
       kind = parent.loading ? "loading" : parent.error ? "error" : kind;
       let row = parent._status;
       if (!row) {
-        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
-      const loaded = parent.children ? parent.children.length : 0;
       const format = numberFormat(this.lang);
-      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
-        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
+      const loaded = format.format(parent.children ? parent.children.length : 0);
+      const labels = this.labels;
+      row.h.label = kind === "loading" ? labels.loading : kind === "error" ? fill(labels.loadError, { error: parent.error }) :
+        parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.format(parent.total) }) : fill(labels.showMoreUnknownTotal, { loaded: loaded });
       row._v = 0;
       return row;
     }
 
-    /** The cell for a column; the tree column falls back to the label. */
     cellOf(node, column, index) {
       const cells = node.cells;
       if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
@@ -788,9 +1101,7 @@
       this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
     }
   }
-  // ---------- tree grid: iterative construction and initial expansion ----------
   Object.assign(TreeGrid.prototype, {
-    /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
       if (this.restoring) return;
       const generation = this.restoreGeneration || 0;
@@ -815,7 +1126,7 @@
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
           children: null, total: null, next: null, inline: false, loading: false, error: null,
-          span: data.detail ? Math.max(1, data.detail.height || 1) : 1, _v: 0
+          hpx: data.detail ? this.detailHeight(data.detail) : this.rowH, auto: !!data.detail && !(data.detail.height > 0), _v: 0
         };
         this.keyMap.set(data.id, w);
         return w;
@@ -842,9 +1153,9 @@
       return root;
     }
   });
-  // ---------- tree grid: iterative filtering, layout, and sorting ----------
+  const LAYOUT_HOLD_MS = 250;
+
   Object.assign(TreeGrid.prototype, {
-    /** 2 = the node matches (its subtree shows), 1 = kept as an ancestor of matches, 0 = hidden. */
     matchState(w) {
       const pending = [{ node: w, visited: false }];
       while (pending.length) {
@@ -867,8 +1178,13 @@
       return w._fm;
     },
 
-    relayout() {
+    relayout(now) {
       if (this.destroyed) return;
+      if (this.layoutHolds && !this.layoutLate && !now) {
+        this.layoutDirty = true;
+        return;
+      }
+      this.layoutDirty = false;
       const previousFocus = this.focused;
       const previousIndex = this.indexOf(previousFocus);
       const previousElement = this.rendered.get(previousFocus);
@@ -896,7 +1212,6 @@
           const parent = frame.parent;
           parent.visibleCount = frame.pos;
           parent.childrenFiltered = frame.filtered;
-          // Unloaded matches remain reachable through their parent status row.
           if (parent.loading) rows.push(this.statusRow(parent, "loading"));
           else if (parent.error) rows.push(this.statusRow(parent, "error"));
           else if (parent.next) rows.push(this.statusRow(parent, "more"));
@@ -904,17 +1219,7 @@
         }
       }
       this.rows = rows;
-      const tops = new Array(rows.length + 1);
-      let y = 0;
-      for (let i = 0; i < rows.length; i++) {
-        rows[i]._ri = i;
-        tops[i] = y;
-        y += rows[i].span * this.rowH;
-      }
-      tops[rows.length] = y;
-      this.tops = tops;
-      this.total = y;
-      this.canvas.style.height = y + "px";
+      this.retop();
       this.grid.setAttribute("aria-rowcount", rows.some((row) => row.status) ? "-1" : String(rows.length + 1));
       if (this.focused && this.indexOf(this.focused) < 0 && this.focused !== this.focusHandoff) {
         let target = this.focused.parent;
@@ -929,6 +1234,48 @@
       }
       this.grid.tabIndex = rows.length ? -1 : 0;
       this.scheduleRender();
+    },
+
+    holdLayout() {
+      if (!this.layoutHolds) {
+        this.layoutTimer = setTimeout(() => {
+          this.layoutTimer = 0;
+          this.layoutLate = true;
+          this.flushLayout();
+        }, LAYOUT_HOLD_MS);
+      }
+      this.layoutHolds = (this.layoutHolds || 0) + 1;
+      let held = true;
+      return () => {
+        if (!held) return false;
+        held = false;
+        if (--this.layoutHolds) return false;
+        clearTimeout(this.layoutTimer);
+        this.layoutTimer = 0;
+        this.layoutLate = false;
+        return this.flushLayout();
+      };
+    },
+
+    flushLayout() {
+      if (!this.layoutDirty) return false;
+      this.relayout(true);
+      return true;
+    },
+
+    retop() {
+      const rows = this.rows;
+      const tops = new Array(rows.length + 1);
+      let y = 0;
+      for (let i = 0; i < rows.length; i++) {
+        rows[i]._ri = i;
+        tops[i] = y;
+        y += rows[i].hpx;
+      }
+      tops[rows.length] = y;
+      this.tops = tops;
+      this.total = y;
+      this.canvas.style.height = y + "px";
     },
 
     applySort(parent, deep) {
@@ -960,7 +1307,16 @@
       }
     }
   });
-  // ---------- protocol node semantics before attachment ----------
+  function isIdentifier(value) {
+    return typeof value === "string" && /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value);
+  }
+
+  function requireIdentifier(value, name) {
+    if (!isIdentifier(value)) {
+      throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
+    }
+  }
+
   function validateNodes(nodes, existing, inlineOnly = false) {
     if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
     const seen = new Set();
@@ -970,6 +1326,10 @@
       requireIdentifier(node && node.id, "node ID");
       if (typeof node.label !== "string") throw new Error("CanopyX: node label must be a string.");
       if (Object.prototype.hasOwnProperty.call(node, "flags")) requireFlags(node.flags, "node flags");
+      if (Object.prototype.hasOwnProperty.call(node, "data") && (!node.data || typeof node.data !== "object" || Array.isArray(node.data) ||
+          Object.keys(node.data).some((name) => !name || name === "__proto__" || typeof node.data[name] !== "string"))) {
+        throw new Error("CanopyX: node data must be an object of strings with nonempty names.");
+      }
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");
@@ -1001,7 +1361,6 @@
     }
   }
 
-  /** Validates the entire incoming page before its wrappers or key map can change. */
   function validatePage(page, existing, expectedOffset) {
     if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
     const items = page.items;
@@ -1021,7 +1380,6 @@
     return items;
   }
 
-  // ---------- tree grid: DOM scaffold and windowed rendering ----------
   Object.assign(TreeGrid.prototype, {
     build() {
       const host = this.host;
@@ -1030,6 +1388,7 @@
         host.setAttribute("data-cx-theme", "auto");
       }
       host.style.setProperty("--cx-row-h", this.rowH + "px");
+      this.setTreeColumnPinned(this.view.pinTreeColumn);
       this.toolbar = h("div", "cx-toolbar");
       this.toolbar.hidden = true;
       const grid = this.grid = h("div", "cx-grid");
@@ -1063,7 +1422,6 @@
       grid.addEventListener("click", (e) => this.onClick(e));
       grid.addEventListener("dblclick", (e) => this.onDblClick(e));
       grid.addEventListener("keydown", (e) => this.onKey(e));
-      // Tabbing into the grid lands on the tab-stop row; adopt it so arrows start there and recycling keeps it.
       this.canvas.addEventListener("focusin", (e) => {
         const rowEl = e.target.closest(".cx-row");
         if (rowEl && rowEl._w && this.focused !== rowEl._w) {
@@ -1072,8 +1430,22 @@
           this.scheduleRender();
         }
       });
+      this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
-      this.resizeObserver = new ResizeObserver(() => this.scheduleRender());
+      this.onHash = (e) => {
+        const href = global.location.href;
+        const last = this.locationEvent;
+        this.locationEvent = last && last.href === href && last.type !== e.type ? null : { href: href, type: e.type };
+        if (this.locationEvent) this.readLocation();
+      };
+      global.addEventListener("hashchange", this.onHash);
+      global.addEventListener("popstate", this.onHash);
+      const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
+      viewWidth();
+      this.resizeObserver = new ResizeObserver(() => {
+        viewWidth();
+        this.scheduleRender();
+      });
       this.resizeObserver.observe(grid);
     },
 
@@ -1082,7 +1454,6 @@
     },
 
     buildHeader() {
-      // Rebuilding the header replaces its buttons; keep keyboard focus on the same column's sort button.
       const active = document.activeElement;
       const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
       const focusedResize = active && active.classList.contains("cx-resize");
@@ -1090,7 +1461,6 @@
       const layoutChanged = !this.cols || this.cols.length !== nextCols.length || nextCols.some((column, i) => column !== this.cols[i]);
       this.cols = nextCols;
       this.columnIndex = this.cols.map((column) => this.columns.indexOf(column));
-      // Visibility changes alter the cell skeleton; width-only changes do not.
       if (layoutChanged) {
         this.layout = (this.layout || 0) + 1;
         this.version++;
@@ -1174,21 +1544,32 @@
       return i !== undefined && this.rows[i] === w ? i : -1;
     },
 
-    /**
-     * Renders the rows in the viewport plus a small overscan and the focused row. A row that leaves the window is
-     * reused for a row that enters it: its cells survive, content is updated while detached, and it is inserted in
-     * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
-     */
     render() {
+      let measured = false;
+      for (let pass = 0; !this.destroyed; pass++) {
+        this.renderPass();
+        if (!this.measureDetails()) break;
+        measured = true;
+        if (pass === 3) {
+          this.scheduleRender();
+          break;
+        }
+      }
+      return measured;
+    },
+
+    renderPass() {
       if (this.destroyed) {
         return;
       }
       const grid = this.grid;
+      const held = this.heldCell();
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
       const n = this.rows.length;
-      const first = n ? Math.max(0, this.rowAt(top) - OVERSCAN) : 0;
-      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + OVERSCAN) : -1;
+      const over = this.lean ? 0 : OVERSCAN;
+      const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
+      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
       const want = new Set();
       for (let i = first; i <= last; i++) {
         want.add(this.rows[i]);
@@ -1203,18 +1584,15 @@
         if (!want.has(w)) {
           this.rendered.delete(w);
           if (rowEl.contains(active)) {
-            // Reusing it would leave keyboard focus on a row that now shows another node.
             rowEl.remove();
             rowEl._w = null;
+            this.observeDetail(rowEl, false);
           } else {
-            // Repaint a departing row while detached, then insert it in the new window's DOM order. Its cell
-            // skeleton survives; retained rows do not need repainting or moving during downward scrolling.
             rowEl.remove();
             free.push(rowEl);
           }
         }
       }
-      // With nothing focused, the tab stop is the first row inside the viewport (not an overscan row).
       const tabRow = visibleFocus || this.rows[n ? this.rowAt(top) : 0] || null;
       const fragment = document.createDocumentFragment();
       for (const w of want) {
@@ -1258,6 +1636,7 @@
       for (const rowEl of free) {
         rowEl.remove();
         rowEl._w = null;
+        this.observeDetail(rowEl, false);
         if (this.pool.length < 200) {
           this.pool.push(rowEl);
         }
@@ -1266,13 +1645,78 @@
         this.canvas.appendChild(fragment);
       }
       this.window = { first: first, last: last };
-      // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
+      if (held) this.restoreCell(held);
+    }
+  });
+
+  Object.assign(TreeGrid.prototype, {
+    applyWidths() {
+      let sum = 0;
+      this.cols.forEach((column, i) => {
+        this.headCells[i].style.width = column.width + "px";
+        const grip = this.headCells[i].querySelector(".cx-resize");
+        grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
+        grip.setAttribute("aria-valuenow", String(column.width));
+        grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
+        sum += column.width;
+      });
+      this.rowWidth = sum;
+      this.headRow.style.width = sum + "px";
+      this.canvas.style.width = sum + "px";
+      const resizeRow = (row) => {
+        row.style.width = sum + "px";
+        if (!row._kind || !row.firstElementChild) return;
+        if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
+        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+      };
+      this.rendered.forEach(resizeRow);
+      this.pool.forEach(resizeRow);
     },
 
-    // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
-    // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
-    // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
+    setColumnWidth(columnId, width) {
+      const column = this.columns.find((c) => c.id === columnId);
+      if (!column || !Number.isFinite(width)) {
+        throw new Error("CanopyX: setColumnWidth needs a column of the view and a width in pixels.");
+      }
+      if (this.cancelResize) this.cancelResize();
+      column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
+      this.applyWidths();
+    },
+
+    setTreeColumnPinned(pinned) {
+      this.host.classList.toggle("cx-pin-tree", !!pinned);
+    },
+
+    startResize(e, column) {
+      if (this.destroyed || e.button !== 0) return;
+      if (this.cancelResize) this.cancelResize();
+      e.preventDefault();
+      const x0 = e.clientX;
+      const w0 = column.width;
+      const pointer = e.pointerId;
+      const move = (ev) => {
+        if (ev.pointerId !== pointer) return;
+        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
+        this.applyWidths();
+      };
+      const stop = () => {
+        global.removeEventListener("pointermove", move);
+        global.removeEventListener("pointerup", end);
+        global.removeEventListener("pointercancel", end);
+        global.removeEventListener("blur", stop);
+        if (this.cancelResize === stop) this.cancelResize = null;
+      };
+      const end = (ev) => { if (ev.pointerId === pointer) stop(); };
+      this.cancelResize = stop;
+      global.addEventListener("pointermove", move);
+      global.addEventListener("pointerup", end);
+      global.addEventListener("pointercancel", end);
+      global.addEventListener("blur", stop);
+    }
+  });
+
+  Object.assign(TreeGrid.prototype, {
     keepDomOrder(first, last) {
       const ordered = [];
       const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
@@ -1346,66 +1790,6 @@
     }
   });
 
-  // ---------- tree grid: column sizing ----------
-  Object.assign(TreeGrid.prototype, {
-    applyWidths() {
-      let sum = 0;
-      this.cols.forEach((column, i) => {
-        this.headCells[i].style.width = column.width + "px";
-        const grip = this.headCells[i].querySelector(".cx-resize");
-        grip.setAttribute("aria-label", "Resize " + column.title);
-        grip.setAttribute("aria-valuenow", String(column.width));
-        grip.setAttribute("aria-valuetext", column.width + " pixels");
-        sum += column.width;
-      });
-      this.rowWidth = sum;
-      this.headRow.style.width = sum + "px";
-      this.canvas.style.width = sum + "px";
-      // Both the original and pooled painters place grid cells directly under the row.
-      // Keep recycled rows in sync without replacing host-owned cell content.
-      const resizeRow = (row) => {
-        row.style.width = sum + "px";
-        if (!row._kind || !row.firstElementChild) return;
-        if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
-      };
-      this.rendered.forEach(resizeRow);
-      this.pool.forEach(resizeRow);
-    },
-
-    startResize(e, column) {
-      if (this.destroyed || e.button !== 0) return;
-      if (this.cancelResize) this.cancelResize();
-      e.preventDefault();
-      const x0 = e.clientX;
-      const w0 = column.width;
-      const pointer = e.pointerId;
-      const move = (ev) => {
-        if (ev.pointerId !== pointer) return;
-        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
-        this.applyWidths();
-      };
-      const stop = () => {
-        global.removeEventListener("pointermove", move);
-        global.removeEventListener("pointerup", end);
-        global.removeEventListener("pointercancel", end);
-        global.removeEventListener("blur", stop);
-        if (this.cancelResize === stop) this.cancelResize = null;
-      };
-      const end = (ev) => { if (ev.pointerId === pointer) stop(); };
-      this.cancelResize = stop;
-      global.addEventListener("pointermove", move);
-      global.addEventListener("pointerup", end);
-      global.addEventListener("pointercancel", end);
-      global.addEventListener("blur", stop);
-    }
-  });
-
-  // ---------- tree grid: row and cell painting ----------
-  // A row element keeps a skeleton of cells for the current column layout. Recycling it for another node only updates
-  // text nodes, classes, attributes, and badges that differ, instead of rebuilding every cell; rebuilding was what made
-  // scrolling drop frames under CPU pressure in the D21 spike. The skeleton is rebuilt only when the row changes kind
-  // (node, detail, status) or the columns change.
   function setAttr(element, name, value) {
     const cache = element._attrs || (element._attrs = {});
     if (cache[name] === value) {
@@ -1428,7 +1812,6 @@
   }
 
   Object.assign(TreeGrid.prototype, {
-    /** Paints a row for a node or a status row. The row element may be recycled from another node. */
     fillRow(rowEl, w) {
       rowEl._w = w;
       const kind = w.status ? "status" : w.h.detail ? "detail" : "node";
@@ -1436,7 +1819,9 @@
         this.buildRow(rowEl, kind);
       }
       setAttr(rowEl, "aria-level", String(w.level));
-      const height = w.span * this.rowH + "px";
+      const auto = kind === "detail" && w.auto;
+      this.observeDetail(rowEl, auto);
+      const height = auto ? "auto" : w.hpx + "px";
       if (rowEl._height !== height) {
         rowEl.style.height = height;
         rowEl._height = height;
@@ -1452,7 +1837,6 @@
 
     buildRow(rowEl, kind) {
       rowEl.textContent = "";
-      // The attribute cache is reset with the skeleton, so drop what a node row of another kind left behind.
       ["aria-expanded", "aria-busy", "aria-setsize", "aria-posinset", "aria-selected", "data-cx-id", "data-cx-status", "data-kind"].forEach((name) => rowEl.removeAttribute(name));
       rowEl._attrs = {};
       rowEl._cls = null;
@@ -1476,7 +1860,7 @@
       }
       rowEl._cells = this.cols.map((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
-        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null };
+        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
         cell.className = slot.base;
         if (i === 0) {
           slot.indent = cell.appendChild(h("span", "cx-indent"));
@@ -1505,16 +1889,19 @@
 
     paintDetailRow(rowEl, w) {
       const node = w.h;
-      setClass(rowEl, "cx-row cx-detail" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
+      setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
       this.paintRowState(rowEl, w);
-      // Detail content (and anything a host renderDetail callback set on the cell) is rebuilt on a fresh cell.
       const old = rowEl._cells[0].cell;
       const cell = this.cell(rowEl, 0, this.rowWidth);
       rowEl.replaceChild(cell, old);
       rowEl._cells[0].cell = cell;
       cell.setAttribute("aria-colspan", String(this.cols.length));
-      cell.style.paddingLeft = (w.level - 1) * INDENT + 8 + "px";
+      const left = (w.level - 1) * INDENT + 8 + "px";
+      cell.style.paddingLeft = left;
+      cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
+      quietControls(cell);
+      if (w.auto) this.measureNeeded = true;
     },
 
     paintNodeRow(rowEl, w) {
@@ -1533,7 +1920,6 @@
       }
     },
 
-    /** Attributes shared by node and detail rows. */
     paintRowState(rowEl, w) {
       const node = w.h;
       setAttr(rowEl, "data-cx-id", node.id);
@@ -1543,7 +1929,6 @@
       this.setPosition(rowEl, w);
     },
 
-    /** Updates paging metadata without replacing a retained host control or its DOM state. */
     refreshRowState(rowEl, w) {
       setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
       setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
@@ -1551,10 +1936,6 @@
       if (rowEl._kind === "node") this.paintTreeSlot(rowEl._cells[0], w);
     },
 
-    /**
-     * aria-posinset is the position among the visible siblings in display (sorted) order. aria-setsize counts children
-     * that are not loaded yet; -1 means the total is unknown.
-     */
     setPosition(rowEl, w) {
       const parent = w.parent;
       const loaded = parent.children ? parent.children.length : 0;
@@ -1589,45 +1970,28 @@
 
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
-      if (this.opts.renderCell) {
-        // Host-rendered cells own their content, so they are rebuilt on every paint, from a clean cell.
-        slot.cell.className = slot.base;
-        slot.cell.removeAttribute("title");
-        slot.cls = slot.base;
-        slot.title = null;
-        if (slot.content === slot.cell) {
-          const old = slot.cell;
-          const fresh = this.cell(old.parentNode, this.cols.indexOf(column), column.width, column.kind);
-          old.replaceWith(fresh);
-          slot.cell = fresh;
-          slot.content = fresh;
-        } else {
-          const fresh = h("span", "cx-content");
-          slot.content.replaceWith(fresh);
-          slot.content = fresh;
-        }
-        slot.badges = [];
-        if (this.opts.renderCell(node, column.id, slot.content, { level: w.level, expanded: w.expanded, index: index }) === true) {
-          return;
-        }
-        slot.content.appendChild(slot.textSpan);
+      const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
+      if (hosted === "host") {
+        return;
       }
-      const text = cellText(value, column, this.lang);
+      const decorated = hosted === "decorated";
+      const text = cellText(value, column, this.fmt);
       if (slot.text.data !== text) {
         slot.text.data = text;
       }
       const object = isCellObject(value);
-      const cls = slot.base + (object && value.tone ? " cx-tone-" + value.tone : "");
+      const tone = object ? toneOf(value.tone) : NO_TONE;
+      const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
-        if (this.opts.renderCell) {
-          // A fallback tone augments a decorator's fresh cell instead of replacing its host classes.
-          if (object && value.tone) slot.cell.classList.add("cx-tone-" + value.tone);
+        if (decorated) {
+          if (tone.cls) slot.cell.className += tone.cls;
         } else {
           slot.cell.className = cls;
         }
         slot.cls = cls;
       }
-      const title = object && value.title ? value.title : null;
+      toneColors(slot.cell, tone);
+      const title = object && value.title ? value.title : decorated ? null : otherZone(value, column, this.fmt);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
@@ -1639,7 +2003,6 @@
       this.paintBadges(slot, (index === 0 && node.badges) || null, object && value.badges ? value.badges : null);
     },
 
-    /** Reuses badge elements: updates the ones that exist, adds missing ones, removes extras. */
     paintBadges(slot, first, second) {
       const count = (first ? first.length : 0) + (second ? second.length : 0);
       for (let k = 0; k < count; k++) {
@@ -1650,10 +2013,10 @@
           span._text = span.appendChild(document.createTextNode(""));
           slot.badges.push(span);
         }
-        const cls = "cx-badge cx-tone-" + (badge.tone || "neutral");
-        if (span._cls !== cls) {
-          span.className = cls;
-          span._cls = cls;
+        const tone = toneOf(badge.tone || "neutral");
+        if (span._cls !== tone.cls) {
+          applyTone(span, "cx-badge", tone);
+          span._cls = tone.cls;
         }
         if (span._text.data !== badge.text) {
           span._text.data = badge.text;
@@ -1673,47 +2036,133 @@
       }
     },
 
+    setTimeZone(zone) {
+      if (zone !== "local" && zone !== "utc") {
+        throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
+      }
+      if (this.local === (zone === "local")) {
+        return;
+      }
+      this.local = zone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
+      this.version++;
+      this.scheduleRender();
+    },
+
     cell(rowEl, index, width, kind) {
+      const cell = this.newCell(index, width, kind);
+      rowEl.appendChild(cell);
+      return cell;
+    },
+
+    newCell(index, width, kind) {
       const cell = h("div", "cx-cell" + (kind ? " cx-kind-" + kind : ""));
       cell.setAttribute("role", "gridcell");
       cell.setAttribute("aria-colindex", String(index + 1));
       cell.style.width = width + "px";
-      rowEl.appendChild(cell);
       return cell;
     }
   });
 
-  // ---------- tree grid: detail rows ----------
-  const detailColumn = { kind: "text" };
 
-  function detailCell(tag, cell, lang) {
+  function badgeElement(badge) {
+    const span = h("span");
+    applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
+    setText(span, badge.text);
+    if (badge.title) span.title = badge.title;
+    return span;
+  }
+
+  function hostBadge(badge) {
+    if (!badge || typeof badge !== "object" || typeof badge.text !== "string" ||
+        (badge.tone != null && typeof badge.tone !== "string") || (badge.title != null && typeof badge.title !== "string")) {
+      throw new Error("CanopyX: badge needs { text, tone?, title? } with string values.");
+    }
+    return badgeElement(badge);
+  }
+
+  function attributeShape(element) {
+    let shape = "";
+    for (const attribute of element.attributes) {
+      shape += attribute.name + "=" + attribute.value + "\n";
+    }
+    return shape;
+  }
+
+  Object.assign(TreeGrid.prototype, {
+    paintHostSlot(slot, node, column, index, w) {
+      const tree = slot.content !== slot.cell;
+      const previous = slot.content;
+      const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
+      const shape = attributeShape(fresh);
+      previous.replaceWith(fresh);
+      this.setSlotContent(slot, fresh, tree);
+      let drawn;
+      try {
+        drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+      } catch (e) {
+        if (fresh.parentNode) fresh.replaceWith(previous);
+        this.setSlotContent(slot, previous, tree);
+        throw e;
+      }
+      const untouched = !drawn && !fresh.firstChild && attributeShape(fresh) === shape;
+      if (untouched && slot.mode === "default") {
+        fresh.replaceWith(previous);
+        this.setSlotContent(slot, previous, tree);
+        return "default";
+      }
+      if (tree) {
+        slot.cell.className = slot.base;
+        slot.cell.removeAttribute("title");
+        toneColors(slot.cell, NO_TONE);
+      }
+      slot.cls = slot.base;
+      slot.title = null;
+      slot.badges = [];
+      slot.mode = drawn ? "host" : untouched ? "default" : "decorated";
+      if (!untouched) {
+        quietControls(fresh);
+      }
+      if (!drawn) {
+        fresh.appendChild(slot.textSpan);
+      }
+      return slot.mode;
+    },
+
+    setSlotContent(slot, element, tree) {
+      slot.content = element;
+      if (!tree) {
+        slot.cell = element;
+      }
+    }
+  });
+
+  const detailColumn = { kind: "text" };
+  const DETAIL_ESTIMATE_SLOTS = 16;
+
+  function detailCell(tag, cell, fmt) {
     const element = h(tag);
-    setText(element, cellText(cell, detailColumn, lang));
+    setText(element, cellText(cell, detailColumn, fmt));
     if (isCellObject(cell)) {
       if (cell.tone) {
-        element.className = "cx-tone-" + cell.tone;
+        applyTone(element, "", toneOf(cell.tone));
       }
       if (cell.title) {
         element.title = cell.title;
       }
-      (cell.badges || []).forEach((badge) => {
-        const span = h("span", "cx-badge cx-tone-" + (badge.tone || "neutral"));
-        setText(span, badge.text);
-        if (badge.title) span.title = badge.title;
-        element.appendChild(span);
-      });
+      (cell.badges || []).forEach((badge) => element.appendChild(badgeElement(badge)));
     }
     return element;
   }
 
   Object.assign(TreeGrid.prototype, {
-    /** Fills a detail row with its table, property list, or trusted host markup; a host callback can take over. */
     renderDetail(node, element, plainHtml = false) {
-      if (this.opts.renderDetail && this.opts.renderDetail(node, element) === true) {
+      const body = element.appendChild(h("div", "cx-detail-body"));
+      if (!plainHtml) body.setAttribute("tabindex", "-1");
+      if (this.opts.renderDetail && this.opts.renderDetail(node, body) === true) {
         return;
       }
       const detail = node.detail;
-      const body = h("div", "cx-detail-body");
       if (detail.type === "table") {
         const table = h("table", "cx-detail-table");
         if (detail.caption) {
@@ -1721,9 +2170,16 @@
           setText(caption, detail.caption);
           table.appendChild(caption);
         }
+        const columns = detail.columns || [];
+        const widths = Array.isArray(detail.widths) && detail.widths.length === columns.length ? detail.widths : null;
+        if (widths) {
+          const total = widths.reduce((sum, share) => sum + share, 0);
+          const group = table.appendChild(h("colgroup"));
+          widths.forEach((share) => { group.appendChild(h("col")).style.width = (share / total * 100) + "%"; });
+        }
         const head = h("thead");
         const headRow = h("tr");
-        (detail.columns || []).forEach((title) => {
+        columns.forEach((title) => {
           const th = h("th");
           th.scope = "col";
           setText(th, title);
@@ -1734,7 +2190,7 @@
         const tbody = h("tbody");
         (detail.rows || []).forEach((row) => {
           const tr = h("tr");
-          row.forEach((cell) => tr.appendChild(detailCell("td", cell, this.lang)));
+          row.forEach((cell) => tr.appendChild(detailCell("td", cell, this.fmt)));
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -1745,29 +2201,84 @@
           const term = h("dt");
           setText(term, item.name);
           list.appendChild(term);
-          list.appendChild(detailCell("dd", item.value, this.lang));
+          list.appendChild(detailCell("dd", item.value, this.fmt));
         });
         body.appendChild(list);
       } else if (detail.type === "html") {
         if (plainHtml) setText(body, detail.html || "");
         else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
       }
-      element.appendChild(body);
+    },
+
+    detailHeight(detail) {
+      if (detail.height > 0) {
+        return detail.height * this.rowH;
+      }
+      const slots = detail.type === "table" ? (detail.rows || []).length + (detail.caption ? 2 : 1) : detail.type === "properties" ? (detail.items || []).length : 6;
+      return Math.max(1, Math.min(DETAIL_ESTIMATE_SLOTS, slots)) * this.rowH;
+    },
+
+    observeDetail(rowEl, auto) {
+      if (!!rowEl._auto === auto) {
+        return;
+      }
+      rowEl._auto = auto;
+      if (!this.detailObserver) {
+        this.detailObserver = new ResizeObserver(() => {
+          this.measureNeeded = true;
+          this.scheduleRender();
+        });
+      }
+      if (auto) {
+        this.detailObserver.observe(rowEl);
+        this.measureNeeded = true;
+      } else {
+        this.detailObserver.unobserve(rowEl);
+      }
+    },
+
+    measureDetails() {
+      if (!this.measureNeeded) {
+        return false;
+      }
+      this.measureNeeded = false;
+      const top = this.grid.scrollTop;
+      let shift = 0;
+      let changed = false;
+      for (const [w, rowEl] of this.rendered) {
+        if (!w.auto || rowEl._kind !== "detail") continue;
+        const measured = rowEl.offsetHeight;
+        const height = Math.max(this.rowH, measured);
+        if (measured && height !== w.hpx) {
+          if (this.tops[this.indexOf(w)] + w.hpx <= top) shift += height - w.hpx;
+          w.hpx = height;
+          changed = true;
+        }
+      }
+      if (changed) {
+        this.retop();
+        if (shift) this.grid.scrollTop = top + shift;
+      }
+      return changed;
     }
   });
 
-  // ---------- tree grid: keyboard ----------
-  // Row-focus model: Up/Down move, Right expands then enters, Left collapses then goes to the parent, Home/End,
-  // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
-  // printable keys run type-ahead on labels. Tab leaves the grid.
   function hostControl(target) {
     const row = target.closest(".cx-row");
     const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
-    return control && row && row !== control && row.contains(control) ? control : null;
+    return control && row && row !== control && row.contains(control) && !control.matches(".cx-cell,.cx-detail-body") ? control : null;
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
-      if (this.head.contains(e.target) || hostControl(e.target)) {
+      if (this.head.contains(e.target)) {
+        return;
+      }
+      const rowEl = e.target.closest(".cx-row");
+      if (rowEl && rowEl !== e.target && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
+        this.skipRowTabStop(rowEl);
+        return;
+      }
+      if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
         return;
       }
       const w = this.focused || this.rows[0];
@@ -1777,7 +2288,6 @@
       const i = this.indexOf(w);
       const pageHeight = Math.max(this.rowH, this.grid.clientHeight - this.head.offsetHeight - this.rowH);
       const last = this.rows.length - 1;
-      // A space inside a running type-ahead term continues the term ("lab c").
       const key = e.key === " " && this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS ? "typeahead" : e.key;
       let target = null;
       let handled = true;
@@ -1789,13 +2299,16 @@
         case "Home": target = this.rows[0]; break;
         case "End": target = this.rows[last]; break;
         case "ArrowRight":
-          if (!w.status && this.expandable(w)) {
-            if (!w._open) {
-              this.toggle(w, true);
-            } else if (this.rows[i + 1] && this.rows[i + 1].parent === w) {
-              target = this.rows[i + 1];
-            }
+          if (!w.status && this.expandable(w) && !w._open) {
+            this.toggle(w, true);
+          } else if (!w.status && this.expandable(w) && this.rows[i + 1] && this.rows[i + 1].parent === w) {
+            target = this.rows[i + 1];
+          } else if (!w.status) {
+            this.enterCells(w);
           }
+          break;
+        case "F2":
+          if (!w.status) this.enterCells(w);
           break;
         case "ArrowLeft":
           if (!w.status && w._open) {
@@ -1824,7 +2337,6 @@
       }
     },
 
-    /** Enter or Space on a row: retry, show more, or select (and with Enter, toggle). */
     activate(w, enter) {
       if (w.status === "more") {
         this.loadMore(w.parent);
@@ -1872,7 +2384,204 @@
       setText(this.live, message);
     }
   });
-  // ---------- tree grid: focus ownership across status-row page requests ----------
+
+  const CELL_CONTROLS = "a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])," +
+    "[role=button],[role=checkbox],[role=radio],[role=link],[role=switch],[role=tab],[role=menuitem],[role=textbox],[role=combobox]";
+  const OWN_ARROWS = ".cx-detail-body,textarea,select,[contenteditable]:not([contenteditable=false]),[aria-activedescendant]," +
+    "[role=textbox],[role=combobox],[role=spinbutton],[role=slider],[role=radio],[role=tab],[role=menuitem],[role=listbox],[role=tree],[role=grid]," +
+    "input:not([type=button]):not([type=checkbox]):not([type=submit]):not([type=reset]):not([type=image]):not([type=file]):not([type=color])";
+
+  function reachable(control) {
+    return !control.matches(":disabled") && !control.closest("[inert],[aria-hidden=true]") &&
+      (control.checkVisibility ? control.checkVisibility({ visibilityProperty: true }) : control.getClientRects().length > 0);
+  }
+
+  function cellControls(cell) {
+    const controls = Array.prototype.filter.call(cell.querySelectorAll(CELL_CONTROLS), (control) =>
+      !control.classList.contains("cx-detail-body") && reachable(control));
+    const body = cell.querySelector(":scope > .cx-detail-body");
+    if (body && (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)) controls.push(body);
+    return controls;
+  }
+
+  function quietControls(cell) {
+    cell.querySelectorAll(CELL_CONTROLS).forEach((control) => {
+      if (control.tabIndex >= 0) control.tabIndex = -1;
+    });
+  }
+
+  Object.assign(TreeGrid.prototype, {
+    rowCells(rowEl) {
+      return rowEl && rowEl._cells && rowEl._kind !== "status" ? rowEl._cells.map((slot) => slot.cell) : [];
+    },
+
+    enterCells(w) {
+      const cells = this.rowCells(this.rendered.get(w));
+      const index = cells.findIndex((cell) => cellControls(cell).length > 0);
+      if (index < 0) return false;
+      this.focusCell(w, index, 0);
+      return true;
+    },
+
+    focusCell(w, index, control, enter) {
+      this.setFocus(w, false);
+      const cells = this.rowCells(this.rendered.get(w));
+      if (!cells.length) {
+        this.setFocus(w, true);
+        return;
+      }
+      const cell = cells[Math.max(0, Math.min(cells.length - 1, index))];
+      const controls = cellControls(cell);
+      let target = cell;
+      if (typeof control === "number" && controls.length) target = controls[control < 0 ? controls.length - 1 : Math.min(control, controls.length - 1)];
+      else if (control === undefined && controls.length === 1) target = controls[0];
+      let parked = -1;
+      if (target !== cell && !enter && !target.classList.contains("cx-detail-body") && target.matches(OWN_ARROWS)) {
+        parked = controls.indexOf(target);
+        target = cell;
+      }
+      cell._cxAt = parked;
+      if (target === cell) cell.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+      this.revealInRow(cell, target, cells[0]);
+    },
+
+    revealInRow(cell, target, treeCell) {
+      const grid = this.grid;
+      if (cell.parentNode && cell.parentNode._kind === "node") {
+        this.revealInCell(cell, target);
+        const pinned = cell !== treeCell && this.host.classList.contains("cx-pin-tree") ? treeCell.offsetWidth : 0;
+        const left = grid.getBoundingClientRect().left + grid.clientLeft;
+        const box = cell.getBoundingClientRect();
+        if (box.left < left + pinned) grid.scrollLeft -= left + pinned - box.left;
+        else if (box.right > left + grid.clientWidth) grid.scrollLeft += Math.min(box.right - left - grid.clientWidth, box.left - left - pinned);
+      }
+      const body = target.closest(".cx-detail-body");
+      if (body && body !== target) {
+        const outer = body.getBoundingClientRect();
+        const inner = target.getBoundingClientRect();
+        if (inner.top < outer.top) body.scrollTop -= outer.top - inner.top;
+        else if (inner.bottom > outer.bottom) body.scrollTop += Math.min(inner.bottom - outer.bottom, inner.top - outer.top);
+      }
+      const frame = grid.getBoundingClientRect();
+      const top = frame.top + grid.clientTop + this.head.offsetHeight;
+      const bottom = frame.top + grid.clientTop + grid.clientHeight;
+      const box = target.getBoundingClientRect();
+      if (box.top < top) grid.scrollTop -= top - box.top;
+      else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+    },
+
+    revealInCell(cell, target) {
+      if (target === cell || !cell.contains(target) || !cell.parentNode || cell.parentNode._kind !== "node") return;
+      const outer = cell.getBoundingClientRect();
+      const inner = target.getBoundingClientRect();
+      const start = outer.left + cell.clientLeft;
+      const end = start + cell.clientWidth;
+      if (inner.left < start) cell.scrollLeft -= start - inner.left;
+      else if (inner.right > end) cell.scrollLeft += Math.min(inner.right - end, inner.left - start);
+      if (cell.scrollLeft) this.scrolledCell = cell;
+    },
+
+    settleCell(next) {
+      const cell = this.scrolledCell;
+      if (cell && !cell.contains(next || document.activeElement)) {
+        cell.scrollLeft = 0;
+        this.scrolledCell = null;
+      }
+    },
+
+    skipRowTabStop(rowEl) {
+      if (rowEl.tabIndex < 0) return;
+      rowEl.tabIndex = -1;
+      setTimeout(() => {
+        if (!this.destroyed && rowEl._tab === 0) rowEl.tabIndex = 0;
+      }, 0);
+    },
+
+    heldCell() {
+      const active = document.activeElement;
+      const rowEl = active && active.closest ? active.closest(".cx-row") : null;
+      if (!rowEl || rowEl === active || !rowEl._w || !this.canvas.contains(rowEl)) return null;
+      const cells = this.rowCells(rowEl);
+      const index = cells.findIndex((cell) => cell.contains(active));
+      if (index < 0) return null;
+      return { w: rowEl._w, index: index, control: active === cells[index] ? -1 : Array.prototype.indexOf.call(cells[index].querySelectorAll(CELL_CONTROLS), active) };
+    },
+
+    restoreCell(held) {
+      const active = document.activeElement;
+      if (!held || this.destroyed || (active && active !== document.body) || !this.rendered.has(held.w)) return;
+      const cell = this.rowCells(this.rendered.get(held.w))[held.index];
+      if (!cell) return;
+      const candidate = held.control >= 0 ? cell.querySelectorAll(CELL_CONTROLS)[held.control] : null;
+      const target = candidate && reachable(candidate) ? candidate : cell;
+      if (target === cell) cell.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+      this.revealInCell(cell, target);
+    },
+
+    onCellKey(e) {
+      const rowEl = e.target.closest(".cx-row");
+      const w = rowEl && rowEl._w;
+      const cells = this.rowCells(rowEl);
+      const index = cells.findIndex((cell) => cell.contains(e.target));
+      if (!w || w.status || index < 0 || e.isComposing || e.defaultPrevented) return index >= 0;
+      const cell = cells[index];
+      const control = e.target !== cell ? e.target : null;
+      if (control && control.matches(OWN_ARROWS)) {
+        if (e.key !== "Escape") return true;
+        const from = cellControls(cell).indexOf(control);
+        this.focusCell(w, index, null);
+        cell._cxAt = from;
+        e.preventDefault();
+        e.stopPropagation();
+        return true;
+      }
+      const controls = cellControls(cell);
+      const at = control ? controls.indexOf(control) : cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
+      const detail = rowEl._kind === "detail";
+      switch (e.key) {
+        case "ArrowRight":
+          if (at >= 0 && at < controls.length - 1) this.focusCell(w, index, at + 1);
+          else if (!detail && index < cells.length - 1) this.focusCell(w, index + 1, 0);
+          break;
+        case "ArrowLeft":
+          if (at > 0) this.focusCell(w, index, at - 1);
+          else if (!detail && index > 0) this.focusCell(w, index - 1, -1);
+          else this.setFocus(w, true);
+          break;
+        case "Home":
+          this.focusCell(w, 0, 0);
+          break;
+        case "End":
+          this.focusCell(w, cells.length - 1, -1);
+          break;
+        case "ArrowUp":
+        case "ArrowDown": {
+          const next = this.rows[this.indexOf(w) + (e.key === "ArrowUp" ? -1 : 1)];
+          if (!next) break;
+          if (!detail && !next.status && !next.h.detail) this.focusCell(next, index);
+          else this.setFocus(next, true);
+          break;
+        }
+        case "Escape":
+        case "F2":
+          this.setFocus(w, true);
+          break;
+        case "Enter":
+        case " ":
+          if (control) return true;
+          if (e.key === "Enter" && controls.length) this.focusCell(w, index, Math.max(0, at), true);
+          else this.activate(w, e.key === "Enter");
+          break;
+        default:
+          return !!control;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return true;
+    }
+  });
   Object.assign(TreeGrid.prototype, {
     async loadStatusPage(parent, status, cursor) {
       const previous = new Set(parent.children || []);
@@ -1884,6 +2593,7 @@
       finally {
         if (this.focusHandoff === status) this.focusHandoff = null;
         if (!this.destroyed) {
+          if (owned) this.flushLayout();
           if (owned && (this.focusRevision || 0) === revision &&
               (document.activeElement === element || document.activeElement === document.body)) {
             let target = parent.error ? this.statusRow(parent, "error") :
@@ -1899,16 +2609,13 @@
               this.grid.focus({ preventScroll: true });
             }
           }
-          // Also retire removed status rows when another control took focus during the request.
           this.relayout();
         }
       }
     }
   });
 
-  // ---------- tree grid: behavior ----------
   Object.assign(TreeGrid.prototype, {
-    /** Opens or closes a node, judged by what the user sees: a filter can show a node open that was never expanded. */
     async toggle(w, expand, automatic = false) {
       if (this.destroyed || !w || w._invalidated || w.status || !this.expandable(w)) {
         return;
@@ -1935,7 +2642,6 @@
           if (want) await this.expandInitial(w);
         }
       } finally {
-        // A host load callback may throw after the page was applied; its expansion still belongs in saved state.
         if (!this.destroyed && !w._invalidated && w.toggleRevision === revision) this.stateChanged();
       }
       if (this.destroyed || w._invalidated || w.toggleRevision !== revision) return;
@@ -1945,7 +2651,6 @@
       }
     },
 
-    /** Loads the first page (cursor null) or the next page of a node's children, or of the top level. */
     loadPage(w, cursor) {
       if (this.destroyed || w._invalidated) return Promise.resolve();
       if (w.loading) {
@@ -1961,6 +2666,7 @@
         let info = null;
         let appliedCount = null;
         let removedSelection = null;
+        let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
@@ -1983,7 +2689,6 @@
             w.expanded = false;
           }
           this.applySort(w, false);
-          // Paging changes sibling metadata, not retained host cell content.
           appliedCount = items.length;
         } catch (err) {
           if (this.destroyed || w._invalidated) return;
@@ -1998,6 +2703,7 @@
             w.total = count;
             if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
+              removed = true;
             } else if (loaded === count) {
               w.next = null;
               w.error = null;
@@ -2005,18 +2711,15 @@
             if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
-          if (!this.destroyed && !w._invalidated) this.relayout();
+          if (!this.destroyed && !w._invalidated) this.relayout(removed);
         }
-        // A newer count can discard an older page during reconciliation. Only announce and notify
-        // the host after the page is known to remain attached to the tree.
         if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
-          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
+          this.announce(w.total != null && loaded < w.total ? fill(this.labels.pageLoaded, { loaded: format.format(loaded), total: format.format(w.total) }) : fill(this.labels.itemsLoaded, { count: format.format(loaded) }));
           info = { node: w.h, count: appliedCount, total: w.total, ms: performance.now() - started };
         }
         if (removedSelection) this.selectionChanged(removedSelection);
-        // Host callback failures do not turn an applied page into a source failure.
         try {
           if (info && !this.destroyed && !w._invalidated) {
             this.emit("load", info);
@@ -2043,7 +2746,10 @@
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
       this.ensureVisible(w);
-      this.render();
+      if (this.render()) {
+        this.ensureVisible(w);
+        this.render();
+      }
       const rowEl = this.rendered.get(w);
       if (rowEl && domFocus !== false) {
         rowEl.focus({ preventScroll: true });
@@ -2057,18 +2763,29 @@
       }
       const grid = this.grid;
       const y = this.tops[i];
-      const height = w.span * this.rowH;
+      const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      if (y < grid.scrollTop) {
+      const before = grid.scrollTop;
+      if (y < before) {
         grid.scrollTop = y;
-      } else if (y + height > grid.scrollTop + viewHeight) {
+      } else if (y + height > before + viewHeight) {
         grid.scrollTop = y + height - viewHeight;
       }
+      if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+    },
+
+    leanReveal() {
+      if (this.lean) return;
+      this.lean = true;
+      requestAnimationFrame(() => setTimeout(() => {
+        this.lean = false;
+        this.scheduleRender();
+      }));
     },
 
     rowFromEvent(e) {
       const rowEl = e.target.closest(".cx-row");
-      return rowEl && rowEl._w ? rowEl._w : null;
+      return rowEl && rowEl._w && !rowEl._w._invalidated ? rowEl._w : null;
     },
 
     onClick(e) {
@@ -2106,94 +2823,6 @@
       }
     },
 
-    /** Opens a node for expandPath and throws when its children cannot be loaded. */
-    async openForPath(w) {
-      if (this.destroyed || w._invalidated) return false;
-      const wasOpen = w.expanded && !w.filterCollapsed;
-      w.expanded = true;
-      w.filterCollapsed = false;
-      const revision = w.toggleRevision || 0;
-      if (!w.children) {
-        await this.loadPage(w, null);
-        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
-        if (!w.children) {
-          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
-        }
-      } else if (!wasOpen) {
-        await this.expandInitial(w);
-      }
-      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
-    },
-
-    /**
-     * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
-     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node),
-     * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
-     */
-    async expandPath(ids, options) {
-      const o = options || {};
-      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
-      if (cancelled()) return null;
-      await this.rootsReady;
-      if (cancelled()) return null;
-      let parent = this.root;
-      let w = null;
-      const opened = [];
-      for (let k = 0; k < ids.length; k++) {
-        if (parent !== this.root) {
-          try { if (!await this.openForPath(parent)) return null; }
-          catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
-          opened.push([parent, parent.toggleRevision || 0]);
-        }
-        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return null;
-        w = this.keyMap.get(ids[k]);
-        const seenCursors = new Set();
-        while ((!w || w.parent !== parent) && parent.children && parent.next) {
-          const before = parent.children.length;
-          const cursor = parent.next;
-          if (seenCursors.has(cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
-          }
-          seenCursors.add(cursor);
-          await this.loadPage(parent, parent.next);
-          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return null;
-          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
-          }
-          w = this.keyMap.get(ids[k]);
-        }
-        if (!w || w.parent !== parent) {
-          throw new Error("CanopyX: id not found on the path: " + ids[k]);
-        }
-        parent = w;
-      }
-      if (o.expandLast && w && this.expandable(w)) {
-        try { if (!await this.openForPath(w)) return null; }
-        catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
-        opened.push([w, w.toggleRevision || 0]);
-      }
-      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
-        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
-      this.relayout();
-      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.activeFilters.clear();
-        this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
-        this.setFilter(null);
-      }
-      this.relayout();
-      this.stateChanged();
-      if (w && o.select !== false) {
-        this.select(w);
-      }
-      if (w && o.focus !== false) {
-        this.setFocus(w, true);
-      } else if (w && o.reveal !== false) {
-        this.ensureVisible(w);
-      }
-      return w ? w.h : null;
-    },
-
-    /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */
     setFilter(filter, options) {
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
       this.filterExpand = !!(options && options.autoExpand);
@@ -2201,23 +2830,35 @@
       this.relayout();
     },
 
-    /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
-      if (active) {
-        this.activeFilters.add(id);
-      } else {
-        this.activeFilters.delete(id);
-      }
-      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-filter]")).find((el) => el.getAttribute("data-cx-filter") === id);
-      if (input) {
-        input.checked = !!active;
-      }
-      const filters = (this.view.filters || []).filter((f) => this.activeFilters.has(f.id));
+      const next = new Set(this.activeFilters);
+      if (active) next.add(id);
+      else next.delete(id);
+      this.applyActiveFilters([id], next);
+    },
+
+    setActiveFilters(ids) {
+      if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+      this.applyActiveFilters(ids, new Set(ids));
+    },
+
+    applyActiveFilters(named, next) {
+      const declared = this.view.filters || [];
+      named.forEach((id) => {
+        if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      });
+      const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
+      if (!changed && this.filter === this.declaredFilter) return;
+      this.activeFilters = next;
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = next.has(input.getAttribute("data-cx-filter")); });
+      const filters = declared.filter((f) => next.has(f.id));
       const has = (node, flag) => !!(flag && node.flags && node.flags.indexOf(flag) >= 0);
       this.setFilter(filters.length ? {
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
+      this.declaredFilter = this.filter;
+      if (changed) this.emit("filter", { active: Array.from(next) });
     },
 
     sort(columnId, direction) {
@@ -2241,11 +2882,128 @@
       this.relayout();
     }
   });
-  // ---------- tree grid: selection and deep-link ownership ----------
+
   Object.assign(TreeGrid.prototype, {
-    /** Selects a row. Options: toggle (Ctrl/Cmd or Space with multi-select), range (Shift). */
+    async openForPath(w) {
+      if (this.destroyed || w._invalidated) return false;
+      const wasOpen = w.expanded && !w.filterCollapsed;
+      w.expanded = true;
+      w.filterCollapsed = false;
+      if (!wasOpen) this.relayout();
+      const revision = w.toggleRevision || 0;
+      if (!w.children) {
+        await this.loadPage(w, null);
+        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
+        if (!w.children) {
+          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
+        }
+      } else if (!wasOpen) {
+        await this.expandInitial(w);
+      }
+      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
+    },
+
+    async expandPath(ids, options) {
+      const o = options || {};
+      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
+      if (cancelled()) return null;
+      await this.rootsReady;
+      if (cancelled()) return null;
+      const aborted = o.signal ? new Promise((resolve) => o.signal.addEventListener("abort", resolve, { once: true })) : null;
+      await (aborted ? Promise.race([this.prefetchPath(ids, !!o.expandLast), aborted]) : this.prefetchPath(ids, !!o.expandLast));
+      if (cancelled()) return null;
+      const release = this.holdLayout();
+      let w;
+      let rebuilt = false;
+      try {
+        w = await this.openPath(ids, o, cancelled);
+      } finally {
+        rebuilt = release();
+      }
+      if (w === undefined) return null;
+      if (w && (o.focus !== false || o.reveal !== false) && this.flushLayout()) rebuilt = true;
+      if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
+      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
+        this.clearDeclaredFilters();
+        this.setFilter(null);
+        this.flushLayout();
+      }
+      this.stateChanged();
+      if (w && o.select !== false) {
+        this.select(w);
+      }
+      if (w && o.focus !== false) {
+        this.setFocus(w, true);
+      } else if (w && o.reveal !== false) {
+        this.ensureVisible(w);
+      }
+      return w ? w.h : null;
+    },
+
+    async prefetchPath(ids, openLast) {
+      if (typeof this.source.prefetch !== "function") return;
+      const opens = [];
+      const finds = [];
+      let parent = this.root;
+      ids.forEach((id, k) => {
+        if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
+        const w = this.keyMap.get(id);
+        if (!(w && parent && w.parent === parent)) finds.push(id);
+        parent = w && w.parent === parent ? w : null;
+      });
+      if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
+      if (!opens.length && !finds.length) return;
+      try {
+        await this.source.prefetch(opens, finds);
+      } catch (err) {
+      }
+    },
+
+    async openPath(ids, o, cancelled) {
+      let parent = this.root;
+      let w = null;
+      const opened = [];
+      for (let k = 0; k < ids.length; k++) {
+        if (parent !== this.root) {
+          try { if (!await this.openForPath(parent)) return undefined; }
+          catch (err) { if (cancelled() || parent._invalidated) return undefined; throw err; }
+          opened.push([parent, parent.toggleRevision || 0]);
+        }
+        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return undefined;
+        w = this.keyMap.get(ids[k]);
+        const seenCursors = new Set();
+        while ((!w || w.parent !== parent) && parent.children && parent.next) {
+          const before = parent.children.length;
+          const cursor = parent.next;
+          if (seenCursors.has(cursor)) {
+            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
+          }
+          seenCursors.add(cursor);
+          await this.loadPage(parent, parent.next);
+          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return undefined;
+          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
+            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
+          }
+          w = this.keyMap.get(ids[k]);
+        }
+        if (!w || w.parent !== parent) {
+          throw new Error("CanopyX: id not found on the path: " + ids[k]);
+        }
+        parent = w;
+      }
+      if (o.expandLast && w && this.expandable(w)) {
+        try { if (!await this.openForPath(w)) return undefined; }
+        catch (err) { if (cancelled() || w._invalidated) return undefined; throw err; }
+        opened.push([w, w.toggleRevision || 0]);
+      }
+      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
+        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return undefined;
+      return w;
+    }
+  });
+  Object.assign(TreeGrid.prototype, {
     select(w, options) {
-      if (!w || w.status) {
+      if (!w || w.status || w._invalidated) {
         return;
       }
       const o = options || {};
@@ -2275,7 +3033,7 @@
       }
       this.selected = new Set();
       for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
-        if (!this.rows[i].status) {
+        if (!this.rows[i].status && !this.rows[i]._invalidated) {
           this.selected.add(this.rows[i]);
         }
       }
@@ -2300,7 +3058,6 @@
     }
   });
 
-  // ---------- tree grid: toolbar (search box, filter switches, column chooser) ----------
   Object.assign(TreeGrid.prototype, {
     buildToolbar() {
       const bar = this.toolbar;
@@ -2310,6 +3067,7 @@
         any = true;
       }
       (this.view.filters || []).forEach((filter) => {
+        if (filter.hidden) return;
         const label = h("label", "cx-switch");
         const input = h("input");
         input.type = "checkbox";
@@ -2327,7 +3085,15 @@
       bar.hidden = !any;
     },
 
-    /** Combobox search: typing lists hits, arrows move through them, Enter expands the tree to the chosen hit. */
+    clearDeclaredFilters() {
+      if (!this.activeFilters.size) {
+        return;
+      }
+      this.activeFilters.clear();
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
+      this.emit("filter", { active: [] });
+    },
+
     buildSearch(bar, options) {
       const box = h("div", "cx-search");
       const input = h("input", "cx-search-input");
@@ -2335,11 +3101,13 @@
       const status = h("span", "cx-sr-only");
       list.id = this.id + "-results";
       list.hidden = true;
+      const labels = this.labels;
+      const count = (value) => numberFormat(this.lang).format(value);
       list.setAttribute("role", "listbox");
-      list.setAttribute("aria-label", "Search results");
+      list.setAttribute("aria-label", labels.searchResults);
       input.type = "search";
-      input.placeholder = options.placeholder || "Search";
-      input.setAttribute("aria-label", options.placeholder || "Search");
+      input.placeholder = options.placeholder || labels.searchPlaceholder;
+      input.setAttribute("aria-label", options.placeholder || labels.searchPlaceholder);
       input.setAttribute("role", "combobox");
       input.setAttribute("aria-autocomplete", "list");
       input.setAttribute("aria-expanded", "false");
@@ -2369,7 +3137,7 @@
         try {
           await this.expandPath(hit.path, { select: true, focus: true, signal: current.signal });
         } catch (err) {
-          if (!this.destroyed && !current.signal.aborted) setText(status, err.message);
+          if (!this.destroyed && !current.signal.aborted) setText(status, fill(labels.searchFailed, { error: err.message }));
         }
       };
       const show = (result) => {
@@ -2401,7 +3169,8 @@
         });
         list.hidden = !hits.length;
         input.setAttribute("aria-expanded", hits.length ? "true" : "false");
-        setText(status, hits.length ? hits.length + (result.truncated ? " of " + (result.total || "many") : "") + " results" : "No results");
+        setText(status, !hits.length ? labels.searchNoResults : !result.truncated ? fill(labels.searchResultCount, { count: count(hits.length) }) :
+          result.total ? fill(labels.searchResultCountOfTotal, { count: count(hits.length), total: count(result.total) }) : fill(labels.searchResultCountOfMany, { count: count(hits.length) }));
       };
       const run = async () => {
         if (this.destroyed) return;
@@ -2409,7 +3178,7 @@
         if (query.length < options.minLength) {
           sequence++;
           close();
-          setText(status, query ? "Type at least " + options.minLength + " characters" : "");
+          setText(status, query ? fill(labels.searchTooShort, { min: count(options.minLength) }) : "");
           return;
         }
         const mine = ++sequence;
@@ -2420,7 +3189,8 @@
           }
         } catch (err) {
           if (!this.destroyed && mine === sequence) {
-            setText(status, "Search failed: " + (err && err.message ? err.message : err));
+            setText(status, err && err.code === "too-short" ? fill(labels.searchWordTooShort, { min: count(2) }) :
+              fill(labels.searchFailed, { error: err && err.message ? err.message : err }));
           }
         }
       };
@@ -2440,7 +3210,6 @@
       input.addEventListener("input", () => {
         cancelNavigation();
         sequence++;
-        // Results for the previous text are stale as soon as the text changes; Enter waits for the new ones.
         clearTimeout(timer);
         hits = [];
         close();
@@ -2482,14 +3251,13 @@
       this.searchInput = input;
     },
 
-    /** A native disclosure with one checkbox per hideable column; the tree column always stays. */
     buildColumnChooser(bar) {
       const details = h("details", "cx-columns");
       const summary = h("summary");
-      setText(summary, "Columns");
+      setText(summary, this.labels.columns);
       const group = h("fieldset", "cx-columns-list");
       const legend = h("legend", "cx-sr-only");
-      setText(legend, "Visible columns");
+      setText(legend, this.labels.visibleColumns);
       group.appendChild(legend);
       this.columns.slice(1).forEach((column) => {
         const label = h("label");
@@ -2508,7 +3276,6 @@
     }
   });
 
-  // ---------- tree grid: remembered state, deep links, outline, counts ----------
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
   }
@@ -2541,7 +3308,6 @@
       if (this.destroyed || !state || !Array.isArray(state.expanded)) {
         return;
       }
-      // Invalid or obsolete stored state must not clear current expansion or reject ready.
       try {
         for (const path of state.expanded) {
           if (!Array.isArray(path) || !path.length) return;
@@ -2553,7 +3319,6 @@
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
-      // Clicks queued for an older restoration cannot override this state.
       this.pendingRestorationToggles = null;
       this.restoring = true;
       clearTimeout(this.saveTimer);
@@ -2561,6 +3326,7 @@
       this.keyMap.forEach((w) => before.set(w, [w.expanded, w.autoExpand, w.filterCollapsed]));
       let restored = 0;
       let fallback = false;
+      const release = this.holdLayout();
       try {
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
@@ -2572,7 +3338,6 @@
             const wrapper = node && this.keyMap.get(node.id);
             if (wrapper && wrapper.expanded) restored++;
           } catch (e) {
-            // A missing node is obsolete; a failed lazy load still owns its open error row.
             const last = this.keyMap.get(path[path.length - 1]);
             if ((last && last.expanded) || path.some((id) => {
               const node = this.keyMap.get(id);
@@ -2591,6 +3356,7 @@
           this.relayout();
         }
       } finally {
+        release();
         if (this.restoreController === current) {
           this.restoring = false;
           this.restoreController = null;
@@ -2649,7 +3415,6 @@
         try {
           sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
         } catch (e) {
-          // Storage can be unavailable (private mode, blocked storage).
         }
       }, 250);
     },
@@ -2668,51 +3433,10 @@
       await this.setState(state);
     },
 
-    deepLinkName() {
-      return "cx." + encodeURIComponent(this.view.id);
-    },
-
-    hashParams() {
-      return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
-    },
-
-    async openDeepLink() {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const param = this.hashParams().find((p) => p.startsWith(prefix));
-      if (!param) {
-        return;
-      }
-      try {
-        const ids = param.slice(prefix.length).split("/").filter(Boolean).map(decodeURIComponent);
-        await this.expandPath(ids, { select: true, focus: false });
-      } catch (e) {
-        this.announce(e.message);
-      }
-    },
-
-    writeDeepLink(w) {
-      if (!this.view.deepLink) {
-        return;
-      }
-      const prefix = this.deepLinkName() + "=";
-      const params = this.hashParams().filter((p) => !p.startsWith(prefix));
-      if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
-      const hash = "#" + params.join("&");
-      try {
-        global.history.replaceState(global.history.state, "", hash);
-      } catch (e) {
-        global.location.hash = hash;
-      }
-    },
-
     visibleRows() {
       return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
     },
 
-    /** An indented outline table of the rows that are open, for print and hosts that export what the user sees. */
     toOutline() {
       const cols = this.visibleColumns();
       const out = ["<table class=\"cx-outline-table\"><thead><tr>"];
@@ -2734,11 +3458,11 @@
         cols.forEach((column, i) => {
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
-          const text = cellText(value, column, this.lang);
+          const text = cellText(value, column, this.fmt);
           const content = h("span");
-          if (!this.opts.renderCell || this.opts.renderCell(w.h, column.id, content, { level: w.level, expanded: w.expanded, index }) !== true) {
+          if (!column.render || column.render(w.h, content, { column: column.id, level: w.level, expanded: w.expanded, index }) !== true) {
             const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
-            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.lang));
+            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.fmt));
           }
           out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
         });
@@ -2748,7 +3472,6 @@
       return out.join("");
     },
 
-    /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
     invalidateChildren(w) {
       const pending = (w.children || []).slice();
       let removedSelection = null;
@@ -2771,6 +3494,7 @@
       if (this.destroyed) return;
       checkDocument(doc, "counts");
       let removedSelection = null;
+      let removed = false;
       doc.items.forEach((item) => {
         const w = this.keyMap.get(item.id);
         if (w && w.inline && item.childCount != null && item.childCount !== w.h.children.length) {
@@ -2795,8 +3519,10 @@
             w.h.hasChildren = item.childCount > 0;
             const loaded = w.children ? w.children.length : 0;
             if (w.loading) w.pendingChildCount = item.childCount;
-            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next))
+            else if (item.childCount < loaded || (item.childCount > loaded && w.children && !w.next)) {
               removedSelection = this.invalidateChildren(w) || removedSelection;
+              removed = true;
+            }
             else if (item.childCount === loaded) {
               w.next = null;
               w.error = null;
@@ -2812,7 +3538,7 @@
         }
       });
       this.applySort(this.root, true);
-      this.relayout();
+      this.relayout(removed);
       if (removedSelection) this.selectionChanged(removedSelection);
     },
 
@@ -2837,28 +3563,119 @@
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
+      clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
+      if (this.detailObserver) this.detailObserver.disconnect();
       this.grid.removeEventListener("scroll", this.onScroll);
       global.removeEventListener("beforeprint", this.onPrint);
+      global.removeEventListener("hashchange", this.onHash);
+      global.removeEventListener("popstate", this.onHash);
+      if (this.linkOpening) this.linkOpening.abort();
       [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
+      this.host.classList.remove("cx-pin-tree");
       this.host.removeAttribute("data-cx-ready");
       this.host.removeAttribute("data-canopyx-mounted");
     }
   });
 
-  // ---------- public API and auto-mount ----------
-  /**
-   * Creates a tree grid in a host element.
-   * @param {HTMLElement} host The element that receives the grid.
-   * @param {{ view: object, source?: object, renderCell?: Function, renderDetail?: Function,
-   *           onSelect?: Function, onToggle?: Function, onLoad?: Function }} options
-   *   `view` is a canopyx/1 view document. Callbacks are optional; the same events are also dispatched on the host
-   *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready.
-   *   renderCell(node, columnId, element, context) returns true when it drew the cell itself; context.index is the
-   *   column's position in view.columns. renderDetail(node, element) returns true when it drew the detail row.
-   */
+  Object.assign(TreeGrid.prototype, {
+    deepLinkName() {
+      return "cx." + encodeURIComponent(this.view.id);
+    },
+
+    hashParams() {
+      return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
+    },
+
+    currentLink() {
+      if (this.opts.parseLink) {
+        return (global.location.hash || "").replace(/^#/, "");
+      }
+      const prefix = this.deepLinkName() + "=";
+      const param = this.hashParams().find((p) => p.startsWith(prefix));
+      return param ? param.slice(prefix.length) : null;
+    },
+
+    readLocation() {
+      if (this.destroyed) return Promise.resolve();
+      if (this.initializing) {
+        if (this.linkOpening && this.currentLink() !== this.link) {
+          this.linkOpening.abort();
+          this.link = null; // Deferred reopening must not reuse the canceled link if the address changes back.
+        }
+        this.linkChanged = true;
+        return this.ready.then(() => undefined, () => undefined);
+      }
+      return this.openDeepLink();
+    },
+
+    openDeepLink() {
+      const link = this.view.deepLink ? this.currentLink() : null;
+      if (link !== this.link && this.linkOpening) this.linkOpening.abort();
+      if (link == null || link === this.link) {
+        if (link == null) this.link = null;
+        return link != null && this.linkTask && this.linkTask.link === link ? this.linkTask.promise : Promise.resolve();
+      }
+      this.link = link;
+      if (this.linkOpening) this.linkOpening.abort();
+      const current = this.linkOpening = new AbortController();
+      const promise = this.openLink(link, current);
+      this.linkTask = { link: link, promise: promise };
+      promise.then(() => {
+        if (this.linkTask && this.linkTask.promise === promise) this.linkTask = null;
+      });
+      return promise;
+    },
+
+    async openLink(link, current) {
+      try {
+        const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
+        if (Array.isArray(ids) && ids.length && !this.destroyed && !current.signal.aborted &&
+            !await this.expandPath(ids, { select: true, focus: false, signal: current.signal }) && !current.signal.aborted) {
+          this.link = null;
+        }
+      } catch (e) {
+        if (!current.signal.aborted) {
+          this.link = null;
+          this.announce(e && e.message ? e.message : String(e));
+        }
+      }
+    },
+
+    writeDeepLink(w) {
+      if (!this.view.deepLink) {
+        return;
+      }
+      let hash;
+      if (this.opts.formatLink) {
+        let link = null;
+        try {
+          link = this.opts.formatLink(w ? this.pathOf(w) : [], w ? w.h : null);
+        } catch (e) {
+          if (global.console) global.console.error(e);
+        }
+        if (link == null) {
+          return;
+        }
+        hash = "#" + String(link).replace(/^#/, "");
+      } else {
+        const prefix = this.deepLinkName() + "=";
+        const params = this.hashParams().filter((p) => !p.startsWith(prefix));
+        if (w) params.push(prefix + this.pathOf(w).map(encodeURIComponent).join("/"));
+        hash = "#" + params.join("&");
+      }
+      try {
+        global.history.replaceState(global.history.state, "", global.location.href.replace(/#.*$/, "") + hash);
+      } catch (e) {
+        global.location.hash = hash;
+      }
+      this.link = this.currentLink();
+      this.locationEvent = null;
+    }
+  });
+
   function createTreeGrid(host, options) {
     if (!host || !options || !options.view) {
       throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
@@ -2871,11 +3688,18 @@
       view: grid.view,
       ready: grid.ready,
       expandPath: (ids, o) => grid.expandPath(ids, o),
-      setFilter: (filter, o) => grid.setFilter(filter, o),
+      setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
+      setActiveFilters: (ids) => grid.setActiveFilters(ids),
+      getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
+      setColumnWidth: (columnId, width) => grid.setColumnWidth(columnId, width),
+      setTreeColumnPinned: (pinned) => grid.setTreeColumnPinned(pinned),
+      setTimeZone: (zone) => grid.setTimeZone(zone),
+      getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
+      readLocation: () => grid.readLocation(),
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
       focus: () => {
         if (grid.destroyed) return;
@@ -2906,20 +3730,36 @@
     return api;
   }
 
-  /** Mounts every [data-canopyx-host] element under root that has a JSON configuration script. */
-  function mount(root) {
+  const configured = new Map();
+
+  function configure(viewId, options) {
+    requireIdentifier(viewId, "view ID");
+    if (!options || typeof options !== "object") {
+      throw new Error("CanopyX: configure needs a view id and an options object.");
+    }
+    if (Array.from(document.querySelectorAll("[data-canopyx-mounted]")).some((host) => host.canopyx && host.canopyx.view.id === viewId)) {
+      throw new Error("CanopyX: view '" + viewId + "' is already mounted; configure it before the page has loaded, or mark its fragment data-cx-mount=\"manual\" and call CanopyX.mount.");
+    }
+    configured.set(viewId, Object.assign({}, configured.get(viewId), options, { view: undefined }));
+  }
+
+  function mount(root, automatic) {
     const scope = root || document;
     const created = [];
-    const showError = (host, err, api) => {
+    const showError = (host, err, api, view) => {
       if (api) {
         api.destroy();
         if (host.canopyx === api) delete host.canopyx;
       }
       const message = err && err.message ? err.message : String(err);
+      let labels = DEFAULT_LABELS;
+      for (const attempt of [() => labelsFor(view && view.labels, view && configured.has(view.id) ? configured.get(view.id).labels : null), () => labelsFor(view && view.labels)]) {
+        try { labels = attempt(); break; } catch (e) { labels = DEFAULT_LABELS; }
+      }
       const notice = document.createElement("div");
       notice.className = "cx-mount-error";
       notice.setAttribute("role", "alert");
-      setText(notice, "This view could not be displayed: " + message);
+      setText(notice, fill(labels.mountError, { error: message }));
       host.classList.add("cx-host");
       host.setAttribute("data-canopyx-mounted", "true");
       host.setAttribute("data-cx-error", message);
@@ -2928,18 +3768,20 @@
     };
     scope.querySelectorAll("[data-canopyx-host]:not([data-canopyx-mounted])").forEach((host) => {
       const config = host.querySelector("script.cx-config");
-      if (!config) {
+      if (!config || (automatic === true && host.getAttribute("data-cx-mount") === "manual")) {
         return;
       }
       host.setAttribute("data-canopyx-mounted", "true");
+      let view = null;
       try {
-        const api = createTreeGrid(host, { view: JSON.parse(config.textContent) });
+        view = JSON.parse(config.textContent);
+        const api = createTreeGrid(host, Object.assign({}, view && configured.get(view.id), { view: view }));
         created.push(api);
         api.ready.catch((err) => {
-          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api);
+          if (activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
         });
       } catch (err) {
-        showError(host, err);
+        showError(host, err, null, view);
       }
     });
     return created;
@@ -2948,13 +3790,17 @@
   global.CanopyX = Object.freeze({
     protocol: PROTOCOL,
     createTreeGrid: createTreeGrid,
-    mount: mount,
-    sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource })
+    configure: configure,
+    mount: (root) => mount(root, false),
+    sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
+    badge: hostBadge,
+    labels: DEFAULT_LABELS
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => mount(document));
+  const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
+  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
+    document.addEventListener("DOMContentLoaded", () => mount(document, true));
   } else {
-    mount(document);
+    mount(document, true);
   }
 })(typeof window !== "undefined" ? window : this);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -9,13 +10,14 @@ namespace CanopyX;
 /// sources the view also carries the nodes.
 /// </summary>
 /// <remarks>
-/// <see cref="ToJson"/> writes the <c>view</c> document of the <c>canopyx/1</c> protocol. <c>CanopyX.Html</c> embeds
+/// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/2</c> protocol. <c>CanopyX.Html</c> embeds
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
 public sealed class CanopyView {
     private int _rowHeight = 28;
     private int _pageSize = 100;
     private CanopySource _source = CanopySource.Inline();
+    private CanopyLabels _labels = new CanopyLabels();
 
     /// <summary>Creates a view.</summary>
     /// <param name="id">The view id, unique within a page. It scopes element ids, remembered state, and deep links.</param>
@@ -73,6 +75,13 @@ public sealed class CanopyView {
         }
     }
 
+    /// <summary>
+    /// Gets or sets whether the tree column stays in view while the other columns scroll sideways, which keeps rows
+    /// identifiable on a narrow screen. A host can change it at run time with the grid's
+    /// <c>setTreeColumnPinned</c>, for example below a viewport width of its choosing.
+    /// </summary>
+    public bool PinTreeColumn { get; set; }
+
     /// <summary>Gets or sets how many rows can be selected at once.</summary>
     public CanopySelectionMode Selection { get; set; }
 
@@ -101,20 +110,55 @@ public sealed class CanopyView {
     /// </summary>
     public string? StateKey { get; set; }
 
+    /// <summary>
+    /// Gets or sets the time zone in which the browser shows date and time columns at first. A host can switch it
+    /// at run time with the grid's <c>setTimeZone</c>. Values are always written as UTC, and the static outline,
+    /// which has no reader's time zone, always shows UTC. Defaults to <see cref="CanopyTimeZone.Utc"/>.
+    /// </summary>
+    public CanopyTimeZone TimeZone { get; set; }
+
     /// <summary>Gets or sets whether selecting a row writes its id path to the URL hash and a hash expands it on load.</summary>
     public bool DeepLink { get; set; }
 
-    /// <summary>Writes the <c>view</c> document of the <c>canopyx/1</c> protocol.</summary>
+    /// <summary>
+    /// Gets or sets the texts CanopyX writes itself for this view, in the browser and in the static outline. English
+    /// by default; set translations once here. Assign one <see cref="CanopyLabels"/> to several views, or
+    /// <see cref="CanopyLabels.Clone"/> it, to share them.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">The value is null.</exception>
+    public CanopyLabels Labels {
+        get => _labels;
+        set => _labels = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>Writes the <c>view</c> document of the <c>canopyx/2</c> protocol.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
-    public string ToJson() {
+    public string ToJson() => ToJson(null);
+
+    /// <summary>
+    /// Writes the view document with the switches of the named filters left out of the toolbar, as if they were
+    /// <see cref="CanopyFilter.Hidden"/>, without changing the view.
+    /// </summary>
+    /// <param name="hiddenFilterIds">Ids of the view's filters to write as hidden, for a page whose host draws its own control for them; null for none.</param>
+    /// <returns>The document as compact, HTML-safe JSON.</returns>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or an id is not one of its filters.</exception>
+    public string ToJson(ICollection<string>? hiddenFilterIds) {
         var writer = new CanopyJsonWriter(4096);
-        WriteJson(writer);
+        WriteJson(writer, hiddenFilterIds);
         return writer.ToString();
     }
 
-    internal void WriteJson(CanopyJsonWriter writer) {
+    internal void WriteJson(CanopyJsonWriter writer, ICollection<string>? hiddenFilterIds = null) {
         CanopyViewValidator.Validate(this);
+        if (hiddenFilterIds != null) {
+            foreach (var id in hiddenFilterIds) {
+                if (!Filters.Any(filter => filter.Id == id)) {
+                    throw new InvalidOperationException("View '" + Id + "' declares no filter '" + id + "' to hide.");
+                }
+            }
+        }
+
         writer.BeginObject().Envelope("view")
             .Property("id", Id)
             .Property("label", Label)
@@ -144,10 +188,20 @@ public sealed class CanopyView {
         if (Filters.Count > 0) {
             writer.Name("filters").BeginArray();
             foreach (var filter in Filters) {
-                filter.WriteJson(writer);
+                filter.WriteJson(writer, filter.Hidden || (hiddenFilterIds != null && hiddenFilterIds.Contains(filter.Id)));
             }
 
             writer.EndArray();
+        }
+
+        writer.OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
+        if (PinTreeColumn) {
+            writer.Property("pinTreeColumn", true);
+        }
+
+        if (_labels.HasRuntimeLabels) {
+            writer.Name("labels");
+            _labels.WriteJson(writer);
         }
 
         writer.OptionalProperty("stateKey", StateKey);
@@ -160,7 +214,7 @@ public sealed class CanopyView {
         if (_source.Kind == CanopySourceKind.Inline) {
             writer.Name("roots").BeginArray();
             foreach (var root in Roots) {
-                root.WriteJson(writer, includeChildren: true);
+                root.WriteJson(writer);
             }
 
             writer.EndArray();

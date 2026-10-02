@@ -8,15 +8,72 @@ namespace CanopyX.Tests.Protocol;
 /// </summary>
 public sealed class ProtocolSchemaTests {
     [Theory]
-    [InlineData("")]
-    [InlineData("k-")]
-    public void Schema_ManifestAcceptsBothSearchShardLayouts(string prefix) {
-        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"shards\":{\"ab\":1}}}")!;
-        Assert.True(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
-        doc["search"]!["prefix"] = prefix;
-        Assert.True(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
-        doc["search"]!["prefix"] = "other";
+    [InlineData("entryCount")]
+    [InlineData("entryFiles")]
+    [InlineData("kinds")]
+    [InlineData("shards")]
+    public void Schema_ManifestSearch_NeedsEveryPartOfTheIndexDescription(string field) {
+        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/2\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[\"folder\"],\"shards\":{\"ab\":1}}}")!;
+        ProtocolSchema.AssertValid(doc.ToJsonString(), "manifest with a search index");
+        doc["search"]!.AsObject().Remove(field);
         Assert.False(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+    }
+
+    [Theory]
+    [InlineData("\"entryPacks\":[0],\"shardPacks\":[\"ab\"]", true)]
+    [InlineData("\"entryPacks\":[],\"shardPacks\":[]", true)]
+    [InlineData("\"entryPacks\":[0]", false)]
+    [InlineData("\"shardPacks\":[\"ab\"]", false)]
+    [InlineData("\"entryPacks\":[-1],\"shardPacks\":[\"ab\"]", false)]
+    [InlineData("\"entryPacks\":[0],\"shardPacks\":[\"AB\"]", false)]
+    public void Schema_ManifestSearch_NamesIndexPacksWithBothLists(string packs, bool valid) {
+        var doc = "{\"protocol\":\"canopyx/2\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":1}," + packs + "}}";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(doc).IsValid);
+    }
+
+    [Theory]
+    [InlineData("{\"pages\":[\"{}\"]}", "0", true)]
+    [InlineData("{\"pages\":[]}", "0", true)]
+    [InlineData("{\"pages\":[{\"protocol\":\"canopyx/2\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"items\":[],\"next\":null}]}", "1", false)]
+    [InlineData("{}", "1", false)]
+    [InlineData("{\"pages\":[\"{}\"]}", "-1", false)]
+    public void Schema_Pack_HoldsPagesAsTextAndTheManifestCountsThePacks(string body, string packs, bool valid) {
+        var pack = JsonNode.Parse(body)!.AsObject();
+        pack["protocol"] = "canopyx/2"; pack["type"] = "pack";
+        var manifest = "{\"protocol\":\"canopyx/2\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"packs\":" + packs + "}";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(pack.ToJsonString()).IsValid && ProtocolSchema.Evaluate(manifest).IsValid);
+    }
+
+    [Theory]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[0,2,-3]]}", true)]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[]]}", false)]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[-1]]}", false)]
+    [InlineData("{\"words\":[\"ab\"],\"postings\":[[3,0]]}", false)]
+    [InlineData("{\"words\":[\"\"],\"postings\":[[3]]}", false)]
+    [InlineData("{\"words\":[\"ab\"]}", false)]
+    public void Schema_SearchShard_DescribesWordsAndPostingLists(string body, bool valid) {
+        var doc = JsonNode.Parse(body)!.AsObject();
+        doc["protocol"] = "canopyx/2"; doc["type"] = "searchShard"; doc["key"] = "ab";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+    }
+
+    [Theory]
+    [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",1]],\"entries\":[[0,4,\"/a\",0,\"A\"],[4,0,\"x\",2,\"B\",0]]}", true)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[-2,0,\"a\",0,\"A\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,0,\"a\",0,\"A\",\"folder\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[[-1,0,\"root\",0,\"Root\"]],\"entries\":[]}", false)]
+    [InlineData("{\"stem\":[],\"entries\":[]}", false)]
+    // Where the pages on a hit's path are: the first children page, and the page that holds the node.
+    [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",null,\"p/0#3\"]],\"entries\":[[0,4,\"/a\",0,\"A\",1,\"p/1#0\",\"p/0#4\"],[4,0,\"x\",2,\"B\",null,null,\"r/2\"]]}", true)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0,\"A\",null,\"\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0,\"A\",null,null,null]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[],\"entries\":[[0,4,\"/a\",0,\"A\",null,\"p/1#0\",\"p/0#4\",\"extra\"]]}", false)]
+    [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",null,7]],\"entries\":[]}", false)]
+    public void Schema_SearchEntries_DescribesEntriesAndTheirStem(string body, bool valid) {
+        var doc = JsonNode.Parse(body)!.AsObject();
+        doc["protocol"] = "canopyx/2"; doc["type"] = "searchEntries";
+        Assert.Equal(valid, ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
     }
 
     [Theory]
@@ -60,25 +117,53 @@ public sealed class ProtocolSchemaTests {
         "empty continuation",
         "roots in a sidecar view",
         "remote source without cursor placeholder",
-        "unknown tone"
+        "tone that is not a name"
     };
 
     [Theory]
     [MemberData(nameof(RejectedMutations))]
     public void Schema_DocumentBreakingAWriterRule_IsRejected(string rule) {
         var json = rule switch {
-            "other protocol version" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["protocol"] = "canopyx/2"),
+            "other protocol version" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["protocol"] = "canopyx/1"),
             "misspelt node field" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["hasChildrn"] = true),
             "detail row with children" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["detail"] = JsonNode.Parse("{\"type\":\"html\",\"height\":2,\"html\":\"x\"}")),
             "empty ref" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["ref"] = ""),
             "empty continuation" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["next"] = ""),
             "roots in a sidecar view" => ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Sidecar("data/files")).ToJson(), view => view["roots"] = new JsonArray()),
             "remote source without cursor placeholder" => ProtocolSchema.Mutate(SampleDocuments.FullView(CanopySource.Remote("c?ref={ref}&cursor={cursor}", "s?q={query}&limit={limit}")).ToJson(), view => view["source"]!["children"] = "c?ref={ref}"),
-            "unknown tone" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["badges"] = JsonNode.Parse("[{\"text\":\"x\",\"tone\":\"red\"}]")),
+            "tone that is not a name" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["badges"] = JsonNode.Parse("[{\"text\":\"x\",\"tone\":\"Red alert\"}]")),
             _ => throw new ArgumentOutOfRangeException(nameof(rule))
         };
 
         Assert.False(ProtocolSchema.Evaluate(json).IsValid, rule);
+    }
+
+    [Fact]
+    public void ToJson_NodeData_IsWrittenAsAnObjectOfStrings() {
+        var view = SampleDocuments.FullView();
+        var plans = JsonNode.Parse(view.ToJson())!["roots"]![0]!["children"]![0]!;
+
+        Assert.Equal("{\"position\":\"0-42\",\"level\":\"high\"}", plans["data"]!.ToJsonString());
+        Assert.Null(JsonNode.Parse(view.ToJson())!["roots"]![0]!["data"]);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["data"] = JsonNode.Parse("{\"position\":42}"))).IsValid);
+        foreach (var (name, value) in new[] { ("empty", (string?)null), ("", "x"), ("__proto__", "x") }) {
+            view.Roots[0].Data.Clear();
+            view.Roots[0].Data[name] = value!;
+            Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        }
+    }
+
+    [Fact]
+    public void ToJson_TimeZone_IsWrittenOnlyWhenTheViewStartsInLocalTime() {
+        var local = SampleDocuments.FullView();
+        var utc = SampleDocuments.FullView();
+        utc.TimeZone = CanopyTimeZone.Utc;
+
+        Assert.Equal("local", JsonNode.Parse(local.ToJson())!["timeZone"]!.GetValue<string>());
+        Assert.Null(JsonNode.Parse(utc.ToJson())!["timeZone"]);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(utc.ToJson(), view => view["timeZone"] = "Europe/Warsaw")).IsValid);
+        utc.TimeZone = (CanopyTimeZone)7;
+        Assert.Throws<ArgumentOutOfRangeException>(() => utc.ToJson());
     }
 
     [Fact]

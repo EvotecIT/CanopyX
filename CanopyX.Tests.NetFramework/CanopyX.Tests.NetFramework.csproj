@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Runs the framework-sensitive contract tests against the net472 build of CanopyX, whose platform text data differs
+    from .NET. It builds everywhere but runs only on Windows, where .NET Framework is available.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <IsTestProject Condition="'$(OS)' == 'Windows_NT'">true</IsTestProject>
+    <IsTestProject Condition="'$(OS)' != 'Windows_NT'">false</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanopyX\CanopyX.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" PrivateAssets="all" />
+    <PackageReference Include="xunit" Version="2.9.3" PrivateAssets="all" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\CanopyX.Tests\Bundles\SearchFoldingParityTests.cs" Link="Bundles\SearchFoldingParityTests.cs" />
+    <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

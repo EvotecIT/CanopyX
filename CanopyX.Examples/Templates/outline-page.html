@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<title>CanopyX static outline in a themed page</title>
+<link rel="stylesheet" href="bundle/assets/{{style}}">
+</head>
+<body style="margin:0;padding:24px 32px;font-family:'Segoe UI',Arial,sans-serif;">
+<main>
+<h1 style="font-size:18px;margin:0 0 12px 0;">Static outline that follows the page theme</h1>
+<!-- No script: the stylesheet gives .cx-static the light or dark palette, here by the reader's system preference. -->
+<div class="cx-static" data-cx-theme="auto">
+{{content}}
+</div>
+</main>
+</body>
+</html>

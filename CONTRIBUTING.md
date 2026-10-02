@@ -16,6 +16,8 @@ For a faster C#-only loop:
 dotnet test .\CanopyX.sln -c Release
 ```
 
+The solution also holds `CanopyX.Tests.NetFramework`, which runs the framework-sensitive contract tests (search folding) against the `net472` build. It builds on every platform and runs on Windows.
+
 Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging.
 
 ## Browser Tests
@@ -46,6 +48,8 @@ The browser runtime is assembled from `CanopyX.Html/Assets/canopyx.source/*.js` 
 
 `./Build/Sync-Assets.ps1 -Check` fails when the assembled file is out of date; the quality loop runs it.
 
+The assembled file leaves out whole-line comments (`//` lines and `/* */` blocks on lines of their own), apart from the header of the first part, so document the parts freely: comments do not count against the 48 KB gzip budget. The rule works on lines, so the script refuses what it could misread: code on a line of a block comment, a block comment that opens after code on a line, template literals, and strings continued with a trailing backslash.
+
 ## Performance Evidence
 
 Changes to row rendering or scrolling need before and after numbers from the scroll benchmark, run on both versions:
@@ -55,7 +59,27 @@ cd tests/browser
 node bench/scroll-benchmark.mjs --runs 5 --cpu 1,4
 ```
 
-Put the median results in the pull request description. The benchmark records frames over 50 ms and 33 ms, the 95th percentile frame time, and blank viewport samples while scrolling a large expanded tree. For changes to loading, expanding, or search, report the timings the Playwright performance tests print for the large bundle example before and after the change.
+Add `--host-columns status,changes,links,finding` to measure a host that draws some columns itself through `renderers`. Put the median results in the pull request description. The benchmark records frames over 50 ms and 33 ms, the 95th percentile frame time, and blank viewport samples while scrolling a large expanded tree. For changes to loading, expanding, or search, report the timings the Playwright performance tests print for the large bundle example before and after the change.
+
+Changes to the bundle search index or to sidecar search also need the search benchmark. It reports the index size next to the pages, and the cold and warm time from a query to an expanded hit, on the large bundle example, on two benchmark bundles (an adversarial deep tree and a directory-shaped tree), and on the packed catalog of the packing benchmark (write it with `--pack-bench` first):
+
+```powershell
+dotnet run --project CanopyX.Examples -c Release -- --search-bench
+cd tests/browser
+node bench/search-benchmark.mjs --runs 5 --cpu 1,4
+```
+
+Write the bundles of the version before the change into another folder and pass it with `--examples` and `--bench` to measure both sides on the same machine.
+
+Changes to the bundle layout (pages, packs, the file budget) need the expand benchmark. It reports the files and bytes of a large bundle, the time to the first rows, and cold expands level by level; `--pack-bench` prints the generation time and the peak memory of the writer (add `--in-memory` to build the whole tree first instead of streaming it):
+
+```powershell
+dotnet run --project CanopyX.Examples -c Release -- --pack-bench
+cd tests/browser
+node bench/expand-benchmark.mjs --runs 5 --cpu 1,4
+```
+
+Pass `--bundle <folder>` to measure a bundle written by the version before the change, or the `bundle` folder of the examples and the `directory` folder of `--search-bench`, which have expand steps of their own. `--child-pack <bytes>` and `--search-pack <bytes>` on `CanopyX.Examples` write the bundles with other pack sizes (write each into an empty folder: the writer leaves files it did not write, and the benchmarks count every file), and `--only catalog` limits the search benchmark to the scenarios whose names start with it.
 
 ## Change Expectations
 

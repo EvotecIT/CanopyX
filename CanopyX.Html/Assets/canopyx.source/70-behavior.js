@@ -54,6 +54,7 @@
         let info = null;
         let appliedCount = null;
         let removedSelection = null;
+        let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
           const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
@@ -91,6 +92,7 @@
             w.total = count;
             if (w.children && (loaded > count || (!w.next && loaded < count))) {
               removedSelection = this.invalidateChildren(w);
+              removed = true;
             } else if (loaded === count) {
               w.next = null;
               w.error = null;
@@ -98,14 +100,15 @@
             if (!count && !loaded) w.expanded = false;
             w.pendingChildCount = null;
           }
-          if (!this.destroyed && !w._invalidated) this.relayout();
+          // Rows of removed nodes go at once, even while an opening path holds back the rest.
+          if (!this.destroyed && !w._invalidated) this.relayout(removed);
         }
         // A newer count can discard an older page during reconciliation. Only announce and notify
         // the host after the page is known to remain attached to the tree.
         if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
-          this.announce(w.total != null && loaded < w.total ? format.format(loaded) + " of " + format.format(w.total) + " loaded" : format.format(loaded) + " items");
+          this.announce(w.total != null && loaded < w.total ? fill(this.labels.pageLoaded, { loaded: format.format(loaded), total: format.format(w.total) }) : fill(this.labels.itemsLoaded, { count: format.format(loaded) }));
           info = { node: w.h, count: appliedCount, total: w.total, ms: performance.now() - started };
         }
         if (removedSelection) this.selectionChanged(removedSelection);
@@ -136,7 +139,11 @@
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
       this.ensureVisible(w);
-      this.render();
+      // Detail rows measured on the way can move the row out of view again.
+      if (this.render()) {
+        this.ensureVisible(w);
+        this.render();
+      }
       const rowEl = this.rendered.get(w);
       if (rowEl && domFocus !== false) {
         rowEl.focus({ preventScroll: true });
@@ -150,18 +157,34 @@
       }
       const grid = this.grid;
       const y = this.tops[i];
-      const height = w.span * this.rowH;
+      const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      if (y < grid.scrollTop) {
+      const before = grid.scrollTop;
+      if (y < before) {
         grid.scrollTop = y;
-      } else if (y + height > grid.scrollTop + viewHeight) {
+      } else if (y + height > before + viewHeight) {
         grid.scrollTop = y + height - viewHeight;
       }
+      if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+    },
+
+    /**
+     * After a jump to a row far away, every row in view is new: until the frame that shows them is painted, the
+     * rows around the viewport (the overscan) are left out, and they follow in the frame after.
+     */
+    leanReveal() {
+      if (this.lean) return;
+      this.lean = true;
+      requestAnimationFrame(() => setTimeout(() => {
+        this.lean = false;
+        this.scheduleRender();
+      }));
     },
 
     rowFromEvent(e) {
       const rowEl = e.target.closest(".cx-row");
-      return rowEl && rowEl._w ? rowEl._w : null;
+      // A row can still show a node that a count update removed, until the rows are rebuilt.
+      return rowEl && rowEl._w && !rowEl._w._invalidated ? rowEl._w : null;
     },
 
     onClick(e) {
@@ -199,93 +222,6 @@
       }
     },
 
-    /** Opens a node for expandPath and throws when its children cannot be loaded. */
-    async openForPath(w) {
-      if (this.destroyed || w._invalidated) return false;
-      const wasOpen = w.expanded && !w.filterCollapsed;
-      w.expanded = true;
-      w.filterCollapsed = false;
-      const revision = w.toggleRevision || 0;
-      if (!w.children) {
-        await this.loadPage(w, null);
-        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
-        if (!w.children) {
-          throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
-        }
-      } else if (!wasOpen) {
-        await this.expandInitial(w);
-      }
-      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
-    },
-
-    /**
-     * Expands the tree along an id path, paging through "show more" until each id is loaded. Options: select and
-     * focus (default true), reveal (scroll to the node, default true), expandLast (also open the last node),
-     * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
-     */
-    async expandPath(ids, options) {
-      const o = options || {};
-      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
-      if (cancelled()) return null;
-      await this.rootsReady;
-      if (cancelled()) return null;
-      let parent = this.root;
-      let w = null;
-      const opened = [];
-      for (let k = 0; k < ids.length; k++) {
-        if (parent !== this.root) {
-          try { if (!await this.openForPath(parent)) return null; }
-          catch (err) { if (cancelled() || parent._invalidated) return null; throw err; }
-          opened.push([parent, parent.toggleRevision || 0]);
-        }
-        if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return null;
-        w = this.keyMap.get(ids[k]);
-        const seenCursors = new Set();
-        while ((!w || w.parent !== parent) && parent.children && parent.next) {
-          const before = parent.children.length;
-          const cursor = parent.next;
-          if (seenCursors.has(cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
-          }
-          seenCursors.add(cursor);
-          await this.loadPage(parent, parent.next);
-          if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return null;
-          if (parent.error || (parent.children.length === before && parent.next === cursor)) {
-            throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
-          }
-          w = this.keyMap.get(ids[k]);
-        }
-        if (!w || w.parent !== parent) {
-          throw new Error("CanopyX: id not found on the path: " + ids[k]);
-        }
-        parent = w;
-      }
-      if (o.expandLast && w && this.expandable(w)) {
-        try { if (!await this.openForPath(w)) return null; }
-        catch (err) { if (cancelled() || w._invalidated) return null; throw err; }
-        opened.push([w, w.toggleRevision || 0]);
-      }
-      if (cancelled() || (w && w._invalidated) || opened.some(([node, revision]) =>
-        node._invalidated || !node.expanded || (node.toggleRevision || 0) !== revision)) return null;
-      this.relayout();
-      if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.activeFilters.clear();
-        this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
-        this.setFilter(null);
-      }
-      this.relayout();
-      this.stateChanged();
-      if (w && o.select !== false) {
-        this.select(w);
-      }
-      if (w && o.focus !== false) {
-        this.setFocus(w, true);
-      } else if (w && o.reveal !== false) {
-        this.ensureVisible(w);
-      }
-      return w ? w.h : null;
-    },
-
     /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */
     setFilter(filter, options) {
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
@@ -296,21 +232,41 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
-      if (active) {
-        this.activeFilters.add(id);
-      } else {
-        this.activeFilters.delete(id);
-      }
-      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-filter]")).find((el) => el.getAttribute("data-cx-filter") === id);
-      if (input) {
-        input.checked = !!active;
-      }
-      const filters = (this.view.filters || []).filter((f) => this.activeFilters.has(f.id));
+      const next = new Set(this.activeFilters);
+      if (active) next.add(id);
+      else next.delete(id);
+      this.applyActiveFilters([id], next);
+    },
+
+    /**
+     * Makes exactly the given declared filters active, all at once: one row rebuild, and one canopyx:filter event with
+     * the final set when it changed. An id the view does not declare is an error, and nothing changes.
+     */
+    setActiveFilters(ids) {
+      if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+      this.applyActiveFilters(ids, new Set(ids));
+    },
+
+    applyActiveFilters(named, next) {
+      const declared = this.view.filters || [];
+      named.forEach((id) => {
+        if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      });
+      const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
+      // The same set again leaves the rows as they are (branches collapsed under the filter stay collapsed), unless
+      // a predicate of the host's replaced the declared filters meanwhile.
+      if (!changed && this.filter === this.declaredFilter) return;
+      this.activeFilters = next;
+      this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = next.has(input.getAttribute("data-cx-filter")); });
+      const filters = declared.filter((f) => next.has(f.id));
       const has = (node, flag) => !!(flag && node.flags && node.flags.indexOf(flag) >= 0);
       this.setFilter(filters.length ? {
         match: (node) => filters.every((f) => has(node, f.flag)),
         keep: (node) => filters.every((f) => has(node, f.flag) || has(node, f.ancestorFlag))
       } : null, { autoExpand: true });
+      this.declaredFilter = this.filter;
+      // A host that draws its own control for a hidden filter keeps it in step through this event.
+      if (changed) this.emit("filter", { active: Array.from(next) });
     },
 
     sort(columnId, direction) {

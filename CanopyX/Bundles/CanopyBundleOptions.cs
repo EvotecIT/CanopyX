@@ -7,9 +7,11 @@ namespace CanopyX.Bundles;
 /// </summary>
 public sealed class CanopyBundleOptions {
     private int _pageSize = 250;
-    private int _searchShardLimit = 2000;
+    private int _searchShardLimit = 20000;
     private int _maxFileBytes = 512 * 1024;
     private string? _dataPath;
+    private int _searchPackBytes = 64 * 1024;
+    private int _childPackBytes = 128 * 1024;
 
     /// <summary>
     /// Gets or sets the folder for the sidecar files, relative to the output folder and to the page, with forward
@@ -37,10 +39,10 @@ public sealed class CanopyBundleOptions {
     }
 
     /// <summary>
-    /// Gets or sets the largest size of one sidecar file in bytes, from 16 KiB to 16 MiB. Pages and search shards that
-    /// would grow past it are split, whatever <see cref="PageSize"/> and <see cref="SearchShardLimit"/> allow. A single
-    /// node or search entry larger than the budget (a huge label or html detail) is written in a file of its own.
-    /// Defaults to 512 KiB, half of the 1 MB budget in docs/architecture.md.
+    /// Gets or sets the largest size of one sidecar file in bytes, from 16 KiB to 16 MiB. Pages and search index files
+    /// that would grow past it are split, whatever <see cref="PageSize"/> and <see cref="SearchShardLimit"/> allow. A
+    /// single node or search entry larger than the budget (a huge label or html detail) is written in a file of its
+    /// own. Defaults to 512 KiB, half of the 1 MB budget in docs/architecture.md.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is outside 16 KiB to 16 MiB.</exception>
     public int MaxFileBytes {
@@ -51,6 +53,47 @@ public sealed class CanopyBundleOptions {
             }
 
             _maxFileBytes = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the size up to which the children pages of different nodes are packed into shared files, from
+    /// 16 KiB to 16 MiB (a size above <see cref="MaxFileBytes"/> packs up to the file budget). The pages of one child
+    /// list stay together up to <see cref="MaxFileBytes"/>, so a list larger than this size gets a pack of its own;
+    /// pages are split by <see cref="PageSize"/> and <see cref="MaxFileBytes"/> only, so this size never changes where
+    /// a page ends. Opening a node reads the whole pack its page is in, so smaller packs mean fewer bytes loaded and
+    /// held per expand, and more files. Defaults to 128 KiB, which on the packing benchmark cuts what a cold search
+    /// to a hit loads by a fifth to a half and keeps the bundle at about 2,600 files (see "Packs" in
+    /// docs/data-protocol.md).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is outside 16 KiB to 16 MiB.</exception>
+    public int ChildPackBytes {
+        get => _childPackBytes;
+        set {
+            if (value < 16 * 1024 || value > 16 * 1024 * 1024) {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The children pack size must be between 16 KiB and 16 MiB.");
+            }
+
+            _childPackBytes = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the size up to which the search index's entry files and shards are packed into shared files, from
+    /// 16 KiB to 16 MiB (a size above <see cref="MaxFileBytes"/> packs up to the file budget), or 0 to write each as
+    /// a file of its own. Defaults to 64 KiB, which turns the 2,910 index files of the packing benchmark into 370
+    /// while a query loads about twice the bytes it did; larger packs mean fewer files and more bytes per query
+    /// (see "Search Index" in docs/data-protocol.md).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is neither 0 nor from 16 KiB to 16 MiB.</exception>
+    public int SearchPackBytes {
+        get => _searchPackBytes;
+        set {
+            if (value != 0 && (value < 16 * 1024 || value > 16 * 1024 * 1024)) {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The search pack size is 0 or between 16 KiB and 16 MiB.");
+            }
+
+            _searchPackBytes = value;
         }
     }
 
@@ -68,15 +111,18 @@ public sealed class CanopyBundleOptions {
     }
 
     /// <summary>
-    /// Gets or sets how many entries a search shard may hold before it splits on a longer prefix, from 100 to
-    /// 100,000. A shard that cannot split further (a very common word) is stored in parts of this size. Defaults to 2,000.
+    /// Gets or sets how many postings (one per word of a node label) a search shard may hold before it splits on a
+    /// longer word prefix, from 100 to 1,000,000. A query loads the shards of its words, so a smaller limit means
+    /// smaller but more files. A shard that cannot split further (a very common word) is stored in parts only when it
+    /// outgrows <see cref="MaxFileBytes"/>. Shards of label tokens split at 1,000 postings or this limit, whichever
+    /// is smaller. Defaults to 20,000.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is outside 100 to 100,000.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is outside 100 to 1,000,000.</exception>
     public int SearchShardLimit {
         get => _searchShardLimit;
         set {
-            if (value < 100 || value > 100000) {
-                throw new ArgumentOutOfRangeException(nameof(value), value, "Search shard limit must be between 100 and 100,000.");
+            if (value < 100 || value > 1000000) {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Search shard limit must be between 100 and 1,000,000.");
             }
 
             _searchShardLimit = value;

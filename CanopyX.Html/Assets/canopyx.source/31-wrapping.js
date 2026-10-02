@@ -25,7 +25,7 @@
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
           children: null, total: null, next: null, inline: false, loading: false, error: null,
-          span: data.detail ? Math.max(1, data.detail.height || 1) : 1, _v: 0
+          hpx: data.detail ? this.detailHeight(data.detail) : this.rowH, auto: !!data.detail && !(data.detail.height > 0), _v: 0
         };
         this.keyMap.set(data.id, w);
         return w;

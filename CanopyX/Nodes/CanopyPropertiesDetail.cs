@@ -22,7 +22,6 @@ public sealed class CanopyPropertiesDetail : CanopyDetail {
 
     internal override string Type => "properties";
 
-    internal override int AutomaticHeight => Math.Min(16, Items.Count);
 
     internal override void WriteContent(CanopyJsonWriter writer) {
         writer.Name("items").BeginArray();

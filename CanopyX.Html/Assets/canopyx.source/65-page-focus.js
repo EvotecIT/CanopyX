@@ -10,6 +10,8 @@
       finally {
         if (this.focusHandoff === status) this.focusHandoff = null;
         if (!this.destroyed) {
+          // The new rows are where focus goes, even while an opening path holds back the rest of the grid.
+          if (owned) this.flushLayout();
           if (owned && (this.focusRevision || 0) === revision &&
               (document.activeElement === element || document.activeElement === document.body)) {
             let target = parent.error ? this.statusRow(parent, "error") :

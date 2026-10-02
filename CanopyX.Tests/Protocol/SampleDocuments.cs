@@ -13,6 +13,8 @@ internal static class SampleDocuments {
             Selection = CanopySelectionMode.Multiple,
             Search = new CanopySearchOptions { MinLength = 2, MaxResults = 25, Placeholder = "Find a file" },
             StateKey = "files-state",
+            TimeZone = CanopyTimeZone.Local,
+            PinTreeColumn = true,
             DeepLink = true
         };
         if (source != null) {
@@ -24,7 +26,10 @@ internal static class SampleDocuments {
         view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });
         view.Icons["folder"] = FolderIcon;
+        view.Labels.Columns = "Kolumny";
+        view.Labels.ShowMore = "Pokaż więcej ({loaded} z {total})";
         view.Filters.Add(new CanopyFilter("changed", "Only changed", "changed") { AncestorFlag = "changed-below" });
+        view.Filters.Add(new CanopyFilter("changed-30d", "Changed in 30 days", "changed-30d") { Hidden = true });
 
         var share = new CanopyNode("share", @"\\files\projects") { Kind = "share", Icon = "folder", Group = true, Expanded = true };
         share.Cells["size"] = 5_368_709_120L;
@@ -36,6 +41,8 @@ internal static class SampleDocuments {
         plans.Cells["modified"] = new DateTime(2026, 9, 27, 10, 15, 0, DateTimeKind.Utc);
         plans.Cells["size"] = new CanopyCell(1_048_576L) { Badges = { new CanopyBadge("large", CanopyTone.Danger) } };
         plans.Flags.Add("changed");
+        plans.Data["position"] = "0-42";
+        plans.Data["level"] = "high";
         share.Children.Add(plans);
 
         var history = new CanopyNode("share/plans/history", "History") { ChildCount = 1 };

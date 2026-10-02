@@ -118,21 +118,21 @@ public sealed class CanopyCell {
     /// Formats the value the way the runtime does when no display text is set, for renderers that run without a
     /// browser (the static outline).
     /// </summary>
-    internal string FormatValue(CanopyColumnKind kind) {
+    internal string FormatValue(CanopyColumnKind kind, CanopyLabels labels) {
         switch (_value) {
             case null:
                 return string.Empty;
             case string text:
                 if (kind == CanopyColumnKind.DateTime
                     && DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed)) {
-                    return parsed.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC";
+                    return Utc(labels, parsed);
                 }
 
                 return text;
             case bool flag:
-                return flag ? "Yes" : "No";
+                return flag ? labels.Yes : labels.No;
             case DateTime date:
-                return kind == CanopyColumnKind.DateTime ? date.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC" : FormatIso(date);
+                return kind == CanopyColumnKind.DateTime ? Utc(labels, date) : FormatIso(date);
             case long whole:
                 return kind == CanopyColumnKind.Number ? whole.ToString("#,0", CultureInfo.InvariantCulture) : whole.ToString(CultureInfo.InvariantCulture);
             case double real:
@@ -145,9 +145,17 @@ public sealed class CanopyCell {
     }
 
     /// <summary>Returns the text a reader sees: the display text when set, otherwise the formatted value.</summary>
-    internal string DisplayText(CanopyColumnKind kind) => Text ?? FormatValue(kind);
+    internal string DisplayText(CanopyColumnKind kind, CanopyLabels labels) => Text ?? FormatValue(kind, labels);
 
-    internal bool HasBadges => _badges != null && _badges.Count > 0;
+    /// <summary>Gets whether <see cref="Badges"/> holds at least one badge, without creating the collection.</summary>
+    public bool HasBadges => _badges != null && _badges.Count > 0;
+
+    /// <summary>A date in UTC as the label shows it: the first <c>{time}</c> becomes the date, as in the browser.</summary>
+    private static string Utc(CanopyLabels labels, DateTime date) {
+        var template = labels.UtcTime;
+        var at = template.IndexOf("{time}", StringComparison.Ordinal);
+        return template.Substring(0, at) + date.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + template.Substring(at + 6);
+    }
 
     /// <summary>ISO 8601 UTC, with milliseconds only when they are not zero.</summary>
     private static string FormatIso(DateTime date) =>
@@ -161,7 +169,6 @@ public sealed class CanopyCell {
     }
 
     internal void ValidateShape() {
-        CanopyJsonNames.Tone(Tone);
         switch (_value) {
             case long whole: CanopyJsonWriter.RequireSafeMagnitude((decimal)whole); break;
             case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
@@ -170,7 +177,6 @@ public sealed class CanopyCell {
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) throw new InvalidOperationException("A cell cannot contain a null badge.");
-                badge.ValidateShape();
             }
         }
     }
@@ -191,7 +197,7 @@ public sealed class CanopyCell {
 
         writer.OptionalProperty("text", Text);
         writer.OptionalProperty("title", Title);
-        writer.OptionalProperty("tone", CanopyJsonNames.Tone(Tone));
+        writer.OptionalProperty("tone", Tone.Name);
         if (HasBadges) {
             writer.Name("badges").BeginArray();
             foreach (var badge in _badges!) {

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { nextFrames, viewPage } from "./support.mjs";
+import { nextFrames, searchIndex, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "hosts", label: "Hosts", rowHeight: 28, pageSize: 100,
+const view = { protocol: "canopyx/2", type: "view", id: "hosts", label: "Hosts", rowHeight: 28, pageSize: 100,
   columns: [{ id: "name", title: "Name", width: 300, kind: "text" }, { id: "value", title: "Value", width: 150, kind: "text" }],
   source: { kind: "inline" }, roots: [] };
 async function open(page) {
@@ -22,7 +22,7 @@ test("custom sources override inline roots and paths cross empty advancing pages
     await api.ready;
     await api.expandPath(["target"]);
     return api.visibleRows().map(r => r.node.id);
-    function viewForTest() { return { protocol: "canopyx/1", type: "view", id: "custom", label: "Custom",
+    function viewForTest() { return { protocol: "canopyx/2", type: "view", id: "custom", label: "Custom",
       source: { kind: "inline" }, columns: [{ id: "name", title: "Name", width: 300 }] }; }
   });
   expect(ids).toEqual(["target"]);
@@ -34,14 +34,15 @@ test("custom renderers get fresh containers and their decorators precede fallbac
     const host = document.querySelector(".cx-host"); host.canopyx.destroy();
     const seen = new WeakSet(); window.reusedContainers = 0;
     data.roots = Array.from({ length: 100 }, (_, i) => ({ id: "n" + i, label: "Label" + i, cells: { value: "Value" + i } }));
-    window.api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, element) {
+    const render = (node, element) => {
       if (seen.has(element)) window.reusedContainers++;
       seen.add(element);
       const prefix = document.createElement("span"); prefix.textContent = "Prefix";
       element.replaceChildren(prefix);
       if (node.id === "n0") element.setAttribute("data-host-mark", "only-first");
       return false;
-    } });
+    };
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) });
     return window.api.ready;
   }, view);
   await expect(page.locator('[data-cx-id="n0"]')).toContainText("PrefixLabel0");
@@ -84,10 +85,11 @@ test("outline respects owned custom cells and fallback badge order", async ({ pa
     const host = document.querySelector(".cx-host"); host.canopyx.destroy();
     data.roots = [{ id: "owned", label: "Owned", badges: [{ text: "Suppressed" }] },
       { id: "fallback", label: "Fallback", badges: [{ text: "Node badge" }], cells: { name: { value: "Fallback", badges: [{ text: "Cell badge" }] } } }];
-    const api = CanopyX.createTreeGrid(host, { view: data, renderCell(node, column, el) {
+    const render = (node, el) => {
       if (node.id === "owned") { el.textContent = "Host only"; return true; }
       return false;
-    } });
+    };
+    const api = CanopyX.createTreeGrid(host, { view: data, renderers: Object.fromEntries(data.columns.map(column => [column.id, render])) });
     await api.ready;
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const div = document.createElement("div"); div.innerHTML = api.toOutline();
@@ -102,8 +104,8 @@ test("sidecar search retains paths whose newline-joined strings collide", async 
   await open(page);
   const data = { ...view, source: { kind: "sidecar", base: "/data/" } };
   const entries = [{ path: ["a\nb", "c"], label: "Abacus one" }, { path: ["a", "b\nc"], label: "Abacus two" }];
-  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0", search: { prefix: "k-", shards: { ab: 2 } } },
-    "s/k-ab": { protocol: "canopyx/1", type: "searchShard", key: "ab", entries } };
+  const index = searchIndex(entries);
+  const docs = { manifest: { protocol: "canopyx/2", type: "manifest", view: data.id, root: "r/0", search: index.search }, ...index.docs };
   await page.route("https://canopyx.test/data/**", route => {
     const ref = new URL(route.request().url()).pathname.slice(6, -3);
     return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([data.id, ref, docs[ref]])});` });

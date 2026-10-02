@@ -14,5 +14,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Templates\index.html" LogicalName="CanopyX.Examples.Templates.index.html" />
     <EmbeddedResource Include="Templates\outline.html" LogicalName="CanopyX.Examples.Templates.outline.html" />
+    <EmbeddedResource Include="Templates\outline-page.html" LogicalName="CanopyX.Examples.Templates.outline-page.html" />
+    <EmbeddedResource Include="Templates\filter-bar.html" LogicalName="CanopyX.Examples.Templates.filter-bar.html" />
   </ItemGroup>
 </Project>

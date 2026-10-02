@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "eighteenth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "eighteenth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 320 }, { id: "value", title: "Value", width: 180 }],
   source: { kind: "inline" }, roots: [] };
 
@@ -27,7 +27,7 @@ test("a terminal count retires the error from a failed continuation", async ({ p
     await api.loadMore("parent");
     await new Promise(resolve => requestAnimationFrame(resolve));
     const errorBefore = host.querySelectorAll("[data-cx-status=error]").length;
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 1 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1 }] });
     await new Promise(resolve => requestAnimationFrame(resolve));
     return { errorBefore, statusAfter: host.querySelectorAll("[data-cx-status]").length,
       ids: api.visibleRows().map(row => row.node.id) };
@@ -47,6 +47,9 @@ test("a user collapse cancels a waiting path expansion", async ({ page }) => {
   }, { ...view, deepLink: true });
   await page.waitForFunction(() => !!window.finishChildren);
   const parent = page.locator('[data-cx-id="parent"]');
+  // A path shows the rows it changes once it is open, or, when a level is slow to load, a moment later.
+  await expect(parent).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator('[data-cx-status="loading"]')).toHaveCount(1);
   await parent.locator('.cx-exp').click();
   await expect(parent).toHaveAttribute("aria-expanded", "false");
   await page.evaluate(() => finishChildren({ items: [{ id: "child", label: "Child" }], total: 1, next: null }));
@@ -68,7 +71,8 @@ for (const detail of [false, true]) {
         cell.appendChild(input); return true;
       };
       window.api = CanopyX.createTreeGrid(host, { view: data,
-        ...(detail ? { renderDetail: (node, cell) => render(node, null, cell) } : { renderCell: render }) });
+        ...(detail ? { renderDetail: (node, cell) => render(node, null, cell) }
+          : { renderers: Object.fromEntries(data.columns.map(column => [column.id, (node, cell) => render(node, column.id, cell)])) }) });
       await api.ready;
     }, detail);
     const input = page.getByRole("textbox", { name: "Host edit" });
@@ -91,7 +95,7 @@ for (const ref of ["c/a?b#c", "c/a%25b", "c/a#fragment"]) {
     const requested = [];
     await page.route("https://canopyx.test/data/**", route => {
       requested.push(route.request().url());
-      return route.fulfill({ contentType: "text/javascript", body: `CanopyXSidecar.push(["eighteenth",${JSON.stringify(ref)},{"protocol":"canopyx/1","type":"page","parent":"parent","offset":0,"items":[{"id":"child","label":"Child"}],"next":null}]);` });
+      return route.fulfill({ contentType: "text/javascript", body: `CanopyXSidecar.push(["eighteenth",${JSON.stringify(ref)},{"protocol":"canopyx/2","type":"page","parent":"parent","offset":0,"items":[{"id":"child","label":"Child"}],"next":null}]);` });
     });
     const result = await page.evaluate(async ref => {
       const source = CanopyX.sources.sidecar({ id: "eighteenth", source: { kind: "sidecar", base: "/data/" } });

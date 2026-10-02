@@ -8,8 +8,10 @@ public enum CanopyAssetMode {
     Inline = 0,
 
     /// <summary>
-    /// The page references <c>canopyx.js</c> and <c>canopyx.css</c> under <see cref="CanopyHtmlOptions.AssetBaseUrl"/>.
-    /// Write the files with <see cref="CanopyHtmlAssets.WriteTo(string)"/>. Several pages then share one cached copy.
+    /// The page references the runtime script and stylesheet under <see cref="CanopyHtmlOptions.AssetBaseUrl"/>, by
+    /// the names <see cref="CanopyHtmlOptions.AssetNaming"/> selects (content-hashed by default). Write the files with
+    /// <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming)"/> and the same naming. Pages written by the
+    /// same build then share one cached copy.
     /// </summary>
     External
 }

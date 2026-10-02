@@ -31,7 +31,52 @@ function Join-AssetSource {
         [System.IO.File]::ReadAllText($part.FullName).Replace("`r`n", "`n").Replace("`r", "`n").TrimEnd("`n")
     }
 
-    ($content -join "`n") + "`n"
+    Remove-CommentLines -Content (($content -join "`n") + "`n")
+}
+
+function Remove-CommentLines {
+    param([string] $Content)
+
+    # Comments document the source parts; the assembled runtime ships without them, which keeps it inside its gzip
+    # budget. Only whole lines are removed: a line that is a // comment, and /* */ blocks that start and end their
+    # lines. The block that opens the first part (what the file is and where it comes from) stays. The rule works on
+    # lines, not on the language, so the layouts it could misread are refused rather than guessed at: code on a line
+    # of a block comment, a block comment that opens after code, and strings that continue on the next line.
+    $ordinal = [System.StringComparison]::Ordinal
+    $lines = $Content.Split("`n")
+    $kept = [System.Collections.Generic.List[string]]::new()
+    $inBlock = $false
+    $header = $Content.StartsWith('/*', $ordinal)
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        $line = $lines[$index]
+        $text = $line.Trim()
+        if ($inBlock -or $text.StartsWith('/*', $ordinal)) {
+            $end = $text.IndexOf('*/', $(if ($inBlock) { 0 } else { 2 }), $ordinal)
+            if ($end -ge 0 -and $end + 2 -ne $text.Length) {
+                throw "Keep code off the lines of a /* */ comment in the runtime source parts: $text"
+            }
+
+            $inBlock = $end -lt 0
+            if ($header) {
+                $kept.Add($line)
+                $header = $inBlock
+            }
+
+            continue
+        }
+
+        if ($text.StartsWith('//', $ordinal)) {
+            continue
+        }
+
+        if ($text.Contains('`') -or $text.EndsWith('\', $ordinal) -or ($text.IndexOf('/*', $ordinal) -gt 0 -and $text.IndexOf('*/', $text.IndexOf('/*', $ordinal), $ordinal) -lt 0)) {
+            throw "Keep template literals, continued strings, and comments that open after code out of the runtime source parts: $text"
+        }
+
+        $kept.Add($line)
+    }
+
+    $kept -join "`n"
 }
 
 foreach ($asset in $assets) {

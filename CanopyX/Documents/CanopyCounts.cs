@@ -5,7 +5,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>
-/// Counts and rollup values for several nodes: the <c>counts</c> document of the <c>canopyx/1</c> protocol. A live
+/// Counts and rollup values for several nodes: the <c>counts</c> document of the <c>canopyx/2</c> protocol. A live
 /// host returns it so the page can refresh "3 changed below" style values without reloading rows.
 /// </summary>
 public sealed class CanopyCounts {

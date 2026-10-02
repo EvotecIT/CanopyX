@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { viewPage, nextFrames, repo } from "./support.mjs";
-const view = { protocol: "canopyx/1", type: "view", id: "integrity", label: "Integrity",
+const view = { protocol: "canopyx/2", type: "view", id: "integrity", label: "Integrity",
   columns: [{ id: "name", title: "Name", width: 500 }], source: { kind: "inline" }, roots: [] };
 async function open(page, data = view, after = "") {
   const html = viewPage(data).replace("</body>", after + "</body>");
@@ -16,15 +16,15 @@ for (const kind of ["remote", "sidecar"]) for (const nested of [false, true]) fo
     let attempts = 0;
     const parent = { id: "parent", label: "Parent", ref: "parent", hasChildren: true, expanded: true };
     const doc = (ref, cursor) => {
-      if (nested && !ref) return { protocol: "canopyx/1", type: "page", parent: null, offset: 0, items: [parent], next: null };
-      return { protocol: "canopyx/1", type: "page", parent: nested ? "parent" : null,
+      if (nested && !ref) return { protocol: "canopyx/2", type: "page", parent: null, offset: 0, items: [parent], next: null };
+      return { protocol: "canopyx/2", type: "page", parent: nested ? "parent" : null,
         offset: cursor ? (++attempts === 1 ? badOffset : 1) : 0,
         items: [{ id: cursor ? "second" : "first", label: cursor ? "Second" : "First" }], next: cursor ? null : "next" };
     };
     await page.route("https://canopyx.test/page?*", r => { const u = new URL(r.request().url()); return r.fulfill({ json: doc(u.searchParams.get("ref"), u.searchParams.get("cursor")) }); });
     await page.route("https://canopyx.test/data/**", r => {
       const ref = new URL(r.request().url()).pathname.slice(6, -3);
-      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : doc(ref === "r/0" ? "" : nested ? "parent" : "", ref === "next" ? "next" : "");
+      const data = ref === "manifest" ? { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0" } : doc(ref === "r/0" ? "" : nested ? "parent" : "", ref === "next" ? "next" : "");
       return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
     });
     await open(page, { ...view, roots: undefined, source: kind === "remote" ? { kind, children: "/page?ref={ref}&cursor={cursor}" } : { kind, base: "/data/" } });
@@ -76,7 +76,7 @@ test("direct initialization before DOMContentLoaded keeps one live grid and can 
 for (const key of ["__proto__", "constructor", "toString"]) {
   test(`counts preserve the own cell key ${key}`, async ({ page }) => {
     await open(page, { ...view, columns: [...view.columns, { id: key, title: "Value", width: 160 }], roots: [{ id: "one", label: "One", cells: { [key]: { value: "Before" } } }] });
-    await page.evaluate(key => document.querySelector('.cx-host').canopyx.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "one", cells: { [key]: { value: "After" } } }] }), key);
+    await page.evaluate(key => document.querySelector('.cx-host').canopyx.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "one", cells: { [key]: { value: "After" } } }] }), key);
     await expect(page.locator('[data-cx-id="one"]')).toContainText("After");
     expect(await page.evaluate(key => { const cells=document.querySelector('.cx-host').canopyx.visibleRows()[0].node.cells; return Object.hasOwn(cells,key) && cells[key].value === "After" && Object.getPrototypeOf(cells) !== cells[key]; }, key)).toBe(true);
     if (key === "__proto__") await page.screenshot({ path: path.join(repo, "artifacts/takeover/ninth-count-key.png") });
@@ -106,19 +106,19 @@ test("counts reject inconsistent inline totals before changing any node", async 
   await open(page, { ...view, roots: [{ id: "p", label: "Parent", children: [{ id: "c", label: "Child" }] }] });
   const result = await page.evaluate(() => {
     const api = document.querySelector('.cx-host').canopyx;
-    let error; try { api.applyCounts({ protocol:"canopyx/1",type:"counts",items:[{id:"p",childCount:2}] }); } catch(e) { error=e.message; }
+    let error; try { api.applyCounts({ protocol:"canopyx/2",type:"counts",items:[{id:"p",childCount:2}] }); } catch(e) { error=e.message; }
     return { error, count:api.visibleRows()[0].node.childCount };
   }); expect(result.error).toContain("inline childCount"); expect(result.count).toBeUndefined();
 });
 
 for (const kind of ["remote", "sidecar"]) {
   test(`${kind} rejects an empty expandable child list before attaching its page`, async ({ page }) => {
-    const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
+    const document = { protocol: "canopyx/2", type: "page", parent: null, offset: 0, next: null,
       items: [{ id: "bad", label: "Bad", hasChildren: true, children: [] }] };
     await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: document }));
     await page.route("https://canopyx.test/data/**", r => {
       const ref = new URL(r.request().url()).pathname.slice(6, -3);
-      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : document;
+      const data = ref === "manifest" ? { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0" } : document;
       return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
     });
     await open(page, { ...view, roots: undefined, source: kind === "remote" ?
@@ -128,13 +128,13 @@ for (const kind of ["remote", "sidecar"]) {
   });
 
   test(`${kind} rejects detail descendants before attaching the page`, async ({ page }) => {
-    const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null,
+    const document = { protocol: "canopyx/2", type: "page", parent: null, offset: 0, next: null,
       items: [{ id: "detail", label: "Detail", detail: { type: "html", html: "Info" },
         children: [{ id: "hidden", label: "Hidden" }] }] };
     await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: document }));
     await page.route("https://canopyx.test/data/**", r => {
       const ref = new URL(r.request().url()).pathname.slice(6, -3);
-      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : document;
+      const data = ref === "manifest" ? { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0" } : document;
       return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
     });
     await open(page, { ...view, roots: undefined, source: kind === "remote" ?
@@ -144,12 +144,12 @@ for (const kind of ["remote", "sidecar"]) {
   });
 
   test(`${kind} rejects a page without its required next field`, async ({ page }) => {
-    const document = { protocol: "canopyx/1", type: "page", parent: null, offset: 0,
+    const document = { protocol: "canopyx/2", type: "page", parent: null, offset: 0,
       items: [{ id: "first", label: "First" }] };
     await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: document }));
     await page.route("https://canopyx.test/data/**", r => {
       const ref = new URL(r.request().url()).pathname.slice(6, -3);
-      const data = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : document;
+      const data = ref === "manifest" ? { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0" } : document;
       return r.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, data])});` });
     });
     await open(page, { ...view, roots: undefined, source: kind === "remote" ?
@@ -165,14 +165,14 @@ for (const cells of ["bad", ["bad"]]) {
     await open(page, data);
     const direct = await page.evaluate(cells => {
       const api = document.querySelector('.cx-host').canopyx;
-      try { api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "one", cells }] }); return "accepted"; }
+      try { api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "one", cells }] }); return "accepted"; }
       catch (error) { return error.message; }
     }, cells);
     expect(direct).toContain("counts cells must be an object");
     await expect(page.locator('[data-cx-id="one"]')).toContainText("Before");
-    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null,
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/2", type: "page", parent: null,
       offset: 0, items: data.roots, next: null } }));
-    await page.route("https://canopyx.test/counts?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "counts", items: [{ id: "one", cells }] } }));
+    await page.route("https://canopyx.test/counts?*", r => r.fulfill({ json: { protocol: "canopyx/2", type: "counts", items: [{ id: "one", cells }] } }));
     await page.evaluate(async data => {
       const host = document.querySelector('.cx-host'); host.canopyx.destroy();
       const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: undefined,
@@ -216,14 +216,14 @@ for (const flags of [null, "changed", [""]]) {
     await open(page, data);
     const direct = await page.evaluate(flags => {
       const api = document.querySelector('.cx-host').canopyx;
-      try { api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "one", flags }] }); return "accepted"; }
+      try { api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "one", flags }] }); return "accepted"; }
       catch (error) { return error.message; }
     }, flags);
     expect(direct).toContain("counts flags must be an array of nonempty strings");
     expect(await page.evaluate(() => document.querySelector('.cx-host').canopyx.visibleRows()[0].node.flags)).toEqual(["before"]);
-    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null,
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/2", type: "page", parent: null,
       offset: 0, items: data.roots, next: null } }));
-    await page.route("https://canopyx.test/counts?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "counts", items: [{ id: "one", flags }] } }));
+    await page.route("https://canopyx.test/counts?*", r => r.fulfill({ json: { protocol: "canopyx/2", type: "counts", items: [{ id: "one", flags }] } }));
     await page.evaluate(async data => {
       const host = document.querySelector('.cx-host'); host.canopyx.destroy();
       const api = CanopyX.createTreeGrid(host, { view: { ...data, roots: undefined,
@@ -273,7 +273,7 @@ for (const flags of ["pred", [""]]) {
       return { error, rows: api.visibleRows().length };
     }, { data: view, flags });
     expect(inline).toEqual({ error: "CanopyX: node flags must be an array of nonempty strings.", rows: 0 });
-    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "page",
+    await page.route("https://canopyx.test/page?*", r => r.fulfill({ json: { protocol: "canopyx/2", type: "page",
       parent: null, offset: 0, next: null, items: [{ id: "bad", label: "Bad", flags }] } }));
     await page.evaluate(async data => {
       const host = document.querySelector('.cx-host'); host.canopyx.destroy();

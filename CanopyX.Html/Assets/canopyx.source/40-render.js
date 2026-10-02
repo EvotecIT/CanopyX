@@ -8,6 +8,7 @@
         host.setAttribute("data-cx-theme", "auto");
       }
       host.style.setProperty("--cx-row-h", this.rowH + "px");
+      this.setTreeColumnPinned(this.view.pinTreeColumn);
       this.toolbar = h("div", "cx-toolbar");
       this.toolbar.hidden = true;
       const grid = this.grid = h("div", "cx-grid");
@@ -50,8 +51,29 @@
           this.scheduleRender();
         }
       });
+      // A cell scrolled to show a control it clipped starts at its first content again once focus leaves it.
+      this.canvas.addEventListener("focusout", (e) => this.settleCell(e.relatedTarget));
       global.addEventListener("beforeprint", this.onPrint);
-      this.resizeObserver = new ResizeObserver(() => this.scheduleRender());
+      // A link followed inside the page, a fragment typed into the address bar, Back and Forward, or a router that
+      // announces its own address change with popstate open their row as on load. A host that changes the address
+      // itself with replaceState or pushState, which fire neither event, calls readLocation.
+      this.onHash = (e) => {
+        // Following a fragment fires popstate and then hashchange for the same address: one navigation, read once, so
+        // a fragment that fails to open is not tried and announced twice.
+        const href = global.location.href;
+        const last = this.locationEvent;
+        this.locationEvent = last && last.href === href && last.type !== e.type ? null : { href: href, type: e.type };
+        if (this.locationEvent) this.readLocation();
+      };
+      global.addEventListener("hashchange", this.onHash);
+      global.addEventListener("popstate", this.onHash);
+      // Detail rows keep their content inside the visible width, which the stylesheet reads from --cx-view-w.
+      const viewWidth = () => { if (grid.clientWidth) host.style.setProperty("--cx-view-w", grid.clientWidth + "px"); };
+      viewWidth();
+      this.resizeObserver = new ResizeObserver(() => {
+        viewWidth();
+        this.scheduleRender();
+      });
       this.resizeObserver.observe(grid);
     },
 
@@ -158,15 +180,35 @@
      * visual DOM order. Rows retained in the viewport are not repainted. Positions and attributes change only as needed.
      */
     render() {
+      // A detail row that sizes itself is measured once it is in the document. A new height moves the rows below
+      // it and can change which rows are in the window, so the pass repeats; heights settle within a pass or two.
+      // Returns whether a height changed, so a caller that scrolled to a row can check that it is still in view.
+      let measured = false;
+      for (let pass = 0; !this.destroyed; pass++) {
+        this.renderPass();
+        if (!this.measureDetails()) break;
+        measured = true;
+        if (pass === 3) {
+          this.scheduleRender();
+          break;
+        }
+      }
+      return measured;
+    },
+
+    renderPass() {
       if (this.destroyed) {
         return;
       }
       const grid = this.grid;
+      // A repaint can replace the cell that holds focus (host-drawn cells and details are rebuilt); focus goes back.
+      const held = this.heldCell();
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
       const top = grid.scrollTop;
       const n = this.rows.length;
-      const first = n ? Math.max(0, this.rowAt(top) - OVERSCAN) : 0;
-      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + OVERSCAN) : -1;
+      const over = this.lean ? 0 : OVERSCAN;
+      const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
+      const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
       const want = new Set();
       for (let i = first; i <= last; i++) {
         want.add(this.rows[i]);
@@ -184,6 +226,7 @@
             // Reusing it would leave keyboard focus on a row that now shows another node.
             rowEl.remove();
             rowEl._w = null;
+            this.observeDetail(rowEl, false);
           } else {
             // Repaint a departing row while detached, then insert it in the new window's DOM order. Its cell
             // skeleton survives; retained rows do not need repainting or moving during downward scrolling.
@@ -236,6 +279,7 @@
       for (const rowEl of free) {
         rowEl.remove();
         rowEl._w = null;
+        this.observeDetail(rowEl, false);
         if (this.pool.length < 200) {
           this.pool.push(rowEl);
         }
@@ -246,80 +290,6 @@
       this.window = { first: first, last: last };
       // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
-    },
-
-    // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
-    // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
-    // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
-    keepDomOrder(first, last) {
-      const ordered = [];
-      const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
-      const focusedEl = focusedIndex >= 0 ? this.rendered.get(this.focused) : null;
-      if (focusedEl && focusedIndex < first) {
-        ordered.push(focusedEl);
-      }
-      for (let i = first; i <= last; i++) {
-        const rowEl = this.rendered.get(this.rows[i]);
-        if (rowEl) {
-          ordered.push(rowEl);
-        }
-      }
-      if (focusedEl && focusedIndex > last) {
-        ordered.push(focusedEl);
-      }
-      const kids = Array.prototype.slice.call(this.canvas.children);
-      const n = ordered.length;
-      let inOrder = kids.length === n;
-      for (let k = 0; inOrder && k < n; k++) {
-        inOrder = kids[k] === ordered[k];
-      }
-      if (inOrder) {
-        return;
-      }
-      if (kids.length === n && !focusedEl) {
-        const shift = kids.indexOf(ordered[0]);
-        let rotation = shift > 0;
-        for (let k = 0; rotation && k < n; k++) {
-          rotation = kids[(shift + k) % n] === ordered[k];
-        }
-        if (rotation) {
-          if (shift <= n - shift) {
-            for (let k = 0; k < shift; k++) {
-              this.canvas.appendChild(kids[k]);
-            }
-          } else {
-            for (let k = n - 1; k >= shift; k--) {
-              this.canvas.insertBefore(kids[k], this.canvas.firstChild);
-            }
-          }
-          return;
-        }
-      }
-      const p = focusedEl ? ordered.indexOf(focusedEl) : -1;
-      if (p < 0) {
-        let node = this.canvas.firstChild;
-        for (const rowEl of ordered) {
-          if (node === rowEl) {
-            node = node.nextSibling;
-          } else {
-            this.canvas.insertBefore(rowEl, node);
-          }
-        }
-        return;
-      }
-      let ref = focusedEl;
-      for (let k = p - 1; k >= 0; k--) {
-        if (ordered[k].nextSibling !== ref) {
-          this.canvas.insertBefore(ordered[k], ref);
-        }
-        ref = ordered[k];
-      }
-      let prev = focusedEl;
-      for (let k = p + 1; k < ordered.length; k++) {
-        if (prev.nextSibling !== ordered[k]) {
-          this.canvas.insertBefore(ordered[k], prev.nextSibling);
-        }
-        prev = ordered[k];
-      }
+      if (held) this.restoreCell(held);
     }
   });

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX with a filter bar of the host's own</title>
+<link rel="stylesheet" href="bundle/assets/{{style}}">
+<script src="bundle/assets/{{script}}" defer></script>
+<style>
+body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.host-bar { display: flex; gap: 12px; align-items: center; margin: 0 0 8px; padding: 0; border: 0; }
+.host-bar legend { float: left; margin-right: 4px; font-weight: 600; }
+.host-bar label { display: inline-flex; gap: 4px; align-items: center; }
+</style>
+</head>
+<body class="cx-page">
+<!-- The page leaves the view's own switches for these filters out (CanopyHtmlOptions.HiddenFilterIds) and draws one
+     choice instead. Switching the choice sets the active filters in one step, with setActiveFilters. -->
+<fieldset class="host-bar">
+<legend>Show</legend>
+<label><input type="radio" name="show" value="" checked> All files</label>
+<label><input type="radio" name="show" value="changed"> Changed in the last 7 days</label>
+<label><input type="radio" name="show" value="large"> Large files</label>
+</fieldset>
+{{content}}
+<script>
+(function () {
+  var bar = document.querySelector(".host-bar");
+  var host = document.querySelector("[data-canopyx-host]");
+  bar.addEventListener("change", function (event) {
+    if (!host.canopyx) return;
+    host.canopyx.setActiveFilters(event.target.value ? event.target.value.split(",") : []);
+  });
+  // The grid also turns filters off by itself, to reveal a search hit or a deep link; the choice follows.
+  host.addEventListener("canopyx:filter", function (event) {
+    var active = event.detail.active.slice().sort().join(",");
+    bar.querySelectorAll("input").forEach(function (input) { input.checked = input.value === active; });
+  });
+})();
+</script>
+</body>
+</html>

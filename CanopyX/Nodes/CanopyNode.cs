@@ -19,6 +19,7 @@ public sealed class CanopyNode {
     private Dictionary<string, CanopyCell>? _cells;
     private List<CanopyBadge>? _badges;
     private List<string>? _flags;
+    private Dictionary<string, string>? _data;
     private List<CanopyNode>? _children;
 
     /// <summary>Creates a node.</summary>
@@ -64,12 +65,20 @@ public sealed class CanopyNode {
     /// <summary>Gets host flags such as <c>changed</c>, used by <see cref="CanopyFilter"/> switches.</summary>
     public IList<string> Flags => _flags ??= new List<string>();
 
+    /// <summary>
+    /// Gets facts about the node that the host's own scripts need and that are not cells, badges, or flags: for
+    /// example a position in another index, or a level a host renderer turns into a marker. CanopyX shows none of
+    /// it and does not search it; the browser runtime hands it to host callbacks as <c>node.data</c>.
+    /// </summary>
+    public IDictionary<string, string> Data => _data ??= new Dictionary<string, string>(StringComparer.Ordinal);
+
     /// <summary>Gets the inline children. Leave empty and set <see cref="HasChildren"/> to load children later.</summary>
     public IList<CanopyNode> Children => _children ??= new List<CanopyNode>();
 
     /// <summary>
     /// Gets or sets whether the node has children that are not included, so the runtime draws an expander and loads
-    /// them from the data source when the node opens.
+    /// them from the data source when the node opens. It says nothing about inline children; ask
+    /// <see cref="HasInlineChildren"/> for those.
     /// </summary>
     public bool HasChildren { get; set; }
 
@@ -111,13 +120,30 @@ public sealed class CanopyNode {
     /// <summary>Gets or sets extra CSS class names added to the row, for host styling.</summary>
     public string? ClassName { get; set; }
 
-    internal bool HasInlineChildren => _children != null && _children.Count > 0;
+    /// <summary>
+    /// Gets whether <see cref="Children"/> holds at least one node. The collections of a node are created when they
+    /// are first read, so a host that walks a large tree asks this before it reads <see cref="Children"/>, and a
+    /// leaf never gets an empty list. The same holds for <see cref="HasCells"/>, <see cref="HasBadges"/>,
+    /// <see cref="HasFlags"/>, and <see cref="HasData"/>.
+    /// </summary>
+    /// <remarks>
+    /// This is about the children the node carries. <see cref="HasChildren"/> is the host's declaration that
+    /// children load later, and stays false on a node whose children are all inline; a node has children of either
+    /// sort when one of the two is true.
+    /// </remarks>
+    public bool HasInlineChildren => _children != null && _children.Count > 0;
 
-    internal bool HasCells => _cells != null && _cells.Count > 0;
+    /// <summary>Gets whether <see cref="Cells"/> holds at least one cell, without creating the collection.</summary>
+    public bool HasCells => _cells != null && _cells.Count > 0;
 
-    internal bool HasBadges => _badges != null && _badges.Count > 0;
+    /// <summary>Gets whether <see cref="Badges"/> holds at least one badge, without creating the collection.</summary>
+    public bool HasBadges => _badges != null && _badges.Count > 0;
 
-    internal bool HasFlags => _flags != null && _flags.Count > 0;
+    /// <summary>Gets whether <see cref="Flags"/> holds at least one flag, without creating the collection.</summary>
+    public bool HasFlags => _flags != null && _flags.Count > 0;
+
+    /// <summary>Gets whether <see cref="Data"/> holds at least one item, without creating the collection.</summary>
+    public bool HasData => _data != null && _data.Count > 0;
 
     internal IEnumerable<KeyValuePair<string, CanopyCell>> CellEntries => _cells ?? (IEnumerable<KeyValuePair<string, CanopyCell>>)Array.Empty<KeyValuePair<string, CanopyCell>>();
 
@@ -133,11 +159,11 @@ public sealed class CanopyNode {
         if (_ref != null && !HasChildren && !HasInlineChildren) {
             throw new InvalidOperationException("Node '" + Id + "' has a reference but no children; set HasChildren for children that load later.");
         }
-        CanopyCell.ValidateEntries(CellEntries);
         if (Detail != null && (HasInlineChildren || HasChildren)) {
             throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
         }
 
+        ValidateContent();
         if (_childCount.HasValue) {
             if (HasInlineChildren && _childCount.Value != _children!.Count) {
                 throw new InvalidOperationException("Node '" + Id + "' has " + _children.Count + " inline children but a child count of " + _childCount.Value + "; inline children must be complete.");
@@ -151,13 +177,16 @@ public sealed class CanopyNode {
                 throw new InvalidOperationException("Node '" + Id + "' declares children with a child count of zero.");
             }
         }
+    }
 
+    /// <summary>Checks the cells, badges, and flags, which do not depend on how the node's children are delivered.</summary>
+    internal void ValidateContent() {
+        CanopyCell.ValidateEntries(CellEntries);
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) {
                     throw new InvalidOperationException("Node '" + Id + "' has a null badge.");
                 }
-                badge.ValidateShape();
             }
         }
 
@@ -168,14 +197,44 @@ public sealed class CanopyNode {
                 }
             }
         }
+
+        if (_data != null) {
+            foreach (var item in _data) {
+                // A sidecar file is a script, where "__proto__" in an object literal sets the prototype instead of a field.
+                if (item.Key.Length == 0 || item.Key == "__proto__" || item.Value == null) {
+                    throw new InvalidOperationException("Node '" + Id + "' has a data item with an empty or reserved name, or a null value.");
+                }
+            }
+        }
     }
 
     /// <summary>
-    /// Writes the node. With <paramref name="includeChildren"/> the inline children are written iteratively;
-    /// otherwise only the lazy-load declaration is written, optionally with a reference and count chosen by the caller.
+    /// Writes the node for a bundle page. The bundle writer, not the node, says whether there are children and where
+    /// their first page is, so <see cref="HasChildren"/>, <see cref="ChildCount"/>, and <see cref="Ref"/> are not read.
     /// </summary>
-    internal void WriteJson(CanopyJsonWriter writer, bool includeChildren, string? refOverride = null, int? childCountOverride = null) {
-        if (!WriteStart(writer, includeChildren, refOverride, childCountOverride)) {
+    /// <param name="writer">The writer.</param>
+    /// <param name="childrenReference">The reference of the first children page, or null for a leaf.</param>
+    /// <param name="childCount">The number of children; zero for a leaf.</param>
+    /// <exception cref="InvalidOperationException">The node breaks a protocol rule, or a detail row has children.</exception>
+    internal void WriteBundleItem(CanopyJsonWriter writer, string? childrenReference, int childCount) {
+        if (Detail != null && childCount > 0) {
+            throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
+        }
+
+        // Writing the detail checks it, so it is not serialized a second time just to validate it.
+        ValidateContent();
+        WriteHead(writer);
+        if (childCount > 0) {
+            writer.Property("hasChildren", true).Property("childCount", childCount).Property("ref", childrenReference);
+        }
+
+        WriteTail(writer);
+        writer.EndObject();
+    }
+
+    /// <summary>Writes the node with its inline children, iteratively, or with its declaration of children that load later.</summary>
+    internal void WriteJson(CanopyJsonWriter writer) {
+        if (!WriteStart(writer)) {
             writer.EndObject();
             return;
         }
@@ -188,14 +247,34 @@ public sealed class CanopyNode {
             } else {
                 pending.Push((node, index + 1));
                 var child = node.ChildNodes[index];
-                if (child.WriteStart(writer, true, null, null)) pending.Push((child, 0));
+                if (child.WriteStart(writer)) pending.Push((child, 0));
                 else writer.EndObject();
             }
         }
     }
 
-    private bool WriteStart(CanopyJsonWriter writer, bool includeChildren, string? refOverride, int? childCountOverride) {
-        ValidateShape(replacingInlineRef: !includeChildren && HasInlineChildren && refOverride != null);
+    /// <summary>Writes the node up to its inline children; returns whether the children array was opened.</summary>
+    private bool WriteStart(CanopyJsonWriter writer) {
+        ValidateShape();
+        WriteHead(writer);
+        var inline = HasInlineChildren;
+        if (inline || HasChildren) {
+            writer.Property("hasChildren", true);
+            writer.OptionalProperty("childCount", _childCount ?? (inline ? _children!.Count : (int?)null));
+            if (!inline) {
+                writer.OptionalProperty("ref", _ref);
+            }
+        }
+
+        WriteTail(writer);
+        if (inline) {
+            writer.Name("children").BeginArray();
+        }
+
+        return inline;
+    }
+
+    private void WriteHead(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", _label);
         writer.OptionalProperty("kind", Kind);
         writer.OptionalProperty("icon", Icon);
@@ -230,16 +309,18 @@ public sealed class CanopyNode {
             writer.StringArray("flags", _flags!);
         }
 
-        var inline = includeChildren && HasInlineChildren;
-        var childCount = childCountOverride ?? _childCount ?? (HasInlineChildren ? _children!.Count : (int?)null);
-        if (inline || HasChildren || HasInlineChildren || childCountOverride > 0) {
-            writer.Property("hasChildren", true);
-            writer.OptionalProperty("childCount", childCount);
-            if (!inline) {
-                writer.OptionalProperty("ref", refOverride ?? _ref);
+        if (HasData) {
+            writer.Name("data").BeginObject();
+            foreach (var item in _data!) {
+                writer.Property(item.Key, item.Value);
             }
+
+            writer.EndObject();
         }
 
+    }
+
+    private void WriteTail(CanopyJsonWriter writer) {
         if (Expanded) {
             writer.Property("expanded", true);
         }
@@ -250,9 +331,5 @@ public sealed class CanopyNode {
         }
 
         writer.OptionalProperty("className", ClassName);
-        if (inline) {
-            writer.Name("children").BeginArray();
-        }
-        return inline;
     }
 }

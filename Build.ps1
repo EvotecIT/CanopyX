@@ -142,9 +142,12 @@ function Invoke-PackageSmoke {
         Invoke-ToolCommand -FileName 'dotnet' -Arguments @('nuget', 'remove', 'source', 'nuget', '--configfile', $config) -Description 'Package smoke feed isolation' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
         Invoke-ToolCommand -FileName 'dotnet' -Arguments @('nuget', 'add', 'source', $PackageRoot, '--name', 'local-canopyx', '--configfile', $config) -Description 'Package smoke local feed' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
         Invoke-ToolCommand -FileName 'dotnet' -Arguments @('nuget', 'config', 'set', 'globalPackagesFolder', (Join-Path $consumerRoot '.packages'), '--configfile', $config) -Description 'Package smoke package cache' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        # RestorePackagesPath overrides an ambient NUGET_PACKAGES, which takes precedence over nuget.config.
+        $cachePath = [System.Security.SecurityElement]::Escape((Join-Path $consumerRoot '.packages'))
+        [System.IO.File]::WriteAllText((Join-Path $consumerRoot 'Directory.Build.props'), "<Project><PropertyGroup><RestorePackagesPath>$cachePath</RestorePackagesPath></PropertyGroup></Project>")
         Copy-Item -LiteralPath (Join-Path $Root 'Build/PackageSmoke/Program.cs') -Destination (Join-Path $consumerRoot 'Program.cs') -Force
-        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('add', (Join-Path $consumerRoot 'CanopyXSmoke.csproj'), 'package', 'CanopyX.Html', '--version', $Version) -Description 'Package smoke dependency restore' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
-        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('run', '--project', (Join-Path $consumerRoot 'CanopyXSmoke.csproj'), '-c', 'Release') -Description 'Package smoke run' -TimeoutSeconds $TimeoutSeconds
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('add', (Join-Path $consumerRoot 'CanopyXSmoke.csproj'), 'package', 'CanopyX.Html', '--version', $Version) -WorkingDirectory $consumerRoot -Description 'Package smoke dependency restore' -TimeoutSeconds $TimeoutSeconds -PassThruOutput | Out-Null
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('run', '--project', (Join-Path $consumerRoot 'CanopyXSmoke.csproj'), '-c', 'Release') -WorkingDirectory $consumerRoot -Description 'Package smoke run' -TimeoutSeconds $TimeoutSeconds
     } finally {
         Remove-Item -LiteralPath $consumerRoot -Recurse -Force -ErrorAction SilentlyContinue
     }

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { repo, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "twentysecond", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "twentysecond", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 280 }],
   source: { kind: "remote", children: "/children?ref={ref}&cursor={cursor}",
     search: "/search?q={query}&limit={limit}", counts: "/counts?ids={ids}" } };
@@ -12,7 +12,7 @@ for (const [field, hasChildren] of [["ref", undefined], ["ref", false], ["childC
     const node = { id: "parent", label: "Parent", [field]: field === "ref" ? "children" : 1 };
     if (hasChildren !== undefined) node.hasChildren = hasChildren;
     await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: {
-      protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 1, next: null, items: [node] } }));
+      protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 1, next: null, items: [node] } }));
     await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
     await page.goto("https://canopyx.test/");
     await expect(page.locator('[data-cx-status="error"]')).toContainText("hasChildren");
@@ -26,9 +26,9 @@ for (const [field, hasChildren] of [["ref", undefined], ["ref", false], ["childC
 test("remote search rejects malformed hit paths and labels before navigation", async ({ page }) => {
   let hit;
   await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 0, next: null, items: [] } }));
+    protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 0, next: null, items: [] } }));
   await page.route("https://canopyx.test/search?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "search", query: "ab", hits: [hit], total: 1, truncated: false } }));
+    protocol: "canopyx/2", type: "search", query: "ab", hits: [hit], total: 1, truncated: false } }));
   await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
   await page.goto("https://canopyx.test/");
   await page.waitForSelector("[data-cx-ready]");
@@ -80,7 +80,7 @@ test("custom source search rejects malformed hits at both API and toolbar bounda
   expect((await page.evaluate(() => window.customApi.search("ab"))).hits).toEqual([{ path: ["b"], label: "Actual B" }]);
 });
 
-test("a malformed sidecar search hit is rejected and a corrected shard can retry", async ({ page }) => {
+test("a malformed sidecar search entry is rejected and a corrected entry file can retry", async ({ page }) => {
   await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage({
     ...view, source: { kind: "inline" }, roots: [] }) }));
   await page.goto("https://canopyx.test/");
@@ -88,14 +88,18 @@ test("a malformed sidecar search hit is rejected and a corrected shard can retry
   const result = await page.evaluate(async () => {
     const id = "bad-shard";
     const source = CanopyX.sources.sidecar({ id, source: { kind: "sidecar", base: "/data/" } });
-    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: id,
-      root: "r/0", search: { shards: { ab: 1 } } }]);
-    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: "ab",
-      entries: [{ path: "ab", label: "Abacus" }] }]);
+    const shard = { protocol: "canopyx/2", type: "searchShard", key: "ab", words: ["abacus"], postings: [[0]] };
+    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/2", type: "manifest", view: id,
+      root: "r/0", search: { entryCount: 1, entryFiles: [0], kinds: [], shards: { ab: 1 } } }]);
+    CanopyXSidecar.push([id, "s/k-ab", shard]);
+    // The entry rebuilds to a lone surrogate, which is not an id a path can hold.
+    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [],
+      entries: [[-1, 0, "\ud800", 0, "Abacus"]] }]);
     let error = null;
     try { await source.search("ab", 10); } catch (caught) { error = caught.message; }
-    CanopyXSidecar.push([id, "s/ab", { protocol: "canopyx/1", type: "searchShard", key: "ab",
-      entries: [{ path: ["found"], label: "Abacus" }] }]);
+    CanopyXSidecar.push([id, "s/k-ab", shard]);
+    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [],
+      entries: [[-1, 0, "found", 0, "Abacus"]] }]);
     return { error, hits: (await source.search("ab", 10)).hits };
   });
   expect(result.error).toContain("search hit");
@@ -105,11 +109,11 @@ test("a malformed sidecar search hit is rejected and a corrected shard can retry
 test("remote counts preserve comma, percent, and Unicode IDs after ordinary query parsing", async ({ page }) => {
   const received = [];
   await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 0, next: null, items: [] } }));
+    protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 0, next: null, items: [] } }));
   await page.route("https://canopyx.test/counts?*", route => {
     const parsed = new URL(route.request().url()).searchParams.get("ids");
     received.push(parsed.split(",").map(decodeURIComponent));
-    return route.fulfill({ json: { protocol: "canopyx/1", type: "counts", items: [] } });
+    return route.fulfill({ json: { protocol: "canopyx/2", type: "counts", items: [] } });
   });
   await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
   await page.goto("https://canopyx.test/");

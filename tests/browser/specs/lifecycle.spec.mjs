@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { nextFrames, row, viewPage } from "./support.mjs";
+import { nextFrames, row, searchIndex, viewPage } from "./support.mjs";
 
-const view = (roots = []) => ({ protocol: "canopyx/1", type: "view", id: "lifecycle", label: "Lifecycle", rowHeight: 28,
+const view = (roots = []) => ({ protocol: "canopyx/2", type: "view", id: "lifecycle", label: "Lifecycle", rowHeight: 28,
   pageSize: 100, selection: "single", columns: [{ id: "name", title: "Name", width: 300, kind: "text" }],
   source: { kind: "inline" }, roots });
 async function open(page, data) {
@@ -47,7 +47,7 @@ test("count refreshes preserve disjoint results and ignore older overlapping res
     const api = CanopyX.createTreeGrid(host, { view: data, source });
     await api.ready;
     const first = api.refreshCounts(["a"]), second = api.refreshCounts(["a"]), third = api.refreshCounts(["b"]);
-    const doc = (id, value) => ({ protocol: "canopyx/1", type: "counts", items: [{ id, cells: { name: value } }] });
+    const doc = (id, value) => ({ protocol: "canopyx/2", type: "counts", items: [{ id, cells: { name: value } }] });
     pending[1](doc("a", "Newest")); await second;
     pending[0](doc("a", "Old")); await first;
     pending[2](doc("b", "Disjoint")); await third;
@@ -66,10 +66,10 @@ test("remote empty children can become expandable after a count refresh", async 
       : { items: [{ id: "parent", label: "Parent", hasChildren: true }], next: null } } });
     await api.ready;
     await api.expandPath(["parent"], { expandLast: true });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 0 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 0 }] });
     await new Promise(resolve => requestAnimationFrame(resolve));
     const zero = document.querySelector("[data-cx-id=parent]").hasAttribute("aria-expanded");
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 1 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1 }] });
     await api.expandPath(["parent"], { expandLast: true });
     return { zero, calls, ids: api.visibleRows().map(r => r.node.id) };
   }, { ...view(), source: { kind: "remote", children: "c?ref={ref}&cursor={cursor}" } });
@@ -129,7 +129,7 @@ test("count changes during expansion keep toggle events and callbacks consistent
     await api.ready;
     await new Promise(resolve => requestAnimationFrame(resolve));
     document.querySelector("[data-cx-id=p] .cx-exp").click();
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "p", childCount: 0 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "p", childCount: 0 }] });
     finish({ items: [], next: null });
     await new Promise(resolve => setTimeout(resolve, 0));
     return { events, callbacks };
@@ -178,17 +178,16 @@ test("revealing a child already visible under a matching parent retains filters"
   await expect(row(page, "unrelated")).toHaveCount(0);
 });
 
-for (const invalidFile of ["manifest", "shard"]) {
+for (const invalidFile of ["manifest", "s/k-ab", "e/0"]) {
   test(`sidecar retries recover after invalid ${invalidFile} content is corrected`, async ({ page }) => {
     await open(page, view());
-    const attempts = { manifest: 0, shard: 0 };
+    const index = searchIndex([{ path: ["ab"], label: "Abacus" }]);
+    const docs = { manifest: { protocol: "canopyx/2", type: "manifest", view: "retry", root: "r/0", search: index.search }, ...index.docs };
+    let attempts = 0;
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice(6, -3);
-      const file = ref === "manifest" ? "manifest" : "shard";
-      const bad = file === invalidFile && ++attempts[file] === 1;
-      const doc = bad ? { protocol: "wrong", type: file } : file === "manifest"
-        ? { protocol: "canopyx/1", type: "manifest", view: "retry", root: "r/0", search: { shards: { ab: 1 } } }
-        : { protocol: "canopyx/1", type: "searchShard", key: "ab", entries: [{ path: ["ab"], label: "Abacus" }] };
+      const bad = ref === invalidFile && ++attempts === 1;
+      const doc = bad ? { protocol: "wrong", type: docs[ref].type } : docs[ref];
       return route.fulfill({ contentType: "application/javascript", body: `CanopyXSidecar.push(${JSON.stringify(["retry", ref, doc])});` });
     });
     const result = await page.evaluate(async () => {
@@ -199,6 +198,6 @@ for (const invalidFile of ["manifest", "shard"]) {
     });
     expect(result.failed).toBe(true);
     expect(result.hits[0].label).toBe("Abacus");
-    expect(attempts[invalidFile]).toBe(2);
+    expect(attempts).toBe(2);
   });
 }

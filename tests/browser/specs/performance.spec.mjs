@@ -1,12 +1,19 @@
 // Performance budgets from docs/architecture.md on the large bundle example (more than 100,000 nodes, opened from disk).
-// The search budget starts when the query runs, after the search box's 150 ms typing pause.
+// The search budget starts when the query runs, after the search box's 150 ms typing pause. Next to the timing, the
+// index files a query loads are counted, which does not depend on how fast the runner is.
 // Interactions are timed in the page, until the result is painted, as the median of three attempts on a fresh page,
 // so one slow sample on a busy CI runner does not decide the result. The timings are printed for pull requests.
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { exampleUrl, median, openExample } from "./support.mjs";
 
 const FIRST_ROWS_MS = 2500;
 const INTERACTION_MS = 250;
+const SEARCH_INDEX_FILES = 32;
+// The index is packed into files of up to 64 KiB, so a query reads a few whole packs: about 11% of the example's
+// 5.5 MB index for the widest query, against 4% with separate files (see "Index Packs" in docs/data-protocol.md).
+const SEARCH_INDEX_BYTES = 1024 * 1024;
 
 /** Runs an async expression in the page and returns the milliseconds until the next painted frame. */
 function timed(page, body) {
@@ -67,6 +74,69 @@ test("search to an expanded hit stays within budget", async ({ browser }) => {
   console.log("search to expanded hit: " + ms.toFixed(1) + " ms");
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
 });
+
+// Budgets that do not depend on how fast the runner is: the pages on a hit's path load in one round, because the
+// index says where they are, and the rows are rebuilt and rendered once for the whole path.
+test("a search hit loads the pages on its path in one round and renders the path once", async ({ page }) => {
+  await openExample(page, "bundle/index.html");
+  const result = await page.evaluate(async () => {
+    const api = document.querySelector(".cx-host").canopyx;
+    const hit = (await api.search("quarterly review")).hits.pop();
+    // A page file is asked for when its script is added, and arrives when the script registers its document.
+    const events = [];
+    const files = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => {
+      if (node.tagName === "SCRIPT" && /\/[pr]\/\d+\.js$/.test(node.src)) events.push("request");
+    })));
+    files.observe(document.head, { childList: true });
+    const register = self.CanopyXSidecar.push;
+    self.CanopyXSidecar.push = function (entry) {
+      if (/^[pr]\//.test(entry[1])) events.push("arrive");
+      return register.apply(this, arguments);
+    };
+    let renders = 0;
+    const rows = new MutationObserver(() => { renders++; });
+    rows.observe(document.querySelector(".cx-canvas"), { childList: true, subtree: true, attributes: true, attributeFilter: ["data-cx-id", "aria-expanded", "data-cx-status"] });
+    const node = await api.expandPath(hit.path);
+    files.disconnect();
+    self.CanopyXSidecar.push = register;
+    return { found: node.id === hit.path[hit.path.length - 1], depth: hit.path.length, events, renders };
+  });
+  console.log("search hit path: " + result.depth + " levels, page files " + result.events.join(" ") + ", renders " + result.renders);
+  expect(result.found).toBe(true);
+  const requests = result.events.filter((event) => event === "request").length;
+  expect(requests).toBeGreaterThan(0);
+  expect(requests).toBeLessThanOrEqual(result.depth);
+  expect(result.events.slice(0, requests).every((event) => event === "request")).toBe(true);
+  expect(result.renders).toBe(1);
+});
+
+test("a repeated search answers from the loaded index within budget", async ({ browser }) => {
+  const ms = await measure(browser, "await api.search('quarterly review');", "await api.search('quarterly review');");
+  console.log("repeated search: " + ms.toFixed(1) + " ms");
+  expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
+});
+
+// A query reads the shards of its words and the entry files of the matches it ranks, never the whole index: 4,698
+// nodes match "quarterly review", "re" starts the most common words of the example, and the queries with a one-unit
+// word match nothing or little among thousands of candidates.
+for (const query of ["quarterly review", "re", "İstanbul lau", "version 9", "quarterly z", "quarterly r"]) {
+  test(`searching "${query}" loads a bounded part of the index`, async ({ page }) => {
+    const loaded = [];
+    page.on("request", (request) => {
+      const match = /\/data\/[^/]+\/[seq]\/[^/]+\.js$/.exec(request.url());
+      if (match) loaded.push(fs.statSync(fileURLToPath(request.url())).size);
+    });
+    await openExample(page, "bundle/index.html");
+    const result = await page.evaluate((text) => document.querySelector(".cx-host").canopyx.search(text), query);
+    const bytes = loaded.reduce((sum, size) => sum + size, 0);
+    console.log("search \"" + query + "\": " + result.hits.length + " of " + result.total + " hits from " + loaded.length + " index files, " + Math.round(bytes / 1024) + " KiB");
+    expect(result.total).toBe(query === "version 9" || query === "quarterly z" ? 0 : result.total);
+    expect(result.truncated).toBe(result.total > result.hits.length);
+    expect(loaded.length).toBeGreaterThan(0);
+    expect(loaded.length).toBeLessThanOrEqual(SEARCH_INDEX_FILES);
+    expect(bytes).toBeLessThanOrEqual(SEARCH_INDEX_BYTES);
+  });
+}
 
 test("scrolling a long expanded list never shows a blank viewport", async ({ page }) => {
   await openExample(page, "bundle/index.html");

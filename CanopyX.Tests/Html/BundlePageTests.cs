@@ -82,8 +82,8 @@ public sealed class BundlePageTests {
             var view = TestTrees.FileShares(shares: 1, foldersPerShare: 1, filesPerFolder: 1, bigFolder: 1);
             var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = assetPath };
             view.SaveHtmlBundle(directory, options);
-            Assert.True(File.Exists(Path.Combine(directory, folder, CanopyHtmlAssets.ScriptFileName)));
-            Assert.Contains("src=\"" + options.AssetBaseUrl + "canopyx.js\"", File.ReadAllText(Path.Combine(directory, "index.html")));
+            Assert.True(File.Exists(Path.Combine(directory, folder, CanopyHtmlAssets.HashedScriptFileName)));
+            Assert.Contains("src=\"" + options.AssetBaseUrl + CanopyHtmlAssets.HashedScriptFileName + "\"", File.ReadAllText(Path.Combine(directory, "index.html")));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
@@ -102,8 +102,10 @@ public sealed class BundlePageTests {
             Assert.Equal("sidecar", config["source"]!["kind"]!.GetValue<string>());
             Assert.Equal(result.Source.BaseUrl, config["source"]!["base"]!.GetValue<string>());
             Assert.Null(config["roots"]);
-            Assert.Contains("<script src=\"assets/canopyx.js\" defer></script>", page);
-            Assert.True(File.Exists(Path.Combine(directory, "assets", CanopyHtmlAssets.ScriptFileName)));
+            Assert.Contains("<script src=\"assets/" + CanopyHtmlAssets.HashedScriptFileName + "\" defer></script>", page);
+            Assert.Contains("<link rel=\"stylesheet\" href=\"assets/" + CanopyHtmlAssets.HashedStyleFileName + "\">", page);
+            Assert.True(File.Exists(Path.Combine(directory, "assets", CanopyHtmlAssets.HashedScriptFileName)));
+            Assert.True(File.Exists(Path.Combine(directory, "assets", CanopyHtmlAssets.HashedStyleFileName)));
             Assert.True(File.Exists(Path.Combine(result.DataDirectory, "manifest.js")));
             Assert.Equal(Path.GetFullPath(Path.Combine(directory, result.Source.BaseUrl!)), Path.GetFullPath(result.DataDirectory) + Path.DirectorySeparatorChar);
         } finally {

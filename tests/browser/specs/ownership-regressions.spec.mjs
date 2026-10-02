@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "ownership", label: "Ownership", rowHeight: 28,
+const view = { protocol: "canopyx/2", type: "view", id: "ownership", label: "Ownership", rowHeight: 28,
   columns: [{ id: "name", title: "Name", width: 300 }], source: { kind: "inline" }, roots: [] };
 async function open(page, data = view) {
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: viewPage(data) }));
@@ -21,7 +21,7 @@ for (const shared of [false, true]) {
           { id: "b", label: "B", children: [{ id: "b-leaf", label: "B leaf" }] }] };
         return new Promise(resolve => { window.finish = resolve; });
       } } }); await api.ready;
-      function viewForTest() { return { protocol: "canopyx/1", type: "view", id: "restore", label: "Restore",
+      function viewForTest() { return { protocol: "canopyx/2", type: "view", id: "restore", label: "Restore",
         columns: [{ id: "name", title: "Name", width: 300 }], source: { kind: "inline" } }; }
       window.oldRestore = api.setState({ expanded: [["a", "old"]] });
     });
@@ -97,14 +97,14 @@ for (const source of ["remote", "sidecar"]) for (const nested of [false, true]) 
     const parent = { id: "parent", label: "Parent", ref: "page", hasChildren: true, expanded: true };
     await page.route("https://canopyx.test/page?*", route => {
       const child = new URL(route.request().url()).searchParams.get("ref");
-      const doc = { protocol: "canopyx/1", type: "page", parent: nested && !child ? null : wrong ? "wrong" : nested ? "parent" : null,
+      const doc = { protocol: "canopyx/2", type: "page", parent: nested && !child ? null : wrong ? "wrong" : nested ? "parent" : null,
         offset: 0, total: 1, items: nested && !child ? [parent] : [{ id: "foreign", label: "Foreign" }], next: null };
       return route.fulfill({ json: doc });
     });
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice("/data/".length).replace(/\.js$/, "");
-      const doc = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0" } :
-        { protocol: "canopyx/1", type: "page", parent: nested && ref === "r/0" ? null : wrong ? "wrong" : nested ? "parent" : null,
+      const doc = ref === "manifest" ? { protocol: "canopyx/2", type: "manifest", view: data.id, root: "r/0" } :
+        { protocol: "canopyx/2", type: "page", parent: nested && ref === "r/0" ? null : wrong ? "wrong" : nested ? "parent" : null,
           offset: 0, total: 1, items: nested && ref === "r/0" ? [parent] : [{ id: "foreign", label: "Foreign" }], next: null };
       return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([data.id, ref, doc])});` });
     });

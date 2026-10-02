@@ -1,7 +1,8 @@
 
   // ---------- tree grid: model ----------
   // Loaded nodes keep their children. The visible rows are a flat array rebuilt on every structure change, in time
-  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots.
+  // proportional to the visible rows. Rows have a fixed height; a detail row spans several row slots, or is as tall
+  // as its content when it declares no height.
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
@@ -15,9 +16,31 @@
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
-      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden }));
+      // Every text the grid writes itself: English, then the view's translations, then the host's.
+      this.labels = labelsFor(view.labels, options.labels);
+      // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
+      this.local = view.timeZone === "local";
+      this.fmt = formatting(this.lang, this.local, this.labels);
+      if (options.renderCell) {
+        throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
+      }
+      // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
+      const renderers = options.renderers || {};
+      if (typeof renderers !== "object" || (Object.getPrototypeOf(renderers) !== Object.prototype && Object.getPrototypeOf(renderers) !== null)) {
+        throw new Error("CanopyX: renderers must be a plain object of functions by column id.");
+      }
+      Object.keys(renderers).forEach((id) => {
+        if (typeof renderers[id] !== "function" || !view.columns.some((column) => column.id === id)) {
+          throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
+        }
+      });
+      if (!options.formatLink !== !options.parseLink) {
+        throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
+      }
+      const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
+      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
-      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null, span: 1 };
+      this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {
         this.root.inlineItems = view.roots || [];
       }
@@ -31,6 +54,8 @@
       this.selected = new Set();
       this.anchor = null;
       this.filter = null;
+      // The predicate built from the view's active filters, which a host predicate can replace.
+      this.declaredFilter = null;
       this.filterExpand = false;
       this.activeFilters = new Set();
       this.sortState = null;
@@ -73,6 +98,8 @@
       }
       if (this.destroyed) return;
       await this.flushPendingToggles();
+      // A fragment that changed while the view was loading is opened now.
+      if (this.linkChanged) await this.openDeepLink();
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
         this.emit("ready", {});
@@ -103,13 +130,14 @@
       kind = parent.loading ? "loading" : parent.error ? "error" : kind;
       let row = parent._status;
       if (!row) {
-        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, span: 1, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
-      const loaded = parent.children ? parent.children.length : 0;
       const format = numberFormat(this.lang);
-      row.h.label = kind === "loading" ? "Loading…" : kind === "error" ? "Could not load: " + parent.error + " (Enter to retry)" :
-        parent.total != null ? "Show more (" + format.format(loaded) + " of " + format.format(parent.total) + " loaded)" : "Show more (" + format.format(loaded) + " loaded)";
+      const loaded = format.format(parent.children ? parent.children.length : 0);
+      const labels = this.labels;
+      row.h.label = kind === "loading" ? labels.loading : kind === "error" ? fill(labels.loadError, { error: parent.error }) :
+        parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.format(parent.total) }) : fill(labels.showMoreUnknownTotal, { loaded: loaded });
       row._v = 0;
       return row;
     }
