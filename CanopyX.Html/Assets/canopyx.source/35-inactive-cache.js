@@ -2,9 +2,11 @@
   Object.assign(TreeGrid.prototype, {
     cachePinned(w) {
       const focus = this.focused;
+      const filter = this.filter;
       return w.expanded || w.autoExpand || w.loading || w.reloadController || this.selected.has(w) ||
         w === (focus && focus.status ? focus.parent : focus) || w === this.anchor ||
-        this.pendingRestorationToggles && this.pendingRestorationToggles.has(w);
+        this.pendingRestorationToggles && this.pendingRestorationToggles.has(w) ||
+        filter && (filter.match(w.h) || filter.keep && filter.keep(w.h));
     },
 
     rememberInactive(w) {
@@ -16,7 +18,7 @@
     },
 
     trimInactiveCache() {
-      if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds || this.filter) return;
+      if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds) return;
       this.cacheDirty = false;
       const cache = this.inactiveCache;
       if (!cache || !cache.size) return;

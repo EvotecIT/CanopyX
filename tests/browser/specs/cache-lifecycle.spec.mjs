@@ -106,7 +106,7 @@ test("a count response cannot change a replacement loaded after its old subtree 
   expect(await page.evaluate(()=>window.loads.a)).toBe(2);
 });
 
-test("loaded filter data stays retained until the filter is cleared", async ({ page }) => {
+test("matching filter data stays retained until the filter is cleared", async ({ page }) => {
   await open(page,{limit:0}); await expand(page,"a");
   await page.evaluate(()=>document.querySelector(".cx-host").canopyx.setFilter(()=>true));
   await collapse(page,"a");
@@ -126,6 +126,35 @@ test("a retired API releases loaded rows and selection while retaining its view 
     return {selected:api.getSelected(),rows:api.visibleRows(),view:api.view.id,mounted:!!host.canopyx,search};
   });
   expect(result).toEqual({selected:[],rows:[],view:"cache-lifecycle",mounted:false,search:"AbortError"});
+});
+
+test("nonmatching collapsed data obeys its retention limit while ancestor hints keep the filter active", async ({ page }) => {
+  await open(page,{limit:0});
+  await page.evaluate(()=>document.querySelector('.cx-host').canopyx.setFilter({match:()=>false,keep:node=>!!node.hasChildren}));
+  for (const id of ['a','b']) {
+    await expand(page,id); await collapse(page,id);
+    await expect(page.evaluate(id=>document.querySelector('.cx-host').canopyx.setSelection([id+'0']),id))
+      .rejects.toThrow('selection node is not loaded: '+id+'0');
+  }
+  await expand(page,'a');
+  expect(await page.evaluate(()=>window.loads.a)).toBe(2);
+  await expect(page.locator('[data-cx-id="a"]')).toHaveAttribute('aria-expanded','true');
+});
+
+test("matching data moved outside an inline page stays retained under a filter", async ({ page }) => {
+  const definition = {...view,pageSize:1,columns:[{id:'name',title:'Name',sortable:true,width:300}],
+    roots:[{id:'p',label:'Project',children:[{id:'a',label:'Atlas',flags:['hit']},{id:'z',label:'Zeta'}]}]};
+  await page.route('https://cache.test/',route=>route.fulfill({contentType:'text/html',body:viewPage(definition)
+    .replace('</head>','<script>CanopyX.configure("cache-lifecycle",{retainedNodeLimit:0});</script></head>')}));
+  await page.goto('https://cache.test/');await page.waitForSelector('[data-cx-ready]');
+  const retained = await page.evaluate(async()=>{
+    const api=document.querySelector('.cx-host').canopyx;
+    await api.expandPath(['p'],{expandLast:true,select:false,focus:false,reveal:false});
+    api.setFilter({match:node=>(node.flags||[]).includes('hit'),keep:node=>node.id==='p'});
+    api.sort('name','desc');
+    return api.setSelection(['a']);
+  });
+  expect(retained).toBe(true);
 });
 
 test("state restoration enrolls newly collapsed lazy branches for eviction",async({page})=>{
