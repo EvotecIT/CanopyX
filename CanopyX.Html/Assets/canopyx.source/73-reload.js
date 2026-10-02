@@ -117,7 +117,7 @@
         for (const key of old.keys()) outside.delete(key);
         const items = [], seen = new Set();
         const inlineOnly = this.root.inlineItems != null;
-        const inline = parent === this.root ? inlineOnly ? this.view.roots || [] : null : parent.inline ? parent.h.children : null;
+        const inline = parent === this.root ? inlineOnly ? this.view.roots : null : parent.inline ? parent.h.children : null;
         if (inlineOnly) validateNodes(inline, outside, true);
         let cursor = null, total = null, next = null;
         do {

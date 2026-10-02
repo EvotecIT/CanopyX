@@ -235,3 +235,19 @@ test("inline reload accepts immutable replacement of the root array", async ({ p
   });
   expect(result).toEqual({ accepted: true, ids: ["new"] });
 });
+
+test("malformed inline root replacements retain existing data and selection", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); data.roots = [{ id: "old", label: "Old" }];
+    const api = CanopyX.createTreeGrid(host, { view: data }); await api.ready; api.setSelection(["old"]);
+    const decisions = [];
+    for (const roots of [null, undefined, false, 0, ""]) {
+      api.view.roots = roots; let rejected = false;
+      try { await api.reload(); } catch (error) { rejected = error.message.includes("items must be an array"); }
+      decisions.push({ rejected, ids: api.visibleRows().map(row => row.node.id), selected: api.getSelected().map(node => node.id) });
+    }
+    return decisions;
+  }, view);
+  expect(result).toEqual(Array(5).fill({ rejected: true, ids: ["old"], selected: ["old"] }));
+});
