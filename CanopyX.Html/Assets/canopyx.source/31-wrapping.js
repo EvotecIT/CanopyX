@@ -17,9 +17,7 @@
       }
     },
 
-    wrap(node, parent, index, suppressExpansion) {
-      const initialExpansion = !suppressExpansion && !this.restoring;
-      const create = (data, owner, position) => {
+    createWrapper(data, owner, position) {
         requireIdentifier(data.id, "node ID");
         if (data.ref != null) requireIdentifier(data.ref, "node reference");
         const w = {
@@ -29,8 +27,11 @@
         };
         this.keyMap.set(data.id, w);
         return w;
-      };
-      const root = create(node, parent, index);
+    },
+
+    wrap(node, parent, index, suppressExpansion) {
+      const initialExpansion = !suppressExpansion && !this.restoring;
+      const root = this.createWrapper(node, parent, index);
       const pending = [root];
       while (pending.length) {
         const w = pending.pop();
@@ -38,7 +39,7 @@
         if (Array.isArray(data.children)) {
           const first = slicePage(data.children, null, this.pageSize);
           w.inline = true;
-          w.children = first.items.map((child, i) => create(child, w, i));
+          w.children = first.items.map((child, i) => this.createWrapper(child, w, i));
           w.total = first.total;
           w.next = first.next;
           w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;

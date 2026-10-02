@@ -5,7 +5,7 @@
   // will read all at once (prefetch; a bundle's search index says where they are).
   /** Races each navigation await against cancellation without cancelling a load another caller may own. */
   function navigationScope(grid, signal) {
-    const signals = Array.from(new Set([grid.lifetime.signal, signal].filter(Boolean)));
+    const signals = Array.from(new Set([grid.lifetime.signal].concat(signal || []).filter(Boolean)));
     let abort;
     const stopped = new Promise((resolve) => { abort = () => resolve(); });
     signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));

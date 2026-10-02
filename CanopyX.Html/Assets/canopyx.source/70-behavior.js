@@ -50,6 +50,10 @@
       const started = performance.now();
       const restoration = this.restoreGeneration || 0;
       const suppressInitial = !!this.restoring;
+      const token = w.pageToken = {};
+      const controller = w.pageController = new AbortController();
+      const generation = w.dataGeneration || 0;
+      const obsolete = () => this.destroyed || w._invalidated || w.pageToken !== token || generation !== (w.dataGeneration || 0);
       const run = (async () => {
         let info = null;
         let appliedCount = null;
@@ -57,8 +61,8 @@
         let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-          const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor);
-          if (this.destroyed || w._invalidated) return;
+          const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+          if (obsolete()) return;
           const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
           if (cursor != null && !items.length && page.next === cursor) {
             throw new Error("CanopyX: page continuation did not advance.");
@@ -80,10 +84,14 @@
           // Paging changes sibling metadata, not retained host cell content.
           appliedCount = items.length;
         } catch (err) {
-          if (this.destroyed || w._invalidated) return;
+          if (obsolete()) return;
           w.error = err && err.message ? err.message : String(err);
           this.emit("error", { node: w.h, message: w.error });
         } finally {
+          controller.abort();
+          if (w.pageToken !== token) return;
+          w.pageToken = null;
+          w.pageController = null;
           w.loading = false;
           w._pending = null;
           if (!this.destroyed && !w._invalidated && w.pendingChildCount != null) {
@@ -105,7 +113,7 @@
         }
         // A newer count can discard an older page during reconciliation. Only announce and notify
         // the host after the page is known to remain attached to the tree.
-        if (appliedCount != null && !this.destroyed && !w._invalidated && w.children) {
+        if (appliedCount != null && !this.destroyed && !w._invalidated && generation === (w.dataGeneration || 0) && w.children) {
           const loaded = w.children.length;
           const format = numberFormat(this.lang);
           this.announce(w.total != null && loaded < w.total ? fill(this.labels.pageLoaded, { loaded: format.format(loaded), total: format.format(w.total) }) : fill(this.labels.itemsLoaded, { count: format.format(loaded) }));

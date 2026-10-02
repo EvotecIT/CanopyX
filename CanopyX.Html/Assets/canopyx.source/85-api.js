@@ -210,6 +210,8 @@
         const child = pending.pop();
         if (child.children) for (const descendant of child.children) pending.push(descendant);
         child._invalidated = true;
+        if (child.pageController) child.pageController.abort();
+        if (child.reloadController) child.reloadController.abort();
         if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
         if (this.selected.delete(child) && !removedSelection) removedSelection = child;
         if (this.anchor === child) this.anchor = null;

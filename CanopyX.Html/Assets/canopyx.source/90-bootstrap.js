@@ -49,6 +49,7 @@
       setTimeZone: (zone) => grid.setTimeZone(zone),
       getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
+      reload: (id, options) => grid.reload(id, options),
       // For a host that changed the address itself (history.replaceState or pushState fire no event).
       readLocation: () => grid.readLocation(),
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
