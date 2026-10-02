@@ -72,7 +72,7 @@
 
 /* ---------- toolbar ---------- */
 .cx-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 6px 2px 8px; }
-.cx-search { position: relative; }
+.cx-search { position: relative; min-width: 0; max-width: 100%; }
 .cx-search-input {
   font: inherit; width: 280px; max-width: 100%; padding: 3px 8px; border-radius: 6px;
   border: 1px solid var(--cx-line-strong); background: var(--cx-surface); color: var(--cx-text);

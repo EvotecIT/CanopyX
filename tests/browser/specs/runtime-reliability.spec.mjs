@@ -167,11 +167,11 @@ test("search flyouts fit a narrow host against the viewport edge and remain keyb
   await page.setViewportSize({ width: 390, height: 500 });
   await open(page, { ...view, search: { minLength: 1, maxResults: 2 } });
   await page.locator(".cx-host").evaluate(host => { host.style.width = "200px"; host.style.marginLeft = "auto"; });
-  await page.locator(".cx-search").evaluate(box => { box.style.width = "190px"; });
   const input = page.getByRole("combobox"); await input.fill("Alpha");
   await expect(page.getByRole("option")).toBeVisible();
   const bounds = await page.locator(".cx-results").boundingBox();
   expect(bounds.x).toBeGreaterThanOrEqual(7); expect(bounds.x + bounds.width).toBeLessThanOrEqual(383);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await capture(page, "search-embedded");
   await input.press("ArrowDown"); await input.press("Enter");
   await expect(page.locator('[data-cx-id="a"]')).toBeFocused();
