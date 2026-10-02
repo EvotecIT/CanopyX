@@ -127,3 +127,33 @@ test("a retired API releases loaded rows and selection while retaining its view 
   });
   expect(result).toEqual({selected:[],rows:[],view:"cache-lifecycle",mounted:false,search:"AbortError"});
 });
+
+test("state restoration enrolls newly collapsed lazy branches for eviction",async({page})=>{
+  await open(page,{limit:0}); await expand(page,"a");
+  await page.evaluate(()=>document.querySelector(".cx-host").canopyx.setState({expanded:[]}));
+  await nextFrames(page);
+  await expect(page.evaluate(()=>document.querySelector(".cx-host").canopyx.setSelection(["a0"])))
+    .rejects.toThrow("selection node is not loaded: a0");
+  await expand(page,"a"); expect(await page.evaluate(()=>window.loads.a)).toBe(2);
+});
+
+test("a retained retired API releases its supplied source without changing caller options",async({page,browserName})=>{
+  test.skip(browserName!=="chromium","Source collection requires the Chromium heap profiler.");
+  await open(page);
+  const unchanged=await page.evaluate(async()=>{
+    const host=document.querySelector(".cx-host"),view=host.canopyx.view; host.canopyx.destroy();
+    const source={enabled:true,page:async()=>({items:[{id:"leaf",label:"Leaf"}],total:1})};
+    const options={view,source,renderers:{name:(_node,element)=>{element.textContent=source.enabled?"Leaf":"Unavailable";return true;}}};
+    window.sourceReference=new WeakRef(source);
+    const api=window.retiredApi=CanopyX.createTreeGrid(host,options);
+    await api.ready; api.setFilter(()=>source.enabled); api.destroy();
+    return options.source===source;
+  });
+  expect(unchanged).toBe(true);
+  const profiler=await page.context().newCDPSession(page);
+  try {
+    await profiler.send("HeapProfiler.collectGarbage");
+    expect(await page.evaluate(()=>window.sourceReference.deref()===undefined)).toBe(true);
+    expect(await page.evaluate(()=>window.retiredApi.visibleRows())).toEqual([]);
+  } finally { await profiler.detach(); }
+});

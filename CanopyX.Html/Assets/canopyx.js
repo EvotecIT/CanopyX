@@ -4236,6 +4236,7 @@ return !this.destroyed && !current.signal.aborted;
 release();
 if (this.restoreController === current) {
 this.restoring = false;
+this.keyMap.forEach(w => this.rememberInactive(w));
 this.cacheDirty = true;
 this.scheduleRender();
 this.restoreController = null;
@@ -4593,6 +4594,12 @@ if (this.inlineRetained) this.inlineRetained.clear();
 this.rows = []; this.tops = [0]; this.total = 0;
 this.root.children = null; this.root.inlineCache = null; this.root.inlineOrder = null;
 this.focused = null; this.anchor = null; this.source = null; this.touchScroll = null;
+this.opts = {};
+for (const column of this.columns) column.render = null;
+this.filter = null; this.declaredFilter = null; this.pendingRestorationToggles = null;
+this.scrolledCell = null; this.focusHandoff = null;
+this.cancelResize = null; this.cancelSearch = null;
+this.disposeColumnChooser = null; this.disposeSearchFlyout = null;
 this.canvas.replaceChildren(); this.outline.replaceChildren();
 }
 });

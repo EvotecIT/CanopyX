@@ -87,6 +87,8 @@
         release();
         if (this.restoreController === current) {
           this.restoring = false;
+          // Restoration changes expansion directly; register its final collapsed branches, including rollback.
+          this.keyMap.forEach(w => this.rememberInactive(w));
           this.cacheDirty = true;
           this.scheduleRender();
           this.restoreController = null;
