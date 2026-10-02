@@ -97,6 +97,7 @@
 
     selectionChanged(w, notify = true) {
       this.selectionRevision = (this.selectionRevision || 0) + 1;
+      this.cacheDirty = true;
       const revision = this.selectionRevision;
       for (const [node, row] of this.rendered) {
         if (!node.status) setAttr(row, "aria-selected", this.selected.has(node) ? "true" : "false");

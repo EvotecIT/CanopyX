@@ -32,10 +32,8 @@
         for (const child of data.children || []) pendingData.push(child);
       }
       // Accepted replacement data retires counts; paging or ordering unchanged identities preserves their responses.
-      if (!ordering && this.countRevisions) {
-        const ids = new Set([...old.keys(), ...incoming]);
-        if (parent.key != null) ids.add(parent.key);
-        for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+      if (!ordering) {
+        for (const w of [parent, ...old.values()]) w.countRevision = (w.countRevision || 0) + 1;
       }
       const pending = [{ owner: parent, items, total, next, positions }];
       while (pending.length) {
@@ -90,14 +88,12 @@
       let removedSelection = null;
       for (const w of old.values()) {
         if (retained.has(w)) continue;
-        w._invalidated = true;
-        this.retirePage(w);
-        if (this.inlineRetained && this.inlineRetained.get(w.key) === w) this.inlineRetained.delete(w.key);
-        if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
-        if (this.selected.delete(w) && !removedSelection) removedSelection = w;
-        if (this.anchor === w) this.anchor = null;
+        const removed = this.retireWrapper(w);
+        if (!removedSelection) removedSelection = removed;
       }
       if (!ordering) this.applySort(parent, true);
+      for (const w of retained) this.rememberInactive(w);
+      this.rememberInactive(parent);
       this.trimInlineCache();
       if (parent !== this.root && !parent.inline) {
         if (total != null) parent.h.childCount = total;

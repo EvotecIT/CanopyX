@@ -45,14 +45,19 @@ $assets = @(
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
         Target = 'CanopyX.Html/Assets/canopyx.js'
+        Folding = $true
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Target = 'CanopyX.Html/Assets/canopyx.css'
     }
 )
 
 function Join-AssetSource {
     param([string] $SourcePath)
 
-    $parts = Get-ChildItem -Path $SourcePath -Filter '*.js' -File |
-        Sort-Object Name
+    $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
+        else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
 
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
@@ -114,8 +119,10 @@ foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
     $generated = Join-AssetSource -SourcePath $sourcePath
-    if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
-    $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
+    if ($asset.Folding) {
+        if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
+        $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
+    }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

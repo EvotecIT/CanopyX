@@ -18,6 +18,7 @@
         return;
       }
       w.expanded = want;
+      this.rememberInactive(w);
       const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
       try {
@@ -143,7 +144,11 @@
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          try {
+            if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          } finally {
+            if (!this.destroyed && !w._invalidated) { this.rememberInactive(w); this.scheduleRender(); }
+          }
         }
       })();
       w._pending = run;
@@ -162,6 +167,7 @@
       }
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
+      this.cacheDirty = true;
       this.ensureVisible(w);
       // Detail rows measured on the way can move the row out of view again.
       if (this.render()) {
@@ -250,6 +256,7 @@
     /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */
     setFilter(filter, options) {
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
+      this.cacheDirty = true;
       this.filterExpand = !!(options && options.autoExpand);
       this.keyMap.forEach((w) => { w.filterCollapsed = false; });
       this.relayout();

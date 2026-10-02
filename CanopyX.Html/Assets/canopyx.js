@@ -18,6 +18,7 @@ const SHARD_CACHE = 24;
 const ENTRY_CACHE = 32;
 const ENTRY_BATCH = 8;
 const PACK_CACHE = 6;
+const PACK_CACHE_BYTES = 2 * 1024 * 1024;
 const DATE_CACHE = 4096;
 const SEARCH_CANDIDATES = 5;
 const MAX_PROTOCOL_INTEGER = 2147483647;
@@ -178,6 +179,7 @@ format = new Intl.NumberFormat(lang || undefined, { maximumFractionDigits: 3 });
 } catch (e) {
 format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
 }
+if (numberFormats.size >= 16) numberFormats.delete(numberFormats.keys().next().value);
 numberFormats.set(key, format);
 }
 return format;
@@ -529,23 +531,32 @@ if (length === word.length) return parts(deeper);
 return [];
 }
 
-function recentCache(limit, loadDoc) {
+function recentCache(limit, loadDoc, maxBytes = Infinity, bytesOf = () => 0) {
 const cache = new Map();
+let bytes = 0;
 const get = (key) => {
-let pending = cache.get(key);
-if (pending) {
+let entry = cache.get(key);
+if (entry) {
 cache.delete(key);
 } else {
-pending = loadDoc(key);
-pending.catch(() => cache.get(key) === pending && cache.delete(key));
+entry = { pending: loadDoc(key), ready: false, bytes: 0 };
+entry.pending.then(doc => {
+if (cache.get(key) !== entry) return;
+entry.ready = true; entry.bytes = bytesOf(doc); bytes += entry.bytes;
+for (const [oldKey, old] of cache) {
+if (cache.size <= limit && bytes <= maxBytes) break;
+if (old.ready) { cache.delete(oldKey); bytes -= old.bytes; }
 }
-cache.set(key, pending);
-if (cache.size > limit) cache.delete(cache.keys().next().value);
-return pending;
+}, () => { if (cache.get(key) === entry) cache.delete(key); });
+}
+cache.set(key, entry);
+return entry.pending;
 };
-get.clear = () => cache.clear();
+get.clear = () => { cache.clear(); bytes = 0; };
 return get;
 }
+
+const packBytes = pages => pages.reduce((bytes, text) => bytes + (typeof text === "string" ? text.length * 2 : 0), 0);
 
 function checkShard(doc, key, count, entryCount) {
 checkDocument(doc, "searchShard");
@@ -664,9 +675,9 @@ function sidecarSearch(load, manifest, hints) {
 const index = async () => (await manifest()).search;
 const loadPack = recentCache(PACK_CACHE, async (number) => {
 const doc = checkDocument(await load("q/" + number), "pack");
-if (!Array.isArray(doc.pages)) throw badIndex("pack");
+if (!Array.isArray(doc.pages) || doc.pages.some(text => typeof text !== "string")) throw badIndex("pack");
 return doc.pages;
-});
+}, PACK_CACHE_BYTES, packBytes);
 const sortedKeys = new WeakMap();
 const packed = async (pack, slot) => {
 const text = (await loadPack(pack))[slot];
@@ -853,15 +864,11 @@ throw err;
 }));
 const loadPack = recentCache(PACK_CACHE, async (number) => {
 const doc = checkDocument(await load("p/" + number), "pack");
-if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
+if (!Array.isArray(doc.pages) || doc.pages.some(text => typeof text !== "string")) throw new Error("CanopyX: pack pages must be an array of strings.");
 return doc.pages;
-});
-let pinned = new Map();
-const pin = (key, promise) => {
-pinned.set(key, promise);
-promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
-return promise;
-};
+}, PACK_CACHE_BYTES, packBytes);
+const pinned = new Map();
+let releaseLoose;
 const packOf = async (ref) => {
 const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
 return packed && (await manifest()).packs !== undefined ? packed : null;
@@ -869,11 +876,11 @@ return packed && (await manifest()).packs !== undefined ? packed : null;
 const loadPage = async (ref) => {
 const packed = await packOf(ref);
 if (!packed) {
-const doc = pinned.get("file:" + ref);
-if (doc) pinned.delete("file:" + ref);
-return doc || load(ref);
+const entry = pinned.get("file:" + ref);
+return entry ? entry.pending : load(ref);
 }
-const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
+const entry = pinned.get("pack:" + packed[1]);
+const text = Number(packed[1]) < (await manifest()).packs ? (await (entry ? entry.pending : loadPack(packed[1])))[Number(packed[2])] : undefined;
 if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
 return JSON.parse(text);
 };
@@ -882,16 +889,40 @@ return {
 kind: "sidecar",
 canSearch: true,
 manifest: manifest,
-async prefetch(opens, finds) {
+async prefetch(opens, finds, request) {
+const held = new Set(), signal = request && request.signal;
+let live = true;
+const release = () => {
+if (!live) return;
+live = false;
+if (signal) signal.removeEventListener("abort", release);
+for (const entry of held) if (!--entry.users && pinned.get(entry.key) === entry) pinned.delete(entry.key);
+held.clear();
+};
+if (signal) {
+if (signal.aborted) { release(); return release; }
+signal.addEventListener("abort", release, { once: true });
+} else {
+if (releaseLoose) releaseLoose();
+releaseLoose = release;
+}
 const refs = new Set();
 opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
 finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
-pinned = new Map();
 await Promise.all(Array.from(refs, async (ref) => {
 const packed = await packOf(ref);
+if (!live) return;
 const key = packed ? "pack:" + packed[1] : "file:" + ref;
-if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+let entry = pinned.get(key);
+if (!entry) {
+entry = { key, users: 0, pending: packed ? loadPack(packed[1]) : load(ref) };
+pinned.set(key, entry);
+entry.pending.catch(() => { if (pinned.get(key) === entry) pinned.delete(key); });
+}
+if (!held.has(entry)) { held.add(entry); entry.users++; }
+await entry.pending;
 }).map((pending) => pending.catch(() => {})));
+return release;
 },
 async page(node, cursor) {
 const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
@@ -1022,6 +1053,8 @@ this.rowH = view.rowHeight || 28;
 this.pageSize = view.pageSize || 100;
 this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
 if (!validStructuralCount(this.retainedNodeLimit)) throw new Error("CanopyX: retainedNodeLimit must be a nonnegative 32-bit integer.");
+this.inactiveNodeLimit = options.inactiveNodeLimit === undefined ? 4096 : options.inactiveNodeLimit;
+if (!validStructuralCount(this.inactiveNodeLimit)) throw new Error("CanopyX: inactiveNodeLimit must be a nonnegative 32-bit integer.");
 this.multi = view.selection === "multiple";
 this.lang = document.documentElement.lang || undefined;
 this.labels = labelsFor(view.labels, options.labels);
@@ -1074,6 +1107,7 @@ this.ready = this.init();
 }
 
 async search(query, limit) {
+if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
 const navigation = navigationScope(this, this.dataLifetime.signal);
 try {
 const result = await navigation.wait(this.source.search(query, limit, this.sourceRequest(this.dataLifetime.signal)));
@@ -1110,6 +1144,7 @@ if (this.linkChanged && !this.linkChanged.aborted) await this.openDeepLink();
 if (!this.destroyed) {
 this.host.setAttribute("data-cx-ready", "true");
 this.emit("ready", {});
+this.scheduleRender();
 }
 }
 
@@ -1129,7 +1164,7 @@ return Promise.resolve();
 }
 
 expandable(w) {
-return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length)));
+return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length) || (w.inline && w.h.children.length)));
 }
 
 statusRow(parent, kind) {
@@ -1210,6 +1245,7 @@ w.next = first.next;
 w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
 for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
 this.applySort(w, false);
+this.rememberInactive(w);
 } else if (data.hasChildren) {
 w.total = typeof data.childCount === "number" ? data.childCount : null;
 w.autoExpand = !!data.expanded && initialExpansion;
@@ -1516,14 +1552,52 @@ size += nodes.length; groups.push({ w, nodes });
 }
 for (const group of groups) {
 if (size <= this.retainedNodeLimit) break;
-if (group.nodes.some(w => this.selected.has(w) || w.expanded || this.focused === w || this.anchor === w || w.loading || w.reloadController)) continue;
+if (group.nodes.some(w => this.cachePinned(w))) continue;
 group.w.parent.inlineCache.delete(group.w.key);
-for (const w of group.nodes) {
-w._invalidated = true; this.retirePage(w); retained.delete(w.key);
-if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
-if (this.countRevisions) this.countRevisions.set(w.key, (this.countRevisions.get(w.key) || 0) + 1);
-}
+for (const w of group.nodes) this.retireWrapper(w);
 size -= group.nodes.length;
+}
+}
+});
+Object.assign(TreeGrid.prototype, {
+cachePinned(w) {
+const focus = this.focused;
+return w.expanded || w.autoExpand || w.loading || w.reloadController || this.selected.has(w) ||
+w === (focus && focus.status ? focus.parent : focus) || w === this.anchor;
+},
+
+rememberInactive(w) {
+if (this.destroyed || w._invalidated) return;
+const cache = this.inactiveCache || (this.inactiveCache = new Set());
+cache.delete(w);
+if (w !== this.root && w.children && (w.children.length || w.inlineCache && w.inlineCache.size) && !w.expanded) cache.add(w);
+this.cacheDirty = true;
+},
+
+trimInactiveCache() {
+if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.layoutHolds || this.filter) return;
+this.cacheDirty = false;
+const cache = this.inactiveCache;
+if (!cache || !cache.size) return;
+const groups = [];
+let size = 0;
+for (const w of cache) {
+if (w._invalidated || !w.children || w.expanded) { cache.delete(w); continue; }
+}
+for (const w of cache) {
+let ancestor = w.parent;
+while (ancestor && !cache.has(ancestor)) ancestor = ancestor.parent;
+if (ancestor) continue;
+const nodes = Array.from(this.descendants(w).values());
+groups.push({ w, nodes }); size += nodes.length;
+}
+for (const { w, nodes } of groups) {
+if (size <= this.inactiveNodeLimit) break;
+if (w.loading || w.reloadController || nodes.some(node => this.cachePinned(node))) continue;
+this.invalidateChildren(w);
+cache.delete(w);
+for (const node of nodes) cache.delete(node);
+size -= nodes.length;
 }
 }
 });
@@ -1565,6 +1639,19 @@ this.toolbar.querySelectorAll("[data-cx-filter]").forEach(input => { input.check
 querySortHeader(id) {
 const query = this.pendingQuery || this.acceptedQuery, state = query.sort && query.sort.column === id ? query.sort.direction : null;
 this.sort(id, state === "asc" ? "desc" : state === "desc" ? null : "asc").catch(() => {});
+}
+});
+Object.assign(TreeGrid.prototype, {
+retireWrapper(w) {
+w._invalidated = true;
+this.retirePage(w);
+if (this.inlineRetained && this.inlineRetained.get(w.key) === w) this.inlineRetained.delete(w.key);
+if (this.inactiveCache) this.inactiveCache.delete(w);
+if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
+w.children = null; w.inlineCache = null; w.inlineOrder = null;
+const selected = this.selected.delete(w);
+if (this.anchor === w) this.anchor = null;
+return selected ? w : null;
 }
 });
 
@@ -1837,6 +1924,7 @@ this.canvas.appendChild(fragment);
 this.window = { first: first, last: last };
 this.keepDomOrder(first, last);
 if (held) this.restoreCell(held);
+this.trimInactiveCache();
 }
 });
 
@@ -2913,6 +3001,7 @@ if (want === open && (!want || w.children)) {
 return;
 }
 w.expanded = want;
+this.rememberInactive(w);
 const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
 w.filterCollapsed = !want && !!this.filter;
 try {
@@ -3031,7 +3120,11 @@ this.emit("load", info);
 if (this.opts.onLoad) this.opts.onLoad(w.h, info);
 }
 } finally {
+try {
 if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+} finally {
+if (!this.destroyed && !w._invalidated) { this.rememberInactive(w); this.scheduleRender(); }
+}
 }
 })();
 w._pending = run;
@@ -3050,6 +3143,7 @@ return;
 }
 this.focusRevision = (this.focusRevision || 0) + 1;
 this.focused = w;
+this.cacheDirty = true;
 this.ensureVisible(w);
 if (this.render()) {
 this.ensureVisible(w);
@@ -3131,6 +3225,7 @@ this.toggle(w);
 
 setFilter(filter, options) {
 this.filter = typeof filter === "function" ? { match: filter } : filter || null;
+this.cacheDirty = true;
 this.filterExpand = !!(options && options.autoExpand);
 this.keyMap.forEach((w) => { w.filterCollapsed = false; });
 this.relayout();
@@ -3201,15 +3296,17 @@ this.stateChanged();
 
 function navigationScope(grid, signal, dataBound = false) {
 const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
+const controller = new AbortController();
 let abort;
-const stopped = new Promise((resolve) => { abort = () => resolve(); });
+const stopped = new Promise((resolve) => { abort = () => { controller.abort(); resolve(); }; });
 signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
 const cancelled = () => signals.some((item) => item.aborted);
 if (cancelled()) abort();
 return {
 cancelled,
+signal: controller.signal,
 wait: (pending) => Promise.race([pending, stopped]),
-dispose: () => signals.forEach((item) => item.removeEventListener("abort", abort))
+dispose: () => { signals.forEach((item) => item.removeEventListener("abort", abort)); controller.abort(); }
 };
 }
 
@@ -3245,7 +3342,7 @@ const cancelled = navigation.cancelled;
 if (cancelled()) return null;
 await navigation.wait(this.rootsReady);
 if (cancelled()) return null;
-await navigation.wait(this.prefetchPath(ids, !!o.expandLast));
+await navigation.wait(this.prefetchPath(ids, !!o.expandLast, navigation.signal));
 if (cancelled()) return null;
 const release = this.holdLayout();
 let w;
@@ -3275,7 +3372,7 @@ this.ensureVisible(w);
 return w ? w.h : null;
 },
 
-async prefetchPath(ids, openLast) {
+async prefetchPath(ids, openLast, signal) {
 if (typeof this.source.prefetch !== "function") return;
 const opens = [];
 const finds = [];
@@ -3289,7 +3386,7 @@ parent = w && w.parent === parent && !w._cached ? w : null;
 if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
 if (!opens.length && !finds.length) return;
 try {
-await this.source.prefetch(opens, finds, this.sourceRequest());
+await this.source.prefetch(opens, finds, this.sourceRequest(signal));
 } catch (err) {
 }
 },
@@ -3430,6 +3527,7 @@ return this.commitSelection(next, target, { reason: "all", anchor: target, revis
 
 selectionChanged(w, notify = true) {
 this.selectionRevision = (this.selectionRevision || 0) + 1;
+this.cacheDirty = true;
 const revision = this.selectionRevision;
 for (const [node, row] of this.rendered) {
 if (!node.status) setAttr(row, "aria-selected", this.selected.has(node) ? "true" : "false");
@@ -3480,10 +3578,8 @@ while (pendingData.length) {
 const data = pendingData.pop(); incoming.add(data.id);
 for (const child of data.children || []) pendingData.push(child);
 }
-if (!ordering && this.countRevisions) {
-const ids = new Set([...old.keys(), ...incoming]);
-if (parent.key != null) ids.add(parent.key);
-for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+if (!ordering) {
+for (const w of [parent, ...old.values()]) w.countRevision = (w.countRevision || 0) + 1;
 }
 const pending = [{ owner: parent, items, total, next, positions }];
 while (pending.length) {
@@ -3537,14 +3633,12 @@ if (owner !== this.root && !children.length && !entry.next) owner.expanded = fal
 let removedSelection = null;
 for (const w of old.values()) {
 if (retained.has(w)) continue;
-w._invalidated = true;
-this.retirePage(w);
-if (this.inlineRetained && this.inlineRetained.get(w.key) === w) this.inlineRetained.delete(w.key);
-if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
-if (this.selected.delete(w) && !removedSelection) removedSelection = w;
-if (this.anchor === w) this.anchor = null;
+const removed = this.retireWrapper(w);
+if (!removedSelection) removedSelection = removed;
 }
 if (!ordering) this.applySort(parent, true);
+for (const w of retained) this.rememberInactive(w);
+this.rememberInactive(parent);
 this.trimInlineCache();
 if (parent !== this.root && !parent.inline) {
 if (total != null) parent.h.childCount = total;
@@ -3667,6 +3761,7 @@ this.dataLifetime.abort(); this.dataLifetime = new AbortController();
 if (this.cancelSearch) this.cancelSearch();
 this.retirePage(this.root);
 for (const node of this.keyMap.values()) this.retirePage(node);
+if (this.inactiveCache) this.inactiveCache.clear();
 this.acceptedQuery = query; this.datasetRevision = revision;
 this.sortState = query.sort; this.activeFilters = new Set(query.filters);
 this.filter = null; this.declaredFilter = null;
@@ -4141,6 +4236,8 @@ return !this.destroyed && !current.signal.aborted;
 release();
 if (this.restoreController === current) {
 this.restoring = false;
+this.cacheDirty = true;
+this.scheduleRender();
 this.restoreController = null;
 if (fallback && !this.initializing) await this.expandInitial(this.root);
 if (!this.initializing) await this.flushPendingToggles();
@@ -4261,16 +4358,13 @@ let removedSelection = null;
 while (pending.length) {
 const child = pending.pop();
 for (const descendant of this.modelChildren(child)) pending.push(descendant);
-child._invalidated = true;
-if (child.pageController) child.pageController.abort();
-if (child.reloadController) child.reloadController.abort();
-if (this.inlineRetained) this.inlineRetained.delete(child.key);
-if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
-if (this.selected.delete(child) && !removedSelection) removedSelection = child;
-if (this.anchor === child) this.anchor = null;
+const removed = this.retireWrapper(child);
+if (!removedSelection) removedSelection = removed;
 }
 w.children = null;
 w.inlineCache = null;
+w.inlineOrder = null;
+if (this.inactiveCache) this.inactiveCache.delete(w);
 w.next = null;
 w.error = null;
 w.expanded = false;
@@ -4289,9 +4383,10 @@ if (w && w.inline && item.childCount != null && item.childCount !== w.h.children
 throw new Error("CanopyX: inline childCount must equal children length.");
 }
 });
-if (!fromRefresh && this.countRevisions) {
+if (!fromRefresh) {
 for (const id of new Set(doc.items.map((item) => item.id))) {
-this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+const w = this.keyMap.get(id);
+if (w) w.countRevision = (w.countRevision || 0) + 1;
 }
 }
 doc.items.forEach((item) => {
@@ -4336,10 +4431,12 @@ async refreshCounts(ids) {
 if (this.destroyed || !this.source.counts) {
 return null;
 }
-const wanted = ids || this.rows.filter((w) => !w.status).map((w) => w.key);
-const revisions = this.countRevisions || (this.countRevisions = new Map());
-const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
-mine.forEach((revision, id) => revisions.set(id, revision));
+const wanted = Array.from(new Set(ids || this.rows.filter((w) => !w.status).map((w) => w.key)));
+const mine = new Map();
+for (const id of wanted) {
+const w = this.keyMap.get(id);
+if (w) { w.countRevision = (w.countRevision || 0) + 1; mine.set(id, { w, revision: w.countRevision }); }
+}
 const navigation = navigationScope(this, this.dataLifetime.signal);
 let doc;
 try { doc = await navigation.wait(this.source.counts(wanted, this.sourceRequest(this.dataLifetime.signal))); }
@@ -4347,35 +4444,11 @@ finally { navigation.dispose(); }
 if (navigation.cancelled()) return null;
 if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
 checkDocument(doc, "counts");
-this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
+this.applyCounts(Object.assign({}, doc, { items: doc.items.filter(item => {
+const captured = mine.get(item.id);
+return captured && this.keyMap.get(item.id) === captured.w && captured.w.countRevision === captured.revision;
+}) }), true);
 return doc;
-},
-
-destroy() {
-if (this.destroyed) return;
-this.destroyed = true;
-this.lifetime.abort();
-this.dataLifetime.abort();
-if (this.queryController) this.queryController.abort();
-if (this.restoreController) this.restoreController.abort();
-if (this.cancelResize) this.cancelResize();
-clearTimeout(this.saveTimer);
-clearTimeout(this.layoutTimer);
-if (this.cancelSearch) this.cancelSearch();
-if (this.disposeColumnChooser) this.disposeColumnChooser();
-if (this.disposeSearchFlyout) this.disposeSearchFlyout();
-cancelAnimationFrame(this.rafId);
-this.resizeObserver.disconnect();
-if (this.detailObserver) this.detailObserver.disconnect();
-this.grid.removeEventListener("scroll", this.onScroll);
-global.removeEventListener("beforeprint", this.onPrint);
-global.removeEventListener("hashchange", this.onHash);
-global.removeEventListener("popstate", this.onHash);
-if (this.linkOpening) this.linkOpening.abort();
-[this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
-this.host.classList.remove("cx-pin-tree");
-this.host.removeAttribute("data-cx-ready");
-this.host.removeAttribute("data-canopyx-mounted");
 }
 });
 
@@ -4481,6 +4554,46 @@ global.location.hash = hash;
 }
 this.link = this.currentLink();
 this.locationEvent = null;
+}
+});
+Object.assign(TreeGrid.prototype, {
+destroy() {
+if (this.destroyed) return;
+this.destroyed = true;
+this.lifetime.abort();
+this.dataLifetime.abort();
+if (this.queryController) this.queryController.abort();
+if (this.restoreController) this.restoreController.abort();
+if (this.cancelResize) this.cancelResize();
+clearTimeout(this.saveTimer);
+clearTimeout(this.layoutTimer);
+if (this.cancelSearch) this.cancelSearch();
+if (this.disposeColumnChooser) this.disposeColumnChooser();
+if (this.disposeSearchFlyout) this.disposeSearchFlyout();
+cancelAnimationFrame(this.rafId);
+this.resizeObserver.disconnect();
+if (this.detailObserver) this.detailObserver.disconnect();
+this.grid.removeEventListener("scroll", this.onScroll);
+this.grid.removeEventListener("wheel", this.onScaledWheel);
+this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
+this.grid.removeEventListener("touchmove", this.onScaledTouchMove);
+this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
+this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
+global.removeEventListener("beforeprint", this.onPrint);
+global.removeEventListener("hashchange", this.onHash);
+global.removeEventListener("popstate", this.onHash);
+if (this.linkOpening) this.linkOpening.abort();
+[this.toolbar, this.grid, this.live, this.outline].forEach(element => element.remove());
+this.host.classList.remove("cx-pin-tree");
+this.host.removeAttribute("data-cx-ready");
+this.host.removeAttribute("data-canopyx-mounted");
+this.keyMap.clear(); this.selected.clear(); this.rendered.clear(); this.pool.length = 0;
+if (this.inactiveCache) this.inactiveCache.clear();
+if (this.inlineRetained) this.inlineRetained.clear();
+this.rows = []; this.tops = [0]; this.total = 0;
+this.root.children = null; this.root.inlineCache = null; this.root.inlineOrder = null;
+this.focused = null; this.anchor = null; this.source = null; this.touchScroll = null;
+this.canvas.replaceChildren(); this.outline.replaceChildren();
 }
 });
 

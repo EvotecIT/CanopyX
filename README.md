@@ -164,7 +164,7 @@ const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwne
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
 
-Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
+Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. Destruction releases loaded rows, selection, caches, and the row pool. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 
 Registered fragment options persist for remounting until their disposer is called or `CanopyX.unconfigure(viewId)` removes them. Removing a registration leaves a mounted grid intact, and an older disposer cannot remove a newer registration.
 
@@ -175,6 +175,8 @@ Selection is independent of focus. `grid.setSelection(["projects", "archive"])` 
 Hosts can pass `isSelectable(node)` to keep rows focusable while preventing selection additions, and `beforeSelect(node, nodes, { previous, reason })` to synchronously veto a whole proposal by returning false. The cancelable `canopyx:beforeselect` event offers the same veto. Reasons are `row`, `range`, `api`, `clear`, or `all`. Selection methods return whether their proposal was accepted. A successful clear emits `canopyx:select` and calls `onSelect` with `null` and an empty array; hosts that handle clearing should account for that nullable node. Removal of data reconciles selection directly and cannot be vetoed.
 
 Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
+
+Collapsed branches retain up to 4,096 loaded descendants by default (`inactiveNodeLimit`); unpinned older data is evicted and loaded again when needed. Selection, focus, expansion, state restoration, active requests, and local filters keep their required data. `retainedNodeLimit` separately bounds identities kept outside an inline page after sorting. Both are nonnegative integer host options; pins and host input arrays can exceed these retention limits. The [architecture reference](docs/architecture.md#rendering-model) describes their ownership and the sidecar pack limits.
 
 ## Documentation
 

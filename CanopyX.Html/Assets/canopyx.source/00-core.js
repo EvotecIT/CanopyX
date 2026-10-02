@@ -19,6 +19,7 @@
   const ENTRY_CACHE = 32;
   const ENTRY_BATCH = 8;
   const PACK_CACHE = 6;
+  const PACK_CACHE_BYTES = 2 * 1024 * 1024;
   const DATE_CACHE = 4096;
   const SEARCH_CANDIDATES = 5;
   const MAX_PROTOCOL_INTEGER = 2147483647;
@@ -192,6 +193,7 @@
       } catch (e) {
         format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
       }
+      if (numberFormats.size >= 16) numberFormats.delete(numberFormats.keys().next().value);
       numberFormats.set(key, format);
     }
     return format;

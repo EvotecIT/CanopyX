@@ -40,6 +40,7 @@
         if (this.cancelSearch) this.cancelSearch();
         this.retirePage(this.root);
         for (const node of this.keyMap.values()) this.retirePage(node);
+        if (this.inactiveCache) this.inactiveCache.clear();
         this.acceptedQuery = query; this.datasetRevision = revision;
         this.sortState = query.sort; this.activeFilters = new Set(query.filters);
         this.filter = null; this.declaredFilter = null;

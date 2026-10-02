@@ -85,3 +85,44 @@ for (const [name, entry] of [["a number", 42], ["an empty string", ""], ["an unp
     expect(message).toContain("search entry 1 does not match the manifest or is malformed");
   });
 }
+
+test("overlapping prefetch leases retain shared packs until their last navigation releases them", async ({ page }) => {
+  const docs=bundle(); docs.manifest.packs=12;
+  for(let n=3;n<12;n++) docs["p/"+n]=pack(JSON.stringify({protocol:"canopyx/2",type:"page",
+    parent:"extra"+n,offset:0,total:1,next:null,items:[{id:"extra"+n+"/child",label:"Extra"}]}));
+  const server=await serve(page,docs);
+  await page.evaluate(async data=>{
+    window.cacheSource=CanopyX.sources.sidecar(data);
+    await window.cacheSource.search("needle",20);
+    window.leaseA=new AbortController();window.leaseB=new AbortController();
+    await window.cacheSource.prefetch(["a"],["a/2"],{signal:window.leaseA.signal});
+    await window.cacheSource.prefetch(["a"],["a/2"],{signal:window.leaseB.signal});
+  },view);
+  const churn=()=>page.evaluate(async()=>{
+    for(let n=3;n<10;n++) await window.cacheSource.page({id:"extra"+n,ref:"p/"+n+"#0"});
+  });
+  const readA=()=>page.evaluate(()=>window.cacheSource.page({id:"a",ref:"p/0#0"}));
+  await churn(); await readA();
+  expect(server.requested.filter(ref=>ref==="p/0")).toHaveLength(1);
+  await page.evaluate(()=>window.leaseA.abort());await churn();await readA();
+  expect(server.requested.filter(ref=>ref==="p/0")).toHaveLength(1);
+  await page.evaluate(()=>window.leaseB.abort());await churn();await readA();
+  expect(server.requested.filter(ref=>ref==="p/0")).toHaveLength(2);
+});
+
+for(const cancelled of [false,true]) test(`prefetch receives a signal retired on navigation ${cancelled?"cancellation":"completion"}`,async({page})=>{
+  const server=await serve(page,bundle());server.release();
+  const result=await page.evaluate(async cancelled=>{
+    const host=document.querySelector(".cx-host"),data=host.canopyx.view;host.canopyx.destroy();
+    const source=CanopyX.sources.sidecar(data);let signal;
+    const controller=new AbortController();
+    const api=CanopyX.createTreeGrid(host,{view:data,source:{...source,prefetch:(_opens,_finds,request)=>{
+      signal=request.signal;
+      if(cancelled){controller.abort();return new Promise(()=>{});}
+    }}});
+    await api.ready;
+    const node=await api.expandPath(["a","a/0"],{signal:controller.signal});
+    return {id:node?.id||null,aborted:signal.aborted};
+  },cancelled);
+  expect(result).toEqual({id:cancelled?null:"a/0",aborted:true});
+});

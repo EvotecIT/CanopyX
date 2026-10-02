@@ -50,6 +50,7 @@
           w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
+          this.rememberInactive(w);
         } else if (data.hasChildren) {
           w.total = typeof data.childCount === "number" ? data.childCount : null;
           w.autoExpand = !!data.expanded && initialExpansion;

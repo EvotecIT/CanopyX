@@ -6,15 +6,17 @@
   /** Races each navigation await against cancellation without cancelling a load another caller may own. */
   function navigationScope(grid, signal, dataBound = false) {
     const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
+    const controller = new AbortController();
     let abort;
-    const stopped = new Promise((resolve) => { abort = () => resolve(); });
+    const stopped = new Promise((resolve) => { abort = () => { controller.abort(); resolve(); }; });
     signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
     const cancelled = () => signals.some((item) => item.aborted);
     if (cancelled()) abort();
     return {
       cancelled,
+      signal: controller.signal,
       wait: (pending) => Promise.race([pending, stopped]),
-      dispose: () => signals.forEach((item) => item.removeEventListener("abort", abort))
+      dispose: () => { signals.forEach((item) => item.removeEventListener("abort", abort)); controller.abort(); }
     };
   }
 
@@ -58,7 +60,7 @@
       await navigation.wait(this.rootsReady);
       if (cancelled()) return null;
       // A newer navigation does not wait for the files an older one asked for.
-      await navigation.wait(this.prefetchPath(ids, !!o.expandLast));
+      await navigation.wait(this.prefetchPath(ids, !!o.expandLast, navigation.signal));
       if (cancelled()) return null;
       const release = this.holdLayout();
       let w;
@@ -95,7 +97,7 @@
      * Lets the source load at once the pages a path will read, instead of one level after another: the children of
      * the nodes that open and are not loaded yet, and the lists that do not hold their node on a loaded page yet.
      */
-    async prefetchPath(ids, openLast) {
+    async prefetchPath(ids, openLast, signal) {
       if (typeof this.source.prefetch !== "function") return;
       const opens = [];
       const finds = [];
@@ -109,7 +111,7 @@
       if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
       if (!opens.length && !finds.length) return;
       try {
-        await this.source.prefetch(opens, finds, this.sourceRequest());
+        await this.source.prefetch(opens, finds, this.sourceRequest(signal));
       } catch (err) {
         // Prefetching only saves time; opening the path reads and reports what failed.
       }

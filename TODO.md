@@ -26,7 +26,9 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
 - [x] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
 - [ ] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
-- [ ] Bounded client caches, large logical-height scrolling, and measured normal/4x rendering within the existing budgets.
+- [x] Bounded inactive subtree and sidecar pack retention, with navigation-owned prefetch pins.
+- [x] Large logical-height scrolling with reachable rows and preserved logical anchors.
+- [ ] Measured normal/4x rendering within the existing budgets.
 - [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
 - [ ] Focused Firefox/WebKit coverage, manual reader qualification, JavaScript distribution/types, and representative HtmlForgeX migration proof.
 
@@ -131,7 +133,7 @@ Left open by that work:
 - On the packed catalog at 4x, "identity gateway" (a service far down a region of 1,000) stays at about 210 ms on a busy machine, over the 200 ms margin and under the 250 ms budget. A trace (Edge, 4x): the search is 70 to 80 ms (19 index files; inserting their script elements alone costs about 17 ms), attaching the region's 1,000 services from one 229 KB pack about 25 ms, the forced layout of the rows in view about 20 ms, and the paint and commit 30 to 40 ms. What is left is the search (it ranks five times `maxResults` candidates and reads the entry files of all of them) and the size of the list a hit sits in; the path itself already loads in one round and renders once.
 - The pages of a list larger than the file budget, and the top-level pages, that lie between a list's first page and the one that holds a hit still load one after another.
 - The streamed writer holds the search entries of a top-level node's subtree until that node is finished, because the location fields of an entry are known only once the lists on its path are paged: for a tree with one top-level node, the whole entry table (about the size of the entry files, twice in memory as UTF-16). Keeping the pending entries as UTF-8 or spilling them to a file would bound it, if a consumer's tree needs that.
-- While a hit's files are prefetched nothing shows, also past 250 ms; the files stay pinned in the sidecar source until the next path opens.
+- While a hit's files are prefetched nothing shows, also past 250 ms. Prefetched files are released when their navigation completes or is cancelled.
 - Scroll benchmark numbers for renderers and time zones on a quiet machine; the runs recorded in PR #10 were taken while other builds ran and differ by less than their noise.
 
 Tree grid follow-ups without a milestone yet, each with the consumer that will pull it in:

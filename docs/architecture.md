@@ -78,7 +78,7 @@ Compared with the outline before themes: the table now paints its surface (white
 
 ## Browser Runtime
 
-The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out whole-line comments and trims indentation while preserving line boundaries. The parts remain documented, and the shipped file stays within its size budget. The first part opens a single closure and the last part closes it, so parts share private helpers without globals.
+The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out whole-line comments and trims indentation while preserving line boundaries. The same assembly writes `canopyx.css` from the documented stylesheet in that source folder. The sources retain their comments, and both assets keep their opening header. The first JavaScript part opens a single closure and the last part closes it, so parts share private helpers without globals.
 
 | Part | Responsibility |
 | --- | --- |
@@ -91,6 +91,8 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `31-wrapping.js` | Iterative node construction and initial expansion |
 | `32-layout.js` | Iterative filtering, visible-row layout, and per-level sorting |
 | `34-inline-order.js` | Complete inline sibling ordering, position indexes, and retained-identity limits |
+| `35-inactive-cache.js` | Recent-use retention and pinning of inactive collapsed subtrees |
+| `36-node-retirement.js` | Permanent node and request retirement shared by reload and eviction |
 | `40-render.js` | DOM scaffold, header, windowed rendering, row pool |
 | `42-dom-order.js` | DOM order of virtual rows |
 | `45-cells.js` | Row and cell painting, badges, tones, icons |
@@ -103,8 +105,9 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `73-reload.js` | Transactional list reloads, identity reconciliation, request retirement, and scroll anchors |
 | `80-toolbar.js` | Built-in search box and filter switches |
 | `83-view-state.js` | Versioned view snapshots, validation, presentation, and restoration position |
-| `85-api.js` | Remembered state, outline and visible rows, counts, teardown |
+| `85-api.js` | Remembered state, outline and visible rows, counts |
 | `86-links.js` | Deep links in the default scheme or the host's own |
+| `88-lifetime.js` | Grid teardown and release of owned loaded data |
 | `90-bootstrap.js` | Auto-mount from JSON configuration, `window.CanopyX`, closure end |
 
 `window.CanopyX` exposes `createTreeGrid(element, options)`, `configure(viewId, options)`, `mount(root)`, and the data source factories, so JavaScript hosts can build views without the C# side.
@@ -135,6 +138,9 @@ Selection proposals share one owner across clicks, keyboard ranges, path navigat
 - Loaded nodes keep their children. The visible rows are a flat array rebuilt on each structure change (expand, collapse, page loaded, sort, filter); the cost is proportional to the visible rows, not to the whole tree.
 - An inline list keeps its host array in its original order and sorts a `Uint32Array` of positions, using four bytes per sibling for the ordered index. Paging reads that complete order, so a later page does not insert a sibling that belongs before the first page. Equal keys retain the host's original order. Clearing sort restores the original page order.
 - Already loaded inline identities outside a reordered prefix are retained separately from attached rows, so selection and expansion survive. `retainedNodeLimit` (JavaScript host option, nonnegative 32-bit integer, default 1,024) limits unpinned retained subtrees across the grid. Selection, expansion, focus, selection anchors, and active requests pin their subtrees; those pins can exceed the limit. This limit does not bound the host's input arrays, active loaded rows, or lazy subtrees. Navigation pages through the ordered prefix before revealing a retained node. Reload validates and reconciles retained identities too.
+- `inactiveNodeLimit` (JavaScript host option, nonnegative 32-bit integer, default 4,096) limits loaded descendants of collapsed branches in recent-use order. Eviction runs after rendering, reloads lazy data when the branch opens again, and rematerializes inline children from the unchanged host array. Selection, focus, anchors, remembered expansion, initial/restored state, active loads, and reloads retain the data they need. An active local filter also retains loaded matching data. Pins, active rows, and host input arrays can exceed the retention limit; it is not a total-heap cap.
+- Children and search pack caches each retain up to six settled packs and 2 MiB of their UTF-16 page text. In-flight loads remain shared; oversized packs still answer their active requests. Parsed search shards and entry readers retain up to 24 and 32 documents respectively. Every navigation releases its prefetch pins on completion or cancellation. A separately owned sidecar source accepts `prefetch(opens, finds, { signal })` and returns a release function; without a signal, a new manual prefetch releases the preceding manual lease. These limits bound retained documents and text, rather than measuring browser heap allocation.
+- Count refreshes capture loaded node identity and its revision. Responses cannot overwrite a node loaded after the request or a replacement rematerialized after eviction. Destroying a grid releases its loaded rows, selection, model caches, source, and row pool; a retained API still exposes its original view metadata.
 - The browser folding table uses derived single-pair and consecutive-range records. The C# Unicode table remains canonical; asset tests expand the browser records back to those bytes, and a browser test compares all 65,536 UTF-16 code units. The representation changes neither protocol tokens nor search ranking.
 - Rows have a fixed height, so an offset table gives every row's top position and a binary search finds the first row in the viewport. A detail row either spans a declared number of row slots or, without a declared height, is as tall as its content: it enters the offset table with an estimate and is measured when it is rendered, and again when a `ResizeObserver` reports that its content or the grid's width changed. When a row above the viewport turns out taller or shorter than its estimate, the scroll position moves by the difference, so the rows in view stay where they are.
 - Logical heights above 8,000,000 CSS pixels use a bounded native scrollbar. The scrollbar maps to the complete loaded range; rows keep their real heights and are positioned relative to the logical viewport. Keyboard navigation and saved anchors use logical offsets. Wheel and single-touch movement inside the scaled view keep CSS-pixel distance, while native scrollbar jumps cover the whole range. Ordinary views retain native scrolling. This bounds DOM geometry, not the host's input arrays or the loaded row model.

@@ -29,6 +29,32 @@ const roots = pageOf(null, [
   { id: "file", label: "Own file", hasChildren: true, ref: "c/own#1" }
 ]);
 
+test("a pack beyond the retained text budget still loads and is released between reads",async({page})=>{
+  const childPage=pageOf("large",[{id:"large/child",label:"Child",data:{payload:"x".repeat(1100000)}}]);
+  const requested=await open(page,{
+    "/data/manifest.js":doc("manifest",{protocol:"canopyx/2",type:"manifest",view:"packs",root:"r/0",packs:1}),
+    "/data/r/0.js":doc("r/0",pageOf(null,[])),
+    "/data/p/0.js":doc("p/0",{protocol:"canopyx/2",type:"pack",pages:[JSON.stringify(childPage)]})
+  });
+  const result=await page.evaluate(async data=>{
+    const source=CanopyX.sources.sidecar(data),node={id:"large",ref:"p/0#0"};
+    const first=await source.page(node),second=await source.page(node);
+    return [first.items[0].label,second.items[0].data.payload.length];
+  },view);
+  expect(result).toEqual(["Child",1100000]);
+  expect(requested.filter(ref=>ref==="/data/p/0.js")).toHaveLength(2);
+});
+
+test("pack pages reject unmeasured objects even when the requested slot contains valid text",async({page})=>{
+  await open(page,{
+    "/data/manifest.js":doc("manifest",{protocol:"canopyx/2",type:"manifest",view:"packs",root:"r/0",packs:1}),
+    "/data/r/0.js":doc("r/0",pageOf(null,[])),
+    "/data/p/0.js":doc("p/0",{protocol:"canopyx/2",type:"pack",pages:[JSON.stringify(pageOf("safe",[])),{unexpected:"object"}]})
+  });
+  await expect(page.evaluate(data=>CanopyX.sources.sidecar(data).page({id:"safe",ref:"p/0#0"}),view))
+    .rejects.toThrow("pack pages must be an array of strings");
+});
+
 test("packed pages load from one pack file, as String.raw templates or plain strings", async ({ page }) => {
   // What the C# writer emits: the page's JSON text in a template, with the backtick and ${ escaped inside it.
   const raw = "String.raw`" + JSON.stringify(pageOf("raw", [{ id: "raw/a", label: "tick ` dollar ${x} slash \\ quote \" é" }]))

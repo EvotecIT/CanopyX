@@ -293,5 +293,6 @@
       // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
       if (held) this.restoreCell(held);
+      this.trimInactiveCache();
     }
   });

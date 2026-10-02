@@ -61,13 +61,9 @@
       }
       for (const group of groups) {
         if (size <= this.retainedNodeLimit) break;
-        if (group.nodes.some(w => this.selected.has(w) || w.expanded || this.focused === w || this.anchor === w || w.loading || w.reloadController)) continue;
+        if (group.nodes.some(w => this.cachePinned(w))) continue;
         group.w.parent.inlineCache.delete(group.w.key);
-        for (const w of group.nodes) {
-          w._invalidated = true; this.retirePage(w); retained.delete(w.key);
-          if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
-          if (this.countRevisions) this.countRevisions.set(w.key, (this.countRevisions.get(w.key) || 0) + 1);
-        }
+        for (const w of group.nodes) this.retireWrapper(w);
         size -= group.nodes.length;
       }
     }

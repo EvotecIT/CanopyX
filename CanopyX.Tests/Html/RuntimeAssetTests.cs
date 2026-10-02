@@ -40,6 +40,12 @@ public sealed class RuntimeAssetTests {
     }
 
     [Fact]
+    public void Style_MatchesItsSource() {
+        var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "canopyx.css"));
+        Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.Style));
+    }
+
+    [Fact]
     public void Assets_StayWithinTheCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 

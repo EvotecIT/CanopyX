@@ -24,6 +24,8 @@
       this.pageSize = view.pageSize || 100;
       this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
       if (!validStructuralCount(this.retainedNodeLimit)) throw new Error("CanopyX: retainedNodeLimit must be a nonnegative 32-bit integer.");
+      this.inactiveNodeLimit = options.inactiveNodeLimit === undefined ? 4096 : options.inactiveNodeLimit;
+      if (!validStructuralCount(this.inactiveNodeLimit)) throw new Error("CanopyX: inactiveNodeLimit must be a nonnegative 32-bit integer.");
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
       // Every text the grid writes itself: English, then the view's translations, then the host's.
@@ -80,6 +82,7 @@
     }
 
     async search(query, limit) {
+      if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       const navigation = navigationScope(this, this.dataLifetime.signal);
       try {
         const result = await navigation.wait(this.source.search(query, limit, this.sourceRequest(this.dataLifetime.signal)));
@@ -120,6 +123,7 @@
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
         this.emit("ready", {});
+        this.scheduleRender();
       }
     }
 
@@ -140,7 +144,7 @@
     }
 
     expandable(w) {
-      return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length)));
+      return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length) || (w.inline && w.h.children.length)));
     }
 
     statusRow(parent, kind) {

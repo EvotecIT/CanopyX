@@ -92,16 +92,12 @@
     // The pages of a subtree sit next to each other, so the last few packs stay loaded.
     const loadPack = recentCache(PACK_CACHE, async (number) => {
       const doc = checkDocument(await load("p/" + number), "pack");
-      if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
+      if (!Array.isArray(doc.pages) || doc.pages.some(text => typeof text !== "string")) throw new Error("CanopyX: pack pages must be an array of strings.");
       return doc.pages;
-    });
-    // Files a path prefetched, held until the next prefetch so the recent-pack cache cannot drop them before use.
-    let pinned = new Map();
-    const pin = (key, promise) => {
-      pinned.set(key, promise);
-      promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
-      return promise;
-    };
+    }, PACK_CACHE_BYTES, packBytes);
+    // Independent navigation leases retain prefetched files until their owning path settles.
+    const pinned = new Map();
+    let releaseLoose;
     const packOf = async (ref) => {
       const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
       return packed && (await manifest()).packs !== undefined ? packed : null;
@@ -110,11 +106,11 @@
       const packed = await packOf(ref);
       if (!packed) {
         // A prefetched file of its own holds one page document, which is used once.
-        const doc = pinned.get("file:" + ref);
-        if (doc) pinned.delete("file:" + ref);
-        return doc || load(ref);
+        const entry = pinned.get("file:" + ref);
+        return entry ? entry.pending : load(ref);
       }
-      const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
+      const entry = pinned.get("pack:" + packed[1]);
+      const text = Number(packed[1]) < (await manifest()).packs ? (await (entry ? entry.pending : loadPack(packed[1])))[Number(packed[2])] : undefined;
       if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
       return JSON.parse(text);
     };
@@ -129,16 +125,40 @@
        * holds each node in finds, as far as the last search told where they are. Never rejects; what fails here fails
        * again, and is reported, when the path reads it.
        */
-      async prefetch(opens, finds) {
+      async prefetch(opens, finds, request) {
+        const held = new Set(), signal = request && request.signal;
+        let live = true;
+        const release = () => {
+          if (!live) return;
+          live = false;
+          if (signal) signal.removeEventListener("abort", release);
+          for (const entry of held) if (!--entry.users && pinned.get(entry.key) === entry) pinned.delete(entry.key);
+          held.clear();
+        };
+        if (signal) {
+          if (signal.aborted) { release(); return release; }
+          signal.addEventListener("abort", release, { once: true });
+        } else {
+          if (releaseLoose) releaseLoose();
+          releaseLoose = release;
+        }
         const refs = new Set();
         opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
         finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
-        pinned = new Map();
         await Promise.all(Array.from(refs, async (ref) => {
           const packed = await packOf(ref);
+          if (!live) return;
           const key = packed ? "pack:" + packed[1] : "file:" + ref;
-          if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+          let entry = pinned.get(key);
+          if (!entry) {
+            entry = { key, users: 0, pending: packed ? loadPack(packed[1]) : load(ref) };
+            pinned.set(key, entry);
+            entry.pending.catch(() => { if (pinned.get(key) === entry) pinned.delete(key); });
+          }
+          if (!held.has(entry)) { held.add(entry); entry.users++; }
+          await entry.pending;
         }).map((pending) => pending.catch(() => {})));
+        return release;
       },
       async page(node, cursor) {
         const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
