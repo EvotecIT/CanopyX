@@ -141,8 +141,17 @@
     applySort(parent, deep) {
       const pending = [parent];
       while (pending.length) {
-        const children = pending.pop().children;
+        const owner = pending.pop();
+        let children = owner.children;
         if (!children) continue;
+        if (owner.inline) {
+          const first = this.inlinePage(owner, null, children.length || this.pageSize);
+          if (first.items.some((node, index) => !children[index] || children[index].key !== node.id) || first.items.length !== children.length) {
+            this.retirePage(owner);
+            this.reconcileList(owner, first.items, first.total, first.next, first.positions, true);
+            children = owner.children;
+          }
+        }
         const state = this.sortState;
         const column = state && this.columns.find((c) => c.id === state.column);
         if (column) {
@@ -162,8 +171,10 @@
           children.sort((a, b) => a.idx - b.idx);
         }
         if (deep) {
-          for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
+          const all = this.modelChildren(owner);
+          for (let i = all.length - 1; i >= 0; i--) pending.push(all[i]);
         }
       }
+      this.trimInlineCache();
     }
   });

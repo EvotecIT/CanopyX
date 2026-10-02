@@ -103,8 +103,8 @@
       ids.forEach((id, k) => {
         if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
         const w = this.keyMap.get(id);
-        if (!(w && parent && w.parent === parent)) finds.push(id);
-        parent = w && w.parent === parent ? w : null;
+        if (!(w && parent && w.parent === parent && !w._cached)) finds.push(id);
+        parent = w && w.parent === parent && !w._cached ? w : null;
       });
       if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
       if (!opens.length && !finds.length) return;
@@ -130,7 +130,7 @@
         if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return undefined;
         w = this.keyMap.get(ids[k]);
         const seenCursors = new Set();
-        while ((!w || w.parent !== parent) && parent.children && parent.next) {
+        while ((!w || w.parent !== parent || w._cached) && parent.children && parent.next) {
           const before = parent.children.length;
           const cursor = parent.next;
           if (seenCursors.has(cursor)) {
@@ -144,7 +144,7 @@
           }
           w = this.keyMap.get(ids[k]);
         }
-        if (!w || w.parent !== parent) {
+        if (!w || w.parent !== parent || w._cached) {
           throw new Error("CanopyX: id not found on the path: " + ids[k]);
         }
         parent = w;

@@ -18,6 +18,8 @@
       this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
       this.rowH = view.rowHeight || 28;
       this.pageSize = view.pageSize || 100;
+      this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
+      if (!validStructuralCount(this.retainedNodeLimit)) throw new Error("CanopyX: retainedNodeLimit must be a nonnegative 32-bit integer.");
       this.multi = view.selection === "multiple";
       this.lang = document.documentElement.lang || undefined;
       // Every text the grid writes itself: English, then the view's translations, then the host's.
@@ -116,9 +118,9 @@
         return this.loadPage(this.root, null);
       }
       validateNodes(this.root.inlineItems, this.keyMap, true);
-      const first = slicePage(this.root.inlineItems, null, this.pageSize);
       this.root.inline = true;
-      this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
+      const first = this.inlinePage(this.root, null);
+      this.root.children = first.items.map((node, i) => this.wrap(node, this.root, first.positions[i]));
       this.root.total = first.total;
       this.root.next = first.next;
       this.applySort(this.root, false);

@@ -29,7 +29,11 @@ public sealed class RuntimeAssetTests {
         var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
         var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
         Assert.NotEmpty(encoded);
-        expected = expected.Replace(marker, encoded);
+        var actual = Regex.Match(CanopyHtmlAssets.Script, "const EXTRA_FOLD_PAIRS = \"([A-Za-z0-9+/=]+)\";");
+        Assert.True(actual.Success, "The browser folding table is missing.");
+        var compact = actual.Groups[1].Value;
+        Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
+        expected = expected.Replace(marker, compact);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
         Assert.True(expected == Normalize(CanopyHtmlAssets.Script), "canopyx.js is out of date. Run Build/Sync-Assets.ps1.");
@@ -170,6 +174,29 @@ public sealed class RuntimeAssetTests {
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
+
+    /// <summary>Decodes the browser representation independently and compares every pair to the canonical table.</summary>
+    private static byte[] ExpandFoldingTable(string encoded) {
+        using var source = new MemoryStream(Convert.FromBase64String(encoded));
+        using var reader = new BinaryReader(source);
+        using var expanded = new MemoryStream();
+        using var writer = new BinaryWriter(expanded);
+        while (source.Position < source.Length) {
+            var from = (int)reader.ReadUInt16();
+            var count = 1;
+            var step = 1;
+            int to;
+            if (from == ushort.MaxValue) {
+                from = reader.ReadUInt16(); to = reader.ReadUInt16(); count = reader.ReadUInt16(); step = reader.ReadUInt16();
+                Assert.True(count >= 3 && step is 1 or 2, "Invalid browser folding range.");
+            } else to = reader.ReadUInt16();
+            Assert.True(from + (count - 1) * step < ushort.MaxValue && to + (count - 1) * step <= ushort.MaxValue);
+            for (var index = 0; index < count; index++) {
+                writer.Write((ushort)(from + index * step)); writer.Write((ushort)(to + index * step));
+            }
+        }
+        return expanded.ToArray();
+    }
 
     private static long GzipLength(string value) {
         using var buffer = new MemoryStream();

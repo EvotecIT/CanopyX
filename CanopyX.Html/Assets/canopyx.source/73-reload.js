@@ -2,11 +2,11 @@
   Object.assign(TreeGrid.prototype, {
     /** Collects attached descendants without recursive walks. */
     descendants(parent) {
-      const found = new Map(), pending = (parent.children || []).slice();
+      const found = new Map(), pending = this.modelChildren(parent).slice();
       while (pending.length) {
         const w = pending.pop();
         found.set(w.key, w);
-        for (const child of w.children || []) pending.push(child);
+        for (const child of this.modelChildren(w)) pending.push(child);
       }
       return found;
     },
@@ -24,7 +24,7 @@
     },
 
     /** Replaces a validated list and reuses surviving identities, including host controls on unchanged rows. */
-    reconcileList(parent, items, total, next) {
+    reconcileList(parent, items, total, next, positions, ordering = false) {
       const old = this.descendants(parent), retained = new Set(), incoming = new Set();
       const pendingData = items.slice();
       while (pendingData.length) {
@@ -37,30 +37,34 @@
         if (parent.key != null) ids.add(parent.key);
         for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
       }
-      const pending = [{ owner: parent, items, total, next }];
+      const pending = [{ owner: parent, items, total, next, positions }];
       while (pending.length) {
         const entry = pending.pop(), owner = entry.owner;
-        const children = entry.items.map((data, index) => {
+        const replacement = owner.inline ? this.inlineReplacement(owner, entry.items, entry.positions) :
+          { items: entry.items, positions: entry.positions, attached: entry.items.length };
+        const children = replacement.items.map((data, index) => {
+          const position = replacement.positions ? replacement.positions[index] : index;
           let w = old.get(data.id);
           const reused = !!w;
-          if (!w) w = this.createWrapper(data, owner, index);
+          if (!w) w = this.createWrapper(data, owner, position);
           else {
-            w.parent = owner; w.idx = index; w.level = owner.level + 1;
+            w.parent = owner; w.idx = position; w.level = owner.level + 1;
             const content = nodeContent(data);
             if (w.content !== content) w._v = 0;
             w.h = data; w.content = content;
             w.hpx = data.detail ? this.detailHeight(data.detail) : this.rowH;
             w.auto = !!data.detail && !(data.detail.height > 0);
           }
+          this.retainInline(w, index >= replacement.attached);
           retained.add(w);
           if (Array.isArray(data.children)) {
             const count = Math.max(this.pageSize, reused && w.children ? w.children.length : 0);
-            const first = slicePage(data.children, null, count);
             this.retirePage(w); w.inline = true;
-            pending.push({ owner: w, items: first.items, total: first.total, next: first.next });
+            const first = this.inlinePage(w, null, count);
+            pending.push({ owner: w, items: first.items, total: first.total, next: first.next, positions: first.positions });
             if (!reused) w.expanded = !!data.expanded && first.items.length > 0;
           } else if (!data.hasChildren || data.detail) {
-            this.retirePage(w); w.inline = false; w.children = null; w.next = null; w.total = null; w.expanded = false;
+            this.retirePage(w); w.inline = false; w.children = null; w.inlineCache = null; w.next = null; w.total = null; w.expanded = false;
           } else {
             w.inline = false;
             // An ID moved into the new list cannot also remain in an old cached lazy subtree.
@@ -68,7 +72,7 @@
             const conflict = Array.from(cached.keys()).some(id => incoming.has(id));
             if (conflict || data.childCount != null && w.children &&
                 (data.childCount < w.children.length || !w.next && data.childCount !== w.children.length)) {
-              this.retirePage(w); w.children = null; w.next = null;
+              this.retirePage(w); w.children = null; w.inlineCache = null; w.next = null;
             } else {
               for (const child of cached.values()) { child.level = child.parent.level + 1; retained.add(child); }
             }
@@ -77,7 +81,9 @@
           }
           return w;
         });
-        owner.children = children; owner.total = entry.total; owner.next = entry.next;
+        owner.children = children.slice(0, replacement.attached);
+        owner.inlineCache = new Map(children.slice(replacement.attached).map(w => [w.key, w]));
+        owner.total = entry.total; owner.next = entry.next;
         owner.error = null;
         if (owner !== this.root && !children.length && !entry.next) owner.expanded = false;
       }
@@ -86,11 +92,13 @@
         if (retained.has(w)) continue;
         w._invalidated = true;
         this.retirePage(w);
+        if (this.inlineRetained && this.inlineRetained.get(w.key) === w) this.inlineRetained.delete(w.key);
         if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
         if (this.selected.delete(w) && !removedSelection) removedSelection = w;
         if (this.anchor === w) this.anchor = null;
       }
-      this.applySort(parent, true);
+      if (!ordering) this.applySort(parent, true);
+      this.trimInlineCache();
       if (parent !== this.root && !parent.inline) {
         if (total != null) parent.h.childCount = total;
         parent.h.hasChildren = !!(parent.children.length || next || total > 0);
@@ -115,14 +123,14 @@
       try {
         const old = this.descendants(parent), outside = new Map(this.keyMap);
         for (const key of old.keys()) outside.delete(key);
-        const items = [], seen = new Set();
+        const items = [], positions = [], seen = new Set();
         const inlineOnly = this.root.inlineItems != null;
         const inline = parent === this.root ? inlineOnly ? this.view.roots : null : parent.inline ? parent.h.children : null;
         if (inlineOnly) validateNodes(inline, outside, true);
         let cursor = null, total = null, next = null;
         do {
           if (navigation.cancelled() || parent._invalidated) return false;
-          const page = inline ? slicePage(inline, cursor, this.pageSize) :
+          const page = inline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
             await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
           if (navigation.cancelled() || parent._invalidated) return false;
           validatePage(page, outside, items.length);
@@ -131,6 +139,7 @@
             const node = pending.pop(); outside.set(node.id, true);
             for (const child of node.children || []) pending.push(child);
           }
+          if (page.positions) positions.push(...page.positions);
           items.push(...page.items); total = page.total; next = page.next || null;
           if (next && (seen.has(next) || next === cursor)) throw new Error("CanopyX: reload continuation did not advance.");
           if (next) seen.add(next);
@@ -145,7 +154,7 @@
         // Paging could have restarted against the old cursor while this snapshot was being staged.
         this.retirePage(parent, controller);
         if (parent === this.root && inlineOnly) parent.inlineItems = inline;
-        this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next);
+        this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next, inline ? positions : null);
         this.restoreScrollAnchor(anchor);
         this.stateChanged();
         this.emit("reload", { node: parent.h, count: items.length, total: parent.total, ms: performance.now() - started });

@@ -15,14 +15,13 @@
 
     getExpandedPaths() {
       const out = [];
-      const pending = (this.root.children || []).slice().reverse();
+      const pending = this.modelChildren(this.root).slice().reverse();
       while (pending.length) {
         const child = pending.pop();
         if (child.expanded && this.expandable(child)) {
           out.push(this.pathOf(child));
-          if (child.children) {
-            for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
-          }
+          const children = this.modelChildren(child);
+          for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
         }
       }
       return out;
@@ -204,19 +203,21 @@
 
     /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
     invalidateChildren(w) {
-      const pending = (w.children || []).slice();
+      const pending = this.modelChildren(w).slice();
       let removedSelection = null;
       while (pending.length) {
         const child = pending.pop();
-        if (child.children) for (const descendant of child.children) pending.push(descendant);
+        for (const descendant of this.modelChildren(child)) pending.push(descendant);
         child._invalidated = true;
         if (child.pageController) child.pageController.abort();
         if (child.reloadController) child.reloadController.abort();
+        if (this.inlineRetained) this.inlineRetained.delete(child.key);
         if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
         if (this.selected.delete(child) && !removedSelection) removedSelection = child;
         if (this.anchor === child) this.anchor = null;
       }
       w.children = null;
+      w.inlineCache = null;
       w.next = null;
       w.error = null;
       w.expanded = false;
@@ -271,6 +272,7 @@
         }
         w.content = nodeContent(w.h);
       });
+      this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.applySort(this.root, true);
       // Rows of removed nodes go at once, even while an opening path holds back the rest.
       this.relayout(removed);

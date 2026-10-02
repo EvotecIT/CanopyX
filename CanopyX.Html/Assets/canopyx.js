@@ -311,12 +311,16 @@ const order = a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0
 return order * direction;
 }
 
-const EXTRA_FOLD_PAIRS = "QQBhAEIAYgBDAGMARABkAEUAZQBGAGYARwBnAEgAaABJAGkASgBqAEsAawBMAGwATQBtAE4AbgBPAG8AUABwAFEAcQBSAHIAUwBzAFQAdABVAHUAVgB2AFcAdwBYAHgAWQB5AFoAegDAAOAAwQDhAMIA4gDDAOMAxADkAMUA5QDGAOYAxwDnAMgA6ADJAOkAygDqAMsA6wDMAOwAzQDtAM4A7gDPAO8A0ADwANEA8QDSAPIA0wDzANQA9ADVAPUA1gD2ANgA+ADZAPkA2gD6ANsA+wDcAPwA3QD9AN4A/gAAAQEBAgEDAQQBBQEGAQcBCAEJAQoBCwEMAQ0BDgEPARABEQESARMBFAEVARYBFwEYARkBGgEbARwBHQEeAR8BIAEhASIBIwEkASUBJgEnASgBKQEqASsBLAEtAS4BLwEyATMBNAE1ATYBNwE5AToBOwE8AT0BPgE/AUABQQFCAUMBRAFFAUYBRwFIAUoBSwFMAU0BTgFPAVABUQFSAVMBVAFVAVYBVwFYAVkBWgFbAVwBXQFeAV8BYAFhAWIBYwFkAWUBZgFnAWgBaQFqAWsBbAFtAW4BbwFwAXEBcgFzAXQBdQF2AXcBeAH/AHkBegF7AXwBfQF+AYEBUwKCAYMBhAGFAYYBVAKHAYgBiQFWAooBVwKLAYwBjgHdAY8BWQKQAVsCkQGSAZMBYAKUAWMClgFpApcBaAKYAZkBnAFvAp0BcgKfAXUCoAGhAaIBowGkAaUBpgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwBywHMAc0BzgHPAdAB0QHSAdMB1AHVAdYB1wHYAdkB2gHbAdwB3gHfAeAB4QHiAeMB5AHlAeYB5wHoAekB6gHrAewB7QHuAe8B8QHzAfIB8wH0AfUB9gGVAfcBvwH4AfkB+gH7AfwB/QH+Af8BAAIBAgICAwIEAgUCBgIHAggCCQIKAgsCDAINAg4CDwIQAhECEgITAhQCFQIWAhcCGAIZAhoCGwIcAh0CHgIfAiACngEiAiMCJAIlAiYCJwIoAikCKgIrAiwCLQIuAi8CMAIxAjICMwI6AmUsOwI8Aj0CmgE+AmYsQQJCAkMCgAFEAokCRQKMAkYCRwJIAkkCSgJLAkwCTQJOAk8CcANxA3IDcwN2A3cDfwPzA4YDrAOIA60DiQOuA4oDrwOMA8wDjgPNA48DzgORA7EDkgOyA5MDswOUA7QDlQO1A5YDtgOXA7cDmAO4A5kDuQOaA7oDmwO7A5wDvAOdA70DngO+A58DvwOgA8ADoQPBA6MDwwOkA8QDpQPFA6YDxgOnA8cDqAPIA6kDyQOqA8oDqwPLA88D1wPYA9kD2gPbA9wD3QPeA98D4APhA+ID4wPkA+UD5gPnA+gD6QPqA+sD7APtA+4D7wP0A7gD9wP4A/kD8gP6A/sD/QN7A/4DfAP/A30DAARQBAEEUQQCBFIEAwRTBAQEVAQFBFUEBgRWBAcEVwQIBFgECQRZBAoEWgQLBFsEDARcBA0EXQQOBF4EDwRfBBAEMAQRBDEEEgQyBBMEMwQUBDQEFQQ1BBYENgQXBDcEGAQ4BBkEOQQaBDoEGwQ7BBwEPAQdBD0EHgQ+BB8EPwQgBEAEIQRBBCIEQgQjBEMEJAREBCUERQQmBEYEJwRHBCgESAQpBEkEKgRKBCsESwQsBEwELQRNBC4ETgQvBE8EYARhBGIEYwRkBGUEZgRnBGgEaQRqBGsEbARtBG4EbwRwBHEEcgRzBHQEdQR2BHcEeAR5BHoEewR8BH0EfgR/BIAEgQSKBIsEjASNBI4EjwSQBJEEkgSTBJQElQSWBJcEmASZBJoEmwScBJ0EngSfBKAEoQSiBKMEpASlBKYEpwSoBKkEqgSrBKwErQSuBK8EsASxBLIEswS0BLUEtgS3BLgEuQS6BLsEvAS9BL4EvwTABM8EwQTCBMMExATFBMYExwTIBMkEygTLBMwEzQTOBNAE0QTSBNME1ATVBNYE1wTYBNkE2gTbBNwE3QTeBN8E4AThBOIE4wTkBOUE5gTnBOgE6QTqBOsE7ATtBO4E7wTwBPEE8gTzBPQE9QT2BPcE+AT5BPoE+wT8BP0E/gT/BAAFAQUCBQMFBAUFBQYFBwUIBQkFCgULBQwFDQUOBQ8FEAURBRIFEwUUBRUFFgUXBRgFGQUaBRsFHAUdBR4FHwUgBSEFIgUjBSQFJQUmBScFKAUpBSoFKwUsBS0FLgUvBTEFYQUyBWIFMwVjBTQFZAU1BWUFNgVmBTcFZwU4BWgFOQVpBToFagU7BWsFPAVsBT0FbQU+BW4FPwVvBUAFcAVBBXEFQgVyBUMFcwVEBXQFRQV1BUYFdgVHBXcFSAV4BUkFeQVKBXoFSwV7BUwFfAVNBX0FTgV+BU8FfwVQBYAFUQWBBVIFggVTBYMFVAWEBVUFhQVWBYYFoBAALaEQAS2iEAItoxADLaQQBC2lEAUtphAGLacQBy2oEAgtqRAJLaoQCi2rEAstrBAMLa0QDS2uEA4trxAPLbAQEC2xEBEtshASLbMQEy20EBQttRAVLbYQFi23EBctuBAYLbkQGS26EBotuxAbLbwQHC29EB0tvhAeLb8QHy3AECAtwRAhLcIQIi3DECMtxBAkLcUQJS3HECctzRAtLaATcKuhE3GrohNyq6MTc6ukE3SrpRN1q6YTdqunE3erqBN4q6kTeauqE3qrqxN7q6wTfKutE32rrhN+q68Tf6uwE4CrsROBq7ITgquzE4OrtBOEq7UThau2E4artxOHq7gTiKu5E4mruhOKq7sTi6u8E4yrvRONq74Tjqu/E4+rwBOQq8ETkavCE5KrwxOTq8QTlKvFE5WrxhOWq8cTl6vIE5iryROZq8oTmqvLE5urzBOcq80TnavOE56rzxOfq9AToKvRE6Gr0hOiq9MTo6vUE6Sr1ROlq9YTpqvXE6er2BOoq9kTqavaE6qr2xOrq9wTrKvdE62r3hOuq98Tr6vgE7Cr4ROxq+ITsqvjE7Or5BO0q+UTtavmE7ar5xO3q+gTuKvpE7mr6hO6q+sTu6vsE7yr7RO9q+4TvqvvE7+r8BP4E/ET+RPyE/oT8xP7E/QT/BP1E/0TiRyKHJAc0BCRHNEQkhzSEJMc0xCUHNQQlRzVEJYc1hCXHNcQmBzYEJkc2RCaHNoQmxzbEJwc3BCdHN0QnhzeEJ8c3xCgHOAQoRzhEKIc4hCjHOMQpBzkEKUc5RCmHOYQpxznEKgc6BCpHOkQqhzqEKsc6xCsHOwQrRztEK4c7hCvHO8QsBzwELEc8RCyHPIQsxzzELQc9BC1HPUQthz2ELcc9xC4HPgQuRz5ELoc+hC9HP0Qvhz+EL8c/xAAHgEeAh4DHgQeBR4GHgceCB4JHgoeCx4MHg0eDh4PHhAeER4SHhMeFB4VHhYeFx4YHhkeGh4bHhweHR4eHh8eIB4hHiIeIx4kHiUeJh4nHigeKR4qHiseLB4tHi4eLx4wHjEeMh4zHjQeNR42HjceOB45HjoeOx48Hj0ePh4/HkAeQR5CHkMeRB5FHkYeRx5IHkkeSh5LHkweTR5OHk8eUB5RHlIeUx5UHlUeVh5XHlgeWR5aHlseXB5dHl4eXx5gHmEeYh5jHmQeZR5mHmceaB5pHmoeax5sHm0ebh5vHnAecR5yHnMedB51HnYedx54Hnkeeh57HnwefR5+Hn8egB6BHoIegx6EHoUehh6HHogeiR6KHosejB6NHo4ejx6QHpEekh6THpQelR6eHt8AoB6hHqIeox6kHqUeph6nHqgeqR6qHqserB6tHq4erx6wHrEesh6zHrQetR62HrceuB65Hroeux68Hr0evh6/HsAewR7CHsMexB7FHsYexx7IHskeyh7LHswezR7OHs8e0B7RHtIe0x7UHtUe1h7XHtge2R7aHtse3B7dHt4e3x7gHuEe4h7jHuQe5R7mHuce6B7pHuoe6x7sHu0e7h7vHvAe8R7yHvMe9B71HvYe9x74Hvke+h77Hvwe/R7+Hv8eCB8AHwkfAR8KHwIfCx8DHwwfBB8NHwUfDh8GHw8fBx8YHxAfGR8RHxofEh8bHxMfHB8UHx0fFR8oHyAfKR8hHyofIh8rHyMfLB8kHy0fJR8uHyYfLx8nHzgfMB85HzEfOh8yHzsfMx88HzQfPR81Hz4fNh8/HzcfSB9AH0kfQR9KH0IfSx9DH0wfRB9NH0UfWR9RH1sfUx9dH1UfXx9XH2gfYB9pH2Efah9iH2sfYx9sH2QfbR9lH24fZh9vH2cfiB+AH4kfgR+KH4Ifix+DH4wfhB+NH4Ufjh+GH48fhx+YH5AfmR+RH5ofkh+bH5MfnB+UH50flR+eH5Yfnx+XH6gfoB+pH6Efqh+iH6sfox+sH6QfrR+lH64fph+vH6cfuB+wH7kfsR+6H3Afux9xH7wfsx/IH3IfyR9zH8ofdB/LH3UfzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIWAhcCFhIXEhYiFyIWMhcyFkIXQhZSF1IWYhdiFnIXchaCF4IWkheSFqIXohayF7IWwhfCFtIX0hbiF+IW8hfyGDIYQhtiTQJLck0SS4JNIkuSTTJLok1CS7JNUkvCTWJL0k1yS+JNgkvyTZJMAk2iTBJNskwiTcJMMk3STEJN4kxSTfJMYk4CTHJOEkyCTiJMkk4yTKJOQkyyTlJMwk5iTNJOckziToJM8k6SQALDAsASwxLAIsMiwDLDMsBCw0LAUsNSwGLDYsByw3LAgsOCwJLDksCiw6LAssOywMLDwsDSw9LA4sPiwPLD8sECxALBEsQSwSLEIsEyxDLBQsRCwVLEUsFixGLBcsRywYLEgsGSxJLBosSiwbLEssHCxMLB0sTSweLE4sHyxPLCAsUCwhLFEsIixSLCMsUywkLFQsJSxVLCYsViwnLFcsKCxYLCksWSwqLFosKyxbLCwsXCwtLF0sLixeLC8sXyxgLGEsYixrAmMsfR1kLH0CZyxoLGksaixrLGwsbSxRAm4scQJvLFACcCxSAnIscyx1LHYsfiw/An8sQAKALIEsgiyDLIQshSyGLIcsiCyJLIosiyyMLI0sjiyPLJAskSySLJMslCyVLJYslyyYLJksmiybLJwsnSyeLJ8soCyhLKIsoyykLKUspiynLKgsqSyqLKssrCytLK4sryywLLEssiyzLLQstSy2LLcsuCy5LLosuyy8LL0sviy/LMAswSzCLMMsxCzFLMYsxyzILMksyizLLMwszSzOLM8s0CzRLNIs0yzULNUs1izXLNgs2SzaLNss3CzdLN4s3yzgLOEs4izjLOss7CztLO4s8izzLECmQaZCpkOmRKZFpkamR6ZIpkmmSqZLpkymTaZOpk+mUKZRplKmU6ZUplWmVqZXplimWaZaplumXKZdpl6mX6ZgpmGmYqZjpmSmZaZmpmemaKZppmqma6Zspm2mgKaBpoKmg6aEpoWmhqaHpoimiaaKpoumjKaNpo6mj6aQppGmkqaTppSmlaaWppemmKaZppqmm6YipyOnJKclpyanJ6copymnKqcrpyynLacupy+nMqczpzSnNac2pzenOKc5pzqnO6c8pz2nPqc/p0CnQadCp0OnRKdFp0anR6dIp0mnSqdLp0ynTadOp0+nUKdRp1KnU6dUp1WnVqdXp1inWadap1unXKddp16nX6dgp2GnYqdjp2SnZadmp2enaKdpp2qna6dsp22nbqdvp3mneqd7p3ynfad5HX6nf6eAp4GngqeDp4SnhaeGp4eni6eMp42nZQKQp5GnkqeTp5anl6eYp5mnmqebp5ynnaeep5+noKehp6Kno6ekp6Wnpqenp6inqaeqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6u0p7Wntqe3p7inuae6p7unvKe9p76nv6fAp8GnwqfDp8SnlKfFp4ICxqeOHcenyKfJp8qny6dkAsynzafQp9Gn1qfXp9in2afap9un3KebAfWn9qch/0H/Iv9C/yP/Q/8k/0T/Jf9F/yb/Rv8n/0f/KP9I/yn/Sf8q/0r/K/9L/yz/TP8t/03/Lv9O/y//T/8w/1D/Mf9R/zL/Uv8z/1P/NP9U/zX/Vf82/1b/N/9X/zj/WP85/1n/Ov9a/w==";
+const EXTRA_FOLD_PAIRS = "//9BAGEAGgABAP//wADgABcAAQD//9gA+AAHAAEA//8AAQEBGAACAP//MgEzAQMAAgD//zkBOgEIAAIA//9KAUsBFwACAHgB/wD//3kBegEDAAIAgQFTAoIBgwGEAYUBhgFUAocBiAGJAVYCigFXAosBjAGOAd0BjwFZApABWwKRAZIBkwFgApQBYwKWAWkClwFoApgBmQGcAW8CnQFyAp8BdQL//6ABoQEDAAIApgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwB///LAcwBCQACAP//3gHfAQkAAgDxAfMB8gHzAfQB9QH2AZUB9wG/Af//+AH5ARQAAgAgAp4B//8iAiMCCQACADoCZSw7AjwCPQKaAT4CZixBAkICQwKAAUQCiQJFAowC//9GAkcCBQACAHADcQNyA3MDdgN3A38D8wOGA6wD//+IA60DAwABAIwDzAOOA80DjwPOA///kQOxAxEAAQD//6MDwwMJAAEAzwPXA///2APZAwwAAgD0A7gD9wP4A/kD8gP6A/sD///9A3sDAwABAP//AARQBBAAAQD//xAEMAQgAAEA//9gBGEEEQACAP//igSLBBsAAgDABM8E///BBMIEBwACAP//0ATRBDAAAgD//zEFYQUmAAEA//+gEAAtJgABAMcQJy3NEC0t//+gE3CrUAABAP//8BP4EwYAAQCJHIoc//+QHNAQKwABAP//vRz9EAMAAQD//wAeAR5LAAIAnh7fAP//oB6hHjAAAgD//wgfAB8IAAEA//8YHxAfBgABAP//KB8gHwgAAQD//zgfMB8IAAEA//9IH0AfBgABAP//WR9RHwQAAgD//2gfYB8IAAEA//+IH4AfCAABAP//mB+QHwgAAQD//6gfoB8IAAEAuB+wH7kfsR+6H3Afux9xH7wfsx///8gfch8EAAEAzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIf//YCFwIRAAAQCDIYQh//+2JNAkGgABAP//ACwwLDAAAQBgLGEsYixrAmMsfR1kLH0C//9nLGgsAwACAG0sUQJuLHECbyxQAnAsUgJyLHMsdSx2LH4sPwJ/LEAC//+ALIEsMgACAOss7CztLO4s8izzLP//QKZBphcAAgD//4CmgaYOAAIA//8ipyOnBwACAP//Mqczpx8AAgB5p3qne6d8p32neR3//36nf6cFAAIAi6eMp42nZQKQp5GnkqeTp///lqeXpwoAAgCqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6v//7SntacIAAIAxKeUp8WnggLGp44dx6fIp8mnyqfLp2QCzKfNp9Cn0af//9an16cDAAIA3KebAfWn9qf//yH/Qf8aAAEA";
 const EXTRA_LOWERCASE = new Map();
 const extraBytes = atob(EXTRA_FOLD_PAIRS);
-for (let i = 0; i < extraBytes.length; i += 4) {
-EXTRA_LOWERCASE.set(extraBytes.charCodeAt(i) | (extraBytes.charCodeAt(i + 1) << 8),
-extraBytes.charCodeAt(i + 2) | (extraBytes.charCodeAt(i + 3) << 8));
+let extraOffset = 0;
+const extraWord = () => extraBytes.charCodeAt(extraOffset++) | (extraBytes.charCodeAt(extraOffset++) << 8);
+while (extraOffset < extraBytes.length) {
+let from = extraWord(), to, count = 1, step = 1;
+if (from === 0xFFFF) { from = extraWord(); to = extraWord(); count = extraWord(); step = extraWord(); }
+else to = extraWord();
+for (let i = 0; i < count; i++) EXTRA_LOWERCASE.set(from + i * step, to + i * step);
 }
 const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
 
@@ -998,6 +1002,8 @@ this.lifetime = new AbortController();
 this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
 this.rowH = view.rowHeight || 28;
 this.pageSize = view.pageSize || 100;
+this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
+if (!validStructuralCount(this.retainedNodeLimit)) throw new Error("CanopyX: retainedNodeLimit must be a nonnegative 32-bit integer.");
 this.multi = view.selection === "multiple";
 this.lang = document.documentElement.lang || undefined;
 this.labels = labelsFor(view.labels, options.labels);
@@ -1088,9 +1094,9 @@ if (!this.root.inlineItems) {
 return this.loadPage(this.root, null);
 }
 validateNodes(this.root.inlineItems, this.keyMap, true);
-const first = slicePage(this.root.inlineItems, null, this.pageSize);
 this.root.inline = true;
-this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
+const first = this.inlinePage(this.root, null);
+this.root.children = first.items.map((node, i) => this.wrap(node, this.root, first.positions[i]));
 this.root.total = first.total;
 this.root.next = first.next;
 this.applySort(this.root, false);
@@ -1172,9 +1178,9 @@ while (pending.length) {
 const w = pending.pop();
 const data = w.h;
 if (Array.isArray(data.children)) {
-const first = slicePage(data.children, null, this.pageSize);
 w.inline = true;
-w.children = first.items.map((child, i) => this.createWrapper(child, w, i));
+const first = this.inlinePage(w, null);
+w.children = first.items.map((child, i) => this.createWrapper(child, w, first.positions[i]));
 w.total = first.total;
 w.next = first.next;
 w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
@@ -1316,8 +1322,17 @@ this.canvas.style.height = y + "px";
 applySort(parent, deep) {
 const pending = [parent];
 while (pending.length) {
-const children = pending.pop().children;
+const owner = pending.pop();
+let children = owner.children;
 if (!children) continue;
+if (owner.inline) {
+const first = this.inlinePage(owner, null, children.length || this.pageSize);
+if (first.items.some((node, index) => !children[index] || children[index].key !== node.id) || first.items.length !== children.length) {
+this.retirePage(owner);
+this.reconcileList(owner, first.items, first.total, first.next, first.positions, true);
+children = owner.children;
+}
+}
 const state = this.sortState;
 const column = state && this.columns.find((c) => c.id === state.column);
 if (column) {
@@ -1337,9 +1352,11 @@ children.sort((a, b) => compareKeys(keyOf(a), keyOf(b), direction) || a.idx - b.
 children.sort((a, b) => a.idx - b.idx);
 }
 if (deep) {
-for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
+const all = this.modelChildren(owner);
+for (let i = all.length - 1; i >= 0; i--) pending.push(all[i]);
 }
 }
+this.trimInlineCache();
 }
 });
 function isIdentifier(value) {
@@ -1414,6 +1431,75 @@ throw new Error("CanopyX: page continuation disagrees with its total.");
 validateNodes(items, existing);
 return items;
 }
+Object.assign(TreeGrid.prototype, {
+modelChildren(w) {
+const children = w.children || [];
+return w.inlineCache && w.inlineCache.size ? children.concat(Array.from(w.inlineCache.values())) : children;
+},
+
+inlinePage(w, cursor, count, supplied) {
+const source = supplied || (w === this.root ? w.inlineItems : w.h.children);
+let order = w.inlineOrder;
+const version = this.inlineOrderVersion || 0, generation = w.dataGeneration || 0;
+if (!order || order.source !== source || order.version !== version || order.generation !== generation) {
+const indices = Uint32Array.from({ length: source.length }, (_, index) => index);
+const state = this.sortState, column = state && this.columns.find(c => c.id === state.column);
+if (column) {
+const columnIndex = this.columns.indexOf(column), direction = state.direction === "desc" ? -1 : 1;
+const keys = source.map(node => sortKey(this.cellOf(node, column, columnIndex), column));
+indices.sort((a, b) => compareKeys(keys[a], keys[b], direction) || a - b);
+}
+order = w.inlineOrder = { source, indices, version, generation };
+}
+const offset = cursor ? Number(cursor) : 0, end = Math.min(source.length, offset + (count || this.pageSize));
+const positions = Array.from(order.indices.subarray(offset, end));
+return { items: positions.map(index => source[index]), positions, total: source.length,
+offset, next: end < source.length ? String(end) : null };
+},
+
+inlineReplacement(owner, items, positions) {
+const source = owner === this.root ? owner.inlineItems : owner.h.children;
+const prior = new Map(this.modelChildren(owner).map(w => [w.key, w]));
+const attached = new Set(items.map(node => node.id)), cached = [], extraPositions = [];
+source.forEach((data, index) => {
+if (prior.has(data.id) && !attached.has(data.id)) { cached.push(data); extraPositions.push(index); }
+});
+return { items: items.concat(cached), positions: (positions || items.map((_, index) => index)).concat(extraPositions), attached: items.length };
+},
+
+retainInline(w, cached) {
+const retained = this.inlineRetained || (this.inlineRetained = new Map());
+w._cached = cached;
+if (cached) { retained.delete(w.key); retained.set(w.key, w); }
+else retained.delete(w.key);
+},
+
+trimInlineCache() {
+const retained = this.inlineRetained;
+if (!retained || !retained.size) return;
+const groups = [];
+let size = 0;
+for (const w of retained.values()) {
+if (w._invalidated || !w._cached) { retained.delete(w.key); continue; }
+let ancestor = w.parent;
+while (ancestor && !ancestor._cached) ancestor = ancestor.parent;
+if (ancestor) continue;
+const nodes = [w].concat(Array.from(this.descendants(w).values()));
+size += nodes.length; groups.push({ w, nodes });
+}
+for (const group of groups) {
+if (size <= this.retainedNodeLimit) break;
+if (group.nodes.some(w => this.selected.has(w) || w.expanded || this.focused === w || this.anchor === w || w.loading || w.reloadController)) continue;
+group.w.parent.inlineCache.delete(group.w.key);
+for (const w of group.nodes) {
+w._invalidated = true; this.retirePage(w); retained.delete(w.key);
+if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
+if (this.countRevisions) this.countRevisions.set(w.key, (this.countRevisions.get(w.key) || 0) + 1);
+}
+size -= group.nodes.length;
+}
+}
+});
 
 Object.assign(TreeGrid.prototype, {
 build() {
@@ -2716,12 +2802,20 @@ let removedSelection = null;
 let removed = false;
 try {
 const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+const page = inlineItems ? this.inlinePage(w, cursor) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
 if (obsolete()) return;
-const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
+const existing = inlineItems ? new Map(this.keyMap) : this.keyMap;
+if (inlineItems) for (const key of this.descendants(w).keys()) existing.delete(key);
+const items = validatePage(page, existing, cursor ? (w.children || []).length : 0);
 if (cursor != null && !items.length && page.next === cursor) {
 throw new Error("CanopyX: page continuation did not advance.");
 }
+if (inlineItems) {
+const prefix = cursor ? w.children || [] : [];
+const combined = prefix.map(child => child.h).concat(items);
+validateNodes(combined, existing, this.root.inlineItems != null);
+this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true);
+} else {
 if (!cursor || !w.children) {
 w.children = [];
 }
@@ -2730,6 +2824,7 @@ const suppressExpansion = suppressInitial || restoration !== (this.restoreGenera
 items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
 w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
 w.next = page.next || null;
+}
 if (w !== this.root && !w.next && !w.children.length) {
 w.h.hasChildren = false;
 w.h.childCount = 0;
@@ -2916,6 +3011,7 @@ this.stateChanged();
 
 sort(columnId, direction) {
 this.sortState = direction ? { column: columnId, direction: direction } : null;
+this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
 this.buildHeader();
 this.applySort(this.root, true);
 this.relayout();
@@ -3022,8 +3118,8 @@ let parent = this.root;
 ids.forEach((id, k) => {
 if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
 const w = this.keyMap.get(id);
-if (!(w && parent && w.parent === parent)) finds.push(id);
-parent = w && w.parent === parent ? w : null;
+if (!(w && parent && w.parent === parent && !w._cached)) finds.push(id);
+parent = w && w.parent === parent && !w._cached ? w : null;
 });
 if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
 if (!opens.length && !finds.length) return;
@@ -3047,7 +3143,7 @@ opened.push([parent, parent.toggleRevision || 0]);
 if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return undefined;
 w = this.keyMap.get(ids[k]);
 const seenCursors = new Set();
-while ((!w || w.parent !== parent) && parent.children && parent.next) {
+while ((!w || w.parent !== parent || w._cached) && parent.children && parent.next) {
 const before = parent.children.length;
 const cursor = parent.next;
 if (seenCursors.has(cursor)) {
@@ -3061,7 +3157,7 @@ throw new Error("CanopyX: could not load more children of '" + (parent.key || "t
 }
 w = this.keyMap.get(ids[k]);
 }
-if (!w || w.parent !== parent) {
+if (!w || w.parent !== parent || w._cached) {
 throw new Error("CanopyX: id not found on the path: " + ids[k]);
 }
 parent = w;
@@ -3192,11 +3288,11 @@ this.opts.onSelect(node, nodes);
 });
 Object.assign(TreeGrid.prototype, {
 descendants(parent) {
-const found = new Map(), pending = (parent.children || []).slice();
+const found = new Map(), pending = this.modelChildren(parent).slice();
 while (pending.length) {
 const w = pending.pop();
 found.set(w.key, w);
-for (const child of w.children || []) pending.push(child);
+for (const child of this.modelChildren(w)) pending.push(child);
 }
 return found;
 },
@@ -3212,7 +3308,7 @@ if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController
 if (clearDeferred) w.pendingChildCount = null;
 },
 
-reconcileList(parent, items, total, next) {
+reconcileList(parent, items, total, next, positions, ordering = false) {
 const old = this.descendants(parent), retained = new Set(), incoming = new Set();
 const pendingData = items.slice();
 while (pendingData.length) {
@@ -3224,37 +3320,41 @@ const ids = new Set([...old.keys(), ...incoming]);
 if (parent.key != null) ids.add(parent.key);
 for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
 }
-const pending = [{ owner: parent, items, total, next }];
+const pending = [{ owner: parent, items, total, next, positions }];
 while (pending.length) {
 const entry = pending.pop(), owner = entry.owner;
-const children = entry.items.map((data, index) => {
+const replacement = owner.inline ? this.inlineReplacement(owner, entry.items, entry.positions) :
+{ items: entry.items, positions: entry.positions, attached: entry.items.length };
+const children = replacement.items.map((data, index) => {
+const position = replacement.positions ? replacement.positions[index] : index;
 let w = old.get(data.id);
 const reused = !!w;
-if (!w) w = this.createWrapper(data, owner, index);
+if (!w) w = this.createWrapper(data, owner, position);
 else {
-w.parent = owner; w.idx = index; w.level = owner.level + 1;
+w.parent = owner; w.idx = position; w.level = owner.level + 1;
 const content = nodeContent(data);
 if (w.content !== content) w._v = 0;
 w.h = data; w.content = content;
 w.hpx = data.detail ? this.detailHeight(data.detail) : this.rowH;
 w.auto = !!data.detail && !(data.detail.height > 0);
 }
+this.retainInline(w, index >= replacement.attached);
 retained.add(w);
 if (Array.isArray(data.children)) {
 const count = Math.max(this.pageSize, reused && w.children ? w.children.length : 0);
-const first = slicePage(data.children, null, count);
 this.retirePage(w); w.inline = true;
-pending.push({ owner: w, items: first.items, total: first.total, next: first.next });
+const first = this.inlinePage(w, null, count);
+pending.push({ owner: w, items: first.items, total: first.total, next: first.next, positions: first.positions });
 if (!reused) w.expanded = !!data.expanded && first.items.length > 0;
 } else if (!data.hasChildren || data.detail) {
-this.retirePage(w); w.inline = false; w.children = null; w.next = null; w.total = null; w.expanded = false;
+this.retirePage(w); w.inline = false; w.children = null; w.inlineCache = null; w.next = null; w.total = null; w.expanded = false;
 } else {
 w.inline = false;
 const cached = this.descendants(w);
 const conflict = Array.from(cached.keys()).some(id => incoming.has(id));
 if (conflict || data.childCount != null && w.children &&
 (data.childCount < w.children.length || !w.next && data.childCount !== w.children.length)) {
-this.retirePage(w); w.children = null; w.next = null;
+this.retirePage(w); w.children = null; w.inlineCache = null; w.next = null;
 } else {
 for (const child of cached.values()) { child.level = child.parent.level + 1; retained.add(child); }
 }
@@ -3263,7 +3363,9 @@ if (!reused) w.autoExpand = !!data.expanded;
 }
 return w;
 });
-owner.children = children; owner.total = entry.total; owner.next = entry.next;
+owner.children = children.slice(0, replacement.attached);
+owner.inlineCache = new Map(children.slice(replacement.attached).map(w => [w.key, w]));
+owner.total = entry.total; owner.next = entry.next;
 owner.error = null;
 if (owner !== this.root && !children.length && !entry.next) owner.expanded = false;
 }
@@ -3272,11 +3374,13 @@ for (const w of old.values()) {
 if (retained.has(w)) continue;
 w._invalidated = true;
 this.retirePage(w);
+if (this.inlineRetained && this.inlineRetained.get(w.key) === w) this.inlineRetained.delete(w.key);
 if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
 if (this.selected.delete(w) && !removedSelection) removedSelection = w;
 if (this.anchor === w) this.anchor = null;
 }
-this.applySort(parent, true);
+if (!ordering) this.applySort(parent, true);
+this.trimInlineCache();
 if (parent !== this.root && !parent.inline) {
 if (total != null) parent.h.childCount = total;
 parent.h.hasChildren = !!(parent.children.length || next || total > 0);
@@ -3299,14 +3403,14 @@ const started = performance.now();
 try {
 const old = this.descendants(parent), outside = new Map(this.keyMap);
 for (const key of old.keys()) outside.delete(key);
-const items = [], seen = new Set();
+const items = [], positions = [], seen = new Set();
 const inlineOnly = this.root.inlineItems != null;
 const inline = parent === this.root ? inlineOnly ? this.view.roots : null : parent.inline ? parent.h.children : null;
 if (inlineOnly) validateNodes(inline, outside, true);
 let cursor = null, total = null, next = null;
 do {
 if (navigation.cancelled() || parent._invalidated) return false;
-const page = inline ? slicePage(inline, cursor, this.pageSize) :
+const page = inline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
 await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
 if (navigation.cancelled() || parent._invalidated) return false;
 validatePage(page, outside, items.length);
@@ -3315,6 +3419,7 @@ while (pending.length) {
 const node = pending.pop(); outside.set(node.id, true);
 for (const child of node.children || []) pending.push(child);
 }
+if (page.positions) positions.push(...page.positions);
 items.push(...page.items); total = page.total; next = page.next || null;
 if (next && (seen.has(next) || next === cursor)) throw new Error("CanopyX: reload continuation did not advance.");
 if (next) seen.add(next);
@@ -3327,7 +3432,7 @@ validateNodes(items, current, inlineOnly);
 const anchor = this.captureScrollAnchor();
 this.retirePage(parent, controller);
 if (parent === this.root && inlineOnly) parent.inlineItems = inline;
-this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next);
+this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next, inline ? positions : null);
 this.restoreScrollAnchor(anchor);
 this.stateChanged();
 this.emit("reload", { node: parent.h, count: items.length, total: parent.total, ms: performance.now() - started });
@@ -3672,6 +3777,7 @@ const column = this.columns.find(c => c.id === input.getAttribute("data-cx-colum
 if (column) input.checked = !column.hidden;
 });
 this.sortState = state.sort;
+this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
 this.setTreeColumnPinned(state.pinTreeColumn);
 this.setTimeZone(state.timeZone);
 this.buildHeader();
@@ -3720,14 +3826,13 @@ return path.reverse();
 
 getExpandedPaths() {
 const out = [];
-const pending = (this.root.children || []).slice().reverse();
+const pending = this.modelChildren(this.root).slice().reverse();
 while (pending.length) {
 const child = pending.pop();
 if (child.expanded && this.expandable(child)) {
 out.push(this.pathOf(child));
-if (child.children) {
-for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
-}
+const children = this.modelChildren(child);
+for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
 }
 }
 return out;
@@ -3903,19 +4008,21 @@ return out.join("");
 },
 
 invalidateChildren(w) {
-const pending = (w.children || []).slice();
+const pending = this.modelChildren(w).slice();
 let removedSelection = null;
 while (pending.length) {
 const child = pending.pop();
-if (child.children) for (const descendant of child.children) pending.push(descendant);
+for (const descendant of this.modelChildren(child)) pending.push(descendant);
 child._invalidated = true;
 if (child.pageController) child.pageController.abort();
 if (child.reloadController) child.reloadController.abort();
+if (this.inlineRetained) this.inlineRetained.delete(child.key);
 if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
 if (this.selected.delete(child) && !removedSelection) removedSelection = child;
 if (this.anchor === child) this.anchor = null;
 }
 w.children = null;
+w.inlineCache = null;
 w.next = null;
 w.error = null;
 w.expanded = false;
@@ -3970,6 +4077,7 @@ w.h.flags = item.flags.slice();
 }
 w.content = nodeContent(w.h);
 });
+this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
 this.applySort(this.root, true);
 this.relayout(removed);
 if (removedSelection) this.selectionChanged(removedSelection);

@@ -10,6 +10,37 @@ if (-not $foldAssignment.Success) { throw 'The canonical search folding table is
 $foldPieces = [regex]::Matches($foldAssignment.Groups['parts'].Value, '"([A-Za-z0-9+/=]+)"')
 $foldPairs = -join @($foldPieces | ForEach-Object { $_.Groups[1].Value })
 
+# Keep the frozen C# table as the canonical input. Consecutive pairs with a stride of one or two use a range
+# record instead of repeating both words. All words are little-endian; U+FFFF is the range marker, not a mapped
+# character. This changes only the browser representation, never the protocol's lowercase mapping.
+$foldBytes = [Convert]::FromBase64String($foldPairs)
+$foldEntries = for ($foldOffset = 0; $foldOffset -lt $foldBytes.Length; $foldOffset += 4) {
+    [pscustomobject]@{
+        From = [int]$foldBytes[$foldOffset] -bor ([int]$foldBytes[$foldOffset + 1] -shl 8)
+        To = [int]$foldBytes[$foldOffset + 2] -bor ([int]$foldBytes[$foldOffset + 3] -shl 8)
+    }
+}
+$foldCompact = [System.Collections.Generic.List[byte]]::new()
+for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
+    $foldEntry = $foldEntries[$foldOffset]
+    if ($foldEntry.From -eq 65535) { throw 'The folding range marker must not be a mapped character.' }
+    $foldCount = 1
+    $foldStep = if ($foldOffset + 1 -lt $foldEntries.Count) { $foldEntries[$foldOffset + 1].From - $foldEntry.From } else { 0 }
+    if ($foldStep -in @(1, 2)) {
+        while ($foldOffset + $foldCount -lt $foldEntries.Count -and
+            $foldEntries[$foldOffset + $foldCount].From -eq $foldEntry.From + $foldCount * $foldStep -and
+            $foldEntries[$foldOffset + $foldCount].To -eq $foldEntry.To + $foldCount * $foldStep) { $foldCount++ }
+    }
+    $foldWords = if ($foldCount -ge 3) { @(65535, $foldEntry.From, $foldEntry.To, $foldCount, $foldStep) }
+        else { @($foldEntry.From, $foldEntry.To) }
+    foreach ($foldWord in $foldWords) {
+        $foldCompact.Add([byte]($foldWord -band 255))
+        $foldCompact.Add([byte]($foldWord -shr 8))
+    }
+    $foldOffset += $(if ($foldCount -ge 3) { $foldCount } else { 1 })
+}
+$foldPairs = [Convert]::ToBase64String($foldCompact.ToArray())
+
 $assets = @(
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'

@@ -70,6 +70,7 @@
         if (column) input.checked = !column.hidden;
       });
       this.sortState = state.sort;
+      this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.setTreeColumnPinned(state.pinTreeColumn);
       this.setTimeZone(state.timeZone);
       this.buildHeader();

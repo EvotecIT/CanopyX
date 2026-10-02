@@ -90,6 +90,7 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `30-model.js` | Tree grid constructor, root loading, status rows, and events |
 | `31-wrapping.js` | Iterative node construction and initial expansion |
 | `32-layout.js` | Iterative filtering, visible-row layout, and per-level sorting |
+| `34-inline-order.js` | Complete inline sibling ordering, position indexes, and retained-identity limits |
 | `40-render.js` | DOM scaffold, header, windowed rendering, row pool |
 | `42-dom-order.js` | DOM order of virtual rows |
 | `45-cells.js` | Row and cell painting, badges, tones, icons |
@@ -132,6 +133,9 @@ Selection proposals share one owner across clicks, keyboard ranges, path navigat
 ### Rendering Model
 
 - Loaded nodes keep their children. The visible rows are a flat array rebuilt on each structure change (expand, collapse, page loaded, sort, filter); the cost is proportional to the visible rows, not to the whole tree.
+- An inline list keeps its host array in its original order and sorts a `Uint32Array` of positions, using four bytes per sibling for the ordered index. Paging reads that complete order, so a later page does not insert a sibling that belongs before the first page. Equal keys retain the host's original order. Clearing sort restores the original page order.
+- Already loaded inline identities outside a reordered prefix are retained separately from attached rows, so selection and expansion survive. `retainedNodeLimit` (JavaScript host option, nonnegative 32-bit integer, default 1,024) limits unpinned retained subtrees across the grid. Selection, expansion, focus, selection anchors, and active requests pin their subtrees; those pins can exceed the limit. This limit does not bound the host's input arrays, active loaded rows, or lazy subtrees. Navigation pages through the ordered prefix before revealing a retained node. Reload validates and reconciles retained identities too.
+- The browser folding table uses derived single-pair and consecutive-range records. The C# Unicode table remains canonical; asset tests expand the browser records back to those bytes, and a browser test compares all 65,536 UTF-16 code units. The representation changes neither protocol tokens nor search ranking.
 - Rows have a fixed height, so an offset table gives every row's top position and a binary search finds the first row in the viewport. A detail row either spans a declared number of row slots or, without a declared height, is as tall as its content: it enters the offset table with an estimate and is measured when it is rendered, and again when a `ResizeObserver` reports that its content or the grid's width changed. When a row above the viewport turns out taller or shorter than its estimate, the scroll position moves by the difference, so the rows in view stay where they are.
 - A detail row's content sits in a body that sticks at the row's indent and takes the visible width of the grid (`--cx-view-w`, which the runtime keeps up to date), so it stays readable when the columns are wider than the grid.
 - Only the rows in the viewport, a small overscan, and the focused row exist in the DOM.

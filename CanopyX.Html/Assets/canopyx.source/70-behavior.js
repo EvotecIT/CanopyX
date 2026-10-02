@@ -61,20 +61,29 @@
         let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-          const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+          const page = inlineItems ? this.inlinePage(w, cursor) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
           if (obsolete()) return;
-          const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
+          const existing = inlineItems ? new Map(this.keyMap) : this.keyMap;
+          if (inlineItems) for (const key of this.descendants(w).keys()) existing.delete(key);
+          const items = validatePage(page, existing, cursor ? (w.children || []).length : 0);
           if (cursor != null && !items.length && page.next === cursor) {
             throw new Error("CanopyX: page continuation did not advance.");
           }
-          if (!cursor || !w.children) {
-            w.children = [];
+          if (inlineItems) {
+            const prefix = cursor ? w.children || [] : [];
+            const combined = prefix.map(child => child.h).concat(items);
+            validateNodes(combined, existing, this.root.inlineItems != null);
+            this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true);
+          } else {
+            if (!cursor || !w.children) {
+              w.children = [];
+            }
+            const base = w.children.length;
+            const suppressExpansion = suppressInitial || restoration !== (this.restoreGeneration || 0);
+            items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
+            w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
+            w.next = page.next || null;
           }
-          const base = w.children.length;
-          const suppressExpansion = suppressInitial || restoration !== (this.restoreGeneration || 0);
-          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
-          w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
-          w.next = page.next || null;
           if (w !== this.root && !w.next && !w.children.length) {
             w.h.hasChildren = false;
             w.h.childCount = 0;
@@ -281,6 +290,7 @@
 
     sort(columnId, direction) {
       this.sortState = direction ? { column: columnId, direction: direction } : null;
+      this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.buildHeader();
       this.applySort(this.root, true);
       this.relayout();
