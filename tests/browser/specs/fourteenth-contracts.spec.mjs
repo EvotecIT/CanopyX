@@ -57,7 +57,7 @@ test("slow declarative siblings cannot save a partial expansion set before a que
   await expect(page.locator('[data-cx-id="a"]')).toHaveAttribute("aria-expanded", "false");
   await page.waitForFunction(() => sessionStorage.getItem("canopyx:fourteenth-defaults") !== null);
   expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:fourteenth-defaults"))))
-    .toEqual({ expanded: [["b"], ["c"]] });
+    .toMatchObject({ version: 1, expanded: [["b"], ["c"]] });
 });
 
 for (const failure of ["root", "saved child"]) {

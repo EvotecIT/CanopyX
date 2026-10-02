@@ -117,3 +117,22 @@ test("inline reload rereads replacements and keeps scroll anchored to a survivin
   });
   expect(result.after).toBe(result.before + 28);
 });
+
+test("reload detects in-place payload edits and preserves an unchanged host control", async ({ page }) => {
+  await open(page);
+  await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy();
+    data.roots = [{ id: "changed", label: "Original" }, { id: "control", label: "Control" }];
+    window.api = CanopyX.createTreeGrid(host, { view: data, renderers: { name: (node, element) => {
+      if (node.id !== "control") return false;
+      const input = document.createElement("input"); input.value = "Original value"; element.append(input); return true;
+    } } }); await api.ready;
+  }, view); await nextFrames(page);
+  await page.locator('[data-cx-id="control"] input').fill("User edit");
+  await page.evaluate(async () => { window.control = document.querySelector('[data-cx-id="control"] input');
+    api.view.roots[0].label = "Changed in place"; api.view.roots[0].cells = { name: "Changed cell" };
+    await api.reload(); }); await nextFrames(page);
+  await expect(page.locator('[data-cx-id="changed"]')).toContainText("Changed cell");
+  await expect(page.locator('[data-cx-id="control"] input')).toHaveValue("User edit");
+  expect(await page.evaluate(() => document.querySelector('[data-cx-id="control"] input') === control)).toBe(true);
+});

@@ -163,7 +163,7 @@ public sealed class RuntimeAssetTests {
             var opens = text.IndexOf("/*", StringComparison.Ordinal);
             Assert.False(text.Contains('`') || text.EndsWith('\\') || (opens > 0 && text.IndexOf("*/", opens, StringComparison.Ordinal) < 0),
                 "A line the comment rule could misread: " + text);
-            kept.Add(line);
+            kept.Add(text);
         }
 
         return string.Join("\n", kept);

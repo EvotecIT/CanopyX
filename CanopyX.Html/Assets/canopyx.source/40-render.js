@@ -36,7 +36,7 @@
       host.appendChild(this.live);
       host.appendChild(this.outline);
       this.buildHeader();
-      this.onScroll = () => this.scheduleRender();
+      this.onScroll = () => { this.scheduleRender(); this.stateChanged(); };
       this.onPrint = () => { this.outline.innerHTML = this.toOutline(); };
       grid.addEventListener("scroll", this.onScroll, { passive: true });
       grid.addEventListener("click", (e) => this.onClick(e));
@@ -128,6 +128,7 @@
           e.stopPropagation();
           column.width = e.key === "Home" ? 40 : Math.min(MAX_COLUMN_WIDTH, Math.max(40, column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10)));
           this.applyWidths();
+          this.stateChanged();
         });
         grip.addEventListener("pointerdown", (e) => this.startResize(e, column));
         cell.appendChild(grip);

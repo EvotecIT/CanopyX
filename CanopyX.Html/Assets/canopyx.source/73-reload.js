@@ -38,7 +38,9 @@
           if (!w) w = this.createWrapper(data, owner, index);
           else {
             w.parent = owner; w.idx = index; w.level = owner.level + 1;
-            if (w.h !== data) { w.h = data; w._v = 0; }
+            const content = nodeContent(data);
+            if (w.content !== content) w._v = 0;
+            w.h = data; w.content = content;
             w.hpx = data.detail ? this.detailHeight(data.detail) : this.rowH;
             w.auto = !!data.detail && !(data.detail.height > 0);
           }

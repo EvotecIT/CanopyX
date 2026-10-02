@@ -105,6 +105,7 @@
       const nodes = Array.from(this.selected).map((s) => s.h);
       this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop(), revision);
       if (this.destroyed || revision !== this.selectionRevision) return false;
+      this.stateChanged();
       if (notify) this.notifySelection(w, nodes, revision);
       return revision === this.selectionRevision && !this.destroyed;
     },

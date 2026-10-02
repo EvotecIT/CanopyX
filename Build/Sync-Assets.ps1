@@ -73,7 +73,7 @@ function Remove-CommentLines {
             throw "Keep template literals, continued strings, and comments that open after code out of the runtime source parts: $text"
         }
 
-        $kept.Add($line)
+        $kept.Add($text)
     }
 
     $kept -join "`n"

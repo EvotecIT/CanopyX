@@ -22,8 +22,8 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [ ] Correct ordering of fully materialized inline siblings before paging; query-aware hosted sorting and filtering with cursor invalidation.
 - [x] Programmatic selection, selectability and veto hooks, and explicit select-all scope that never fetches unloaded data.
 - [ ] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
-- [ ] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
-- [ ] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
+- [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
+- [x] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
 - [ ] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
 - [ ] Bounded client caches, large logical-height scrolling, and measured normal/4x rendering within the existing budgets.
 - [ ] Focused Firefox/WebKit coverage, manual reader qualification, JavaScript distribution/types, and representative HtmlForgeX migration proof.

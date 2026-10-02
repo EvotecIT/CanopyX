@@ -105,7 +105,8 @@ public sealed class CanopyView {
     public IDictionary<string, string> Icons { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// Gets or sets the key under which the runtime remembers expanded paths for the browser session.
+    /// Gets or sets the key under which the runtime remembers the view state for the browser session.
+    /// The state includes expansion, selection, columns, sorting, declared filters, time zone, focus, and scroll.
     /// <see langword="null"/> (the default) remembers nothing.
     /// </summary>
     public string? StateKey { get; set; }

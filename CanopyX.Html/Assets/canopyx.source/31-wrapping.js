@@ -1,4 +1,8 @@
   // ---------- tree grid: iterative construction and initial expansion ----------
+  // Snapshot visible payloads so an inline host's in-place edits are detected without serializing whole subtrees.
+  function nodeContent(node) {
+    return JSON.stringify([node.label, node.kind, node.icon, node.cells, node.badges, node.flags, node.detail, node.data]);
+  }
   Object.assign(TreeGrid.prototype, {
     /** Loads lazy children of nodes that start expanded without recursive tree walks. */
     async expandInitial(parent) {
@@ -23,7 +27,8 @@
         const w = {
           key: data.id, h: data, parent: owner, level: owner.level + 1, idx: position, expanded: false,
           children: null, total: null, next: null, inline: false, loading: false, error: null,
-          hpx: data.detail ? this.detailHeight(data.detail) : this.rowH, auto: !!data.detail && !(data.detail.height > 0), _v: 0
+          hpx: data.detail ? this.detailHeight(data.detail) : this.rowH, auto: !!data.detail && !(data.detail.height > 0), _v: 0,
+          content: nodeContent(data)
         };
         this.keyMap.set(data.id, w);
         return w;

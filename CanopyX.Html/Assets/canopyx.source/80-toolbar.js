@@ -39,6 +39,7 @@
       this.activeFilters.clear();
       this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.checked = false; });
       this.emit("filter", { active: [] });
+      this.stateChanged();
     },
 
     /** Combobox search: typing lists hits, arrows move through them, Enter expands the tree to the chosen hit. */

@@ -29,18 +29,9 @@
     },
 
     async setState(state) {
-      if (this.destroyed || !state || !Array.isArray(state.expanded)) {
-        return;
-      }
-      // Invalid or obsolete stored state must not clear current expansion or reject ready.
-      try {
-        for (const path of state.expanded) {
-          if (!Array.isArray(path) || !path.length) return;
-          for (const id of path) requireIdentifier(id, "remembered path ID");
-        }
-      } catch (error) {
-        return;
-      }
+      if (this.destroyed) return false;
+      state = this.readState(state);
+      if (!state) return false;
       if (this.restoreController) this.restoreController.abort();
       const current = this.restoreController = new AbortController();
       this.restoreGeneration = (this.restoreGeneration || 0) + 1;
@@ -55,6 +46,9 @@
       // The restored paths are laid out and rendered together, once.
       const release = this.holdLayout();
       try {
+        this.applyStatePresentation(state);
+        if (state.version) await this.loadStatePaths(state, current);
+        if (this.destroyed || current.signal.aborted) return false;
         this.keyMap.forEach((w) => { w.expanded = false; w.autoExpand = false; });
         this.relayout();
         const paths = state.expanded.slice().sort((a, b) => a.length - b.length);
@@ -83,6 +77,11 @@
           });
           this.relayout();
         }
+        if (!this.destroyed && !current.signal.aborted && state.version) {
+          this.flushLayout();
+          this.applyStatePosition(state, current);
+        }
+        return !this.destroyed && !current.signal.aborted;
       } finally {
         release();
         if (this.restoreController === current) {
@@ -90,6 +89,7 @@
           this.restoreController = null;
           if (fallback && !this.initializing) await this.expandInitial(this.root);
           if (!this.initializing) await this.flushPendingToggles();
+          if (!this.initializing) this.stateChanged();
         }
       }
     },
@@ -141,7 +141,7 @@
       this.saveTimer = setTimeout(() => {
         if (this.destroyed || this.restoring || this.initializing || this.replayingToggles) return;
         try {
-          sessionStorage.setItem(key, JSON.stringify({ expanded: this.getExpandedPaths() }));
+          sessionStorage.setItem(key, JSON.stringify(this.getState()));
         } catch (e) {
           // Storage can be unavailable (private mode, blocked storage).
         }
@@ -269,6 +269,7 @@
         if (Array.isArray(item.flags)) {
           w.h.flags = item.flags.slice();
         }
+        w.content = nodeContent(w.h);
       });
       this.applySort(this.root, true);
       // Rows of removed nodes go at once, even while an opening path holds back the rest.

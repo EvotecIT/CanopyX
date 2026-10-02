@@ -64,7 +64,7 @@
       },
       visibleRows: () => grid.visibleRows(),
       toOutline: () => grid.toOutline(),
-      getState: () => ({ expanded: grid.getExpandedPaths() }),
+      getState: () => grid.getState(),
       setState: (state) => grid.setState(state),
       search: (query, limit) => grid.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
       loadMore: (id) => {

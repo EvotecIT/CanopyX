@@ -279,6 +279,7 @@
       this.fmt = formatting(this.lang, this.local, this.labels);
       this.version++;
       this.scheduleRender();
+      this.stateChanged();
     },
 
     cell(rowEl, index, width, kind) {

@@ -156,6 +156,7 @@
       if (rowEl && domFocus !== false) {
         rowEl.focus({ preventScroll: true });
       }
+      this.stateChanged();
     },
 
     ensureVisible(w) {
@@ -275,6 +276,7 @@
       this.declaredFilter = this.filter;
       // A host that draws its own control for a hidden filter keeps it in step through this event.
       if (changed) this.emit("filter", { active: Array.from(next) });
+      this.stateChanged();
     },
 
     sort(columnId, direction) {
@@ -282,6 +284,7 @@
       this.buildHeader();
       this.applySort(this.root, true);
       this.relayout();
+      this.stateChanged();
     },
 
     setColumnVisible(columnId, visible) {
@@ -296,5 +299,6 @@
       }
       this.buildHeader();
       this.relayout();
+      this.stateChanged();
     }
   });
