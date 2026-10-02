@@ -2374,16 +2374,16 @@
       } else if (w.status === "error") {
         this.retryPage(w);
       } else if (!w.status) {
-        let accepted;
-        if (this.multi && !enter) {
-          accepted = this.select(w, { toggle: true });
-        } else {
-          accepted = this.select(w, { deferNotify: enter && this.expandable(w) });
+        let accepted, revision;
+        try {
+          accepted = this.multi && !enter ? this.select(w, { toggle: true }) :
+            this.select(w, { deferNotify: enter && this.expandable(w) });
+          revision = this.selectionRevision;
+        } finally {
+          if (enter && this.expandable(w)) this.toggle(w);
         }
-        if (enter && this.expandable(w)) {
-          this.toggle(w);
-          if (accepted) this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
-        }
+        if (accepted && enter && this.expandable(w) && revision === this.selectionRevision)
+          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h), revision);
       }
     },
 
@@ -3059,8 +3059,9 @@
         return false;
       }
       const o = options || {};
+      const revision = this.selectionRevision || 0;
       if (this.multi && o.range && this.anchor) {
-        return this.selectRange(w);
+        return this.selectRange(w, revision);
       }
       const next = new Set(this.selected);
       if (this.multi && o.toggle) {
@@ -3069,10 +3070,10 @@
       } else {
         next.clear(); next.add(w);
       }
-      return this.commitSelection(next, w, { notify: !o.deferNotify, reason: "row", anchor: w });
+      return this.commitSelection(next, w, { notify: !o.deferNotify, reason: "row", anchor: w, revision });
     },
 
-    selectRange(w) {
+    selectRange(w, revision = this.selectionRevision || 0) {
       const from = this.indexOf(this.anchor);
       const to = this.indexOf(w);
       if (from < 0 || to < 0) {
@@ -3083,7 +3084,7 @@
         const node = this.rows[i];
         if (!node.status && !node._invalidated && this.isSelectable(node)) next.add(node);
       }
-      return this.commitSelection(next, w, { reason: "range" });
+      return this.commitSelection(next, w, { reason: "range", revision });
     },
 
     isSelectable(w) {
@@ -3093,14 +3094,18 @@
     commitSelection(next, target, options) {
       if (this.destroyed) return false;
       const o = options || {};
-      const revision = this.selectionRevision || 0;
+      const revision = o.revision == null ? this.selectionRevision || 0 : o.revision;
+      if (revision !== (this.selectionRevision || 0)) return false;
       for (const w of next) if (!this.selected.has(w) && !this.isSelectable(w)) return false;
       const nodes = Array.from(next, w => w.h), previous = Array.from(this.selected, w => w.h);
       const node = target ? target.h : null;
       const context = { previous, reason: o.reason || "api" };
       if (this.opts.beforeSelect) {
         const decision = this.opts.beforeSelect(node, nodes.slice(), context);
-        if (decision && typeof decision.then === "function") throw new Error("CanopyX: beforeSelect must return synchronously.");
+        if (decision && typeof decision.then === "function") {
+          Promise.resolve(decision).catch(() => {});
+          throw new Error("CanopyX: beforeSelect must return synchronously.");
+        }
         if (decision === false) return false;
       }
       const event = new CustomEvent("canopyx:beforeselect", { bubbles: true, cancelable: true,
@@ -3109,8 +3114,7 @@
       if (Array.from(next).some(w => w._invalidated || this.keyMap.get(w.key) !== w)) return false;
       this.selected = next;
       if (Object.prototype.hasOwnProperty.call(o, "anchor")) this.anchor = o.anchor;
-      this.selectionChanged(target, o.notify !== false);
-      return true;
+      return this.selectionChanged(target, o.notify !== false);
     },
 
     setSelection(ids) {
@@ -3134,26 +3138,30 @@
       const scope = options && options.scope;
       if (scope !== "visible" && scope !== "loaded") throw new Error("CanopyX: selectAll scope must be visible or loaded.");
       const candidates = scope === "visible" ? this.rows : Array.from(this.keyMap.values());
+      const revision = this.selectionRevision || 0;
       const next = new Set(candidates.filter(w => !w.status && !w._invalidated && this.isSelectable(w)));
       const target = Array.from(next).pop() || null;
-      return this.commitSelection(next, target, { reason: "all", anchor: target });
+      return this.commitSelection(next, target, { reason: "all", anchor: target, revision });
     },
 
     selectionChanged(w, notify = true) {
       this.selectionRevision = (this.selectionRevision || 0) + 1;
+      const revision = this.selectionRevision;
       for (const [node, row] of this.rendered) {
         if (!node.status) setAttr(row, "aria-selected", this.selected.has(node) ? "true" : "false");
       }
       this.scheduleRender();
       const nodes = Array.from(this.selected).map((s) => s.h);
-      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop());
-      if (notify) this.notifySelection(w, nodes);
+      this.writeDeepLink(this.selected.has(w) ? w : Array.from(this.selected).pop(), revision);
+      if (this.destroyed || revision !== this.selectionRevision) return false;
+      if (notify) this.notifySelection(w, nodes, revision);
+      return revision === this.selectionRevision && !this.destroyed;
     },
 
-    notifySelection(w, nodes) {
+    notifySelection(w, nodes, revision = this.selectionRevision) {
       const node = w ? w.h : null;
       this.emit("select", { node, nodes });
-      if (this.opts.onSelect) {
+      if (this.opts.onSelect && revision === this.selectionRevision && !this.destroyed) {
         this.opts.onSelect(node, nodes);
       }
     }
@@ -3778,7 +3786,7 @@
       }
     },
 
-    writeDeepLink(w) {
+    writeDeepLink(w, revision = this.selectionRevision) {
       if (!this.view.deepLink) {
         return;
       }
@@ -3790,7 +3798,7 @@
         } catch (e) {
           if (global.console) global.console.error(e);
         }
-        if (link == null) {
+        if (link == null || this.destroyed || revision !== this.selectionRevision) {
           return;
         }
         hash = "#" + String(link).replace(/^#/, "");

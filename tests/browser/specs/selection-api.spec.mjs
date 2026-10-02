@@ -155,3 +155,55 @@ test("a vetoed Enter can expand its row without announcing selection", async ({ 
   await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
   expect(await page.evaluate(() => window.selectionEvents)).toEqual([]);
 });
+
+for (const operation of ["all", "range"]) test("a nested eligibility selection wins over " + operation, async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async operation => {
+    const host = api.element, data = api.view; api.destroy();
+    let nested = false, armed = false;
+    window.api = CanopyX.createTreeGrid(host, { view: data, isSelectable: node => {
+      if (armed && !nested && node.id === "parent") { nested = true; api.setSelection(["tail"]); }
+      return true;
+    } });
+    await api.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (operation === "range") api.setSelection(["parent"]);
+    armed = true;
+    if (operation === "all") api.selectAll({ scope: "visible" });
+    else document.querySelector('[data-cx-id="tail"]').dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true }));
+    return api.getSelected().map(n => n.id);
+  }, operation);
+  expect(result).toEqual(["tail"]);
+});
+
+for (const asynchronous of [false, true]) test("Enter expansion survives a " + (asynchronous ? "asynchronous" : "throwing") + " veto", async ({ page }) => {
+  await open(page); const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.evaluate(asynchronous => { window.selectionPolicy = asynchronous ? async () => false : () => { throw new Error("Host failure"); }; }, asynchronous);
+  await page.locator('[data-cx-id="parent"]').focus(); await page.keyboard.press("Enter");
+  await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
+  expect(await page.evaluate(() => window.selectionEvents)).toEqual([]);
+  expect(errors.some(error => error.includes(asynchronous ? "synchronously" : "Host failure"))).toBe(true);
+});
+
+test("a nested link selection owns the final URL and notification", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async () => {
+    const host = api.element, data = api.view; api.destroy(); const events = [];
+    window.api = CanopyX.createTreeGrid(host, { view: data, parseLink: () => null,
+      formatLink: (path, node) => { if (node && node.id === "parent") api.setSelection(["tail"]); return path.join("/"); },
+      onSelect: node => events.push(node && node.id) });
+    await api.ready; api.setSelection(["parent"]);
+    return { ids: api.getSelected().map(n => n.id), hash: location.hash, events };
+  });
+  expect(result).toEqual({ ids: ["tail"], hash: "#tail", events: ["tail"] });
+});
+
+test("a selection event's nested selection supersedes the older callback", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(() => {
+    api.element.addEventListener("canopyx:select", () => api.setSelection(["tail"]), { once: true });
+    const accepted = api.setSelection(["parent"]);
+    return { accepted, ids: api.getSelected().map(n => n.id), events: selectionEvents };
+  });
+  expect(result).toEqual({ accepted: false, ids: ["tail"], events: [{ node: "tail", nodes: ["tail"] }] });
+});

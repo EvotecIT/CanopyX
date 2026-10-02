@@ -90,16 +90,16 @@
       } else if (w.status === "error") {
         this.retryPage(w);
       } else if (!w.status) {
-        let accepted;
-        if (this.multi && !enter) {
-          accepted = this.select(w, { toggle: true });
-        } else {
-          accepted = this.select(w, { deferNotify: enter && this.expandable(w) });
+        let accepted, revision;
+        try {
+          accepted = this.multi && !enter ? this.select(w, { toggle: true }) :
+            this.select(w, { deferNotify: enter && this.expandable(w) });
+          revision = this.selectionRevision;
+        } finally {
+          if (enter && this.expandable(w)) this.toggle(w);
         }
-        if (enter && this.expandable(w)) {
-          this.toggle(w);
-          if (accepted) this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
-        }
+        if (accepted && enter && this.expandable(w) && revision === this.selectionRevision)
+          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h), revision);
       }
     },
 
