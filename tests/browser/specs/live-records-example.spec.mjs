@@ -9,7 +9,7 @@ test("the generated host sorts records beyond the first inline page", async ({ p
   await expect(value).toHaveAttribute("aria-sort", "descending");
   const records = page.locator('.cx-row[data-cx-id^="record-1-"]');
   await expect(records).toHaveCount(4);
-  expect(await records.evaluateAll(rows => rows.map(row => row.getAttribute("data-cx-id"))))
+  await expect.poll(() => records.evaluateAll(rows => rows.map(row => row.getAttribute("data-cx-id"))))
     .toEqual(["record-1-8", "record-1-7", "record-1-6", "record-1-5"]);
 });
 
