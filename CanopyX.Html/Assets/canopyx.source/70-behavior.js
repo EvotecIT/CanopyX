@@ -52,6 +52,7 @@
       const suppressInitial = !!this.restoring;
       const token = w.pageToken = {};
       const controller = w.pageController = new AbortController();
+      const navigation = navigationScope(this, controller.signal);
       const generation = w.dataGeneration || 0;
       const obsolete = () => this.destroyed || w._invalidated || w.pageToken !== token || generation !== (w.dataGeneration || 0);
       const run = (async () => {
@@ -61,11 +62,15 @@
         let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-          const page = inlineItems ? this.inlinePage(w, cursor) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+          const page = inlineItems ? this.inlinePage(w, cursor) : await navigation.wait(this.source.page(w === this.root ? null : w.h, cursor, this.sourceRequest(controller.signal)));
           if (obsolete()) return;
           const existing = inlineItems ? new Map(this.keyMap) : this.keyMap;
           if (inlineItems) for (const key of this.descendants(w).keys()) existing.delete(key);
           const items = validatePage(page, existing, cursor ? (w.children || []).length : 0);
+          if (this.queryAware && !inlineItems) {
+            const revision = snapshotRevision(page, this.datasetRevision);
+            if (this.datasetRevision == null) this.datasetRevision = revision;
+          }
           if (cursor != null && !items.length && page.next === cursor) {
             throw new Error("CanopyX: page continuation did not advance.");
           }
@@ -98,6 +103,7 @@
           w.error = err && err.message ? err.message : String(err);
           this.emit("error", { node: w.h, message: w.error });
         } finally {
+          navigation.dispose();
           controller.abort();
           if (w.pageToken !== token) return;
           w.pageToken = null;
@@ -251,9 +257,13 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
-      const next = new Set(this.activeFilters);
+      const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
       if (active) next.add(id);
       else next.delete(id);
+      if (this.queryAware) {
+        if (!(this.view.filters || []).some(f => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+        return this.setActiveFilters(Array.from(next));
+      }
       this.applyActiveFilters([id], next);
     },
 
@@ -263,6 +273,7 @@
      */
     setActiveFilters(ids) {
       if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+      if (this.queryAware) return this.setQuery({ version: 1, sort: (this.pendingQuery || this.acceptedQuery).sort, filters: ids });
       this.applyActiveFilters(ids, new Set(ids));
     },
 
@@ -290,6 +301,7 @@
     },
 
     sort(columnId, direction) {
+      if (this.queryAware) return this.setQuery({ version: 1, sort: direction ? { column: columnId, direction } : null, filters: (this.pendingQuery || this.acceptedQuery).filters });
       this.sortState = direction ? { column: columnId, direction: direction } : null;
       this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.buildHeader();

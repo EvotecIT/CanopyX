@@ -155,6 +155,10 @@
   /** Remote requests have a bounded lifetime; options are { timeoutMs?: number, signal?: AbortSignal }. */
   function remoteSource(view, options) {
     const source = view.source;
+    if (source.queryAware !== undefined && typeof source.queryAware !== "boolean") throw new Error("CanopyX: queryAware must be a boolean.");
+    if (source.queryAware) for (const name of ["children", "search", "counts"]) {
+      if (source[name] != null && !/^[^#]*\{viewQuery\}/.test(source[name])) throw new Error("CanopyX: query-aware " + name + " needs {viewQuery} before its fragment.");
+    }
     const settings = options || {};
     const timeoutMs = settings.timeoutMs === undefined ? 30000 : settings.timeoutMs;
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
@@ -162,36 +166,44 @@
     }
     const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
     const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
+    const queryValues = request => {
+      if (!source.queryAware) return {};
+      if (!request || !request.query || request.query.version !== 1) throw new Error("CanopyX: a query-aware request needs a view query.");
+      return { viewQuery: encodeURIComponent(JSON.stringify(request.query)), revision: encodeURIComponent(request.revision || "") };
+    };
     return {
       kind: "remote",
+      queryAware: source.queryAware === true,
       canSearch: !!source.search,
       async page(node, cursor, request) {
-        const doc = checkPage(await getJson(fill(source.children, {
+        const doc = checkPage(await getJson(fill(source.children, Object.assign(queryValues(request), {
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
-        }), "page", request), node);
-        return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+        })), "page", request), node);
+        return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0, revision: doc.revision };
       },
       async search(query, limit, request) {
         if (!source.search) {
-          return { hits: [], total: 0, truncated: false };
+          return { hits: [], total: 0, truncated: false, revision: request && request.revision };
         }
-        const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search", request);
+        const doc = await getJson(fill(source.search, Object.assign(queryValues(request), { query: encodeURIComponent(query), limit: String(limit) })), "search", request);
         if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
         if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
           throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
         }
-        return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
+        return { hits: doc.hits, total: doc.total, truncated: doc.truncated, revision: doc.revision };
       },
       counts: source.counts ? async (ids, request) => {
         const items = [];
+        let revision = request && request.revision;
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
           // The host's normal query parser decodes once; retain encoded components for its split-then-decode step.
           const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
-          const doc = await getJson(fill(source.counts, { ids: batch }), "counts", request);
+          const doc = await getJson(fill(source.counts, Object.assign(queryValues(request), { ids: batch })), "counts", request);
+          if (source.queryAware) revision = snapshotRevision(doc, revision);
           items.push.apply(items, doc.items);
         }
-        return { protocol: PROTOCOL, type: "counts", items: items };
+        return Object.assign({ protocol: PROTOCOL, type: "counts", items: items }, source.queryAware ? { revision } : {});
       } : null
     };
   }

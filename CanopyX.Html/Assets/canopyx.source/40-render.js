@@ -109,7 +109,7 @@
           const button = h("button", "cx-sort");
           button.type = "button";
           setText(button, column.title);
-          button.addEventListener("click", () => this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
+          button.addEventListener("click", () => this.queryAware ? this.querySortHeader(column.id) : this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
           cell.appendChild(button);
         } else {
           const title = h("span", "cx-htext");

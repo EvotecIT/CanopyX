@@ -13,6 +13,9 @@
    *   isSelectable(node) returning false prevents adding that node; it remains focusable. beforeSelect(node, nodes,
    *   { previous, reason }) is a synchronous veto: false rejects the entire proposal. The cancelable
    *   canopyx:beforeselect event offers the same veto. Clearing selection notifies onSelect with node null and nodes [].
+   *   A queryAware source receives { signal, query, revision } with each request and returns revision on pages,
+   *   search results, and counts. setQuery, sort, and declared-filter methods return promises on that source.
+   *   A new query stages its roots before replacing accepted rows; canopyx:query reports { query, revision }.
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
    *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling, and so do the rows
@@ -38,11 +41,13 @@
       ready: grid.ready,
       expandPath: (ids, o) => grid.expandPath(ids, o),
       // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
-      setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
+      setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
       setActiveFilters: (ids) => grid.setActiveFilters(ids),
       getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
+      getQuery: () => grid.getQuery(),
+      setQuery: (query, options) => grid.setQuery(query, options),
       setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
       setColumnWidth: (columnId, width) => grid.setColumnWidth(columnId, width),
       setTreeColumnPinned: (pinned) => grid.setTreeColumnPinned(pinned),

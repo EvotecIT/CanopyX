@@ -15,7 +15,10 @@
         const input = h("input");
         input.type = "checkbox";
         input.setAttribute("data-cx-filter", filter.id);
-        input.addEventListener("change", () => this.setFilterActive(filter.id, input.checked));
+        input.addEventListener("change", () => {
+          const pending = this.setFilterActive(filter.id, input.checked);
+          if (pending && pending.catch) pending.catch(() => {});
+        });
         label.appendChild(input);
         label.appendChild(document.createTextNode(filter.label));
         bar.appendChild(label);
@@ -197,7 +200,7 @@
         clearTimeout(blurTimer);
         blurTimer = setTimeout(close, 150);
       });
-      this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
+      this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); hits = []; close(); };
       box.appendChild(input);
       box.appendChild(list);
       box.appendChild(status);

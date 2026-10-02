@@ -41,6 +41,7 @@ public sealed class CanopyLabels {
         [nameof(ColumnWidth)] = "{width} pixels",
         [nameof(Loading)] = "Loading…",
         [nameof(LoadError)] = "Could not load: {error} (Enter to retry)",
+        [nameof(QueryFailed)] = "Could not update the view: {error}",
         [nameof(ShowMore)] = "Show more ({loaded} of {total} loaded)",
         [nameof(ShowMoreUnknownTotal)] = "Show more ({loaded} loaded)",
         [nameof(PageLoaded)] = "{loaded} of {total} loaded",
@@ -60,7 +61,7 @@ public sealed class CanopyLabels {
     private static readonly string[] RuntimeNames = {
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(SearchNoResults), nameof(SearchTooShort), nameof(SearchWordTooShort), nameof(SearchFailed), nameof(Columns), nameof(VisibleColumns),
-        nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
+        nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(QueryFailed), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
         nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError)
     };
 
@@ -110,6 +111,9 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the row shown when children could not be loaded because of <c>{error}</c>. Default "Could not load: {error} (Enter to retry)".</summary>
     public string LoadError { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the announcement when a view query failed with <c>{error}</c>. Default "Could not update the view: {error}".</summary>
+    public string QueryFailed { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the "show more" row, with <c>{loaded}</c> of <c>{total}</c> children loaded. Default "Show more ({loaded} of {total} loaded)".</summary>
     public string ShowMore { get => Get(); set => Set(value); }

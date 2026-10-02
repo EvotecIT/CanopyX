@@ -4,8 +4,8 @@
   // in between are never laid out, and focus moves once, at the end. Before that, the source may load the pages the path
   // will read all at once (prefetch; a bundle's search index says where they are).
   /** Races each navigation await against cancellation without cancelling a load another caller may own. */
-  function navigationScope(grid, signal) {
-    const signals = Array.from(new Set([grid.lifetime.signal].concat(signal || []).filter(Boolean)));
+  function navigationScope(grid, signal, dataBound = false) {
+    const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
     let abort;
     const stopped = new Promise((resolve) => { abort = () => resolve(); });
     signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
@@ -45,7 +45,7 @@
      * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
      */
     async expandPath(ids, options) {
-      const navigation = navigationScope(this, options && options.signal);
+      const navigation = navigationScope(this, options && options.signal, true);
       try { return await this.navigatePath(ids, options, navigation); }
       finally { navigation.dispose(); }
     },
@@ -75,7 +75,7 @@
       // Opening levels puts new rows around the node: the frame that shows it first draws only what is in view.
       if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.clearDeclaredFilters();
+        if (!this.queryAware) this.clearDeclaredFilters();
         this.setFilter(null);
         this.flushLayout();
       }
@@ -109,7 +109,7 @@
       if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
       if (!opens.length && !finds.length) return;
       try {
-        await this.source.prefetch(opens, finds);
+        await this.source.prefetch(opens, finds, this.sourceRequest());
       } catch (err) {
         // Prefetching only saves time; opening the path reads and reports what failed.
       }

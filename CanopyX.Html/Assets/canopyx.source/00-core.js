@@ -65,6 +65,7 @@
     if (doc.type !== type) {
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
+    if (Object.prototype.hasOwnProperty.call(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
     if (type === "search") {
       validateSearchResult(doc);
       if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
@@ -229,6 +230,7 @@
     searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
     columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
     loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+    queryFailed: "Could not update the view: {error}",
     showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
     pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
     utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"

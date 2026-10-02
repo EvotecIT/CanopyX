@@ -74,6 +74,7 @@ The runtime writes some text of its own: the search box's hints and announcement
 | `columnWidth` | {width} pixels | `width` |
 | `loading` | Loading… | |
 | `loadError` | Could not load: {error} (Enter to retry) | `error` |
+| `queryFailed` | Could not update the view: {error} | `error` |
 | `showMore` | Show more ({loaded} of {total} loaded) | `loaded`, `total` |
 | `showMoreUnknownTotal` | Show more ({loaded} loaded) | `loaded` |
 | `pageLoaded` | {loaded} of {total} loaded | `loaded`, `total` |
@@ -90,6 +91,8 @@ The runtime writes some text of its own: the search box's hints and announcement
 A node matches a filter when its `flags` contain the filter's `flag`; a matching node keeps its whole subtree. A node that does not match stays visible, with its children filtered, when a loaded descendant matches or when it carries the `ancestorFlag`. The runtime never walks data it has not loaded, so a host that wants a collapsed branch to stay visible under a filter marks it with the ancestor flag. Rollup flags like these are always computed by the host.
 
 The toolbar draws a switch for every filter that is not `hidden`. A C# host that writes pages with and without a filter bar of its own from one view names the filters to hide per page in `CanopyHtmlOptions.HiddenFilterIds` (or `CanopyView.ToJson(hiddenFilterIds)`), which writes them as `hidden` without changing the view. A hidden filter is for a host that draws its own control, for example one "only changed" button in front of a filter per time window: it declares the filters, turns one on or off with `grid.setFilterActive(id, active)` or sets the whole active set at once with `grid.setActiveFilters(ids)` (one row rebuild and at most one event, for a control that switches from one filter to another), reads `grid.getActiveFilters()`, and listens for the `canopyx:filter` event on the host element, whose `detail.active` lists the ids of the active filters. The event fires only when the set changes, also when the grid itself turns the filters off: when a search hit or a deep link leads to a row the filters hide, and when the host sets a predicate of its own with `grid.setFilter`, which replaces the declared filters. `setFilterActive` and `setActiveFilters` reject an id the view does not declare, before they change anything.
+
+For a query-aware remote source, the host applies declared filters before paging and supplies the ancestor rows needed to reach matches. Filter methods return promises, and local predicates do not turn those server filters off. See [Queries Before Remote Paging](#queries-before-remote-paging).
 
 ## Node
 
@@ -195,6 +198,7 @@ Table and property cells follow the cell rules above. In the interactive browser
 - `offset` is the index of the first item among all of the parent's children.
 - `total` is optional; when present it is at least `offset` plus the number of items. A continuation is required exactly when that sum is below the known total.
 - `next` is an opaque continuation. The data source passes it back to get the next page; `null` means the last page. The runtime shows a "show more" row while `next` is set.
+- `revision` is an optional nonempty identifier for the dataset snapshot. Query-aware sources require it on every page, search result, and counts document; ordinary inline, sidecar, and remote sources do not require it.
 - Items may carry inline `children`. A node with a lazy `ref` or positive `childCount` and no inline children must declare `hasChildren: true`; readers reject the otherwise unreachable children before attaching the page.
 
 ## Search
@@ -378,6 +382,24 @@ The runtime fills the placeholders with URL-encoded values and sends `GET` reque
 - `counts` (optional): `{ids}` is the node ids, each encoded twice with `encodeURIComponent`, joined with a literal comma and inserted without further encoding. After normal query-parameter decoding, split on commas and decode each component once more; for example, the id `a,b` arrives as `a%2Cb` in the decoded parameter, so it remains one id. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
 
 A response with a non-success status, invalid JSON, or the wrong `protocol` or `type` shows an error row with a retry action in place of the children. Authorization, page-size limits, and query-time limits belong to the host's endpoints.
+
+### Queries Before Remote Paging
+
+`CanopySource.RemoteQuery` declares `queryAware: true`. Every endpoint it provides contains `{viewQuery}` before any fragment. The placeholder carries URL-encoded JSON, separate from the search text in `{query}`:
+
+```json
+{ "version": 1, "sort": { "column": "value", "direction": "desc" }, "filters": ["flagged"] }
+```
+
+`sort` is `null` or one sortable column ID and `asc` or `desc`. `filters` holds unique IDs declared by the view. Its schema is `$defs/viewQuery`; it is a request parameter, not a document envelope. The host validates these IDs against its own allowlist and applies the query to the complete dataset before paging. It supplies ancestors needed to reach filtered descendants. The runtime preserves the order and membership it receives, including inline children inside remote pages.
+
+`grid.getQuery()` returns the accepted query. `await grid.setQuery(query, { signal })`, `await grid.sort(column, direction)`, and the declared-filter methods stage a new root page. Accepted rows, selection, and sort indicators remain until validation succeeds. Failure rejects the promise and emits `canopyx:error`; caller cancellation, destruction, or a newer query returns `false`. An equivalent query returns `true` without fetching. On acceptance, `canopyx:query` reports `{ query, revision }`, and changed declared filters emit `canopyx:filter`. A local `setFilter` predicate can further narrow the accepted rows without changing the host query or its filter switches.
+
+Every page, search result, and counts document carries the same `revision` for one accepted snapshot. `{revision}` is an optional URL placeholder: empty for a new root query, otherwise the accepted revision. Hosts bind continuations to the query and revision and reject stale cursors. A mismatched revision is rejected before rows, hits, or counts are applied. Use `grid.reload()` to accept a new root revision; it stages through the loaded root range. Child reloads stay in the accepted revision.
+
+A query replacement retires old page, search, counts, reload, and navigation consumers. A custom source receives `query` as a frozen snapshot and `revision` alongside `signal` in its request argument for `page(node, cursor, request)`, `search(text, limit, request)`, `counts(ids, request)`, and optional `prefetch(opens, finds, request)`. Its transport still owns cancellation and deadlines; the grid can release a consumer even if that transport ignores its signal. Custom page results and search results include `revision`; custom counts return a counts document with that field.
+
+Loaded roots and complete inline descendants preserve surviving identities. Old lazy child lists are discarded because their membership and order may have changed; open surviving parents load their new children. Row selection is pruned when its data leaves the loaded snapshot. A saved view applies its query before restoring columns, paths, selection, and position. The generated `query-records.html` example demonstrates host ordering, filtering, failures, and reloads from a source that also works from disk.
 
 ## Security Notes
 

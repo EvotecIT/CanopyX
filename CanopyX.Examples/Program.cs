@@ -108,6 +108,8 @@ barOptions.HiddenFilterIds.Add("large");
 WriteTemplate("filter-bar.html", Path.Combine(output, "filter-bar.html"), barView.ToHtmlFragment(barOptions));
 WriteTemplate("live-records.html", Path.Combine(output, "live-records.html"),
     LiveRecordsView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "60vh" }));
+WriteTemplate("query-records.html", Path.Combine(output, "query-records.html"),
+    QueryRecordsView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }));
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 

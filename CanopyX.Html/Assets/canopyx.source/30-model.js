@@ -16,6 +16,10 @@
       this.id = "cx" + ++instanceSeq;
       this.lifetime = new AbortController();
       this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
+      this.queryAware = this.source.queryAware === true;
+      this.dataLifetime = new AbortController();
+      this.acceptedQuery = Object.freeze({ version: 1, sort: null, filters: Object.freeze([]) });
+      this.datasetRevision = null;
       this.rowH = view.rowHeight || 28;
       this.pageSize = view.pageSize || 100;
       this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
@@ -76,7 +80,13 @@
     }
 
     async search(query, limit) {
-      return validateSearchResult(await this.source.search(query, limit));
+      const navigation = navigationScope(this, this.dataLifetime.signal);
+      try {
+        const result = await navigation.wait(this.source.search(query, limit, this.sourceRequest(this.dataLifetime.signal)));
+        if (navigation.cancelled()) throw new DOMException("Search snapshot was retired.", "AbortError");
+        if (this.queryAware) snapshotRevision(result, this.datasetRevision);
+        return validateSearchResult(result);
+      } finally { navigation.dispose(); }
     }
 
     buildIcons(icons) {

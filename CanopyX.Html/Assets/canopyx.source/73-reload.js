@@ -24,7 +24,7 @@
     },
 
     /** Replaces a validated list and reuses surviving identities, including host controls on unchanged rows. */
-    reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false) {
+    reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false, resetLazy = false) {
       const old = this.descendants(parent), retained = new Set(), incoming = new Set();
       const pendingData = items.slice();
       while (pendingData.length) {
@@ -70,14 +70,14 @@
             // An ID moved into the new list cannot also remain in an old cached lazy subtree.
             const cached = this.descendants(w);
             const conflict = Array.from(cached.keys()).some(id => incoming.has(id));
-            if (conflict || data.childCount != null && w.children &&
+            if (resetLazy || conflict || data.childCount != null && w.children &&
                 (data.childCount < w.children.length || !w.next && data.childCount !== w.children.length)) {
               this.retirePage(w); w.children = null; w.inlineCache = null; w.next = null;
             } else {
               for (const child of cached.values()) { child.level = child.parent.level + 1; retained.add(child); }
             }
             w.total = data.childCount == null ? w.total : data.childCount;
-            if (!reused) w.autoExpand = !suppressExpansion && !this.restoring && !!data.expanded;
+            if (!reused || resetLazy) w.autoExpand = !suppressExpansion && !this.restoring && !!(data.expanded || resetLazy && w.expanded);
           }
           return w;
         });
@@ -110,6 +110,7 @@
     /** Rereads a list through its loaded range; cancellation and failed validation leave existing data attached. */
     async reload(id, options) {
       if (this.destroyed) return false;
+      if (id == null && this.queryAware) return this.setQuery(this.acceptedQuery, Object.assign({}, options, { force: true }));
       const parent = id == null ? this.root : this.keyMap.get(id);
       if (!parent || parent._invalidated) throw new Error("CanopyX: reload needs a loaded parent ID, or null for roots.");
       if (parent !== this.root && !this.expandable(parent)) throw new Error("CanopyX: reload needs a node with children.");
@@ -132,9 +133,10 @@
         do {
           if (navigation.cancelled() || parent._invalidated) return false;
           const page = isInline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
-            await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
+            await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, this.sourceRequest(controller.signal)));
           if (navigation.cancelled() || parent._invalidated) return false;
           validatePage(page, outside, items.length);
+          if (this.queryAware && !isInline) snapshotRevision(page, this.datasetRevision);
           const pending = page.items.slice();
           while (pending.length) {
             const node = pending.pop(); outside.set(node.id, true);

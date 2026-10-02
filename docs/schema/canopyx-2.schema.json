@@ -189,11 +189,18 @@
         {
           "properties": {
             "kind": { "const": "remote" },
+            "queryAware": { "description": "The host applies the view query before paging; every page carries a dataset revision.", "type": "boolean" },
             "children": { "type": "string", "pattern": "^[^#]*\\{ref\\}[^#]*\\{cursor\\}|^[^#]*\\{cursor\\}[^#]*\\{ref\\}" },
             "search": { "type": "string", "pattern": "^[^#]*\\{query\\}[^#]*\\{limit\\}|^[^#]*\\{limit\\}[^#]*\\{query\\}" },
             "counts": { "type": "string", "pattern": "^[^#]*\\{ids\\}" }
           },
           "required": ["children"],
+          "if": { "required": ["queryAware"], "properties": { "queryAware": { "const": true } } },
+          "then": { "properties": {
+            "children": { "pattern": "^[^#]*\\{viewQuery\\}" },
+            "search": { "pattern": "^[^#]*\\{viewQuery\\}" },
+            "counts": { "pattern": "^[^#]*\\{viewQuery\\}" }
+          } },
           "additionalProperties": false
         }
       ]
@@ -271,6 +278,7 @@
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
             "loading": { "$ref": "#/$defs/accessibleLabel" },
             "loadError": { "$ref": "#/$defs/accessibleLabel" },
+            "queryFailed": { "$ref": "#/$defs/accessibleLabel" },
             "showMore": { "$ref": "#/$defs/accessibleLabel" },
             "showMoreUnknownTotal": { "$ref": "#/$defs/accessibleLabel" },
             "pageLoaded": { "$ref": "#/$defs/accessibleLabel" },
@@ -296,6 +304,20 @@
         "then": { "properties": { "source": { "required": ["search"] } } }
       }]
     },
+    "viewQuery": {
+      "description": "JSON carried in the viewQuery URL parameter; it is not a document envelope.",
+      "type": "object",
+      "required": ["version", "sort", "filters"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "sort": { "oneOf": [ { "type": "null" }, {
+          "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+          "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } }
+        } ] },
+        "filters": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } }
+      }
+    },
     "page": {
       "type": "object",
       "required": ["protocol", "type", "parent", "offset", "items", "next"],
@@ -303,6 +325,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "page" },
+        "revision": { "$ref": "#/$defs/identifier" },
         "parent": { "type": ["string", "null"], "minLength": 1, "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$" },
         "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
@@ -317,6 +340,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "search" },
+        "revision": { "$ref": "#/$defs/identifier" },
         "query": { "type": "string" },
         "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "truncated": { "type": "boolean" },
@@ -331,6 +355,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "counts" },
+        "revision": { "$ref": "#/$defs/identifier" },
         "items": {
           "type": "array",
           "items": {

@@ -61,6 +61,7 @@ throw new Error("CanopyX: unsupported protocol '" + doc.protocol + "' (this runt
 if (doc.type !== type) {
 throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
 }
+if (Object.prototype.hasOwnProperty.call(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
 if (type === "search") {
 validateSearchResult(doc);
 if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
@@ -209,6 +210,7 @@ searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
 searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
 columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
 loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+queryFailed: "Could not update the view: {error}",
 showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
 pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
 utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
@@ -905,6 +907,10 @@ search: sidecarSearch(load, manifest, hints)
 
 function remoteSource(view, options) {
 const source = view.source;
+if (source.queryAware !== undefined && typeof source.queryAware !== "boolean") throw new Error("CanopyX: queryAware must be a boolean.");
+if (source.queryAware) for (const name of ["children", "search", "counts"]) {
+if (source[name] != null && !/^[^#]*\{viewQuery\}/.test(source[name])) throw new Error("CanopyX: query-aware " + name + " needs {viewQuery} before its fragment.");
+}
 const settings = options || {};
 const timeoutMs = settings.timeoutMs === undefined ? 30000 : settings.timeoutMs;
 if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
@@ -912,35 +918,43 @@ throw new Error("CanopyX: request timeout must be an integer from 1 to 214748364
 }
 const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
 const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
+const queryValues = request => {
+if (!source.queryAware) return {};
+if (!request || !request.query || request.query.version !== 1) throw new Error("CanopyX: a query-aware request needs a view query.");
+return { viewQuery: encodeURIComponent(JSON.stringify(request.query)), revision: encodeURIComponent(request.revision || "") };
+};
 return {
 kind: "remote",
+queryAware: source.queryAware === true,
 canSearch: !!source.search,
 async page(node, cursor, request) {
-const doc = checkPage(await getJson(fill(source.children, {
+const doc = checkPage(await getJson(fill(source.children, Object.assign(queryValues(request), {
 ref: node ? encodeURIComponent(node.ref || node.id) : "",
 cursor: cursor ? encodeURIComponent(cursor) : ""
-}), "page", request), node);
-return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+})), "page", request), node);
+return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0, revision: doc.revision };
 },
 async search(query, limit, request) {
 if (!source.search) {
-return { hits: [], total: 0, truncated: false };
+return { hits: [], total: 0, truncated: false, revision: request && request.revision };
 }
-const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search", request);
+const doc = await getJson(fill(source.search, Object.assign(queryValues(request), { query: encodeURIComponent(query), limit: String(limit) })), "search", request);
 if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
 if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
 throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
 }
-return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
+return { hits: doc.hits, total: doc.total, truncated: doc.truncated, revision: doc.revision };
 },
 counts: source.counts ? async (ids, request) => {
 const items = [];
+let revision = request && request.revision;
 for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
 const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
-const doc = await getJson(fill(source.counts, { ids: batch }), "counts", request);
+const doc = await getJson(fill(source.counts, Object.assign(queryValues(request), { ids: batch })), "counts", request);
+if (source.queryAware) revision = snapshotRevision(doc, revision);
 items.push.apply(items, doc.items);
 }
-return { protocol: PROTOCOL, type: "counts", items: items };
+return Object.assign({ protocol: PROTOCOL, type: "counts", items: items }, source.queryAware ? { revision } : {});
 } : null
 };
 }
@@ -1000,6 +1014,10 @@ if (options[name] !== undefined && typeof options[name] !== "function") throw ne
 this.id = "cx" + ++instanceSeq;
 this.lifetime = new AbortController();
 this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
+this.queryAware = this.source.queryAware === true;
+this.dataLifetime = new AbortController();
+this.acceptedQuery = Object.freeze({ version: 1, sort: null, filters: Object.freeze([]) });
+this.datasetRevision = null;
 this.rowH = view.rowHeight || 28;
 this.pageSize = view.pageSize || 100;
 this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
@@ -1056,7 +1074,13 @@ this.ready = this.init();
 }
 
 async search(query, limit) {
-return validateSearchResult(await this.source.search(query, limit));
+const navigation = navigationScope(this, this.dataLifetime.signal);
+try {
+const result = await navigation.wait(this.source.search(query, limit, this.sourceRequest(this.dataLifetime.signal)));
+if (navigation.cancelled()) throw new DOMException("Search snapshot was retired.", "AbortError");
+if (this.queryAware) snapshotRevision(result, this.datasetRevision);
+return validateSearchResult(result);
+} finally { navigation.dispose(); }
 }
 
 buildIcons(icons) {
@@ -1320,6 +1344,7 @@ this.canvas.style.height = y + "px";
 },
 
 applySort(parent, deep) {
+if (this.queryAware) return;
 const pending = [parent];
 while (pending.length) {
 const owner = pending.pop();
@@ -1416,6 +1441,7 @@ for (const child of node.children) pending.push(child);
 function validatePage(page, existing, expectedOffset) {
 if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
 const items = page.items;
+if (page.revision !== undefined) requireIdentifier(page.revision, "dataset revision");
 if (Object.prototype.hasOwnProperty.call(page, "next") && page.next !== null) {
 requireIdentifier(page.next, "page continuation");
 }
@@ -1443,7 +1469,7 @@ let order = w.inlineOrder;
 const version = this.inlineOrderVersion || 0, generation = w.dataGeneration || 0;
 if (!order || order.source !== source || order.version !== version || order.generation !== generation) {
 const indices = Uint32Array.from({ length: source.length }, (_, index) => index);
-const state = this.sortState, column = state && this.columns.find(c => c.id === state.column);
+const state = !this.queryAware && this.sortState, column = state && this.columns.find(c => c.id === state.column);
 if (column) {
 const columnIndex = this.columns.indexOf(column), direction = state.direction === "desc" ? -1 : 1;
 const keys = source.map(node => sortKey(this.cellOf(node, column, columnIndex), column));
@@ -1498,6 +1524,46 @@ if (this.countRevisions) this.countRevisions.set(w.key, (this.countRevisions.get
 }
 size -= group.nodes.length;
 }
+}
+});
+function readQuery(grid, value) {
+if (!value || value.version !== 1 || !Array.isArray(value.filters) ||
+value.sort === undefined || typeof value !== "object") throw new Error("CanopyX: query needs version 1, sort, and filters.");
+let sort = null;
+if (value.sort !== null) {
+const state = value.sort, column = state && grid.columns.find(c => c.id === state.column && c.sortable);
+if (!column || state.direction !== "asc" && state.direction !== "desc") throw new Error("CanopyX: invalid query sort.");
+sort = Object.freeze({ column: column.id, direction: state.direction });
+}
+const named = new Set(value.filters);
+if (named.size !== value.filters.length || value.filters.some(id => !(grid.view.filters || []).some(f => f.id === id)))
+throw new Error("CanopyX: query filters must be unique declared IDs.");
+const filters = Object.freeze((grid.view.filters || []).filter(f => named.has(f.id)).map(f => f.id));
+return Object.freeze({ version: 1, sort, filters });
+}
+
+function snapshotRevision(value, expected) {
+requireIdentifier(value && value.revision, "dataset revision");
+if (expected != null && value.revision !== expected) throw new Error("CanopyX: dataset revision changed; reload the roots before continuing.");
+return value.revision;
+}
+
+Object.assign(TreeGrid.prototype, {
+getQuery() {
+return { version: 1, sort: this.sortState && Object.assign({}, this.sortState), filters: Array.from(this.activeFilters) };
+},
+
+sourceRequest(signal) {
+return this.queryAware ? { signal: signal || this.dataLifetime.signal, query: this.acceptedQuery, revision: this.datasetRevision } : { signal };
+},
+
+syncQueryControls() {
+this.toolbar.querySelectorAll("[data-cx-filter]").forEach(input => { input.checked = this.activeFilters.has(input.getAttribute("data-cx-filter")); });
+},
+
+querySortHeader(id) {
+const query = this.pendingQuery || this.acceptedQuery, state = query.sort && query.sort.column === id ? query.sort.direction : null;
+this.sort(id, state === "asc" ? "desc" : state === "desc" ? null : "asc").catch(() => {});
 }
 });
 
@@ -1600,7 +1666,7 @@ cell.setAttribute("aria-sort", sorted === "asc" ? "ascending" : sorted === "desc
 const button = h("button", "cx-sort");
 button.type = "button";
 setText(button, column.title);
-button.addEventListener("click", () => this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
+button.addEventListener("click", () => this.queryAware ? this.querySortHeader(column.id) : this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
 cell.appendChild(button);
 } else {
 const title = h("span", "cx-htext");
@@ -2793,6 +2859,7 @@ const restoration = this.restoreGeneration || 0;
 const suppressInitial = !!this.restoring;
 const token = w.pageToken = {};
 const controller = w.pageController = new AbortController();
+const navigation = navigationScope(this, controller.signal);
 const generation = w.dataGeneration || 0;
 const obsolete = () => this.destroyed || w._invalidated || w.pageToken !== token || generation !== (w.dataGeneration || 0);
 const run = (async () => {
@@ -2802,11 +2869,15 @@ let removedSelection = null;
 let removed = false;
 try {
 const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-const page = inlineItems ? this.inlinePage(w, cursor) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+const page = inlineItems ? this.inlinePage(w, cursor) : await navigation.wait(this.source.page(w === this.root ? null : w.h, cursor, this.sourceRequest(controller.signal)));
 if (obsolete()) return;
 const existing = inlineItems ? new Map(this.keyMap) : this.keyMap;
 if (inlineItems) for (const key of this.descendants(w).keys()) existing.delete(key);
 const items = validatePage(page, existing, cursor ? (w.children || []).length : 0);
+if (this.queryAware && !inlineItems) {
+const revision = snapshotRevision(page, this.datasetRevision);
+if (this.datasetRevision == null) this.datasetRevision = revision;
+}
 if (cursor != null && !items.length && page.next === cursor) {
 throw new Error("CanopyX: page continuation did not advance.");
 }
@@ -2838,6 +2909,7 @@ if (obsolete()) return;
 w.error = err && err.message ? err.message : String(err);
 this.emit("error", { node: w.h, message: w.error });
 } finally {
+navigation.dispose();
 controller.abort();
 if (w.pageToken !== token) return;
 w.pageToken = null;
@@ -2979,14 +3051,19 @@ this.relayout();
 },
 
 setFilterActive(id, active) {
-const next = new Set(this.activeFilters);
+const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
 if (active) next.add(id);
 else next.delete(id);
+if (this.queryAware) {
+if (!(this.view.filters || []).some(f => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+return this.setActiveFilters(Array.from(next));
+}
 this.applyActiveFilters([id], next);
 },
 
 setActiveFilters(ids) {
 if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+if (this.queryAware) return this.setQuery({ version: 1, sort: (this.pendingQuery || this.acceptedQuery).sort, filters: ids });
 this.applyActiveFilters(ids, new Set(ids));
 },
 
@@ -3011,6 +3088,7 @@ this.stateChanged();
 },
 
 sort(columnId, direction) {
+if (this.queryAware) return this.setQuery({ version: 1, sort: direction ? { column: columnId, direction } : null, filters: (this.pendingQuery || this.acceptedQuery).filters });
 this.sortState = direction ? { column: columnId, direction: direction } : null;
 this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
 this.buildHeader();
@@ -3035,8 +3113,8 @@ this.stateChanged();
 }
 });
 
-function navigationScope(grid, signal) {
-const signals = Array.from(new Set([grid.lifetime.signal].concat(signal || []).filter(Boolean)));
+function navigationScope(grid, signal, dataBound = false) {
+const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
 let abort;
 const stopped = new Promise((resolve) => { abort = () => resolve(); });
 signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
@@ -3070,7 +3148,7 @@ return !navigation.cancelled() && !w._invalidated && w.expanded && (w.toggleRevi
 },
 
 async expandPath(ids, options) {
-const navigation = navigationScope(this, options && options.signal);
+const navigation = navigationScope(this, options && options.signal, true);
 try { return await this.navigatePath(ids, options, navigation); }
 finally { navigation.dispose(); }
 },
@@ -3095,7 +3173,7 @@ if (cancelled() || w === undefined) return null;
 if (w && (o.focus !== false || o.reveal !== false) && this.flushLayout()) rebuilt = true;
 if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
 if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-this.clearDeclaredFilters();
+if (!this.queryAware) this.clearDeclaredFilters();
 this.setFilter(null);
 this.flushLayout();
 }
@@ -3125,7 +3203,7 @@ parent = w && w.parent === parent && !w._cached ? w : null;
 if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
 if (!opens.length && !finds.length) return;
 try {
-await this.source.prefetch(opens, finds);
+await this.source.prefetch(opens, finds, this.sourceRequest());
 } catch (err) {
 }
 },
@@ -3309,7 +3387,7 @@ if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController
 if (clearDeferred) w.pendingChildCount = null;
 },
 
-reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false) {
+reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false, resetLazy = false) {
 const old = this.descendants(parent), retained = new Set(), incoming = new Set();
 const pendingData = items.slice();
 while (pendingData.length) {
@@ -3353,14 +3431,14 @@ this.retirePage(w); w.inline = false; w.children = null; w.inlineCache = null; w
 w.inline = false;
 const cached = this.descendants(w);
 const conflict = Array.from(cached.keys()).some(id => incoming.has(id));
-if (conflict || data.childCount != null && w.children &&
+if (resetLazy || conflict || data.childCount != null && w.children &&
 (data.childCount < w.children.length || !w.next && data.childCount !== w.children.length)) {
 this.retirePage(w); w.children = null; w.inlineCache = null; w.next = null;
 } else {
 for (const child of cached.values()) { child.level = child.parent.level + 1; retained.add(child); }
 }
 w.total = data.childCount == null ? w.total : data.childCount;
-if (!reused) w.autoExpand = !suppressExpansion && !this.restoring && !!data.expanded;
+if (!reused || resetLazy) w.autoExpand = !suppressExpansion && !this.restoring && !!(data.expanded || resetLazy && w.expanded);
 }
 return w;
 });
@@ -3392,6 +3470,7 @@ if (removedSelection) this.selectionChanged(null);
 
 async reload(id, options) {
 if (this.destroyed) return false;
+if (id == null && this.queryAware) return this.setQuery(this.acceptedQuery, Object.assign({}, options, { force: true }));
 const parent = id == null ? this.root : this.keyMap.get(id);
 if (!parent || parent._invalidated) throw new Error("CanopyX: reload needs a loaded parent ID, or null for roots.");
 if (parent !== this.root && !this.expandable(parent)) throw new Error("CanopyX: reload needs a node with children.");
@@ -3413,9 +3492,10 @@ let cursor = null, total = null, next = null;
 do {
 if (navigation.cancelled() || parent._invalidated) return false;
 const page = isInline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
-await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
+await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, this.sourceRequest(controller.signal)));
 if (navigation.cancelled() || parent._invalidated) return false;
 validatePage(page, outside, items.length);
+if (this.queryAware && !isInline) snapshotRevision(page, this.datasetRevision);
 const pending = page.items.slice();
 while (pending.length) {
 const node = pending.pop(); outside.set(node.id, true);
@@ -3460,6 +3540,76 @@ const w = anchor && this.keyMap.get(anchor.id), index = this.indexOf(w);
 if (index >= 0) this.grid.scrollTop = Math.max(0, this.tops[index] + anchor.offset);
 }
 });
+Object.assign(TreeGrid.prototype, {
+async setQuery(value, options, restoreOwner) {
+if (this.destroyed) return false;
+if (options && options.signal && options.signal.aborted) return false;
+if (!this.queryAware) throw new Error("CanopyX: this source does not support view queries.");
+const query = readQuery(this, value), force = !!(options && options.force);
+if (this.restoreController && this.restoreController !== restoreOwner) this.restoreController.abort();
+if (this.queryController) this.queryController.abort();
+if (!force && this.datasetRevision != null && JSON.stringify(query) === JSON.stringify(this.acceptedQuery)) {
+this.pendingQuery = null; this.syncQueryControls(); return true;
+}
+const controller = this.queryController = new AbortController();
+const navigation = navigationScope(this, [controller.signal, options && options.signal]);
+this.pendingQuery = query;
+const started = performance.now(), target = force ? Math.max(this.pageSize, (this.root.children || []).length) : 1;
+try {
+const items = [], seen = new Set(), existing = new Map();
+let cursor = null, next = null, total = null, revision = null;
+do {
+if (navigation.cancelled()) return false;
+const page = await navigation.wait(this.source.page(null, cursor, { signal: controller.signal, query, revision }));
+if (navigation.cancelled()) return false;
+validatePage(page, existing, items.length);
+revision = snapshotRevision(page, revision);
+for (const node of page.items) {
+const pending = [node];
+while (pending.length) { const data = pending.pop(); existing.set(data.id, true); for (const child of data.children || []) pending.push(child); }
+}
+items.push(...page.items); total = page.total; next = page.next || null;
+if (next && (next === cursor || seen.has(next))) throw new Error("CanopyX: query continuation did not advance.");
+if (next) seen.add(next);
+cursor = next;
+} while (next && items.length < target);
+if (navigation.cancelled()) return false;
+const anchor = force ? this.captureScrollAnchor() : null;
+const filtersChanged = JSON.stringify(query.filters) !== JSON.stringify(this.acceptedQuery.filters);
+this.dataLifetime.abort(); this.dataLifetime = new AbortController();
+if (this.cancelSearch) this.cancelSearch();
+this.retirePage(this.root);
+for (const node of this.keyMap.values()) this.retirePage(node);
+this.acceptedQuery = query; this.datasetRevision = revision;
+this.sortState = query.sort; this.activeFilters = new Set(query.filters);
+this.filter = null; this.declaredFilter = null;
+this.buildHeader(); this.syncQueryControls();
+this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
+this.rootsReady = Promise.resolve();
+if (anchor) this.restoreScrollAnchor(anchor); else this.grid.scrollTop = 0;
+const count = numberFormat(this.lang);
+this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
+fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
+this.stateChanged();
+if (navigation.cancelled()) return false;
+this.emit("query", { query: this.getQuery(), revision });
+if (filtersChanged && !navigation.cancelled()) this.emit("filter", { active: Array.from(this.activeFilters) });
+if (force && !navigation.cancelled()) this.emit("reload", { node: null, count: items.length, total: this.root.total, ms: performance.now() - started });
+if (!this.restoring && !navigation.cancelled()) await navigation.wait(this.expandInitial(this.root));
+return !navigation.cancelled();
+} catch (error) {
+if (navigation.cancelled()) return false;
+this.announce(fill(this.labels.queryFailed, { error: error.message || String(error) }));
+this.emit("error", { node: null, message: error.message || String(error) });
+throw error;
+} finally {
+navigation.dispose(); controller.abort();
+if (this.queryController === controller) {
+this.queryController = null; this.pendingQuery = null; this.syncQueryControls();
+}
+}
+}
+});
 
 Object.assign(TreeGrid.prototype, {
 buildToolbar() {
@@ -3475,7 +3625,10 @@ const label = h("label", "cx-switch");
 const input = h("input");
 input.type = "checkbox";
 input.setAttribute("data-cx-filter", filter.id);
-input.addEventListener("change", () => this.setFilterActive(filter.id, input.checked));
+input.addEventListener("change", () => {
+const pending = this.setFilterActive(filter.id, input.checked);
+if (pending && pending.catch) pending.catch(() => {});
+});
 label.appendChild(input);
 label.appendChild(document.createTextNode(filter.label));
 bar.appendChild(label);
@@ -3650,7 +3803,7 @@ clearTimeout(timer);
 clearTimeout(blurTimer);
 blurTimer = setTimeout(close, 150);
 });
-this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
+this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); hits = []; close(); };
 box.appendChild(input);
 box.appendChild(list);
 box.appendChild(status);
@@ -3784,7 +3937,7 @@ this.setTreeColumnPinned(state.pinTreeColumn);
 this.setTimeZone(state.timeZone);
 this.buildHeader();
 this.applySort(this.root, true);
-this.setActiveFilters(state.filters);
+if (!this.queryAware) this.setActiveFilters(state.filters);
 },
 
 async loadStatePaths(state, current) {
@@ -3860,6 +4013,8 @@ let restored = 0;
 let fallback = false;
 const release = this.holdLayout();
 try {
+if (this.queryAware && state.version && !await this.setQuery({ version: 1, sort: state.sort, filters: state.filters }, { signal: current.signal }, current)) return false;
+if (this.destroyed || current.signal.aborted) return false;
 this.applyStatePresentation(state);
 if (state.version) await this.loadStatePaths(state, current);
 if (this.destroyed || current.signal.aborted) return false;
@@ -4038,6 +4193,7 @@ return removedSelection;
 applyCounts(doc, fromRefresh = false) {
 if (this.destroyed) return;
 checkDocument(doc, "counts");
+if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
 let removedSelection = null;
 let removed = false;
 doc.items.forEach((item) => {
@@ -4097,8 +4253,12 @@ const wanted = ids || this.rows.filter((w) => !w.status).map((w) => w.key);
 const revisions = this.countRevisions || (this.countRevisions = new Map());
 const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
 mine.forEach((revision, id) => revisions.set(id, revision));
-const doc = await this.source.counts(wanted);
-if (this.destroyed) return null;
+const navigation = navigationScope(this, this.dataLifetime.signal);
+let doc;
+try { doc = await navigation.wait(this.source.counts(wanted, this.sourceRequest(this.dataLifetime.signal))); }
+finally { navigation.dispose(); }
+if (navigation.cancelled()) return null;
+if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
 checkDocument(doc, "counts");
 this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
 return doc;
@@ -4108,6 +4268,8 @@ destroy() {
 if (this.destroyed) return;
 this.destroyed = true;
 this.lifetime.abort();
+this.dataLifetime.abort();
+if (this.queryController) this.queryController.abort();
 if (this.restoreController) this.restoreController.abort();
 if (this.cancelResize) this.cancelResize();
 clearTimeout(this.saveTimer);
@@ -4238,11 +4400,13 @@ element: host,
 view: grid.view,
 ready: grid.ready,
 expandPath: (ids, o) => grid.expandPath(ids, o),
-setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
+setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
 setFilterActive: (id, active) => grid.setFilterActive(id, active),
 setActiveFilters: (ids) => grid.setActiveFilters(ids),
 getActiveFilters: () => Array.from(grid.activeFilters),
 sort: (columnId, direction) => grid.sort(columnId, direction),
+getQuery: () => grid.getQuery(),
+setQuery: (query, options) => grid.setQuery(query, options),
 setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
 setColumnWidth: (columnId, width) => grid.setColumnWidth(columnId, width),
 setTreeColumnPinned: (pinned) => grid.setTreeColumnPinned(pinned),

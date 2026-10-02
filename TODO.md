@@ -20,7 +20,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 
 - [x] Prompt navigation cancellation, host-owned keyboard events, disposable fragment configuration, bounded remote requests, and viewport-aware toolbar panels.
 - [x] Correct ordering of fully materialized inline siblings before paging, with stable retained selection and expansion.
-- [ ] Query-aware hosted sorting and filtering with cursor invalidation.
+- [x] Query-aware hosted sorting and filtering with cursor invalidation and dataset revision checks.
 - [x] Programmatic selection, selectability and veto hooks, and explicit select-all scope that never fetches unloaded data.
 - [ ] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
 - [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.

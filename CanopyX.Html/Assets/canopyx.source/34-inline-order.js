@@ -12,7 +12,7 @@
       const version = this.inlineOrderVersion || 0, generation = w.dataGeneration || 0;
       if (!order || order.source !== source || order.version !== version || order.generation !== generation) {
         const indices = Uint32Array.from({ length: source.length }, (_, index) => index);
-        const state = this.sortState, column = state && this.columns.find(c => c.id === state.column);
+        const state = !this.queryAware && this.sortState, column = state && this.columns.find(c => c.id === state.column);
         if (column) {
           const columnIndex = this.columns.indexOf(column), direction = state.direction === "desc" ? -1 : 1;
           const keys = source.map(node => sortKey(this.cellOf(node, column, columnIndex), column));

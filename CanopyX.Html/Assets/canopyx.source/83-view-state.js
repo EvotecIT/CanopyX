@@ -75,7 +75,7 @@
       this.setTimeZone(state.timeZone);
       this.buildHeader();
       this.applySort(this.root, true);
-      this.setActiveFilters(state.filters);
+      if (!this.queryAware) this.setActiveFilters(state.filters);
     },
 
     /** Loads saved paths within restoration ownership, without selecting, revealing, or taking DOM focus. */

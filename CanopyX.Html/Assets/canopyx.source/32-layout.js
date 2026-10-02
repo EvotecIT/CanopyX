@@ -139,6 +139,7 @@
     },
 
     applySort(parent, deep) {
+      if (this.queryAware) return;
       const pending = [parent];
       while (pending.length) {
         const owner = pending.pop();

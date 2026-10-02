@@ -5,15 +5,16 @@ namespace CanopyX;
 
 /// <summary>
 /// Declares where the runtime reads a view's nodes from. Create instances with <see cref="Inline"/>,
-/// <see cref="Sidecar"/>, or <see cref="Remote"/>.
+/// <see cref="Sidecar"/>, <see cref="Remote"/>, or <see cref="RemoteQuery"/>.
 /// </summary>
 public sealed class CanopySource {
-    private CanopySource(CanopySourceKind kind, string? baseUrl, string? childrenUrl, string? searchUrl, string? countsUrl) {
+    private CanopySource(CanopySourceKind kind, string? baseUrl, string? childrenUrl, string? searchUrl, string? countsUrl, bool queryAware = false) {
         Kind = kind;
         BaseUrl = baseUrl;
         ChildrenUrl = childrenUrl;
         SearchUrl = searchUrl;
         CountsUrl = countsUrl;
+        QueryAware = queryAware;
     }
 
     /// <summary>Gets the kind of source.</summary>
@@ -30,6 +31,9 @@ public sealed class CanopySource {
 
     /// <summary>Gets the counts URL template with an <c>{ids}</c> placeholder (remote sources).</summary>
     public string? CountsUrl { get; }
+
+    /// <summary>Gets whether the host orders and filters the complete dataset using the view query.</summary>
+    public bool QueryAware { get; }
 
     /// <summary>Nodes travel inside the view document. Use for single-file pages.</summary>
     /// <returns>An inline source.</returns>
@@ -62,6 +66,21 @@ public sealed class CanopySource {
     /// <returns>A remote source.</returns>
     /// <exception cref="ArgumentException">A template is missing a required placeholder.</exception>
     public static CanopySource Remote(string childrenUrl, string? searchUrl = null, string? countsUrl = null) {
+        return CreateRemote(childrenUrl, searchUrl, countsUrl, false);
+    }
+
+    /// <summary>Creates a remote source whose host applies sorting and declared filters before paging.</summary>
+    /// <param name="childrenUrl">A children template containing <c>{ref}</c>, <c>{cursor}</c>, and <c>{viewQuery}</c>.</param>
+    /// <param name="searchUrl">Optional search template containing <c>{query}</c>, <c>{limit}</c>, and <c>{viewQuery}</c>.</param>
+    /// <param name="countsUrl">Optional counts template containing <c>{ids}</c> and <c>{viewQuery}</c>.</param>
+    /// <returns>A query-aware remote source. Every page, search result, and counts document identifies the host's dataset revision.</returns>
+    /// <remarks>Templates may also contain <c>{revision}</c>; it is empty for a new root query and otherwise names the accepted snapshot.</remarks>
+    /// <exception cref="ArgumentException">A template is missing a required placeholder before its fragment.</exception>
+    public static CanopySource RemoteQuery(string childrenUrl, string? searchUrl = null, string? countsUrl = null) {
+        return CreateRemote(childrenUrl, searchUrl, countsUrl, true);
+    }
+
+    private static CanopySource CreateRemote(string childrenUrl, string? searchUrl, string? countsUrl, bool queryAware) {
         Require(childrenUrl, nameof(childrenUrl), "{ref}", "{cursor}");
         if (searchUrl != null) {
             Require(searchUrl, nameof(searchUrl), "{query}", "{limit}");
@@ -71,7 +90,12 @@ public sealed class CanopySource {
             Require(countsUrl, nameof(countsUrl), "{ids}");
         }
 
-        return new CanopySource(CanopySourceKind.Remote, null, childrenUrl, searchUrl, countsUrl);
+        if (queryAware) {
+            Require(childrenUrl, nameof(childrenUrl), "{viewQuery}");
+            if (searchUrl != null) Require(searchUrl, nameof(searchUrl), "{viewQuery}");
+            if (countsUrl != null) Require(countsUrl, nameof(countsUrl), "{viewQuery}");
+        }
+        return new CanopySource(CanopySourceKind.Remote, null, childrenUrl, searchUrl, countsUrl, queryAware);
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
@@ -80,6 +104,7 @@ public sealed class CanopySource {
         writer.OptionalProperty("children", ChildrenUrl);
         writer.OptionalProperty("search", SearchUrl);
         writer.OptionalProperty("counts", CountsUrl);
+        if (QueryAware) writer.Property("queryAware", true);
         writer.EndObject();
     }
 

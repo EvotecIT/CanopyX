@@ -45,6 +45,8 @@
       // The restored paths are laid out and rendered together, once.
       const release = this.holdLayout();
       try {
+        if (this.queryAware && state.version && !await this.setQuery({ version: 1, sort: state.sort, filters: state.filters }, { signal: current.signal }, current)) return false;
+        if (this.destroyed || current.signal.aborted) return false;
         this.applyStatePresentation(state);
         if (state.version) await this.loadStatePaths(state, current);
         if (this.destroyed || current.signal.aborted) return false;
@@ -227,6 +229,7 @@
     applyCounts(doc, fromRefresh = false) {
       if (this.destroyed) return;
       checkDocument(doc, "counts");
+      if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
       let removedSelection = null;
       let removed = false;
       doc.items.forEach((item) => {
@@ -287,8 +290,12 @@
       const revisions = this.countRevisions || (this.countRevisions = new Map());
       const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
       mine.forEach((revision, id) => revisions.set(id, revision));
-      const doc = await this.source.counts(wanted);
-      if (this.destroyed) return null;
+      const navigation = navigationScope(this, this.dataLifetime.signal);
+      let doc;
+      try { doc = await navigation.wait(this.source.counts(wanted, this.sourceRequest(this.dataLifetime.signal))); }
+      finally { navigation.dispose(); }
+      if (navigation.cancelled()) return null;
+      if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
       checkDocument(doc, "counts");
       this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
       return doc;
@@ -298,6 +305,8 @@
       if (this.destroyed) return;
       this.destroyed = true;
       this.lifetime.abort();
+      this.dataLifetime.abort();
+      if (this.queryController) this.queryController.abort();
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
