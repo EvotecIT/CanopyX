@@ -34,6 +34,19 @@ foreach (var name in new[] { CanopyHtmlAssets.HashedScriptFileName, CanopyHtmlAs
     Require(bundlePage.Contains("assets/" + name, StringComparison.Ordinal) && File.Exists(Path.Combine(output, "bundle", "assets", name)), "the bundle page and its assets disagree about " + name);
 }
 
+view.Checkboxes = CanopyCheckboxMode.Hierarchical;
+view.CheckIntents.Add(new CanopyCheckIntent(new[] { "root" }, true));
+var checkingDirectory = Path.Combine(output, "checking");
+view.SaveHtmlBundle(checkingDirectory);
+var checkingPage = File.ReadAllText(Path.Combine(checkingDirectory, "index.html"));
+foreach (var name in new[] {
+    CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.InteractiveTreeGrid),
+    CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.InteractiveTreeGrid)
+}) {
+    Require(checkingPage.Contains("assets/" + name, StringComparison.Ordinal) && File.Exists(Path.Combine(checkingDirectory, "assets", name)), "the checking bundle is missing " + name);
+}
+Require(CanopyStaticHtml.Render(view).Contains("aria-checked=\"true\"", StringComparison.Ordinal), "the static outline lost its checking intent");
+
 Console.WriteLine("CanopyX package smoke passed.");
 
 static void Require(bool condition, string failure) {

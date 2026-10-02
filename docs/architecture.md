@@ -78,6 +78,10 @@ Compared with the outline before themes: the table now paints its surface (white
 
 ## Browser Runtime
 
+The standard tree entry point remains within its 48 KiB gzip budget. Checking lives in a separate interactive tree entry point assembled from the same core source parts plus `canopyx.interactive.source`. Its complete script and stylesheet have a 64 KiB gzip budget. Hosts include one entry point per page; the interactive tree also mounts ordinary views. C# page and bundle writers choose matching content-hashed assets automatically when a view enables checkboxes.
+
+Checking stores a trie of explicit node-ID paths rather than references to loaded wrappers. Branch intent therefore survives lazy paging, sorting, queries, and inactive-cache retirement. Reads are not needed to check a branch. The current path and its exceptions determine native checkbox state; a complete loaded sibling set can fold into an ancestor rule. Synchronous host vetoes and proposal revisions prevent a nested newer change from being overwritten. Saved-state validation includes checking before applying presentation, and the script-free C# outline evaluates the same path semantics.
+
 The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out whole-line comments and trims indentation while preserving line boundaries. The same assembly writes `canopyx.css` from the documented stylesheet in that source folder. The sources retain their comments, and both assets keep their opening header. The first JavaScript part opens a single closure and the last part closes it, so parts share private helpers without globals.
 
 | Part | Responsibility |

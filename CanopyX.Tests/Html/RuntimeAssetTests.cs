@@ -10,11 +10,20 @@ namespace CanopyX.Tests.Html;
 /// budget in docs/architecture.md, and be safe to inline into a page.
 /// </summary>
 public sealed class RuntimeAssetTests {
-    [Fact]
-    public void Script_MatchesItsSourceParts() {
+    [Theory]
+    [InlineData(CanopyRuntime.TreeGrid)]
+    [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    public void Script_MatchesItsSourceParts(CanopyRuntime runtime) {
         var root = RepositoryPaths.Root;
-        var parts = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
-            .OrderBy(Path.GetFileName, StringComparer.Ordinal)
+        var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal).ToArray();
+        if (runtime == CanopyRuntime.InteractiveTreeGrid) {
+            files = files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") < 0)
+                .Concat(Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.interactive.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal))
+                .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
+        }
+        var script = CanopyHtmlAssets.GetScript(runtime);
+        var parts = files
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
             .ToArray();
 
@@ -29,20 +38,24 @@ public sealed class RuntimeAssetTests {
         var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
         var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
         Assert.NotEmpty(encoded);
-        var actual = Regex.Match(CanopyHtmlAssets.Script, "const EXTRA_FOLD_PAIRS = \"([A-Za-z0-9+/=]+)\";");
+        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS = \"([A-Za-z0-9+/=]+)\";");
         Assert.True(actual.Success, "The browser folding table is missing.");
         var compact = actual.Groups[1].Value;
         Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
         expected = expected.Replace(marker, compact);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
-        Assert.True(expected == Normalize(CanopyHtmlAssets.Script), "canopyx.js is out of date. Run Build/Sync-Assets.ps1.");
+        Assert.True(expected == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
     }
 
-    [Fact]
-    public void Style_MatchesItsSource() {
+    [Theory]
+    [InlineData(CanopyRuntime.TreeGrid)]
+    [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    public void Style_MatchesItsSource(CanopyRuntime runtime) {
         var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "canopyx.css"));
-        Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.Style));
+        if (runtime == CanopyRuntime.InteractiveTreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.interactive.source", "canopyx.css"));
+        Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
     }
 
     [Fact]
@@ -50,6 +63,12 @@ public sealed class RuntimeAssetTests {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 
         Assert.True(compressed <= 48 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 48 KB.");
+    }
+
+    [Fact]
+    public void InteractiveAssets_StayWithinTheirCompressedBudget() {
+        var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.InteractiveTreeGrid));
+        Assert.True(compressed <= 64 * 1024, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 64 KiB.");
     }
 
     [Fact]

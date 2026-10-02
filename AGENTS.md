@@ -15,6 +15,7 @@ CanopyX is a generic, dependency-free engine for large interactive data views. T
 
 ## Browser Runtime
 
+- Optional tree interaction parts live in `CanopyX.Html/Assets/canopyx.interactive.source`. The assembly script combines them with the core into the interactive entry point; keep ordinary views within the core asset budget.
 - Keep the runtime as plain modern JavaScript source parts in `CanopyX.Html/Assets/canopyx.source/NN-name.js`. `Build/Sync-Assets.ps1` assembles them into `canopyx.js`, without their whole-line comments (keep code off the lines of a `/* */` comment); never edit the assembled file by hand.
 - No TypeScript, bundler, or npm step in the library build. JSDoc types are fine. Node and Playwright are used only under `tests/browser`.
 - Edit the stylesheet in `CanopyX.Html/Assets/canopyx.source/canopyx.css`; `Build/Sync-Assets.ps1` assembles it into `canopyx.css`. Do not edit the assembled stylesheet by hand.

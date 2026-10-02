@@ -41,6 +41,8 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `rowHeight` | integer 20 to 64 | Height of every row in CSS pixels. |
 | `pageSize` | integer 1 to 10,000 | For inline sources, how many children show before a "show more" row. |
 | `selection` | `single` or `multiple` | Selection mode. |
+| `checkboxes` | `independent` or `hierarchical` | Optional. Checking is separate from selection and requires the interactive tree entry point. Absent means no checkboxes. |
+| `checkIntents` | array of `{ path, checked }` | Optional when checkboxes are enabled. Complete node-ID paths and boolean values; paths are unique and may name unloaded descendants. |
 | `columns` | array of columns | The first column is the tree column. At least one. |
 | `icons` | object | Optional. Icon key to trusted SVG markup, declared once and referenced by nodes. |
 | `search` | object | Optional. Shows the search box. When present it has `minLength` (1 to 16; at least 2 for sidecar sources) and `maxResults` (1 to 500), and optionally `placeholder` (the box's placeholder and accessible name; `labels.searchPlaceholder` when absent) and `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
@@ -54,6 +56,24 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `roots` | array of nodes | Top-level nodes; present only for inline sources. |
 
 A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable` and `hidden`. The tree column cannot be hidden. Widths are initial: the reader drags a column edge, and a host sets one with `grid.setColumnWidth(columnId, pixels)`, for example to narrow the tree column on a small screen. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
+
+### Checking Intent
+
+An enabled `checkboxes` mode is independent of `selection`. In `independent` mode each rule applies only to its exact path. In `hierarchical` mode a rule applies to the path's branch, including unloaded descendants; a deeper rule overrides it. The default is unchecked. A branch with a checked descendant or an exception to its own checked rule is mixed. Complete loaded sibling sets can combine into one branch intent; partially loaded lists never imply a choice for unseen siblings.
+
+```json
+"checkboxes": "hierarchical",
+"checkIntents": [
+  { "path": ["project-a"], "checked": true },
+  { "path": ["project-a", "task-1"], "checked": false }
+]
+```
+
+Paths are complete, nonempty, and contain no repeated IDs. An intent array cannot contain the same path twice. Rules may name unloaded nodes and require no reads. Readers normalize redundant hierarchical rules without changing their meaning. Node IDs retain their exact Unicode and case. Detail rows have no checking control.
+
+The interactive tree entry point reads these fields. C# HTML writers select it automatically; hosts writing fragments include that entry point once for the whole page. Standard readers ignore these optional fields. Version 1 saved views may additionally carry `checkboxes` and `checkIntents`; a mismatched checkbox mode or malformed rules reject the whole restore before changes. Legacy expansion-only state preserves current checks. A modern saved view without checking fields restores the unchecked default.
+
+Checkbox state is a presentation intent. The library does not enumerate an unloaded branch, authorize its members, or perform a write. A host interprets rules against its own data and governs the resulting operation.
 
 ### Labels
 

@@ -13,6 +13,10 @@ public sealed class CanopyHtmlOptions {
     /// <summary>Gets or sets how a full page includes the runtime assets. Fragments never include them.</summary>
     public CanopyAssetMode AssetMode { get; set; }
 
+    /// <summary>Gets or sets the browser entry point. Checkbox views automatically use the interactive tree.</summary>
+    /// <remarks>For a page hosting several fragments, include the interactive assets once if any fragment needs them.</remarks>
+    public CanopyRuntime Runtime { get; set; }
+
     /// <summary>
     /// Gets or sets how the asset files a page references are named when <see cref="AssetMode"/> is
     /// <see cref="CanopyAssetMode.External"/>. Defaults to <see cref="CanopyAssetNaming.ContentHash"/>

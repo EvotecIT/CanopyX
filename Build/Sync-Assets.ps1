@@ -51,13 +51,31 @@ $assets = @(
         Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
         Target = 'CanopyX.Html/Assets/canopyx.css'
     }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source'
+        Target = 'CanopyX.Html/Assets/canopyx-interactive.js'
+        Folding = $true
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css'
+        Target = 'CanopyX.Html/Assets/canopyx-interactive.css'
+    }
 )
 
 function Join-AssetSource {
-    param([string] $SourcePath)
+    param([string] $SourcePath, [string] $ExtensionPath)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
+
+    if ($ExtensionPath) {
+        $extra = if (Test-Path -LiteralPath $ExtensionPath -PathType Leaf) { @(Get-Item -LiteralPath $ExtensionPath) }
+            else { @(Get-ChildItem -LiteralPath $ExtensionPath -Filter '*.js' -File | Sort-Object Name) }
+        if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { $parts = @($parts) + @($extra) }
+        else { $parts = @($parts | Where-Object Name -LT '90-') + @($extra) + @($parts | Where-Object Name -GE '90-') }
+    }
 
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
@@ -118,7 +136,8 @@ function Remove-CommentLines {
 foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
-    $generated = Join-AssetSource -SourcePath $sourcePath
+    $extensionPath = if ($asset.Extension) { Join-Path $root $asset.Extension } else { $null }
+    $generated = Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)

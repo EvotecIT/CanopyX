@@ -155,8 +155,9 @@ function Invoke-PackageSmoke {
 
 function Assert-RuntimeLineBudget {
     param([string] $Root)
-    $parts = Join-Path $Root 'CanopyX.Html/Assets/canopyx.source'
-    if (Test-Path -LiteralPath $parts) {
+    foreach ($source in @('canopyx.source', 'canopyx.interactive.source')) {
+        $parts = Join-Path $Root "CanopyX.Html/Assets/$source"
+        if (!(Test-Path -LiteralPath $parts)) { continue }
         foreach ($part in Get-ChildItem -LiteralPath $parts -Filter '*.js' -File) {
             if ([System.IO.File]::ReadAllLines($part.FullName).Length -gt 350) {
                 throw "Runtime source part exceeds the 350-line budget: $($part.Name)"

@@ -50,11 +50,17 @@ public static class CanopyStaticHtml {
         }
 
         html.Append("</tr></thead><tbody>");
+        var checks = view.Checkboxes == CanopyCheckboxMode.None ? null : new CanopyCheckIntentIndex(view);
+        var path = new List<string>();
         foreach (var (node, level) in rows) {
+            if (checks != null) {
+                while (path.Count >= level) path.RemoveAt(path.Count - 1);
+                path.Add(node.Id);
+            }
             if (node.Detail != null) {
                 AppendDetail(html, node, level, columns.Count, styles, view.Labels);
             } else {
-                AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles, view.Labels);
+                AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles, view.Labels, checks?.State(path));
             }
         }
 
@@ -155,7 +161,7 @@ public static class CanopyStaticHtml {
         return count;
     }
 
-    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels) {
+    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels, string? checkState) {
         html.Append("<tr>");
         for (var index = 0; index < columns.Count; index++) {
             var column = columns[index];
@@ -174,7 +180,13 @@ public static class CanopyStaticHtml {
                 html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
             }
 
-            html.Append('>').Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty));
+            html.Append('>');
+            if (index == 0 && checkState != null) {
+                html.Append("<span role=\"checkbox\" aria-readonly=\"true\" aria-label=\"").Append(Encode(node.Label))
+                    .Append("\" aria-checked=\"").Append(checkState).Append("\" style=\"margin-right:6px;\">")
+                    .Append(checkState == "mixed" ? "▣" : checkState == "true" ? "☑" : "☐").Append("</span> ");
+            }
+            html.Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty));
             if (index == 0 && node.HasBadges) {
                 AppendBadges(html, node.Badges, styles);
             }

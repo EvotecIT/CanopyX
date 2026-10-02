@@ -27,6 +27,7 @@ internal static class CanopyViewValidator {
     internal static HashSet<string> ValidateDefinition(CanopyView view, bool bundle) {
         // Bundle writers use this validation before creating sidecars, not only when serializing the page.
         CanopyJsonNames.Selection(view.Selection);
+        CanopyCheckIntentValidator.Validate(view);
         CanopyJsonNames.TimeZone(view.TimeZone);
         if (view.Columns.Count == 0) {
             throw new InvalidOperationException("View '" + view.Id + "' needs at least one column.");

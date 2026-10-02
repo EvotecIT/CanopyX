@@ -42,19 +42,26 @@ internal static class CanopyHtmlWriter {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
-            ["head"] = Head(options),
+            ["head"] = Head(view, options),
             ["body"] = Fragment(view, fragmentOptions)
         };
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 
-    private static string Head(CanopyHtmlOptions options) {
+    internal static CanopyRuntime RuntimeFor(CanopyView view, CanopyHtmlOptions options) {
+        if (options.Runtime != CanopyRuntime.TreeGrid && options.Runtime != CanopyRuntime.InteractiveTreeGrid)
+            throw new ArgumentOutOfRangeException(nameof(options), "Unknown browser runtime.");
+        return view.Checkboxes == CanopyCheckboxMode.None ? options.Runtime : CanopyRuntime.InteractiveTreeGrid;
+    }
+
+    private static string Head(CanopyView view, CanopyHtmlOptions options) {
+        var runtime = RuntimeFor(view, options);
         if (options.AssetMode == CanopyAssetMode.External) {
-            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming)) + "\">\n"
-                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming)) + "\" defer></script>";
+            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming, runtime)) + "\">\n"
+                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming, runtime)) + "\" defer></script>";
         }
 
-        return "<style>\n" + CanopyHtmlAssets.Style + "</style>\n<script>\n" + CanopyHtmlAssets.Script + "</script>";
+        return "<style>\n" + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script>\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>";
     }
 
     private static string ThemeName(CanopyTheme theme) => theme switch {

@@ -178,6 +178,24 @@ Bundle folder and asset constraints are described in the [data protocol](docs/da
 
 Collapsed branches retain up to 4,096 loaded descendants by default (`inactiveNodeLimit`); unpinned older data is evicted and loaded again when needed. Selection, focus, expansion, state restoration, active requests, and local filters keep their required data. `retainedNodeLimit` separately bounds identities kept outside an inline page after sorting. Both are nonnegative integer host options; pins and host input arrays can exceed these retention limits. The [architecture reference](docs/architecture.md#rendering-model) describes their ownership and the sidecar pack limits.
 
+## Checking Lazy Branches
+
+Checkboxes are independent of row selection. A hierarchical check applies to a complete branch, including children that have not loaded; a deeper rule creates an exception. Checking does not fetch children or perform a host operation.
+
+```csharp
+view.Checkboxes = CanopyCheckboxMode.Hierarchical;
+view.CheckIntents.Add(new CanopyCheckIntent(new[] { "project-a" }, true));
+view.CheckIntents.Add(new CanopyCheckIntent(new[] { "project-a", "task-1" }, false));
+```
+
+`CanopyCheckboxMode.Independent` checks individual nodes. Page and bundle writers choose the interactive runtime automatically for checkbox views. For a page assembled from fragments, include `CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)` and its matching `GetStyle` once. The interactive entry point includes the standard tree runtime; use one entry point per page.
+
+In the browser, `api.setChecked(id, checked)` changes a loaded node. `api.setCheckIntents([{ path, checked }])` replaces the complete intent without loading paths. `getCheckState(id)` returns `true`, `false`, `"mixed"`, or `null` for an unavailable node; `getCheckIntents()` returns a copied snapshot suitable for the host to interpret. A complete loaded sibling set can combine into one branch rule; partial pages preserve exceptions without claiming unseen siblings. Rules survive sorting, reload, and cache eviction. Saved views include them, and both outline renderers show readonly check states.
+
+Space checks the focused row; Control+Space or Command+Space keeps row selection. F2 enters the native checkbox. `isCheckable(node)` disables direct changes to a node's control. It does not restrict an ancestor's branch intent: the host evaluates its own eligibility and authorization when interpreting that intent. `beforeCheck(node, intents, { previous, reason })` and the cancelable `canopyx:beforecheck` event can veto a complete proposal, including saved-state restoration. Vetoes return synchronously. `onCheck` and `canopyx:check` report accepted changes. Checking controls pause while a saved view restores.
+
+The generated `checkboxes.html` example demonstrates lazy branches, paging, exceptions, keyboard controls, and saved choices.
+
 ## Documentation
 
 For hosted data, `CanopySource.RemoteQuery` lets endpoints sort and filter the complete dataset before paging. Every supplied endpoint receives `{viewQuery}` and returns its dataset revision. In the browser, `await grid.sort("value", "desc")` or `await grid.setActiveFilters(["flagged"])` stages a replacement while accepted rows remain visible. Failed queries keep the old view, and stale pages cannot mix revisions. The [remote query contract](docs/data-protocol.md#queries-before-remote-paging) describes request fields, events, cancellation, and selection semantics; `query-records.html` demonstrates the host source.

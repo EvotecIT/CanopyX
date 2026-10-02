@@ -25,7 +25,7 @@ namespace CanopyX.Html;
 /// names, or takes <see cref="ScriptHash"/> and <see cref="StyleHash"/> for its own naming and cache keys. The names tie a page to its runtime, not to its data: the page and its sidecar files are still published together.
 /// </para>
 /// </remarks>
-public static class CanopyHtmlAssets {
+public static partial class CanopyHtmlAssets {
     /// <summary>The plain file name of the runtime script, <c>canopyx.js</c>.</summary>
     public const string ScriptFileName = "canopyx.js";
 
@@ -89,20 +89,31 @@ public static class CanopyHtmlAssets {
     /// </param>
     /// <returns>The full paths of the written files: the script, then the stylesheet.</returns>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty.</exception>
-    public static IReadOnlyList<string> WriteTo(string directory, CanopyAssetNaming naming) {
+    public static IReadOnlyList<string> WriteTo(string directory, CanopyAssetNaming naming) => WriteTo(directory, naming, CanopyRuntime.TreeGrid);
+
+    /// <summary>Writes the selected runtime and stylesheet, using the same naming as the page that loads them.</summary>
+    /// <param name="directory">The output directory.</param>
+    /// <param name="naming">Content-hashed or plain file names.</param>
+    /// <param name="runtime">The single browser entry point used by the page.</param>
+    /// <returns>The full paths of the written script and stylesheet.</returns>
+    /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="runtime"/> is unknown.</exception>
+    public static IReadOnlyList<string> WriteTo(string directory, CanopyAssetNaming naming, CanopyRuntime runtime) {
         if (string.IsNullOrEmpty(directory)) {
             throw new ArgumentException("Directory is required.", nameof(directory));
         }
 
+        var scriptText = GetScript(runtime);
+        var styleText = GetStyle(runtime);
         Directory.CreateDirectory(directory);
-        var script = Path.GetFullPath(Path.Combine(directory, GetScriptFileName(naming)));
-        var style = Path.GetFullPath(Path.Combine(directory, GetStyleFileName(naming)));
+        var script = Path.GetFullPath(Path.Combine(directory, GetScriptFileName(naming, runtime)));
+        var style = Path.GetFullPath(Path.Combine(directory, GetStyleFileName(naming, runtime)));
         if (naming == CanopyAssetNaming.Plain) {
-            File.WriteAllText(script, Script, FileEncoding);
-            File.WriteAllText(style, Style, FileEncoding);
+            File.WriteAllText(script, scriptText, FileEncoding);
+            File.WriteAllText(style, styleText, FileEncoding);
         } else {
-            WriteOnce(script, FileEncoding.GetBytes(Script));
-            WriteOnce(style, FileEncoding.GetBytes(Style));
+            WriteOnce(script, FileEncoding.GetBytes(scriptText));
+            WriteOnce(style, FileEncoding.GetBytes(styleText));
         }
 
         return new[] { script, style };
