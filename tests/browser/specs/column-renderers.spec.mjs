@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "renderers", label: "Renderers", rowHeight: 28, pageSize: 1000, selection: "single",
+const view = { protocol: "canopyx/2", type: "view", id: "renderers", label: "Renderers", rowHeight: 28, pageSize: 1000, selection: "single",
   columns: [{ id: "name", title: "Name", width: 260, kind: "text" }, { id: "state", title: "State", width: 140, kind: "text" },
     { id: "size", title: "Size", width: 120, kind: "number" }, { id: "spare", title: "Spare", width: 120, kind: "text", hidden: true }],
   source: { kind: "inline" },

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
-const view = { protocol: "canopyx/1", type: "view", id: "host-paging", label: "Host paging", rowHeight: 28,
+const view = { protocol: "canopyx/2", type: "view", id: "host-paging", label: "Host paging", rowHeight: 28,
   columns: [{ id: "name", title: "Name", width: 300 }, { id: "controls", title: "Controls", width: 350 }],
   source: { kind: "inline" }, roots: [] };
 test.beforeEach(({ page }) => {

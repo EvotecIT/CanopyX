@@ -3,7 +3,7 @@ import path from "node:path";
 import { focusedId, nextFrames, repo, viewPage } from "./support.mjs";
 
 async function open(page, roots) {
-  const view = { protocol: "canopyx/1", type: "view", id: "keyboard", label: "Keyboard", rowHeight: 28, pageSize: 100,
+  const view = { protocol: "canopyx/2", type: "view", id: "keyboard", label: "Keyboard", rowHeight: 28, pageSize: 100,
     columns: [{ id: "name", title: "Name", width: 300, kind: "text", sortable: true }], source: { kind: "inline" }, roots };
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: viewPage(view) }));
   await page.goto("https://canopyx.test/");

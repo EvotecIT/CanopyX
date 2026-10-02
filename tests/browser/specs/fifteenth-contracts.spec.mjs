@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "fifteenth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "fifteenth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "inline" }, roots: [] };
 
 async function open(page, data = view) {
@@ -15,12 +15,12 @@ async function open(page, data = view) {
 for (const kind of ["remote", "sidecar"]) for (const shape of ["missing", "null"]) {
   test(`${kind} rejects a terminal page with ${shape} items`, async ({ page }) => {
     await open(page);
-    const doc = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 0, next: null };
+    const doc = { protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 0, next: null };
     if (shape === "null") doc.items = null;
     await page.route("https://canopyx.test/page", route => route.fulfill({ json: doc }));
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice("/data/".length, -3);
-      const value = ref === "manifest" ? { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0" } : doc;
+      const value = ref === "manifest" ? { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0" } : doc;
       return route.fulfill({ contentType: "application/javascript", body:
         `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([view.id, ref, value])});` });
     });

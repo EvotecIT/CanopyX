@@ -30,6 +30,10 @@
     readLocation() {
       if (this.destroyed) return Promise.resolve();
       if (this.initializing) {
+        if (this.linkOpening && this.currentLink() !== this.link) {
+          this.linkOpening.abort();
+          this.link = null; // Deferred reopening must not reuse the canceled link if the address changes back.
+        }
         this.linkChanged = true;
         return this.ready.then(() => undefined, () => undefined);
       }
@@ -42,6 +46,7 @@
      */
     openDeepLink() {
       const link = this.view.deepLink ? this.currentLink() : null;
+      if (link !== this.link && this.linkOpening) this.linkOpening.abort();
       if (link == null || link === this.link) {
         if (link == null) this.link = null;
         // The same fragment may still be opening; whoever asks again waits for it.

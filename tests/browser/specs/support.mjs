@@ -117,11 +117,11 @@ export function searchIndex(hits) {
       post("\u0000" + (hash >>> 0).toString(16).padStart(8, "0"), number);
     }
   }
-  const docs = { "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries } };
+  const docs = { "e/0": { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [], entries } };
   const shards = {};
   for (const word of [...postings.keys()].sort()) {
     const key = word.length === 1 ? shardKey(word) + "-" : shardKey(word.slice(0, 2));
-    const doc = docs["s/k-" + key] || (docs["s/k-" + key] = { protocol: "canopyx/1", type: "searchShard", key, words: [], postings: [] });
+    const doc = docs["s/k-" + key] || (docs["s/k-" + key] = { protocol: "canopyx/2", type: "searchShard", key, words: [], postings: [] });
     const list = postings.get(word);
     doc.words.push(word);
     doc.postings.push(list.map((number, i) => (i ? number - list[i - 1] : number)));

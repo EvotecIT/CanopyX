@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { repo, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "twentythird", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "twentythird", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "inline" }, roots: [] };
 
 async function open(page, data = view) {
@@ -31,13 +31,13 @@ test("count-only refresh keeps an edited host control on the affected row", asyn
     const input = host.querySelector('[data-cx-id="parent"] input');
     input.value = "edited";
     input.focus();
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const result = { retained: host.querySelector('[data-cx-id="parent"] input') === input,
       connected: input.isConnected, value: input.value, focused: document.activeElement === input };
     await api.expandPath(["parent"], { expandLast: true });
     input.focus();
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 0 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 0 }] });
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     result.afterInvalidation = { retained: host.querySelector('[data-cx-id="parent"] input') === input,
       focused: document.activeElement === input, childRemoved: !host.querySelector('[data-cx-id="child"]') };
@@ -53,7 +53,7 @@ for (const label of [undefined, null, 42]) {
     const node = { id: "broken" };
     if (label !== undefined) node.label = label;
     await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: {
-      protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 1, next: null, items: [node] } }));
+      protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 1, next: null, items: [node] } }));
     await open(page, { ...view, source: { kind: "remote", children: "/children?ref={ref}&cursor={cursor}" } });
     await expect(page.locator('[data-cx-status="error"]')).toContainText("label");
     await expect(page.locator('[data-cx-id="broken"]')).toHaveCount(0);
@@ -65,7 +65,7 @@ test("sidecar children load by ID when an optional reference is absent", async (
   await open(page);
   await page.evaluate(async () => {
     const id = "sidecar-ref-default";
-    const base = { protocol: "canopyx/1" };
+    const base = { protocol: "canopyx/2" };
     CanopyXSidecar.push([id, "manifest", { ...base, type: "manifest", view: id, root: "r/0" }]);
     CanopyXSidecar.push([id, "r/0", { ...base, type: "page", parent: null, offset: 0, total: 1,
       next: null, items: [{ id: "parent", label: "Parent", hasChildren: true }] }]);
@@ -120,7 +120,7 @@ test("flag-only counts retain an edited control on a row that survives filtering
     const input = host.querySelector('[data-cx-id="parent"] input');
     input.value = "edited";
     input.focus();
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", flags: ["keep", "new"] }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", flags: ["keep", "new"] }] });
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     return { retained: host.querySelector('[data-cx-id="parent"] input') === input,
       connected: input.isConnected, value: input.value, focused: document.activeElement === input,

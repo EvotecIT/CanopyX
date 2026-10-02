@@ -50,7 +50,7 @@ export function scrollView(groups, perGroup) {
     roots.push({ id: "g" + g, label: "Group " + (g + 1), kind: "group", group: true, expanded: true, hasChildren: true, childCount: perGroup, cells: { changes: { value: groups, text: String(perGroup) + " items" } }, children: children });
   }
   return {
-    protocol: "canopyx/1", type: "view", id: "bench", label: "Scroll benchmark", rowHeight: 28, pageSize: Math.max(groups, perGroup), selection: "single",
+    protocol: "canopyx/2", type: "view", id: "bench", label: "Scroll benchmark", rowHeight: 28, pageSize: Math.max(groups, perGroup), selection: "single",
     columns: [
       { id: "name", title: "Name", width: 330, kind: "text", sortable: true },
       { id: "status", title: "Status", width: 120, kind: "text" },

@@ -21,7 +21,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\docs\schema\canopyx-1.schema.json" Link="Schema\canopyx-1.schema.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\docs\schema\canopyx-2.schema.json" Link="Schema\canopyx-2.schema.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>

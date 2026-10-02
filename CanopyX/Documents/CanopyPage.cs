@@ -5,7 +5,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>
-/// A page of children: the <c>page</c> document of the <c>canopyx/1</c> protocol, returned by sidecar files and
+/// A page of children: the <c>page</c> document of the <c>canopyx/2</c> protocol, returned by sidecar files and
 /// remote endpoints when a node opens or the user asks for more.
 /// </summary>
 public sealed class CanopyPage {

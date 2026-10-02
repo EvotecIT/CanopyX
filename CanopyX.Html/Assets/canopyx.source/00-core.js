@@ -1,5 +1,5 @@
 /*
- * CanopyX browser runtime: a virtualized tree grid over the canopyx/1 data protocol. No dependencies.
+ * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
  */
 (function (global) {
@@ -10,7 +10,7 @@
     return;
   }
 
-  const PROTOCOL = "canopyx/1";
+  const PROTOCOL = "canopyx/2";
   const OVERSCAN = 8;
   const TYPEAHEAD_MS = 600;
   const INDENT = 18;

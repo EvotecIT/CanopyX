@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { viewPage, nextFrames, repo } from "./support.mjs";
 import path from "node:path";
-const view = { protocol: "canopyx/1", type: "view", id: "boundaries", label: "Boundaries", columns: [{ id: "name", title: "Name", width: 400 }], source: { kind: "inline" }, roots: [{ id: "one", label: "Alpha Beta" }] };
+const view = { protocol: "canopyx/2", type: "view", id: "boundaries", label: "Boundaries", columns: [{ id: "name", title: "Name", width: 400 }], source: { kind: "inline" }, roots: [{ id: "one", label: "Alpha Beta" }] };
 async function open(page, data = view, options = "{}") {
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: viewPage(data).replace("</body>", `<script>window.api=CanopyX.createTreeGrid(document.querySelector('.cx-host'),Object.assign({view:JSON.parse(document.querySelector('.cx-config').textContent)},${options}));</script></body>`) }));
   await page.goto("https://canopyx.test/#other=keep"); await page.waitForSelector("[data-cx-ready]"); await nextFrames(page);
@@ -10,7 +10,7 @@ test.beforeEach(({ page }) => { page.errors = []; page.on("pageerror", e => page
 test.afterEach(({ page }) => expect(page.errors).toEqual([]));
 
 for (const query of [undefined, null, "different"]) test(`remote search rejects echoed query ${query}`, async ({ page }) => {
-  await page.route("https://canopyx.test/search?*", r => r.fulfill({ json: { protocol: "canopyx/1", type: "search", query, hits: [{ path: ["one"], label: "Alpha Beta" }], truncated: false } }));
+  await page.route("https://canopyx.test/search?*", r => r.fulfill({ json: { protocol: "canopyx/2", type: "search", query, hits: [{ path: ["one"], label: "Alpha Beta" }], truncated: false } }));
   await open(page, { ...view, source: { kind: "remote", children: "/page?ref={ref}&cursor={cursor}", search: "/search?q={query}&limit={limit}" } }, `{source: {page: async()=>({items:[]})}}`);
   const result = await page.evaluate(async () => { try { await CanopyX.sources.remote({source:{search:"/search?q={query}&limit={limit}"}}).search("alpha",20); return null; } catch(e) { return e.message; } });
   expect(result).toContain("query");
@@ -58,8 +58,8 @@ for (const semantic of [true,false]) test(`search option ${semantic?"semantic":"
 for(const queued of [true,false]) test(`sidecar pair identity is unambiguous (${queued?"queued":"pending"})`, async({page})=>{
   await open(page);
   const result=await page.evaluate(async queued=>{
-    const entries=[["a\nb","c",{protocol:"canopyx/1",type:"page",parent:null,offset:0,items:[{id:"first",label:"First"}],next:null}],["a","b\nc",{protocol:"canopyx/1",type:"page",parent:null,offset:0,items:[{id:"second",label:"Second"}],next:null}]];
-    const sources=entries.map(([id,ref],i)=>{CanopyXSidecar.push([id,"manifest",{protocol:"canopyx/1",type:"manifest",view:id,root:ref}]);return CanopyX.sources.sidecar({id,source:{base:"/pair"+i+"/"}});});
+    const entries=[["a\nb","c",{protocol:"canopyx/2",type:"page",parent:null,offset:0,items:[{id:"first",label:"First"}],next:null}],["a","b\nc",{protocol:"canopyx/2",type:"page",parent:null,offset:0,items:[{id:"second",label:"Second"}],next:null}]];
+    const sources=entries.map(([id,ref],i)=>{CanopyXSidecar.push([id,"manifest",{protocol:"canopyx/2",type:"manifest",view:id,root:ref}]);return CanopyX.sources.sidecar({id,source:{base:"/pair"+i+"/"}});});
     if(queued) entries.forEach(e=>CanopyXSidecar.push(e));
     const pending=sources.map(s=>s.page(null,null));
     if(!queued){await new Promise(r=>setTimeout(r,0));entries.forEach(e=>CanopyXSidecar.push(e));}

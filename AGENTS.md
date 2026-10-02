@@ -1,6 +1,6 @@
 # Agent Guidance
 
-CanopyX is a generic, dependency-free engine for large interactive data views. The tree grid is the first view; a data grid and a 2D matrix come later. The C# side owns view definitions, the `canopyx/1` data protocol, the bundle writer, and the static fallback renderer. The browser runtime renders the views. Keep changes generic, testable, and usable by any host.
+CanopyX is a generic, dependency-free engine for large interactive data views. The tree grid is the first view; a data grid and a 2D matrix come later. The C# side owns view definitions, the `canopyx/2` data protocol, the bundle writer, and the static fallback renderer. The browser runtime renders the views. Keep changes generic, testable, and usable by any host.
 
 ## Boundaries
 
@@ -23,7 +23,7 @@ CanopyX is a generic, dependency-free engine for large interactive data views. T
 
 ## Change Expectations
 
-- A protocol change updates `docs/data-protocol.md`, `docs/schema/canopyx-1.schema.json`, and the schema contract tests together. Additive optional fields stay in `canopyx/1`; anything that breaks an existing reader needs `canopyx/2`.
+- A protocol change updates `docs/data-protocol.md`, `docs/schema/canopyx-2.schema.json`, and the schema contract tests together. Additive optional fields stay in `canopyx/2`; anything that breaks an existing reader needs a new protocol version.
 - Add or update contract tests for new behavior. Test the protocol, bundle layout, static output, and browser behavior that hosts rely on, not incidental structure.
 - Add or update generated examples when a change affects visible output.
 - Performance changes need measured before/after numbers at normal speed and at a 4x CPU slowdown from `tests/browser/bench`.

@@ -52,7 +52,7 @@ public sealed class IdentifierContractTests {
     [InlineData(0xdc00)]
     public void UrlBoundIdentifiersRejectUnpairedSurrogates(int code) {
         var broken = "x" + (char)code;
-        var schema = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-1.schema.json")))!;
+        var schema = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-2.schema.json")))!;
         var pattern = schema["$defs"]!["identifier"]!["pattern"]!.GetValue<string>();
         Assert.DoesNotMatch(pattern, broken);
         Assert.Matches(pattern, "node-\U0001f332");

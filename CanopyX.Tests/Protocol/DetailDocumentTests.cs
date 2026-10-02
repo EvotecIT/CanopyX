@@ -59,7 +59,7 @@ public sealed class DetailDocumentTests {
     [InlineData("\"height\":0")]
     [InlineData("\"height\":41")]
     public void Schema_DetailOutsideItsRanges_IsRejected(string field) {
-        var page = "{\"protocol\":\"canopyx/1\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"next\":null,\"items\":[{\"id\":\"d\",\"label\":\"D\","
+        var page = "{\"protocol\":\"canopyx/2\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"next\":null,\"items\":[{\"id\":\"d\",\"label\":\"D\","
             + "\"detail\":{\"type\":\"table\",\"columns\":[\"A\",\"B\"],\"rows\":[]," + field + "}}]}";
 
         Assert.False(ProtocolSchema.Evaluate(page).IsValid);

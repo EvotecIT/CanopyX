@@ -10,6 +10,6 @@ public enum CanopySourceKind {
     /// <summary>The nodes live in sidecar script files written by the bundle writer, loadable from <c>file://</c>.</summary>
     Sidecar,
 
-    /// <summary>The nodes come from HTTP endpoints that answer with <c>canopyx/1</c> documents.</summary>
+    /// <summary>The nodes come from HTTP endpoints that answer with <c>canopyx/2</c> documents.</summary>
     Remote
 }

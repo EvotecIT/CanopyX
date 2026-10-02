@@ -3,7 +3,7 @@ using System;
 namespace CanopyX.Json;
 
 /// <summary>
-/// Maps CanopyX enums to their <c>canopyx/1</c> wire names. Keep in step with <c>docs/schema/canopyx-1.schema.json</c>.
+/// Maps CanopyX enums to their <c>canopyx/2</c> wire names. Keep in step with <c>docs/schema/canopyx-2.schema.json</c>.
 /// </summary>
 internal static class CanopyJsonNames {
 

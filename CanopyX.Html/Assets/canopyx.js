@@ -1,5 +1,5 @@
 /*
- * CanopyX browser runtime: a virtualized tree grid over the canopyx/1 data protocol. No dependencies.
+ * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
  */
 (function (global) {
@@ -9,7 +9,7 @@
     return;
   }
 
-  const PROTOCOL = "canopyx/1";
+  const PROTOCOL = "canopyx/2";
   const OVERSCAN = 8;
   const TYPEAHEAD_MS = 600;
   const INDENT = 18;
@@ -3601,6 +3601,10 @@
     readLocation() {
       if (this.destroyed) return Promise.resolve();
       if (this.initializing) {
+        if (this.linkOpening && this.currentLink() !== this.link) {
+          this.linkOpening.abort();
+          this.link = null; // Deferred reopening must not reuse the canceled link if the address changes back.
+        }
         this.linkChanged = true;
         return this.ready.then(() => undefined, () => undefined);
       }
@@ -3609,6 +3613,7 @@
 
     openDeepLink() {
       const link = this.view.deepLink ? this.currentLink() : null;
+      if (link !== this.link && this.linkOpening) this.linkOpening.abort();
       if (link == null || link === this.link) {
         if (link == null) this.link = null;
         return link != null && this.linkTask && this.linkTask.link === link ? this.linkTask.promise : Promise.resolve();

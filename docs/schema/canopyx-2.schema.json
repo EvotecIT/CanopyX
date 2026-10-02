@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/schema/canopyx-1.schema.json",
-  "title": "CanopyX data protocol, version 1 (canopyx/1)",
-  "description": "Every canopyx/1 document. The schema lists every field of the current revision and rejects unknown ones, so it doubles as a writer check. Readers must ignore unknown fields so documents from a newer canopyx/1 writer still load.",
+  "$id": "https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/schema/canopyx-2.schema.json",
+  "title": "CanopyX data protocol, version 2 (canopyx/2)",
+  "description": "Every canopyx/2 document. The schema lists every field of the current revision and rejects unknown ones, so it doubles as a writer check. Readers must ignore unknown fields so documents from a newer canopyx/2 writer still load.",
   "oneOf": [
     { "$ref": "#/$defs/view" },
     { "$ref": "#/$defs/page" },
@@ -14,7 +14,7 @@
     { "$ref": "#/$defs/searchEntries" }
   ],
   "$defs": {
-    "protocol": { "const": "canopyx/1" },
+    "protocol": { "const": "canopyx/2" },
     "accessibleLabel": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "identifier": { "type": "string", "minLength": 1, "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$" },

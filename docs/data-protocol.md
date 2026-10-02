@@ -1,19 +1,21 @@
-# CanopyX Data Protocol (`canopyx/1`)
+# CanopyX Data Protocol (`canopyx/2`)
 
-This is the wire format between hosts and the CanopyX browser runtime. The C# types in the `CanopyX` package write it; the runtime in `CanopyX.Html` reads it. A host that is not .NET can produce the same documents by hand. The JSON schema is [schema/canopyx-1.schema.json](schema/canopyx-1.schema.json).
+This is the wire format between hosts and the CanopyX browser runtime. The C# types in the `CanopyX` package write it; the runtime in `CanopyX.Html` reads it. A host that is not .NET can produce the same documents by hand. The JSON schema is [schema/canopyx-2.schema.json](schema/canopyx-2.schema.json).
 
 ## Versioning
 
 Every top-level document carries two fields:
 
 ```json
-{ "protocol": "canopyx/1", "type": "view" }
+{ "protocol": "canopyx/2", "type": "view" }
 ```
 
-- `protocol` is `canopyx/1` for every document described here. The runtime rejects a document with another value and reports it, instead of guessing.
-- Optional fields may be added within `canopyx/1`. Readers ignore fields they do not know, so a document from a newer writer still loads.
-- A change that would break an existing reader (removing or renaming a field, changing its meaning or type, making an optional field required) needs `canopyx/2`.
+- `protocol` is `canopyx/2` for every document described here. The runtime rejects a document with another value and reports it, instead of guessing.
+- Optional fields may be added within `canopyx/2`. Readers ignore fields they do not know, so a document from a newer writer still loads.
+- A change that would break an existing reader (removing or renaming a field, changing its meaning or type, making an optional field required) needs a new protocol version.
 - The schema lists every field of the current revision and rejects unknown ones, so it doubles as a check on writers. Update it in the same change that adds a field.
+
+Version 2 introduces packed child pages and the word/posting search index with separate entry files. Version 1 readers cannot consume those references or search documents. Regenerate bundles with the version 2 writer and deploy the matching browser runtime together. The runtime rejects version 1 documents explicitly.
 
 ## Documents
 
@@ -185,7 +187,7 @@ Table and property cells follow the cell rules above. In the interactive browser
 ## Page
 
 ```json
-{ "protocol": "canopyx/1", "type": "page", "parent": "projects", "offset": 0, "total": 1234,
+{ "protocol": "canopyx/2", "type": "page", "parent": "projects", "offset": 0, "total": 1234,
   "items": [ { "id": "projects/plans", "label": "plans" } ], "next": "p/12#3" }
 ```
 
@@ -200,7 +202,7 @@ Table and property cells follow the cell rules above. In the interactive browser
 A search result lists id paths, so the runtime can expand the tree to each hit without knowing anything else about the data:
 
 ```json
-{ "protocol": "canopyx/1", "type": "search", "query": "plan", "total": 2, "truncated": false,
+{ "protocol": "canopyx/2", "type": "search", "query": "plan", "total": 2, "truncated": false,
   "hits": [ { "path": ["projects", "projects/plans"], "label": "plans", "kind": "folder", "context": "\\\\files\\projects" } ] }
 ```
 
@@ -232,7 +234,7 @@ The fragment is written onto the page's own address (`location`), replacing the 
 ## Counts
 
 ```json
-{ "protocol": "canopyx/1", "type": "counts",
+{ "protocol": "canopyx/2", "type": "counts",
   "items": [ { "id": "projects", "childCount": 13, "cells": { "changed": 3 }, "flags": ["changed-below"] } ] }
 ```
 
@@ -259,7 +261,7 @@ The view's `roots` carry the whole tree with inline `children`. Long child lists
 The bundle writer splits the tree into script files under `base`. Script files are used instead of JSON files because browsers block `fetch` of local files on `file://`; a script tag loads from a file share, a web server, or SharePoint alike. Every file has the same wrapper:
 
 ```js
-(self.CanopyXSidecar = self.CanopyXSidecar || []).push(["files", "r/0", { "protocol": "canopyx/1", "type": "page", ... }]);
+(self.CanopyXSidecar = self.CanopyXSidecar || []).push(["files", "r/0", { "protocol": "canopyx/2", "type": "page", ... }]);
 ```
 
 The three array items are the view id, the file's reference (its path under `base` without `.js`), and the document. The queue works whether the file loads before or after the runtime, and the view id keeps two bundles on one page apart.
@@ -281,8 +283,8 @@ Every page holds at most the writer's page size and fits the file budget (512 Ki
 A tree with many small child lists would need one file per list: 150,000 parents make 150,000 files, which is slow to write and impractical to copy or upload. The bundle writer therefore stores the children pages of many nodes together in pack files, each filled up to the children pack size (128 KiB by default, `CanopyBundleOptions.ChildPackBytes`):
 
 ```js
-(self.CanopyXSidecar = self.CanopyXSidecar || []).push(["files", "p/12", { "protocol": "canopyx/1", "type": "pack",
-  "pages": [ String.raw`{"protocol":"canopyx/1","type":"page","parent":"projects","offset":0,"total":2,"items":[...],"next":null}`, ... ] }]);
+(self.CanopyXSidecar = self.CanopyXSidecar || []).push(["files", "p/12", { "protocol": "canopyx/2", "type": "pack",
+  "pages": [ String.raw`{"protocol":"canopyx/2","type":"page","parent":"projects","offset":0,"total":2,"items":[...],"next":null}`, ... ] }]);
 ```
 
 - `pages` holds page documents as JSON text, one string per page. The runtime parses only the page a node asks for and keeps the last six packs it read, so a pack costs little to load however many pages it holds.
@@ -299,7 +301,7 @@ A runtime from before packs reads `p/<n>#<slot>` as a file name and cannot open 
 The manifest:
 
 ```json
-{ "protocol": "canopyx/1", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 700, "pageSize": 250, "packs": 1,
+{ "protocol": "canopyx/2", "type": "manifest", "view": "files", "root": "r/0", "nodeCount": 700, "pageSize": 250, "packs": 1,
   "search": { "entryCount": 700, "entryFiles": [0, 256, 512], "kinds": ["share", "folder", "file"],
     "shards": { "ab": 81, "ac": 9, "pra": 190, "prb": 12, "pr-": 3, "report-": 410, "report-.2": 230 } } }
 ```
@@ -313,7 +315,7 @@ The index holds every node search can find once, together with its ancestors, in
 **Entries.** The bundle writer numbers the nodes of the index in depth-first order, so a parent always has a smaller number than its children. A node gets an entry when search can find it (every node, or the nodes of the view's `search.kinds`) and when it is an ancestor of such a node, whether or not its own label has a searchable word, because the id path of a hit runs through its ancestors. A node that cannot be found and has no descendant that can is left out, so `search.entryCount` can be smaller than `nodeCount`. The files `e/0`, `e/1`, and so on hold consecutive entries, at most 256 per file and fewer when the file budget requires it. `search.entryCount` is the number of entries, and `search.entryFiles` lists the number of the first entry of each file in file order, starting with 0.
 
 ```json
-{ "protocol": "canopyx/1", "type": "searchEntries", "first": 512,
+{ "protocol": "canopyx/2", "type": "searchEntries", "first": 512,
   "stem": [[0, -1, 0, "share-a", 0, "\\\\files\\share-a", 0, "p/9#12"], [3, 0, 7, "/d0", 0, "Finance", 1, "p/6#4"]],
   "entries": [[3, 10, "/p4", 0, "Budget", 1, "p/3#2", "p/5#7"], [512, 13, "/f0", 0, "Budget 1.xlsx", 2]] }
 ```
@@ -334,7 +336,7 @@ A packed page `p/<n>#<slot>` is in the file `p/<n>`; any other reference is a fi
 **Shards.** A shard covers every word that starts with a given prefix of the folded word. A prefix starts at two code units. When a shard would refer to more entries than the bundle writer's limit (20,000 postings by default; 1,000 for the shards of label tokens, because a query reads exactly one token), it splits into prefixes one code unit longer, and the word exactly as long as the old prefix moves to a shard for the old prefix marked with a trailing `-`. Prefixes stop growing at 12 code units. A word of one code unit has a shard of its own, named by that code unit and a trailing `-`. The shard key is the prefix encoded for file names: `a` to `z` and `0` to `9` stay as they are, and any other code unit becomes `_` followed by its four lowercase hex digits (`é` becomes `_00e9`, and the keys of label tokens start with `_0000`).
 
 ```json
-{ "protocol": "canopyx/1", "type": "searchShard", "key": "pra",
+{ "protocol": "canopyx/2", "type": "searchShard", "key": "pra",
   "words": ["practice", "prague"], "postings": [[14, 3, -5, 120], [7]] }
 ```
 
@@ -400,4 +402,4 @@ Sidecar bases name a folder, end in `/`, and contain no query or fragment. Inlin
 Known page totals require a continuation exactly when the loaded range ends before the total. Browser search normalization removes only ASCII separators; non-ASCII word characters remain part of the query. A multi-selection deep link names a currently selected row and is removed when the grid selection becomes empty. Browser outlines honor host detail rendering callbacks; their default HTML-detail fallback escapes markup for script-free output.
 
 Local external assets in an HTML bundle use a separate directory tree from its sidecar data. `AssetBaseUrl` normalizes backslashes to URL slashes, so a relative Windows-style asset folder is written at the same path used by the page. Bundle folders cannot occupy `index.html` or a runtime asset file path. Local asset and data folder components use portable ASCII names of at most 255 characters without internal `.` or `..` segments; a leading `./` is allowed for local assets. These layout checks run before any bundle files are written. URLs outside the bundle remain host-served.
-Fully materialized remote trees can be written as sidecar bundles with local search enabled even when the original remote source has no search endpoint; ordinary remote views still require that endpoint. A node in such a tree may retain its former remote `Ref` beside its complete inline children in memory: the bundle writer replaces that reference with the generated child-page reference. Ordinary `canopyx/1` node documents still reject a `ref` beside inline children.
+Fully materialized remote trees can be written as sidecar bundles with local search enabled even when the original remote source has no search endpoint; ordinary remote views still require that endpoint. A node in such a tree may retain its former remote `Ref` beside its complete inline children in memory: the bundle writer replaces that reference with the generated child-page reference. Ordinary `canopyx/2` node documents still reject a `ref` beside inline children.

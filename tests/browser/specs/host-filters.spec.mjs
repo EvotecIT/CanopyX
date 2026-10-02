@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, openExample, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "filters", label: "Filters", rowHeight: 28, pageSize: 100, selection: "single",
+const view = { protocol: "canopyx/2", type: "view", id: "filters", label: "Filters", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 260, kind: "text" }],
   filters: [{ id: "week", label: "Changed this week", flag: "changed-7d", ancestorFlag: "below-7d", hidden: true },
     { id: "month", label: "Changed this month", flag: "changed-30d", hidden: true },

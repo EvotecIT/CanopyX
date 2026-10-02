@@ -96,7 +96,7 @@ public sealed class LabelsTests {
         }
 
         // And the schema knows exactly those names.
-        var schema = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-1.schema.json")))!;
+        var schema = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-2.schema.json")))!;
         var declared = schema["$defs"]!["view"]!["properties"]!["labels"]!["properties"]!.AsObject().Select(item => item.Key);
         Assert.Equal(written, declared.OrderBy(name => name, StringComparer.Ordinal));
     }

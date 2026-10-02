@@ -225,7 +225,7 @@ test.describe("remote source", () => {
   test("pages children, searches, and refreshes counts through the endpoint templates", async ({ page }) => {
     const requests = [];
     const view = {
-      protocol: "canopyx/1", type: "view", id: "remote", label: "Remote tree", rowHeight: 28, pageSize: 100, selection: "single",
+      protocol: "canopyx/2", type: "view", id: "remote", label: "Remote tree", rowHeight: 28, pageSize: 100, selection: "single",
       columns: [{ id: "name", title: "Name", width: 300, kind: "text" }, { id: "size", title: "Size", width: 100, kind: "number" }],
       search: { minLength: 2, maxResults: 20, placeholder: "Search" },
       source: { kind: "remote", children: "api/children?ref={ref}&cursor={cursor}", search: "api/search?q={query}&limit={limit}", counts: "api/counts?ids={ids}" }
@@ -241,11 +241,11 @@ test.describe("remote source", () => {
         const all = children(url.searchParams.get("ref"));
         const offset = Number(url.searchParams.get("cursor") || 0);
         const items = all.slice(offset, offset + 50);
-        body = { protocol: "canopyx/1", type: "page", parent: url.searchParams.get("ref") || null, offset, total: all.length, items, next: offset + 50 < all.length ? String(offset + 50) : null };
+        body = { protocol: "canopyx/2", type: "page", parent: url.searchParams.get("ref") || null, offset, total: all.length, items, next: offset + 50 < all.length ? String(offset + 50) : null };
       } else if (url.pathname === "/api/search") {
-        body = { protocol: "canopyx/1", type: "search", query: url.searchParams.get("q"), truncated: false, hits: [{ path: ["r1", "r1/110"], label: "Item 110 of r1" }] };
+        body = { protocol: "canopyx/2", type: "search", query: url.searchParams.get("q"), truncated: false, hits: [{ path: ["r1", "r1/110"], label: "Item 110 of r1" }] };
       } else {
-        body = { protocol: "canopyx/1", type: "counts", items: url.searchParams.get("ids").split(",").map((id) => ({ id, cells: { size: 999 } })) };
+        body = { protocol: "canopyx/2", type: "counts", items: url.searchParams.get("ids").split(",").map((id) => ({ id, cells: { size: 999 } })) };
       }
       return route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
     });

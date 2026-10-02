@@ -5,7 +5,7 @@ import { nextFrames, viewPage } from "./support.mjs";
 
 test.use({ timezoneId: "Europe/Warsaw" });
 
-const view = (extra) => ({ protocol: "canopyx/1", type: "view", id: "zones", label: "Zones", rowHeight: 28, pageSize: 100, selection: "single",
+const view = (extra) => ({ protocol: "canopyx/2", type: "view", id: "zones", label: "Zones", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 200, kind: "text" }, { id: "changed", title: "Changed", width: 220, kind: "datetime", sortable: true }],
   source: { kind: "inline" },
   roots: [
@@ -62,7 +62,9 @@ test("a view can start in local time, and sorting still follows the moment, not 
   await expect(cell(page, "plain")).toHaveText("2026-09-27 12:15");
   expect(await page.evaluate(`${api}.getTimeZone()`)).toBe("local");
   await page.getByRole("button", { name: "Changed" }).click();
-  const ids = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")]
-    .sort((a, b) => Number(a.getAttribute("aria-rowindex")) - Number(b.getAttribute("aria-rowindex"))).map((row) => row.getAttribute("data-cx-id")));
-  expect(ids.slice(0, 4)).toEqual(["text", "titled", "plain", "late"]);
+  // Sorting schedules a paint; observe the rendered order after that paint rather than the click's task.
+  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")]
+    .sort((a, b) => Number(a.getAttribute("aria-rowindex")) - Number(b.getAttribute("aria-rowindex")))
+    .map((row) => row.getAttribute("data-cx-id")).slice(0, 4)))
+    .toEqual(["text", "titled", "plain", "late"]);
 });

@@ -19,7 +19,7 @@
     <Version>$(CanopyXProductVersion)</Version>
     <Authors>Evotec</Authors>
     <Description>Dependency-free view definitions, versioned data protocol, sidecar bundle writer, and script-free outline renderer for large interactive data views such as virtualized tree grids.</Description>
-    <PackageReleaseNotes>CanopyX 0.1.0 is the first release: tree grid view definitions, the canopyx/1 protocol, the sidecar bundle writer, and the static outline renderer.</PackageReleaseNotes>
+    <PackageReleaseNotes>CanopyX 0.1.0 is the first release: tree grid view definitions, the canopyx/2 protocol, the sidecar bundle writer, and the static outline renderer.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tree-grid;treegrid;treeview;virtualization;lazy-loading;data-views;html;reports;zero-dependency;aot;trimming</PackageTags>

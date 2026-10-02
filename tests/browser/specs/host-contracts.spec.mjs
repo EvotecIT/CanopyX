@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, searchIndex, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "hosts", label: "Hosts", rowHeight: 28, pageSize: 100,
+const view = { protocol: "canopyx/2", type: "view", id: "hosts", label: "Hosts", rowHeight: 28, pageSize: 100,
   columns: [{ id: "name", title: "Name", width: 300, kind: "text" }, { id: "value", title: "Value", width: 150, kind: "text" }],
   source: { kind: "inline" }, roots: [] };
 async function open(page) {
@@ -22,7 +22,7 @@ test("custom sources override inline roots and paths cross empty advancing pages
     await api.ready;
     await api.expandPath(["target"]);
     return api.visibleRows().map(r => r.node.id);
-    function viewForTest() { return { protocol: "canopyx/1", type: "view", id: "custom", label: "Custom",
+    function viewForTest() { return { protocol: "canopyx/2", type: "view", id: "custom", label: "Custom",
       source: { kind: "inline" }, columns: [{ id: "name", title: "Name", width: 300 }] }; }
   });
   expect(ids).toEqual(["target"]);
@@ -105,7 +105,7 @@ test("sidecar search retains paths whose newline-joined strings collide", async 
   const data = { ...view, source: { kind: "sidecar", base: "/data/" } };
   const entries = [{ path: ["a\nb", "c"], label: "Abacus one" }, { path: ["a", "b\nc"], label: "Abacus two" }];
   const index = searchIndex(entries);
-  const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: data.id, root: "r/0", search: index.search }, ...index.docs };
+  const docs = { manifest: { protocol: "canopyx/2", type: "manifest", view: data.id, root: "r/0", search: index.search }, ...index.docs };
   await page.route("https://canopyx.test/data/**", route => {
     const ref = new URL(route.request().url()).pathname.slice(6, -3);
     return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(${JSON.stringify([data.id, ref, docs[ref]])});` });

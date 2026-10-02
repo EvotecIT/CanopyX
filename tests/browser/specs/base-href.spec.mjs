@@ -4,7 +4,7 @@
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "records", label: "Records", rowHeight: 28, pageSize: 100, selection: "single", deepLink: true,
+const view = { protocol: "canopyx/2", type: "view", id: "records", label: "Records", rowHeight: 28, pageSize: 100, selection: "single", deepLink: true,
   columns: [{ id: "name", title: "Name", width: 260, kind: "text" }],
   source: { kind: "inline" },
   roots: [{ id: "group", label: "Group", expanded: true, children: [{ id: "r1", label: "Record one", kind: "record" }, { id: "r2", label: "Record two", kind: "record" }] }] };

@@ -6,7 +6,7 @@ CanopyX turns host data into large interactive views that stay fast at hundreds 
 
 | Package | Owns | Depends on |
 | --- | --- | --- |
-| `CanopyX` | View definition model, `canopyx/1` protocol documents and their JSON writer, bundle writer, static fallback renderer | nothing at runtime |
+| `CanopyX` | View definition model, `canopyx/2` protocol documents and their JSON writer, bundle writer, static fallback renderer | nothing at runtime |
 | `CanopyX.Html` | Browser runtime assets (tree grid engine, public API, data sources, theme CSS) as embedded resources, and the C# API that emits a page fragment, a full page, or the asset files | `CanopyX` |
 
 Hosts own everything product-specific. A host maps its records into `CanopyNode` objects, computes rollups and flags, and decides the delivery mode. HtmlForgeX will host CanopyX through its own `HtmlForgeX.CanopyX` bridge; TestimoX and other products either use that bridge or call `CanopyX.Html` directly.
@@ -22,7 +22,7 @@ Hosts own everything product-specific. A host maps its records into `CanopyNode`
 4. `CanopyX.Html` renders the fragment: a host element and the view as a JSON configuration script. Assets are inlined or referenced as files named by their content hash (see [Assets and Caching](#assets-and-caching)).
 5. The runtime finds every `[data-canopyx-host]` element, reads its configuration, creates the data source, and mounts a tree grid.
 
-Every document on the wire carries `"protocol": "canopyx/1"`. The runtime rejects documents with another protocol value instead of guessing.
+Every document on the wire carries `"protocol": "canopyx/2"`. The runtime rejects documents with another protocol value instead of guessing.
 
 ## Assets and Caching
 

@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { searchIndex, shardKey, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "index", label: "Index", columns: [{ id: "name", title: "Name", width: 400 }],
+const view = { protocol: "canopyx/2", type: "view", id: "index", label: "Index", columns: [{ id: "name", title: "Name", width: 400 }],
   source: { kind: "inline" }, roots: [] };
 
 /** Serves the documents as a sidecar bundle and returns the references the page requested, in order. */
@@ -29,7 +29,7 @@ function search(page, query, limit = 20) {
   }, { id: view.id, query, limit });
 }
 
-const manifest = (index) => ({ protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", search: index });
+const manifest = (index) => ({ protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0", search: index });
 
 test.beforeEach(({ page }) => {
   page.runtimeErrors = [];
@@ -50,12 +50,12 @@ test("entries rebuild ids shared with the parent, the path, the context, and the
   ];
   const docs = {
     manifest: manifest({ entryCount: 5, entryFiles: [0, 2], kinds: ["domain", "unit"], shards: { us: 1, gr: 1, pl: 1 } }),
-    "s/k-us": { protocol: "canopyx/1", type: "searchShard", key: "us", words: ["users"], postings: [[2]] },
-    "s/k-gr": { protocol: "canopyx/1", type: "searchShard", key: "gr", words: ["groups"], postings: [[2]] },
-    "s/k-pl": { protocol: "canopyx/1", type: "searchShard", key: "pl", words: ["plans"], postings: [[4]] },
-    "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries: entries.slice(0, 2) },
+    "s/k-us": { protocol: "canopyx/2", type: "searchShard", key: "us", words: ["users"], postings: [[2]] },
+    "s/k-gr": { protocol: "canopyx/2", type: "searchShard", key: "gr", words: ["groups"], postings: [[2]] },
+    "s/k-pl": { protocol: "canopyx/2", type: "searchShard", key: "pl", words: ["plans"], postings: [[4]] },
+    "e/0": { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [], entries: entries.slice(0, 2) },
     // The second file reaches entries 0 and 1 only through its stem.
-    "e/1": { protocol: "canopyx/1", type: "searchEntries", first: 2, stem: [[0].concat(entries[0]), [1].concat(entries[1])], entries: entries.slice(2) }
+    "e/1": { protocol: "canopyx/2", type: "searchEntries", first: 2, stem: [[0].concat(entries[0]), [1].concat(entries[1])], entries: entries.slice(2) }
   };
   const requested = await serve(page, docs);
 
@@ -70,10 +70,10 @@ test("posting lists decode gaps and runs, and words intersect", async ({ page })
   const docs = {
     manifest: manifest({ entryCount: 40, entryFiles: [0], kinds: [], shards: { it: 40, od: 20, la: 10 } }),
     // "item" is one run of all 40 entries, "odd" is every second one, "late" is a run of ten that starts at 30.
-    "s/k-it": { protocol: "canopyx/1", type: "searchShard", key: "it", words: ["item"], postings: [[0, -39]] },
-    "s/k-od": { protocol: "canopyx/1", type: "searchShard", key: "od", words: ["odd"], postings: [[1].concat(Array(19).fill(2))] },
-    "s/k-la": { protocol: "canopyx/1", type: "searchShard", key: "la", words: ["late"], postings: [[30, -9]] },
-    "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries: labels.map((label, i) => [-1, 0, "n" + i, 0, label]) }
+    "s/k-it": { protocol: "canopyx/2", type: "searchShard", key: "it", words: ["item"], postings: [[0, -39]] },
+    "s/k-od": { protocol: "canopyx/2", type: "searchShard", key: "od", words: ["odd"], postings: [[1].concat(Array(19).fill(2))] },
+    "s/k-la": { protocol: "canopyx/2", type: "searchShard", key: "la", words: ["late"], postings: [[30, -9]] },
+    "e/0": { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [], entries: labels.map((label, i) => [-1, 0, "n" + i, 0, label]) }
   };
   await serve(page, docs);
 
@@ -111,13 +111,13 @@ for (const [query, label, labelWords, tokenShard, token] of [
     const entries = Array.from({ length: 60 }, (_, i) => [-1, 0, "n" + i, 0, label + " copy " + i]).concat([[-1, 0, "exact", 0, label]]);
     const docs = {
       manifest: manifest({ entryCount: 61, entryFiles: [0], kinds: [], shards: { [tokenShard]: 1 } }),
-      ["s/k-" + tokenShard]: { protocol: "canopyx/1", type: "searchShard", key: tokenShard, words: ["\u0000" + token], postings: [[60]] },
-      "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries }
+      ["s/k-" + tokenShard]: { protocol: "canopyx/2", type: "searchShard", key: tokenShard, words: ["\u0000" + token], postings: [[60]] },
+      "e/0": { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [], entries }
     };
     for (const word of labelWords) {
       const key = shardKey(word.slice(0, 2));
       docs.manifest.search.shards[key] = 61;
-      docs["s/k-" + key] = { protocol: "canopyx/1", type: "searchShard", key, words: [word], postings: [[0, -60]] };
+      docs["s/k-" + key] = { protocol: "canopyx/2", type: "searchShard", key, words: [word], postings: [[0, -60]] };
     }
     await serve(page, docs);
 
@@ -135,7 +135,7 @@ test("a label equal to the query ranks first behind any number of other matches"
   const entries = index.docs["e/0"].entries;
   const docs = { manifest: manifest({ ...index.search, entryFiles: Array.from({ length: 121 }, (_, i) => i * 5) }), ...index.docs };
   for (let file = 0; file <= 120; file++) {
-    docs["e/" + file] = { protocol: "canopyx/1", type: "searchEntries", first: file * 5, stem: [], entries: entries.slice(file * 5, file * 5 + 5) };
+    docs["e/" + file] = { protocol: "canopyx/2", type: "searchEntries", first: file * 5, stem: [], entries: entries.slice(file * 5, file * 5 + 5) };
   }
   const requested = await serve(page, docs);
 
@@ -187,7 +187,7 @@ function pack(docs, perPack) {
     // Entry files and shards never share a pack.
     if (i % perPack === 0 || (!entry && files[i - 1][0].startsWith("e/"))) {
       number++;
-      packed["q/" + number] = { protocol: "canopyx/1", type: "pack", pages: [] };
+      packed["q/" + number] = { protocol: "canopyx/2", type: "pack", pages: [] };
       packed.manifest.search[entry ? "entryPacks" : "shardPacks"].push(name);
     }
     packed["q/" + number].pages.push(JSON.stringify(docs[ref]));
@@ -204,8 +204,8 @@ test("a packed index answers like separate files and loads only the packs its do
   docs["e/0"] = { ...docs["e/0"], entries: docs["e/0"].entries.slice(0, 20) };
   const all = searchIndex(hits).docs["e/0"].entries;
   const stem = (first) => { const out = []; for (let n = all[first][0]; n >= 0; n = all[n][0]) out.unshift([n].concat(all[n])); return out; };
-  docs["e/1"] = { protocol: "canopyx/1", type: "searchEntries", first: 20, stem: stem(20), entries: all.slice(20, 40) };
-  docs["e/2"] = { protocol: "canopyx/1", type: "searchEntries", first: 40, stem: stem(40), entries: all.slice(40) };
+  docs["e/1"] = { protocol: "canopyx/2", type: "searchEntries", first: 20, stem: stem(20), entries: all.slice(20, 40) };
+  docs["e/2"] = { protocol: "canopyx/2", type: "searchEntries", first: 40, stem: stem(40), entries: all.slice(40) };
   const separate = { manifest: manifest(index), ...docs };
   const requested = await serve(page, pack(separate, 2));
 
@@ -219,7 +219,7 @@ test("a corrupt or missing index pack is reported in the search box, and the que
   const hits = [{ path: ["alpha"], label: "Alpha report" }, { path: ["beta"], label: "Beta report" }];
   const { search: index, docs } = searchIndex(hits);
   const files = pack({ manifest: manifest(index), ...docs }, 1);
-  files["r/0"] = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 2, next: null,
+  files["r/0"] = { protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 2, next: null,
     items: [{ id: "alpha", label: "Alpha report" }, { id: "beta", label: "Beta report" }] };
   // With one document per pack, the shard of "report" has a pack of its own.
   const shardPack = "q/" + (files.manifest.search.entryPacks.length + files.manifest.search.shardPacks.indexOf("re"));
@@ -244,7 +244,7 @@ test("a corrupt or missing index pack is reported in the search box, and the que
   };
 
   // A pack whose shard does not match the manifest: the failure is reported and nothing is listed.
-  files[shardPack] = { ...good, pages: [JSON.stringify({ protocol: "canopyx/1", type: "searchShard", key: "re", words: ["report"], postings: [[0]] })] };
+  files[shardPack] = { ...good, pages: [JSON.stringify({ protocol: "canopyx/2", type: "searchShard", key: "re", words: ["report"], postings: [[0]] })] };
   await query();
   await expect(status).toContainText("Search failed: CanopyX: search shard posting count does not match the manifest");
   await expect(page.locator(".cx-result")).toHaveCount(0);

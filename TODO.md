@@ -128,7 +128,7 @@ Tree grid follow-ups without a milestone yet, each with the consumer that will p
 
 Consumer: the TestimoX Monitoring service, which serves the GPO explorer live from its database.
 
-- [ ] `CanopyX.AspNetCore` (targets `net8.0` and `net10.0`): endpoint helpers that answer children pages, search, and counts with the same `canopyx/1` documents the bundle writer produces, so the runtime's remote data source works unchanged.
+- [ ] `CanopyX.AspNetCore` (targets `net8.0` and `net10.0`): endpoint helpers that answer children pages, search, and counts with the same `canopyx/2` documents the bundle writer produces, so the runtime's remote data source works unchanged.
 - [ ] The host supplies the query callbacks. Database paging stays in DbaClientX and reaches CanopyX through a bridge in the host, so CanopyX takes no DbaClientX dependency.
 - [ ] Endpoints take the host's authorization policy (there is no anonymous default) and the host's page-size and query-time caps (TestimoX plan section 19.1).
 - [ ] Remote search hits carry no location hints, so a hosted path opens one level after another (one round trip each). The remote source can implement the runtime's optional `prefetch(opens, finds)` once the search document says where a hit's pages are; the bundle index already does (see "Search Index" in data-protocol.md).
@@ -185,7 +185,7 @@ Consumers: external users of the published packages, and write-governed tools su
 - [ ] Published benchmarks with reproducible commands.
 - [ ] Optional npm distribution of the built runtime for hosts that are not .NET.
 
-Gate: no breaking changes to the public API or to `canopyx/1` during 1.x, and the website documents every public entry point with a working example.
+Gate: no breaking changes to the public API or to `canopyx/2` during 1.x, and the website documents every public entry point with a working example.
 
 ## Package Split Policy
 

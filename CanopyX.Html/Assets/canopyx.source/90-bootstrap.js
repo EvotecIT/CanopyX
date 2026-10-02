@@ -5,7 +5,7 @@
    * @param {HTMLElement} host The element that receives the grid.
    * @param {{ view: object, source?: object, labels?: Object<string, string>, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function, formatLink?: Function, parseLink?: Function }} options
-   *   `view` is a canopyx/1 view document. `labels` translates the texts the grid writes itself, on top of the view's
+   *   `view` is a canopyx/2 view document. `labels` translates the texts the grid writes itself, on top of the view's
    *   own `labels` (names and placeholders as in docs/data-protocol.md). Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
    *   the ids of the active declared filters whenever they change.

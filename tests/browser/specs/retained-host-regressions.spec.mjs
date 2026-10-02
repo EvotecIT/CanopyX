@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
-const view = { protocol: "canopyx/1", type: "view", id: "retained-host", label: "Retained host",
+const view = { protocol: "canopyx/2", type: "view", id: "retained-host", label: "Retained host",
   columns: [{ id: "name", title: "Name", width: 500 }], source: { kind: "inline" }, roots: [] };
 async function open(page) {
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: viewPage(view) }));

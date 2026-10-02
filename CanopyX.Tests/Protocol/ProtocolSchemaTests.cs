@@ -13,7 +13,7 @@ public sealed class ProtocolSchemaTests {
     [InlineData("kinds")]
     [InlineData("shards")]
     public void Schema_ManifestSearch_NeedsEveryPartOfTheIndexDescription(string field) {
-        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[\"folder\"],\"shards\":{\"ab\":1}}}")!;
+        var doc = JsonNode.Parse("{\"protocol\":\"canopyx/2\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[\"folder\"],\"shards\":{\"ab\":1}}}")!;
         ProtocolSchema.AssertValid(doc.ToJsonString(), "manifest with a search index");
         doc["search"]!.AsObject().Remove(field);
         Assert.False(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
@@ -27,20 +27,20 @@ public sealed class ProtocolSchemaTests {
     [InlineData("\"entryPacks\":[-1],\"shardPacks\":[\"ab\"]", false)]
     [InlineData("\"entryPacks\":[0],\"shardPacks\":[\"AB\"]", false)]
     public void Schema_ManifestSearch_NamesIndexPacksWithBothLists(string packs, bool valid) {
-        var doc = "{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":1}," + packs + "}}";
+        var doc = "{\"protocol\":\"canopyx/2\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"search\":{\"entryCount\":1,\"entryFiles\":[0],\"kinds\":[],\"shards\":{\"ab\":1}," + packs + "}}";
         Assert.Equal(valid, ProtocolSchema.Evaluate(doc).IsValid);
     }
 
     [Theory]
     [InlineData("{\"pages\":[\"{}\"]}", "0", true)]
     [InlineData("{\"pages\":[]}", "0", true)]
-    [InlineData("{\"pages\":[{\"protocol\":\"canopyx/1\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"items\":[],\"next\":null}]}", "1", false)]
+    [InlineData("{\"pages\":[{\"protocol\":\"canopyx/2\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"items\":[],\"next\":null}]}", "1", false)]
     [InlineData("{}", "1", false)]
     [InlineData("{\"pages\":[\"{}\"]}", "-1", false)]
     public void Schema_Pack_HoldsPagesAsTextAndTheManifestCountsThePacks(string body, string packs, bool valid) {
         var pack = JsonNode.Parse(body)!.AsObject();
-        pack["protocol"] = "canopyx/1"; pack["type"] = "pack";
-        var manifest = "{\"protocol\":\"canopyx/1\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"packs\":" + packs + "}";
+        pack["protocol"] = "canopyx/2"; pack["type"] = "pack";
+        var manifest = "{\"protocol\":\"canopyx/2\",\"type\":\"manifest\",\"view\":\"v\",\"root\":\"r/0\",\"nodeCount\":1,\"pageSize\":1,\"packs\":" + packs + "}";
         Assert.Equal(valid, ProtocolSchema.Evaluate(pack.ToJsonString()).IsValid && ProtocolSchema.Evaluate(manifest).IsValid);
     }
 
@@ -53,7 +53,7 @@ public sealed class ProtocolSchemaTests {
     [InlineData("{\"words\":[\"ab\"]}", false)]
     public void Schema_SearchShard_DescribesWordsAndPostingLists(string body, bool valid) {
         var doc = JsonNode.Parse(body)!.AsObject();
-        doc["protocol"] = "canopyx/1"; doc["type"] = "searchShard"; doc["key"] = "ab";
+        doc["protocol"] = "canopyx/2"; doc["type"] = "searchShard"; doc["key"] = "ab";
         Assert.Equal(valid, ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
     }
 
@@ -72,7 +72,7 @@ public sealed class ProtocolSchemaTests {
     [InlineData("{\"first\":4,\"stem\":[[0,-1,0,\"root\",0,\"Root\",null,7]],\"entries\":[]}", false)]
     public void Schema_SearchEntries_DescribesEntriesAndTheirStem(string body, bool valid) {
         var doc = JsonNode.Parse(body)!.AsObject();
-        doc["protocol"] = "canopyx/1"; doc["type"] = "searchEntries";
+        doc["protocol"] = "canopyx/2"; doc["type"] = "searchEntries";
         Assert.Equal(valid, ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
     }
 
@@ -124,7 +124,7 @@ public sealed class ProtocolSchemaTests {
     [MemberData(nameof(RejectedMutations))]
     public void Schema_DocumentBreakingAWriterRule_IsRejected(string rule) {
         var json = rule switch {
-            "other protocol version" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["protocol"] = "canopyx/2"),
+            "other protocol version" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["protocol"] = "canopyx/1"),
             "misspelt node field" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["hasChildrn"] = true),
             "detail row with children" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["detail"] = JsonNode.Parse("{\"type\":\"html\",\"height\":2,\"html\":\"x\"}")),
             "empty ref" => ProtocolSchema.Mutate(SampleDocuments.Page().ToJson(), page => page["items"]![0]!.AsObject()["ref"] = ""),

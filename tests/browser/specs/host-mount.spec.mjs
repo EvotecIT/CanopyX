@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, runtimeAssets, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "records", label: "Records", rowHeight: 28, pageSize: 100, selection: "single", deepLink: true,
+const view = { protocol: "canopyx/2", type: "view", id: "records", label: "Records", rowHeight: 28, pageSize: 100, selection: "single", deepLink: true,
   columns: [{ id: "name", title: "Name", width: 260, kind: "text" }, { id: "state", title: "State", width: 160, kind: "text" }],
   source: { kind: "inline" },
   roots: [{ id: "group", label: "Group", children: [
@@ -158,6 +158,54 @@ test("readLocation waits for a fragment that is already being opened", async ({ 
     return grid.getSelected().map((node) => node.id);
   });
   expect(selected).toEqual(["r2"]);
+});
+
+async function delayedDefaultLink(page, initializing) {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let requested = false;
+  const remote = { ...view, source: { kind: "remote", children: "https://canopyx.test/children?ref={ref}" } };
+  delete remote.roots;
+  await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(remote) }));
+  await page.route("https://canopyx.test/children?*", async route => {
+    const parent = new URL(route.request().url()).searchParams.get("ref") || null;
+    if (parent) { requested = true; await gate; }
+    await route.fulfill({ json: { protocol: "canopyx/2", type: "page", parent, offset: 0, next: null, items: parent ? [{ id: "r2", label: "Record two" }] : [{ id: "group", label: "Group", hasChildren: true }] } });
+  });
+  await page.goto("https://canopyx.test/" + (initializing ? "#cx.records=group/r2" : ""));
+  if (!initializing) {
+    await page.waitForSelector("[data-cx-ready]");
+    await page.evaluate(() => { history.replaceState(null, "", "#cx.records=group/r2"); window.pendingLink = document.querySelector(".cx-host").canopyx.readLocation(); });
+  }
+  await expect.poll(() => requested).toBe(true);
+  return release;
+}
+
+for (const initializing of [false, true]) for (const fragment of ["", "#other=1"]) {
+  test(`clearing a pending default link preserves ${fragment}, initializing=${initializing}`, async ({ page }) => {
+    const release = await delayedDefaultLink(page, initializing);
+    await page.evaluate(fragment => {
+      history.replaceState(null, "", location.pathname + fragment);
+      document.querySelector(".cx-host").canopyx.readLocation();
+    }, fragment);
+    release();
+    await page.evaluate(() => window.pendingLink || document.querySelector(".cx-host").canopyx.ready);
+    expect(await hash(page)).toBe(fragment);
+    expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.getSelected().map(n => n.id))).toEqual([]);
+  });
+}
+
+test("initializing deep link reopens after the address changes away and back", async ({ page }) => {
+  const release = await delayedDefaultLink(page, true);
+  await page.evaluate(() => {
+    const grid = document.querySelector(".cx-host").canopyx;
+    history.replaceState(null, "", "#cx.records=other"); grid.readLocation();
+    history.replaceState(null, "", "#cx.records=group/r2"); grid.readLocation();
+  });
+  release();
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.ready);
+  await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
+  expect(await hash(page)).toBe("#cx.records=group/r2");
 });
 
 test("a fragment navigation that fires popstate and hashchange is read once, also when it opens no row", async ({ page }) => {

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "count-source-contracts", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "count-source-contracts", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "inline" }, roots: [] };
 
 async function open(page) {
@@ -25,7 +25,7 @@ test("a lower count replaces a stale terminal child cache", async ({ page }) => 
     } } });
     await api.ready;
     await api.expandPath(["parent"], { select: false, focus: false, expandLast: true });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     const afterCount = api.visibleRows().map(row => row.node.id);
     await api.expandPath(["parent", "b"], { select: false, focus: false });
     return { loads, afterCount, final: api.visibleRows().map(row => row.node.id) };
@@ -50,7 +50,7 @@ test("a lower count received during paging wins over the stale page", async ({ p
     await api.expandPath(["parent"], { select: false, focus: false, expandLast: true });
     const loading = api.loadMore("parent");
     await new Promise(resolve => { const started = () => window.finishOldContinuation ? resolve() : setTimeout(started, 0); started(); });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
     finishOldContinuation({ items: [{ id: "d", label: "d" }], total: 4, next: null });
     await loading;
     const afterOldPage = api.visibleRows().map(row => row.node.id);
@@ -76,7 +76,7 @@ test("discarded in-flight child pages do not announce or notify a host", async (
     const liveBefore = host.querySelector(".cx-live").textContent;
     const pending = api.expandPath(["parent"], { select: false, focus: false, expandLast: true }).catch(() => null);
     await new Promise(resolve => { const started = () => window.finishDiscardedPage ? resolve() : setTimeout(started, 0); started(); });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 0 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 0 }] });
     finishDiscardedPage({ items: [{ id: "stale", label: "Stale" }], total: 1, next: null });
     await pending;
     return { callbacks, events, liveBefore, liveAfter: host.querySelector(".cx-live").textContent,
@@ -87,10 +87,10 @@ test("discarded in-flight child pages do not announce or notify a host", async (
 
 test("remote search requires hits and truncated in every response", async ({ page }) => {
   await open(page);
-  await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null, offset: 0, items: [] } }));
+  await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: { protocol: "canopyx/2", type: "page", parent: null, offset: 0, items: [] } }));
   await page.route("https://canopyx.test/search?*", route => {
     const query = new URL(route.request().url()).searchParams.get("q");
-    const response = { protocol: "canopyx/1", type: "search", query, hits: [], truncated: false };
+    const response = { protocol: "canopyx/2", type: "search", query, hits: [], truncated: false };
     if (query === "missing-hits") delete response.hits;
     if (query === "null-hits") response.hits = null;
     if (query === "missing-flag") delete response.truncated;
@@ -112,9 +112,9 @@ test("remote search requires hits and truncated in every response", async ({ pag
 
 test("remote and host counts reject a missing items array", async ({ page }) => {
   await open(page);
-  await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null, offset: 0, items: [{ id: "a", label: "A" }] } }));
+  await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: { protocol: "canopyx/2", type: "page", parent: null, offset: 0, items: [{ id: "a", label: "A" }] } }));
   await page.route("https://canopyx.test/counts?*", route => {
-    const response = { protocol: "canopyx/1", type: "counts" };
+    const response = { protocol: "canopyx/2", type: "counts" };
     if (new URL(route.request().url()).searchParams.get("ids") === "null") response.items = null;
     return route.fulfill({ json: response });
   });
@@ -126,7 +126,7 @@ test("remote and host counts reject a missing items array", async ({ page }) => 
       try { await api.refreshCounts([id]); result.push(null); } catch (error) { result.push(error.message); }
     }
     for (const items of [undefined, null]) {
-      const document = { protocol: "canopyx/1", type: "counts" };
+      const document = { protocol: "canopyx/2", type: "counts" };
       if (items === null) document.items = null;
       try { api.applyCounts(document); result.push(null); } catch (error) { result.push(error.message); }
     }

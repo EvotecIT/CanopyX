@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "thirteenth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "thirteenth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 240 }, { id: "value", title: "Value", width: 120 }],
   source: { kind: "inline" }, roots: [] };
 

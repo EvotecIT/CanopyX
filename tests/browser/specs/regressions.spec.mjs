@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { nextFrames, row, searchIndex, viewPage } from "./support.mjs";
 
 const baseView = (roots = []) => ({
-  protocol: "canopyx/1", type: "view", id: "regression", label: "Regression",
+  protocol: "canopyx/2", type: "view", id: "regression", label: "Regression",
   rowHeight: 28, pageSize: 2, selection: "multiple", deepLink: true,
   columns: [{ id: "name", title: "Name", width: 300, kind: "text", sortable: true },
     { id: "value", title: "Value", width: 180, kind: "number", sortable: true }],
@@ -21,7 +21,7 @@ test("count updates re-sort loaded siblings", async ({ page }) => {
   const ids = await page.evaluate(() => {
     const api = document.querySelector(".cx-host").canopyx;
     api.sort("value", "asc");
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "a", cells: { value: 3 } }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "a", cells: { value: 3 } }] });
     return api.visibleRows().map((r) => r.node.id);
   });
   expect(ids).toEqual(["b", "a"]);
@@ -162,8 +162,8 @@ test("the search box lists hits from a sidecar index", async ({ page }) => {
   const view = { ...baseView(), roots: undefined, source: { kind: "sidecar", base: "/data/" }, search: { minLength: 2, maxResults: 20, placeholder: "Search" } };
   const index = searchIndex([{ path: ["ab"], label: "Abacus" }]);
   const docs = {
-    manifest: { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", search: index.search },
-    "r/0": { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, items: [{ id: "ab", label: "Abacus" }] },
+    manifest: { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0", search: index.search },
+    "r/0": { protocol: "canopyx/2", type: "page", parent: null, offset: 0, next: null, items: [{ id: "ab", label: "Abacus" }] },
     ...index.docs
   };
   await page.route("https://canopyx.test/data/**", (route) => {

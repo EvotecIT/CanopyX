@@ -10,7 +10,7 @@ namespace CanopyX;
 /// sources the view also carries the nodes.
 /// </summary>
 /// <remarks>
-/// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/1</c> protocol. <c>CanopyX.Html</c> embeds
+/// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/2</c> protocol. <c>CanopyX.Html</c> embeds
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
 public sealed class CanopyView {
@@ -131,7 +131,7 @@ public sealed class CanopyView {
         set => _labels = value ?? throw new ArgumentNullException(nameof(value));
     }
 
-    /// <summary>Writes the <c>view</c> document of the <c>canopyx/1</c> protocol.</summary>
+    /// <summary>Writes the <c>view</c> document of the <c>canopyx/2</c> protocol.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
     public string ToJson() => ToJson(null);

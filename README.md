@@ -19,7 +19,7 @@ The images come from the pages `CanopyX.Examples` generates; `tests/browser/tool
 
 | Package | Purpose |
 | --- | --- |
-| `CanopyX` | View definitions, the `canopyx/1` data protocol, the bundle writer, and the static fallback renderer. No runtime dependencies. |
+| `CanopyX` | View definitions, the `canopyx/2` data protocol, the bundle writer, and the static fallback renderer. No runtime dependencies. |
 | `CanopyX.Html` | The browser runtime (tree grid, data sources, theme CSS) and the API that writes pages, fragments, bundles, and asset files. |
 
 Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
@@ -160,7 +160,7 @@ Bundle folder and asset constraints are described in the [data protocol](docs/da
 ## Documentation
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
-- [Data protocol](docs/data-protocol.md): the `canopyx/1` documents, bundle file layout, and remote endpoints, with a JSON schema in `docs/schema`.
+- [Data protocol](docs/data-protocol.md): the `canopyx/2` documents, bundle file layout, and remote endpoints, with a JSON schema in `docs/schema`.
 - [Roadmap](TODO.md): milestones, their consumers, and their gates.
 - [Contributing](CONTRIBUTING.md): the quality loop, browser tests, and performance evidence.
 

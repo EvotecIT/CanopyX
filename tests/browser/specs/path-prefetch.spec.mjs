@@ -4,23 +4,23 @@
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "paths", label: "Paths", columns: [{ id: "name", title: "Name", width: 400 }],
+const view = { protocol: "canopyx/2", type: "view", id: "paths", label: "Paths", columns: [{ id: "name", title: "Name", width: 400 }],
   search: { minLength: 2, maxResults: 20 }, source: { kind: "sidecar", base: "/data/" } };
-const listPage = (parent, offset, items, next) => JSON.stringify({ protocol: "canopyx/1", type: "page", parent, offset, total: 3, items, next });
-const pack = (...pages) => ({ protocol: "canopyx/1", type: "pack", pages });
+const listPage = (parent, offset, items, next) => JSON.stringify({ protocol: "canopyx/2", type: "page", parent, offset, total: 3, items, next });
+const pack = (...pages) => ({ protocol: "canopyx/2", type: "pack", pages });
 const entries = [[-1, 0, "a", 0, "Alpha", null, "p/0#0"], [0, 1, "/2", 0, "Two", null, "p/2#0", "p/1#0"], [1, 3, "/x", 0, "Needle"]];
 
 /** "a" has three children on three pages in two packs; the last one opens a list of its own, in a third pack. */
 function bundle(entryItems = entries) {
   return {
-    manifest: { protocol: "canopyx/1", type: "manifest", view: view.id, root: "r/0", nodeCount: 5, pageSize: 1, packs: 3,
+    manifest: { protocol: "canopyx/2", type: "manifest", view: view.id, root: "r/0", nodeCount: 5, pageSize: 1, packs: 3,
       search: { entryCount: 3, entryFiles: [0], kinds: [], shards: { ne: 1 } } },
-    "r/0": { protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 1, items: [{ id: "a", label: "Alpha", hasChildren: true, childCount: 3, ref: "p/0#0" }], next: null },
+    "r/0": { protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 1, items: [{ id: "a", label: "Alpha", hasChildren: true, childCount: 3, ref: "p/0#0" }], next: null },
     "p/0": pack(listPage("a", 0, [{ id: "a/0", label: "Zero" }], "p/0#1"), listPage("a", 1, [{ id: "a/1", label: "One" }], "p/1#0")),
     "p/1": pack(listPage("a", 2, [{ id: "a/2", label: "Two", hasChildren: true, childCount: 1, ref: "p/2#0" }], null)),
-    "p/2": pack(JSON.stringify({ protocol: "canopyx/1", type: "page", parent: "a/2", offset: 0, total: 1, items: [{ id: "a/2/x", label: "Needle" }], next: null })),
-    "e/0": { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries: entryItems },
-    "s/k-ne": { protocol: "canopyx/1", type: "searchShard", key: "ne", words: ["needle"], postings: [[2]] }
+    "p/2": pack(JSON.stringify({ protocol: "canopyx/2", type: "page", parent: "a/2", offset: 0, total: 1, items: [{ id: "a/2/x", label: "Needle" }], next: null })),
+    "e/0": { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [], entries: entryItems },
+    "s/k-ne": { protocol: "canopyx/2", type: "searchShard", key: "ne", words: ["needle"], postings: [[2]] }
   };
 }
 

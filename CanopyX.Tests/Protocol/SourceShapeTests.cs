@@ -29,7 +29,7 @@ public sealed class SourceShapeTests {
         parent.Children.Add(new CanopyNode("child", "Child"));
         var page = new CanopyPage(null); page.Items.Add(parent);
         Assert.Throws<InvalidOperationException>(() => page.ToJson());
-        var json = "{\"protocol\":\"canopyx/1\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"next\":null,\"items\":[{\"id\":\"parent\",\"label\":\"Parent\",\"ref\":\"remaining\",\"children\":[{\"id\":\"child\",\"label\":\"Child\"}]}]}";
+        var json = "{\"protocol\":\"canopyx/2\",\"type\":\"page\",\"parent\":null,\"offset\":0,\"next\":null,\"items\":[{\"id\":\"parent\",\"label\":\"Parent\",\"ref\":\"remaining\",\"children\":[{\"id\":\"child\",\"label\":\"Child\"}]}]}";
         Assert.False(ProtocolSchema.Evaluate(json).IsValid);
     }
 

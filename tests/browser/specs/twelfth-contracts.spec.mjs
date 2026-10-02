@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "twelfth", label: "Contracts", rowHeight: 28,
+const view = { protocol: "canopyx/2", type: "view", id: "twelfth", label: "Contracts", rowHeight: 28,
   pageSize: 100, selection: "single", columns: [{ id: "name", title: "Name", width: 240 },
     { id: "value", title: "Value", width: 120 }], source: { kind: "inline" }, roots: [] };
 
@@ -69,10 +69,10 @@ test("sidecar manifest owner is checked before caching and can be retried", asyn
   const result = await page.evaluate(async () => {
     const id = "manifest-owner";
     const source = CanopyX.sources.sidecar({ id, source: { base: "/data/" } });
-    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: "other", root: "r/0" }]);
+    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/2", type: "manifest", view: "other", root: "r/0" }]);
     let error = null;
     try { await source.manifest(); } catch (caught) { error = caught.message; }
-    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: id, root: "r/0" }]);
+    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/2", type: "manifest", view: id, root: "r/0" }]);
     return { error, owner: (await source.manifest()).view };
   });
   expect(result.error).toContain("view");
@@ -84,14 +84,14 @@ for (const mismatch of ["key", "count"]) test(`sidecar shard ${mismatch} mismatc
   const result = await page.evaluate(async mismatch => {
     const id = "shard-" + mismatch;
     const source = CanopyX.sources.sidecar({ id, source: { base: "/data/" } });
-    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/1", type: "manifest", view: id,
+    CanopyXSidecar.push([id, "manifest", { protocol: "canopyx/2", type: "manifest", view: id,
       root: "r/0", search: { entryCount: 1, entryFiles: [0], kinds: [], shards: { ab: 1 } } }]);
-    CanopyXSidecar.push([id, "s/k-ab", { protocol: "canopyx/1", type: "searchShard", key: mismatch === "key" ? "wrong" : "ab",
+    CanopyXSidecar.push([id, "s/k-ab", { protocol: "canopyx/2", type: "searchShard", key: mismatch === "key" ? "wrong" : "ab",
       words: mismatch === "count" ? ["abacus", "abbey"] : ["abacus"], postings: mismatch === "count" ? [[0], [0]] : [[0]] }]);
     let error = null;
     try { await source.search("ab", 10); } catch (caught) { error = caught.message; }
-    CanopyXSidecar.push([id, "s/k-ab", { protocol: "canopyx/1", type: "searchShard", key: "ab", words: ["abacus"], postings: [[0]] }]);
-    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/1", type: "searchEntries", first: 0, stem: [], entries: [[-1, 0, "found", 0, "Abacus"]] }]);
+    CanopyXSidecar.push([id, "s/k-ab", { protocol: "canopyx/2", type: "searchShard", key: "ab", words: ["abacus"], postings: [[0]] }]);
+    CanopyXSidecar.push([id, "e/0", { protocol: "canopyx/2", type: "searchEntries", first: 0, stem: [], entries: [[-1, 0, "found", 0, "Abacus"]] }]);
     return { error, hits: (await source.search("ab", 10)).hits };
   }, mismatch);
   expect(result.error).toContain(mismatch === "key" ? "key" : "count");

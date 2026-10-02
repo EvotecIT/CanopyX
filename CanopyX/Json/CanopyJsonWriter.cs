@@ -6,7 +6,7 @@ using System.Text;
 namespace CanopyX.Json;
 
 /// <summary>
-/// Minimal forward-only JSON writer used for every <c>canopyx/1</c> document.
+/// Minimal forward-only JSON writer used for every <c>canopyx/2</c> document.
 /// </summary>
 /// <remarks>
 /// CanopyX targets <c>net472</c> and <c>netstandard2.0</c> without runtime package dependencies, so it cannot use

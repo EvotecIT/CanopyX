@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, row, searchIndex, viewPage } from "./support.mjs";
 
-const view = (roots = []) => ({ protocol: "canopyx/1", type: "view", id: "lifecycle", label: "Lifecycle", rowHeight: 28,
+const view = (roots = []) => ({ protocol: "canopyx/2", type: "view", id: "lifecycle", label: "Lifecycle", rowHeight: 28,
   pageSize: 100, selection: "single", columns: [{ id: "name", title: "Name", width: 300, kind: "text" }],
   source: { kind: "inline" }, roots });
 async function open(page, data) {
@@ -47,7 +47,7 @@ test("count refreshes preserve disjoint results and ignore older overlapping res
     const api = CanopyX.createTreeGrid(host, { view: data, source });
     await api.ready;
     const first = api.refreshCounts(["a"]), second = api.refreshCounts(["a"]), third = api.refreshCounts(["b"]);
-    const doc = (id, value) => ({ protocol: "canopyx/1", type: "counts", items: [{ id, cells: { name: value } }] });
+    const doc = (id, value) => ({ protocol: "canopyx/2", type: "counts", items: [{ id, cells: { name: value } }] });
     pending[1](doc("a", "Newest")); await second;
     pending[0](doc("a", "Old")); await first;
     pending[2](doc("b", "Disjoint")); await third;
@@ -66,10 +66,10 @@ test("remote empty children can become expandable after a count refresh", async 
       : { items: [{ id: "parent", label: "Parent", hasChildren: true }], next: null } } });
     await api.ready;
     await api.expandPath(["parent"], { expandLast: true });
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 0 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 0 }] });
     await new Promise(resolve => requestAnimationFrame(resolve));
     const zero = document.querySelector("[data-cx-id=parent]").hasAttribute("aria-expanded");
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 1 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1 }] });
     await api.expandPath(["parent"], { expandLast: true });
     return { zero, calls, ids: api.visibleRows().map(r => r.node.id) };
   }, { ...view(), source: { kind: "remote", children: "c?ref={ref}&cursor={cursor}" } });
@@ -129,7 +129,7 @@ test("count changes during expansion keep toggle events and callbacks consistent
     await api.ready;
     await new Promise(resolve => requestAnimationFrame(resolve));
     document.querySelector("[data-cx-id=p] .cx-exp").click();
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "p", childCount: 0 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "p", childCount: 0 }] });
     finish({ items: [], next: null });
     await new Promise(resolve => setTimeout(resolve, 0));
     return { events, callbacks };
@@ -182,7 +182,7 @@ for (const invalidFile of ["manifest", "s/k-ab", "e/0"]) {
   test(`sidecar retries recover after invalid ${invalidFile} content is corrected`, async ({ page }) => {
     await open(page, view());
     const index = searchIndex([{ path: ["ab"], label: "Abacus" }]);
-    const docs = { manifest: { protocol: "canopyx/1", type: "manifest", view: "retry", root: "r/0", search: index.search }, ...index.docs };
+    const docs = { manifest: { protocol: "canopyx/2", type: "manifest", view: "retry", root: "r/0", search: index.search }, ...index.docs };
     let attempts = 0;
     await page.route("https://canopyx.test/data/**", route => {
       const ref = new URL(route.request().url()).pathname.slice(6, -3);

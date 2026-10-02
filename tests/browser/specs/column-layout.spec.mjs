@@ -5,7 +5,7 @@ import { nextFrames, viewPage } from "./support.mjs";
 
 test.use({ viewport: { width: 390, height: 700 } });
 
-const view = (extra) => ({ protocol: "canopyx/1", type: "view", id: "layout", label: "Layout", rowHeight: 28, pageSize: 100, selection: "single",
+const view = (extra) => ({ protocol: "canopyx/2", type: "view", id: "layout", label: "Layout", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 220, kind: "text" }].concat(Array.from({ length: 5 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 200, kind: "text" }))),
   source: { kind: "inline" },
   roots: Array.from({ length: 30 }, (_, i) => ({ id: "n" + i, label: "Node " + i, cells: { c0: "zero " + i, c4: "four " + i } })), ...extra });

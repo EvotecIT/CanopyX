@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "tones", label: "Tones", rowHeight: 28, pageSize: 100, selection: "single",
+const view = { protocol: "canopyx/2", type: "view", id: "tones", label: "Tones", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 260, kind: "text" }, { id: "state", title: "State", width: 200, kind: "text" }],
   source: { kind: "inline" },
   roots: [
@@ -63,7 +63,7 @@ test("the six shipped tones, an unthemed tone, and a malformed tone keep working
 test("a cell that changes from a host tone to a shipped one drops the host colours", async ({ page }) => {
   await open(page);
   const cell = stateCell(page, "critical");
-  await page.evaluate(() => document.querySelector(".cx-host").canopyx.applyCounts({ protocol: "canopyx/1", type: "counts",
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.applyCounts({ protocol: "canopyx/2", type: "counts",
     items: [{ id: "critical", cells: { state: { value: "recovered", tone: "success" } } }] }));
   await nextFrames(page);
   await expect(cell).toHaveText("recovered");

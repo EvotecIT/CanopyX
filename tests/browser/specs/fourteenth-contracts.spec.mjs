@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "fourteenth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "fourteenth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "inline" }, roots: [] };
 
 async function open(page, data = view) {
@@ -174,7 +174,7 @@ test("filtered paged siblings report unknown set size until the final page", asy
 test("remote search rejects both directions of total and truncation mismatch", async ({ page }) => {
   await open(page);
   await page.route("https://canopyx.test/search?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "search", query: "find", hits: [{ path: ["one"], label: "One" }],
+    protocol: "canopyx/2", type: "search", query: "find", hits: [{ path: ["one"], label: "One" }],
     total: Number(new URL(route.request().url()).searchParams.get("total")), truncated: false } }));
   const results = await page.evaluate(async () => {
     const out = [];
@@ -228,7 +228,7 @@ test("count refresh preserves an unrelated edited host control and focus", async
   const input = page.getByRole("textbox", { name: "Host edit" });
   await input.fill("Unsaved");
   await page.evaluate(() => { window.original = document.activeElement;
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "changed", flags: ["new"] }] }); });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "changed", flags: ["new"] }] }); });
   await nextFrames(page);
   await expect(input).toBeFocused(); await expect(input).toHaveValue("Unsaved");
   expect(await page.evaluate(() => original.isConnected && document.activeElement === original)).toBe(true);

@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "twentyfirst", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "twentyfirst", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 280 }],
   source: { kind: "remote", children: "/children?ref={ref}&cursor={cursor}", counts: "/counts?ids={ids}" } };
 
 test("invalid direct and remote child counts reject the whole update", async ({ page }) => {
   await page.route("https://canopyx.test/children?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 1, next: null,
+    protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 1, next: null,
     items: [{ id: "parent", label: "Parent", hasChildren: true, childCount: 1 }] } }));
   await page.route("https://canopyx.test/counts?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 1.5 }] } }));
+    protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1.5 }] } }));
   await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
   await page.goto("https://canopyx.test/");
   await page.waitForSelector("[data-cx-ready]");
@@ -18,7 +18,7 @@ test("invalid direct and remote child counts reject the whole update", async ({ 
     const api = document.querySelector(".cx-host").canopyx;
     const errors = [];
     for (const bad of [-1, 2147483648, null]) {
-      try { api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [
+      try { api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [
         { id: "parent", childCount: 2 }, { id: "other", childCount: bad }] });
         errors.push(null);
       } catch (error) { errors.push(error.message); }
@@ -56,7 +56,7 @@ test("out-of-range page and node counts fail before remote nodes attach", async 
     [{ total: 2147483648, items: [{ id: "parent", label: "Parent" }] }, "page total"],
     [{ total: 1, items: [{ id: "parent", label: "Parent", childCount: 0 }] }, "node childCount"]
   ]) {
-    response = { protocol: "canopyx/1", type: "page", parent: null, offset: 0, next: null, ...bad };
+    response = { protocol: "canopyx/2", type: "page", parent: null, offset: 0, next: null, ...bad };
     await page.goto("https://canopyx.test/");
     await expect(page.getByRole("row", { name: /Could not load:/ })).toContainText(message);
     await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(0);
@@ -114,12 +114,12 @@ test("duplicate direct and remote counts reject before changing loaded children"
   const remote = { ...view, source: { kind: "remote", children: "/children?ref={ref}&cursor={cursor}", counts: "/counts?ids={ids}" } };
   await page.route("https://canopyx.test/children?*", route => {
     const ref = new URL(route.request().url()).searchParams.get("ref");
-    return route.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: ref || null, offset: 0,
+    return route.fulfill({ json: { protocol: "canopyx/2", type: "page", parent: ref || null, offset: 0,
       total: 1, next: null, items: ref ? [{ id: "child", label: "Child" }] :
         [{ id: "parent", label: "Parent", hasChildren: true, childCount: 1 }] } });
   });
   await page.route("https://canopyx.test/counts?*", route => route.fulfill({ json: {
-    protocol: "canopyx/1", type: "counts", items: [
+    protocol: "canopyx/2", type: "counts", items: [
       { id: "parent", childCount: 0 }, { id: "parent", childCount: 1 }] } }));
   await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(remote) }));
   await page.goto("https://canopyx.test/");
@@ -129,7 +129,7 @@ test("duplicate direct and remote counts reject before changing loaded children"
     await api.expandPath(["parent"], { select: false, focus: false, expandLast: true });
     const before = api.visibleRows().map(row => row.node.id);
     const errors = [];
-    for (const update of [() => api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [
+    for (const update of [() => api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [
       { id: "parent", childCount: 0 }, { id: "parent", childCount: 1 }] }), () => api.refreshCounts(["parent"])]) {
       try { await update(); errors.push(null); } catch (error) { errors.push(error.message); }
     }

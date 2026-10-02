@@ -12,7 +12,7 @@ Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 
 | Package | Purpose |
 | --- | --- |
-| `CanopyX` | View definitions, the `canopyx/1` data protocol, the bundle writer, and the static fallback renderer. No runtime dependencies. |
+| `CanopyX` | View definitions, the `canopyx/2` data protocol, the bundle writer, and the static fallback renderer. No runtime dependencies. |
 | `CanopyX.Html` | The browser runtime (tree grid, data sources, theme CSS) and the API that writes pages, fragments, bundles, and asset files. |
 
 ## Quick Start

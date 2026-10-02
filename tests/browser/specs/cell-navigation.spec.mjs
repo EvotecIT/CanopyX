@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "cells", label: "Records", rowHeight: 28, pageSize: 100, selection: "single",
+const view = { protocol: "canopyx/2", type: "view", id: "cells", label: "Records", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 200, kind: "text" }, { id: "state", title: "State", width: 120, kind: "text" },
     { id: "links", title: "Links", width: 200, kind: "text" }, { id: "note", title: "Note", width: 200, kind: "text" }],
   source: { kind: "inline" },
@@ -245,6 +245,7 @@ test("Shift+Tab from a cell or a control in a row leaves the grid in one step, a
     expect(await describe()).toBe(fromRow);
   }
   // The row is still the grid's tab stop: Tab comes back to it.
+  await expect(row(page, "r1")).toHaveAttribute("tabindex", "0");
   await page.keyboard.press("Tab");
   expect(await focused(page)).toBe("row r1");
   // The same from a control in a detail row.

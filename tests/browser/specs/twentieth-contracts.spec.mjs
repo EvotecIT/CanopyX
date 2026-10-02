@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "twentieth", label: "Contracts",
+const view = { protocol: "canopyx/2", type: "view", id: "twentieth", label: "Contracts",
   columns: [{ id: "name", title: "Name", width: 300, sortable: true }, { id: "value", title: "Value", width: 160 }],
   source: { kind: "inline" }, roots: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
 
@@ -96,8 +96,8 @@ test("direct counts supersede an older pending refresh", async ({ page }) => {
     } });
     await api.ready;
     const pending = api.refreshCounts(["parent"]);
-    api.applyCounts({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 2 }] });
-    finishOldCount({ protocol: "canopyx/1", type: "counts", items: [{ id: "parent", childCount: 1 }] });
+    api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 2 }] });
+    finishOldCount({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1 }] });
     await pending;
     return api.visibleRows()[0].node.childCount;
   }, view);

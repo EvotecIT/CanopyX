@@ -12,7 +12,7 @@ const polish = {
   mountError: "Nie można wyświetlić widoku: {error}"
 };
 
-const view = { protocol: "canopyx/1", type: "view", id: "labelled", label: "Pliki", rowHeight: 28, pageSize: 2, selection: "single",
+const view = { protocol: "canopyx/2", type: "view", id: "labelled", label: "Pliki", rowHeight: 28, pageSize: 2, selection: "single",
   labels: polish, search: { minLength: 2, maxResults: 1, placeholder: "Szukaj plików" },
   columns: [{ id: "name", title: "Nazwa", width: 240, kind: "text" }, { id: "done", title: "Gotowe", width: 90, kind: "text" },
     { id: "when", title: "Kiedy", width: 180, kind: "datetime" }],

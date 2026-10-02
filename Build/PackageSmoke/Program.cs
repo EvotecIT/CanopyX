@@ -16,7 +16,7 @@ view.Roots.Add(root);
 
 var page = view.ToHtmlPage();
 Require(page.Contains("data-canopyx-host", StringComparison.Ordinal), "the page has no view host element");
-Require(page.Contains("\"protocol\":\"canopyx/1\"", StringComparison.Ordinal), "the page has no view document");
+Require(page.Contains("\"protocol\":\"canopyx/2\"", StringComparison.Ordinal), "the page has no view document");
 Require(page.Contains(CanopyHtmlAssets.Script, StringComparison.Ordinal), "the page does not inline the runtime");
 
 var assets = CanopyHtmlAssets.WriteTo(Path.Combine(output, "assets"));

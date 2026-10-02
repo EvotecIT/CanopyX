@@ -5,7 +5,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>
-/// Search results: the <c>search</c> document of the <c>canopyx/1</c> protocol, returned by remote search endpoints.
+/// Search results: the <c>search</c> document of the <c>canopyx/2</c> protocol, returned by remote search endpoints.
 /// </summary>
 public sealed class CanopySearchResult {
     private int? _total;

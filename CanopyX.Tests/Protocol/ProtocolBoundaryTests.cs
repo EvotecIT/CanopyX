@@ -50,9 +50,9 @@ public sealed class ProtocolBoundaryTests {
     [InlineData("a_", false)]
     [InlineData("_00zzb", false)]
     public void SchemaValidatesEncodedShardUnits(string key, bool valid) {
-        var manifest = new JsonObject { ["protocol"] = "canopyx/1", ["type"] = "manifest", ["view"] = "v", ["root"] = "r", ["nodeCount"] = 0, ["pageSize"] = 10,
+        var manifest = new JsonObject { ["protocol"] = "canopyx/2", ["type"] = "manifest", ["view"] = "v", ["root"] = "r", ["nodeCount"] = 0, ["pageSize"] = 10,
             ["search"] = new JsonObject { ["entryCount"] = 1, ["entryFiles"] = new JsonArray(0), ["kinds"] = new JsonArray(), ["shards"] = new JsonObject { [key] = 1 } } };
-        var shard = new JsonObject { ["protocol"] = "canopyx/1", ["type"] = "searchShard", ["key"] = key, ["words"] = new JsonArray(), ["postings"] = new JsonArray() };
+        var shard = new JsonObject { ["protocol"] = "canopyx/2", ["type"] = "searchShard", ["key"] = key, ["words"] = new JsonArray(), ["postings"] = new JsonArray() };
         Assert.Equal(valid, ProtocolSchema.Evaluate(manifest.ToJsonString()).IsValid);
         Assert.Equal(valid, ProtocolSchema.Evaluate(shard.ToJsonString()).IsValid);
         shard["key"] = key + ".2";

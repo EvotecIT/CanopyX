@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "data", label: "Data", rowHeight: 28, pageSize: 100, selection: "single",
+const view = { protocol: "canopyx/2", type: "view", id: "data", label: "Data", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 260, kind: "text" }, { id: "level", title: "Level", width: 160, kind: "text" }],
   search: { minLength: 2, maxResults: 20, placeholder: "Search" }, source: { kind: "inline" },
   roots: [{ id: "a", label: "Alpha", data: { level: "high", position: "0-42" } }, { id: "b", label: "Beta", data: { level: "low", position: "0-43" } }, { id: "c", label: "Gamma" }] };
@@ -50,7 +50,7 @@ test("search kinds limit inline search to those kinds and still open the path th
 });
 
 test("data that is not an object of strings is rejected with the page it came in", async ({ page }) => {
-  await page.route("https://canopyx.test/children?*", (route) => route.fulfill({ json: { protocol: "canopyx/1", type: "page", parent: null, offset: 0, total: 1, next: null,
+  await page.route("https://canopyx.test/children?*", (route) => route.fulfill({ json: { protocol: "canopyx/2", type: "page", parent: null, offset: 0, total: 1, next: null,
     items: [{ id: "bad", label: "Bad", data: { position: 42 } }] } }));
   const remote = { ...view, source: { kind: "remote", children: "/children?ref={ref}&cursor={cursor}" } };
   delete remote.roots;

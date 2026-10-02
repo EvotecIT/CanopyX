@@ -3,11 +3,11 @@
 import { expect, test } from "@playwright/test";
 import { openExample, row, viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "packs", label: "Packs",
+const view = { protocol: "canopyx/2", type: "view", id: "packs", label: "Packs",
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "sidecar", base: "/data/" } };
 const push = (ref, body) => "(self.CanopyXSidecar = self.CanopyXSidecar || []).push([\"packs\"," + JSON.stringify(ref) + "," + body + "]);\n";
 const doc = (ref, document) => push(ref, JSON.stringify(document));
-const pageOf = (parent, items, next = null) => ({ protocol: "canopyx/1", type: "page", parent, offset: 0, total: items.length, items, next });
+const pageOf = (parent, items, next = null) => ({ protocol: "canopyx/2", type: "page", parent, offset: 0, total: items.length, items, next });
 
 /** Serves a bundle from a map of script paths to script text, and records the data files the page asks for. */
 async function open(page, files) {
@@ -35,9 +35,9 @@ test("packed pages load from one pack file, as String.raw templates or plain str
     .replace(/`/g, "\\u0060").replace(/\$\{/g, "\\u0024{") + "`";
   const text = JSON.stringify(JSON.stringify(pageOf("text", [{ id: "text/a", label: "From a plain string" }])));
   const requested = await open(page, {
-    "/data/manifest.js": doc("manifest", { protocol: "canopyx/1", type: "manifest", view: "packs", root: "r/0", nodeCount: 6, pageSize: 250, packs: 1 }),
+    "/data/manifest.js": doc("manifest", { protocol: "canopyx/2", type: "manifest", view: "packs", root: "r/0", nodeCount: 6, pageSize: 250, packs: 1 }),
     "/data/r/0.js": doc("r/0", roots),
-    "/data/p/0.js": push("p/0", "{\"protocol\":\"canopyx/1\",\"type\":\"pack\",\"pages\":[" + raw + "," + text + "]}"),
+    "/data/p/0.js": push("p/0", "{\"protocol\":\"canopyx/2\",\"type\":\"pack\",\"pages\":[" + raw + "," + text + "]}"),
     "/data/c/own#1.js": doc("c/own#1", pageOf("file", [{ id: "file/a", label: "From its own file" }]))
   });
   for (const id of ["raw", "text", "file"]) await row(page, id).locator(".cx-exp").click();
@@ -54,9 +54,9 @@ test("a reference outside the packs shows an error row instead of rows", async (
     { id: "pack", label: "No such pack", hasChildren: true, ref: "p/3#0" }
   ]);
   const requested = await open(page, {
-    "/data/manifest.js": doc("manifest", { protocol: "canopyx/1", type: "manifest", view: "packs", root: "r/0", nodeCount: 2, pageSize: 250, packs: 1 }),
+    "/data/manifest.js": doc("manifest", { protocol: "canopyx/2", type: "manifest", view: "packs", root: "r/0", nodeCount: 2, pageSize: 250, packs: 1 }),
     "/data/r/0.js": doc("r/0", bad),
-    "/data/p/0.js": doc("p/0", { protocol: "canopyx/1", type: "pack", pages: [JSON.stringify(pageOf("other", []))] })
+    "/data/p/0.js": doc("p/0", { protocol: "canopyx/2", type: "pack", pages: [JSON.stringify(pageOf("other", []))] })
   });
   await row(page, "slot").locator(".cx-exp").click();
   await expect(page.locator(".cx-row[data-cx-status=error]")).toContainText("no packed page p/0#7");
@@ -68,14 +68,14 @@ test("a reference outside the packs shows an error row instead of rows", async (
 
 test("a pack that failed to load is asked for again on retry", async ({ page }) => {
   const files = {
-    "/data/manifest.js": doc("manifest", { protocol: "canopyx/1", type: "manifest", view: "packs", root: "r/0", nodeCount: 2, pageSize: 250, packs: 1 }),
+    "/data/manifest.js": doc("manifest", { protocol: "canopyx/2", type: "manifest", view: "packs", root: "r/0", nodeCount: 2, pageSize: 250, packs: 1 }),
     "/data/r/0.js": doc("r/0", pageOf(null, [{ id: "raw", label: "Parent", hasChildren: true, ref: "p/0#0" }]))
   };
   const requested = await open(page, files);
   await row(page, "raw").locator(".cx-exp").click();
   const error = page.locator(".cx-row[data-cx-status=error]");
   await expect(error).toContainText("Sidecar file is missing: p/0");
-  files["/data/p/0.js"] = doc("p/0", { protocol: "canopyx/1", type: "pack", pages: [JSON.stringify(pageOf("raw", [{ id: "raw/a", label: "Child" }]))] });
+  files["/data/p/0.js"] = doc("p/0", { protocol: "canopyx/2", type: "pack", pages: [JSON.stringify(pageOf("raw", [{ id: "raw/a", label: "Child" }]))] });
   await error.click();
   await expect(row(page, "raw/a")).toBeVisible();
   expect(requested.filter((path) => path === "/data/p/0.js")).toHaveLength(2);
@@ -83,7 +83,7 @@ test("a pack that failed to load is asked for again on retry", async ({ page }) 
 
 test("without packs in the manifest, p/0#0 is an ordinary file reference", async ({ page }) => {
   const requested = await open(page, {
-    "/data/manifest.js": doc("manifest", { protocol: "canopyx/1", type: "manifest", view: "packs", root: "r/0", nodeCount: 2, pageSize: 250 }),
+    "/data/manifest.js": doc("manifest", { protocol: "canopyx/2", type: "manifest", view: "packs", root: "r/0", nodeCount: 2, pageSize: 250 }),
     "/data/r/0.js": doc("r/0", pageOf(null, [{ id: "raw", label: "Parent", hasChildren: true, ref: "p/0#0" }])),
     "/data/p/0#0.js": doc("p/0#0", pageOf("raw", [{ id: "raw/a", label: "Child" }]))
   });

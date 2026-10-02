@@ -3,7 +3,7 @@
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/1", type: "view", id: "paths", label: "Paths", columns: [{ id: "name", title: "Name", width: 400 }],
+const view = { protocol: "canopyx/2", type: "view", id: "paths", label: "Paths", columns: [{ id: "name", title: "Name", width: 400 }],
   source: { kind: "inline" }, roots: [] };
 
 /**
