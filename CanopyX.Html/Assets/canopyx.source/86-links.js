@@ -34,7 +34,7 @@
           this.linkOpening.abort();
           this.link = null; // Deferred reopening must not reuse the canceled link if the address changes back.
         }
-        this.linkChanged = true;
+        this.linkChanged = this.dataLifetime.signal;
         return this.ready.then(() => undefined, () => undefined);
       }
       return this.openDeepLink();
@@ -65,19 +65,28 @@
 
     /** Opens the row of one fragment; never rejects, a failure is announced. */
     async openLink(link, current) {
+      const navigation = navigationScope(this, current.signal, true);
       try {
-        const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
+        const ids = this.opts.parseLink ? await navigation.wait(this.opts.parseLink(link)) : link.split("/").filter(Boolean).map(decodeURIComponent);
         // A host's parseLink returns null for a fragment that does not name a row of this view.
-        if (Array.isArray(ids) && ids.length && !this.destroyed && !current.signal.aborted &&
-            !await this.expandPath(ids, { select: true, focus: false, signal: current.signal }) && !current.signal.aborted) {
+        if (Array.isArray(ids) && ids.length && !navigation.cancelled() &&
+            !await this.navigatePath(ids, { select: true, focus: false }, navigation) && !navigation.cancelled()) {
           this.link = null;
         }
       } catch (e) {
-        if (!current.signal.aborted) {
+        if (!navigation.cancelled()) {
           // The same fragment can be tried again once whatever failed is back.
           this.link = null;
           this.announce(e && e.message ? e.message : String(e));
         }
+      } finally {
+        const cancelled = navigation.cancelled();
+        navigation.dispose();
+        if (this.linkOpening === current) {
+          if (cancelled && this.link === link) this.link = null;
+          this.linkOpening = null;
+        }
+        current.abort();
       }
     },
 

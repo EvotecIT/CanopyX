@@ -115,7 +115,7 @@
       if (this.destroyed) return;
       await this.flushPendingToggles();
       // A fragment that changed while the view was loading is opened now.
-      if (this.linkChanged) await this.openDeepLink();
+      if (this.linkChanged && !this.linkChanged.aborted) await this.openDeepLink();
       if (!this.destroyed) {
         this.host.setAttribute("data-cx-ready", "true");
         this.emit("ready", {});
