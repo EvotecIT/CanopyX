@@ -13,6 +13,7 @@ using CanopyX.Rendering;
 //   outline-dark.html  the same outline in the dark theme, as literal colours
 //   outline-page.html  the same outline following the theme of the page it is in, without script
 //   filter-bar.html    a host's own filter bar in place of the view's filter switches
+//   live-records.html  fresh record snapshots, selection, and saved view controls
 //   index.html         links to the pages above
 // With --search-bench it writes the search benchmark bundles instead (deep/ and directory/, see SearchBenchTrees).
 // With --pack-bench it writes the packing benchmark bundle instead (catalog/, see PackBenchTree) and reports the
@@ -105,6 +106,8 @@ var barOptions = new CanopyHtmlOptions { Height = "70vh" };
 barOptions.HiddenFilterIds.Add("changed");
 barOptions.HiddenFilterIds.Add("large");
 WriteTemplate("filter-bar.html", Path.Combine(output, "filter-bar.html"), barView.ToHtmlFragment(barOptions));
+WriteTemplate("live-records.html", Path.Combine(output, "live-records.html"),
+    LiveRecordsView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "60vh" }));
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 

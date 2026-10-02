@@ -117,3 +117,16 @@ test("obsolete column and filter IDs are skipped while valid snapshot settings s
   });
   expect(result).toEqual({ filters: ["marked"], sort: null });
 });
+
+test("a snapshot restores fractional CSS widths produced by pointer resizing", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async () => {
+    const handle = document.querySelector('.cx-head [data-cx-column="name"] .cx-resize');
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, clientX: 100, button: 0 }));
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 130.5 }));
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientX: 130.5 }));
+    api.setSelection(["n1"]); const saved = api.getState(); api.setColumnWidth("name", 400); api.clearSelection();
+    const accepted = await api.setState(saved); return { accepted, width: api.getState().columns[0].width, selected: api.getSelected().map(n => n.id), saved: saved.columns[0].width };
+  });
+  expect(result).toEqual({ accepted: true, width: 330.5, selected: ["n1"], saved: 330.5 });
+});

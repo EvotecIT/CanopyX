@@ -12,13 +12,15 @@
     },
 
     /** Retires old requests without allowing their finalizers to change a newer list. */
-    retirePage(w) {
+    retirePage(w, reloadOwner, clearDeferred = true) {
       w.dataGeneration = (w.dataGeneration || 0) + 1;
       w.pageToken = null;
       if (w.pageController) w.pageController.abort();
       w.pageController = null;
       w._pending = null;
       w.loading = false;
+      if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController.abort();
+      if (clearDeferred) w.pendingChildCount = null;
     },
 
     /** Replaces a validated list and reuses surviving identities, including host controls on unchanged rows. */
@@ -28,6 +30,12 @@
       while (pendingData.length) {
         const data = pendingData.pop(); incoming.add(data.id);
         for (const child of data.children || []) pendingData.push(child);
+      }
+      // A response read against the previous data cannot update replacement identities or their descendants.
+      if (this.countRevisions) {
+        const ids = new Set([...old.keys(), ...incoming]);
+        if (parent.key != null) ids.add(parent.key);
+        for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
       }
       const pending = [{ owner: parent, items, total, next }];
       while (pending.length) {
@@ -78,7 +86,6 @@
         if (retained.has(w)) continue;
         w._invalidated = true;
         this.retirePage(w);
-        if (w.reloadController) w.reloadController.abort();
         if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
         if (this.selected.delete(w) && !removedSelection) removedSelection = w;
         if (this.anchor === w) this.anchor = null;
@@ -101,17 +108,20 @@
       if (parent.reloadController) parent.reloadController.abort();
       const controller = parent.reloadController = new AbortController();
       const navigation = navigationScope(this, [controller.signal, options && options.signal]);
-      this.retirePage(parent);
+      // Keep accepted counts on the old list until the replacement succeeds; cancel only its page here.
+      this.retirePage(parent, controller, false);
       const target = Math.max(this.pageSize, (parent.children || []).length);
       const started = performance.now();
       try {
         const old = this.descendants(parent), outside = new Map(this.keyMap);
         for (const key of old.keys()) outside.delete(key);
         const items = [], seen = new Set();
+        const inlineOnly = this.root.inlineItems != null;
+        const inline = parent === this.root ? inlineOnly ? this.view.roots || [] : null : parent.inline ? parent.h.children : null;
+        if (inlineOnly) validateNodes(inline, outside, true);
         let cursor = null, total = null, next = null;
         do {
           if (navigation.cancelled() || parent._invalidated) return false;
-          const inline = parent === this.root ? parent.inlineItems : parent.inline ? parent.h.children : null;
           const page = inline ? slicePage(inline, cursor, this.pageSize) :
             await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
           if (navigation.cancelled() || parent._invalidated) return false;
@@ -130,8 +140,11 @@
         // Other lists may have loaded while the snapshot was read. Validate against their current identities too.
         const current = new Map(this.keyMap);
         for (const key of this.descendants(parent).keys()) current.delete(key);
-        validateNodes(items, current);
+        validateNodes(items, current, inlineOnly);
         const anchor = this.captureScrollAnchor();
+        // Paging could have restarted against the old cursor while this snapshot was being staged.
+        this.retirePage(parent, controller);
+        if (parent === this.root && inlineOnly) parent.inlineItems = inline;
         this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next);
         this.restoreScrollAnchor(anchor);
         this.stateChanged();

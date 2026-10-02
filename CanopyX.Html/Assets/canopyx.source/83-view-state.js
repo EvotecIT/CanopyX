@@ -32,7 +32,7 @@
         const seen = new Set();
         result.columns = state.columns.map(c => {
           requireIdentifier(c && c.id, "state column ID");
-          if (seen.has(c.id) || !Number.isInteger(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
+          if (seen.has(c.id) || !Number.isFinite(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
             throw new Error("CanopyX: invalid state column.");
           seen.add(c.id);
           if (c.id === this.columns[0].id && c.hidden) throw new Error("CanopyX: the tree column remains visible.");

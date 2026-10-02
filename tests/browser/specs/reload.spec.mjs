@@ -136,3 +136,102 @@ test("reload detects in-place payload edits and preserves an unchanged host cont
   await expect(page.locator('[data-cx-id="control"] input')).toHaveValue("User edit");
   expect(await page.evaluate(() => document.querySelector('[data-cx-id="control"] input') === control)).toBe(true);
 });
+
+test("replacement retires a continuation started while reload is staging", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); let calls = 0, replacement, continuation;
+    const source = { page: async (_, cursor) => {
+      if (++calls === 2) return new Promise(resolve => { replacement = resolve; });
+      if (calls === 3) return new Promise(resolve => { continuation = resolve; });
+      return { items: [{ id: "keep", label: "Original" }], next: "old" };
+    } };
+    const api = CanopyX.createTreeGrid(host, { view: data, source }); await api.ready;
+    const reload = api.reload(), more = api.loadMore();
+    replacement({ items: [{ id: "keep", label: "Replacement" }, { id: "fresh", label: "Fresh" }], next: "fresh-cursor" }); await reload;
+    continuation({ items: [{ id: "stale", label: "Stale" }], next: null }); await more;
+    return api.visibleRows().map(row => row.node.id);
+  }, view);
+  expect(result).toEqual(["keep", "fresh"]);
+});
+
+for (const shape of ["inline", "leaf", "changed-count"]) test("a parent replacement cancels a surviving descendant reload: " + shape, async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async ({ data, shape }) => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); let rootCalls = 0, childCalls = 0, finish;
+    const source = { page: async node => {
+      if (node) {
+        if (++childCalls === 2) return new Promise(resolve => { finish = resolve; });
+        return { items: [{ id: "old-child", label: "Old child" }], total: 1, next: null };
+      }
+      const parent = ++rootCalls === 1 ? { id: "parent", label: "Parent", hasChildren: true } :
+        shape === "inline" ? { id: "parent", label: "Parent", children: [{ id: "new-child", label: "New child" }] } :
+          shape === "leaf" ? { id: "parent", label: "Parent" } : { id: "parent", label: "Parent", hasChildren: true, childCount: 2 };
+      return { items: [parent], next: null };
+    } };
+    const api = CanopyX.createTreeGrid(host, { view: data, source }); await api.ready;
+    await api.expandPath(["parent"], { expandLast: true }); const older = api.reload("parent"); await api.reload();
+    const decision = await Promise.race([older, new Promise(resolve => setTimeout(() => resolve("hung"), 100))]);
+    finish({ items: [{ id: "stale-child", label: "Stale child" }], next: null }); await older;
+    return { decision, ids: api.visibleRows().map(row => row.node.id) };
+  }, { data: view, shape });
+  expect(result.decision).toBe(false); expect(result.ids).not.toContain("stale-child");
+  if (shape === "inline") expect(result.ids).toEqual(["parent", "new-child"]);
+});
+
+test("a reload retires an older count response for surviving identities", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); let changed = false, counts;
+    const source = { page: async node => ({ items: node ? [{ id: "a", label: "A" }, { id: "b", label: "B" }] :
+      [{ id: "parent", label: "Parent", hasChildren: true, childCount: 2, cells: { name: changed ? "New" : "Original" } }], next: null }),
+      counts: async () => new Promise(resolve => { counts = resolve; }) };
+    const api = CanopyX.createTreeGrid(host, { view: data, source }); await api.ready;
+    await api.expandPath(["parent", "a"]); const older = api.refreshCounts(["parent"]); changed = true; await api.reload();
+    counts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 0, cells: { name: "Stale" } }] }); await older;
+    return { ids: api.visibleRows().map(row => row.node.id), selected: api.getSelected().map(node => node.id), parent: api.visibleRows().find(row => row.node.id === "parent").node };
+  }, view);
+  expect(result.ids).toEqual(["parent", "a", "b"]); expect(result.selected).toEqual(["a"]);
+  expect(result.parent.cells.name).toBe("New"); expect(result.parent.childCount).toBe(2);
+});
+
+test("a retired page cannot carry a deferred count into the replacement", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); let childCalls = 0, finish;
+    const source = { page: async (node, cursor) => {
+      if (!node) return { items: [{ id: "parent", label: "Parent", hasChildren: true }], next: null };
+      if (++childCalls === 1) return { items: [{ id: "a", label: "A" }], next: "old" };
+      if (childCalls === 2) return new Promise(resolve => { finish = resolve; });
+      return cursor ? { items: [{ id: "c", label: "C" }], offset: 2, total: 3, next: null } :
+        { items: [{ id: "a", label: "A" }, { id: "b", label: "B" }], total: 3, next: "new" };
+    } };
+    const api = CanopyX.createTreeGrid(host, { view: data, source }); await api.ready; await api.expandPath(["parent", "a"]);
+    const older = api.loadMore("parent"); api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "parent", childCount: 1 }] });
+    await api.reload("parent"); finish({ items: [{ id: "stale", label: "Stale" }], offset: 1, next: null }); await older;
+    await api.loadMore("parent"); return { ids: api.visibleRows().map(row => row.node.id), selected: api.getSelected().map(node => node.id) };
+  }, view);
+  expect(result).toEqual({ ids: ["parent", "a", "b", "c"], selected: ["a"] });
+});
+
+test("inline reload rejects lazy declarations before replacing attached rows", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); data.roots = [{ id: "old", label: "Old" }];
+    const api = CanopyX.createTreeGrid(host, { view: data }); await api.ready;
+    api.view.roots.splice(0, 1, { id: "invalid", label: "Invalid", hasChildren: true });
+    let error; try { await api.reload(); } catch (e) { error = e.message; }
+    return { error, ids: api.visibleRows().map(row => row.node.id) };
+  }, view);
+  expect(result.error).toContain("inline views cannot declare lazy children"); expect(result.ids).toEqual(["old"]);
+});
+
+test("inline reload accepts immutable replacement of the root array", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async () => {
+    const api = document.querySelector(".cx-host").canopyx;
+    api.view.roots = [{ id: "new", label: "Replacement" }]; const accepted = await api.reload();
+    return { accepted, ids: api.visibleRows().map(row => row.node.id) };
+  });
+  expect(result).toEqual({ accepted: true, ids: ["new"] });
+});

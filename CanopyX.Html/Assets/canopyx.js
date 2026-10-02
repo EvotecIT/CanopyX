@@ -3201,13 +3201,15 @@ for (const child of w.children || []) pending.push(child);
 return found;
 },
 
-retirePage(w) {
+retirePage(w, reloadOwner, clearDeferred = true) {
 w.dataGeneration = (w.dataGeneration || 0) + 1;
 w.pageToken = null;
 if (w.pageController) w.pageController.abort();
 w.pageController = null;
 w._pending = null;
 w.loading = false;
+if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController.abort();
+if (clearDeferred) w.pendingChildCount = null;
 },
 
 reconcileList(parent, items, total, next) {
@@ -3216,6 +3218,11 @@ const pendingData = items.slice();
 while (pendingData.length) {
 const data = pendingData.pop(); incoming.add(data.id);
 for (const child of data.children || []) pendingData.push(child);
+}
+if (this.countRevisions) {
+const ids = new Set([...old.keys(), ...incoming]);
+if (parent.key != null) ids.add(parent.key);
+for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
 }
 const pending = [{ owner: parent, items, total, next }];
 while (pending.length) {
@@ -3265,7 +3272,6 @@ for (const w of old.values()) {
 if (retained.has(w)) continue;
 w._invalidated = true;
 this.retirePage(w);
-if (w.reloadController) w.reloadController.abort();
 if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
 if (this.selected.delete(w) && !removedSelection) removedSelection = w;
 if (this.anchor === w) this.anchor = null;
@@ -3287,17 +3293,19 @@ if (parent !== this.root && !this.expandable(parent)) throw new Error("CanopyX: 
 if (parent.reloadController) parent.reloadController.abort();
 const controller = parent.reloadController = new AbortController();
 const navigation = navigationScope(this, [controller.signal, options && options.signal]);
-this.retirePage(parent);
+this.retirePage(parent, controller, false);
 const target = Math.max(this.pageSize, (parent.children || []).length);
 const started = performance.now();
 try {
 const old = this.descendants(parent), outside = new Map(this.keyMap);
 for (const key of old.keys()) outside.delete(key);
 const items = [], seen = new Set();
+const inlineOnly = this.root.inlineItems != null;
+const inline = parent === this.root ? inlineOnly ? this.view.roots || [] : null : parent.inline ? parent.h.children : null;
+if (inlineOnly) validateNodes(inline, outside, true);
 let cursor = null, total = null, next = null;
 do {
 if (navigation.cancelled() || parent._invalidated) return false;
-const inline = parent === this.root ? parent.inlineItems : parent.inline ? parent.h.children : null;
 const page = inline ? slicePage(inline, cursor, this.pageSize) :
 await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
 if (navigation.cancelled() || parent._invalidated) return false;
@@ -3315,8 +3323,10 @@ cursor = next;
 if (navigation.cancelled() || parent._invalidated) return false;
 const current = new Map(this.keyMap);
 for (const key of this.descendants(parent).keys()) current.delete(key);
-validateNodes(items, current);
+validateNodes(items, current, inlineOnly);
 const anchor = this.captureScrollAnchor();
+this.retirePage(parent, controller);
+if (parent === this.root && inlineOnly) parent.inlineItems = inline;
 this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next);
 this.restoreScrollAnchor(anchor);
 this.stateChanged();
@@ -3624,7 +3634,7 @@ if (!Array.isArray(state.columns) || !Array.isArray(state.filters)) return null;
 const seen = new Set();
 result.columns = state.columns.map(c => {
 requireIdentifier(c && c.id, "state column ID");
-if (seen.has(c.id) || !Number.isInteger(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
+if (seen.has(c.id) || !Number.isFinite(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
 throw new Error("CanopyX: invalid state column.");
 seen.add(c.id);
 if (c.id === this.columns[0].id && c.hidden) throw new Error("CanopyX: the tree column remains visible.");

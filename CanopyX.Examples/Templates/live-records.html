@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX live records and saved views</title>
+<link rel="stylesheet" href="bundle/assets/{{style}}">
+<script src="bundle/assets/{{script}}" defer></script>
+<style>
+body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1 { margin: 0 0 8px; font-size: 22px; }
+p { max-width: 75ch; }
+.record-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.record-controls button { min-height: 32px; }
+.record-controls label { display: inline-flex; gap: 4px; align-items: center; }
+</style>
+</head>
+<body class="cx-page">
+<h1>Live records and saved views</h1>
+<p>Select records, resize or hide a column, and save the view. Reload records to replace their values while keeping surviving selections and open groups. Restore the saved view after changing the layout.</p>
+<div class="record-controls">
+<button id="reload-records" disabled>Reload records</button>
+<button id="save-view" disabled>Save view</button>
+<button id="restore-view" disabled>Restore view</button>
+<button id="clear-selection" disabled>Clear selection</button>
+<label><input id="dark-theme" type="checkbox"> Dark theme</label>
+</div>
+<p id="record-status" role="status">Loading records.</p>
+{{content}}
+<p id="record-selection">No records selected.</p>
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const host = document.querySelector("[data-canopyx-host]");
+  const status = document.getElementById("record-status");
+  const api = CanopyX.createTreeGrid(host, {
+    view: JSON.parse(host.querySelector(".cx-config").textContent),
+    onSelect: function (node, selected) {
+      document.getElementById("record-selection").textContent = selected.length ?
+        "Selected: " + selected.map(record => record.label).join(", ") : "No records selected.";
+    }
+  });
+  await api.ready;
+  let saved = null, revision = 1;
+  document.getElementById("reload-records").addEventListener("click", async function () {
+    this.disabled = true;
+    try {
+      revision++;
+      // The host supplies a fresh immutable snapshot. IDs are stable across snapshots.
+      api.view.roots = api.view.roots.map(group => ({ ...group, children: group.children.map(record => ({
+        ...record, cells: { ...record.cells, value: Number(record.cells.value) + 10 }
+      })) }));
+      await api.reload(); status.textContent = "Record snapshot " + revision + " loaded.";
+    } catch (error) { status.textContent = error.message; }
+    finally { this.disabled = false; }
+  });
+  document.getElementById("save-view").addEventListener("click", function () {
+    saved = JSON.parse(JSON.stringify(api.getState()));
+    document.getElementById("restore-view").disabled = false; status.textContent = "View saved.";
+  });
+  document.getElementById("restore-view").addEventListener("click", async function () {
+    status.textContent = await api.setState(saved) ? "Saved view restored." : "The saved view could not be restored.";
+  });
+  document.getElementById("clear-selection").addEventListener("click", function () { api.clearSelection(); });
+  document.getElementById("dark-theme").addEventListener("change", function () {
+    host.setAttribute("data-cx-theme", this.checked ? "dark" : "light");
+  });
+  ["reload-records", "save-view", "clear-selection"].forEach(id => { document.getElementById(id).disabled = false; });
+  status.textContent = "Record snapshot 1 loaded.";
+});
+</script>
+</body>
+</html>
