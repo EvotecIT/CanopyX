@@ -12,6 +12,7 @@
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
+      if (e.defaultPrevented || e.isComposing) return;
       if (this.head.contains(e.target)) {
         return;
       }

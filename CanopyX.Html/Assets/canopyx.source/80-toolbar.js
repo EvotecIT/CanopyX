@@ -74,6 +74,8 @@
         input.setAttribute("aria-expanded", "false");
         input.removeAttribute("aria-activedescendant");
       };
+      const flyout = watchFlyout(box, list, () => !list.hidden);
+      this.disposeSearchFlyout = flyout.dispose;
       const choose = async (index) => {
         const hit = hits[index];
         if (!hit) {
@@ -116,6 +118,7 @@
           list.appendChild(item);
         });
         list.hidden = !hits.length;
+        flyout.position();
         input.setAttribute("aria-expanded", hits.length ? "true" : "false");
         setText(status, !hits.length ? labels.searchNoResults : !result.truncated ? fill(labels.searchResultCount, { count: count(hits.length) }) :
           result.total ? fill(labels.searchResultCountOfTotal, { count: count(hits.length), total: count(result.total) }) : fill(labels.searchResultCountOfMany, { count: count(hits.length) }));
@@ -166,7 +169,7 @@
         timer = setTimeout(run, 150);
       });
       input.addEventListener("keydown", (e) => {
-        if (e.isComposing) return;
+        if (e.defaultPrevented || e.isComposing) return;
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           move(e.key === "ArrowDown" ? 1 : -1);
         } else if (e.key === "Enter") {
@@ -224,5 +227,8 @@
       details.appendChild(summary);
       details.appendChild(group);
       bar.appendChild(details);
+      const flyout = watchFlyout(details, group, () => details.open);
+      details.addEventListener("toggle", flyout.position);
+      this.disposeColumnChooser = flyout.dispose;
     }
   });

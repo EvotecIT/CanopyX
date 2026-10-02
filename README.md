@@ -130,7 +130,7 @@ const grid = CanopyX.createTreeGrid(document.getElementById("files"), {
   onSelect: (node) => showDrawer(node)
 });
 await grid.expandPath(["projects", "projects/plans"]);
-// Pass { signal: controller.signal } to cancel navigation before selection and focus.
+// Pass { signal: controller.signal } to cancel navigation promptly, even while a page is still loading.
 ```
 
 A renderer that draws badges or chips uses `CanopyX.badge({ text, tone, title })`, which returns the badge element the grid itself draws (the `cx-badge` class, the classes of a named tone, and for a host tone its `--cx-tone-<name>` colours), so a host cell matches the cells CanopyX paints:
@@ -148,12 +148,17 @@ A renderer gets the node, a fresh element to fill, and `{ column, level, expande
 A page that embeds a fragment from `ToHtmlFragment` hands it the same options before the runtime mounts it, from a script that runs before the page has loaded:
 
 ```js
-CanopyX.configure("files", { renderers: { owner: drawOwnerChip }, onSelect: showDrawer });
+const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwnerChip }, onSelect: showDrawer });
+// When the host retires this view, destroy its grid and call releaseOptions().
 ```
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
 
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
+
+Registered fragment options persist for remounting until their disposer is called or `CanopyX.unconfigure(viewId)` removes them. Removing a registration leaves a mounted grid intact, and an older disposer cannot remove a newer registration.
+
+Built-in remote requests have a 30-second deadline, including reading the response body. Set `requestTimeoutMs` in grid options to change it; destroying the grid cancels its built-in requests. A separately owned source created with `CanopyX.sources.remote(view, { timeoutMs, signal })` follows its owner's signal, and `page(node, cursor, { signal })`, `search(query, limit, { signal })`, and `counts(ids, { signal })` accept individual request signals. Cancelling navigation releases that caller without cancelling a shared page load. Custom sources own their transport cancellation and deadlines.
 
 Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
 

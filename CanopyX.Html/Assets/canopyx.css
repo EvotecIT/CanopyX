@@ -78,11 +78,12 @@
   border: 1px solid var(--cx-line-strong); background: var(--cx-surface); color: var(--cx-text);
 }
 .cx-results {
-  position: absolute; z-index: 20; top: 100%; left: 0; width: 420px; max-width: 90vw; max-height: 360px; overflow: auto;
-  margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--cx-surface);
+  position: absolute; z-index: 20; top: 100%; left: 0; width: 420px; max-width: calc(100vw - 16px); max-height: 320px; overflow: auto;
+  margin: 0; padding: 4px 0; list-style: none; background: var(--cx-surface);
   border: 1px solid var(--cx-line-strong); border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
 }
 .cx-result { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 3px 10px; cursor: pointer; }
+.cx-result-label { min-width: 0; overflow-wrap: anywhere; }
 .cx-result[aria-selected="true"], .cx-result:hover { background: var(--cx-selected-bg); }
 .cx-result-kind { font-size: .8em; color: var(--cx-muted); text-transform: uppercase; }
 .cx-result-context { grid-column: 1 / -1; font-size: .85em; color: var(--cx-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -92,10 +93,12 @@
 .cx-columns > summary { cursor: pointer; padding: 2px 8px; border: 1px solid var(--cx-line-strong); border-radius: 6px; list-style: none; }
 .cx-columns > summary::-webkit-details-marker { display: none; }
 .cx-columns-list {
-  position: absolute; z-index: 20; top: 100%; left: 0; margin: 2px 0 0; padding: 6px 10px; min-width: 180px;
+  position: absolute; z-index: 20; top: 100%; left: 0; margin: 0; padding: 6px 10px;
+  width: max-content; min-width: min(180px, calc(100vw - 16px)); max-width: calc(100vw - 16px); max-height: 320px; overflow: auto;
   display: grid; gap: 4px; background: var(--cx-surface); border: 1px solid var(--cx-line-strong); border-radius: 6px;
 }
-.cx-columns-list label { display: flex; gap: 6px; align-items: center; min-height: 24px; white-space: nowrap; }
+.cx-columns-list label { display: flex; gap: 6px; align-items: center; min-height: 24px; overflow-wrap: anywhere; }
+.cx-columns-list input { flex: none; }
 .cx-host :is(.cx-search-input, .cx-sort, .cx-columns > summary, .cx-switch input):focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 1px; }
 
 /* ---------- grid ---------- */

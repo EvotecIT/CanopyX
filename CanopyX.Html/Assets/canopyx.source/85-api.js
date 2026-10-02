@@ -292,11 +292,14 @@
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
+      this.lifetime.abort();
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
       clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
+      if (this.disposeColumnChooser) this.disposeColumnChooser();
+      if (this.disposeSearchFlyout) this.disposeSearchFlyout();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
       if (this.detailObserver) this.detailObserver.disconnect();

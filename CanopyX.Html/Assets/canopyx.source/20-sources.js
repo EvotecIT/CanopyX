@@ -152,43 +152,43 @@
     };
   }
 
-  function remoteSource(view) {
+  /** Remote requests have a bounded lifetime; options are { timeoutMs?: number, signal?: AbortSignal }. */
+  function remoteSource(view, options) {
     const source = view.source;
+    const settings = options || {};
+    const timeoutMs = settings.timeoutMs === undefined ? 30000 : settings.timeoutMs;
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
+      throw new Error("CanopyX: request timeout must be an integer from 1 to 2147483647 milliseconds.");
+    }
     const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
-    const getJson = async (url, type) => {
-      const response = await fetch(url, { headers: { Accept: "application/json" } });
-      if (!response.ok) {
-        throw new Error(response.status + " " + response.statusText);
-      }
-      return checkDocument(await response.json(), type);
-    };
+    const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
     return {
       kind: "remote",
       canSearch: !!source.search,
-      async page(node, cursor) {
+      async page(node, cursor, request) {
         const doc = checkPage(await getJson(fill(source.children, {
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
-        }), "page"), node);
+        }), "page", request), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
-      async search(query, limit) {
+      async search(query, limit, request) {
         if (!source.search) {
           return { hits: [], total: 0, truncated: false };
         }
-        const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search");
+        const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search", request);
         if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
         if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
           throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
         }
         return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
       },
-      counts: source.counts ? async (ids) => {
+      counts: source.counts ? async (ids, request) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
           // The host's normal query parser decodes once; retain encoded components for its split-then-decode step.
           const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
-          const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
+          const doc = await getJson(fill(source.counts, { ids: batch }), "counts", request);
           items.push.apply(items, doc.items);
         }
         return { protocol: PROTOCOL, type: "counts", items: items };
@@ -196,13 +196,13 @@
     };
   }
 
-  function sourceFor(view) {
+  function sourceFor(view, options) {
     const kind = view.source && view.source.kind;
     if (kind === "sidecar") {
       return sidecarSource(view);
     }
     if (kind === "remote") {
-      return remoteSource(view);
+      return remoteSource(view, options);
     }
     if (kind === "inline") {
       if (!Array.isArray(view.roots)) throw new Error("CanopyX: inline view roots must be an array.");

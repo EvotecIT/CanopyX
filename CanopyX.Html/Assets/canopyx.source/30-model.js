@@ -11,7 +11,8 @@
       this.view = view;
       this.opts = options;
       this.id = "cx" + ++instanceSeq;
-      this.source = options.source || sourceFor(view);
+      this.lifetime = new AbortController();
+      this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
       this.rowH = view.rowHeight || 28;
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";

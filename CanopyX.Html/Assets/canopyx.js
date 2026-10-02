@@ -899,42 +899,41 @@
     };
   }
 
-  function remoteSource(view) {
+  function remoteSource(view, options) {
     const source = view.source;
+    const settings = options || {};
+    const timeoutMs = settings.timeoutMs === undefined ? 30000 : settings.timeoutMs;
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
+      throw new Error("CanopyX: request timeout must be an integer from 1 to 2147483647 milliseconds.");
+    }
     const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
-    const getJson = async (url, type) => {
-      const response = await fetch(url, { headers: { Accept: "application/json" } });
-      if (!response.ok) {
-        throw new Error(response.status + " " + response.statusText);
-      }
-      return checkDocument(await response.json(), type);
-    };
+    const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
     return {
       kind: "remote",
       canSearch: !!source.search,
-      async page(node, cursor) {
+      async page(node, cursor, request) {
         const doc = checkPage(await getJson(fill(source.children, {
           ref: node ? encodeURIComponent(node.ref || node.id) : "",
           cursor: cursor ? encodeURIComponent(cursor) : ""
-        }), "page"), node);
+        }), "page", request), node);
         return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
       },
-      async search(query, limit) {
+      async search(query, limit, request) {
         if (!source.search) {
           return { hits: [], total: 0, truncated: false };
         }
-        const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search");
+        const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search", request);
         if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
         if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
           throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
         }
         return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
       },
-      counts: source.counts ? async (ids) => {
+      counts: source.counts ? async (ids, request) => {
         const items = [];
         for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
           const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
-          const doc = await getJson(fill(source.counts, { ids: batch }), "counts");
+          const doc = await getJson(fill(source.counts, { ids: batch }), "counts", request);
           items.push.apply(items, doc.items);
         }
         return { protocol: PROTOCOL, type: "counts", items: items };
@@ -942,19 +941,42 @@
     };
   }
 
-  function sourceFor(view) {
+  function sourceFor(view, options) {
     const kind = view.source && view.source.kind;
     if (kind === "sidecar") {
       return sidecarSource(view);
     }
     if (kind === "remote") {
-      return remoteSource(view);
+      return remoteSource(view, options);
     }
     if (kind === "inline") {
       if (!Array.isArray(view.roots)) throw new Error("CanopyX: inline view roots must be an array.");
       return inlineSource(view);
     }
     throw new Error("CanopyX: unknown source kind '" + kind + "'.");
+  }
+
+  async function remoteJson(url, type, timeoutMs, lifetime, signal) {
+    const controller = new AbortController();
+    const signals = Array.from(new Set([lifetime, signal].filter(Boolean)));
+    const abort = () => controller.abort();
+    signals.forEach((item) => {
+      if (item.aborted) abort();
+      else item.addEventListener("abort", abort, { once: true });
+    });
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; abort(); }, timeoutMs);
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" }, signal: controller.signal });
+      if (!response.ok) throw new Error(response.status + " " + response.statusText);
+      return checkDocument(await response.json(), type);
+    } catch (error) {
+      if (timedOut) throw new Error("CanopyX: remote request timed out after " + timeoutMs + " milliseconds.");
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      signals.forEach((item) => item.removeEventListener("abort", abort));
+    }
   }
 
   class TreeGrid {
@@ -965,7 +987,8 @@
       this.view = view;
       this.opts = options;
       this.id = "cx" + ++instanceSeq;
-      this.source = options.source || sourceFor(view);
+      this.lifetime = new AbortController();
+      this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
       this.rowH = view.rowHeight || 28;
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";
@@ -2270,6 +2293,7 @@
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
+      if (e.defaultPrevented || e.isComposing) return;
       if (this.head.contains(e.target)) {
         return;
       }
@@ -2883,44 +2907,63 @@
     }
   });
 
+  function navigationScope(grid, signal) {
+    const signals = Array.from(new Set([grid.lifetime.signal, signal].filter(Boolean)));
+    let abort;
+    const stopped = new Promise((resolve) => { abort = () => resolve(); });
+    signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
+    const cancelled = () => signals.some((item) => item.aborted);
+    if (cancelled()) abort();
+    return {
+      cancelled,
+      wait: (pending) => Promise.race([pending, stopped]),
+      dispose: () => signals.forEach((item) => item.removeEventListener("abort", abort))
+    };
+  }
+
   Object.assign(TreeGrid.prototype, {
-    async openForPath(w) {
-      if (this.destroyed || w._invalidated) return false;
+    async openForPath(w, navigation) {
+      if (navigation.cancelled() || w._invalidated) return false;
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
       if (!wasOpen) this.relayout();
       const revision = w.toggleRevision || 0;
       if (!w.children) {
-        await this.loadPage(w, null);
-        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
+        await navigation.wait(this.loadPage(w, null));
+        if (navigation.cancelled() || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
         if (!w.children) {
           throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
         }
       } else if (!wasOpen) {
-        await this.expandInitial(w);
+        await navigation.wait(this.expandInitial(w));
       }
-      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
+      return !navigation.cancelled() && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
     },
 
     async expandPath(ids, options) {
+      const navigation = navigationScope(this, options && options.signal);
+      try { return await this.navigatePath(ids, options, navigation); }
+      finally { navigation.dispose(); }
+    },
+
+    async navigatePath(ids, options, navigation) {
       const o = options || {};
-      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
+      const cancelled = navigation.cancelled;
       if (cancelled()) return null;
-      await this.rootsReady;
+      await navigation.wait(this.rootsReady);
       if (cancelled()) return null;
-      const aborted = o.signal ? new Promise((resolve) => o.signal.addEventListener("abort", resolve, { once: true })) : null;
-      await (aborted ? Promise.race([this.prefetchPath(ids, !!o.expandLast), aborted]) : this.prefetchPath(ids, !!o.expandLast));
+      await navigation.wait(this.prefetchPath(ids, !!o.expandLast));
       if (cancelled()) return null;
       const release = this.holdLayout();
       let w;
       let rebuilt = false;
       try {
-        w = await this.openPath(ids, o, cancelled);
+        w = await this.openPath(ids, o, navigation);
       } finally {
         rebuilt = release();
       }
-      if (w === undefined) return null;
+      if (cancelled() || w === undefined) return null;
       if (w && (o.focus !== false || o.reveal !== false) && this.flushLayout()) rebuilt = true;
       if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
@@ -2959,13 +3002,14 @@
       }
     },
 
-    async openPath(ids, o, cancelled) {
+    async openPath(ids, o, navigation) {
+      const cancelled = navigation.cancelled;
       let parent = this.root;
       let w = null;
       const opened = [];
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
-          try { if (!await this.openForPath(parent)) return undefined; }
+          try { if (!await this.openForPath(parent, navigation)) return undefined; }
           catch (err) { if (cancelled() || parent._invalidated) return undefined; throw err; }
           opened.push([parent, parent.toggleRevision || 0]);
         }
@@ -2979,7 +3023,7 @@
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
           }
           seenCursors.add(cursor);
-          await this.loadPage(parent, parent.next);
+          await navigation.wait(this.loadPage(parent, parent.next));
           if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return undefined;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
@@ -2992,7 +3036,7 @@
         parent = w;
       }
       if (o.expandLast && w && this.expandable(w)) {
-        try { if (!await this.openForPath(w)) return undefined; }
+        try { if (!await this.openForPath(w, navigation)) return undefined; }
         catch (err) { if (cancelled() || w._invalidated) return undefined; throw err; }
         opened.push([w, w.toggleRevision || 0]);
       }
@@ -3126,6 +3170,8 @@
         input.setAttribute("aria-expanded", "false");
         input.removeAttribute("aria-activedescendant");
       };
+      const flyout = watchFlyout(box, list, () => !list.hidden);
+      this.disposeSearchFlyout = flyout.dispose;
       const choose = async (index) => {
         const hit = hits[index];
         if (!hit) {
@@ -3168,6 +3214,7 @@
           list.appendChild(item);
         });
         list.hidden = !hits.length;
+        flyout.position();
         input.setAttribute("aria-expanded", hits.length ? "true" : "false");
         setText(status, !hits.length ? labels.searchNoResults : !result.truncated ? fill(labels.searchResultCount, { count: count(hits.length) }) :
           result.total ? fill(labels.searchResultCountOfTotal, { count: count(hits.length), total: count(result.total) }) : fill(labels.searchResultCountOfMany, { count: count(hits.length) }));
@@ -3216,7 +3263,7 @@
         timer = setTimeout(run, 150);
       });
       input.addEventListener("keydown", (e) => {
-        if (e.isComposing) return;
+        if (e.defaultPrevented || e.isComposing) return;
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           move(e.key === "ArrowDown" ? 1 : -1);
         } else if (e.key === "Enter") {
@@ -3273,8 +3320,35 @@
       details.appendChild(summary);
       details.appendChild(group);
       bar.appendChild(details);
+      const flyout = watchFlyout(details, group, () => details.open);
+      details.addEventListener("toggle", flyout.position);
+      this.disposeColumnChooser = flyout.dispose;
     }
   });
+
+  function watchFlyout(anchorElement, panel, isOpen) {
+    const position = () => {
+      if (!isOpen()) return;
+      const anchor = anchorElement.getBoundingClientRect();
+      const below = Math.max(0, global.innerHeight - anchor.bottom - 8);
+      const above = Math.max(0, anchor.top - 8);
+      const opensAbove = below < 120 && above > below;
+      panel.style.maxHeight = Math.min(320, opensAbove ? above : below) + "px";
+      panel.style.top = opensAbove ? "auto" : "100%";
+      panel.style.bottom = opensAbove ? "100%" : "auto";
+      const width = panel.getBoundingClientRect().width;
+      panel.style.left = Math.max(8, Math.min(anchor.left, global.innerWidth - width - 8)) - anchor.left + "px";
+    };
+    global.addEventListener("resize", position);
+    global.addEventListener("scroll", position, true);
+    return {
+      position,
+      dispose: () => {
+        global.removeEventListener("resize", position);
+        global.removeEventListener("scroll", position, true);
+      }
+    };
+  }
 
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
@@ -3560,11 +3634,14 @@
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
+      this.lifetime.abort();
       if (this.restoreController) this.restoreController.abort();
       if (this.cancelResize) this.cancelResize();
       clearTimeout(this.saveTimer);
       clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
+      if (this.disposeColumnChooser) this.disposeColumnChooser();
+      if (this.disposeSearchFlyout) this.disposeSearchFlyout();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
       if (this.detailObserver) this.detailObserver.disconnect();
@@ -3740,7 +3817,16 @@
     if (Array.from(document.querySelectorAll("[data-canopyx-mounted]")).some((host) => host.canopyx && host.canopyx.view.id === viewId)) {
       throw new Error("CanopyX: view '" + viewId + "' is already mounted; configure it before the page has loaded, or mark its fragment data-cx-mount=\"manual\" and call CanopyX.mount.");
     }
-    configured.set(viewId, Object.assign({}, configured.get(viewId), options, { view: undefined }));
+    const registration = Object.assign({}, configured.get(viewId), options, { view: undefined });
+    configured.set(viewId, registration);
+    return () => {
+      if (configured.get(viewId) === registration) configured.delete(viewId);
+    };
+  }
+
+  function unconfigure(viewId) {
+    requireIdentifier(viewId, "view ID");
+    return configured.delete(viewId);
   }
 
   function mount(root, automatic) {
@@ -3791,6 +3877,7 @@
     protocol: PROTOCOL,
     createTreeGrid: createTreeGrid,
     configure: configure,
+    unconfigure: unconfigure,
     mount: (root) => mount(root, false),
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
     badge: hostBadge,
