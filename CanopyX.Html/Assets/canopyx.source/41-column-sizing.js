@@ -36,11 +36,13 @@
       if (this.cancelResize) this.cancelResize();
       column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
       this.applyWidths();
+      this.stateChanged();
     },
 
     /** Keeps the tree column in view while the other columns scroll sideways, or lets it scroll with them. */
     setTreeColumnPinned(pinned) {
       this.host.classList.toggle("cx-pin-tree", !!pinned);
+      this.stateChanged();
     },
 
     startResize(e, column) {
@@ -61,6 +63,7 @@
         global.removeEventListener("pointercancel", end);
         global.removeEventListener("blur", stop);
         if (this.cancelResize === stop) this.cancelResize = null;
+        this.stateChanged();
       };
       const end = (ev) => { if (ev.pointerId === pointer) stop(); };
       this.cancelResize = stop;

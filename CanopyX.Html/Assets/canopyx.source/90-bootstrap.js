@@ -4,11 +4,15 @@
    * Creates a tree grid in a host element.
    * @param {HTMLElement} host The element that receives the grid.
    * @param {{ view: object, source?: object, labels?: Object<string, string>, renderers?: Object<string, Function>, renderDetail?: Function,
-   *           onSelect?: Function, onToggle?: Function, onLoad?: Function, formatLink?: Function, parseLink?: Function }} options
+   *           onSelect?: Function, onToggle?: Function, onLoad?: Function, isSelectable?: Function, beforeSelect?: Function,
+   *           formatLink?: Function, parseLink?: Function, requestTimeoutMs?: number }} options
    *   `view` is a canopyx/2 view document. `labels` translates the texts the grid writes itself, on top of the view's
    *   own `labels` (names and placeholders as in docs/data-protocol.md). Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
    *   the ids of the active declared filters whenever they change.
+   *   isSelectable(node) returning false prevents adding that node; it remains focusable. beforeSelect(node, nodes,
+   *   { previous, reason }) is a synchronous veto: false rejects the entire proposal. The cancelable
+   *   canopyx:beforeselect event offers the same veto. Clearing selection notifies onSelect with node null and nodes [].
    *   renderers maps a column id to a function (node, element, context) that returns true when it drew the cell
    *   itself; context is { column, level, expanded, index }, where index is the column's position in view.columns.
    *   Columns without a renderer are painted by the runtime and reuse their cells while scrolling, and so do the rows
@@ -45,9 +49,13 @@
       setTimeZone: (zone) => grid.setTimeZone(zone),
       getTimeZone: () => (grid.local ? "local" : "utc"),
       refresh: () => { grid.version++; grid.scheduleRender(); },
+      reload: (id, options) => grid.reload(id, options),
       // For a host that changed the address itself (history.replaceState or pushState fire no event).
       readLocation: () => grid.readLocation(),
       getSelected: () => Array.from(grid.selected).map((w) => w.h),
+      setSelection: (ids) => grid.setSelection(ids),
+      clearSelection: () => grid.setSelection([]),
+      selectAll: (options) => grid.selectAll(options),
       focus: () => {
         if (grid.destroyed) return;
         const target = grid.indexOf(grid.focused) >= 0 ? grid.focused : grid.rows[0];
@@ -56,7 +64,7 @@
       },
       visibleRows: () => grid.visibleRows(),
       toOutline: () => grid.toOutline(),
-      getState: () => ({ expanded: grid.getExpandedPaths() }),
+      getState: () => grid.getState(),
       setState: (state) => grid.setState(state),
       search: (query, limit) => grid.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
       loadMore: (id) => {
@@ -82,7 +90,7 @@
   // link hooks, or a data source reach a fragment.
   const configured = new Map();
 
-  /** Registers createTreeGrid options (everything but the view) for the fragment of a view id; a later call replaces the options it names. */
+  /** Registers fragment options and returns a disposer for this registration; a later call replaces the options it names. */
   function configure(viewId, options) {
     requireIdentifier(viewId, "view ID");
     if (!options || typeof options !== "object") {
@@ -91,7 +99,17 @@
     if (Array.from(document.querySelectorAll("[data-canopyx-mounted]")).some((host) => host.canopyx && host.canopyx.view.id === viewId)) {
       throw new Error("CanopyX: view '" + viewId + "' is already mounted; configure it before the page has loaded, or mark its fragment data-cx-mount=\"manual\" and call CanopyX.mount.");
     }
-    configured.set(viewId, Object.assign({}, configured.get(viewId), options, { view: undefined }));
+    const registration = Object.assign({}, configured.get(viewId), options, { view: undefined });
+    configured.set(viewId, registration);
+    return () => {
+      if (configured.get(viewId) === registration) configured.delete(viewId);
+    };
+  }
+
+  /** Removes the options registered for future mounts of a view, leaving any current grid intact. */
+  function unconfigure(viewId) {
+    requireIdentifier(viewId, "view ID");
+    return configured.delete(viewId);
   }
 
   /**
@@ -147,6 +165,7 @@
     protocol: PROTOCOL,
     createTreeGrid: createTreeGrid,
     configure: configure,
+    unconfigure: unconfigure,
     mount: (root) => mount(root, false),
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
     // A badge ({ text, tone?, title? }) drawn as the grid draws one, for cells and details a host renderer draws.

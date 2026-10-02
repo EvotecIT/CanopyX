@@ -81,7 +81,7 @@
       }
     },
 
-    writeDeepLink(w) {
+    writeDeepLink(w, revision = this.selectionRevision) {
       if (!this.view.deepLink) {
         return;
       }
@@ -95,7 +95,7 @@
         } catch (e) {
           if (global.console) global.console.error(e);
         }
-        if (link == null) {
+        if (link == null || this.destroyed || revision !== this.selectionRevision) {
           return;
         }
         hash = "#" + String(link).replace(/^#/, "");

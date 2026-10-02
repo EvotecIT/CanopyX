@@ -3,25 +3,40 @@
   // A path opens level by level in the model, but the rows are rebuilt and rendered once, when it is open: the levels
   // in between are never laid out, and focus moves once, at the end. Before that, the source may load the pages the path
   // will read all at once (prefetch; a bundle's search index says where they are).
+  /** Races each navigation await against cancellation without cancelling a load another caller may own. */
+  function navigationScope(grid, signal) {
+    const signals = Array.from(new Set([grid.lifetime.signal].concat(signal || []).filter(Boolean)));
+    let abort;
+    const stopped = new Promise((resolve) => { abort = () => resolve(); });
+    signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
+    const cancelled = () => signals.some((item) => item.aborted);
+    if (cancelled()) abort();
+    return {
+      cancelled,
+      wait: (pending) => Promise.race([pending, stopped]),
+      dispose: () => signals.forEach((item) => item.removeEventListener("abort", abort))
+    };
+  }
+
   Object.assign(TreeGrid.prototype, {
     /** Opens a node for expandPath and throws when its children cannot be loaded. */
-    async openForPath(w) {
-      if (this.destroyed || w._invalidated) return false;
+    async openForPath(w, navigation) {
+      if (navigation.cancelled() || w._invalidated) return false;
       const wasOpen = w.expanded && !w.filterCollapsed;
       w.expanded = true;
       w.filterCollapsed = false;
       if (!wasOpen) this.relayout();
       const revision = w.toggleRevision || 0;
       if (!w.children) {
-        await this.loadPage(w, null);
-        if (this.destroyed || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
+        await navigation.wait(this.loadPage(w, null));
+        if (navigation.cancelled() || w._invalidated || !w.expanded || (w.toggleRevision || 0) !== revision) return false;
         if (!w.children) {
           throw new Error("CanopyX: could not load the children of '" + w.key + "': " + (w.error || "no data"));
         }
       } else if (!wasOpen) {
-        await this.expandInitial(w);
+        await navigation.wait(this.expandInitial(w));
       }
-      return !this.destroyed && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
+      return !navigation.cancelled() && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
     },
 
     /**
@@ -30,25 +45,31 @@
      * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
      */
     async expandPath(ids, options) {
+      const navigation = navigationScope(this, options && options.signal);
+      try { return await this.navigatePath(ids, options, navigation); }
+      finally { navigation.dispose(); }
+    },
+
+    /** Performs navigation inside the caller's cancellation scope. */
+    async navigatePath(ids, options, navigation) {
       const o = options || {};
-      const cancelled = () => this.destroyed || !!(o.signal && o.signal.aborted);
+      const cancelled = navigation.cancelled;
       if (cancelled()) return null;
-      await this.rootsReady;
+      await navigation.wait(this.rootsReady);
       if (cancelled()) return null;
       // A newer navigation does not wait for the files an older one asked for.
-      const aborted = o.signal ? new Promise((resolve) => o.signal.addEventListener("abort", resolve, { once: true })) : null;
-      await (aborted ? Promise.race([this.prefetchPath(ids, !!o.expandLast), aborted]) : this.prefetchPath(ids, !!o.expandLast));
+      await navigation.wait(this.prefetchPath(ids, !!o.expandLast));
       if (cancelled()) return null;
       const release = this.holdLayout();
       let w;
       let rebuilt = false;
       try {
-        w = await this.openPath(ids, o, cancelled);
+        w = await this.openPath(ids, o, navigation);
       } finally {
         // One row rebuild for every level the path opened.
         rebuilt = release();
       }
-      if (w === undefined) return null;
+      if (cancelled() || w === undefined) return null;
       // Another path can still hold the rows; this one reads them to reveal and focus its node.
       if (w && (o.focus !== false || o.reveal !== false) && this.flushLayout()) rebuilt = true;
       // Opening levels puts new rows around the node: the frame that shows it first draws only what is in view.
@@ -95,13 +116,14 @@
     },
 
     /** Opens the nodes of a path in the model; returns the last node, or undefined when the path was abandoned. */
-    async openPath(ids, o, cancelled) {
+    async openPath(ids, o, navigation) {
+      const cancelled = navigation.cancelled;
       let parent = this.root;
       let w = null;
       const opened = [];
       for (let k = 0; k < ids.length; k++) {
         if (parent !== this.root) {
-          try { if (!await this.openForPath(parent)) return undefined; }
+          try { if (!await this.openForPath(parent, navigation)) return undefined; }
           catch (err) { if (cancelled() || parent._invalidated) return undefined; throw err; }
           opened.push([parent, parent.toggleRevision || 0]);
         }
@@ -115,7 +137,7 @@
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': no progress (continuation repeated)");
           }
           seenCursors.add(cursor);
-          await this.loadPage(parent, parent.next);
+          await navigation.wait(this.loadPage(parent, parent.next));
           if (cancelled() || parent._invalidated || (parent !== this.root && (!parent.expanded || (parent.toggleRevision || 0) !== opened[opened.length - 1][1]))) return undefined;
           if (parent.error || (parent.children.length === before && parent.next === cursor)) {
             throw new Error("CanopyX: could not load more children of '" + (parent.key || "the top level") + "': " + (parent.error || "no progress"));
@@ -128,7 +150,7 @@
         parent = w;
       }
       if (o.expandLast && w && this.expandable(w)) {
-        try { if (!await this.openForPath(w)) return undefined; }
+        try { if (!await this.openForPath(w, navigation)) return undefined; }
         catch (err) { if (cancelled() || w._invalidated) return undefined; throw err; }
         opened.push([w, w.toggleRevision || 0]);
       }

@@ -10,8 +10,8 @@ test("the runtime folds every code unit like the shared table", async ({ page })
   expect(table.length).toBeGreaterThan(1000);
   // The folding code is private to the runtime, so the test runs that section of the shipped script on its own.
   const { script } = runtimeAssets();
-  const start = script.indexOf("  const EXTRA_FOLD_PAIRS");
-  const end = script.indexOf("  function foldUnit");
+  const start = script.indexOf("const EXTRA_FOLD_PAIRS");
+  const end = script.indexOf("function foldUnit");
   expect(start).toBeGreaterThan(0);
   expect(end).toBeGreaterThan(start);
   await page.setContent("<!DOCTYPE html><title>Folding</title>");

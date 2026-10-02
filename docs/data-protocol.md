@@ -47,7 +47,7 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `filters` | array of filters | Optional. "Only matching" switches. |
 | `timeZone` | `utc` or `local` | Optional. The time zone `datetime` columns show at first: UTC (the default), or the reader's own. A host can switch it at run time. |
 | `pinTreeColumn` | boolean | Optional. The tree column stays in view while the other columns scroll sideways. A host can change it at run time with `grid.setTreeColumnPinned(pinned)`. |
-| `stateKey` | string | Optional. Session storage key for remembered expanded paths. |
+| `stateKey` | string | Optional. Session storage key for remembered view state: expansion, selection, columns, sorting, declared filters, timezone, focus, and scroll. |
 | `deepLink` | boolean | Optional. Selection writes the id path to the URL hash; a hash expands it on load. |
 | `labels` | object | Optional. Translations of the texts the runtime writes itself (see [Labels](#labels)); English where a name is absent. |
 | `source` | object | Where nodes come from (see [Sources](#sources)). |

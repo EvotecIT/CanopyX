@@ -12,6 +12,7 @@
   }
   Object.assign(TreeGrid.prototype, {
     onKey(e) {
+      if (e.defaultPrevented || e.isComposing) return;
       if (this.head.contains(e.target)) {
         return;
       }
@@ -89,15 +90,17 @@
       } else if (w.status === "error") {
         this.retryPage(w);
       } else if (!w.status) {
-        if (this.multi && !enter) {
-          this.select(w, { toggle: true });
-        } else {
-          this.select(w, { deferNotify: enter && this.expandable(w) });
+        let accepted, revision;
+        const deferred = enter && this.expandable(w);
+        try {
+          accepted = this.multi && !enter ? this.select(w, { toggle: true }) :
+            this.select(w, { deferNotify: deferred });
+          revision = this.selectionRevision;
+        } finally {
+          if (enter && this.expandable(w)) this.toggle(w);
         }
-        if (enter && this.expandable(w)) {
-          this.toggle(w);
-          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h));
-        }
+        if (accepted && deferred && revision === this.selectionRevision)
+          this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h), revision);
       }
     },
 

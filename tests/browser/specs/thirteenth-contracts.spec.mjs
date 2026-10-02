@@ -71,7 +71,7 @@ test("a failed lazy expansion is saved and reopened as an error row", async ({ p
   await expect(page.locator('[data-cx-status="error"]')).toBeVisible();
   await page.waitForFunction(() => sessionStorage.getItem("canopyx:thirteenth-lazy") !== null);
   expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:thirteenth-lazy"))))
-    .toEqual({ expanded: [["lazy"]] });
+    .toMatchObject({ version: 1, expanded: [["lazy"]] });
   await page.evaluate(async () => {
     const host = document.querySelector(".cx-host"), data = host.canopyx.view;
     host.canopyx.destroy();

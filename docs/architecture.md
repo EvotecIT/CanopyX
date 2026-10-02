@@ -78,7 +78,7 @@ Compared with the outline before themes: the table now paints its surface (white
 
 ## Browser Runtime
 
-The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out their whole-line comments: the parts are documented, the shipped file stays within its size budget. The first part opens a single closure and the last part closes it, so parts share private helpers without globals.
+The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out whole-line comments and trims indentation while preserving line boundaries. The parts remain documented, and the shipped file stays within its size budget. The first part opens a single closure and the last part closes it, so parts share private helpers without globals.
 
 | Part | Responsibility |
 | --- | --- |
@@ -99,7 +99,9 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `65-page-focus.js` | Focus ownership across paging and retry |
 | `70-behavior.js` | Expand and collapse, paging, focus and reveal, filters, sorting, column visibility |
 | `71-paths.js` | Opening a path (search hits, deep links, remembered state, `expandPath`): loading its pages at once, one row rebuild and one render |
+| `73-reload.js` | Transactional list reloads, identity reconciliation, request retirement, and scroll anchors |
 | `80-toolbar.js` | Built-in search box and filter switches |
+| `83-view-state.js` | Versioned view snapshots, validation, presentation, and restoration position |
 | `85-api.js` | Remembered state, outline and visible rows, counts, teardown |
 | `86-links.js` | Deep links in the default scheme or the host's own |
 | `90-bootstrap.js` | Auto-mount from JSON configuration, `window.CanopyX`, closure end |
@@ -116,6 +118,16 @@ A fragment carries only the view document, and the runtime mounts it when the pa
 - `CanopyHtmlOptions.AutoMount = false` marks the fragment `data-cx-mount="manual"`. The runtime leaves it alone until the host calls `CanopyX.mount(root)`, which also applies configured options. Use it when the host's scripts load late or the view starts hidden.
 
 `createTreeGrid` rejects the `renderCell` option of earlier revisions, which drew every column through one callback and so gave up cell reuse for the whole grid. Host controls in custom cells and details keep their click behavior and their own Enter and Space; the arrow keys move between cells, except on controls that use them (text boxes, lists, radio buttons, tabs) or that handle the key themselves (`preventDefault`). Paging updates metadata on retained rows without rebuilding their host content. `focus()` enters the current visible row or the empty grid. Restoring saved expansion suppresses declarative expansion defaults on newly loaded pages. `onLoad` runs after the page is applied; a callback exception rejects the operation without marking that page as a source failure or changing its continuation cursor.
+
+`expandPath(path, { signal })` settles with `null` when the signal is aborted or the grid is destroyed, including while it waits for roots, prefetch, children, paging, or initial expansion. The cancelled caller releases its layout hold and never takes selection or focus later. A shared page load can still complete for other callers. Built-in remote sources bound each request, including its body, to 30 seconds by default (`requestTimeoutMs` in grid options), and destruction aborts their requests. A separately created remote source takes `{ timeoutMs, signal }`; its methods take an optional request signal. Custom sources govern their own transport lifetime.
+
+Fragment configuration belongs to the host. `configure(viewId, options)` returns a disposer for that registration, and `unconfigure(viewId)` removes the current registration for future mounts. Destroying a grid leaves its configuration available for remounting. Removing configuration does not change a mounted grid; disposing an older registration cannot remove a newer one.
+
+Selection proposals share one owner across clicks, keyboard ranges, path navigation, and the host APIs. `setSelection(ids)` validates the entire loaded-id set before changing it; single selection permits at most one distinct id. `clearSelection()` proposes an empty set. `selectAll({ scope })` requires `visible` or `loaded` and never fetches more data. `isSelectable(node)` governs additions and filters ranges/select-all. Existing selection can be removed even if eligibility later changes. `beforeSelect(node, nodes, { previous, reason })` is synchronous and can veto the full set; returning a promise is an error. Hosts can also cancel `canopyx:beforeselect`. A nested host selection supersedes the older proposal, and a node removed by a host callback cannot be reattached through selection. Vetoes leave the selection, its URL fragment, and selection notifications intact. Focus and expansion remain separate. Accepted data removal reconciles selection without a veto.
+
+`reload(id?, { signal }?)` stages a replacement child list through the range already loaded before changing the model. The root list is the default. An invalid document rejects and leaves existing data attached; an abort, destruction, or newer reload returns `false`. Surviving IDs reuse their wrappers, expansion, selection, focus, and scroll anchor. Unchanged nodes keep their host controls. A changed inline child list is reconciled; loaded lazy subtrees remain cached unless the replacement proves them obsolete. Reload a lazy parent separately when its children changed. Older page finalizers cannot clear a newer request. Custom sources receive a request signal in the third argument to `page`; their transport remains host-owned. Immutable sidecar bundles continue to read their cached snapshot; mount the replacement bundle to switch versions. `refresh()` repaints, while `refreshCounts()` updates counts, cells, and flags.
+
+`getState()` returns a JSON snapshot with `version: 1`, `expanded` and `selection` ID paths, `columns` (`id`, `width`, `hidden`), `sort`, active declared `filters`, `timeZone`, `pinTreeColumn`, a `focus` path, and an `anchor` (`path`, row-relative pixel `offset`). `setState()` validates the full snapshot before changing the view and returns `false` for invalid or unsupported versions. Removed columns and filters are skipped, obsolete sort columns clear sorting, and missing node paths are ignored. Restoration loads missing saved paths without taking DOM focus; selected nodes in a collapsed branch remain selected. Selection policy still governs a restored selection. The legacy `{ expanded }` shape changes expansion alone. `stateKey` stores the versioned snapshot with a debounce after interaction; initialization never writes a partial snapshot. Host predicates, renderers, and callbacks are not serialized.
 
 ### Rendering Model
 

@@ -38,7 +38,7 @@ test("a throwing toggle callback cannot prevent state persistence", async ({ pag
   await page.locator('[data-cx-id="parent"] .cx-exp').click();
   await expect(page.locator('[data-cx-id="parent"]')).toHaveAttribute("aria-expanded", "true");
   await page.waitForFunction(() => sessionStorage.getItem("canopyx:twelfth-toggle") !== null, null, { timeout: 2000 });
-  expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-toggle")))).toEqual({ expanded: [["parent"]] });
+  expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-toggle")))).toMatchObject({ version: 1, expanded: [["parent"]] });
   expect(errors).toContain("host toggle failure");
 });
 
@@ -60,7 +60,7 @@ test("a throwing load callback cannot prevent persistence of applied lazy expans
   await page.locator('[data-cx-id="lazy"] .cx-exp').click();
   await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
   await page.waitForFunction(() => sessionStorage.getItem("canopyx:twelfth-lazy") !== null, null, { timeout: 2000 });
-  expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-lazy")))).toEqual({ expanded: [["lazy"]] });
+  expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-lazy")))).toMatchObject({ version: 1, expanded: [["lazy"]] });
   expect(errors).toContain("host load failure");
 });
 
@@ -107,7 +107,8 @@ test("an expanded empty inline node remains a leaf across state restoration", as
     await api.setState(before);
     return { before, after: api.getState() };
   });
-  expect(result).toEqual({ before: { expanded: [["parent"]] }, after: { expanded: [["parent"]] } });
+  expect(result.before.expanded).toEqual([["parent"]]);
+  expect(result.after).toEqual(result.before);
   await expect(page.locator('[data-cx-id="empty"]')).not.toHaveAttribute("aria-expanded");
 });
 

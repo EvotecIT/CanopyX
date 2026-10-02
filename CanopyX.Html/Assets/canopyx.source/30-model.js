@@ -10,8 +10,12 @@
       this.host = host;
       this.view = view;
       this.opts = options;
+      for (const name of ["isSelectable", "beforeSelect"]) {
+        if (options[name] !== undefined && typeof options[name] !== "function") throw new Error("CanopyX: " + name + " must be a function.");
+      }
       this.id = "cx" + ++instanceSeq;
-      this.source = options.source || sourceFor(view);
+      this.lifetime = new AbortController();
+      this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
       this.rowH = view.rowHeight || 28;
       this.pageSize = view.pageSize || 100;
       this.multi = view.selection === "multiple";

@@ -14,6 +14,22 @@ References to "the TestimoX plan" mean `docs/roadmaps/Reporting-Platform-EndToEn
 
 ## 0.1 Tree Grid, Read-Only
 
+### Tree Explorer Completion
+
+Consumers: HtmlForgeX tree documents and the live and offline tree explorers described below. These requirements complete their selection and data lifecycle before adding another view type.
+
+- [x] Prompt navigation cancellation, host-owned keyboard events, disposable fragment configuration, bounded remote requests, and viewport-aware toolbar panels.
+- [ ] Correct ordering of fully materialized inline siblings before paging; query-aware hosted sorting and filtering with cursor invalidation.
+- [x] Programmatic selection, selectability and veto hooks, and explicit select-all scope that never fetches unloaded data.
+- [ ] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
+- [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
+- [x] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
+- [ ] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
+- [ ] Bounded client caches, large logical-height scrolling, and measured normal/4x rendering within the existing budgets.
+- [ ] Focused Firefox/WebKit coverage, manual reader qualification, JavaScript distribution/types, and representative HtmlForgeX migration proof.
+
+Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
+
 Consumers: the TestimoX GPO explorer (both views, the GPO list and the scope tree; TestimoX plan section 10.2) and the replacement for the HtmlForgeX `FancyTree` component (jQuery plus the fancytree plugin today).
 
 Scope, taken from the `hfx/archetypes` 07 `tree` checklist:

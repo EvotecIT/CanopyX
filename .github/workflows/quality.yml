@@ -42,8 +42,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: tests/browser/package-lock.json
+          # Five test packages install in seconds; transferring the runner's shared npm cache can exhaust this job.
+          package-manager-cache: false
 
       - name: Install browser test dependencies
         working-directory: tests/browser
