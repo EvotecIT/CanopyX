@@ -974,6 +974,7 @@
       if (timedOut) throw new Error("CanopyX: remote request timed out after " + timeoutMs + " milliseconds.");
       throw error;
     } finally {
+      abort();
       clearTimeout(timer);
       signals.forEach((item) => item.removeEventListener("abort", abort));
     }

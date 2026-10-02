@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import http from "node:http";
+import path from "node:path";
 import { nextFrames, viewPage } from "./support.mjs";
 
 const view = { protocol: "canopyx/2", type: "view", id: "reliability", label: "Records", rowHeight: 28, pageSize: 2,
@@ -10,6 +12,10 @@ async function open(page, data = view) {
   await page.goto("https://canopyx.test/");
   await page.waitForSelector("[data-cx-ready]");
   await nextFrames(page);
+}
+
+async function capture(page, name) {
+  if (process.env.CANOPYX_VISUAL_OUTPUT) await page.screenshot({ path: path.join(process.env.CANOPYX_VISUAL_OUTPUT, name + ".png") });
 }
 
 for (const ownership of ["prevented", "composing"]) {
@@ -138,8 +144,24 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 180 }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
     await menu.locator("input").last().uncheck();
     await expect(menu.locator("input").last()).not.toBeChecked();
+    await capture(page, "columns-" + viewport.width + "x" + viewport.height);
   });
 }
+
+test("a low toolbar opens its chooser above and repositions when the viewport changes", async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await open(page, { ...view, columns: [view.columns[0], ...Array.from({ length: 20 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 100 }))] });
+  await page.locator(".cx-host").evaluate(host => { host.style.marginTop = "290px"; });
+  const control = page.locator(".cx-columns > summary"), menu = page.locator(".cx-columns-list");
+  await control.click(); await expect(menu).toBeVisible();
+  await expect.poll(() => menu.evaluate(group => group.getBoundingClientRect().bottom <= group.parentElement.getBoundingClientRect().top)).toBe(true);
+  await capture(page, "columns-above");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => menu.evaluate(group => {
+    const r = group.getBoundingClientRect();
+    return r.left >= 7 && r.right <= innerWidth - 7 && r.top >= group.parentElement.getBoundingClientRect().bottom && r.bottom <= innerHeight - 7;
+  })).toBe(true);
+});
 
 test("search flyouts fit a narrow host against the viewport edge and remain keyboard usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 500 });
@@ -150,6 +172,7 @@ test("search flyouts fit a narrow host against the viewport edge and remain keyb
   await expect(page.getByRole("option")).toBeVisible();
   const bounds = await page.locator(".cx-results").boundingBox();
   expect(bounds.x).toBeGreaterThanOrEqual(7); expect(bounds.x + bounds.width).toBeLessThanOrEqual(383);
+  await capture(page, "search-embedded");
   await input.press("ArrowDown"); await input.press("Enter");
   await expect(page.locator('[data-cx-id="a"]')).toBeFocused();
 });
@@ -181,3 +204,30 @@ for (const outcome of ["deadline", "caller", "lifetime", "body"]) {
     expect(result).toBe(outcome === "deadline" || outcome === "body" ? "CanopyX: remote request timed out after 25 milliseconds." : "aborted");
   });
 }
+
+test("remote transport closes an unread streaming HTTP error body", async ({ page }) => {
+  let closed = false;
+  const server = http.createServer((request, response) => {
+    if (request.url.startsWith("/failure")) {
+      response.writeHead(503, "Service Unavailable", { "Content-Type": "application/json" });
+      response.write('{"unfinished":');
+      response.once("close", () => { closed = true; });
+    } else {
+      response.writeHead(200, { "Content-Type": "text/html" }); response.end(viewPage(view));
+    }
+  });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  try {
+    await page.goto("http://127.0.0.1:" + server.address().port);
+    const error = await page.evaluate(async () => {
+      try {
+        await CanopyX.sources.remote({ source: { children: "/failure?ref={ref}&cursor={cursor}" } }).page(null, null);
+        return "unexpected success";
+      } catch (error) { return error.message; }
+    });
+    expect(error).toBe("503 Service Unavailable");
+    await expect.poll(() => closed, { timeout: 3000 }).toBe(true);
+  } finally {
+    server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
+  }
+});
