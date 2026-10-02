@@ -155,6 +155,30 @@ test("matching data moved outside an inline page stays retained under a filter",
     return api.setSelection(['a']);
   });
   expect(retained).toBe(true);
+  await page.evaluate(()=>{const api=document.querySelector('.cx-host').canopyx;api.clearSelection();api.setFilter(null);});
+  await nextFrames(page);
+  await expect(page.evaluate(()=>document.querySelector('.cx-host').canopyx.setSelection(['a'])))
+    .rejects.toThrow('selection node is not loaded: a');
+});
+
+for (const method of ['applyCounts','refreshCounts']) test(`${method} releases a collapsed group after its flags stop matching`,async({page})=>{
+  await open(page,{limit:0,counts:true}); await expand(page,'a');
+  await page.evaluate(()=>{
+    const api=document.querySelector('.cx-host').canopyx;
+    api.applyCounts({protocol:'canopyx/2',type:'counts',items:[{id:'a0',flags:['hit']},{id:'a1',flags:['hit']}]});
+    api.setFilter({match:node=>(node.flags||[]).includes('hit'),keep:node=>node.id==='a'});
+  });
+  await collapse(page,'a'); await nextFrames(page);
+  await page.evaluate(async method=>{
+    const api=document.querySelector('.cx-host').canopyx;
+    const update={protocol:'canopyx/2',type:'counts',items:[{id:'a0',flags:[]},{id:'a1',flags:[]}]};
+    if(method==='applyCounts') api.applyCounts(update);
+    else {const pending=api.refreshCounts(['a0','a1']);window.finishCounts(update);await pending;}
+  },method);
+  await nextFrames(page);
+  await expect(page.evaluate(()=>document.querySelector('.cx-host').canopyx.setSelection(['a0'])))
+    .rejects.toThrow('selection node is not loaded: a0');
+  await expand(page,'a'); expect(await page.evaluate(()=>window.loads.a)).toBe(2);
 });
 
 test("state restoration enrolls newly collapsed lazy branches for eviction",async({page})=>{

@@ -280,6 +280,7 @@
         w.content = nodeContent(w.h);
       });
       this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
+      this.cacheDirty = true;
       this.applySort(this.root, true);
       // Rows of removed nodes go at once, even while an opening path holds back the rest.
       this.relayout(removed);

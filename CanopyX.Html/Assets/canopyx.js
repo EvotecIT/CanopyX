@@ -1580,6 +1580,7 @@ this.cacheDirty = true;
 trimInactiveCache() {
 if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds) return;
 this.cacheDirty = false;
+this.trimInlineCache();
 const cache = this.inactiveCache;
 if (!cache || !cache.size) return;
 const groups = [];
@@ -4428,6 +4429,7 @@ w.h.flags = item.flags.slice();
 w.content = nodeContent(w.h);
 });
 this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
+this.cacheDirty = true;
 this.applySort(this.root, true);
 this.relayout(removed);
 if (removedSelection) this.selectionChanged(removedSelection);

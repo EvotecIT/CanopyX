@@ -20,6 +20,7 @@
     trimInactiveCache() {
       if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds) return;
       this.cacheDirty = false;
+      this.trimInlineCache();
       const cache = this.inactiveCache;
       if (!cache || !cache.size) return;
       const groups = [];
