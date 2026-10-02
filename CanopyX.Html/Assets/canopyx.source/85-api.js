@@ -126,6 +126,8 @@
       } finally {
         if (this.pendingToggleFlush === run) this.pendingToggleFlush = null;
         this.replayingToggles = false;
+        this.cacheDirty = true;
+        this.scheduleRender();
         if (this.pendingRestorationToggles === pending && !pending.size) {
           this.pendingRestorationToggles = null;
           if (!this.destroyed) this.stateChanged();

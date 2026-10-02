@@ -3,7 +3,8 @@
     cachePinned(w) {
       const focus = this.focused;
       return w.expanded || w.autoExpand || w.loading || w.reloadController || this.selected.has(w) ||
-        w === (focus && focus.status ? focus.parent : focus) || w === this.anchor;
+        w === (focus && focus.status ? focus.parent : focus) || w === this.anchor ||
+        this.pendingRestorationToggles && this.pendingRestorationToggles.has(w);
     },
 
     rememberInactive(w) {
@@ -15,7 +16,7 @@
     },
 
     trimInactiveCache() {
-      if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.layoutHolds || this.filter) return;
+      if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds || this.filter) return;
       this.cacheDirty = false;
       const cache = this.inactiveCache;
       if (!cache || !cache.size) return;
