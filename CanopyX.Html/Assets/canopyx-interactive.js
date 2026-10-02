@@ -1562,9 +1562,11 @@ size -= group.nodes.length;
 Object.assign(TreeGrid.prototype, {
 cachePinned(w) {
 const focus = this.focused;
+const filter = this.filter;
 return w.expanded || w.autoExpand || w.loading || w.reloadController || this.selected.has(w) ||
 w === (focus && focus.status ? focus.parent : focus) || w === this.anchor ||
-this.pendingRestorationToggles && this.pendingRestorationToggles.has(w);
+this.pendingRestorationToggles && this.pendingRestorationToggles.has(w) ||
+filter && (filter.match(w.h) || filter.keep && filter.keep(w.h));
 },
 
 rememberInactive(w) {
@@ -1576,8 +1578,9 @@ this.cacheDirty = true;
 },
 
 trimInactiveCache() {
-if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds || this.filter) return;
+if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds) return;
 this.cacheDirty = false;
+this.trimInlineCache();
 const cache = this.inactiveCache;
 if (!cache || !cache.size) return;
 const groups = [];
@@ -4426,6 +4429,7 @@ w.h.flags = item.flags.slice();
 w.content = nodeContent(w.h);
 });
 this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
+this.cacheDirty = true;
 this.applySort(this.root, true);
 this.relayout(removed);
 if (removedSelection) this.selectionChanged(removedSelection);

@@ -7,8 +7,10 @@ function view(mode = "hierarchical", roots = [{ id: "a", label: "Atlas", hasChil
     checkboxes: mode, columns: [{ id: "name", title: "Name", width: 400 }], source: { kind: "inline" }, roots };
 }
 
-async function mount(page, definition = view(), options = "{}") {
-  const html = viewPage(definition).replace("</head>", "<script>CanopyX.configure('checking'," + options + ");</script></head>");
+async function mount(page, definition = view(), options = "{}", accessiblePage = false) {
+  let html = viewPage(definition).replace("</head>", "<script>CanopyX.configure('checking'," + options + ");</script></head>");
+  if (accessiblePage) html = html.replace('<body class="cx-page">','<body class="cx-page"><main><h1>Projects</h1>')
+    .replace('</body>','</main></body>').replace('data-cx-theme="light"','data-cx-theme="auto"');
   await page.route("https://checking.test/", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://checking.test/");
   await page.waitForSelector("[data-cx-ready]");
@@ -22,7 +24,7 @@ const lazy = `{source:{page:async node=>{window.reads=(window.reads||0)+1;return
 for (const theme of ['light','dark']) test(`native checkboxes expose checked, mixed and disabled states without axe violations (${theme})`,async({page})=>{
   await page.emulateMedia({colorScheme:theme});
   await mount(page,{...view('hierarchical',[{id:'a',label:'Atlas',expanded:true,children:[{id:'a0',label:'Planning'},{id:'a1',label:'Delivery'}]},
-    {id:'b',label:'Beacon'},{id:'c',label:'Cedar'}]),pageSize:3},`{isCheckable:node=>node.id!=='c'}`);
+    {id:'b',label:'Beacon'},{id:'c',label:'Cedar'}]),pageSize:3},`{isCheckable:node=>node.id!=='c'}`,true);
   await page.evaluate(()=>document.querySelector('.cx-host').canopyx.setCheckIntents([{path:['a'],checked:true},{path:['a','a0'],checked:false}]));
   await nextFrames(page);
   await expect(row(page,'a').getByRole('checkbox')).toHaveAttribute('aria-checked','mixed');
