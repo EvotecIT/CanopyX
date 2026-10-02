@@ -207,3 +207,16 @@ test("a selection event's nested selection supersedes the older callback", async
   });
   expect(result).toEqual({ accepted: false, ids: ["tail"], events: [{ node: "tail", nodes: ["tail"] }] });
 });
+
+for (const startsExpandable of [false, true]) test("Enter notifies once when a veto hook changes expandability from " + startsExpandable, async ({ page }) => {
+  await open(page);
+  await page.evaluate(async startsExpandable => {
+    const host = api.element, data = api.view; api.destroy(); window.events = [];
+    window.api = CanopyX.createTreeGrid(host, { view: data, source: { page: async node => ({ items: node ? [] :
+      [{ id: "target", label: "Target", ...(startsExpandable ? { hasChildren: true } : {}) }], next: null }) },
+      beforeSelect: () => { api.applyCounts({ protocol: "canopyx/2", type: "counts", items: [{ id: "target", childCount: startsExpandable ? 0 : 1 }] }); return true; },
+      onSelect: node => events.push(node.id) }); await api.ready;
+  }, startsExpandable);
+  await nextFrames(page); await page.locator('[data-cx-id="target"]').focus(); await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => events)).toEqual(["target"]);
+});

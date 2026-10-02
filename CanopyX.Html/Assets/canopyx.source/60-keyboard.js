@@ -91,14 +91,15 @@
         this.retryPage(w);
       } else if (!w.status) {
         let accepted, revision;
+        const deferred = enter && this.expandable(w);
         try {
           accepted = this.multi && !enter ? this.select(w, { toggle: true }) :
-            this.select(w, { deferNotify: enter && this.expandable(w) });
+            this.select(w, { deferNotify: deferred });
           revision = this.selectionRevision;
         } finally {
           if (enter && this.expandable(w)) this.toggle(w);
         }
-        if (accepted && enter && this.expandable(w) && revision === this.selectionRevision)
+        if (accepted && deferred && revision === this.selectionRevision)
           this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h), revision);
       }
     },
