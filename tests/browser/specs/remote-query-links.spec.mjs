@@ -65,3 +65,20 @@ test("a replacement query releases ready when initial link parsing is stalled", 
   }, view);
   expect(result).toBe("settled");
 });
+
+test("a deferred initial address is retired before parsing starts on replacement roots", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async data => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy(); let parses = 0;
+    const api = CanopyX.createTreeGrid(host, { view: data, formatLink: () => null,
+      parseLink: () => { parses++; return new Promise(() => {}); },
+      source: { queryAware: true, page: async (node, cursor, request) => request.query.sort
+        ? { items: [{ id: "a", label: "New A" }], next: null, revision: "r2" }
+        : new Promise(() => {}) } });
+    history.replaceState(null, "", "#stalled"); const opening = api.readLocation(); await api.sort("name", "desc");
+    const completion = await Promise.race([Promise.all([api.ready, opening]).then(() => "settled"),
+      new Promise(resolve => setTimeout(() => resolve("pending"), 150))]);
+    return { completion, parses, selected: api.getSelected() };
+  }, view);
+  expect(result).toEqual({ completion: "settled", parses: 0, selected: [] });
+});

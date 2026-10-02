@@ -108,7 +108,8 @@
         // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
         // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
         await this.expandInitial(this.root);
-        await this.openDeepLink();
+        // A queued address belongs to the data lifetime in which its caller requested it.
+        if (!this.linkChanged || !this.linkChanged.aborted) await this.openDeepLink();
       } finally {
         this.initializing = false;
       }

@@ -1100,7 +1100,7 @@ this.rootsReady = this.loadRoots();
 await this.rootsReady;
 await this.restoreState();
 await this.expandInitial(this.root);
-await this.openDeepLink();
+if (!this.linkChanged || !this.linkChanged.aborted) await this.openDeepLink();
 } finally {
 this.initializing = false;
 }
