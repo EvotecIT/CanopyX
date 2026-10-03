@@ -30,7 +30,8 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Large logical-height scrolling with reachable rows and preserved logical anchors.
 - [ ] Measured normal/4x rendering within the existing budgets.
 - [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
-- [ ] Focused Firefox/WebKit coverage, manual reader qualification, JavaScript distribution/types, and representative HtmlForgeX migration proof.
+- [x] JavaScript module and classic distribution with typed host contracts, an isolated package-consumer check, and server-safe imports.
+- [ ] Focused Firefox/WebKit coverage, manual reader qualification, and representative HtmlForgeX migration proof.
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 
@@ -203,7 +204,7 @@ Consumers: external users of the published packages, and write-governed tools su
 - [x] Editing and drag and drop. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
 - [ ] Documentation website built with PowerForge.Web.
 - [ ] Published benchmarks with reproducible commands.
-- [ ] Optional npm distribution of the built runtime for hosts that are not .NET.
+- [x] Optional npm distribution of the built runtime for hosts that are not .NET.
 
 Gate: no breaking changes to the public API or to `canopyx/2` during 1.x, and the website documents every public entry point with a working example.
 

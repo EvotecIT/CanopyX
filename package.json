@@ -1,0 +1,28 @@
+{
+  "name": "@evotecit/canopyx",
+  "version": "0.1.0",
+  "description": "Dependency-free virtualized tree grid with lazy data, checking intent and host-governed interactions.",
+  "type": "module",
+  "license": "MIT",
+  "types": "./JavaScript/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./JavaScript/index.d.ts",
+      "import": "./CanopyX.Html/Assets/canopyx-module.mjs"
+    },
+    "./styles.css": "./CanopyX.Html/Assets/canopyx-interactive.css",
+    "./core.css": "./CanopyX.Html/Assets/canopyx.css",
+    "./classic.js": "./CanopyX.Html/Assets/canopyx-interactive.js",
+    "./core.js": "./CanopyX.Html/Assets/canopyx.js"
+  },
+  "files": [
+    "JavaScript/*.d.ts",
+    "CanopyX.Html/Assets/canopyx-module.mjs",
+    "CanopyX.Html/Assets/canopyx-interactive.js",
+    "CanopyX.Html/Assets/canopyx-interactive.css",
+    "CanopyX.Html/Assets/canopyx.js",
+    "CanopyX.Html/Assets/canopyx.css"
+  ],
+  "keywords": ["treegrid", "treeview", "virtualization", "accessibility", "lazy-loading"],
+  "engines": { "node": ">=18" }
+}

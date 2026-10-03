@@ -62,6 +62,13 @@ $assets = @(
         Extension = 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css'
         Target = 'CanopyX.Html/Assets/canopyx-interactive.css'
     }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source'
+        Target = 'CanopyX.Html/Assets/canopyx-module.mjs'
+        Folding = $true
+        Module = $true
+    }
 )
 
 function Join-AssetSource {
@@ -133,6 +140,34 @@ function Remove-CommentLines {
     $kept -join "`n"
 }
 
+function ConvertTo-Module {
+    param([string] $Content)
+
+    # The module uses the same implementation as the interactive classic script. Only its host, automatic
+    # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
+    $footer = '})(typeof window !== "undefined" ? window : this);'
+    $automatic = 'const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;'
+    if (-not $Content.EndsWith($footer + "`n", [System.StringComparison]::Ordinal) -or
+        ([regex]::Matches($Content, [regex]::Escape($automatic))).Count -ne 1) {
+        throw 'The canonical runtime mount boundary changed; update the module assembly explicitly.'
+    }
+    $Content = $Content.Replace($automatic, "if (typeof document !== `"undefined`") {`n" + $automatic)
+    $Content = $Content.Substring(0, $Content.Length - $footer.Length - 1) + "}`n})(runtimeHost);`n"
+    $header = @'
+const runtimeHost = typeof window === "undefined" ? {} : window;
+if (runtimeHost.CanopyX && (runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)) {
+throw new Error("CanopyX: load the interactive runtime or module before the core script.");
+}
+'@
+    $exports = @'
+const CanopyX = runtimeHost.CanopyX;
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels };
+export default CanopyX;
+'@
+    $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
+}
+
 foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
@@ -142,6 +177,7 @@ foreach ($asset in $assets) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
+    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

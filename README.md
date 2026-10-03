@@ -24,6 +24,31 @@ The images come from the pages `CanopyX.Examples` generates; `tests/browser/tool
 
 Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 
+### JavaScript Hosts
+
+The optional `@evotecit/canopyx` package contains the complete interactive runtime, CSS, and TypeScript declarations. It has no runtime dependencies. The module and classic scripts are assembled from the same JavaScript source; .NET consumers keep their existing build with no JavaScript compiler or bundler.
+
+```javascript
+import { createTreeGrid } from "@evotecit/canopyx";
+import "@evotecit/canopyx/styles.css";
+
+const grid = createTreeGrid(document.getElementById("files"), {
+  view: {
+    protocol: "canopyx/2", type: "view", id: "files", label: "Files",
+    rowHeight: 28, pageSize: 100, selection: "single",
+    columns: [{ id: "name", title: "Name", kind: "text", width: 320 }],
+    source: { kind: "inline" }, roots: [{ id: "plans", label: "Plans" }]
+  }
+});
+await grid.ready;
+```
+
+The CSS import above uses the host's existing asset pipeline. A host without a bundler serves the exported stylesheet through a `<link>` and imports `CanopyX.Html/Assets/canopyx-module.mjs` from a module script. `classic.js` and `core.js` export the complete interactive and smaller readonly scripts as assets; their matching styles are `styles.css` and `core.css`. Classic scripts expose `window.CanopyX`.
+
+Module imports are safe during server rendering and leave the server's globals unchanged. Mounting, configuration, and DOM helpers run in the browser. On a page that mixes module and classic hosts, load the module or complete interactive script first; an already-loaded core script cannot be upgraded to support interaction methods. The module rejects that loading order explicitly. Include one matching runtime and stylesheet for the page.
+
+Build the local JavaScript archive with `npm pack --ignore-scripts --pack-destination <output-directory>` at the repository root, then install that tarball in a host. This packs the checked-in assets and declarations; it performs no compilation. Reassemble assets with `Build/Sync-Assets.ps1` after editing their canonical source. The browser quality loop packs and installs an isolated consumer, checks its types, and verifies server imports and browser module behavior.
+
 ### Building Against Local Source
 
 A released consumer references the packages. A consumer that needs work that is not released yet (a bridge, a host under development) builds against a checkout of this repository instead:
