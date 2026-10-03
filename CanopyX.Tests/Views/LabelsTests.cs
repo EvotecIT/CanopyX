@@ -84,10 +84,11 @@ public sealed class LabelsTests {
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 
         // The runtime's English texts are the C# defaults, name for name.
-        var script = CanopyX.Html.CanopyHtmlAssets.Script;
-        var start = script.IndexOf("const DEFAULT_LABELS = Object.freeze({", StringComparison.Ordinal);
-        var body = script.Substring(start, script.IndexOf("});", start, StringComparison.Ordinal) - start);
-        var runtime = System.Text.RegularExpressions.Regex.Matches(body, "(\\w+): (\"(?:[^\"\\\\]|\\\\.)*\")")
+        var script = CanopyX.Html.CanopyHtmlAssets.GetScript(CanopyX.Html.CanopyRuntime.InteractiveTreeGrid);
+        var blocks = System.Text.RegularExpressions.Regex.Matches(script,
+            @"DEFAULT_LABELS = Object\.freeze\((?:Object\.assign\(\{\}, DEFAULT_LABELS, )?\{(?<body>[\s\S]*?)\}\)?\);");
+        var runtime = blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
+                "(\\w+): (\"(?:[^\"\\\\]|\\\\.)*\")"))
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();

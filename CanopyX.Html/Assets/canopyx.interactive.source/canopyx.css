@@ -1,3 +1,18 @@
 /* Optional checking controls; the standard tree stylesheet remains independent of interaction features. */
 .cx-check { flex: none; margin: 0; width: 16px; height: 16px; accent-color: var(--cx-accent); }
 .cx-check:focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 1px; }
+
+.cx-interaction-panel { position: fixed; z-index: 20; box-sizing: border-box; width: min(340px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow: auto; padding: 8px; border: 1px solid var(--cx-line); border-radius: 6px; background: var(--cx-surface); color: var(--cx-text); box-shadow: 0 4px 18px color-mix(in srgb, var(--cx-text) 20%, transparent); font: inherit; }
+.cx-interaction-panel button, .cx-editor { box-sizing: border-box; font: inherit; color: inherit; background: var(--cx-surface); border: 1px solid var(--cx-line); border-radius: 4px; padding: 6px 10px; }
+.cx-editor { width: 100%; margin-bottom: 8px; }
+.cx-editor[type="checkbox"] { width: 20px; height: 20px; display: block; }
+.cx-interaction-title { font-weight: 600; margin-bottom: 8px; }
+.cx-interaction-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.cx-action-item { display: block; width: 100%; text-align: start; border: 0 !important; }
+.cx-action-item[aria-disabled="true"] { color: var(--cx-muted); }
+.cx-interaction-panel button:hover { background: var(--cx-hover-bg); }
+.cx-interaction-panel :focus-visible { outline: 2px solid var(--cx-accent); outline-offset: -2px; }
+.cx-drop-target { outline: 2px solid var(--cx-accent); outline-offset: -2px; }
+.cx-drop-target[data-cx-drop-placement="before"] { outline: 0; box-shadow: inset 0 3px var(--cx-accent); }
+.cx-drop-target[data-cx-drop-placement="after"] { outline: 0; box-shadow: inset 0 -3px var(--cx-accent); }
+@media print { .cx-interaction-panel { display: none; } }

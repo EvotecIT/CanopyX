@@ -167,6 +167,7 @@
         "width": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
+        "editable": { "type": "boolean" },
         "hidden": { "type": "boolean" }
       }
     },
@@ -241,6 +242,13 @@
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
+        "dragDrop": { "description": "Offers proposals to a host drop hook; the runtime never moves nodes itself.", "type": "boolean" },
+        "contextActions": {
+          "type": "array", "items": {
+            "type": "object", "required": ["id", "label"], "additionalProperties": false,
+            "properties": { "id": { "$ref": "#/$defs/identifier" }, "label": { "$ref": "#/$defs/accessibleLabel" } }
+          }
+        },
         "checkboxes": { "description": "Checking is independent of row selection; hierarchical rules include unloaded descendants.", "enum": ["independent", "hierarchical"] },
         "checkIntents": {
           "type": "array",
@@ -293,6 +301,19 @@
             "loading": { "$ref": "#/$defs/accessibleLabel" },
             "loadError": { "$ref": "#/$defs/accessibleLabel" },
             "queryFailed": { "$ref": "#/$defs/accessibleLabel" },
+            "actions": { "$ref": "#/$defs/accessibleLabel" },
+            "editValue": { "$ref": "#/$defs/accessibleLabel" },
+            "saveEdit": { "$ref": "#/$defs/accessibleLabel" },
+            "cancelEdit": { "$ref": "#/$defs/accessibleLabel" },
+            "invalidEdit": { "$ref": "#/$defs/accessibleLabel" },
+            "interactionPending": { "$ref": "#/$defs/accessibleLabel" },
+            "interactionRejected": { "$ref": "#/$defs/accessibleLabel" },
+            "interactionFailed": { "$ref": "#/$defs/accessibleLabel" },
+            "markMove": { "$ref": "#/$defs/accessibleLabel" },
+            "moveHere": { "$ref": "#/$defs/accessibleLabel" },
+            "moveBefore": { "$ref": "#/$defs/accessibleLabel" },
+            "moveAfter": { "$ref": "#/$defs/accessibleLabel" },
+            "cancelMove": { "$ref": "#/$defs/accessibleLabel" },
             "showMore": { "$ref": "#/$defs/accessibleLabel" },
             "showMoreUnknownTotal": { "$ref": "#/$defs/accessibleLabel" },
             "pageLoaded": { "$ref": "#/$defs/accessibleLabel" },

@@ -53,6 +53,10 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets whether clicking the header sorts siblings by this column's cell values.</summary>
     public bool Sortable { get; set; }
 
+    /// <summary>Gets or sets whether the interactive runtime offers an editor for this column.</summary>
+    /// <remarks>The host edit hook validates and executes proposals. The runtime never changes the node value itself.</remarks>
+    public bool Editable { get; set; }
+
     /// <summary>Gets or sets whether the column starts hidden. The tree column cannot be hidden.</summary>
     public bool Hidden { get; set; }
 
@@ -65,6 +69,7 @@ public sealed class CanopyColumn {
         if (Sortable) {
             writer.Property("sortable", true);
         }
+        if (Editable) writer.Property("editable", true);
 
         if (Hidden) {
             writer.Property("hidden", true);

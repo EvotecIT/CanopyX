@@ -225,7 +225,7 @@
   // Every text the runtime writes itself, in English. A view document can carry translations in "labels", and a host
   // can pass more in the options; placeholders such as {count} are replaced. Host data (labels of nodes, column
   // titles, cells) is never translated here.
-  const DEFAULT_LABELS = Object.freeze({
+  let DEFAULT_LABELS = Object.freeze({
     searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
     searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
     searchNoResults: "No results", searchTooShort: "Type at least {min} characters",

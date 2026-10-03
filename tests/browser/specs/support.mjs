@@ -54,7 +54,8 @@ export function runtimeAssets(runtime = "tree") {
 
 /** A page with one view mounted from a view document, served by the test through page.route. */
 export function viewPage(view) {
-  const { script, style } = runtimeAssets(view.checkboxes ? "interactive" : "tree");
+  const interactive = view.checkboxes || view.dragDrop || view.contextActions && view.contextActions.length || view.columns.some(column => column.editable);
+  const { script, style } = runtimeAssets(interactive ? "interactive" : "tree");
   const json = JSON.stringify(view).replace(/</g, "\\" + "u003c");
   return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
     + "</script></head><body class=\"cx-page\"><div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\"><script type=\"application/json\" class=\"cx-config\">"

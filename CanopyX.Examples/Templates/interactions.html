@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX host actions</title>
+<link rel="stylesheet" href="checkbox-assets/{{style}}">
+<script src="checkbox-assets/{{script}}" defer></script>
+<style>
+body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+h1 { margin: 0 0 8px; font-size: 22px; }
+p { max-width: 80ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body><main>
+<h1>Host actions</h1>
+<p>Alt+Enter edits a value. Right-click or Shift+F10 opens actions. Drag a task onto another project, or use Control+Shift+X on a task and Control+Shift+V on its destination. The host validates each proposal and refreshes accepted data.</p>
+<div class="controls">
+<label><input id="reject-actions" type="checkbox"> Decline changes</label>
+<label><input id="dark-theme" type="checkbox"> Dark theme</label>
+</div>
+{{content}}
+<p id="action-status" role="status">Ready.</p>
+<details><summary>Last proposal</summary><pre id="action-proposal"></pre></details>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const host = document.querySelector("[data-canopyx-host]");
+  const records = [ {id:"atlas",label:"Atlas project",parent:null,owner:"Operations",kind:"project"},
+    {id:"beacon",label:"Beacon project",parent:null,owner:"Delivery",kind:"project"},
+    ...Array.from({length:8},(_,i)=>({id:"task-"+i,label:"Task "+(i+1),parent:"atlas",owner:i%2?"Morgan":"Alex",kind:"task"})) ];
+  const find = id => records.find(record=>record.id===id);
+  const children = id => records.filter(record=>record.parent===id);
+  const path = record => { const ids=[]; while(record){ids.unshift(record.id);record=find(record.parent)} return ids; };
+  const current = proposal => { const record=find(proposal.nodeId);return record && JSON.stringify(path(record))===JSON.stringify(proposal.path); };
+  const allowed = request => !request.signal.aborted && !document.getElementById("reject-actions").checked;
+  const pause = () => new Promise(resolve=>setTimeout(resolve,80));
+  const source = { async page(node) { const items=children(node?node.id:null).map(record=>({id:record.id,label:record.label,kind:record.kind,
+    ...(children(record.id).length?{hasChildren:true,childCount:children(record.id).length}:{}),cells:{owner:record.owner}}));return {items,total:items.length}; } };
+  let api;
+  CanopyX.configure("interactions", { source,canDrag:node=>node.kind==="task",canEdit:node=>node.kind==="task",
+    async onEdit(proposal,request) {
+      await pause();
+      if(!allowed(request)||!current(proposal)||find(proposal.nodeId).kind!=="task"||typeof proposal.value!=="string"||!proposal.value.trim())return false;
+      find(proposal.nodeId)[proposal.column==="name"?"label":"owner"]=proposal.value;return true;
+    },
+    async onDrop(proposal,request) {
+      await pause();
+      const target=find(proposal.target.nodeId), parent=proposal.placement==="inside"?target:target&&find(target.parent);
+      if(!allowed(request)||!target||!parent||parent.kind!=="project"||!proposal.nodes.every(node=>current(node)&&find(node.nodeId).kind==="task"))return false;
+      for(const node of proposal.nodes){const record=find(node.nodeId);records.splice(records.indexOf(record),1);
+        record.parent=parent.id;const index=proposal.placement==="inside"?records.length:records.indexOf(target)+(proposal.placement==="after"?1:0);records.splice(index,0,record);}
+      return true;
+    },
+    async onAction(proposal,request) { if(!allowed(request)||!current(proposal)||proposal.action!=="inspect")return false;
+      document.getElementById("action-status").textContent="Inspecting "+find(proposal.nodeId).label;return true; }
+  });
+  api=CanopyX.mount()[0];await api.ready;
+  const report=event=>{
+    document.getElementById("action-proposal").textContent=JSON.stringify(event.detail.proposal,null,2);
+    if(event.type!=="canopyx:action")document.getElementById("action-status").textContent=event.detail.accepted?"Accepted by the host.":"Declined by the host.";
+    if(event.detail.accepted && event.type!=="canopyx:action") Promise.resolve().then(async()=>{
+      await api.reload(null);for(const group of records.filter(record=>record.kind==="project"&&children(record.id).length))await api.reload(group.id);
+    }).catch(error=>document.getElementById("action-status").textContent=error.message);
+  };
+  for(const kind of ["edit","drop","action"])host.addEventListener("canopyx:"+kind,report);
+  document.getElementById("dark-theme").onchange=event=>host.dataset.cxTheme=event.target.checked?"dark":"light";
+});
+</script>
+</main></body>
+</html>

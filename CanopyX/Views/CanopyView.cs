@@ -93,6 +93,14 @@ public sealed class CanopyView {
     /// <remarks>Intents require an enabled <see cref="Checkboxes"/> mode. Deeper paths override ancestor intents.</remarks>
     public IList<CanopyCheckIntent> CheckIntents { get; } = new List<CanopyCheckIntent>();
 
+    /// <summary>Gets or sets whether rows offer drag-and-drop proposals. Defaults to false.</summary>
+    /// <remarks>The interactive runtime requires a host drop hook. It never moves or writes nodes itself.</remarks>
+    public bool DragDrop { get; set; }
+
+    /// <summary>Gets the context actions exposed by the interactive runtime.</summary>
+    /// <remarks>Actions require a host action hook, which owns authorization and execution.</remarks>
+    public IList<CanopyContextAction> ContextActions { get; } = new List<CanopyContextAction>();
+
     /// <summary>Gets or sets where the runtime reads nodes from. Defaults to <see cref="CanopySource.Inline"/>.</summary>
     /// <exception cref="ArgumentNullException">The value is null.</exception>
     public CanopySource Source {
@@ -181,6 +189,12 @@ public sealed class CanopyView {
                 foreach (var intent in CheckIntents) intent.WriteJson(writer);
                 writer.EndArray();
             }
+        }
+        if (DragDrop) writer.Property("dragDrop", true);
+        if (ContextActions.Count > 0) {
+            writer.Name("contextActions").BeginArray();
+            foreach (var action in ContextActions) action.WriteJson(writer);
+            writer.EndArray();
         }
         writer.Name("columns").BeginArray();
         foreach (var column in Columns) {

@@ -25,7 +25,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
 - [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
 - [x] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
-- [ ] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
+- [x] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
 - [x] Bounded inactive subtree and sidecar pack retention, with navigation-owned prefetch pins.
 - [x] Large logical-height scrolling with reachable rows and preserved logical anchors.
 - [ ] Measured normal/4x rendering within the existing budgets.
@@ -160,7 +160,7 @@ Gate: the live GPO explorer answers each expand and search within 400 ms round t
 Consumers: HtmlForgeX documents that use `FancyTree` today, and TestimoX reports that HtmlForgeX renders. The work happens in HtmlForgeX and needs CanopyX 0.1; this entry tracks it because it is the first external consumer of `CanopyX.Html`.
 
 - [ ] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX): registers the CanopyX assets as a library, maps HtmlForgeX design tokens onto the CanopyX base colours, and emits the fragment.
-- [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) that CanopyX only plans for 1.0, so check outside callers before deleting.
+- [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) and host-specific hooks, so inventory those contracts before migration.
 - [ ] Delete the component and its jQuery and fancytree assets.
 - [ ] `HtmlForgeX.Email` renders tree content through the CanopyX static renderer, because email clients run no script.
 
@@ -191,7 +191,7 @@ Consumers: an Active Directory users and computers browser (ADPlayground and Tes
 - [ ] Master-detail layout and a property sheet for the selected node.
 - [ ] Column chooser and saved views.
 - [ ] Filter builder.
-- [ ] Context actions that call host-provided, host-governed write hooks. CanopyX never performs a write itself.
+- [x] Context actions that call host-provided, host-governed write hooks. CanopyX never performs a write itself.
 - [ ] Remote sources with 1,000,000 rows.
 
 Gate: the directory browser runs on the TestimoX L directory fixture (1.5 million objects) and the certificates overview on 1 million issued certificates from the TestimoX scale fixtures, both without product code in CanopyX, and every write goes through a host hook.
@@ -200,7 +200,7 @@ Gate: the directory browser runs on the TestimoX L directory fixture (1.5 millio
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.
 
-- [ ] Editing and drag and drop. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
+- [x] Editing and drag and drop. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
 - [ ] Documentation website built with PowerForge.Web.
 - [ ] Published benchmarks with reproducible commands.
 - [ ] Optional npm distribution of the built runtime for hosts that are not .NET.

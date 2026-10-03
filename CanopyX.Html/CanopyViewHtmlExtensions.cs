@@ -41,7 +41,8 @@ public static class CanopyViewHtmlExtensions {
     /// <remarks>
     /// With <see cref="CanopyAssetMode.External"/>, also write the assets with <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming, CanopyRuntime)"/>
     /// into the folder that <see cref="CanopyHtmlOptions.AssetBaseUrl"/> points to, under the naming of the options.
-    /// A view with checkboxes uses <see cref="CanopyRuntime.InteractiveTreeGrid"/>; other views use <see cref="CanopyHtmlOptions.Runtime"/>.
+    /// Checking, editing, drop, context actions, or translated interaction labels use <see cref="CanopyRuntime.InteractiveTreeGrid"/>;
+    /// other views use <see cref="CanopyHtmlOptions.Runtime"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="path"/> is null or empty.</exception>
     public static void SaveHtmlPage(this CanopyView view, string path, CanopyHtmlOptions? options = null) {

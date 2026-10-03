@@ -115,6 +115,8 @@ WriteTemplate("long-document.html", Path.Combine(output, "long-document.html"),
 CanopyHtmlAssets.WriteTo(Path.Combine(output, "checkbox-assets"), CanopyAssetNaming.ContentHash, CanopyRuntime.InteractiveTreeGrid);
 WriteTemplate("checkboxes.html", Path.Combine(output, "checkboxes.html"),
     CheckboxView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
+WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
+    InteractionView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 

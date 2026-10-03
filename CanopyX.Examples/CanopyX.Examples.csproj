@@ -20,5 +20,6 @@
     <EmbeddedResource Include="Templates\query-records.html" LogicalName="CanopyX.Examples.Templates.query-records.html" />
     <EmbeddedResource Include="Templates\long-document.html" LogicalName="CanopyX.Examples.Templates.long-document.html" />
     <EmbeddedResource Include="Templates\checkboxes.html" LogicalName="CanopyX.Examples.Templates.checkboxes.html" />
+    <EmbeddedResource Include="Templates\interactions.html" LogicalName="CanopyX.Examples.Templates.interactions.html" />
   </ItemGroup>
 </Project>

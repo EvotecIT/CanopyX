@@ -196,6 +196,39 @@ Space checks the focused row; Control+Space or Command+Space keeps row selection
 
 The generated `checkboxes.html` example demonstrates lazy branches, paging, exceptions, keyboard controls, and saved choices.
 
+## Host Actions, Editing, and Moving Nodes
+
+The interactive runtime presents operations to hooks supplied by the host. It sends immutable IDs, complete paths, and proposed values; the host validates authorization and executes the operation against its own data.
+
+```csharp
+view.Columns[0].Editable = true;
+view.DragDrop = true;
+view.ContextActions.Add(new CanopyContextAction("inspect", "Inspect record"));
+```
+
+Page and bundle writers choose the interactive assets automatically. Fragment hosts include the interactive script and matching stylesheet once. Configure hooks before mounting:
+
+```js
+CanopyX.configure("records", {
+  canEdit: (node, column) => node.kind === "task",
+  canDrag: node => node.kind === "task",
+  onEdit: async (proposal, request) => {
+    // The host validates the path, column, value, and current authorization.
+    return await records.acceptEdit(proposal, request.signal);
+  },
+  onDrop: (proposal, request) => records.acceptMove(proposal, request.signal),
+  onAction: (proposal, request) => records.runAction(proposal, request.signal)
+});
+```
+
+Hooks return `true` for acceptance or `false` for rejection, directly or through a promise. Exceptions report failure. Each request supplies an abort signal, its reason, and the current remote query and dataset revision when applicable. The default deadline is 30 seconds; `interactionTimeoutMs` sets a positive deadline. Cancellation, a newer proposal, destruction, or replacement of affected data retires pending work. Hosts observe cancellation before committing their own writes.
+
+Alt+Enter opens an editor for an editable cell; F2 retains cell navigation. Right-click, the Menu key, or Shift+F10 opens actions. The menu provides move destinations, including before and after a node. Control+Shift+X marks a node or its selected group for moving; Control+Shift+V proposes moving into the destination. Native internal drag offers the same placements. A missing hook makes its operation unavailable. `canEdit`, `canDrag`, `canDrop`, and `isActionEnabled` provide synchronous eligibility; the host still enforces authorization.
+
+The API exposes `beginEdit(nodeId, columnId)`, `openActions(nodeId)`, `requestEdit(nodeId, columnId, value)`, `requestDrop(nodeIds, targetId, placement)`, `requestAction(nodeId, actionId)`, and `cancelInteraction()`. Request methods resolve to an acceptance boolean and accept an optional `{ signal, reason }` argument. Edit values are finite JSON scalars. A drop uses loaded nodes, excludes nested sources when their ancestor is also moved, and rejects a destination within the source subtree. An API drop into the root uses `null` with `"inside"`.
+
+Cancelable `canopyx:beforeedit`, `canopyx:beforedrop`, and `canopyx:beforeaction` events can veto a proposal before execution. `canopyx:edit`, `canopyx:drop`, and `canopyx:action` report `{ proposal, accepted, reason }`. After acceptance, the host supplies fresh data through `applyCounts` or `reload`; return from the hook before refreshing affected data so the operation can report its accepted result. The `interactions.html` example demonstrates this flow, host rejection, and keyboard controls. Translations for these controls are properties of `CanopyLabels`.
+
 ## Documentation
 
 For hosted data, `CanopySource.RemoteQuery` lets endpoints sort and filter the complete dataset before paging. Every supplied endpoint receives `{viewQuery}` and returns its dataset revision. In the browser, `await grid.sort("value", "desc")` or `await grid.setActiveFilters(["flagged"])` stages a replacement while accepted rows remain visible. Failed queries keep the old view, and stale pages cannot mix revisions. The [remote query contract](docs/data-protocol.md#queries-before-remote-paging) describes request fields, events, cancellation, and selection semantics; `query-records.html` demonstrates the host source.

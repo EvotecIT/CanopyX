@@ -51,7 +51,9 @@ internal static class CanopyHtmlWriter {
     internal static CanopyRuntime RuntimeFor(CanopyView view, CanopyHtmlOptions options) {
         if (options.Runtime != CanopyRuntime.TreeGrid && options.Runtime != CanopyRuntime.InteractiveTreeGrid)
             throw new ArgumentOutOfRangeException(nameof(options), "Unknown browser runtime.");
-        return view.Checkboxes == CanopyCheckboxMode.None ? options.Runtime : CanopyRuntime.InteractiveTreeGrid;
+        if (view.Checkboxes != CanopyCheckboxMode.None || view.DragDrop || view.ContextActions.Count > 0 || view.Labels.RequiresInteractiveRuntime) return CanopyRuntime.InteractiveTreeGrid;
+        foreach (var column in view.Columns) if (column.Editable) return CanopyRuntime.InteractiveTreeGrid;
+        return options.Runtime;
     }
 
     private static string Head(CanopyView view, CanopyHtmlOptions options) {

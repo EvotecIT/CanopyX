@@ -205,7 +205,7 @@ dateTexts.set(value, texts);
 return texts;
 }
 
-const DEFAULT_LABELS = Object.freeze({
+let DEFAULT_LABELS = Object.freeze({
 searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
 searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
 searchNoResults: "No results", searchTooShort: "Type at least {min} characters",

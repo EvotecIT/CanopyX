@@ -205,7 +205,7 @@ dateTexts.set(value, texts);
 return texts;
 }
 
-const DEFAULT_LABELS = Object.freeze({
+let DEFAULT_LABELS = Object.freeze({
 searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
 searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
 searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
@@ -4911,6 +4911,498 @@ this.checkRevision++;
 super.destroy();
 this.checks = null;
 }
+};
+function interactionSettings(options) {
+const view = options.view, ids = new Set();
+if (view.dragDrop !== undefined && typeof view.dragDrop !== "boolean") throw new Error("CanopyX: dragDrop must be a boolean.");
+for (const column of view.columns || []) {
+if (column.editable !== undefined && typeof column.editable !== "boolean") throw new Error("CanopyX: editable must be a boolean.");
+}
+if (view.contextActions !== undefined && !Array.isArray(view.contextActions)) throw new Error("CanopyX: contextActions must be an array.");
+const actions = (view.contextActions || []).map(action => {
+requireIdentifier(action && action.id, "action ID");
+if (ids.has(action.id) || typeof action.label !== "string" || !action.label.trim()) throw new Error("CanopyX: actions need unique IDs and visible labels.");
+ids.add(action.id);
+return Object.freeze({ id: action.id, label: action.label });
+});
+for (const name of ["onEdit", "onDrop", "onAction", "canEdit", "canDrag", "canDrop", "isActionEnabled"]) {
+if (options[name] != null && typeof options[name] !== "function") throw new Error("CanopyX: " + name + " must be a function.");
+}
+const timeout = options.interactionTimeoutMs === undefined ? 30000 : options.interactionTimeoutMs;
+if (!Number.isInteger(timeout) || timeout < 1 || timeout > MAX_PROTOCOL_INTEGER) throw new Error("CanopyX: interactionTimeoutMs must be a positive protocol integer.");
+return { actions, timeout };
+}
+
+function frozenPath(path) { return Object.freeze(path.slice()); }
+function scalarValue(value) {
+return value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value);
+}
+
+TreeGrid = class extends TreeGrid {
+constructor(host, options) {
+const settings = interactionSettings(options);
+super(host, options);
+this.interactions = settings;
+this.interactionRevision = 0;
+this.interactionPins = new Set();
+}
+
+interactionApi() {
+return Object.assign(super.interactionApi(), {
+requestEdit: (id, column, value, options) => this.requestEdit(id, column, value, options),
+requestDrop: (ids, target, placement, options) => this.requestDrop(ids, target, placement, options),
+requestAction: (id, action, options) => this.requestAction(id, action, options),
+cancelInteraction: () => this.cancelInteraction()
+});
+}
+
+cachePinned(w) {
+return super.cachePinned(w) || !!(this.interactionPins && this.interactionPins.has(w));
+}
+
+reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false, resetLazy = false) {
+if (!ordering && this.pendingInteraction) {
+const replaced = this.descendants(parent);
+if (this.interactionPins.has(parent) || Array.from(this.interactionPins).some(w => replaced.get(w.key) === w)) this.cancelInteraction();
+}
+return super.reconcileList(parent, items, total, next, positions, ordering, suppressExpansion, resetLazy);
+}
+
+retireWrapper(w) {
+if (this.interactionPins && this.interactionPins.has(w)) this.cancelInteraction();
+return super.retireWrapper(w);
+}
+
+applyCounts(doc, fromRefresh = false) {
+const operation = this.pendingInteraction;
+const result = super.applyCounts(doc, fromRefresh);
+if (operation && this.pendingInteraction === operation && doc.items.some(item =>
+Array.from(this.interactionPins).some(w => w.key === item.id))) this.cancelInteraction();
+return result;
+}
+
+interactionNode(id) {
+requireIdentifier(id, "interaction node ID");
+const w = this.keyMap.get(id);
+return w && !w._invalidated && !w.h.detail ? w : null;
+}
+
+eligible(name, ...args) {
+const predicate = this.opts[name];
+if (!predicate) return true;
+const result = predicate(...args);
+if (result && typeof result.then === "function") {
+Promise.resolve(result).catch(() => {});
+throw new Error("CanopyX: " + name + " must return synchronously.");
+}
+return result !== false;
+}
+
+async requestEdit(id, columnId, value, options) {
+if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+if (!scalarValue(value)) throw new Error("CanopyX: an edit value must be a finite JSON scalar.");
+const revision = this.interactionRevision, w = this.interactionNode(id);
+const index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
+if (!w || !column || !column.editable || !this.eligible("canEdit", w.h, column)) return false;
+const raw = this.cellOf(w.h, column, index), previous = isCellObject(raw) ? raw.value : raw;
+const proposal = Object.freeze({ nodeId: id, path: frozenPath(this.pathOf(w)), column: columnId,
+previous: previous === undefined ? null : previous, value });
+return this.dispatchProposal("edit", proposal, [w], revision, options, () => this.eligible("canEdit", w.h, column));
+}
+
+async requestDrop(ids, targetId, placement = "inside", options) {
+if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) throw new Error("CanopyX: a drop needs unique loaded node IDs.");
+if (!["inside", "before", "after"].includes(placement)) throw new Error("CanopyX: drop placement is inside, before, or after.");
+const revision = this.interactionRevision, nodes = ids.map(id => this.interactionNode(id));
+const target = targetId === null ? null : this.interactionNode(targetId);
+if (!this.view.dragDrop || nodes.some(w => !w) || targetId !== null && !target || targetId === null && placement !== "inside") return false;
+const targetPath = target ? this.pathOf(target) : [];
+if (nodes.some(w => targetPath.includes(w.key) || !this.eligible("canDrag", w.h))) return false;
+const roots = nodes.filter(w => !this.pathOf(w).slice(0, -1).some(id => ids.includes(id)));
+const proposal = Object.freeze({ nodes: Object.freeze(roots.map(w => Object.freeze({ nodeId: w.key, path: frozenPath(this.pathOf(w)) }))),
+target: Object.freeze({ nodeId: targetId, path: frozenPath(targetPath) }), placement });
+if (!this.eligible("canDrop", proposal)) return false;
+return this.dispatchProposal("drop", proposal, roots.concat(target || []), revision, options,
+() => roots.every(w => this.eligible("canDrag", w.h)) && this.eligible("canDrop", proposal));
+}
+
+async requestAction(id, actionId, options) {
+if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+const revision = this.interactionRevision, w = this.interactionNode(id);
+const action = this.interactions.actions.find(item => item.id === actionId);
+if (!w || !action || !this.eligible("isActionEnabled", w.h, action)) return false;
+const proposal = Object.freeze({ nodeId: id, path: frozenPath(this.pathOf(w)), action: actionId });
+return this.dispatchProposal("action", proposal, [w], revision, options, () => this.eligible("isActionEnabled", w.h, action));
+}
+
+async dispatchProposal(kind, proposal, nodes, revision, options, eligible) {
+const handler = this.opts["on" + kind[0].toUpperCase() + kind.slice(1)];
+if (!handler || this.destroyed || this.initializing || this.restoring || revision !== this.interactionRevision ||
+options && options.signal && options.signal.aborted) return false;
+const versions = nodes.map(w => ({ w, count: w.countRevision || 0, path: this.pathOf(w) }));
+this.cancelInteraction();
+const controller = new AbortController(), operation = { controller, proposal, kind };
+this.pendingInteraction = operation;
+this.interactionRevision++;
+this.interactionPins = new Set(nodes); this.cacheDirty = true;
+const navigation = navigationScope(this, [controller.signal, options && options.signal], true);
+const live = () => !navigation.cancelled() && this.pendingInteraction === operation && versions.every(({ w, count, path }) => {
+const current = this.pathOf(w);
+return !w._invalidated && this.keyMap.get(w.key) === w && (w.countRevision || 0) === count &&
+current.length === path.length && current.every((id, index) => id === path[index]);
+});
+const reason = options && options.reason || "api";
+let timer, timedOut = false;
+try {
+const event = new CustomEvent("canopyx:before" + kind, { bubbles: true, cancelable: true, detail: proposal });
+if (!this.host.dispatchEvent(event) || !live() || !eligible() || !live()) return false;
+timer = setTimeout(() => { timedOut = true; controller.abort(); }, this.interactions.timeout);
+const context = Object.freeze({ signal: navigation.signal, reason,
+query: this.queryAware ? this.getQuery() : null, revision: this.datasetRevision == null ? null : this.datasetRevision });
+const accepted = await navigation.wait(handler(proposal, context));
+if (timedOut) throw new Error("CanopyX: interaction timed out after " + this.interactions.timeout + " milliseconds.");
+if (!live()) return false;
+if (typeof accepted !== "boolean") throw new Error("CanopyX: a host interaction hook must return a boolean acceptance result.");
+this.emit(kind, { proposal, accepted, reason });
+return accepted;
+} catch (error) {
+if (timedOut) throw new Error("CanopyX: interaction timed out after " + this.interactions.timeout + " milliseconds.");
+if (navigation.cancelled()) return false;
+throw error;
+} finally {
+clearTimeout(timer); navigation.dispose(); controller.abort();
+if (this.pendingInteraction === operation) {
+this.pendingInteraction = null; this.interactionPins.clear(); this.cacheDirty = true;
+this.scheduleRender();
+}
+}
+}
+
+cancelInteraction() {
+if (!this.pendingInteraction) return false;
+this.pendingInteraction.controller.abort(); this.pendingInteraction = null;
+this.interactionRevision++; this.interactionPins.clear(); this.cacheDirty = true;
+this.scheduleRender();
+return true;
+}
+
+destroy() {
+this.cancelInteraction();
+super.destroy();
+this.interactions = null;
+if (this.interactionPins) this.interactionPins.clear();
+}
+};
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+actions: "Actions", editValue: "Edit {column}", saveEdit: "Save", cancelEdit: "Cancel", invalidEdit: "Enter a valid {column} value.",
+interactionPending: "Waiting for the host…", interactionRejected: "The host declined the operation.",
+interactionFailed: "Operation failed: {error}", markMove: "Move this node", moveHere: "Move here",
+moveBefore: "Move before", moveAfter: "Move after", cancelMove: "Cancel move"
+}));
+
+TreeGrid = class extends TreeGrid {
+build() {
+super.build();
+this.interactionUiLifetime = new AbortController();
+const signal = this.interactionUiLifetime.signal;
+this.grid.addEventListener("scroll", () => this.closeInteractionPanel(false), { signal, passive: true });
+global.addEventListener("resize", () => this.closeInteractionPanel(false), { signal });
+document.addEventListener("pointerdown", event => {
+if (this.interactionPanel && !this.interactionPanel.contains(event.target)) this.closeInteractionPanel(false);
+}, { signal });
+this.grid.addEventListener("contextmenu", event => {
+const row = event.target.closest(".cx-row");
+if (row && row._w && !hostControl(event.target) && this.openActionMenu(row._w, row)) event.preventDefault();
+}, { signal });
+}
+
+interactionApi() {
+return Object.assign(super.interactionApi(), {
+beginEdit: (id, column) => this.beginEdit(id, column),
+openActions: id => { const w = this.interactionNode(id); return !!w && this.openActionMenu(w, this.rendered.get(w)); }
+});
+}
+
+openInteractionPanel(w, anchor, role, label) {
+this.closeInteractionPanel(false);
+if (this.destroyed || !anchor || !anchor.isConnected) return null;
+const panel = this.interactionPanel = h("div", "cx-interaction-panel");
+panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
+this.panelNode = w;
+this.host.appendChild(panel);
+return panel;
+}
+
+placeInteractionPanel(anchor) {
+const panel = this.interactionPanel;
+if (!panel) return;
+const rect = anchor.getBoundingClientRect(), bounds = panel.getBoundingClientRect();
+panel.style.left = Math.max(8, Math.min(rect.left, global.innerWidth - bounds.width - 8)) + "px";
+const below = global.innerHeight - rect.bottom - 8, above = rect.top - 8;
+const top = below >= Math.min(bounds.height, 120) || below >= above ? rect.bottom : rect.top - bounds.height;
+panel.style.top = Math.max(8, Math.min(top, global.innerHeight - bounds.height - 8)) + "px";
+}
+
+closeInteractionPanel(restoreFocus = true) {
+if (!this.interactionPanel) return;
+const w = this.panelNode;
+this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+if (this.editorController) this.editorController.abort();
+this.editorController = null;
+this.interactionPanel.remove(); this.interactionPanel = null; this.panelNode = null;
+if (restoreFocus && !this.destroyed && w && this.keyMap.get(w.key) === w && !w._invalidated) this.setFocus(w);
+}
+
+async performInteraction(work) {
+const revision = this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+setText(this.live, this.labels.interactionPending);
+try {
+const accepted = await work();
+if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, accepted ? "" : this.labels.interactionRejected);
+return accepted;
+} catch (error) {
+if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
+return false;
+}
+}
+
+beginEdit(id, columnId) {
+if (this.destroyed || this.initializing || this.restoring || !this.opts.onEdit) return false;
+const w = this.interactionNode(id), index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
+if (!w || !column || !column.editable || column.hidden || !this.eligible("canEdit", w.h, column)) return false;
+const row = this.rendered.get(w);
+if (!row || !row.isConnected) return false;
+const label = fill(this.labels.editValue, { column: column.title });
+const panel = this.openInteractionPanel(w, row, "dialog", label);
+if (!panel) return false;
+const controller = this.editorController = new AbortController();
+const raw = this.cellOf(w.h, column, index), value = isCellObject(raw) ? raw.value : raw;
+const input = h("input", "cx-editor"); input.type = typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : "text";
+if (input.type === "number") { input.step = "any"; input.required = true; }
+input.checked = value === true;
+input.value = value == null ? "" : String(value); input.setAttribute("aria-label", label);
+const controls = h("div", "cx-interaction-buttons");
+const save = h("button"), cancel = h("button"); save.type = cancel.type = "button";
+setText(save, this.labels.saveEdit); setText(cancel, this.labels.cancelEdit);
+const title = h("div", "cx-interaction-title"); setText(title, label);
+controls.append(save, cancel); panel.append(title, input, controls);
+const submit = async () => {
+if (save.disabled) return;
+let next = input.type === "checkbox" ? input.checked : input.value;
+if (typeof value === "number") {
+if (!input.value.trim() || !Number.isFinite(Number(input.value))) {
+input.setCustomValidity(fill(this.labels.invalidEdit, { column: column.title })); input.reportValidity(); return;
+}
+next = Number(input.value);
+}
+input.setCustomValidity(""); input.disabled = save.disabled = true;
+cancel.focus();
+const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }));
+if (this.interactionPanel !== panel) return;
+if (accepted) this.closeInteractionPanel();
+else { input.disabled = save.disabled = false; input.focus(); }
+};
+save.addEventListener("click", submit);
+cancel.addEventListener("click", () => this.closeInteractionPanel());
+panel.addEventListener("keydown", event => {
+if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); this.closeInteractionPanel(); }
+else if (event.key === "Enter" && event.target === input) { event.preventDefault(); submit(); }
+});
+this.placeInteractionPanel(row); input.focus(); if (input.type !== "checkbox") input.select();
+return true;
+}
+
+onKey(event) {
+if (!event.defaultPrevented && !event.isComposing && !hostControl(event.target)) {
+const row = event.target.closest(".cx-row"), w = row && row._w;
+if (w && !w.status && !w.h.detail) {
+if (event.key === "ContextMenu" || event.key === "F10" && event.shiftKey) {
+if (this.openActionMenu(w, row)) { event.preventDefault(); event.stopPropagation(); return; }
+}
+if (event.key === "Enter" && event.altKey) {
+const cell = event.target.closest(".cx-cell"), column = cell && cell.getAttribute("data-cx-column");
+const editable = this.columns.find(item => item.editable && !item.hidden && this.eligible("canEdit", w.h, item));
+if (this.beginEdit(w.key, column || editable && editable.id)) { event.preventDefault(); event.stopPropagation(); return; }
+}
+}
+}
+super.onKey(event);
+}
+
+destroy() {
+this.closeInteractionPanel(false);
+if (this.interactionUiLifetime) this.interactionUiLifetime.abort();
+super.destroy();
+this.interactionUiLifetime = null;
+}
+};
+TreeGrid = class extends TreeGrid {
+cachePinned(w) {
+return super.cachePinned(w) || this.panelNode === w || !!(this.moveNodes && this.moveNodes.includes(w));
+}
+
+reconcileList(parent, ...args) {
+const ordering = args[4] === true;
+if (!ordering) {
+this.moveNodes = null;
+if (this.panelNode && (parent === this.root || parent === this.panelNode || this.pathOf(this.panelNode).includes(parent.key)))
+this.closeInteractionPanel(false);
+}
+return super.reconcileList(parent, ...args);
+}
+
+retireWrapper(w) {
+if (this.panelNode === w) this.closeInteractionPanel(false);
+if (this.moveNodes && this.moveNodes.includes(w)) this.moveNodes = null;
+return super.retireWrapper(w);
+}
+
+applyCounts(doc, fromRefresh = false) {
+const panel = this.interactionPanel, node = this.panelNode, moving = this.moveNodes;
+const result = super.applyCounts(doc, fromRefresh);
+if (node && this.interactionPanel === panel && doc.items.some(item => item.id === node.key)) this.closeInteractionPanel(false);
+if (moving && this.moveNodes === moving && doc.items.some(item => moving.some(w => w.key === item.id))) this.moveNodes = null;
+return result;
+}
+
+applyStatePresentation(state) {
+this.closeInteractionPanel(false); this.moveNodes = null; this.cancelInteraction();
+return super.applyStatePresentation(state);
+}
+
+markMove(w) {
+if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
+const nodes = this.selected.has(w) ? Array.from(this.selected).filter(node => !node.h.detail) : [w];
+if (!nodes.length || !nodes.every(node => this.keyMap.get(node.key) === node && !node._invalidated && this.eligible("canDrag", node.h))) return false;
+this.moveNodes = nodes; this.cacheDirty = true;
+setText(this.live, this.labels.markMove);
+return true;
+}
+
+moveTarget(w) {
+if (!this.moveNodes || !w || w.status || w.h.detail || this.destroyed) return false;
+const path = this.pathOf(w);
+return this.moveNodes.every(node => !node._invalidated && this.keyMap.get(node.key) === node && !path.includes(node.key));
+}
+
+async moveTo(w, placement, reason = "menu") {
+if (!this.moveTarget(w)) return false;
+const nodes = this.moveNodes; this.moveNodes = null; this.cacheDirty = true;
+return this.performInteraction(() => this.requestDrop(nodes.map(node => node.key), w.key, placement, { reason }));
+}
+
+openActionMenu(w, anchor) {
+if (this.destroyed || this.initializing || this.restoring || !w || w.status || w.h.detail || !anchor || !anchor.isConnected) return false;
+const items = [];
+if (this.opts.onEdit) for (const column of this.columns) {
+if (column.editable && !column.hidden) items.push({ label: fill(this.labels.editValue, { column: column.title }),
+disabled: !this.eligible("canEdit", w.h, column), run: () => this.beginEdit(w.key, column.id) });
+}
+if (this.opts.onAction) for (const action of this.interactions.actions) items.push({ label: action.label,
+disabled: !this.eligible("isActionEnabled", w.h, action),
+run: () => this.performInteraction(() => this.requestAction(w.key, action.id, { reason: "menu" })) });
+if (this.view.dragDrop && this.opts.onDrop) {
+items.push({ label: this.labels.markMove, disabled: !this.eligible("canDrag", w.h), run: () => this.markMove(w) });
+if (this.moveNodes) {
+for (const [placement, label] of [["inside", "moveHere"], ["before", "moveBefore"], ["after", "moveAfter"]])
+items.push({ label: this.labels[label], disabled: !this.moveTarget(w), run: () => this.moveTo(w, placement) });
+items.push({ label: this.labels.cancelMove, run: () => { this.moveNodes = null; this.cacheDirty = true; } });
+}
+}
+if (!items.length || this.destroyed || w._invalidated || this.keyMap.get(w.key) !== w) return false;
+const panel = this.openInteractionPanel(w, anchor, "menu", this.labels.actions);
+if (!panel) return false;
+const buttons = items.map(item => {
+const button = h("button", "cx-action-item"); button.type = "button"; button.tabIndex = -1;
+button.setAttribute("role", "menuitem");
+if (item.disabled) button.setAttribute("aria-disabled", "true");
+setText(button, item.label);
+button.addEventListener("click", () => {
+if (item.disabled) return;
+this.closeInteractionPanel(); item.run();
+});
+panel.appendChild(button); return button;
+});
+panel.addEventListener("keydown", event => {
+const index = buttons.indexOf(document.activeElement);
+let target;
+if (event.key === "ArrowDown") target = buttons[(index + 1) % buttons.length];
+else if (event.key === "ArrowUp") target = buttons[(index + buttons.length - 1) % buttons.length];
+else if (event.key === "Home") target = buttons[0];
+else if (event.key === "End") target = buttons[buttons.length - 1];
+else if (event.key === "Escape") this.closeInteractionPanel();
+else if (event.key === "Tab") { this.closeInteractionPanel(); return; }
+else return;
+event.preventDefault(); event.stopPropagation(); if (target) target.focus();
+});
+this.placeInteractionPanel(anchor); buttons[0].focus();
+return true;
+}
+
+onKey(event) {
+if (!event.defaultPrevented && !event.isComposing && !hostControl(event.target) && event.ctrlKey && event.shiftKey && !event.altKey) {
+const row = event.target.closest(".cx-row"), w = row && row._w;
+if (event.key.toLowerCase() === "x" && this.markMove(w)) { event.preventDefault(); event.stopPropagation(); return; }
+if (event.key.toLowerCase() === "v" && this.moveTarget(w)) {
+event.preventDefault(); event.stopPropagation(); this.moveTo(w, "inside", "keyboard"); return;
+}
+}
+super.onKey(event);
+}
+
+destroy() { this.moveNodes = null; super.destroy(); }
+};
+TreeGrid = class extends TreeGrid {
+build() {
+super.build();
+const signal = this.interactionUiLifetime.signal;
+this.grid.addEventListener("scroll", () => this.clearDropRow(), { signal, passive: true });
+this.grid.addEventListener("dragstart", event => {
+const row = event.target.closest(".cx-row");
+if (!row || hostControl(event.target) || !event.dataTransfer || !this.markMove(row._w)) { event.preventDefault(); return; }
+this.dragLease = this.moveNodes;
+event.dataTransfer.effectAllowed = "move";
+event.dataTransfer.setData("application/x-canopyx-move", this.id);
+}, { signal });
+this.grid.addEventListener("dragover", event => {
+const row = event.target.closest(".cx-row");
+if (this.dragLease && event.dataTransfer && Array.from(event.dataTransfer.types).includes("application/x-canopyx-move") && row && this.moveTarget(row._w)) {
+event.preventDefault(); event.dataTransfer.dropEffect = "move";
+if (this.dropRow !== row) { this.clearDropRow(); this.dropRow = row; row.classList.add("cx-drop-target"); }
+row.setAttribute("data-cx-drop-placement", this.dropPlacement(event, row));
+} else this.clearDropRow();
+}, { signal });
+this.grid.addEventListener("drop", event => {
+const row = event.target.closest(".cx-row");
+if (!this.dragLease || !event.dataTransfer || event.dataTransfer.getData("application/x-canopyx-move") !== this.id || !row || !this.moveTarget(row._w)) return;
+event.preventDefault();
+const placement = this.dropPlacement(event, row);
+this.clearDropRow(); this.dragLease = null; this.moveTo(row._w, placement, "pointer");
+}, { signal });
+this.grid.addEventListener("dragend", () => {
+this.clearDropRow();
+if (this.dragLease) { this.moveNodes = null; this.cacheDirty = true; }
+this.dragLease = null;
+}, { signal });
+}
+
+paintRowState(row, w) {
+super.paintRowState(row, w);
+row.draggable = !!(this.view.dragDrop && this.opts.onDrop && !w.status && !w.h.detail);
+}
+
+clearDropRow() {
+if (this.dropRow) { this.dropRow.classList.remove("cx-drop-target"); this.dropRow.removeAttribute("data-cx-drop-placement"); }
+this.dropRow = null;
+}
+
+dropPlacement(event, row) {
+const bounds = row.getBoundingClientRect(), fraction = (event.clientY - bounds.top) / bounds.height;
+return fraction < 0.25 ? "before" : fraction > 0.75 ? "after" : "inside";
+}
+
+destroy() { this.clearDropRow(); this.dragLease = null; super.destroy(); }
 };
 
 function createTreeGrid(host, options) {

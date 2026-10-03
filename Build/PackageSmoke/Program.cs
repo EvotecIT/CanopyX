@@ -47,6 +47,15 @@ foreach (var name in new[] {
 }
 Require(CanopyStaticHtml.Render(view).Contains("aria-checked=\"true\"", StringComparison.Ordinal), "the static outline lost its checking intent");
 
+view.Checkboxes = CanopyCheckboxMode.None;
+view.CheckIntents.Clear();
+view.Columns[0].Editable = true;
+view.DragDrop = true;
+view.ContextActions.Add(new CanopyContextAction("inspect", "Inspect record"));
+var interactionPage = view.ToHtmlPage();
+Require(interactionPage.Contains("\"editable\":true", StringComparison.Ordinal) && interactionPage.Contains("\"contextActions\"", StringComparison.Ordinal), "interaction definitions are missing");
+Require(interactionPage.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid), StringComparison.Ordinal), "interaction definitions chose the wrong runtime");
+
 Console.WriteLine("CanopyX package smoke passed.");
 
 static void Require(bool condition, string failure) {
