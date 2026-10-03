@@ -47,6 +47,8 @@ The CSS import above uses the host's existing asset pipeline. A host without a b
 
 Module imports are safe during server rendering and leave the server's globals unchanged. Mounting, configuration, and DOM helpers run in the browser. On a page that mixes module and classic hosts, load the module or complete interactive script first; an already-loaded core script cannot be upgraded to support interaction methods. The module rejects that loading order explicitly. Include one matching runtime and stylesheet for the page.
 
+Typed hosts use `InlineView`, `SidecarView`, or `RemoteView` with the matching source factory. Inline roots use the recursive `InlineNode` shape; `CanopyNode` also supports lazy branches. A node chooses complete children or a lazy reference, and detail rows remain leaves. Query-aware custom sources return a dataset `revision` with every page, search result, and count update. Custom link parsers and formatters are supplied together.
+
 Build the local JavaScript archive with `npm pack --ignore-scripts --pack-destination <output-directory>` at the repository root, then install that tarball in a host. This packs the checked-in assets and declarations; it performs no compilation. Reassemble assets with `Build/Sync-Assets.ps1` after editing their canonical source. The browser quality loop packs and installs an isolated consumer, checks its types, and verifies server imports and browser module behavior.
 
 ### Building Against Local Source
