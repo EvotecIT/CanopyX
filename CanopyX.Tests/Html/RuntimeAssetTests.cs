@@ -166,7 +166,7 @@ public sealed class RuntimeAssetTests {
         Assert.Single(lines, line => line.TrimStart().StartsWith("/*", StringComparison.Ordinal));
     }
 
-    /// <summary>The comment stripping of Build/Sync-Assets.ps1: whole // lines and /* */ blocks, except the first block.</summary>
+    /// <summary>The asset assembly removes empty and comment lines, preserving the opening header.</summary>
     private static string WithoutCommentLines(string content) {
         var kept = new List<string>();
         var inBlock = false;
@@ -185,7 +185,7 @@ public sealed class RuntimeAssetTests {
                 continue;
             }
 
-            if (text.StartsWith("//", StringComparison.Ordinal)) {
+            if (text.Length == 0 || text.StartsWith("//", StringComparison.Ordinal)) {
                 continue;
             }
 
@@ -195,7 +195,7 @@ public sealed class RuntimeAssetTests {
             kept.Add(text);
         }
 
-        return string.Join("\n", kept);
+        return string.Join("\n", kept) + "\n";
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");

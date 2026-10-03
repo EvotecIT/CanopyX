@@ -269,14 +269,9 @@
 
     /** Changes part of the filter set atomically, retaining unrelated pending query changes. Additions win over removals. */
     updateActiveFilters(change) {
-      if (!change || typeof change !== "object") throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
-      const add = change.add === undefined ? [] : change.add;
-      const remove = change.remove === undefined ? [] : change.remove;
-      if (!Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
-      const declared = this.view.filters || [];
-      add.concat(remove).forEach(id => {
-        if (!declared.some(filter => filter.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
-      });
+      const { add = [], remove = [] } = change || {};
+      if (!change || typeof change !== "object" || !Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: filter changes need add/remove arrays.");
+      this.validateFilterIds(add.concat(remove));
       const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
       remove.forEach(id => next.delete(id)); add.forEach(id => next.add(id));
       return this.setActiveFilters(Array.from(next));
@@ -292,11 +287,16 @@
       this.applyActiveFilters(ids, new Set(ids));
     },
 
-    applyActiveFilters(named, next) {
+    validateFilterIds(ids) {
       const declared = this.view.filters || [];
-      named.forEach((id) => {
+      ids.forEach((id) => {
         if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
       });
+    },
+
+    applyActiveFilters(named, next) {
+      this.validateFilterIds(named);
+      const declared = this.view.filters || [];
       const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
       // The same set again leaves the rows as they are (branches collapsed under the filter stay collapsed), unless
       // a predicate of the host's replaced the declared filters meanwhile.

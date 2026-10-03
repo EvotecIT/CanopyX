@@ -126,7 +126,7 @@ function Remove-CommentLines {
             continue
         }
 
-        if ($text.StartsWith('//', $ordinal)) {
+        if ($text.Length -eq 0 -or $text.StartsWith('//', $ordinal)) {
             continue
         }
 
@@ -137,7 +137,7 @@ function Remove-CommentLines {
         $kept.Add($text)
     }
 
-    $kept -join "`n"
+    ($kept -join "`n") + "`n"
 }
 
 function ConvertTo-Module {

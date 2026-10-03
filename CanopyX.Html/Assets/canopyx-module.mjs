@@ -8,11 +8,9 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
  */
 (function (global) {
 "use strict";
-
 if (global.CanopyX) {
 return;
 }
-
 const PROTOCOL = "canopyx/2";
 const OVERSCAN = 8;
 const TYPEAHEAD_MS = 600;
@@ -29,7 +27,6 @@ const MAX_PROTOCOL_INTEGER = 2147483647;
 const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
 const activeGrids = new WeakMap();
 let instanceSeq = 0;
-
 function h(tag, className) {
 const element = document.createElement(tag);
 if (className) {
@@ -37,25 +34,20 @@ element.className = className;
 }
 return element;
 }
-
 function setText(element, value) {
 element.textContent = value == null ? "" : String(value);
 }
-
 function safeId(value) {
 return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
 }
-
 function validStructuralCount(value) {
 return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
 }
-
 function requireFlags(flags, name) {
 if (!Array.isArray(flags) || flags.some((flag) => typeof flag !== "string" || !flag.length)) {
 throw new Error("CanopyX: " + name + " must be an array of nonempty strings.");
 }
 }
-
 function checkDocument(doc, type) {
 if (!doc || typeof doc !== "object") {
 throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
@@ -93,7 +85,6 @@ if (Object.prototype.hasOwnProperty.call(item, "flags")) requireFlags(item.flags
 }
 return doc;
 }
-
 function validateSearchHit(hit) {
 if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
 throw new Error("CanopyX: search hit needs an ID path and string label.");
@@ -109,13 +100,11 @@ if ((Object.prototype.hasOwnProperty.call(hit, "kind") && typeof hit.kind !== "s
 throw new Error("CanopyX: search hit kind and context must be strings.");
 }
 }
-
 function validateSearchResult(result) {
 if (!result || !Array.isArray(result.hits)) throw new Error("CanopyX: search hits must be an array.");
 result.hits.forEach(validateSearchHit);
 return result;
 }
-
 function checkPage(doc, node) {
 checkDocument(doc, "page");
 if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
@@ -129,18 +118,14 @@ const parent = node ? node.id : null;
 if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
 return doc;
 }
-
 function isCellObject(cell) {
 return cell !== null && typeof cell === "object";
 }
-
 function cellValue(cell) {
 return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
 }
-
 const NO_TONE = { cls: "", host: null };
 const tones = new Map();
-
 function toneOf(name) {
 let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
 if (!tone) {
@@ -153,12 +138,10 @@ if (tones.size < 256) tones.set(name, tone);
 }
 return tone;
 }
-
 function applyTone(element, base, tone) {
 element.className = base + tone.cls;
 toneColors(element, tone);
 }
-
 function toneColors(element, tone) {
 if ((element._tone || null) === tone.host) {
 return;
@@ -172,7 +155,6 @@ element.style.removeProperty("--cx-t");
 element.style.removeProperty("--cx-t-bg");
 }
 }
-
 const numberFormats = new Map();
 function numberFormat(lang) {
 const key = lang || "";
@@ -188,13 +170,10 @@ numberFormats.set(key, format);
 }
 return format;
 }
-
 function pad2(value) {
 return value < 10 ? "0" + value : String(value);
 }
-
 const dateTexts = new Map();
-
 function dateText(value) {
 let texts = dateTexts.get(value);
 if (texts === undefined) {
@@ -208,7 +187,6 @@ dateTexts.set(value, texts);
 }
 return texts;
 }
-
 let DEFAULT_LABELS = Object.freeze({
 searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
 searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
@@ -221,7 +199,6 @@ showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show 
 pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
 utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
 });
-
 function labelsFor(...sources) {
 const labels = Object.assign({}, DEFAULT_LABELS);
 for (const source of sources) {
@@ -236,21 +213,17 @@ labels[name] = source[name];
 }
 return Object.freeze(labels);
 }
-
 function fill(template, values) {
 return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
 }
-
 function formatting(lang, local, labels) {
 const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
 return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
 }
-
 function formatDate(value, fmt) {
 const texts = dateText(value);
 return texts ? (fmt.local ? texts[1] : fmt.utc[0] + texts[0] + fmt.utc[1]) : String(value);
 }
-
 function otherZone(cell, column, fmt) {
 const value = cellValue(cell);
 if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
@@ -259,7 +232,6 @@ return null;
 const texts = dateText(value);
 return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
 }
-
 function formatValue(value, kind, fmt) {
 if (value === null || value === undefined) {
 return "";
@@ -275,16 +247,13 @@ return formatDate(value, fmt);
 }
 return String(value);
 }
-
 function cellText(cell, column, fmt) {
 if (isCellObject(cell) && typeof cell.text === "string") {
 return cell.text;
 }
 return formatValue(cellValue(cell), column.kind, fmt);
 }
-
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-
 function sortKey(cell, column) {
 let value = cellValue(cell);
 if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
@@ -307,7 +276,6 @@ return { rank: 0, value: time };
 }
 return { rank: 1, value: String(value) };
 }
-
 function compareKeys(a, b, direction) {
 if (a.rank !== b.rank) {
 return a.rank - b.rank;
@@ -318,7 +286,6 @@ return 0;
 const order = a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : collator.compare(a.value, b.value);
 return order * direction;
 }
-
 const EXTRA_FOLD_PAIRS = "//9BAGEAGgABAP//wADgABcAAQD//9gA+AAHAAEA//8AAQEBGAACAP//MgEzAQMAAgD//zkBOgEIAAIA//9KAUsBFwACAHgB/wD//3kBegEDAAIAgQFTAoIBgwGEAYUBhgFUAocBiAGJAVYCigFXAosBjAGOAd0BjwFZApABWwKRAZIBkwFgApQBYwKWAWkClwFoApgBmQGcAW8CnQFyAp8BdQL//6ABoQEDAAIApgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwB///LAcwBCQACAP//3gHfAQkAAgDxAfMB8gHzAfQB9QH2AZUB9wG/Af//+AH5ARQAAgAgAp4B//8iAiMCCQACADoCZSw7AjwCPQKaAT4CZixBAkICQwKAAUQCiQJFAowC//9GAkcCBQACAHADcQNyA3MDdgN3A38D8wOGA6wD//+IA60DAwABAIwDzAOOA80DjwPOA///kQOxAxEAAQD//6MDwwMJAAEAzwPXA///2APZAwwAAgD0A7gD9wP4A/kD8gP6A/sD///9A3sDAwABAP//AARQBBAAAQD//xAEMAQgAAEA//9gBGEEEQACAP//igSLBBsAAgDABM8E///BBMIEBwACAP//0ATRBDAAAgD//zEFYQUmAAEA//+gEAAtJgABAMcQJy3NEC0t//+gE3CrUAABAP//8BP4EwYAAQCJHIoc//+QHNAQKwABAP//vRz9EAMAAQD//wAeAR5LAAIAnh7fAP//oB6hHjAAAgD//wgfAB8IAAEA//8YHxAfBgABAP//KB8gHwgAAQD//zgfMB8IAAEA//9IH0AfBgABAP//WR9RHwQAAgD//2gfYB8IAAEA//+IH4AfCAABAP//mB+QHwgAAQD//6gfoB8IAAEAuB+wH7kfsR+6H3Afux9xH7wfsx///8gfch8EAAEAzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIf//YCFwIRAAAQCDIYQh//+2JNAkGgABAP//ACwwLDAAAQBgLGEsYixrAmMsfR1kLH0C//9nLGgsAwACAG0sUQJuLHECbyxQAnAsUgJyLHMsdSx2LH4sPwJ/LEAC//+ALIEsMgACAOss7CztLO4s8izzLP//QKZBphcAAgD//4CmgaYOAAIA//8ipyOnBwACAP//Mqczpx8AAgB5p3qne6d8p32neR3//36nf6cFAAIAi6eMp42nZQKQp5GnkqeTp///lqeXpwoAAgCqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6v//7SntacIAAIAxKeUp8WnggLGp44dx6fIp8mnyqfLp2QCzKfNp9Cn0af//9an16cDAAIA3KebAfWn9qf//yH/Qf8aAAEA";
 const EXTRA_LOWERCASE = new Map();
 const extraBytes = atob(EXTRA_FOLD_PAIRS);
@@ -331,7 +298,6 @@ else to = extraWord();
 for (let i = 0; i < count; i++) EXTRA_LOWERCASE.set(from + i * step, to + i * step);
 }
 const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
-
 function foldCode(c) {
 if (c < 0x80) {
 return c >= 65 && c <= 90 ? c + 32 : c;
@@ -360,15 +326,12 @@ return c + 0x30;
 if (GREEK_ACCENTED[c]) return GREEK_ACCENTED[c];
 return EXTRA_LOWERCASE.get(c) || c;
 }
-
 function foldUnit(unit) {
 return String.fromCharCode(foldCode(unit.charCodeAt(0)));
 }
-
 function isSeparator(code) {
 return code < 128 && !((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122));
 }
-
 function foldText(text) {
 const source = String(text == null ? "" : text);
 let out = "";
@@ -377,7 +340,6 @@ out += foldUnit(source.charAt(i));
 }
 return out;
 }
-
 function words(text) {
 const folded = foldText(text);
 const out = [];
@@ -397,23 +359,19 @@ out.push(current);
 }
 return out;
 }
-
 function matchesWords(labelWords, queryWords) {
 return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
 }
-
 function trimSeparators(text) {
 let start = 0, end = text.length;
 while (start < end && isSeparator(text.charCodeAt(start))) start++;
 while (end > start && isSeparator(text.charCodeAt(end - 1))) end--;
 return text.slice(start, end);
 }
-
 function rankLabel(label, foldedQuery) {
 const l = trimSeparators(foldText(label));
 return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
 }
-
 function shardKey(prefix) {
 let out = "";
 for (let i = 0; i < prefix.length; i++) {
@@ -422,14 +380,11 @@ out += (code >= 97 && code <= 122) || (code >= 48 && code <= 57) ? prefix.charAt
 }
 return out;
 }
-
 const sidecarDocs = new Map();
 const sidecarWaiters = new Map();
-
 function sidecarKey(view, ref) {
 return JSON.stringify([view, ref]);
 }
-
 function acceptSidecar(entry) {
 if (!Array.isArray(entry) || entry.length !== 3) {
 return;
@@ -443,7 +398,6 @@ waiter.resolve(entry[2]);
 sidecarDocs.set(key, entry[2]);
 }
 }
-
 const sidecarQueue = global.CanopyXSidecar = global.CanopyXSidecar || [];
 sidecarQueue.forEach(acceptSidecar);
 sidecarQueue.length = 0;
@@ -453,7 +407,6 @@ acceptSidecar(arguments[i]);
 }
 return 0;
 };
-
 function loadSidecar(base, view, ref) {
 if (ref.split("/").some((part) => part === "." || part === "..")) {
 return Promise.reject(new Error("Sidecar reference cannot contain a dot path component: " + ref));
@@ -494,16 +447,12 @@ waiter.reject(new Error("Sidecar file is missing: " + ref));
 document.head.appendChild(script);
 return waiter.promise;
 }
-
-
 function badIndex(what) {
 return new Error("CanopyX: search " + what + " does not match the manifest or is malformed.");
 }
-
 function isCount(value) {
 return Number.isInteger(value) && value >= 0;
 }
-
 function checkSearchIndex(index) {
 if (!index || !isCount(index.entryCount) || !Array.isArray(index.entryFiles) || !Array.isArray(index.kinds) ||
 !index.shards || typeof index.shards !== "object" || (index.entryCount > 0) !== (index.entryFiles.length > 0) ||
@@ -520,7 +469,6 @@ index.shardPacks.some((key, i) => typeof key !== "string" || !Object.prototype.h
 throw badIndex("index packs");
 }
 }
-
 function resolveShards(shards, keys, word) {
 const bases = keys.filter((key) => !/\.\d+$/.test(key));
 const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
@@ -534,7 +482,6 @@ if (length === word.length) return parts(deeper);
 }
 return [];
 }
-
 function recentCache(limit, loadDoc, maxBytes = Infinity, bytesOf = () => 0) {
 const cache = new Map();
 let bytes = 0;
@@ -559,9 +506,7 @@ return entry.pending;
 get.clear = () => { cache.clear(); bytes = 0; };
 return get;
 }
-
 const packBytes = pages => pages.reduce((bytes, text) => bytes + (typeof text === "string" ? text.length * 2 : 0), 0);
-
 function checkShard(doc, key, count, entryCount) {
 checkDocument(doc, "searchShard");
 if (doc.key !== key) throw badIndex("shard key");
@@ -581,7 +526,6 @@ if (last >= entryCount) throw badIndex("shard");
 if (total !== count) throw badIndex("shard posting count");
 return doc;
 }
-
 function mergePostings(lists) {
 const out = [];
 let ascending = true;
@@ -599,7 +543,6 @@ if (ascending) return out;
 out.sort((a, b) => a - b);
 return out.filter((value, i) => !i || value !== out[i - 1]);
 }
-
 function intersectPostings(a, b) {
 let j = 0;
 return a.filter((value) => {
@@ -607,7 +550,6 @@ while (j < b.length && b[j] < value) j++;
 return b[j] === value;
 });
 }
-
 function labelToken(folded) {
 let hash = 2166136261;
 for (let i = 0; i < folded.length; i++) {
@@ -615,11 +557,9 @@ hash = Math.imul(hash ^ folded.charCodeAt(i), 16777619);
 }
 return "\u0000" + ("0000000" + (hash >>> 0).toString(16)).slice(-8);
 }
-
 function entryReference(value) {
 return value === undefined || value === null || isIdentifier(value);
 }
-
 function entryFile(doc, first, count) {
 checkDocument(doc, "searchEntries");
 if (doc.first !== first || !Array.isArray(doc.stem) || !Array.isArray(doc.entries) || doc.entries.length !== count) throw badIndex("entry file");
@@ -649,7 +589,6 @@ kind: item[5] == null ? undefined : item[5], ref: item[6] || null, at: item[7] |
 return records.get(n);
 };
 }
-
 function entryHit(record, kinds) {
 const path = [];
 for (let r = record; r; r = r.parent) path.unshift(r.id);
@@ -663,7 +602,6 @@ if (parent) hit.context = parent.parent ? parent.parent.label + " / " + parent.l
 validateSearchHit(hit);
 return hit;
 }
-
 function entryFileOf(starts, n) {
 let low = 0;
 let high = starts.length - 1;
@@ -674,7 +612,6 @@ else high = mid - 1;
 }
 return low;
 }
-
 function sidecarSearch(load, manifest, hints) {
 const index = async () => (await manifest()).search;
 const loadPack = recentCache(PACK_CACHE, async (number) => {
@@ -710,7 +647,6 @@ const first = search.entryFiles[file];
 const end = file + 1 < search.entryFiles.length ? search.entryFiles[file + 1] : search.entryCount;
 return entryFile(await loadIndexDoc(search, "e", file), first, end - first);
 });
-
 async function postingsOf(search, keys, word) {
 const lists = [];
 for (const shard of await Promise.all(resolveShards(search.shards, keys, word).map(loadShard))) {
@@ -718,7 +654,6 @@ shard.words.forEach((indexed, i) => indexed.startsWith(word) && lists.push(shard
 }
 return mergePostings(lists);
 }
-
 async function run(query, queryWords, limit, sequence) {
 const search = await index();
 if (!search) {
@@ -769,7 +704,6 @@ ranked.hits.forEach((hit) => { for (let r = records.get(hit); r; r = r.parent) h
 }
 return ranked;
 }
-
 let latest = 0;
 return (query, limit) => {
 const queryWords = words(query);
@@ -789,22 +723,18 @@ throw err;
 });
 };
 }
-
-
 function slicePage(all, cursor, pageSize) {
 const offset = cursor ? Number(cursor) || 0 : 0;
 const items = all.slice(offset, offset + pageSize);
 const end = offset + items.length;
 return { items: items, total: all.length, next: end < all.length ? String(end) : null, offset: offset };
 }
-
 function rankHits(hits, query, limit) {
 const folded = trimSeparators(foldText(query));
 const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
 ranked.sort((a, b) => a.rank - b.rank || collator.compare(a.hit.label, b.hit.label));
 return { hits: ranked.slice(0, limit).map((item) => item.hit), total: hits.length, truncated: hits.length > limit };
 }
-
 function inlineSource(view) {
 const pageSize = view.pageSize || 100;
 const labelWords = new WeakMap();
@@ -849,7 +779,6 @@ return Promise.resolve(rankHits(hits, query, limit));
 }
 };
 }
-
 function sidecarSource(view) {
 const supplied = view.source.base;
 if (typeof supplied !== "string" || !supplied || /[?#]/.test(supplied)) throw new Error("CanopyX: sidecar base must be a folder path without a query or fragment.");
@@ -939,7 +868,6 @@ return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc
 search: sidecarSearch(load, manifest, hints)
 };
 }
-
 function remoteSource(view, options) {
 const source = view.source;
 if (source.queryAware !== undefined && typeof source.queryAware !== "boolean") throw new Error("CanopyX: queryAware must be a boolean.");
@@ -993,7 +921,6 @@ return Object.assign({ protocol: PROTOCOL, type: "counts", items: items }, sourc
 } : null
 };
 }
-
 function sourceFor(view, options) {
 const kind = view.source && view.source.kind;
 if (kind === "sidecar") {
@@ -1008,7 +935,6 @@ return inlineSource(view);
 }
 throw new Error("CanopyX: unknown source kind '" + kind + "'.");
 }
-
 async function remoteJson(url, type, timeoutMs, lifetime, signal) {
 const controller = new AbortController();
 const signals = Array.from(new Set([lifetime, signal].filter(Boolean)));
@@ -1035,7 +961,6 @@ clearTimeout(timer);
 signals.forEach((item) => item.removeEventListener("abort", abort));
 }
 }
-
 class TreeGrid {
 constructor(host, options) {
 const view = checkDocument(options.view, "view");
@@ -1109,7 +1034,6 @@ this.build();
 this.buildToolbar();
 this.ready = this.init();
 }
-
 async search(query, limit) {
 if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
 const navigation = navigationScope(this, this.dataLifetime.signal);
@@ -1120,7 +1044,6 @@ if (this.queryAware) snapshotRevision(result, this.datasetRevision);
 return validateSearchResult(result);
 } finally { navigation.dispose(); }
 }
-
 buildIcons(icons) {
 const templates = new Map();
 Object.keys(icons).forEach((key) => {
@@ -1131,7 +1054,6 @@ templates.set(key, holder);
 });
 return templates;
 }
-
 async init() {
 try {
 this.rootsReady = this.loadRoots();
@@ -1151,7 +1073,6 @@ this.emit("ready", {});
 this.scheduleRender();
 }
 }
-
 loadRoots() {
 if (!this.root.inlineItems) {
 return this.loadPage(this.root, null);
@@ -1166,11 +1087,9 @@ this.applySort(this.root, false);
 this.relayout();
 return Promise.resolve();
 }
-
 expandable(w) {
 return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length) || (w.inline && w.h.children.length)));
 }
-
 statusRow(parent, kind) {
 kind = parent.loading ? "loading" : parent.error ? "error" : kind;
 let row = parent._status;
@@ -1186,7 +1105,6 @@ parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.for
 row._v = 0;
 return row;
 }
-
 cellOf(node, column, index) {
 const cells = node.cells;
 if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
@@ -1194,7 +1112,6 @@ return cells[column.id];
 }
 return index === 0 ? node.label : undefined;
 }
-
 emit(name, detail) {
 if (this.destroyed) return;
 this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
@@ -1219,7 +1136,6 @@ for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
 }
 }
 },
-
 createWrapper(data, owner, position) {
 requireIdentifier(data.id, "node ID");
 if (data.ref != null) requireIdentifier(data.ref, "node reference");
@@ -1232,7 +1148,6 @@ content: nodeContent(data)
 this.keyMap.set(data.id, w);
 return w;
 },
-
 wrap(node, parent, index, suppressExpansion) {
 const initialExpansion = !suppressExpansion && !this.restoring;
 const root = this.createWrapper(node, parent, index);
@@ -1259,7 +1174,6 @@ return root;
 }
 });
 const LAYOUT_HOLD_MS = 250;
-
 Object.assign(TreeGrid.prototype, {
 matchState(w) {
 const pending = [{ node: w, visited: false }];
@@ -1282,7 +1196,6 @@ if (child._fm === undefined) pending.push({ node: child, visited: false });
 }
 return w._fm;
 },
-
 relayout(now) {
 if (this.destroyed) return;
 if (this.layoutHolds && !this.layoutLate && !now) {
@@ -1340,7 +1253,6 @@ this.grid.focus({ preventScroll: true });
 this.grid.tabIndex = rows.length ? -1 : 0;
 this.scheduleRender();
 },
-
 holdLayout() {
 if (!this.layoutHolds) {
 this.layoutTimer = setTimeout(() => {
@@ -1361,13 +1273,11 @@ this.layoutLate = false;
 return this.flushLayout();
 };
 },
-
 flushLayout() {
 if (!this.layoutDirty) return false;
 this.relayout(true);
 return true;
 },
-
 retop() {
 const top = this.logicalTop();
 const rows = this.rows;
@@ -1383,7 +1293,6 @@ this.tops = tops;
 this.total = y;
 this.syncScrollRange(top);
 },
-
 applySort(parent, deep) {
 if (this.queryAware) return;
 const pending = [parent];
@@ -1428,13 +1337,11 @@ this.trimInlineCache();
 function isIdentifier(value) {
 return typeof value === "string" && /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value);
 }
-
 function requireIdentifier(value, name) {
 if (!isIdentifier(value)) {
 throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
 }
 }
-
 function validateNodes(nodes, existing, inlineOnly = false) {
 if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
 const seen = new Set();
@@ -1478,7 +1385,6 @@ for (const child of node.children) pending.push(child);
 }
 }
 }
-
 function validatePage(page, existing, expectedOffset) {
 if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
 const items = page.items;
@@ -1503,7 +1409,6 @@ modelChildren(w) {
 const children = w.children || [];
 return w.inlineCache && w.inlineCache.size ? children.concat(Array.from(w.inlineCache.values())) : children;
 },
-
 inlinePage(w, cursor, count, supplied) {
 const source = supplied || (w === this.root ? w.inlineItems : w.h.children);
 let order = w.inlineOrder;
@@ -1523,7 +1428,6 @@ const positions = Array.from(order.indices.subarray(offset, end));
 return { items: positions.map(index => source[index]), positions, total: source.length,
 offset, next: end < source.length ? String(end) : null };
 },
-
 inlineReplacement(owner, items, positions) {
 const source = owner === this.root ? owner.inlineItems : owner.h.children;
 const prior = new Map(this.modelChildren(owner).map(w => [w.key, w]));
@@ -1533,14 +1437,12 @@ if (prior.has(data.id) && !attached.has(data.id)) { cached.push(data); extraPosi
 });
 return { items: items.concat(cached), positions: (positions || items.map((_, index) => index)).concat(extraPositions), attached: items.length };
 },
-
 retainInline(w, cached) {
 const retained = this.inlineRetained || (this.inlineRetained = new Map());
 w._cached = cached;
 if (cached) { retained.delete(w.key); retained.set(w.key, w); }
 else retained.delete(w.key);
 },
-
 trimInlineCache() {
 const retained = this.inlineRetained;
 if (!retained || !retained.size) return;
@@ -1572,7 +1474,6 @@ w === (focus && focus.status ? focus.parent : focus) || w === this.anchor ||
 this.pendingRestorationToggles && this.pendingRestorationToggles.has(w) ||
 filter && (filter.match(w.h) || filter.keep && filter.keep(w.h));
 },
-
 rememberInactive(w) {
 if (this.destroyed || w._invalidated) return;
 const cache = this.inactiveCache || (this.inactiveCache = new Set());
@@ -1580,7 +1481,6 @@ cache.delete(w);
 if (w !== this.root && w.children && (w.children.length || w.inlineCache && w.inlineCache.size) && !w.expanded) cache.add(w);
 this.cacheDirty = true;
 },
-
 trimInactiveCache() {
 if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds) return;
 this.cacheDirty = false;
@@ -1624,26 +1524,21 @@ throw new Error("CanopyX: query filters must be unique declared IDs.");
 const filters = Object.freeze((grid.view.filters || []).filter(f => named.has(f.id)).map(f => f.id));
 return Object.freeze({ version: 1, sort, filters });
 }
-
 function snapshotRevision(value, expected) {
 requireIdentifier(value && value.revision, "dataset revision");
 if (expected != null && value.revision !== expected) throw new Error("CanopyX: dataset revision changed; reload the roots before continuing.");
 return value.revision;
 }
-
 Object.assign(TreeGrid.prototype, {
 getQuery() {
 return { version: 1, sort: this.sortState && Object.assign({}, this.sortState), filters: Array.from(this.activeFilters) };
 },
-
 sourceRequest(signal) {
 return this.queryAware ? { signal: signal || this.dataLifetime.signal, query: this.acceptedQuery, revision: this.datasetRevision } : { signal };
 },
-
 syncQueryControls() {
 this.toolbar.querySelectorAll("[data-cx-filter]").forEach(input => { input.checked = this.activeFilters.has(input.getAttribute("data-cx-filter")); });
 },
-
 querySortHeader(id) {
 const query = this.pendingQuery || this.acceptedQuery, state = query.sort && query.sort.column === id ? query.sort.direction : null;
 this.sort(id, state === "asc" ? "desc" : state === "desc" ? null : "asc").catch(() => {});
@@ -1662,7 +1557,6 @@ if (this.anchor === w) this.anchor = null;
 return selected ? w : null;
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 build() {
 const host = this.host;
@@ -1731,11 +1625,9 @@ this.scheduleRender();
 });
 this.resizeObserver.observe(grid);
 },
-
 visibleColumns() {
 return this.columns.filter((column) => !column.hidden);
 },
-
 buildHeader() {
 const active = document.activeElement;
 const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
@@ -1797,7 +1689,6 @@ button.focus();
 }
 }
 },
-
 scheduleRender() {
 if (this.destroyed) return;
 if (!this.rafId) {
@@ -1807,7 +1698,6 @@ this.render();
 });
 }
 },
-
 rowAt(y) {
 const tops = this.tops;
 let lo = 0;
@@ -1822,12 +1712,10 @@ hi = mid - 1;
 }
 return Math.max(0, lo);
 },
-
 indexOf(w) {
 const i = w ? w._ri : undefined;
 return i !== undefined && this.rows[i] === w ? i : -1;
 },
-
 render() {
 let measured = false;
 for (let pass = 0; !this.destroyed; pass++) {
@@ -1841,7 +1729,6 @@ break;
 }
 return measured;
 },
-
 renderPass() {
 if (this.destroyed) {
 return;
@@ -1935,7 +1822,6 @@ if (held) this.restoreCell(held);
 this.trimInactiveCache();
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 applyWidths() {
 let sum = 0;
@@ -1959,7 +1845,6 @@ else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].sty
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
 },
-
 setColumnWidth(columnId, width) {
 const column = this.columns.find((c) => c.id === columnId);
 if (!column || !Number.isFinite(width)) {
@@ -1970,12 +1855,10 @@ column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
 this.applyWidths();
 this.stateChanged();
 },
-
 setTreeColumnPinned(pinned) {
 this.host.classList.toggle("cx-pin-tree", !!pinned);
 this.stateChanged();
 },
-
 startResize(e, column) {
 if (this.destroyed || e.button !== 0) return;
 if (this.cancelResize) this.cancelResize();
@@ -2004,7 +1887,6 @@ global.addEventListener("pointercancel", end);
 global.addEventListener("blur", stop);
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 keepDomOrder(first, last) {
 const ordered = [];
@@ -2079,13 +1961,11 @@ prev = ordered[k];
 }
 });
 const NATIVE_HEIGHT = 8000000;
-
 Object.assign(TreeGrid.prototype, {
 scrollRange() {
 const view = Math.max(0, this.grid.clientHeight - this.head.offsetHeight);
 return { logical: Math.max(0, this.total - view), native: Math.max(0, NATIVE_HEIGHT - view) };
 },
-
 logicalTop() {
 const physical = this.grid.scrollTop;
 if (!this.scaledScroll) return physical;
@@ -2094,7 +1974,6 @@ const point = this.scrollPosition;
 return Math.min(range.logical, point && point.native === physical ? point.logical :
 range.native ? physical * range.logical / range.native : 0);
 },
-
 setLogicalTop(value) {
 if (!this.scaledScroll) { this.grid.scrollTop = value; this.scrollPosition = null; return; }
 const range = this.scrollRange(), logical = Math.max(0, Math.min(range.logical, value));
@@ -2102,7 +1981,6 @@ this.grid.scrollTop = range.logical ? logical * range.native / range.logical : 0
 this.scrollPosition = { native: this.grid.scrollTop, logical };
 this.scheduleRender(); this.stateChanged();
 },
-
 syncScrollRange(top) {
 const scaled = this.total > NATIVE_HEIGHT;
 this.canvas.style.height = Math.min(this.total, NATIVE_HEIGHT) + "px";
@@ -2130,7 +2008,6 @@ this.touchScroll = null;
 }
 this.setLogicalTop(top);
 },
-
 scaledWheel(event) {
 if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable) return;
 if (this.nestedScroll(event.target, event.deltaY)) return;
@@ -2141,7 +2018,6 @@ event.preventDefault();
 this.grid.scrollLeft += event.deltaX * unit;
 this.setLogicalTop(next);
 },
-
 scaledTouch(event) {
 const start = this.touchScroll;
 if (!start || event.defaultPrevented || event.touches.length !== 1 || !event.cancelable) { this.touchScroll = null; return; }
@@ -2152,7 +2028,6 @@ const next = Math.max(0, Math.min(this.scrollRange().logical, start.top + dy));
 if (next === this.logicalTop()) return;
 event.preventDefault(); this.grid.scrollLeft = start.left + dx; this.setLogicalTop(next);
 },
-
 nestedScroll(target, delta) {
 for (let element = target; element && element !== this.grid; element = element.parentElement) {
 if (element.clientHeight && element.scrollHeight > element.clientHeight &&
@@ -2162,7 +2037,6 @@ if (element.clientHeight && element.scrollHeight > element.clientHeight &&
 return false;
 }
 });
-
 function setAttr(element, name, value) {
 const cache = element._attrs || (element._attrs = {});
 if (cache[name] === value) {
@@ -2175,7 +2049,6 @@ element.removeAttribute(name);
 element.setAttribute(name, value);
 }
 }
-
 function setClass(element, value) {
 if (element._cls !== value) {
 element.className = value;
@@ -2183,7 +2056,6 @@ element._cls = value;
 element._alt = false;
 }
 }
-
 Object.assign(TreeGrid.prototype, {
 fillRow(rowEl, w) {
 rowEl._w = w;
@@ -2207,7 +2079,6 @@ this.paintDetailRow(rowEl, w);
 this.paintNodeRow(rowEl, w);
 }
 },
-
 buildRow(rowEl, kind) {
 rowEl.textContent = "";
 ["aria-expanded", "aria-busy", "aria-setsize", "aria-posinset", "aria-selected", "data-cx-id", "data-cx-status", "data-kind"].forEach((name) => rowEl.removeAttribute(name));
@@ -2248,7 +2119,6 @@ slot.text = slot.textSpan.appendChild(document.createTextNode(""));
 return slot;
 });
 },
-
 paintStatusRow(rowEl, w) {
 setClass(rowEl, "cx-row cx-status cx-" + w.status);
 setAttr(rowEl, "data-cx-status", w.status);
@@ -2259,7 +2129,6 @@ if (slot.text.data !== w.h.label) {
 slot.text.data = w.h.label;
 }
 },
-
 paintDetailRow(rowEl, w) {
 const node = w.h;
 setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
@@ -2276,7 +2145,6 @@ this.renderDetail(node, cell);
 quietControls(cell);
 if (w.auto) this.measureNeeded = true;
 },
-
 paintNodeRow(rowEl, w) {
 const node = w.h;
 setClass(rowEl, "cx-row" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
@@ -2292,7 +2160,6 @@ this.paintTreeSlot(slot, w);
 this.paintSlot(slot, node, this.cols[i], this.columnIndex[i], w);
 }
 },
-
 paintRowState(rowEl, w) {
 const node = w.h;
 setAttr(rowEl, "data-cx-id", node.id);
@@ -2301,14 +2168,12 @@ setAttr(rowEl, "data-cx-status", null);
 setAttr(rowEl, "aria-selected", this.selected.has(w) ? "true" : "false");
 this.setPosition(rowEl, w);
 },
-
 refreshRowState(rowEl, w) {
 setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
 setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
 this.setPosition(rowEl, w);
 if (rowEl._kind === "node") this.paintTreeSlot(rowEl._cells[0], w);
 },
-
 setPosition(rowEl, w) {
 const parent = w.parent;
 const loaded = parent.children ? parent.children.length : 0;
@@ -2316,7 +2181,6 @@ const size = parent.childrenFiltered ? (parent.next ? -1 : parent.visibleCount) 
 setAttr(rowEl, "aria-setsize", String(size));
 setAttr(rowEl, "aria-posinset", String(w.pos));
 },
-
 paintTreeSlot(slot, w) {
 const level = w.level;
 if (slot.level !== level) {
@@ -2340,7 +2204,6 @@ slot.cell.insertBefore(slot.iconEl, slot.content);
 slot.iconKey = key;
 }
 },
-
 paintSlot(slot, node, column, index, w) {
 const value = this.cellOf(node, column, index);
 const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
@@ -2375,7 +2238,6 @@ slot.title = title;
 }
 this.paintBadges(slot, (index === 0 && node.badges) || null, object && value.badges ? value.badges : null);
 },
-
 paintBadges(slot, first, second) {
 const count = (first ? first.length : 0) + (second ? second.length : 0);
 for (let k = 0; k < count; k++) {
@@ -2408,7 +2270,6 @@ while (slot.badges.length > count) {
 slot.badges.pop().remove();
 }
 },
-
 setTimeZone(zone) {
 if (zone !== "local" && zone !== "utc") {
 throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
@@ -2422,13 +2283,11 @@ this.version++;
 this.scheduleRender();
 this.stateChanged();
 },
-
 cell(rowEl, index, width, kind) {
 const cell = this.newCell(index, width, kind);
 rowEl.appendChild(cell);
 return cell;
 },
-
 newCell(index, width, kind) {
 const cell = h("div", "cx-cell" + (kind ? " cx-kind-" + kind : ""));
 cell.setAttribute("role", "gridcell");
@@ -2437,8 +2296,6 @@ cell.style.width = width + "px";
 return cell;
 }
 });
-
-
 function badgeElement(badge) {
 const span = h("span");
 applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
@@ -2446,7 +2303,6 @@ setText(span, badge.text);
 if (badge.title) span.title = badge.title;
 return span;
 }
-
 function hostBadge(badge) {
 if (!badge || typeof badge !== "object" || typeof badge.text !== "string" ||
 (badge.tone != null && typeof badge.tone !== "string") || (badge.title != null && typeof badge.title !== "string")) {
@@ -2454,7 +2310,6 @@ throw new Error("CanopyX: badge needs { text, tone?, title? } with string values
 }
 return badgeElement(badge);
 }
-
 function attributeShape(element) {
 let shape = "";
 for (const attribute of element.attributes) {
@@ -2462,7 +2317,6 @@ shape += attribute.name + "=" + attribute.value + "\n";
 }
 return shape;
 }
-
 Object.assign(TreeGrid.prototype, {
 paintHostSlot(slot, node, column, index, w) {
 const tree = slot.content !== slot.cell;
@@ -2502,7 +2356,6 @@ fresh.appendChild(slot.textSpan);
 }
 return slot.mode;
 },
-
 setSlotContent(slot, element, tree) {
 slot.content = element;
 if (!tree) {
@@ -2510,10 +2363,8 @@ slot.cell = element;
 }
 }
 });
-
 const detailColumn = { kind: "text" };
 const DETAIL_ESTIMATE_SLOTS = 16;
-
 function detailCell(tag, cell, fmt) {
 const element = h(tag);
 setText(element, cellText(cell, detailColumn, fmt));
@@ -2528,7 +2379,6 @@ element.title = cell.title;
 }
 return element;
 }
-
 Object.assign(TreeGrid.prototype, {
 renderDetail(node, element, plainHtml = false) {
 const body = element.appendChild(h("div", "cx-detail-body"));
@@ -2583,7 +2433,6 @@ if (plainHtml) setText(body, detail.html || "");
 else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
 }
 },
-
 detailHeight(detail) {
 if (detail.height > 0) {
 return detail.height * this.rowH;
@@ -2591,7 +2440,6 @@ return detail.height * this.rowH;
 const slots = detail.type === "table" ? (detail.rows || []).length + (detail.caption ? 2 : 1) : detail.type === "properties" ? (detail.items || []).length : 6;
 return Math.max(1, Math.min(DETAIL_ESTIMATE_SLOTS, slots)) * this.rowH;
 },
-
 observeDetail(rowEl, auto) {
 if (!!rowEl._auto === auto) {
 return;
@@ -2610,7 +2458,6 @@ this.measureNeeded = true;
 this.detailObserver.unobserve(rowEl);
 }
 },
-
 measureDetails() {
 if (!this.measureNeeded) {
 return false;
@@ -2636,7 +2483,6 @@ this.setLogicalTop(top + shift);
 return changed;
 }
 });
-
 function hostControl(target) {
 const row = target.closest(".cx-row");
 const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
@@ -2711,7 +2557,6 @@ e.preventDefault();
 e.stopPropagation();
 }
 },
-
 activate(w, enter) {
 if (w.status === "more") {
 this.loadMore(w.parent);
@@ -2731,12 +2576,10 @@ if (accepted && deferred && revision === this.selectionRevision)
 this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h), revision);
 }
 },
-
 async retryPage(status) {
 const parent = status.parent;
 await this.loadStatusPage(parent, status, parent.next || null);
 },
-
 typeAhead(e, i) {
 if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) {
 return false;
@@ -2756,23 +2599,19 @@ break;
 }
 return true;
 },
-
 announce(message) {
 setText(this.live, message);
 }
 });
-
 const CELL_CONTROLS = "a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])," +
 "[role=button],[role=checkbox],[role=radio],[role=link],[role=switch],[role=tab],[role=menuitem],[role=textbox],[role=combobox]";
 const OWN_ARROWS = ".cx-detail-body,textarea,select,[contenteditable]:not([contenteditable=false]),[aria-activedescendant]," +
 "[role=textbox],[role=combobox],[role=spinbutton],[role=slider],[role=radio],[role=tab],[role=menuitem],[role=listbox],[role=tree],[role=grid]," +
 "input:not([type=button]):not([type=checkbox]):not([type=submit]):not([type=reset]):not([type=image]):not([type=file]):not([type=color])";
-
 function reachable(control) {
 return !control.matches(":disabled") && !control.closest("[inert],[aria-hidden=true]") &&
 (control.checkVisibility ? control.checkVisibility({ visibilityProperty: true }) : control.getClientRects().length > 0);
 }
-
 function cellControls(cell) {
 const controls = Array.prototype.filter.call(cell.querySelectorAll(CELL_CONTROLS), (control) =>
 !control.classList.contains("cx-detail-body") && reachable(control));
@@ -2780,18 +2619,15 @@ const body = cell.querySelector(":scope > .cx-detail-body");
 if (body && (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)) controls.push(body);
 return controls;
 }
-
 function quietControls(cell) {
 cell.querySelectorAll(CELL_CONTROLS).forEach((control) => {
 if (control.tabIndex >= 0) control.tabIndex = -1;
 });
 }
-
 Object.assign(TreeGrid.prototype, {
 rowCells(rowEl) {
 return rowEl && rowEl._cells && rowEl._kind !== "status" ? rowEl._cells.map((slot) => slot.cell) : [];
 },
-
 enterCells(w) {
 const cells = this.rowCells(this.rendered.get(w));
 const index = cells.findIndex((cell) => cellControls(cell).length > 0);
@@ -2799,7 +2635,6 @@ if (index < 0) return false;
 this.focusCell(w, index, 0);
 return true;
 },
-
 focusCell(w, index, control, enter) {
 this.setFocus(w, false);
 const cells = this.rowCells(this.rendered.get(w));
@@ -2822,7 +2657,6 @@ if (target === cell) cell.setAttribute("tabindex", "-1");
 target.focus({ preventScroll: true });
 this.revealInRow(cell, target, cells[0]);
 },
-
 revealInRow(cell, target, treeCell) {
 const grid = this.grid;
 if (cell.parentNode && cell.parentNode._kind === "node") {
@@ -2847,7 +2681,6 @@ const box = target.getBoundingClientRect();
 if (box.top < top) this.setLogicalTop(this.logicalTop() - (top - box.top));
 else if (box.bottom > bottom) this.setLogicalTop(this.logicalTop() + Math.min(box.bottom - bottom, box.top - top));
 },
-
 revealInCell(cell, target) {
 if (target === cell || !cell.contains(target) || !cell.parentNode || cell.parentNode._kind !== "node") return;
 const outer = cell.getBoundingClientRect();
@@ -2858,7 +2691,6 @@ if (inner.left < start) cell.scrollLeft -= start - inner.left;
 else if (inner.right > end) cell.scrollLeft += Math.min(inner.right - end, inner.left - start);
 if (cell.scrollLeft) this.scrolledCell = cell;
 },
-
 settleCell(next) {
 const cell = this.scrolledCell;
 if (cell && !cell.contains(next || document.activeElement)) {
@@ -2866,14 +2698,12 @@ cell.scrollLeft = 0;
 this.scrolledCell = null;
 }
 },
-
 focusBeforeRows(event) {
 const previous = this.headRow.querySelector(".cx-hcell:last-child .cx-resize");
 if (!previous) return;
 event.preventDefault();
 previous.focus();
 },
-
 heldCell() {
 const active = document.activeElement;
 const rowEl = active && active.closest ? active.closest(".cx-row") : null;
@@ -2883,7 +2713,6 @@ const index = cells.findIndex((cell) => cell.contains(active));
 if (index < 0) return null;
 return { w: rowEl._w, index: index, control: active === cells[index] ? -1 : Array.prototype.indexOf.call(cells[index].querySelectorAll(CELL_CONTROLS), active) };
 },
-
 restoreCell(held) {
 const active = document.activeElement;
 if (!held || this.destroyed || (active && active !== document.body) || !this.rendered.has(held.w)) return;
@@ -2895,7 +2724,6 @@ if (target === cell) cell.setAttribute("tabindex", "-1");
 target.focus({ preventScroll: true });
 this.revealInCell(cell, target);
 },
-
 onCellKey(e) {
 const rowEl = e.target.closest(".cx-row");
 const w = rowEl && rowEl._w;
@@ -2990,7 +2818,6 @@ this.relayout();
 }
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 async toggle(w, expand, automatic = false) {
 if (this.destroyed || !w || w._invalidated || w.status || !this.expandable(w)) {
@@ -3027,7 +2854,6 @@ if (this.opts.onToggle) {
 this.opts.onToggle(w.h, w.expanded);
 }
 },
-
 loadPage(w, cursor) {
 if (this.destroyed || w._invalidated) return Promise.resolve();
 if (w.loading) {
@@ -3137,13 +2963,11 @@ if (!this.destroyed && !w._invalidated) { this.rememberInactive(w); this.schedul
 w._pending = run;
 return run;
 },
-
 async loadMore(w) {
 if (w.children && w.next) {
 await this.loadStatusPage(w, this.statusRow(w, "more"), w.next);
 }
 },
-
 setFocus(w, domFocus) {
 if (!w) {
 return;
@@ -3162,7 +2986,6 @@ rowEl.focus({ preventScroll: true });
 }
 this.stateChanged();
 },
-
 ensureVisible(w) {
 const i = this.indexOf(w);
 if (i < 0) {
@@ -3180,7 +3003,6 @@ this.setLogicalTop(y + height - viewHeight);
 }
 if (Math.abs(this.logicalTop() - before) > viewHeight) this.leanReveal();
 },
-
 leanReveal() {
 if (this.lean) return;
 this.lean = true;
@@ -3189,12 +3011,10 @@ this.lean = false;
 this.scheduleRender();
 }));
 },
-
 rowFromEvent(e) {
 const rowEl = e.target.closest(".cx-row");
 return rowEl && rowEl._w && !rowEl._w._invalidated ? rowEl._w : null;
 },
-
 onClick(e) {
 const w = this.rowFromEvent(e);
 if (!w) {
@@ -3222,14 +3042,12 @@ this.toggle(w);
 this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
 }
 },
-
 onDblClick(e) {
 const w = this.rowFromEvent(e);
 if (w && !w.status && !hostControl(e.target)) {
 this.toggle(w);
 }
 },
-
 setFilter(filter, options) {
 this.filter = typeof filter === "function" ? { match: filter } : filter || null;
 this.cacheDirty = true;
@@ -3237,36 +3055,31 @@ this.filterExpand = !!(options && options.autoExpand);
 this.keyMap.forEach((w) => { w.filterCollapsed = false; });
 this.relayout();
 },
-
 setFilterActive(id, active) {
 return this.updateActiveFilters(active ? { add: [id] } : { remove: [id] });
 },
-
 updateActiveFilters(change) {
-if (!change || typeof change !== "object") throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
-const add = change.add === undefined ? [] : change.add;
-const remove = change.remove === undefined ? [] : change.remove;
-if (!Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
-const declared = this.view.filters || [];
-add.concat(remove).forEach(id => {
-if (!declared.some(filter => filter.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
-});
+const { add = [], remove = [] } = change || {};
+if (!change || typeof change !== "object" || !Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: filter changes need add/remove arrays.");
+this.validateFilterIds(add.concat(remove));
 const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
 remove.forEach(id => next.delete(id)); add.forEach(id => next.add(id));
 return this.setActiveFilters(Array.from(next));
 },
-
 setActiveFilters(ids) {
 if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
 if (this.queryAware) return this.setQuery({ version: 1, sort: (this.pendingQuery || this.acceptedQuery).sort, filters: ids });
 this.applyActiveFilters(ids, new Set(ids));
 },
-
-applyActiveFilters(named, next) {
+validateFilterIds(ids) {
 const declared = this.view.filters || [];
-named.forEach((id) => {
+ids.forEach((id) => {
 if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
 });
+},
+applyActiveFilters(named, next) {
+this.validateFilterIds(named);
+const declared = this.view.filters || [];
 const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
 if (!changed && this.filter === this.declaredFilter) return;
 this.activeFilters = next;
@@ -3281,7 +3094,6 @@ this.declaredFilter = this.filter;
 if (changed) this.emit("filter", { active: Array.from(next) });
 this.stateChanged();
 },
-
 sort(columnId, direction) {
 if (this.queryAware) return this.setQuery({ version: 1, sort: direction ? { column: columnId, direction } : null, filters: (this.pendingQuery || this.acceptedQuery).filters });
 this.sortState = direction ? { column: columnId, direction: direction } : null;
@@ -3291,7 +3103,6 @@ this.applySort(this.root, true);
 this.relayout();
 this.stateChanged();
 },
-
 setColumnVisible(columnId, visible) {
 const index = this.columns.findIndex((c) => c.id === columnId);
 if (index <= 0) {
@@ -3307,7 +3118,6 @@ this.relayout();
 this.stateChanged();
 }
 });
-
 function navigationScope(grid, signal, dataBound = false) {
 const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
 const controller = new AbortController();
@@ -3323,7 +3133,6 @@ wait: (pending) => Promise.race([pending, stopped]),
 dispose: () => { signals.forEach((item) => item.removeEventListener("abort", abort)); controller.abort(); }
 };
 }
-
 Object.assign(TreeGrid.prototype, {
 async openForPath(w, navigation) {
 if (navigation.cancelled() || w._invalidated) return false;
@@ -3343,13 +3152,11 @@ await navigation.wait(this.expandInitial(w));
 }
 return !navigation.cancelled() && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
 },
-
 async expandPath(ids, options) {
 const navigation = navigationScope(this, options && options.signal, true);
 try { return await this.navigatePath(ids, options, navigation); }
 finally { navigation.dispose(); }
 },
-
 async navigatePath(ids, options, navigation) {
 const o = options || {};
 const cancelled = navigation.cancelled;
@@ -3385,7 +3192,6 @@ this.ensureVisible(w);
 }
 return w ? w.h : null;
 },
-
 async prefetchPath(ids, openLast, signal) {
 if (typeof this.source.prefetch !== "function") return;
 const opens = [];
@@ -3404,7 +3210,6 @@ await this.source.prefetch(opens, finds, this.sourceRequest(signal));
 } catch (err) {
 }
 },
-
 async openPath(ids, o, navigation) {
 const cancelled = navigation.cancelled;
 let parent = this.root;
@@ -3467,7 +3272,6 @@ next.clear(); next.add(w);
 }
 return this.commitSelection(next, w, { notify: !o.deferNotify, reason: "row", anchor: w, revision });
 },
-
 selectRange(w, revision = this.selectionRevision || 0) {
 const from = this.indexOf(this.anchor);
 const to = this.indexOf(w);
@@ -3481,11 +3285,9 @@ if (!node.status && !node._invalidated && this.isSelectable(node)) next.add(node
 }
 return this.commitSelection(next, w, { reason: "range", revision });
 },
-
 isSelectable(w) {
 return !this.opts.isSelectable || this.opts.isSelectable(w.h) !== false;
 },
-
 commitSelection(next, target, options) {
 if (this.destroyed) return false;
 const o = options || {};
@@ -3511,7 +3313,6 @@ this.selected = next;
 if (Object.prototype.hasOwnProperty.call(o, "anchor")) this.anchor = o.anchor;
 return this.selectionChanged(target, o.notify !== false);
 },
-
 setSelection(ids) {
 if (this.destroyed) return false;
 if (!Array.isArray(ids)) throw new Error("CanopyX: setSelection needs an array of loaded node ids.");
@@ -3526,7 +3327,6 @@ if (!this.multi && next.size > 1) throw new Error("CanopyX: this view allows onl
 const target = Array.from(next).pop() || null;
 return this.commitSelection(next, target, { reason: ids.length ? "api" : "clear", anchor: target });
 },
-
 selectAll(options) {
 if (this.destroyed) return false;
 if (!this.multi) throw new Error("CanopyX: selectAll requires multiple selection.");
@@ -3538,7 +3338,6 @@ const next = new Set(candidates.filter(w => !w.status && !w._invalidated && this
 const target = Array.from(next).pop() || null;
 return this.commitSelection(next, target, { reason: "all", anchor: target, revision });
 },
-
 selectionChanged(w, notify = true) {
 this.selectionRevision = (this.selectionRevision || 0) + 1;
 this.cacheDirty = true;
@@ -3554,7 +3353,6 @@ this.stateChanged();
 if (notify) this.notifySelection(w, nodes, revision);
 return revision === this.selectionRevision && !this.destroyed;
 },
-
 notifySelection(w, nodes, revision = this.selectionRevision) {
 const node = w ? w.h : null;
 this.emit("select", { node, nodes });
@@ -3573,7 +3371,6 @@ for (const child of this.modelChildren(w)) pending.push(child);
 }
 return found;
 },
-
 retirePage(w, reloadOwner, clearDeferred = true) {
 w.dataGeneration = (w.dataGeneration || 0) + 1;
 w.pageToken = null;
@@ -3584,7 +3381,6 @@ w.loading = false;
 if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController.abort();
 if (clearDeferred) w.pendingChildCount = null;
 },
-
 reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false, resetLazy = false) {
 const old = this.descendants(parent), retained = new Set(), incoming = new Set();
 const pendingData = items.slice();
@@ -3661,7 +3457,6 @@ parent.h.hasChildren = !!(parent.children.length || next || total > 0);
 this.relayout(true);
 if (removedSelection) this.selectionChanged(null);
 },
-
 async reload(id, options) {
 if (this.destroyed) return false;
 if (id == null && this.queryAware) return this.setQuery(this.acceptedQuery, Object.assign({}, options, { force: true }));
@@ -3722,14 +3517,12 @@ navigation.dispose(); controller.abort();
 if (parent.reloadController === controller) parent.reloadController = null;
 }
 },
-
 captureScrollAnchor() {
 const top = this.logicalTop();
 const index = this.rowAt(top);
 const w = this.rows[Math.min(index, this.rows.length - 1)];
 return w && !w.status ? { id: w.key, offset: top - this.tops[this.indexOf(w)] } : null;
 },
-
 restoreScrollAnchor(anchor) {
 const w = anchor && this.keyMap.get(anchor.id), index = this.indexOf(w);
 if (index >= 0) this.setLogicalTop(Math.max(0, this.tops[index] + anchor.offset));
@@ -3790,7 +3583,6 @@ this.queryController = null; this.pendingQuery = null; this.syncQueryControls();
 }
 }
 },
-
 applyQuerySnapshot(query, revision, items, total, next, anchor) {
 this.dataLifetime.abort(); this.dataLifetime = new AbortController();
 if (this.cancelSearch) this.cancelSearch();
@@ -3810,7 +3602,6 @@ fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
 this.stateChanged();
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 buildToolbar() {
 const bar = this.toolbar;
@@ -3840,7 +3631,6 @@ any = true;
 }
 bar.hidden = !any;
 },
-
 clearDeclaredFilters() {
 if (!this.activeFilters.size) {
 return;
@@ -3850,7 +3640,6 @@ this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.che
 this.emit("filter", { active: [] });
 this.stateChanged();
 },
-
 buildSearch(bar, options) {
 const box = h("div", "cx-search");
 const input = h("input", "cx-search-input");
@@ -4010,7 +3799,6 @@ box.appendChild(status);
 bar.appendChild(box);
 this.searchInput = input;
 },
-
 buildColumnChooser(bar) {
 const details = h("details", "cx-columns");
 const summary = h("summary");
@@ -4038,7 +3826,6 @@ details.addEventListener("toggle", flyout.position);
 this.disposeColumnChooser = flyout.dispose;
 }
 });
-
 function watchFlyout(anchorElement, panel, isOpen) {
 const position = () => {
 if (!isOpen()) return;
@@ -4069,7 +3856,6 @@ if (!Array.isArray(path) || !path.length) throw new Error("CanopyX: state paths 
 return path.map(id => { requireIdentifier(id, "state path ID"); return id; });
 });
 }
-
 Object.assign(TreeGrid.prototype, {
 getState() {
 const anchor = this.captureScrollAnchor(), anchorNode = anchor && this.keyMap.get(anchor.id);
@@ -4080,7 +3866,6 @@ timeZone: this.local ? "local" : "utc", pinTreeColumn: this.host.classList.conta
 focus: this.focused && !this.focused.status && !this.focused._invalidated ? this.pathOf(this.focused) : null,
 anchor: anchorNode ? { path: this.pathOf(anchorNode), offset: anchor.offset } : null };
 },
-
 readState(state) {
 if (!state || typeof state !== "object") return null;
 try {
@@ -4119,7 +3904,6 @@ result.anchor = { path: statePaths([state.anchor.path])[0], offset: state.anchor
 return result;
 } catch (error) { return null; }
 },
-
 applyStatePresentation(state) {
 if (!state.version) return;
 if (this.cancelResize) this.cancelResize();
@@ -4139,7 +3923,6 @@ this.buildHeader();
 this.applySort(this.root, true);
 if (!this.queryAware) this.setActiveFilters(state.filters);
 },
-
 async loadStatePaths(state, current) {
 const paths = state.selection.concat(state.focus ? [state.focus] : [], state.anchor ? [state.anchor.path] : []);
 const attached = new Set([state.focus, state.anchor && state.anchor.path].filter(Boolean).map(path => JSON.stringify(path)));
@@ -4154,7 +3937,6 @@ try { await this.expandPath(path, { select: false, focus: false, reveal: false, 
 catch (error) { /* Nodes removed since the snapshot are skipped. */ }
 }
 },
-
 applyStatePosition(state, current) {
 if (!state.version) return;
 const valid = path => {
@@ -4169,11 +3951,9 @@ const anchor = state.anchor && valid(state.anchor.path);
 if (anchor) this.restoreScrollAnchor({ id: anchor.key, offset: state.anchor.offset });
 }
 });
-
 function escapeHtml(value) {
 return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
 }
-
 Object.assign(TreeGrid.prototype, {
 pathOf(w) {
 const path = [];
@@ -4182,7 +3962,6 @@ path.push(node.key);
 }
 return path.reverse();
 },
-
 getExpandedPaths() {
 const out = [];
 const pending = this.modelChildren(this.root).slice().reverse();
@@ -4196,7 +3975,6 @@ for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
 }
 return out;
 },
-
 async setState(state) {
 if (this.destroyed) return false;
 state = this.readState(state);
@@ -4264,7 +4042,6 @@ if (!this.initializing) this.stateChanged();
 }
 }
 },
-
 async flushPendingToggles() {
 if (this.pendingToggleFlush) {
 try { await this.pendingToggleFlush; }
@@ -4300,11 +4077,9 @@ if (!this.destroyed) this.stateChanged();
 }
 }
 },
-
 stateKey() {
 return this.view.stateKey == null ? null : "canopyx:" + this.view.stateKey;
 },
-
 stateChanged() {
 const key = this.stateKey();
 if (this.destroyed || !key || this.restoring || this.initializing || this.replayingToggles) {
@@ -4319,7 +4094,6 @@ sessionStorage.setItem(key, JSON.stringify(this.getState()));
 }
 }, 250);
 },
-
 async restoreState() {
 const key = this.stateKey();
 if (!key) {
@@ -4333,11 +4107,9 @@ state = null;
 }
 await this.setState(state);
 },
-
 visibleRows() {
 return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
 },
-
 toOutline() {
 const cols = this.visibleColumns();
 const out = ["<table class=\"cx-outline-table\"><thead><tr>"];
@@ -4372,7 +4144,6 @@ out.push("</tr>");
 out.push("</tbody></table>");
 return out.join("");
 },
-
 invalidateChildren(w) {
 const pending = this.modelChildren(w).slice();
 let removedSelection = null;
@@ -4391,7 +4162,6 @@ w.error = null;
 w.expanded = false;
 return removedSelection;
 },
-
 applyCounts(doc, fromRefresh = false) {
 if (this.destroyed) return;
 checkDocument(doc, "counts");
@@ -4448,7 +4218,6 @@ this.applySort(this.root, true);
 this.relayout(removed);
 if (removedSelection) this.selectionChanged(removedSelection);
 },
-
 async refreshCounts(ids) {
 if (this.destroyed || !this.source.counts) {
 return null;
@@ -4473,16 +4242,13 @@ return captured && this.keyMap.get(item.id) === captured.w && captured.w.countRe
 return doc;
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 deepLinkName() {
 return "cx." + encodeURIComponent(this.view.id);
 },
-
 hashParams() {
 return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
 },
-
 currentLink() {
 if (this.opts.parseLink) {
 return (global.location.hash || "").replace(/^#/, "");
@@ -4491,7 +4257,6 @@ const prefix = this.deepLinkName() + "=";
 const param = this.hashParams().find((p) => p.startsWith(prefix));
 return param ? param.slice(prefix.length) : null;
 },
-
 readLocation() {
 if (this.destroyed) return Promise.resolve();
 if (this.initializing) {
@@ -4504,7 +4269,6 @@ return this.ready.then(() => undefined, () => undefined);
 }
 return this.openDeepLink();
 },
-
 openDeepLink() {
 const link = this.view.deepLink ? this.currentLink() : null;
 if (link !== this.link && this.linkOpening) this.linkOpening.abort();
@@ -4522,7 +4286,6 @@ if (this.linkTask && this.linkTask.promise === promise) this.linkTask = null;
 });
 return promise;
 },
-
 async openLink(link, current) {
 const navigation = navigationScope(this, current.signal, true);
 try {
@@ -4546,7 +4309,6 @@ this.linkOpening = null;
 current.abort();
 }
 },
-
 writeDeepLink(w, revision = this.selectionRevision) {
 if (!this.view.deepLink) {
 return;
@@ -4624,7 +4386,6 @@ this.disposeColumnChooser = null; this.disposeSearchFlyout = null;
 this.canvas.replaceChildren(); this.outline.replaceChildren();
 }
 });
-
 function checkIntentPath(path) {
 if (!Array.isArray(path) || !path.length) throw new Error("CanopyX: checking needs a complete node-ID path.");
 const seen = new Set();
@@ -4635,9 +4396,7 @@ seen.add(id);
 return id;
 });
 }
-
 function checkBranch() { return { value: null, mask: 0, children: new Map() }; }
-
 class CheckIntents {
 constructor(items, mode) {
 if (!Array.isArray(items)) throw new Error("CanopyX: checkIntents must be an array.");
@@ -4668,7 +4427,6 @@ pending.push({ branch, inherited, visited: true });
 for (const child of branch.children.values()) pending.push({ branch: child, inherited, visited: false });
 }
 }
-
 snapshot() {
 const result = [], pending = [{ branch: this.root, path: [] }];
 while (pending.length) {
@@ -4679,7 +4437,6 @@ for (let i = children.length - 1; i >= 0; i--) pending.push({ branch: children[i
 }
 return result;
 }
-
 state(path) {
 let branch = this.root, checked = false;
 for (const id of path) {
@@ -4689,7 +4446,6 @@ if (branch && branch.value !== null && this.mode === "hierarchical") checked = b
 if (this.mode === "independent") return !!branch && branch.value === true;
 return branch && (branch.mask & (checked ? 2 : 1)) ? "mixed" : checked;
 }
-
 with(path, checked) {
 const samePrefix = rule => path.every((id, index) => rule.path[index] === id);
 const items = this.snapshot().filter(rule => !(samePrefix(rule) && (this.mode === "hierarchical" || rule.path.length === path.length)));
@@ -4697,7 +4453,6 @@ items.push({ path: path.slice(), checked });
 return new CheckIntents(items, this.mode);
 }
 }
-
 TreeGrid = class extends TreeGrid {
 constructor(host, options) {
 const mode = options.view && options.view.checkboxes;
@@ -4709,7 +4464,6 @@ if (options[name] !== undefined && typeof options[name] !== "function") throw ne
 }
 super(host, options);
 }
-
 async init() {
 this.checkMode = this.view.checkboxes || null;
 this.checkRevision = 0;
@@ -4717,7 +4471,6 @@ this.checks = new CheckIntents(this.view.checkIntents === undefined ? [] : this.
 await super.init();
 this.paintCheckedRows();
 }
-
 interactionApi() {
 return {
 getCheckState: id => {
@@ -4729,16 +4482,13 @@ setChecked: (id, checked) => this.setChecked(id, checked),
 setCheckIntents: items => this.setCheckIntents(items)
 };
 }
-
 canCheck(w) {
 return !!this.checkMode && !w.status && !w.h.detail && !w._invalidated &&
 (!this.opts.isCheckable || this.opts.isCheckable(w.h) !== false);
 }
-
 checkSnapshot(model) {
 return Object.freeze(model.snapshot().map(item => Object.freeze({ path: Object.freeze(item.path), checked: item.checked })));
 }
-
 voteCheck(next, w, reason, revision) {
 const intents = this.checkSnapshot(next), previous = this.checkSnapshot(this.checks);
 const node = w ? w.h : null, context = Object.freeze({ previous, reason });
@@ -4755,7 +4505,6 @@ detail: Object.freeze({ node, intents, previous, reason }) });
 return this.host.dispatchEvent(event) && !this.destroyed && revision === this.checkRevision &&
 (!w || !w._invalidated && this.keyMap.get(w.key) === w && this.canCheck(w)) && revision === this.checkRevision;
 }
-
 commitCheck(next, w, reason, revision) {
 if (!this.voteCheck(next, w, reason, revision)) return false;
 this.checks = next;
@@ -4765,20 +4514,17 @@ this.stateChanged();
 this.notifyCheck(w, reason);
 return true;
 }
-
 notifyCheck(w, reason) {
 const model = this.checks;
 const detail = Object.freeze({ node: w ? w.h : null, intents: this.checkSnapshot(model), reason });
 if (this.opts.onCheck) this.opts.onCheck(detail.node, detail.intents, { reason });
 if (!this.destroyed && this.checks === model) this.emit("check", detail);
 }
-
 setCheckIntents(items) {
 if (this.destroyed || !this.checkMode || this.initializing || this.restoring) return false;
 const revision = this.checkRevision;
 return this.commitCheck(new CheckIntents(items, this.checkMode), null, "api", revision);
 }
-
 setChecked(id, checked, reason) {
 if (typeof checked !== "boolean") throw new Error("CanopyX: checked must be a boolean.");
 if (this.destroyed || !this.checkMode || this.initializing || this.restoring) return false;
@@ -4796,11 +4542,9 @@ next = next.with(this.pathOf(parent), values[0]);
 }
 return this.commitCheck(next, w, reason || "api", revision);
 }
-
 toggleCheck(w, reason) {
 return this.setChecked(w.key, this.checks.state(this.pathOf(w)) !== true, reason);
 }
-
 paintTreeSlot(slot, w) {
 super.paintTreeSlot(slot, w);
 if (!this.checkMode) return;
@@ -4812,7 +4556,6 @@ slot.check.tabIndex = -1;
 if (slot.check.nextSibling !== slot.content) slot.cell.insertBefore(slot.check, slot.content);
 this.paintCheck(slot.check, w);
 }
-
 paintCheck(input, w) {
 const value = this.checks.state(this.pathOf(w));
 input.checked = value === true;
@@ -4821,7 +4564,6 @@ setAttr(input, "aria-checked", value === "mixed" ? "mixed" : String(value));
 setAttr(input, "aria-label", w.h.label);
 input.disabled = this.initializing || this.restoring || !this.canCheck(w);
 }
-
 paintCheckedRows() {
 if (this.destroyed || !this.checkMode) return;
 for (const [w, row] of this.rendered) {
@@ -4829,7 +4571,6 @@ const input = row._kind === "node" && row._cells[0].check;
 if (input) this.paintCheck(input, w);
 }
 }
-
 onClick(event) {
 if (!event.defaultPrevented && event.target.classList.contains("cx-check")) {
 event.preventDefault();
@@ -4840,7 +4581,6 @@ return;
 }
 super.onClick(event);
 }
-
 onKey(event) {
 const row = event.target.closest(".cx-row");
 const w = row && row === event.target && this.rowFromEvent(event);
@@ -4855,13 +4595,11 @@ return;
 }
 super.onKey(event);
 }
-
 getState() {
 const state = super.getState();
 if (this.checkMode) { state.checkboxes = this.checkMode; state.checkIntents = this.checks.snapshot(); }
 return state;
 }
-
 toOutline() {
 const model = this.checks, items = this.rows.filter(w => !w.status).map(w =>
 ({ path: this.pathOf(w), label: w.h.label, detail: !!w.h.detail }));
@@ -4883,7 +4621,6 @@ rows[index].cells[0].prepend(marker);
 });
 return holder.innerHTML;
 }
-
 readState(state) {
 const result = super.readState(state);
 if (!result || !result.version) return result;
@@ -4896,7 +4633,6 @@ result.checkIntents = new CheckIntents(state.checkIntents === undefined ? [] : s
 return result;
 } catch (error) { return null; }
 }
-
 async setState(state) {
 const parsed = this.readState(state);
 if (!parsed || this.destroyed) return false;
@@ -4909,7 +4645,6 @@ return await operation;
 }
 finally { this.paintCheckedRows(); }
 }
-
 applyStatePresentation(state) {
 const owner = this.restoreController;
 super.applyStatePresentation(state);
@@ -4919,7 +4654,6 @@ this.checks = new CheckIntents(state.checkIntents, this.checkMode); this.checkRe
 this.paintCheckedRows(); this.notifyCheck(null, "restore");
 }
 }
-
 destroy() {
 this.checkRevision++;
 super.destroy();
@@ -4946,12 +4680,10 @@ const timeout = options.interactionTimeoutMs === undefined ? 30000 : options.int
 if (!Number.isInteger(timeout) || timeout < 1 || timeout > MAX_PROTOCOL_INTEGER) throw new Error("CanopyX: interactionTimeoutMs must be a positive protocol integer.");
 return { actions, timeout };
 }
-
 function frozenPath(path) { return Object.freeze(path.slice()); }
 function scalarValue(value) {
 return value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value);
 }
-
 TreeGrid = class extends TreeGrid {
 constructor(host, options) {
 const settings = interactionSettings(options);
@@ -4960,7 +4692,6 @@ this.interactions = settings;
 this.interactionRevision = 0;
 this.interactionPins = new Set();
 }
-
 interactionApi() {
 return Object.assign(super.interactionApi(), {
 requestEdit: (id, column, value, options) => this.requestEdit(id, column, value, options),
@@ -4969,11 +4700,9 @@ requestAction: (id, action, options) => this.requestAction(id, action, options),
 cancelInteraction: () => this.cancelInteraction()
 });
 }
-
 cachePinned(w) {
 return super.cachePinned(w) || !!(this.interactionPins && this.interactionPins.has(w));
 }
-
 reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false, resetLazy = false) {
 if (!ordering && this.pendingInteraction) {
 const replaced = this.descendants(parent);
@@ -4981,12 +4710,10 @@ if (this.interactionPins.has(parent) || Array.from(this.interactionPins).some(w 
 }
 return super.reconcileList(parent, items, total, next, positions, ordering, suppressExpansion, resetLazy);
 }
-
 retireWrapper(w) {
 if (this.interactionPins && this.interactionPins.has(w)) this.cancelInteraction();
 return super.retireWrapper(w);
 }
-
 applyCounts(doc, fromRefresh = false) {
 const operation = this.pendingInteraction;
 const result = super.applyCounts(doc, fromRefresh);
@@ -4994,7 +4721,6 @@ if (operation && this.pendingInteraction === operation && doc.items.some(item =>
 Array.from(this.interactionPins).some(w => w.key === item.id))) this.cancelInteraction();
 return result;
 }
-
 refreshCounts(ids) {
 if (!this.destroyed && this.source.counts && this.pendingInteraction) {
 const wanted = new Set(ids || this.rows.filter(w => !w.status).map(w => w.key));
@@ -5002,13 +4728,11 @@ if (Array.from(this.interactionPins).some(w => wanted.has(w.key))) this.cancelIn
 }
 return super.refreshCounts(ids);
 }
-
 interactionNode(id) {
 requireIdentifier(id, "interaction node ID");
 const w = this.keyMap.get(id);
 return w && !w._invalidated && !w.h.detail ? w : null;
 }
-
 eligible(name, ...args) {
 const predicate = this.opts[name];
 if (!predicate) return true;
@@ -5019,7 +4743,6 @@ throw new Error("CanopyX: " + name + " must return synchronously.");
 }
 return result !== false;
 }
-
 async requestEdit(id, columnId, value, options) {
 if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
 if (!scalarValue(value)) throw new Error("CanopyX: an edit value must be a finite JSON scalar.");
@@ -5031,7 +4754,6 @@ const proposal = Object.freeze({ nodeId: id, path: frozenPath(this.pathOf(w)), c
 previous: previous === undefined ? null : previous, value });
 return this.dispatchProposal("edit", proposal, [w], revision, options, () => this.eligible("canEdit", w.h, column));
 }
-
 async requestDrop(ids, targetId, placement = "inside", options) {
 if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
 const revision = this.interactionRevision, prepared = this.prepareDrop(ids, targetId, placement);
@@ -5040,7 +4762,6 @@ const { proposal, roots, target } = prepared;
 return this.dispatchProposal("drop", proposal, roots.concat(target || []), revision, options,
 () => roots.every(w => this.eligible("canDrag", w.h)) && this.eligible("canDrop", proposal));
 }
-
 prepareDrop(ids, targetId, placement) {
 if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) throw new Error("CanopyX: a drop needs unique loaded node IDs.");
 if (!["inside", "before", "after"].includes(placement)) throw new Error("CanopyX: drop placement is inside, before, or after.");
@@ -5057,7 +4778,6 @@ if (this.destroyed || this.interactionClosing || revision !== this.interactionRe
 nodes.concat(target || []).some(w => w._invalidated || this.keyMap.get(w.key) !== w)) return false;
 return { proposal, roots, target };
 }
-
 async requestAction(id, actionId, options) {
 if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
 const revision = this.interactionRevision, w = this.interactionNode(id);
@@ -5066,7 +4786,6 @@ if (!w || !action || !this.eligible("isActionEnabled", w.h, action)) return fals
 const proposal = Object.freeze({ nodeId: id, path: frozenPath(this.pathOf(w)), action: actionId });
 return this.dispatchProposal("action", proposal, [w], revision, options, () => this.eligible("isActionEnabled", w.h, action));
 }
-
 async dispatchProposal(kind, proposal, nodes, revision, options, eligible) {
 const handler = this.opts["on" + kind[0].toUpperCase() + kind.slice(1)];
 if (!handler || this.destroyed || this.interactionClosing || this.initializing || this.restoring || revision !== this.interactionRevision ||
@@ -5116,7 +4835,6 @@ this.scheduleRender();
 navigation.dispose(); controller.abort();
 }
 }
-
 cancelInteraction() {
 const operation = this.pendingInteraction;
 if (!operation) return false;
@@ -5126,7 +4844,6 @@ this.scheduleRender();
 this.abortInteractionController(operation.controller);
 return true;
 }
-
 abortInteractionController(controller) {
 if (!controller || controller.signal.aborted) return;
 if (this.interactionReplacementDepth) {
@@ -5134,7 +4851,6 @@ if (!this.interactionAbortQueue) this.interactionAbortQueue = new Set();
 this.interactionAbortQueue.add(controller);
 } else controller.abort();
 }
-
 withInteractionReplacement(work) {
 this.interactionReplacementDepth = (this.interactionReplacementDepth || 0) + 1;
 try { return work(); }
@@ -5146,7 +4862,6 @@ if (controllers) for (const controller of controllers) controller.abort();
 }
 }
 }
-
 destroy() {
 this.interactionClosing = true;
 this.cancelInteraction();
@@ -5161,7 +4876,6 @@ interactionPending: "Waiting for the host…", interactionRejected: "The host de
 interactionFailed: "Operation failed: {error}", markMove: "Move this node", moveHere: "Move here",
 moveBefore: "Move before", moveAfter: "Move after", cancelMove: "Cancel move"
 }));
-
 TreeGrid = class extends TreeGrid {
 build() {
 super.build();
@@ -5177,14 +4891,12 @@ const row = event.target.closest(".cx-row");
 if (row && row._w && !hostControl(event.target) && this.openActionMenu(row._w, row)) event.preventDefault();
 }, { signal });
 }
-
 interactionApi() {
 return Object.assign(super.interactionApi(), {
 beginEdit: (id, column) => this.beginEdit(id, column),
 openActions: id => { const w = this.interactionNode(id); return !!w && this.openActionMenu(w, this.rendered.get(w)); }
 });
 }
-
 openInteractionPanel(w, anchor, role, label) {
 const revision = (this.uiWorkRevision || 0) + (this.interactionPanel ? 1 : 0);
 this.closeInteractionPanel(false);
@@ -5199,7 +4911,6 @@ this.host.appendChild(panel);
 panel.addEventListener("pointerdown", () => { panel._cxPointerFocus = panel.contains(document.activeElement); });
 return panel;
 }
-
 placeInteractionPanel(anchor) {
 const panel = this.interactionPanel;
 if (!panel) return;
@@ -5209,7 +4920,6 @@ const below = global.innerHeight - rect.bottom - 8, above = rect.top - 8;
 const top = below >= Math.min(bounds.height, 120) || below >= above ? rect.bottom : rect.top - bounds.height;
 panel.style.top = Math.max(8, Math.min(top, global.innerHeight - bounds.height - 8)) + "px";
 }
-
 closeInteractionPanel(restoreFocus = true) {
 const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
 if (!panel) return null;
@@ -5227,7 +4937,6 @@ this.abortInteractionController(controller);
 if (restoreFocus) this.restoreInteractionFocus(focus);
 return focus;
 }
-
 restoreInteractionFocus(focus) {
 if (!focus || this.destroyed || this.interactionClosing || this.interactionPanel || focus.revision !== this.uiWorkRevision) return;
 const active = document.activeElement;
@@ -5237,7 +4946,6 @@ const target = visible(focus.node) ? focus.node : visible(this.focused) ? this.f
 if (target) this.setFocus(target, true);
 else { this.grid.tabIndex = 0; this.grid.focus({ preventScroll: true }); }
 }
-
 async performInteraction(work, controller = null) {
 this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
 const operation = this.uiPendingOperation = { controller };
@@ -5253,7 +4961,6 @@ return false;
 if (this.uiPendingOperation === operation) this.uiPendingOperation = null;
 }
 }
-
 beginEdit(id, columnId) {
 if (this.destroyed || this.interactionClosing || this.initializing || this.restoring || !this.opts.onEdit) return false;
 const w = this.interactionNode(id), index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
@@ -5301,7 +5008,6 @@ else if (event.key === "Enter" && event.target === input) { event.preventDefault
 this.placeInteractionPanel(row); input.focus(); if (input.type !== "checkbox") input.select();
 return true;
 }
-
 onKey(event) {
 if (!event.defaultPrevented && !event.isComposing && !hostControl(event.target)) {
 const row = event.target.closest(".cx-row"), w = row && row._w;
@@ -5318,7 +5024,6 @@ if (this.beginEdit(w.key, column || editable && editable.id)) { event.preventDef
 }
 super.onKey(event);
 }
-
 destroy() {
 this.interactionClosing = true;
 this.closeInteractionPanel(false);
@@ -5331,26 +5036,21 @@ TreeGrid = class extends TreeGrid {
 cachePinned(w) {
 return super.cachePinned(w) || this.panelNode === w || !!(this.moveNodes && this.moveNodes.includes(w));
 }
-
 refreshCounts(ids) {
 return this.withInteractionReplacement(() => super.refreshCounts(ids));
 }
-
 sort(...args) {
 return this.withInteractionReplacement(() => super.sort(...args));
 }
-
 setColumnVisible(...args) {
 return this.withInteractionReplacement(() => super.setColumnVisible(...args));
 }
-
 applyQuerySnapshot(...args) {
 return this.withInteractionReplacement(() => {
 this.cancelInteraction();
 return super.applyQuerySnapshot(...args);
 });
 }
-
 relayout(now) {
 return this.withInteractionReplacement(() => {
 const focus = this.closeInteractionPanel(false);
@@ -5359,7 +5059,6 @@ this.restoreInteractionFocus(focus);
 return result;
 });
 }
-
 buildHeader(...args) {
 return this.withInteractionReplacement(() => {
 const focus = this.closeInteractionPanel(false);
@@ -5368,7 +5067,6 @@ this.restoreInteractionFocus(focus);
 return result;
 });
 }
-
 reconcileList(parent, ...args) {
 return this.withInteractionReplacement(() => {
 const ordering = args[4] === true;
@@ -5384,7 +5082,6 @@ this.restoreInteractionFocus(focus);
 return result;
 });
 }
-
 retireWrapper(w) {
 return this.withInteractionReplacement(() => {
 if (this.panelNode === w) this.interactionFocusHandoff = this.closeInteractionPanel(false) || this.interactionFocusHandoff;
@@ -5392,7 +5089,6 @@ if (this.moveNodes && this.moveNodes.includes(w)) this.moveNodes = null;
 return super.retireWrapper(w);
 });
 }
-
 applyCounts(doc, fromRefresh = false) {
 return this.withInteractionReplacement(() => {
 const panel = this.interactionPanel, node = this.panelNode, moving = this.moveNodes;
@@ -5404,21 +5100,18 @@ this.restoreInteractionFocus(handoff);
 return result;
 });
 }
-
 applyStatePresentation(state) {
 const focus = this.closeInteractionPanel(false); this.moveNodes = null; this.cancelInteraction();
 const result = super.applyStatePresentation(state);
 this.restoreInteractionFocus(focus);
 return result;
 }
-
 moveSources(w) {
 if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
 const nodes = this.selected.has(w) ? Array.from(this.selected).filter(node => !node.h.detail) : [w];
 if (!nodes.length || !nodes.every(node => this.keyMap.get(node.key) === node && !node._invalidated && this.eligible("canDrag", node.h))) return false;
 return nodes;
 }
-
 markMove(w) {
 const nodes = this.moveSources(w);
 if (!nodes) return false;
@@ -5426,20 +5119,17 @@ this.moveNodes = nodes; this.cacheDirty = true;
 setText(this.live, this.labels.markMove);
 return true;
 }
-
 moveTarget(w, placement = "inside") {
 if (!this.moveNodes || !w || w.status || w.h.detail || this.destroyed) return false;
 const nodes = this.moveNodes;
 if (nodes.some(node => node._invalidated || this.keyMap.get(node.key) !== node)) return false;
 return !!this.prepareDrop(nodes.map(node => node.key), w.key, placement) && this.moveNodes === nodes;
 }
-
 async moveTo(w, placement, reason = "menu") {
 if (!this.moveTarget(w, placement)) return false;
 const nodes = this.moveNodes; this.moveNodes = null; this.cacheDirty = true;
 return this.performInteraction(() => this.requestDrop(nodes.map(node => node.key), w.key, placement, { reason }));
 }
-
 openActionMenu(w, anchor) {
 if (this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail || !anchor || !anchor.isConnected) return false;
 const items = [];
@@ -5487,7 +5177,6 @@ event.preventDefault(); event.stopPropagation(); if (target) target.focus();
 this.placeInteractionPanel(anchor); buttons[0].focus();
 return true;
 }
-
 onKey(event) {
 if (!event.defaultPrevented && !event.isComposing && !hostControl(event.target) && event.ctrlKey && event.shiftKey && !event.altKey) {
 const row = event.target.closest(".cx-row"), w = row && row._w;
@@ -5498,7 +5187,6 @@ event.preventDefault(); event.stopPropagation(); this.moveTo(w, "inside", "keybo
 }
 super.onKey(event);
 }
-
 destroy() { this.moveNodes = null; super.destroy(); }
 };
 TreeGrid = class extends TreeGrid {
@@ -5535,25 +5223,20 @@ if (this.dragLease) { this.moveNodes = null; this.cacheDirty = true; }
 this.dragLease = null;
 }, { signal });
 }
-
 paintRowState(row, w) {
 super.paintRowState(row, w);
 row.draggable = !!(this.view.dragDrop && this.opts.onDrop && !w.status && !w.h.detail);
 }
-
 clearDropRow() {
 if (this.dropRow) { this.dropRow.classList.remove("cx-drop-target"); this.dropRow.removeAttribute("data-cx-drop-placement"); }
 this.dropRow = null;
 }
-
 dropPlacement(event, row) {
 const bounds = row.getBoundingClientRect(), fraction = (event.clientY - bounds.top) / bounds.height;
 return fraction < 0.25 ? "before" : fraction > 0.75 ? "after" : "inside";
 }
-
 destroy() { this.clearDropRow(); this.dragLease = null; super.destroy(); }
 };
-
 function createTreeGrid(host, options) {
 if (!host || !options || !options.view) {
 throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
@@ -5614,9 +5297,7 @@ host.setAttribute("data-canopyx-mounted", "true");
 host.canopyx = api;
 return api;
 }
-
 const configured = new Map();
-
 function configure(viewId, options) {
 requireIdentifier(viewId, "view ID");
 if (!options || typeof options !== "object") {
@@ -5631,12 +5312,10 @@ return () => {
 if (configured.get(viewId) === registration) configured.delete(viewId);
 };
 }
-
 function unconfigure(viewId) {
 requireIdentifier(viewId, "view ID");
 return configured.delete(viewId);
 }
-
 function mount(root, automatic) {
 const scope = root || document;
 const created = [];
@@ -5680,7 +5359,6 @@ showError(host, err, null, view);
 });
 return created;
 }
-
 global.CanopyX = Object.freeze({
 protocol: PROTOCOL,
 createTreeGrid: createTreeGrid,
@@ -5691,7 +5369,6 @@ sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: r
 badge: hostBadge,
 labels: DEFAULT_LABELS
 });
-
 if (typeof document !== "undefined") {
 const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
 if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
