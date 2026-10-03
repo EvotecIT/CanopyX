@@ -14,7 +14,7 @@ jobs:
   build-test-pack:
     name: Build, test, examples, browser tests, pack (${{ matrix.name }})
     runs-on: ${{ fromJSON(matrix.runner) }}
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -57,43 +57,13 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $browser = (Get-Content node_modules/playwright-core/browsers.json -Raw | ConvertFrom-Json).browsers | Where-Object name -eq 'chromium' | Select-Object -First 1
-          if (-not $browser -or $browser.browserVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'Playwright Chromium version is missing.' }
-          if ($env:RUNNER_OS -eq 'Linux') {
-            node node_modules/@playwright/test/cli.js install-deps chromium
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            $platform = 'linux64'
-            $executable = 'chrome-linux64/chrome'
-          } elseif ($env:RUNNER_OS -eq 'macOS') {
-            $platform = 'mac-arm64'
-            $executable = 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
-          } else {
-            $platform = 'win64'
-            $executable = 'chrome-win64/chrome.exe'
-          }
-          $archive = Join-Path $env:RUNNER_TEMP 'canopyx-chrome.zip'
-          $directory = Join-Path $env:RUNNER_TEMP 'canopyx-chrome'
-          $url = "https://storage.googleapis.com/chrome-for-testing-public/$($browser.browserVersion)/$platform/chrome-$platform.zip"
-          $curl = if ($env:RUNNER_OS -eq 'Windows') { 'curl.exe' } else { 'curl' }
-          & $curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 600 -o $archive $url
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          New-Item -ItemType Directory -Force -Path $directory | Out-Null
-          if ($env:RUNNER_OS -eq 'Windows') {
-            Expand-Archive -LiteralPath $archive -DestinationPath $directory -Force
-          } else {
-            & unzip -q -o $archive -d $directory
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          $browserPath = Join-Path $directory $executable
-          if (-not (Test-Path -LiteralPath $browserPath -PathType Leaf)) { throw "Browser executable missing: $browserPath" }
-          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CANOPYX_BROWSER_EXECUTABLE=$browserPath" -Encoding utf8
-          $otherEngines = @($env:CANOPYX_TEST_BROWSERS -split ',' | Where-Object { $_ -ne 'chromium' })
-          node node_modules/@playwright/test/cli.js install --with-deps @otherEngines
+          $engines = @($env:CANOPYX_TEST_BROWSERS -split ',')
+          dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- @engines
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run quality loop
         shell: pwsh
-        run: ./Build.ps1 -Configuration Release
+        run: ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds 2400
 
       - name: Upload packages
         uses: actions/upload-artifact@v7

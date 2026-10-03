@@ -11,6 +11,9 @@ param(
     [ValidateRange(1, 86400)]
     [int] $DotNetCommandTimeoutSeconds = 900,
 
+    [ValidateRange(1, 86400)]
+    [int] $BrowserTestTimeoutSeconds = 900,
+
     [ValidateRange(1, 3600)]
     [int] $PackageConsumerTimeoutSeconds = 300
 )
@@ -254,7 +257,7 @@ try {
             $env:CANOPYX_EXAMPLES = $examplesOutput
             try {
                 Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
-                Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
             } finally {
                 $env:CANOPYX_EXAMPLES = $previousExamples
             }

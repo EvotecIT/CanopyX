@@ -66,6 +66,7 @@ test("keyboard walkthrough follows the row-focus model", async ({ page }) => {
   await openExample(page, "inline.html");
   await page.evaluate(() => {
     const outlet = document.createElement("button"); outlet.textContent = "After tree"; outlet.type = "button";
+    outlet.tabIndex = 0;
     document.body.appendChild(outlet);
   });
   await row(page, "share-a").click();

@@ -5189,6 +5189,7 @@ const panel = this.interactionPanel = h("div", "cx-interaction-panel");
 panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
 this.panelNode = w;
 this.host.appendChild(panel);
+panel.addEventListener("pointerdown", () => { panel._cxPointerFocus = panel.contains(document.activeElement); });
 return panel;
 }
 
@@ -5205,7 +5206,8 @@ panel.style.top = Math.max(8, Math.min(top, global.innerHeight - bounds.height -
 closeInteractionPanel(restoreFocus = true) {
 const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
 if (!panel) return null;
-const owned = panel.contains(document.activeElement);
+const active = document.activeElement;
+const owned = panel.contains(active) || panel._cxPointerFocus && (active === document.body || active === document.documentElement);
 if (controller && this.uiPendingOperation && this.uiPendingOperation.controller === controller) {
 this.uiPendingOperation = null;
 setText(this.live, "");

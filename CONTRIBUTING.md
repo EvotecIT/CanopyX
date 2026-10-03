@@ -18,7 +18,7 @@ dotnet test .\CanopyX.sln -c Release
 
 The solution also holds `CanopyX.Tests.NetFramework`, which runs the framework-sensitive contract tests (search folding) against the `net472` build. It builds on every platform and runs on Windows.
 
-Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging.
+Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging. `-BrowserTestTimeoutSeconds` separately bounds the browser suite; CI uses 2400 seconds for the full engine matrix.
 
 ## Browser Tests
 
@@ -29,14 +29,14 @@ Install the test dependencies once, then let the quality loop generate the examp
 ```powershell
 cd tests/browser
 npm ci
-node node_modules/@playwright/test/cli.js install chromium
+dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium
 cd ../..
 ./Build.ps1 -Configuration Release -SkipPack
 ```
 
 To rerun only the browser tests against the pages already generated, run `npm test` in `tests/browser` (it opens the Release examples; set `CANOPYX_EXAMPLES` to another output folder, for example after a Debug build). Set `CANOPYX_BROWSER_CHANNEL=msedge` (or `chrome`) to use an installed browser instead of Playwright's Chromium. After a visible change, refresh the README screenshots with `node tools/screenshots.mjs`.
 
-The local loop uses Chromium by default. Set `CANOPYX_TEST_BROWSERS=chromium,firefox,webkit` to run all three engines, or choose a comma-separated subset. Install the chosen engines with `node node_modules/@playwright/test/cli.js install --with-deps chromium firefox webkit` in `tests/browser`. Installed-browser channels and `CANOPYX_BROWSER_EXECUTABLE` apply only to the Chromium project. CI runs all three engines on Linux, Chromium and Firefox on Windows, and Chromium and WebKit on macOS.
+The local loop uses Chromium by default. Set `CANOPYX_TEST_BROWSERS=chromium,firefox,webkit` to run all three engines, or choose a comma-separated subset. Install the chosen engines with `dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium firefox webkit` in `tests/browser`. This test-only executable uses the published HtmlTinkerX installer and verifies that its Playwright version matches the browser tests. On Linux, set `HTMLTINKERX_PLAYWRIGHT_WITH_DEPS=1` when system dependencies also need installation; root CI runners install them automatically. Installed-browser channels and `CANOPYX_BROWSER_EXECUTABLE` apply only to the Chromium project. CI runs all three engines on Linux, Chromium and Firefox on Windows, and Chromium and WebKit on macOS.
 
 The suite covers a smoke pass over every Must feature of the tree grid, an axe-core scan in light and dark themes, a keyboard walkthrough, and performance budgets on the large bundle example.
 

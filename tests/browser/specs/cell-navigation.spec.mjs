@@ -31,7 +31,7 @@ const hostScript = `CanopyX.configure("cells", { renderers: {
 async function open(page) {
   const html = viewPage(view).replace("</head>", () => "<script>" + hostScript + "</script></head>")
     .replace('<body class="cx-page">', '<body class="cx-page"><a href="#before" id="before-tree">Before tree</a>')
-    .replace("</body>", '<button type="button" id="after-tree">After tree</button></body>');
+    .replace("</body>", '<button type="button" id="after-tree" tabindex="0">After tree</button></body>');
   await page.route("https://canopyx.test/", (route) => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://canopyx.test/");
   await page.waitForSelector("[data-cx-ready]");

@@ -40,6 +40,8 @@
       panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
       this.panelNode = w;
       this.host.appendChild(panel);
+      // WebKit on macOS blurs an editor to the body when a native button is clicked.
+      panel.addEventListener("pointerdown", () => { panel._cxPointerFocus = panel.contains(document.activeElement); });
       return panel;
     }
 
@@ -56,7 +58,8 @@
     closeInteractionPanel(restoreFocus = true) {
       const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
       if (!panel) return null;
-      const owned = panel.contains(document.activeElement);
+      const active = document.activeElement;
+      const owned = panel.contains(active) || panel._cxPointerFocus && (active === document.body || active === document.documentElement);
       if (controller && this.uiPendingOperation && this.uiPendingOperation.controller === controller) {
         this.uiPendingOperation = null;
         setText(this.live, "");

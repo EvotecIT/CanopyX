@@ -196,6 +196,19 @@ test('context menus have keyboard navigation and disabled actions never execute'
   await row(page,'a').click({button:'right'}); await page.keyboard.press('Enter');
   await expect.poll(()=>page.evaluate(()=>window.action?.nodeId)).toBe('a');
   await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(row(page,'a')).toBeFocused();
+  await page.keyboard.press('Shift+F10');
+  await page.getByRole('menuitem',{name:'Inspect record'}).click();
+  await expect(row(page,'a')).toBeFocused();
+});
+
+test('closing a panel retains focus taken by an external host control',async({page})=>{
+  await mount(page,'{onEdit:()=>true}');await row(page,'a').press('Alt+Enter');
+  await page.evaluate(()=>{const button=document.createElement('button');button.textContent='Host control';
+    document.body.appendChild(button);button.focus();});
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Host control'})).toBeFocused();
 });
 
 test('keyboard moving proposes a drop without altering selection or row data',async({page})=>{
