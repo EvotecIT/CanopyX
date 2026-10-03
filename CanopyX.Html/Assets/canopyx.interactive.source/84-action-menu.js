@@ -16,6 +16,13 @@
       return this.withInteractionReplacement(() => super.setColumnVisible(...args));
     }
 
+    applyQuerySnapshot(...args) {
+      return this.withInteractionReplacement(() => {
+        this.cancelInteraction();
+        return super.applyQuerySnapshot(...args);
+      });
+    }
+
     relayout(now) {
       return this.withInteractionReplacement(() => {
         const focus = this.closeInteractionPanel(false);
@@ -77,10 +84,16 @@
       return result;
     }
 
-    markMove(w) {
+    moveSources(w) {
       if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
       const nodes = this.selected.has(w) ? Array.from(this.selected).filter(node => !node.h.detail) : [w];
       if (!nodes.length || !nodes.every(node => this.keyMap.get(node.key) === node && !node._invalidated && this.eligible("canDrag", node.h))) return false;
+      return nodes;
+    }
+
+    markMove(w) {
+      const nodes = this.moveSources(w);
+      if (!nodes) return false;
       this.moveNodes = nodes; this.cacheDirty = true;
       setText(this.live, this.labels.markMove);
       return true;
@@ -110,7 +123,7 @@
         disabled: !this.eligible("isActionEnabled", w.h, action),
         run: () => this.performInteraction(() => this.requestAction(w.key, action.id, { reason: "menu" })) });
       if (this.view.dragDrop && this.opts.onDrop) {
-        items.push({ label: this.labels.markMove, disabled: !this.eligible("canDrag", w.h), run: () => this.markMove(w) });
+        items.push({ label: this.labels.markMove, disabled: !this.moveSources(w), run: () => this.markMove(w) });
         if (this.moveNodes) {
           for (const [placement, label] of [["inside", "moveHere"], ["before", "moveBefore"], ["after", "moveAfter"]])
             items.push({ label: this.labels[label], disabled: !this.moveTarget(w, placement), run: () => this.moveTo(w, placement) });

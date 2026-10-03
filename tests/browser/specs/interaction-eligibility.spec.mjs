@@ -78,3 +78,12 @@ test("native drag indicators honor the placement before advertising a target", a
     before: { consumed: true, highlighted: true, placement: "before" },
     after: { consumed: false, highlighted: false, placement: null } });
 });
+
+test("the move-source menu honors every selected member's drag eligibility", async ({ page }) => {
+  await mount(page, "{canDrag:node=>node.id!=='b',onDrop:()=>true}");
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.setSelection(["a", "b"]))).toBe(true);
+  await row(page, "a").press("Shift+F10");
+  await expect(page.getByRole("menuitem", { name: "Move this node", exact: true })).toHaveAttribute("aria-disabled", "true");
+  await page.getByRole("menuitem", { name: "Move this node", exact: true }).press("Enter");
+  await expect(page.getByRole("menu")).toBeVisible();
+});

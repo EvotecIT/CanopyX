@@ -57,8 +57,8 @@
       const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
       if (!panel) return null;
       const owned = panel.contains(document.activeElement);
-      if (controller && this.uiPendingRevision === this.uiWorkRevision) {
-        this.uiPendingRevision = null;
+      if (controller && this.uiPendingOperation && this.uiPendingOperation.controller === controller) {
+        this.uiPendingOperation = null;
         setText(this.live, "");
       }
       this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
@@ -80,19 +80,19 @@
       else { this.grid.tabIndex = 0; this.grid.focus({ preventScroll: true }); }
     }
 
-    async performInteraction(work) {
-      const revision = this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
-      this.uiPendingRevision = revision;
+    async performInteraction(work, controller = null) {
+      this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+      const operation = this.uiPendingOperation = { controller };
       setText(this.live, this.labels.interactionPending);
       try {
         const accepted = await work();
-        if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, accepted ? "" : this.labels.interactionRejected);
+        if (!this.destroyed && this.uiPendingOperation === operation) setText(this.live, accepted ? "" : this.labels.interactionRejected);
         return accepted;
       } catch (error) {
-        if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
+        if (!this.destroyed && this.uiPendingOperation === operation) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
         return false;
       } finally {
-        if (this.uiPendingRevision === revision) this.uiPendingRevision = null;
+        if (this.uiPendingOperation === operation) this.uiPendingOperation = null;
       }
     }
 
@@ -128,7 +128,7 @@
         }
         input.setCustomValidity(""); input.disabled = save.disabled = true;
         cancel.focus();
-        const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }));
+        const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }), controller);
         if (this.interactionPanel !== panel) return;
         if (accepted) this.closeInteractionPanel();
         else { input.disabled = save.disabled = false; input.focus(); }

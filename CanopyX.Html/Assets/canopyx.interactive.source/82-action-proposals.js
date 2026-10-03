@@ -153,7 +153,8 @@
       this.pendingInteraction = operation;
       this.interactionRevision++;
       this.interactionPins = new Set(nodes); this.cacheDirty = true;
-      const navigation = navigationScope(this, [controller.signal, options && options.signal], true);
+      // Data replacement cancels this owner explicitly after committing its synchronous transaction.
+      const navigation = navigationScope(this, [controller.signal, options && options.signal]);
       const live = () => !navigation.cancelled() && this.pendingInteraction === operation && versions.every(({ w, count, path }) => {
         const current = this.pathOf(w);
         return !w._invalidated && this.keyMap.get(w.key) === w && (w.countRevision || 0) === count &&

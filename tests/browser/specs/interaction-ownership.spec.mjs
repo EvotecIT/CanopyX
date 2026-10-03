@@ -9,9 +9,11 @@ const view = { protocol: "canopyx/2", type: "view", id: "ownership", label: "Rec
     { id: "b", label: "Beacon", cells: { amount: 12 } }] };
 
 async function mount(page, options) {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
   const html = viewPage(view).replace("</head>", `<script>CanopyX.configure('ownership',${options});</script></head>`);
   await page.route("https://ownership.test/", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://ownership.test/"); await page.waitForSelector("[data-cx-ready]"); await nextFrames(page);
+  expect(errors).toEqual([]);
 }
 const countsSource = `Object.assign(CanopyX.sources.inline(${JSON.stringify(view)}),
   {counts:()=>new Promise((resolve,reject)=>{window.finishCounts=resolve;window.failCounts=reject})})`;
@@ -121,4 +123,36 @@ test("cancelling an editor clears its pending announcement", async ({ page }) =>
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator('.cx-live')).toBeEmpty();
+});
+
+for (const replacement of ["editor", "proposal"]) test(`query acceptance hands ${replacement} cancellation callbacks the new snapshot`, async ({ page }) => {
+  await mount(page, `{source:{queryAware:true,page(node,cursor,request){const fresh=!!request.query.sort;
+    return {items:[{id:'a',label:'Atlas'},{id:'b',label:'Beacon',cells:{name:fresh?'Fresh Beacon':'Beacon'}}],revision:fresh?'r2':'r1'}}},
+    onEdit(proposal,context){context.signal.addEventListener('abort',()=>{
+      const api=document.querySelector('.cx-host').canopyx;
+      if('${replacement}'==='editor')api.beginEdit('b','name');else window.newer=api.requestAction('b','inspect');
+    },{once:true});return new Promise(()=>{})},
+    onAction(proposal,context){window.observed={revision:context.revision,query:context.query,
+      value:document.querySelector('.cx-host').canopyx.visibleRows().find(row=>row.node.id==='b').node.cells.name};return true}}`);
+  await page.evaluate(() => { window.old = document.querySelector(".cx-host").canopyx.requestEdit("a", "name", "Draft"); });
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.sort("name", "desc"))).toBe(true);
+  expect(await page.evaluate(() => window.old)).toBe(false);
+  if (replacement === "editor") {
+    await expect(page.getByRole("textbox", { name: "Edit Name" })).toHaveValue("Fresh Beacon");
+    await expect(page.getByRole("textbox", { name: "Edit Name" })).toBeFocused();
+  } else expect(await page.evaluate(async () => ({ accepted: await window.newer, observed: window.observed }))).toEqual({
+    accepted: true, observed: { revision: "r2", query: { version: 1, sort: { column: "name", direction: "desc" }, filters: [] }, value: "Fresh Beacon" }
+  });
+});
+
+test("closing a draft editor preserves another action's pending and completion announcements", async ({ page }) => {
+  await mount(page, `{onEdit:()=>true,onAction(proposal,context){window.actionSignal=context.signal;return new Promise(resolve=>window.finishAction=resolve)}}`);
+  await row(page, "b").press("Shift+F10"); await page.getByRole("menuitem", { name: "Inspect", exact: true }).click();
+  await expect(page.locator(".cx-live")).toHaveText("Waiting for the host…");
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.beginEdit("a", "name"));
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".cx-live")).toHaveText("Waiting for the host…");
+  expect(await page.evaluate(() => window.actionSignal.aborted)).toBe(false);
+  await page.evaluate(() => window.finishAction(false));
+  await expect(page.locator(".cx-live")).toHaveText("The host declined the operation.");
 });

@@ -3761,22 +3761,7 @@ cursor = next;
 if (navigation.cancelled()) return false;
 const anchor = force ? this.captureScrollAnchor() : null;
 const filtersChanged = JSON.stringify(query.filters) !== JSON.stringify(this.acceptedQuery.filters);
-this.dataLifetime.abort(); this.dataLifetime = new AbortController();
-if (this.cancelSearch) this.cancelSearch();
-this.retirePage(this.root);
-for (const node of this.keyMap.values()) this.retirePage(node);
-if (this.inactiveCache) this.inactiveCache.clear();
-this.acceptedQuery = query; this.datasetRevision = revision;
-this.sortState = query.sort; this.activeFilters = new Set(query.filters);
-this.filter = null; this.declaredFilter = null;
-this.buildHeader(); this.syncQueryControls();
-this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
-this.rootsReady = Promise.resolve();
-if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
-const count = numberFormat(this.lang);
-this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
-fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
-this.stateChanged();
+this.applyQuerySnapshot(query, revision, items, total, next, anchor);
 if (navigation.cancelled()) return false;
 this.emit("query", { query: this.getQuery(), revision });
 if (filtersChanged && !navigation.cancelled()) this.emit("filter", { active: Array.from(this.activeFilters) });
@@ -3794,6 +3779,25 @@ if (this.queryController === controller) {
 this.queryController = null; this.pendingQuery = null; this.syncQueryControls();
 }
 }
+},
+
+applyQuerySnapshot(query, revision, items, total, next, anchor) {
+this.dataLifetime.abort(); this.dataLifetime = new AbortController();
+if (this.cancelSearch) this.cancelSearch();
+this.retirePage(this.root);
+for (const node of this.keyMap.values()) this.retirePage(node);
+if (this.inactiveCache) this.inactiveCache.clear();
+this.acceptedQuery = query; this.datasetRevision = revision;
+this.sortState = query.sort; this.activeFilters = new Set(query.filters);
+this.filter = null; this.declaredFilter = null;
+this.buildHeader(); this.syncQueryControls();
+this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
+this.rootsReady = Promise.resolve();
+if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
+const count = numberFormat(this.lang);
+this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
+fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
+this.stateChanged();
 }
 });
 
@@ -5065,7 +5069,7 @@ const controller = new AbortController(), operation = { controller, proposal, ki
 this.pendingInteraction = operation;
 this.interactionRevision++;
 this.interactionPins = new Set(nodes); this.cacheDirty = true;
-const navigation = navigationScope(this, [controller.signal, options && options.signal], true);
+const navigation = navigationScope(this, [controller.signal, options && options.signal]);
 const live = () => !navigation.cancelled() && this.pendingInteraction === operation && versions.every(({ w, count, path }) => {
 const current = this.pathOf(w);
 return !w._invalidated && this.keyMap.get(w.key) === w && (w.countRevision || 0) === count &&
@@ -5199,8 +5203,8 @@ closeInteractionPanel(restoreFocus = true) {
 const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
 if (!panel) return null;
 const owned = panel.contains(document.activeElement);
-if (controller && this.uiPendingRevision === this.uiWorkRevision) {
-this.uiPendingRevision = null;
+if (controller && this.uiPendingOperation && this.uiPendingOperation.controller === controller) {
+this.uiPendingOperation = null;
 setText(this.live, "");
 }
 this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
@@ -5222,19 +5226,19 @@ if (target) this.setFocus(target, true);
 else { this.grid.tabIndex = 0; this.grid.focus({ preventScroll: true }); }
 }
 
-async performInteraction(work) {
-const revision = this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
-this.uiPendingRevision = revision;
+async performInteraction(work, controller = null) {
+this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+const operation = this.uiPendingOperation = { controller };
 setText(this.live, this.labels.interactionPending);
 try {
 const accepted = await work();
-if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, accepted ? "" : this.labels.interactionRejected);
+if (!this.destroyed && this.uiPendingOperation === operation) setText(this.live, accepted ? "" : this.labels.interactionRejected);
 return accepted;
 } catch (error) {
-if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
+if (!this.destroyed && this.uiPendingOperation === operation) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
 return false;
 } finally {
-if (this.uiPendingRevision === revision) this.uiPendingRevision = null;
+if (this.uiPendingOperation === operation) this.uiPendingOperation = null;
 }
 }
 
@@ -5270,7 +5274,7 @@ next = Number(input.value);
 }
 input.setCustomValidity(""); input.disabled = save.disabled = true;
 cancel.focus();
-const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }));
+const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }), controller);
 if (this.interactionPanel !== panel) return;
 if (accepted) this.closeInteractionPanel();
 else { input.disabled = save.disabled = false; input.focus(); }
@@ -5325,6 +5329,13 @@ return this.withInteractionReplacement(() => super.sort(...args));
 
 setColumnVisible(...args) {
 return this.withInteractionReplacement(() => super.setColumnVisible(...args));
+}
+
+applyQuerySnapshot(...args) {
+return this.withInteractionReplacement(() => {
+this.cancelInteraction();
+return super.applyQuerySnapshot(...args);
+});
 }
 
 relayout(now) {
@@ -5388,10 +5399,16 @@ this.restoreInteractionFocus(focus);
 return result;
 }
 
-markMove(w) {
+moveSources(w) {
 if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
 const nodes = this.selected.has(w) ? Array.from(this.selected).filter(node => !node.h.detail) : [w];
 if (!nodes.length || !nodes.every(node => this.keyMap.get(node.key) === node && !node._invalidated && this.eligible("canDrag", node.h))) return false;
+return nodes;
+}
+
+markMove(w) {
+const nodes = this.moveSources(w);
+if (!nodes) return false;
 this.moveNodes = nodes; this.cacheDirty = true;
 setText(this.live, this.labels.markMove);
 return true;
@@ -5421,7 +5438,7 @@ if (this.opts.onAction) for (const action of this.interactions.actions) items.pu
 disabled: !this.eligible("isActionEnabled", w.h, action),
 run: () => this.performInteraction(() => this.requestAction(w.key, action.id, { reason: "menu" })) });
 if (this.view.dragDrop && this.opts.onDrop) {
-items.push({ label: this.labels.markMove, disabled: !this.eligible("canDrag", w.h), run: () => this.markMove(w) });
+items.push({ label: this.labels.markMove, disabled: !this.moveSources(w), run: () => this.markMove(w) });
 if (this.moveNodes) {
 for (const [placement, label] of [["inside", "moveHere"], ["before", "moveBefore"], ["after", "moveAfter"]])
 items.push({ label: this.labels[label], disabled: !this.moveTarget(w, placement), run: () => this.moveTo(w, placement) });

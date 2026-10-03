@@ -36,23 +36,7 @@
         if (navigation.cancelled()) return false;
         const anchor = force ? this.captureScrollAnchor() : null;
         const filtersChanged = JSON.stringify(query.filters) !== JSON.stringify(this.acceptedQuery.filters);
-        this.dataLifetime.abort(); this.dataLifetime = new AbortController();
-        if (this.cancelSearch) this.cancelSearch();
-        this.retirePage(this.root);
-        for (const node of this.keyMap.values()) this.retirePage(node);
-        if (this.inactiveCache) this.inactiveCache.clear();
-        this.acceptedQuery = query; this.datasetRevision = revision;
-        this.sortState = query.sort; this.activeFilters = new Set(query.filters);
-        this.filter = null; this.declaredFilter = null;
-        this.buildHeader(); this.syncQueryControls();
-        // Old lazy lists belong to the old query even when their parent identity survives.
-        this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
-        this.rootsReady = Promise.resolve();
-        if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
-        const count = numberFormat(this.lang);
-        this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
-          fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
-        this.stateChanged();
+        this.applyQuerySnapshot(query, revision, items, total, next, anchor);
         if (navigation.cancelled()) return false;
         this.emit("query", { query: this.getQuery(), revision });
         if (filtersChanged && !navigation.cancelled()) this.emit("filter", { active: Array.from(this.activeFilters) });
@@ -70,5 +54,26 @@
           this.queryController = null; this.pendingQuery = null; this.syncQueryControls();
         }
       }
+    },
+
+    /** Commits one validated query snapshot synchronously before notifying its consumers. */
+    applyQuerySnapshot(query, revision, items, total, next, anchor) {
+      this.dataLifetime.abort(); this.dataLifetime = new AbortController();
+      if (this.cancelSearch) this.cancelSearch();
+      this.retirePage(this.root);
+      for (const node of this.keyMap.values()) this.retirePage(node);
+      if (this.inactiveCache) this.inactiveCache.clear();
+      this.acceptedQuery = query; this.datasetRevision = revision;
+      this.sortState = query.sort; this.activeFilters = new Set(query.filters);
+      this.filter = null; this.declaredFilter = null;
+      this.buildHeader(); this.syncQueryControls();
+      // Old lazy lists belong to the old query even when their parent identity survives.
+      this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
+      this.rootsReady = Promise.resolve();
+      if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
+      const count = numberFormat(this.lang);
+      this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
+        fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
+      this.stateChanged();
     }
   });
