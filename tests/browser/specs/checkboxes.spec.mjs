@@ -234,6 +234,28 @@ test('a failed restoration query never applies or reports its proposed checking 
   expect(result).toEqual({error:'Query unavailable',intents,notifications:0});
 });
 
+for(const action of ['replace','destroy']) test(`a filter callback can ${action} a restoration before its checking presentation commits`,async({page})=>{
+  const definition={...view('hierarchical',[{id:'a',label:'Atlas',flags:['hit']},{id:'b',label:'Beacon',flags:['hit']}]),
+    filters:[{id:'flagged',label:'Flagged',flag:'hit'}]};
+  await mount(page,definition,`{onCheck:(node,intents)=>{(window.checkNotifications||=[]).push(intents)}}`);
+  const result=await page.evaluate(async action=>{
+    const host=document.querySelector('.cx-host'),api=host.canopyx;
+    host.addEventListener('canopyx:filter',()=>{
+      if(action==='destroy'){api.destroy();return}
+      const newer=api.getState();newer.checkIntents=[{path:['b'],checked:true}];window.newerCheckRestore=api.setState(newer);
+    },{once:true});
+    const older=api.getState();older.filters=['flagged'];older.checkIntents=[{path:['a'],checked:true}];
+    const accepted=await api.setState(older);if(window.newerCheckRestore)await window.newerCheckRestore;
+    return {accepted,intents:api.getCheckIntents(),notifications:window.checkNotifications||[]};
+  },action);
+  const intents=action==='replace'?[{path:['b'],checked:true}]:[];
+  expect(result).toEqual({accepted:false,intents,notifications:action==='replace'?[intents]:[]});
+  if(action==='replace') {
+    await expect(row(page,'b').getByRole('checkbox')).toBeChecked();
+    await expect(row(page,'a').getByRole('checkbox')).not.toBeChecked();
+  }
+});
+
 test("the generated project checklist loads pages and restores its saved checks", async ({ page }) => {
   await openExample(page, 'checkboxes.html');
   await expect(row(page, 'atlas').locator('.cx-check')).toHaveAttribute('aria-checked','mixed');

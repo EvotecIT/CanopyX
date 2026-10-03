@@ -4897,7 +4897,9 @@ finally { this.paintCheckedRows(); }
 }
 
 applyStatePresentation(state) {
+const owner = this.restoreController;
 super.applyStatePresentation(state);
+if (this.destroyed || this.restoreController !== owner || owner && owner.signal.aborted) return;
 if (state.checkIntents) {
 this.checks = new CheckIntents(state.checkIntents, this.checkMode); this.checkRevision++;
 this.paintCheckedRows(); this.notifyCheck(null, "restore");
