@@ -8,17 +8,21 @@ export type Awaitable<T> = T | PromiseLike<T>;
 export interface SourceRequest { signal: AbortSignal; query?: ReadonlyViewQuery; revision?: string | null; }
 interface DataSourceBase {
   kind?: string;
-  queryAware?: boolean;
-  page(node: CanopyNode | null, cursor: string | null, request?: SourceRequest): Awaitable<PageResult>;
-  counts?: ((ids: string[], request?: SourceRequest) => Awaitable<CountsDocument>) | null;
   /** Resolves a lease disposer. A source releases held data on cancellation as well. */
   prefetch?(opens: string[], finds: string[], request?: SourceRequest): Awaitable<void | (() => void)>;
 }
-type SourceSearch = (query: string, limit: number, request?: SourceRequest) => Awaitable<SearchResult>;
-/** Declaring search availability requires the implementation the toolbar calls. */
+type SourcePage<T> = (node: CanopyNode | null, cursor: string | null, request?: SourceRequest) => Awaitable<T>;
+type SourceSearch<T> = (query: string, limit: number, request?: SourceRequest) => Awaitable<T>;
+type SourceCounts<T> = (ids: string[], request?: SourceRequest) => Awaitable<T>;
+type SearchCapability<T> = (
+  | { canSearch: true; search: SourceSearch<T> }
+  | { canSearch?: false; search?: SourceSearch<T> }
+);
+/** Search availability requires its method; query-aware callbacks identify one dataset revision. */
 export type DataSource = DataSourceBase & (
-  | { canSearch: true; search: SourceSearch }
-  | { canSearch?: false; search?: SourceSearch }
+  | ({ queryAware?: false; page: SourcePage<PageResult>; counts?: SourceCounts<CountsDocument> | null } & SearchCapability<SearchResult>)
+  | ({ queryAware: true; page: SourcePage<PageResult & { revision: string }>;
+       counts?: SourceCounts<CountsDocument & { revision: string }> | null } & SearchCapability<SearchResult & { revision: string }>)
 );
 export interface RemoteOptions { timeoutMs?: number; signal?: AbortSignal; }
 export interface Sources {
@@ -76,7 +80,7 @@ interface HostOptionsBase {
   canEdit?: (node: CanopyNode, column: CanopyColumn) => boolean;
   canDrag?: (node: CanopyNode) => boolean;
   canDrop?: (proposal: DropProposal) => boolean;
-  isActionEnabled?: (node: CanopyNode, action: ContextAction) => boolean;
+  isActionEnabled?: (node: CanopyNode, action: Readonly<ContextAction>) => boolean;
 }
 /** A custom deep-link scheme supplies its formatter and parser together. */
 export type HostOptions = HostOptionsBase & (

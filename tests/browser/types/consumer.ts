@@ -1,5 +1,5 @@
 import CanopyX, {
-  createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type DataSource, type ViewState, type CheckState, type PageDocument
+  createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 
 const view: CanopyView = {
@@ -26,7 +26,7 @@ const source: DataSource = {
     if (request?.query) request.query.sort = null;
     return { items: [{ id: "a", label: "Atlas" }], next: null, offset: 0, revision: request?.revision || "r1" };
   },
-  async search(query, limit, request) { return { hits: [], truncated: false, revision: request?.revision ?? undefined }; }
+  async search(query, limit, request) { return { hits: [], truncated: false, revision: request?.revision || "r1" }; }
 };
 const api = createTreeGrid(document.createElement("div"), {
   view, source,
@@ -113,3 +113,28 @@ if (source.canSearch) await source.search("atlas", 10);
 const { checkboxes: ignoredMode, ...withoutCheckboxes } = view;
 // @ts-expect-error Initial checking intents need a checkbox mode.
 const missingCheckboxes: CanopyView = { ...withoutCheckboxes, checkIntents: [{ path: ["a"], checked: true }] };
+
+// @ts-expect-error Query-aware pages identify the accepted dataset revision.
+const unversionedQueryPage: DataSource = { queryAware: true, page: () => ({ items: [] }) };
+// @ts-expect-error Query-aware search results belong to the same revision.
+const unversionedQuerySearch: DataSource = { queryAware: true, canSearch: true, page: () => ({ items: [], revision: "r1" }), search: () => ({ hits: [], truncated: false }) };
+// @ts-expect-error Query-aware count updates belong to the same revision.
+const unversionedQueryCounts: DataSource = { queryAware: true, page: () => ({ items: [], revision: "r1" }), counts: () => ({ protocol: "canopyx/2", type: "counts", items: [] }) };
+// @ts-expect-error Detail rows cannot own child nodes.
+const detailWithChildren: CanopyNode = { id: "detail", label: "Detail", detail: { type: "html", html: "<p>Details</p>" }, children: [{ id: "child", label: "Child" }] };
+// @ts-expect-error A node chooses inline children or a lazy reference.
+const inlineWithRef: CanopyNode = { id: "parent", label: "Parent", children: [{ id: "child", label: "Child" }], ref: "children", hasChildren: true };
+// @ts-expect-error Inline views contain only fully materialized nodes, recursively.
+const inlineWithLazyChild: CanopyView = { ...view, roots: [{ id: "parent", label: "Parent", children: [{ id: "lazy", label: "Lazy", hasChildren: true }] }] };
+CanopyX.configure("files", { isActionEnabled(node, action) {
+  // @ts-expect-error Eligibility receives a frozen action descriptor.
+  action.label = "Changed";
+  return action.id === "inspect";
+} });
+const inlineBranch: InlineNode = { id: "branch", label: "Branch", children: [{ id: "leaf", label: "Leaf" }], hasChildren: true };
+const lazySource: DataSource = { queryAware: true,
+  page: () => ({ items: [{ id: "lazy", label: "Lazy", hasChildren: true, ref: "children" }], revision: "r1" }),
+  counts: () => ({ protocol: "canopyx/2", type: "counts", items: [], revision: "r1" })
+};
+// Input action definitions remain editable; the runtime freezes its own descriptor snapshot.
+if (view.contextActions?.[0]) view.contextActions[0].label = "Inspect record";

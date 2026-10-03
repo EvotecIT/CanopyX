@@ -33,7 +33,7 @@ export interface HtmlDetail { type: "html"; height?: number; html: string; }
 export type CanopyDetail = TableDetail | PropertiesDetail | HtmlDetail;
 
 /** A host-owned node. IDs are unique within the view; lazy nodes omit children. */
-export interface CanopyNode {
+interface NodeDefinition {
   id: string;
   label: string;
   kind?: string;
@@ -43,12 +43,7 @@ export interface CanopyNode {
   badges?: CanopyBadge[];
   flags?: string[];
   data?: Record<string, string>;
-  hasChildren?: boolean;
-  childCount?: number;
-  ref?: string;
-  children?: CanopyNode[];
   expanded?: boolean;
-  detail?: CanopyDetail;
   className?: string;
 }
 
@@ -78,6 +73,22 @@ export interface ReadonlyViewQuery {
   readonly sort: Readonly<Sort> | null;
   readonly filters: readonly string[];
 }
+export type LeafNode = NodeDefinition & {
+  hasChildren?: false; children?: never; childCount?: never; ref?: never; detail?: never;
+};
+export type DetailNode = NodeDefinition & {
+  detail: CanopyDetail; hasChildren?: false; children?: never; childCount?: never; ref?: never;
+};
+export interface InlineBranch<TNode = CanopyNode> extends NodeDefinition {
+  children: TNode[]; hasChildren?: true; childCount?: number; ref?: never; detail?: never;
+}
+export type LazyNode = NodeDefinition & {
+  hasChildren: true; childCount?: number; ref?: string; children?: never; detail?: never;
+};
+/** A node chooses one leaf, detail, complete branch, or lazy branch payload. */
+export type CanopyNode = LeafNode | DetailNode | InlineBranch | LazyNode;
+/** Inline roots and every descendant are fully materialized. */
+export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =
@@ -128,7 +139,7 @@ export type ViewDefinition = ViewDefinitionBase & (
   | { checkboxes?: never; checkIntents?: never }
 );
 /** Inline views own roots. Sidecar and remote views read roots from their source. */
-export type InlineView = ViewDefinition & { source: InlineSourceDefinition; roots: CanopyNode[] };
+export type InlineView = ViewDefinition & { source: InlineSourceDefinition; roots: InlineNode[] };
 export type SidecarView = ViewDefinition & { source: SidecarSourceDefinition; roots?: never };
 export type RemoteView = ViewDefinition & { source: RemoteSourceDefinition; roots?: never };
 export type CanopyView = InlineView | SidecarView | RemoteView;
