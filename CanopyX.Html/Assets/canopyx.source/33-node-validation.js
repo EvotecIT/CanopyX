@@ -58,6 +58,7 @@
   function validatePage(page, existing, expectedOffset) {
     if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
     const items = page.items;
+    if (page.revision !== undefined) requireIdentifier(page.revision, "dataset revision");
     if (Object.prototype.hasOwnProperty.call(page, "next") && page.next !== null) {
       requireIdentifier(page.next, "page continuation");
     }

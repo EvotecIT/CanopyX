@@ -39,8 +39,10 @@ public static class CanopyViewHtmlExtensions {
     /// <param name="path">The file path of the page.</param>
     /// <param name="options">Asset mode, theme, title, and language.</param>
     /// <remarks>
-    /// With <see cref="CanopyAssetMode.External"/>, also write the assets with <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming)"/>
+    /// With <see cref="CanopyAssetMode.External"/>, also write the assets with <see cref="CanopyHtmlAssets.WriteTo(string, CanopyAssetNaming, CanopyRuntime)"/>
     /// into the folder that <see cref="CanopyHtmlOptions.AssetBaseUrl"/> points to, under the naming of the options.
+    /// Checking, editing, drop, context actions, or translated interaction labels use <see cref="CanopyRuntime.InteractiveTreeGrid"/>;
+    /// other views use <see cref="CanopyHtmlOptions.Runtime"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="path"/> is null or empty.</exception>
     public static void SaveHtmlPage(this CanopyView view, string path, CanopyHtmlOptions? options = null) {
@@ -129,14 +131,15 @@ public static class CanopyViewHtmlExtensions {
             }
         }
 
-        ValidateBundleLayout(CanopyX.Bundles.BundlePaths.DataPath(view.Id, bundleOptions?.DataPath), localAssets ? assetFolder : null);
+        var runtime = CanopyHtmlWriter.RuntimeFor(view, pageOptions);
+        ValidateBundleLayout(CanopyX.Bundles.BundlePaths.DataPath(view.Id, bundleOptions?.DataPath), localAssets ? assetFolder : null, runtime);
         var previousSource = view.Source;
         var result = write(new CanopyBundleWriter(bundleOptions));
         view.Source = result.Source;
         try {
             if (localAssets) {
                 var assets = assetFolder.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
-                CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets), pageOptions.AssetNaming);
+                CanopyHtmlAssets.WriteTo(assets.Length == 0 ? directory : Path.Combine(directory, assets), pageOptions.AssetNaming, runtime);
             }
 
             view.SaveHtmlPage(Path.Combine(directory, "index.html"), pageOptions);
@@ -149,14 +152,16 @@ public static class CanopyViewHtmlExtensions {
     }
 
     /// <summary>Rejects page/file collisions and overlapping local asset/data trees before any output is written.</summary>
-    private static void ValidateBundleLayout(string dataFolder, string? assetFolder) {
+    private static void ValidateBundleLayout(string dataFolder, string? assetFolder, CanopyRuntime runtime) {
         bool Under(string path, string folder) => path.StartsWith(folder, StringComparison.OrdinalIgnoreCase);
         if (Under(dataFolder, "index.html/") || (assetFolder != null && Under(assetFolder, "index.html/"))) {
             throw new ArgumentException("Bundle folders cannot occupy the index.html page path.");
         }
         if (assetFolder == null) return;
         // Under either naming, so a folder that is fine today does not block the other naming tomorrow.
-        foreach (var file in new[] { CanopyHtmlAssets.ScriptFileName, CanopyHtmlAssets.StyleFileName, CanopyHtmlAssets.HashedScriptFileName, CanopyHtmlAssets.HashedStyleFileName }) {
+        foreach (var file in new[] { CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, runtime),
+            CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.Plain, runtime), CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime),
+            CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime) }) {
             if (Under(dataFolder, assetFolder + file + "/")) {
                 throw new ArgumentException("The data folder cannot occupy a runtime asset file path.");
             }

@@ -18,6 +18,7 @@
         return;
       }
       w.expanded = want;
+      this.rememberInactive(w);
       const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
       w.filterCollapsed = !want && !!this.filter;
       try {
@@ -52,6 +53,7 @@
       const suppressInitial = !!this.restoring;
       const token = w.pageToken = {};
       const controller = w.pageController = new AbortController();
+      const navigation = navigationScope(this, controller.signal);
       const generation = w.dataGeneration || 0;
       const obsolete = () => this.destroyed || w._invalidated || w.pageToken !== token || generation !== (w.dataGeneration || 0);
       const run = (async () => {
@@ -61,20 +63,34 @@
         let removed = false;
         try {
           const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-          const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+          const page = inlineItems ? this.inlinePage(w, cursor) : await navigation.wait(this.source.page(w === this.root ? null : w.h, cursor, this.sourceRequest(controller.signal)));
           if (obsolete()) return;
-          const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
+          const existing = inlineItems ? new Map(this.keyMap) : this.keyMap;
+          if (inlineItems) for (const key of this.descendants(w).keys()) existing.delete(key);
+          const items = validatePage(page, existing, cursor ? (w.children || []).length : 0);
+          if (this.queryAware && !inlineItems) {
+            const revision = snapshotRevision(page, this.datasetRevision);
+            if (this.datasetRevision == null) this.datasetRevision = revision;
+          }
           if (cursor != null && !items.length && page.next === cursor) {
             throw new Error("CanopyX: page continuation did not advance.");
           }
-          if (!cursor || !w.children) {
-            w.children = [];
+          if (inlineItems) {
+            const prefix = cursor ? w.children || [] : [];
+            const combined = prefix.map(child => child.h).concat(items);
+            validateNodes(combined, existing, this.root.inlineItems != null);
+            this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true,
+              suppressInitial || restoration !== (this.restoreGeneration || 0));
+          } else {
+            if (!cursor || !w.children) {
+              w.children = [];
+            }
+            const base = w.children.length;
+            const suppressExpansion = suppressInitial || restoration !== (this.restoreGeneration || 0);
+            items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
+            w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
+            w.next = page.next || null;
           }
-          const base = w.children.length;
-          const suppressExpansion = suppressInitial || restoration !== (this.restoreGeneration || 0);
-          items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
-          w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
-          w.next = page.next || null;
           if (w !== this.root && !w.next && !w.children.length) {
             w.h.hasChildren = false;
             w.h.childCount = 0;
@@ -88,6 +104,7 @@
           w.error = err && err.message ? err.message : String(err);
           this.emit("error", { node: w.h, message: w.error });
         } finally {
+          navigation.dispose();
           controller.abort();
           if (w.pageToken !== token) return;
           w.pageToken = null;
@@ -127,7 +144,11 @@
             if (this.opts.onLoad) this.opts.onLoad(w.h, info);
           }
         } finally {
-          if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          try {
+            if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+          } finally {
+            if (!this.destroyed && !w._invalidated) { this.rememberInactive(w); this.scheduleRender(); }
+          }
         }
       })();
       w._pending = run;
@@ -146,6 +167,7 @@
       }
       this.focusRevision = (this.focusRevision || 0) + 1;
       this.focused = w;
+      this.cacheDirty = true;
       this.ensureVisible(w);
       // Detail rows measured on the way can move the row out of view again.
       if (this.render()) {
@@ -168,13 +190,13 @@
       const y = this.tops[i];
       const height = w.hpx;
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      const before = grid.scrollTop;
+      const before = this.logicalTop();
       if (y < before) {
-        grid.scrollTop = y;
+        this.setLogicalTop(y);
       } else if (y + height > before + viewHeight) {
-        grid.scrollTop = y + height - viewHeight;
+        this.setLogicalTop(y + height - viewHeight);
       }
-      if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+      if (Math.abs(this.logicalTop() - before) > viewHeight) this.leanReveal();
     },
 
     /**
@@ -234,6 +256,7 @@
     /** Sets a filter: a predicate over nodes, or { match, keep } for ancestor hints; null clears it. */
     setFilter(filter, options) {
       this.filter = typeof filter === "function" ? { match: filter } : filter || null;
+      this.cacheDirty = true;
       this.filterExpand = !!(options && options.autoExpand);
       this.keyMap.forEach((w) => { w.filterCollapsed = false; });
       this.relayout();
@@ -241,10 +264,17 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
-      const next = new Set(this.activeFilters);
-      if (active) next.add(id);
-      else next.delete(id);
-      this.applyActiveFilters([id], next);
+      return this.updateActiveFilters(active ? { add: [id] } : { remove: [id] });
+    },
+
+    /** Changes part of the filter set atomically, retaining unrelated pending query changes. Additions win over removals. */
+    updateActiveFilters(change) {
+      const { add = [], remove = [] } = change || {};
+      if (!change || typeof change !== "object" || !Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: filter changes need add/remove arrays.");
+      this.validateFilterIds(add.concat(remove));
+      const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
+      remove.forEach(id => next.delete(id)); add.forEach(id => next.add(id));
+      return this.setActiveFilters(Array.from(next));
     },
 
     /**
@@ -253,14 +283,20 @@
      */
     setActiveFilters(ids) {
       if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+      if (this.queryAware) return this.setQuery({ version: 1, sort: (this.pendingQuery || this.acceptedQuery).sort, filters: ids });
       this.applyActiveFilters(ids, new Set(ids));
     },
 
-    applyActiveFilters(named, next) {
+    validateFilterIds(ids) {
       const declared = this.view.filters || [];
-      named.forEach((id) => {
+      ids.forEach((id) => {
         if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
       });
+    },
+
+    applyActiveFilters(named, next) {
+      this.validateFilterIds(named);
+      const declared = this.view.filters || [];
       const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
       // The same set again leaves the rows as they are (branches collapsed under the filter stay collapsed), unless
       // a predicate of the host's replaced the declared filters meanwhile.
@@ -280,7 +316,9 @@
     },
 
     sort(columnId, direction) {
+      if (this.queryAware) return this.setQuery({ version: 1, sort: direction ? { column: columnId, direction } : null, filters: (this.pendingQuery || this.acceptedQuery).filters });
       this.sortState = direction ? { column: columnId, direction: direction } : null;
+      this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.buildHeader();
       this.applySort(this.root, true);
       this.relayout();

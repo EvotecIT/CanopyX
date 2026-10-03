@@ -17,6 +17,19 @@ export function exampleUrl(name) {
   return pathToFileURL(file).href;
 }
 
+/** Records script loads from the DOM, including file URLs browsers omit from network events. */
+export async function trackScriptLoads(page) {
+  await page.addInitScript(() => {
+    window.__canopyxScriptLoads = [];
+    new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node.nodeName === "SCRIPT" && node.src) window.__canopyxScriptLoads.push(node.src);
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  return () => page.evaluate(() => window.__canopyxScriptLoads.splice(0));
+}
+
 export function nextFrames(page) {
   return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
@@ -44,16 +57,18 @@ export function focusedId(page) {
 }
 
 /** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves. */
-export function runtimeAssets() {
+export function runtimeAssets(runtime = "tree") {
+  const stem = runtime === "interactive" ? "canopyx-interactive" : "canopyx";
   return {
-    script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx.js"), "utf8"),
-    style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx.css"), "utf8")
+    script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8"),
+    style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8")
   };
 }
 
 /** A page with one view mounted from a view document, served by the test through page.route. */
 export function viewPage(view) {
-  const { script, style } = runtimeAssets();
+  const interactive = view.checkboxes || view.dragDrop || view.contextActions && view.contextActions.length || view.columns.some(column => column.editable);
+  const { script, style } = runtimeAssets(interactive ? "interactive" : "tree");
   const json = JSON.stringify(view).replace(/</g, "\\" + "u003c");
   return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
     + "</script></head><body class=\"cx-page\"><div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\"><script type=\"application/json\" class=\"cx-config\">"

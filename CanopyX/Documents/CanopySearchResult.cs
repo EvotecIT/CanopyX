@@ -9,6 +9,14 @@ namespace CanopyX;
 /// </summary>
 public sealed class CanopySearchResult {
     private int? _total;
+    private string? _revision;
+
+    /// <summary>Gets or sets the dataset revision, required for a query-aware remote source.</summary>
+    /// <exception cref="ArgumentException">The value is empty or contains unpaired surrogates.</exception>
+    public string? Revision {
+        get => _revision;
+        set { CanopyIdentifiers.Require(value, nameof(value), allowNull: true); _revision = value; }
+    }
 
     /// <summary>Creates a search result.</summary>
     /// <param name="query">The query as the user typed it.</param>
@@ -51,6 +59,7 @@ public sealed class CanopySearchResult {
         var writer = new CanopyJsonWriter(1024);
         writer.BeginObject().Envelope("search").Property("query", Query);
         writer.OptionalProperty("total", _total);
+        writer.OptionalProperty("revision", _revision);
         writer.Property("truncated", Truncated);
         writer.Name("hits").BeginArray();
         foreach (var hit in Hits) {

@@ -167,6 +167,7 @@
         "width": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
+        "editable": { "type": "boolean" },
         "hidden": { "type": "boolean" }
       }
     },
@@ -189,11 +190,18 @@
         {
           "properties": {
             "kind": { "const": "remote" },
+            "queryAware": { "description": "The host applies the view query before paging; every page carries a dataset revision.", "type": "boolean" },
             "children": { "type": "string", "pattern": "^[^#]*\\{ref\\}[^#]*\\{cursor\\}|^[^#]*\\{cursor\\}[^#]*\\{ref\\}" },
             "search": { "type": "string", "pattern": "^[^#]*\\{query\\}[^#]*\\{limit\\}|^[^#]*\\{limit\\}[^#]*\\{query\\}" },
             "counts": { "type": "string", "pattern": "^[^#]*\\{ids\\}" }
           },
           "required": ["children"],
+          "if": { "required": ["queryAware"], "properties": { "queryAware": { "const": true } } },
+          "then": { "properties": {
+            "children": { "pattern": "^[^#]*\\{viewQuery\\}" },
+            "search": { "pattern": "^[^#]*\\{viewQuery\\}" },
+            "counts": { "pattern": "^[^#]*\\{viewQuery\\}" }
+          } },
           "additionalProperties": false
         }
       ]
@@ -225,6 +233,7 @@
       "type": "object",
       "required": ["protocol", "type", "id", "label", "rowHeight", "pageSize", "selection", "columns", "source"],
       "additionalProperties": false,
+      "dependentRequired": { "checkIntents": ["checkboxes"] },
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "view" },
@@ -233,6 +242,26 @@
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
+        "dragDrop": { "description": "Offers proposals to a host drop hook; the runtime never moves nodes itself.", "type": "boolean" },
+        "contextActions": {
+          "type": "array", "items": {
+            "type": "object", "required": ["id", "label"], "additionalProperties": false,
+            "properties": { "id": { "$ref": "#/$defs/identifier" }, "label": { "$ref": "#/$defs/accessibleLabel" } }
+          }
+        },
+        "checkboxes": { "description": "Checking is independent of row selection; hierarchical rules include unloaded descendants.", "enum": ["independent", "hierarchical"] },
+        "checkIntents": {
+          "type": "array",
+          "uniqueItems": true,
+          "$comment": "Writers and readers also require unique paths when checked values differ; JSON Schema uniqueItems compares complete items.",
+          "items": {
+            "type": "object", "required": ["path", "checked"], "additionalProperties": false,
+            "properties": {
+              "path": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+              "checked": { "type": "boolean" }
+            }
+          }
+        },
         "columns": { "type": "array", "minItems": 1, "prefixItems": [{ "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "hidden": { "const": false } } }] }], "items": { "$ref": "#/$defs/column" } },
         "icons": { "type": "object", "propertyNames": { "minLength": 1 }, "additionalProperties": { "type": "string", "pattern": "^\\s*<[sS][vV][gG][ \\t\\r\\n\\f/>]" } },
         "search": {
@@ -271,6 +300,20 @@
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
             "loading": { "$ref": "#/$defs/accessibleLabel" },
             "loadError": { "$ref": "#/$defs/accessibleLabel" },
+            "queryFailed": { "$ref": "#/$defs/accessibleLabel" },
+            "actions": { "$ref": "#/$defs/accessibleLabel" },
+            "editValue": { "$ref": "#/$defs/accessibleLabel" },
+            "saveEdit": { "$ref": "#/$defs/accessibleLabel" },
+            "cancelEdit": { "$ref": "#/$defs/accessibleLabel" },
+            "invalidEdit": { "$ref": "#/$defs/accessibleLabel" },
+            "interactionPending": { "$ref": "#/$defs/accessibleLabel" },
+            "interactionRejected": { "$ref": "#/$defs/accessibleLabel" },
+            "interactionFailed": { "$ref": "#/$defs/accessibleLabel" },
+            "markMove": { "$ref": "#/$defs/accessibleLabel" },
+            "moveHere": { "$ref": "#/$defs/accessibleLabel" },
+            "moveBefore": { "$ref": "#/$defs/accessibleLabel" },
+            "moveAfter": { "$ref": "#/$defs/accessibleLabel" },
+            "cancelMove": { "$ref": "#/$defs/accessibleLabel" },
             "showMore": { "$ref": "#/$defs/accessibleLabel" },
             "showMoreUnknownTotal": { "$ref": "#/$defs/accessibleLabel" },
             "pageLoaded": { "$ref": "#/$defs/accessibleLabel" },
@@ -296,6 +339,20 @@
         "then": { "properties": { "source": { "required": ["search"] } } }
       }]
     },
+    "viewQuery": {
+      "description": "JSON carried in the viewQuery URL parameter; it is not a document envelope.",
+      "type": "object",
+      "required": ["version", "sort", "filters"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "sort": { "oneOf": [ { "type": "null" }, {
+          "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+          "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } }
+        } ] },
+        "filters": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } }
+      }
+    },
     "page": {
       "type": "object",
       "required": ["protocol", "type", "parent", "offset", "items", "next"],
@@ -303,6 +360,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "page" },
+        "revision": { "$ref": "#/$defs/identifier" },
         "parent": { "type": ["string", "null"], "minLength": 1, "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$" },
         "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
@@ -317,6 +375,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "search" },
+        "revision": { "$ref": "#/$defs/identifier" },
         "query": { "type": "string" },
         "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "truncated": { "type": "boolean" },
@@ -331,6 +390,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "counts" },
+        "revision": { "$ref": "#/$defs/identifier" },
         "items": {
           "type": "array",
           "items": {

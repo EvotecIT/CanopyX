@@ -11,6 +11,9 @@ param(
     [ValidateRange(1, 86400)]
     [int] $DotNetCommandTimeoutSeconds = 900,
 
+    [ValidateRange(1, 86400)]
+    [int] $BrowserTestTimeoutSeconds = 900,
+
     [ValidateRange(1, 3600)]
     [int] $PackageConsumerTimeoutSeconds = 300
 )
@@ -155,8 +158,9 @@ function Invoke-PackageSmoke {
 
 function Assert-RuntimeLineBudget {
     param([string] $Root)
-    $parts = Join-Path $Root 'CanopyX.Html/Assets/canopyx.source'
-    if (Test-Path -LiteralPath $parts) {
+    foreach ($source in @('canopyx.source', 'canopyx.interactive.source')) {
+        $parts = Join-Path $Root "CanopyX.Html/Assets/$source"
+        if (!(Test-Path -LiteralPath $parts)) { continue }
         foreach ($part in Get-ChildItem -LiteralPath $parts -Filter '*.js' -File) {
             if ([System.IO.File]::ReadAllLines($part.FullName).Length -gt 350) {
                 throw "Runtime source part exceeds the 350-line budget: $($part.Name)"
@@ -252,7 +256,8 @@ try {
             $previousExamples = $env:CANOPYX_EXAMPLES
             $env:CANOPYX_EXAMPLES = $examplesOutput
             try {
-                Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
             } finally {
                 $env:CANOPYX_EXAMPLES = $previousExamples
             }

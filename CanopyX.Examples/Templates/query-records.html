@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX queries and paged records</title>
+<link rel="stylesheet" href="bundle/assets/{{style}}">
+<script src="bundle/assets/{{script}}" defer></script>
+<style>{{example-style}}</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Queries and paged records</h1>
+<p>Only six of sixty records arrive initially. Sort Value to fetch the lowest or highest records first, or enable Flagged records to query that subset. Show more reads the next page in the accepted order.</p>
+<p>This page uses a host source with the same query and revision contract as HTTP endpoints. It adds a short delay so the accepted rows stay visible while a new query loads.</p>
+<div class="query-controls">
+<button id="reload-query" disabled>Reload snapshot</button>
+<button id="save-query" disabled>Save view</button>
+<button id="restore-query" disabled>Restore view</button>
+<label><input id="fail-query" type="checkbox"> Fail next request</label>
+<label><input id="dark-theme" type="checkbox"> Dark theme</label>
+</div>
+<p id="query-status" role="status">Loading records.</p>
+{{content}}
+<p id="query-selection">No records selected.</p>
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const host = document.querySelector("[data-canopyx-host]"), status = document.getElementById("query-status");
+  let revision = 1, saved = null;
+  const records = () => Array.from({ length: 60 }, (_, index) => ({
+    id: "record-" + (index + 1), label: "Record " + String(index + 1).padStart(2, "0"),
+    cells: { value: index + 1 + (revision - 1) * 100 }, flags: (index + 1) % 3 === 0 ? ["flagged"] : []
+  }));
+  const ordered = query => {
+    let rows = records();
+    if (query.filters.includes("flagged")) rows = rows.filter(row => row.flags.includes("flagged"));
+    if (query.sort) rows.sort((a, b) => (query.sort.column === "value" ? a.cells.value - b.cells.value : a.label.localeCompare(b.label)) * (query.sort.direction === "desc" ? -1 : 1));
+    return rows;
+  };
+  const delay = signal => new Promise((resolve, reject) => {
+    const abort = () => { clearTimeout(timer); signal.removeEventListener("abort", abort); reject(new DOMException("Request cancelled.", "AbortError")); };
+    const timer = setTimeout(() => { if (signal) signal.removeEventListener("abort", abort); resolve(); }, 250);
+    if (signal) { signal.addEventListener("abort", abort, { once: true }); if (signal.aborted) abort(); }
+  });
+  const source = { queryAware: true, canSearch: true,
+    async page(node, cursor, request) {
+      const snapshot = "records-" + revision, all = ordered(request.query);
+      await delay(request.signal);
+      if (document.getElementById("fail-query").checked) {
+        document.getElementById("fail-query").checked = false; throw new Error("The host could not read the requested snapshot.");
+      }
+      const offset = Number(cursor || 0);
+      return { items: all.slice(offset, offset + 6), offset, total: all.length, next: offset + 6 < all.length ? String(offset + 6) : null, revision: snapshot };
+    },
+    async search(text, limit, request) {
+      return { hits: ordered(request.query).filter(row => row.label.toLowerCase().includes(text.toLowerCase())).slice(0, limit)
+        .map(row => ({ path: [row.id], label: row.label })), revision: "records-" + revision };
+    },
+    async counts(ids, request) {
+      return { protocol: "canopyx/2", type: "counts", revision: "records-" + revision,
+        items: ordered(request.query).filter(row => ids.includes(row.id)).map(row => ({ id: row.id, cells: row.cells })) };
+    }
+  };
+  const api = CanopyX.createTreeGrid(host, { view: JSON.parse(host.querySelector(".cx-config").textContent), source,
+    onSelect: (node, selected) => { document.getElementById("query-selection").textContent = selected.length ? "Selected: " + selected.map(row => row.label).join(", ") : "No records selected."; }
+  });
+  host.addEventListener("canopyx:query", event => { status.textContent = "Accepted " + event.detail.revision + "."; });
+  host.addEventListener("canopyx:error", event => { status.textContent = event.detail.message; });
+  await api.ready;
+  document.getElementById("reload-query").addEventListener("click", async function () {
+    this.disabled = true;
+    try { revision++; await api.reload(); } catch (error) { status.textContent = error.message; }
+    finally { this.disabled = false; }
+  });
+  document.getElementById("save-query").addEventListener("click", () => {
+    saved = api.getState(); document.getElementById("restore-query").disabled = false; status.textContent = "View saved.";
+  });
+  document.getElementById("restore-query").addEventListener("click", async () => {
+    try { status.textContent = await api.setState(saved) ? "Saved view restored." : "The saved view could not be restored."; }
+    catch (error) { status.textContent = error.message; }
+  });
+  document.getElementById("dark-theme").addEventListener("change", event => { host.setAttribute("data-cx-theme", event.target.checked ? "dark" : "light"); });
+  ["reload-query", "save-query"].forEach(id => { document.getElementById(id).disabled = false; });
+  status.textContent = "Accepted records-1.";
+});
+</script>
+</main>
+</body>
+</html>

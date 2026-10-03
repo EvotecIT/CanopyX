@@ -47,23 +47,32 @@
   }
 
   /** Keeps the most recently used documents only. Failed loads are not kept, so a retry can succeed. */
-  function recentCache(limit, loadDoc) {
+  function recentCache(limit, loadDoc, maxBytes = Infinity, bytesOf = () => 0) {
     const cache = new Map();
+    let bytes = 0;
     const get = (key) => {
-      let pending = cache.get(key);
-      if (pending) {
+      let entry = cache.get(key);
+      if (entry) {
         cache.delete(key);
       } else {
-        pending = loadDoc(key);
-        pending.catch(() => cache.get(key) === pending && cache.delete(key));
+        entry = { pending: loadDoc(key), ready: false, bytes: 0 };
+        entry.pending.then(doc => {
+          if (cache.get(key) !== entry) return;
+          entry.ready = true; entry.bytes = bytesOf(doc); bytes += entry.bytes;
+          for (const [oldKey, old] of cache) {
+            if (cache.size <= limit && bytes <= maxBytes) break;
+            if (old.ready) { cache.delete(oldKey); bytes -= old.bytes; }
+          }
+        }, () => { if (cache.get(key) === entry) cache.delete(key); });
       }
-      cache.set(key, pending);
-      if (cache.size > limit) cache.delete(cache.keys().next().value);
-      return pending;
+      cache.set(key, entry);
+      return entry.pending;
     };
-    get.clear = () => cache.clear();
+    get.clear = () => { cache.clear(); bytes = 0; };
     return get;
   }
+
+  const packBytes = pages => pages.reduce((bytes, text) => bytes + (typeof text === "string" ? text.length * 2 : 0), 0);
 
   /** Checks a shard against the manifest. A posting list is an entry number, then gaps; -n is a run of n entries. */
   function checkShard(doc, key, count, entryCount) {
@@ -202,9 +211,9 @@
     // manifest names the first entry file and the first shard key of each pack.
     const loadPack = recentCache(PACK_CACHE, async (number) => {
       const doc = checkDocument(await load("q/" + number), "pack");
-      if (!Array.isArray(doc.pages)) throw badIndex("pack");
+      if (!Array.isArray(doc.pages) || doc.pages.some(text => typeof text !== "string")) throw badIndex("pack");
       return doc.pages;
-    });
+    }, PACK_CACHE_BYTES, packBytes);
     // Shard keys in ordinal order (the order of the shard packs), once per manifest.
     const sortedKeys = new WeakMap();
     const packed = async (pack, slot) => {

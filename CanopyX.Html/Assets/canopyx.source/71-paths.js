@@ -4,17 +4,19 @@
   // in between are never laid out, and focus moves once, at the end. Before that, the source may load the pages the path
   // will read all at once (prefetch; a bundle's search index says where they are).
   /** Races each navigation await against cancellation without cancelling a load another caller may own. */
-  function navigationScope(grid, signal) {
-    const signals = Array.from(new Set([grid.lifetime.signal].concat(signal || []).filter(Boolean)));
+  function navigationScope(grid, signal, dataBound = false) {
+    const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
+    const controller = new AbortController();
     let abort;
-    const stopped = new Promise((resolve) => { abort = () => resolve(); });
+    const stopped = new Promise((resolve) => { abort = () => { controller.abort(); resolve(); }; });
     signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
     const cancelled = () => signals.some((item) => item.aborted);
     if (cancelled()) abort();
     return {
       cancelled,
+      signal: controller.signal,
       wait: (pending) => Promise.race([pending, stopped]),
-      dispose: () => signals.forEach((item) => item.removeEventListener("abort", abort))
+      dispose: () => { signals.forEach((item) => item.removeEventListener("abort", abort)); controller.abort(); }
     };
   }
 
@@ -45,7 +47,7 @@
      * signal (AbortSignal; cancelled navigation returns null without selecting or focusing).
      */
     async expandPath(ids, options) {
-      const navigation = navigationScope(this, options && options.signal);
+      const navigation = navigationScope(this, options && options.signal, true);
       try { return await this.navigatePath(ids, options, navigation); }
       finally { navigation.dispose(); }
     },
@@ -58,7 +60,7 @@
       await navigation.wait(this.rootsReady);
       if (cancelled()) return null;
       // A newer navigation does not wait for the files an older one asked for.
-      await navigation.wait(this.prefetchPath(ids, !!o.expandLast));
+      await navigation.wait(this.prefetchPath(ids, !!o.expandLast, navigation.signal));
       if (cancelled()) return null;
       const release = this.holdLayout();
       let w;
@@ -75,7 +77,7 @@
       // Opening levels puts new rows around the node: the frame that shows it first draws only what is in view.
       if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
       if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-        this.clearDeclaredFilters();
+        if (!this.queryAware) this.clearDeclaredFilters();
         this.setFilter(null);
         this.flushLayout();
       }
@@ -95,7 +97,7 @@
      * Lets the source load at once the pages a path will read, instead of one level after another: the children of
      * the nodes that open and are not loaded yet, and the lists that do not hold their node on a loaded page yet.
      */
-    async prefetchPath(ids, openLast) {
+    async prefetchPath(ids, openLast, signal) {
       if (typeof this.source.prefetch !== "function") return;
       const opens = [];
       const finds = [];
@@ -103,13 +105,13 @@
       ids.forEach((id, k) => {
         if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
         const w = this.keyMap.get(id);
-        if (!(w && parent && w.parent === parent)) finds.push(id);
-        parent = w && w.parent === parent ? w : null;
+        if (!(w && parent && w.parent === parent && !w._cached)) finds.push(id);
+        parent = w && w.parent === parent && !w._cached ? w : null;
       });
       if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
       if (!opens.length && !finds.length) return;
       try {
-        await this.source.prefetch(opens, finds);
+        await this.source.prefetch(opens, finds, this.sourceRequest(signal));
       } catch (err) {
         // Prefetching only saves time; opening the path reads and reports what failed.
       }
@@ -130,7 +132,7 @@
         if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return undefined;
         w = this.keyMap.get(ids[k]);
         const seenCursors = new Set();
-        while ((!w || w.parent !== parent) && parent.children && parent.next) {
+        while ((!w || w.parent !== parent || w._cached) && parent.children && parent.next) {
           const before = parent.children.length;
           const cursor = parent.next;
           if (seenCursors.has(cursor)) {
@@ -144,7 +146,7 @@
           }
           w = this.keyMap.get(ids[k]);
         }
-        if (!w || w.parent !== parent) {
+        if (!w || w.parent !== parent || w._cached) {
           throw new Error("CanopyX: id not found on the path: " + ids[k]);
         }
         parent = w;

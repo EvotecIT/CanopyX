@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX project checklist</title>
+<link rel="stylesheet" href="checkbox-assets/{{style}}">
+<script src="checkbox-assets/{{script}}" defer></script>
+<style>{{example-style}}</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Project checklist</h1>
+<p>Check a branch to include its tasks before opening it. Uncheck individual tasks to create an exception. Row selection stays independent: Space checks a row, Control+Space selects it, and F2 enters its checkbox.</p>
+<div class="check-controls">
+<button id="clear-checks" disabled>Clear checks</button>
+<button id="save-checks" disabled>Save view</button>
+<button id="restore-checks" disabled>Restore view</button>
+<label><input id="dark-theme" type="checkbox"> Dark theme</label>
+</div>
+{{content}}
+<p id="check-status" role="status"></p>
+<details><summary>Checking intent for the host</summary><pre id="check-intents"></pre></details>
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+  const host = document.querySelector("[data-canopyx-host]");
+  let saved = null;
+  const source = {
+    async page(node, cursor) {
+      if (!node) return { items: [
+        { id: "atlas", label: "Atlas project", hasChildren: true, childCount: 200, cells: { owner: "Operations" } },
+        { id: "beacon", label: "Beacon project", hasChildren: true, childCount: 200, cells: { owner: "Delivery" } }
+      ], total: 2 };
+      const offset = Number(cursor) || 0;
+      return { items: Array.from({ length: 50 }, (_, i) => ({ id: node.id + "-" + (offset + i),
+        label: "Task " + String(offset + i + 1).padStart(3, "0"), cells: { owner: (offset + i) % 2 ? "Morgan" : "Alex" } })),
+        total: 200, offset, next: offset + 50 < 200 ? String(offset + 50) : null };
+    }
+  };
+  CanopyX.configure("checkboxes", { source });
+  const api = CanopyX.mount()[0];
+  await api.ready;
+  const update = () => {
+    document.getElementById("check-status").textContent = api.getSelected().length + " selected rows; " + api.getCheckIntents().length + " checking rules.";
+    document.getElementById("check-intents").textContent = JSON.stringify(api.getCheckIntents(), null, 2);
+  };
+  host.addEventListener("canopyx:check", update);
+  host.addEventListener("canopyx:select", update);
+  document.getElementById("clear-checks").onclick = () => api.setCheckIntents([]);
+  document.getElementById("save-checks").onclick = () => { saved = api.getState(); };
+  document.getElementById("restore-checks").onclick = async () => { if (saved) { await api.setState(saved); update(); } };
+  document.getElementById("dark-theme").onchange = event => host.dataset.cxTheme = event.target.checked ? "dark" : "light";
+  document.querySelectorAll("button").forEach(button => button.disabled = false);
+  update();
+});
+</script>
+</main>
+</body>
+</html>

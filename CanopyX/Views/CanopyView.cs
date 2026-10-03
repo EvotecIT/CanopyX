@@ -85,6 +85,22 @@ public sealed class CanopyView {
     /// <summary>Gets or sets how many rows can be selected at once.</summary>
     public CanopySelectionMode Selection { get; set; }
 
+    /// <summary>Gets or sets checking independently of row selection. Defaults to no checkboxes.</summary>
+    /// <remarks>Checkbox views use the interactive browser runtime supplied by <c>CanopyX.Html</c>.</remarks>
+    public CanopyCheckboxMode Checkboxes { get; set; }
+
+    /// <summary>Gets the initial checking intents, including paths to nodes that have not loaded.</summary>
+    /// <remarks>Intents require an enabled <see cref="Checkboxes"/> mode. Deeper paths override ancestor intents.</remarks>
+    public IList<CanopyCheckIntent> CheckIntents { get; } = new List<CanopyCheckIntent>();
+
+    /// <summary>Gets or sets whether rows offer drag-and-drop proposals. Defaults to false.</summary>
+    /// <remarks>The interactive runtime requires a host drop hook. It never moves or writes nodes itself.</remarks>
+    public bool DragDrop { get; set; }
+
+    /// <summary>Gets the context actions exposed by the interactive runtime.</summary>
+    /// <remarks>Actions require a host action hook, which owns authorization and execution.</remarks>
+    public IList<CanopyContextAction> ContextActions { get; } = new List<CanopyContextAction>();
+
     /// <summary>Gets or sets where the runtime reads nodes from. Defaults to <see cref="CanopySource.Inline"/>.</summary>
     /// <exception cref="ArgumentNullException">The value is null.</exception>
     public CanopySource Source {
@@ -166,6 +182,20 @@ public sealed class CanopyView {
             .Property("rowHeight", _rowHeight)
             .Property("pageSize", _pageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection));
+        if (Checkboxes != CanopyCheckboxMode.None) {
+            writer.Property("checkboxes", CanopyJsonNames.Checkboxes(Checkboxes));
+            if (CheckIntents.Count > 0) {
+                writer.Name("checkIntents").BeginArray();
+                foreach (var intent in CheckIntents) intent.WriteJson(writer);
+                writer.EndArray();
+            }
+        }
+        if (DragDrop) writer.Property("dragDrop", true);
+        if (ContextActions.Count > 0) {
+            writer.Name("contextActions").BeginArray();
+            foreach (var action in ContextActions) action.WriteJson(writer);
+            writer.EndArray();
+        }
         writer.Name("columns").BeginArray();
         foreach (var column in Columns) {
             column.WriteJson(writer);

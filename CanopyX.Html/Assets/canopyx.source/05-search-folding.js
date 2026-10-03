@@ -4,9 +4,13 @@
   const EXTRA_FOLD_PAIRS = "__CANOPYX_FOLD_PAIRS__";
   const EXTRA_LOWERCASE = new Map();
   const extraBytes = atob(EXTRA_FOLD_PAIRS);
-  for (let i = 0; i < extraBytes.length; i += 4) {
-    EXTRA_LOWERCASE.set(extraBytes.charCodeAt(i) | (extraBytes.charCodeAt(i + 1) << 8),
-      extraBytes.charCodeAt(i + 2) | (extraBytes.charCodeAt(i + 3) << 8));
+  let extraOffset = 0;
+  const extraWord = () => extraBytes.charCodeAt(extraOffset++) | (extraBytes.charCodeAt(extraOffset++) << 8);
+  while (extraOffset < extraBytes.length) {
+    let from = extraWord(), to, count = 1, step = 1;
+    if (from === 0xFFFF) { from = extraWord(); to = extraWord(); count = extraWord(); step = extraWord(); }
+    else to = extraWord();
+    for (let i = 0; i < count; i++) EXTRA_LOWERCASE.set(from + i * step, to + i * step);
   }
   const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
 

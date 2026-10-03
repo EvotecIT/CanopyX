@@ -10,11 +10,20 @@ namespace CanopyX.Tests.Html;
 /// budget in docs/architecture.md, and be safe to inline into a page.
 /// </summary>
 public sealed class RuntimeAssetTests {
-    [Fact]
-    public void Script_MatchesItsSourceParts() {
+    [Theory]
+    [InlineData(CanopyRuntime.TreeGrid)]
+    [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    public void Script_MatchesItsSourceParts(CanopyRuntime runtime) {
         var root = RepositoryPaths.Root;
-        var parts = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
-            .OrderBy(Path.GetFileName, StringComparer.Ordinal)
+        var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal).ToArray();
+        if (runtime == CanopyRuntime.InteractiveTreeGrid) {
+            files = files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") < 0)
+                .Concat(Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.interactive.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal))
+                .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
+        }
+        var script = CanopyHtmlAssets.GetScript(runtime);
+        var parts = files
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
             .ToArray();
 
@@ -29,10 +38,24 @@ public sealed class RuntimeAssetTests {
         var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
         var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
         Assert.NotEmpty(encoded);
-        expected = expected.Replace(marker, encoded);
+        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS = \"([A-Za-z0-9+/=]+)\";");
+        Assert.True(actual.Success, "The browser folding table is missing.");
+        var compact = actual.Groups[1].Value;
+        Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
+        expected = expected.Replace(marker, compact);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
-        Assert.True(expected == Normalize(CanopyHtmlAssets.Script), "canopyx.js is out of date. Run Build/Sync-Assets.ps1.");
+        Assert.True(expected == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
+    }
+
+    [Theory]
+    [InlineData(CanopyRuntime.TreeGrid)]
+    [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    public void Style_MatchesItsSource(CanopyRuntime runtime) {
+        var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "canopyx.css"));
+        if (runtime == CanopyRuntime.InteractiveTreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.interactive.source", "canopyx.css"));
+        Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
     }
 
     [Fact]
@@ -40,6 +63,12 @@ public sealed class RuntimeAssetTests {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 
         Assert.True(compressed <= 48 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 48 KB.");
+    }
+
+    [Fact]
+    public void InteractiveAssets_StayWithinTheirCompressedBudget() {
+        var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.InteractiveTreeGrid));
+        Assert.True(compressed <= 64 * 1024, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 64 KiB.");
     }
 
     [Fact]
@@ -137,7 +166,7 @@ public sealed class RuntimeAssetTests {
         Assert.Single(lines, line => line.TrimStart().StartsWith("/*", StringComparison.Ordinal));
     }
 
-    /// <summary>The comment stripping of Build/Sync-Assets.ps1: whole // lines and /* */ blocks, except the first block.</summary>
+    /// <summary>The asset assembly removes empty and comment lines, preserving the opening header.</summary>
     private static string WithoutCommentLines(string content) {
         var kept = new List<string>();
         var inBlock = false;
@@ -156,7 +185,7 @@ public sealed class RuntimeAssetTests {
                 continue;
             }
 
-            if (text.StartsWith("//", StringComparison.Ordinal)) {
+            if (text.Length == 0 || text.StartsWith("//", StringComparison.Ordinal)) {
                 continue;
             }
 
@@ -166,10 +195,33 @@ public sealed class RuntimeAssetTests {
             kept.Add(text);
         }
 
-        return string.Join("\n", kept);
+        return string.Join("\n", kept) + "\n";
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
+
+    /// <summary>Decodes the browser representation independently and compares every pair to the canonical table.</summary>
+    private static byte[] ExpandFoldingTable(string encoded) {
+        using var source = new MemoryStream(Convert.FromBase64String(encoded));
+        using var reader = new BinaryReader(source);
+        using var expanded = new MemoryStream();
+        using var writer = new BinaryWriter(expanded);
+        while (source.Position < source.Length) {
+            var from = (int)reader.ReadUInt16();
+            var count = 1;
+            var step = 1;
+            int to;
+            if (from == ushort.MaxValue) {
+                from = reader.ReadUInt16(); to = reader.ReadUInt16(); count = reader.ReadUInt16(); step = reader.ReadUInt16();
+                Assert.True(count >= 3 && step is 1 or 2, "Invalid browser folding range.");
+            } else to = reader.ReadUInt16();
+            Assert.True(from + (count - 1) * step < ushort.MaxValue && to + (count - 1) * step <= ushort.MaxValue);
+            for (var index = 0; index < count; index++) {
+                writer.Write((ushort)(from + index * step)); writer.Write((ushort)(to + index * step));
+            }
+        }
+        return expanded.ToArray();
+    }
 
     private static long GzipLength(string value) {
         using var buffer = new MemoryStream();

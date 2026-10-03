@@ -235,7 +235,7 @@ test("remote transport cancels an unread streaming HTTP error response", async (
       return { error, aborted: signal.aborted, retired };
     });
     expect(result).toEqual({ error: "503 Service Unavailable", aborted: true, retired: true });
-    expect((await cancelled).failure().errorText).toContain("ABORTED");
+    expect((await cancelled).failure().errorText).toMatch(/aborted|cancelled/i);
   } finally {
     server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
   }

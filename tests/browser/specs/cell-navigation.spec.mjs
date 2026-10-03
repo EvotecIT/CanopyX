@@ -29,7 +29,9 @@ const hostScript = `CanopyX.configure("cells", { renderers: {
     input.setAttribute("aria-label", "Note " + node.id); input.value = "abc"; el.appendChild(input); return true; } } });`;
 
 async function open(page) {
-  const html = viewPage(view).replace("</head>", () => "<script>" + hostScript + "</script></head>");
+  const html = viewPage(view).replace("</head>", () => "<script>" + hostScript + "</script></head>")
+    .replace('<body class="cx-page">', '<body class="cx-page"><a href="#before" id="before-tree">Before tree</a>')
+    .replace("</body>", '<button type="button" id="after-tree" tabindex="0">After tree</button></body>');
   await page.route("https://canopyx.test/", (route) => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://canopyx.test/");
   await page.waitForSelector("[data-cx-ready]");
@@ -107,7 +109,7 @@ test("controls keep their own keys, and the grid stays one Tab stop", async ({ p
   expect(await page.evaluate(() => [...document.querySelectorAll(".cx-row .cx-cell :is(a, button, input)")].every((c) => c.tabIndex === -1))).toBe(true);
   await row(page, "r1").locator(".cx-text").first().click();
   await page.keyboard.press("Tab");
-  expect(await page.evaluate(() => !!document.activeElement.closest(".cx-grid"))).toBe(false);
+  await expect(page.getByRole("button", { name: "After tree", exact: true })).toBeFocused();
 
   // Enter on a button presses the button; it neither selects nor toggles the row.
   await row(page, "r2").locator(".cx-text").first().click();
@@ -229,12 +231,16 @@ test("a control a narrow cell clips scrolls into view inside its cell, and the c
 test("Shift+Tab from a cell or a control in a row leaves the grid in one step, as from the row", async ({ page }) => {
   await open(page);
   const outsideRows = () => page.evaluate(() => !document.activeElement.closest(".cx-row"));
-  const describe = () => page.evaluate(() => { const active = document.activeElement; return active.className + "|" + (active.closest(".cx-hcell") || {}).dataset?.cxColumn; });
+  const describe = () => page.evaluate(() => { const active = document.activeElement; return active.className + "|" + active.getAttribute("data-cx-id") + "|" + (active.closest(".cx-hcell") || {}).dataset?.cxColumn; });
   // From the row: the element before the grid's tab stop.
   await row(page, "r1").locator(".cx-text").first().click();
   await page.keyboard.press("Shift+Tab");
-  expect(await outsideRows()).toBe(true);
+  expect(await outsideRows(), await describe()).toBe(true);
   const fromRow = await describe();
+  expect(await page.evaluate(() => {
+    const style = getComputedStyle(document.activeElement);
+    return { style: style.outlineStyle, width: style.outlineWidth };
+  })).toEqual({ style: "solid", width: "2px" });
   // From a control, and from a cell, focus lands on that same element, not on the row.
   for (const keys of [["ArrowRight"], ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]]) {
     await row(page, "r1").locator(".cx-text").first().click();

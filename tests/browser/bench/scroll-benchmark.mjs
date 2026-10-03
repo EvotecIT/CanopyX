@@ -5,6 +5,7 @@
 //                                   [--style path/to/canopyx.css] [--channel msedge] [--label name] [--out file.json]
 //                                   [--pause-every 6 --pause-ms 700] [--host-columns status,changes,links,finding]
 //                                   [--host-api renderers|renderCell] [--host-share 0.2]
+//                                   [--profile-dir path] (diagnostic runs; do not compare their timings)
 //
 // Method (same as the D21 spike): a fresh browser per run, viewport 1680 x 950, 500 px wheel steps 16 ms apart, each
 // step awaited. Frames over 50 ms and 33 ms, the 95th percentile and the maximum frame time come from a
@@ -20,6 +21,7 @@
 // false for the others, as a report that draws chips only for some rows does.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -39,6 +41,7 @@ const runtime = path.resolve(option("runtime", path.join(repo, "CanopyX.Html/Ass
 const stylesheet = path.resolve(option("style", path.join(repo, "CanopyX.Html/Assets/canopyx.css")));
 const channel = option("channel", process.env.CANOPYX_BROWSER_CHANNEL || undefined);
 const label = option("label", "current");
+const profileDir = option("profile-dir", null);
 const pauseEvery = Number(option("pause-every", "0"));
 const pauseMs = Number(option("pause-ms", "700"));
 const hostColumns = option("host-columns", "");
@@ -47,16 +50,19 @@ if (host && host.api !== "renderers" && host.api !== "renderCell") throw new Err
 if (host && !(host.share >= 0 && host.share <= 1)) throw new Error("--host-share is a number from 0 to 1.");
 const outDir = path.join(here, "..", "bench-results");
 const out = path.resolve(option("out", path.join(outDir, "scroll-" + label + ".json")));
+const viewport = { width: 1680, height: 950 };
+const deviceScaleFactor = 1;
+const sha256 = (content) => createHash("sha256").update(content).digest("hex");
 
 function median(values) {
   const sorted = values.filter((v) => typeof v === "number").sort((a, b) => a - b);
   return sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : null;
 }
 
-async function scrollOnce(pageUrl, cpu) {
+async function scrollOnce(pageUrl, cpu, run) {
   const browser = await chromium.launch({ channel: channel, headless: true });
   try {
-    const context = await browser.newContext({ viewport: { width: 1680, height: 950 }, deviceScaleFactor: 1 });
+    const context = await browser.newContext({ viewport: viewport, deviceScaleFactor: deviceScaleFactor });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -123,6 +129,10 @@ async function scrollOnce(pageUrl, cpu) {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     const started = Date.now();
     const startedAt = await page.evaluate(() => window.__beginCapture());
+    if (profileDir) {
+      await cdp.send("Profiler.enable");
+      await cdp.send("Profiler.start");
+    }
     let steps = 0;
     for (;;) {
       await page.mouse.wheel(0, 500);
@@ -155,6 +165,8 @@ async function scrollOnce(pageUrl, cpu) {
         frames: frames.length,
         over50: frames.filter((f) => f > 50).length,
         over33: frames.filter((f) => f > 33.4).length,
+        frameMedianMs: sorted[Math.floor(sorted.length * 0.5)] || null,
+        frameP10Ms: sorted[Math.floor(sorted.length * 0.1)] || null,
         p95: sorted[Math.floor(sorted.length * 0.95)] || null,
         max: sorted[sorted.length - 1] || null,
         blank: window.__blank,
@@ -164,25 +176,42 @@ async function scrollOnce(pageUrl, cpu) {
         wheelSteps: wheelSteps
       };
     }, { wheelSteps: steps, startedAt: startedAt });
+    if (profileDir) {
+      const { profile } = await cdp.send("Profiler.stop");
+      fs.mkdirSync(profileDir, { recursive: true });
+      fs.writeFileSync(path.join(profileDir, "scroll-cpu" + cpu + "-run" + (run + 1) + ".cpuprofile"), JSON.stringify(profile));
+    }
     if (errors.length) {
       throw new Error("Scroll benchmark encountered page errors: " + errors.join("; "));
     }
     result.errors = errors;
+    result.browserVersion = browser.version();
     return result;
   } finally {
     await browser.close();
   }
 }
 
-fs.mkdirSync(outDir, { recursive: true });
-const pageFile = path.join(outDir, "scroll-" + label + ".html");
-fs.writeFileSync(pageFile, pageHtml(fs.readFileSync(runtime, "utf8"), fs.readFileSync(stylesheet, "utf8"), scrollView(5, Math.ceil(rows / 5)), host));
+fs.mkdirSync(path.dirname(out), { recursive: true });
+const pageFile = path.join(path.dirname(out), "scroll-" + label + ".html");
+const runtimeBytes = fs.readFileSync(runtime);
+const stylesheetBytes = fs.readFileSync(stylesheet);
+const pageSource = pageHtml(runtimeBytes.toString("utf8"), stylesheetBytes.toString("utf8"), scrollView(5, Math.ceil(rows / 5)), host);
+fs.writeFileSync(pageFile, pageSource);
 const pageUrl = pathToFileURL(pageFile).href;
-const report = { label: label, host: host, pauseEvery: pauseEvery, pauseMs: pauseEvery ? pauseMs : 0, runtime: runtime, channel: channel || "chromium", at: new Date().toISOString(), machine: { cpu: os.cpus()[0].model.trim(), logicalCores: os.cpus().length, memoryGB: Math.round(os.totalmem() / 1073741824), os: os.type() + " " + os.release() }, results: {} };
+const report = {
+  label: label, host: host, pauseEvery: pauseEvery, pauseMs: pauseEvery ? pauseMs : 0,
+  runtime: runtime, stylesheet: stylesheet, channel: channel || "chromium", at: new Date().toISOString(),
+  assets: { runtimeSha256: sha256(runtimeBytes), stylesheetSha256: sha256(stylesheetBytes) },
+  fixture: { path: pageFile, sha256: sha256(pageSource), viewport: viewport, deviceScaleFactor: deviceScaleFactor, requestedRows: rows },
+  nodeVersion: process.version,
+  machine: { cpu: os.cpus()[0].model.trim(), logicalCores: os.cpus().length, memoryGB: Math.round(os.totalmem() / 1073741824), os: os.type() + " " + os.release() },
+  results: {}
+};
 for (const cpu of cpus) {
   const all = [];
   for (let run = 0; run < runs; run++) {
-    const result = await scrollOnce(pageUrl, cpu);
+    const result = await scrollOnce(pageUrl, cpu, run);
     all.push(result);
     process.stdout.write(label + " cpu" + cpu + " run " + (run + 1) + ": frames " + result.frames + ", over 50 ms " + result.over50 + ", over 33 ms " + result.over33 + ", p95 " + (result.p95 || 0).toFixed(1) + " ms, blank " + result.blank + "/" + result.samples + (result.errors.length ? ", errors " + result.errors.join("; ") : "") + "\n");
   }
@@ -195,6 +224,8 @@ for (const cpu of cpus) {
       over50Per100Steps: median(all.map((r) => (100 * r.over50) / r.wheelSteps)),
       over33Per100Steps: median(all.map((r) => (100 * r.over33) / r.wheelSteps)),
       over50Share: median(all.map((r) => r.over50 / r.frames)),
+      frameMedianMs: median(all.map((r) => r.frameMedianMs)),
+      frameP10Ms: median(all.map((r) => r.frameP10Ms)),
       p95: median(all.map((r) => r.p95)),
       max: median(all.map((r) => r.max)),
       blank: median(all.map((r) => r.blank)),

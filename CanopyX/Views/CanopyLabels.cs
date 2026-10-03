@@ -41,6 +41,20 @@ public sealed class CanopyLabels {
         [nameof(ColumnWidth)] = "{width} pixels",
         [nameof(Loading)] = "Loading…",
         [nameof(LoadError)] = "Could not load: {error} (Enter to retry)",
+        [nameof(QueryFailed)] = "Could not update the view: {error}",
+        [nameof(Actions)] = "Actions",
+        [nameof(EditValue)] = "Edit {column}",
+        [nameof(SaveEdit)] = "Save",
+        [nameof(CancelEdit)] = "Cancel",
+        [nameof(InvalidEdit)] = "Enter a valid {column} value.",
+        [nameof(InteractionPending)] = "Waiting for the host…",
+        [nameof(InteractionRejected)] = "The host declined the operation.",
+        [nameof(InteractionFailed)] = "Operation failed: {error}",
+        [nameof(MarkMove)] = "Move this node",
+        [nameof(MoveHere)] = "Move here",
+        [nameof(MoveBefore)] = "Move before",
+        [nameof(MoveAfter)] = "Move after",
+        [nameof(CancelMove)] = "Cancel move",
         [nameof(ShowMore)] = "Show more ({loaded} of {total} loaded)",
         [nameof(ShowMoreUnknownTotal)] = "Show more ({loaded} loaded)",
         [nameof(PageLoaded)] = "{loaded} of {total} loaded",
@@ -60,8 +74,15 @@ public sealed class CanopyLabels {
     private static readonly string[] RuntimeNames = {
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(SearchNoResults), nameof(SearchTooShort), nameof(SearchWordTooShort), nameof(SearchFailed), nameof(Columns), nameof(VisibleColumns),
-        nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
-        nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError)
+        nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(QueryFailed), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
+        nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError),
+        nameof(Actions), nameof(EditValue), nameof(SaveEdit), nameof(CancelEdit), nameof(InvalidEdit), nameof(InteractionPending),
+        nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove)
+    };
+
+    private static readonly string[] InteractionNames = {
+        nameof(Actions), nameof(EditValue), nameof(SaveEdit), nameof(CancelEdit), nameof(InvalidEdit), nameof(InteractionPending),
+        nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove)
     };
 
     private readonly Dictionary<string, string> _values = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -110,6 +131,44 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the row shown when children could not be loaded because of <c>{error}</c>. Default "Could not load: {error} (Enter to retry)".</summary>
     public string LoadError { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the announcement when a view query failed with <c>{error}</c>. Default "Could not update the view: {error}".</summary>
+    public string QueryFailed { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the context menu. Default "Actions".</summary>
+    public string Actions { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets an editor's label, including <c>{column}</c>. Default "Edit {column}".</summary>
+    public string EditValue { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the editor's submit button. Default "Save".</summary>
+    public string SaveEdit { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the editor's cancel button. Default "Cancel".</summary>
+    public string CancelEdit { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the invalid value message, including <c>{column}</c>. Default "Enter a valid {column} value.".</summary>
+    public string InvalidEdit { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the announcement while a host hook is pending. Default "Waiting for the host…".</summary>
+    public string InteractionPending { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the announcement for a declined proposal. Default "The host declined the operation.".</summary>
+    public string InteractionRejected { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the failure announcement, including <c>{error}</c>. Default "Operation failed: {error}".</summary>
+    public string InteractionFailed { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the menu command that marks a node for moving. Default "Move this node".</summary>
+    public string MarkMove { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the command that proposes moving into a node. Default "Move here".</summary>
+    public string MoveHere { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the command that proposes moving before a node. Default "Move before".</summary>
+    public string MoveBefore { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the command that proposes moving after a node. Default "Move after".</summary>
+    public string MoveAfter { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the command that clears a move intent. Default "Cancel move".</summary>
+    public string CancelMove { get => Get(); set => Set(value); }
+
+    /// <summary>Gets whether translations use labels supplied by the interactive browser entry point.</summary>
+    public bool RequiresInteractiveRuntime {
+        get {
+            foreach (var name in InteractionNames) if (_values.ContainsKey(name)) return true;
+            return false;
+        }
+    }
 
     /// <summary>Gets or sets the "show more" row, with <c>{loaded}</c> of <c>{total}</c> children loaded. Default "Show more ({loaded} of {total} loaded)".</summary>
     public string ShowMore { get => Get(); set => Set(value); }

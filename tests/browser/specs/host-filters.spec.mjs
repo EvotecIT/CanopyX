@@ -71,11 +71,13 @@ test("the host switches from one filter to another in one step, with one event f
   await expect(page.getByLabel("Only open")).toBeChecked();
   expect(await page.evaluate(`(() => { try { ${api}.setActiveFilters(["week", "year"]); return "accepted"; } catch (e) { return e.message; } })()`)).toContain("no filter 'year'");
   expect(await page.evaluate(`${api}.getActiveFilters()`)).toEqual(["month", "open"]);
+  await page.evaluate(`${api}.updateActiveFilters({remove:["month"],add:["week"]})`);
+  expect(await page.evaluate(`${api}.getActiveFilters()`)).toEqual(["open", "week"]);
   await page.evaluate(`${api}.setActiveFilters([])`);
   await nextFrames(page);
   await expect(page.getByLabel("Only open")).not.toBeChecked();
   expect(await ids(page)).toEqual(["a", "b"]);
-  expect(await page.evaluate(() => window.events)).toEqual(["week", "month", "month,open", ""]);
+  expect(await page.evaluate(() => window.events)).toEqual(["week", "month", "month,open", "open,week", ""]);
 });
 test("the host hears when the grid drops the filters to reveal a row", async ({ page }) => {
   await open(page);

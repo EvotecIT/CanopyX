@@ -33,4 +33,11 @@ internal static class CanopyJsonNames {
         CanopySourceKind.Remote => "remote",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown source kind.")
     };
+
+    internal static string? Checkboxes(CanopyCheckboxMode mode) => mode switch {
+        CanopyCheckboxMode.None => null,
+        CanopyCheckboxMode.Independent => "independent",
+        CanopyCheckboxMode.Hierarchical => "hierarchical",
+        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown checkbox mode.")
+    };
 }

@@ -18,8 +18,8 @@
       }
       // Focus in a cell, on the cell or on a control in it: cell navigation, or the control's own keys.
       const rowEl = e.target.closest(".cx-row");
-      if (rowEl && rowEl !== e.target && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
-        this.skipRowTabStop(rowEl);
+      if (rowEl && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
+        this.focusBeforeRows(e);
         return;
       }
       if (rowEl && rowEl !== e.target && this.onCellKey(e)) {

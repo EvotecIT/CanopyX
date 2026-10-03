@@ -1,4 +1,7 @@
 /*
+ * CanopyX browser runtime: canopyx/2.
+ */
+/*
  * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
  */
@@ -19,6 +22,7 @@
   const ENTRY_CACHE = 32;
   const ENTRY_BATCH = 8;
   const PACK_CACHE = 6;
+  const PACK_CACHE_BYTES = 2 * 1024 * 1024;
   const DATE_CACHE = 4096;
   const SEARCH_CANDIDATES = 5;
   const MAX_PROTOCOL_INTEGER = 2147483647;
@@ -65,6 +69,7 @@
     if (doc.type !== type) {
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
+    if (Object.prototype.hasOwnProperty.call(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
     if (type === "search") {
       validateSearchResult(doc);
       if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
@@ -191,6 +196,7 @@
       } catch (e) {
         format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
       }
+      if (numberFormats.size >= 16) numberFormats.delete(numberFormats.keys().next().value);
       numberFormats.set(key, format);
     }
     return format;
@@ -222,13 +228,14 @@
   // Every text the runtime writes itself, in English. A view document can carry translations in "labels", and a host
   // can pass more in the options; placeholders such as {count} are replaced. Host data (labels of nodes, column
   // titles, cells) is never translated here.
-  const DEFAULT_LABELS = Object.freeze({
+  let DEFAULT_LABELS = Object.freeze({
     searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
     searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
     searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
     searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
     columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
     loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+    queryFailed: "Could not update the view: {error}",
     showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
     pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
     utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"

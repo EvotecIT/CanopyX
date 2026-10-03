@@ -9,6 +9,15 @@ namespace CanopyX;
 /// host returns it so the page can refresh "3 changed below" style values without reloading rows.
 /// </summary>
 public sealed class CanopyCounts {
+    private string? _revision;
+
+    /// <summary>Gets or sets the dataset revision, required for a query-aware remote source.</summary>
+    /// <exception cref="ArgumentException">The value is empty or contains unpaired surrogates.</exception>
+    public string? Revision {
+        get => _revision;
+        set { CanopyIdentifiers.Require(value, nameof(value), allowNull: true); _revision = value; }
+    }
+
     /// <summary>Gets the entries, one per node.</summary>
     public IList<CanopyCountEntry> Items { get; } = new List<CanopyCountEntry>();
 
@@ -17,7 +26,9 @@ public sealed class CanopyCounts {
     public string ToJson() {
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var writer = new CanopyJsonWriter(1024);
-        writer.BeginObject().Envelope("counts").Name("items").BeginArray();
+        writer.BeginObject().Envelope("counts");
+        writer.OptionalProperty("revision", _revision);
+        writer.Name("items").BeginArray();
         foreach (var item in Items) {
             if (item != null && !ids.Add(item.Id)) {
                 throw new InvalidOperationException("Counts cannot repeat node id '" + item.Id + "'.");

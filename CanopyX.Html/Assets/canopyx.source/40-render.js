@@ -109,7 +109,7 @@
           const button = h("button", "cx-sort");
           button.type = "button";
           setText(button, column.title);
-          button.addEventListener("click", () => this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
+          button.addEventListener("click", () => this.queryAware ? this.querySortHeader(column.id) : this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
           cell.appendChild(button);
         } else {
           const title = h("span", "cx-htext");
@@ -205,7 +205,8 @@
       // A repaint can replace the cell that holds focus (host-drawn cells and details are rebuilt); focus goes back.
       const held = this.heldCell();
       const viewHeight = grid.clientHeight - this.head.offsetHeight;
-      const top = grid.scrollTop;
+      const top = this.logicalTop();
+      const shift = this.scaledScroll ? top - grid.scrollTop : 0;
       const n = this.rows.length;
       const over = this.lean ? 0 : OVERSCAN;
       const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
@@ -257,7 +258,8 @@
           this.fillRow(rowEl, w);
           w._v = this.version;
         } else if (!w.status) this.refreshRowState(rowEl, w);
-        const y = this.tops[index];
+        const y = this.scaledScroll && (index < first || index > last) ?
+          (index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.tops[index] - shift;
         if (rowEl._top !== y) {
           rowEl.style.transform = "translateY(" + y + "px)";
           rowEl._top = y;
@@ -278,7 +280,6 @@
         }
       }
       for (const rowEl of free) {
-        rowEl.remove();
         rowEl._w = null;
         this.observeDetail(rowEl, false);
         if (this.pool.length < 200) {
@@ -292,5 +293,6 @@
       // Browse-mode assistive technology reads DOM order even while wheel or touch scrolling continues.
       this.keepDomOrder(first, last);
       if (held) this.restoreCell(held);
+      this.trimInactiveCache();
     }
   });

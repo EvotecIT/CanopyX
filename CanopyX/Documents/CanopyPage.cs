@@ -12,6 +12,7 @@ public sealed class CanopyPage {
     private int _offset;
     private int? _total;
     private string? _next;
+    private string? _revision;
 
     /// <summary>Creates a page.</summary>
     /// <param name="parentId">The id of the node whose children these are, or <see langword="null"/> for the top level.</param>
@@ -71,6 +72,19 @@ public sealed class CanopyPage {
         }
     }
 
+    /// <summary>
+    /// Gets or sets the host's dataset revision. Query-aware sources return the same nonempty revision on every
+    /// page of one snapshot, including child lists; a changed revision requires a new root query or reload.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is empty or contains unpaired surrogates.</exception>
+    public string? Revision {
+        get => _revision;
+        set {
+            CanopyIdentifiers.Require(value, nameof(value), allowNull: true);
+            _revision = value;
+        }
+    }
+
     /// <summary>Writes the <c>page</c> document.</summary>
     /// <returns>The document as compact, HTML-safe JSON.</returns>
     /// <exception cref="InvalidOperationException">A node breaks a protocol rule, or the total is below the items shown.</exception>
@@ -93,6 +107,7 @@ public sealed class CanopyPage {
         CanopyTreeValidator.Validate(Items, ParentId == null ? "The top-level page" : "The page of '" + ParentId + "'", parentId: ParentId);
         writer.BeginObject().Envelope("page").Name("parent").String(ParentId).Property("offset", _offset);
         writer.OptionalProperty("total", _total);
+        writer.OptionalProperty("revision", _revision);
         writer.Name("items").BeginArray();
         foreach (var item in Items) {
             writeNode(item ?? throw new InvalidOperationException("A page cannot contain a null node."), writer);

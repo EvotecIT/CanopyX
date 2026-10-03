@@ -15,14 +15,13 @@
 
     getExpandedPaths() {
       const out = [];
-      const pending = (this.root.children || []).slice().reverse();
+      const pending = this.modelChildren(this.root).slice().reverse();
       while (pending.length) {
         const child = pending.pop();
         if (child.expanded && this.expandable(child)) {
           out.push(this.pathOf(child));
-          if (child.children) {
-            for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
-          }
+          const children = this.modelChildren(child);
+          for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
         }
       }
       return out;
@@ -46,6 +45,8 @@
       // The restored paths are laid out and rendered together, once.
       const release = this.holdLayout();
       try {
+        if (this.queryAware && state.version && !await this.setQuery({ version: 1, sort: state.sort, filters: state.filters }, { signal: current.signal }, current)) return false;
+        if (this.destroyed || current.signal.aborted) return false;
         this.applyStatePresentation(state);
         if (state.version) await this.loadStatePaths(state, current);
         if (this.destroyed || current.signal.aborted) return false;
@@ -86,6 +87,10 @@
         release();
         if (this.restoreController === current) {
           this.restoring = false;
+          // Restoration changes expansion directly; register its final collapsed branches, including rollback.
+          this.keyMap.forEach(w => this.rememberInactive(w));
+          this.cacheDirty = true;
+          this.scheduleRender();
           this.restoreController = null;
           if (fallback && !this.initializing) await this.expandInitial(this.root);
           if (!this.initializing) await this.flushPendingToggles();
@@ -121,6 +126,8 @@
       } finally {
         if (this.pendingToggleFlush === run) this.pendingToggleFlush = null;
         this.replayingToggles = false;
+        this.cacheDirty = true;
+        this.scheduleRender();
         if (this.pendingRestorationToggles === pending && !pending.size) {
           this.pendingRestorationToggles = null;
           if (!this.destroyed) this.stateChanged();
@@ -202,21 +209,20 @@
       return out.join("");
     },
 
-    /** Applies a counts document to loaded nodes: child counts, rollup cells, and flags. */
+    /** Retires loaded descendants and their requests, including inactive cache membership. */
     invalidateChildren(w) {
-      const pending = (w.children || []).slice();
+      const pending = this.modelChildren(w).slice();
       let removedSelection = null;
       while (pending.length) {
         const child = pending.pop();
-        if (child.children) for (const descendant of child.children) pending.push(descendant);
-        child._invalidated = true;
-        if (child.pageController) child.pageController.abort();
-        if (child.reloadController) child.reloadController.abort();
-        if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
-        if (this.selected.delete(child) && !removedSelection) removedSelection = child;
-        if (this.anchor === child) this.anchor = null;
+        for (const descendant of this.modelChildren(child)) pending.push(descendant);
+        const removed = this.retireWrapper(child);
+        if (!removedSelection) removedSelection = removed;
       }
       w.children = null;
+      w.inlineCache = null;
+      w.inlineOrder = null;
+      if (this.inactiveCache) this.inactiveCache.delete(w);
       w.next = null;
       w.error = null;
       w.expanded = false;
@@ -226,6 +232,7 @@
     applyCounts(doc, fromRefresh = false) {
       if (this.destroyed) return;
       checkDocument(doc, "counts");
+      if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
       let removedSelection = null;
       let removed = false;
       doc.items.forEach((item) => {
@@ -234,9 +241,10 @@
           throw new Error("CanopyX: inline childCount must equal children length.");
         }
       });
-      if (!fromRefresh && this.countRevisions) {
+      if (!fromRefresh) {
         for (const id of new Set(doc.items.map((item) => item.id))) {
-          this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+          const w = this.keyMap.get(id);
+          if (w) w.countRevision = (w.countRevision || 0) + 1;
         }
       }
       doc.items.forEach((item) => {
@@ -271,6 +279,8 @@
         }
         w.content = nodeContent(w.h);
       });
+      this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
+      this.cacheDirty = true;
       this.applySort(this.root, true);
       // Rows of removed nodes go at once, even while an opening path holds back the rest.
       this.relayout(removed);
@@ -281,39 +291,23 @@
       if (this.destroyed || !this.source.counts) {
         return null;
       }
-      const wanted = ids || this.rows.filter((w) => !w.status).map((w) => w.key);
-      const revisions = this.countRevisions || (this.countRevisions = new Map());
-      const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
-      mine.forEach((revision, id) => revisions.set(id, revision));
-      const doc = await this.source.counts(wanted);
-      if (this.destroyed) return null;
+      const wanted = Array.from(new Set(ids || this.rows.filter((w) => !w.status).map((w) => w.key)));
+      const mine = new Map();
+      for (const id of wanted) {
+        const w = this.keyMap.get(id);
+        if (w) { w.countRevision = (w.countRevision || 0) + 1; mine.set(id, { w, revision: w.countRevision }); }
+      }
+      const navigation = navigationScope(this, this.dataLifetime.signal);
+      let doc;
+      try { doc = await navigation.wait(this.source.counts(wanted, this.sourceRequest(this.dataLifetime.signal))); }
+      finally { navigation.dispose(); }
+      if (navigation.cancelled()) return null;
+      if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
       checkDocument(doc, "counts");
-      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
+      this.applyCounts(Object.assign({}, doc, { items: doc.items.filter(item => {
+        const captured = mine.get(item.id);
+        return captured && this.keyMap.get(item.id) === captured.w && captured.w.countRevision === captured.revision;
+      }) }), true);
       return doc;
-    },
-
-    destroy() {
-      if (this.destroyed) return;
-      this.destroyed = true;
-      this.lifetime.abort();
-      if (this.restoreController) this.restoreController.abort();
-      if (this.cancelResize) this.cancelResize();
-      clearTimeout(this.saveTimer);
-      clearTimeout(this.layoutTimer);
-      if (this.cancelSearch) this.cancelSearch();
-      if (this.disposeColumnChooser) this.disposeColumnChooser();
-      if (this.disposeSearchFlyout) this.disposeSearchFlyout();
-      cancelAnimationFrame(this.rafId);
-      this.resizeObserver.disconnect();
-      if (this.detailObserver) this.detailObserver.disconnect();
-      this.grid.removeEventListener("scroll", this.onScroll);
-      global.removeEventListener("beforeprint", this.onPrint);
-      global.removeEventListener("hashchange", this.onHash);
-      global.removeEventListener("popstate", this.onHash);
-      if (this.linkOpening) this.linkOpening.abort();
-      [this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
-      this.host.classList.remove("cx-pin-tree");
-      this.host.removeAttribute("data-cx-ready");
-      this.host.removeAttribute("data-canopyx-mounted");
     }
   });

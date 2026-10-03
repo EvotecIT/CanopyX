@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { exampleUrl, median, openExample } from "./support.mjs";
+import { exampleUrl, median, openExample, trackScriptLoads } from "./support.mjs";
 
 const FIRST_ROWS_MS = 2500;
 const INTERACTION_MS = 250;
@@ -121,13 +121,11 @@ test("a repeated search answers from the loaded index within budget", async ({ b
 // word match nothing or little among thousands of candidates.
 for (const query of ["quarterly review", "re", "İstanbul lau", "version 9", "quarterly z", "quarterly r"]) {
   test(`searching "${query}" loads a bounded part of the index`, async ({ page }) => {
-    const loaded = [];
-    page.on("request", (request) => {
-      const match = /\/data\/[^/]+\/[seq]\/[^/]+\.js$/.exec(request.url());
-      if (match) loaded.push(fs.statSync(fileURLToPath(request.url())).size);
-    });
+    const scriptLoads = await trackScriptLoads(page);
     await openExample(page, "bundle/index.html");
     const result = await page.evaluate((text) => document.querySelector(".cx-host").canopyx.search(text), query);
+    const loaded = (await scriptLoads()).filter(url => /\/data\/[^/]+\/[seq]\/[^/]+\.js$/.test(url))
+      .map(url => fs.statSync(fileURLToPath(url)).size);
     const bytes = loaded.reduce((sum, size) => sum + size, 0);
     console.log("search \"" + query + "\": " + result.hits.length + " of " + result.total + " hits from " + loaded.length + " index files, " + Math.round(bytes / 1024) + " KiB");
     expect(result.total).toBe(query === "version 9" || query === "quarterly z" ? 0 : result.total);
@@ -148,7 +146,8 @@ test("scrolling a long expanded list never shows a blank viewport", async ({ pag
     }
     const grid = document.querySelector(".cx-grid");
     const box = grid.getBoundingClientRect();
-    const probes = [0.3, 0.6, 0.9].map((y) => [box.left + 80, box.top + box.height * y]);
+    // Sample CSS pixels; fractional points on a transformed row edge can hit the canvas in Firefox.
+    const probes = [0.3, 0.6, 0.9].map((y) => [Math.round(box.left + 80), Math.round(box.top + box.height * y)]);
     window.__blank = 0;
     window.__samples = 0;
     grid.addEventListener("scroll", () => requestAnimationFrame(() => {

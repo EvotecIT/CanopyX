@@ -79,9 +79,11 @@ test("later pages expand lazy nodes marked expanded", async ({ page }) => {
 test("sorted paging focuses a newly loaded row", async ({ page }) => {
   await openView(page, baseView(["Z", "Y", "A", "B"].map((label) => ({ id: label, label }))));
   await page.evaluate(() => document.querySelector(".cx-host").canopyx.sort("name", "asc"));
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.visibleRows().map(r => r.node.id))).toEqual(["A", "B"]);
   await page.locator(".cx-row[data-cx-status=more]").focus();
   await page.keyboard.press("Enter");
-  await expect(row(page, "A")).toBeFocused();
+  await expect(row(page, "Y")).toBeFocused();
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx.visibleRows().map(r => r.node.id))).toEqual(["A", "B", "Y", "Z"]);
 });
 
 test("paging another branch preserves the focused show-more row", async ({ page }) => {

@@ -24,6 +24,33 @@ The images come from the pages `CanopyX.Examples` generates; `tests/browser/tool
 
 Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 
+### JavaScript Hosts
+
+The optional `@evotecit/canopyx` package contains the complete interactive runtime, CSS, and TypeScript declarations. It has no runtime dependencies. The module and classic scripts are assembled from the same JavaScript source; .NET consumers keep their existing build with no JavaScript compiler or bundler.
+
+```javascript
+import { createTreeGrid } from "@evotecit/canopyx";
+import "@evotecit/canopyx/styles.css";
+
+const grid = createTreeGrid(document.getElementById("files"), {
+  view: {
+    protocol: "canopyx/2", type: "view", id: "files", label: "Files",
+    rowHeight: 28, pageSize: 100, selection: "single",
+    columns: [{ id: "name", title: "Name", kind: "text", width: 320 }],
+    source: { kind: "inline" }, roots: [{ id: "plans", label: "Plans" }]
+  }
+});
+await grid.ready;
+```
+
+The CSS import above uses the host's existing asset pipeline. A host without a bundler serves the exported stylesheet through a `<link>` and imports `CanopyX.Html/Assets/canopyx-module.mjs` from a module script. `classic.js` and `core.js` export the complete interactive and smaller readonly scripts as assets; their matching styles are `styles.css` and `core.css`. Classic scripts expose `window.CanopyX`.
+
+Module imports are safe during server rendering and leave the server's globals unchanged. Mounting, configuration, and DOM helpers run in the browser. On a page that mixes module and classic hosts, load the module or complete interactive script first; an already-loaded core script cannot be upgraded to support interaction methods. The module rejects that loading order explicitly. Include one matching runtime and stylesheet for the page.
+
+Typed hosts use `InlineView`, `SidecarView`, or `RemoteView` with the matching source factory. Inline roots use the recursive `InlineNode` shape; `CanopyNode` also supports lazy branches. A node chooses complete children or a lazy reference, and detail rows remain leaves. Query-aware custom sources return a dataset `revision` with every page, search result, and count update. Custom link parsers and formatters are supplied together.
+
+Build the local JavaScript archive with `npm pack --ignore-scripts --pack-destination <output-directory>` at the repository root, then install that tarball in a host. This packs the checked-in assets and declarations; it performs no compilation. Reassemble assets with `Build/Sync-Assets.ps1` after editing their canonical source. The browser quality loop packs and installs an isolated consumer, checks its types, and verifies server imports and browser module behavior.
+
 ### Building Against Local Source
 
 A released consumer references the packages. A consumer that needs work that is not released yet (a bridge, a host under development) builds against a checkout of this repository instead:
@@ -53,7 +80,7 @@ A consumer with a solution or build list of its own adds the two CanopyX project
 ## Tree Grid Features
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.
-- Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM.
+- Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM. Large logical heights map to a bounded native scrollbar, keeping every loaded row reachable through scrolling, keyboard navigation, and saved anchors.
 - Columns with per-level sort, resize, and hide, and a tree column that can stay pinned while the others scroll; dates in UTC or the reader's time zone, switchable at run time.
 - Search that returns id paths and expands the tree to the match, optionally limited to the node kinds worth finding; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
 - "Only matching" filters that keep the ancestors of matching rows.
@@ -69,6 +96,10 @@ JavaScript hosts can save a view with `const state = api.getState()` and restore
 Use `await api.reload()` to reread roots, or `await api.reload(parentId, { signal })` to reread a loaded parent's children. Reload reads through the range already loaded, validates the replacement before applying it, and preserves surviving selection, expansion, focus, and scroll position. A newer reload supersedes an older one. Failed validation retains the old data; cancellation returns `false`. `api.refresh()` repaints the current nodes, and `api.refreshCounts()` updates rollup values and child counts.
 
 The generated `live-records.html` example replaces an inline snapshot and provides save and restore controls for the view. An inline host can assign a new array to `api.view.roots` and then call `await api.reload()`; stable node IDs retain the reader's selection and open branches.
+
+The generated `long-document.html` example loads 20,000 tall sections and provides jumps and saved positions across their full range. The height mapping preserves each section's size; it does not load additional pages or bound the memory of rows the host has already supplied.
+
+Sorting an inline list orders its complete sibling array before choosing the loaded page. Selected and expanded identities remain available when they move outside that prefix. `retainedNodeLimit` is a JavaScript host option, defaulting to 1,024 nodes, that bounds unpinned wrappers retained after inline reordering. Selection, expansion, focus, anchors, and pending operations pin their subtrees. The host's inline arrays remain unchanged. For remote and sidecar lists this API orders loaded siblings; ordering the complete dataset remains the host's responsibility.
 
 ## Quick Start
 
@@ -160,7 +191,7 @@ const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwne
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
 
-Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
+Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. Destruction releases loaded rows, selection, caches, and the row pool. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 
 Registered fragment options persist for remounting until their disposer is called or `CanopyX.unconfigure(viewId)` removes them. Removing a registration leaves a mounted grid intact, and an older disposer cannot remove a newer registration.
 
@@ -172,7 +203,64 @@ Hosts can pass `isSelectable(node)` to keep rows focusable while preventing sele
 
 Bundle folder and asset constraints are described in the [data protocol](docs/data-protocol.md#sidecar).
 
+Collapsed branches retain up to 4,096 loaded descendants by default (`inactiveNodeLimit`); unpinned older data is evicted and loaded again when needed. Selection, focus, expansion, state restoration, active requests, and local filters keep their required data. `retainedNodeLimit` separately bounds identities kept outside an inline page after sorting. Both are nonnegative integer host options; pins and host input arrays can exceed these retention limits. The [architecture reference](docs/architecture.md#rendering-model) describes their ownership and the sidecar pack limits.
+
+## Checking Lazy Branches
+
+Checkboxes are independent of row selection. A hierarchical check applies to a complete branch, including children that have not loaded; a deeper rule creates an exception. Checking does not fetch children or perform a host operation.
+
+```csharp
+view.Checkboxes = CanopyCheckboxMode.Hierarchical;
+view.CheckIntents.Add(new CanopyCheckIntent(new[] { "project-a" }, true));
+view.CheckIntents.Add(new CanopyCheckIntent(new[] { "project-a", "task-1" }, false));
+```
+
+`CanopyCheckboxMode.Independent` checks individual nodes. Page and bundle writers choose the interactive runtime automatically for checkbox views. Fragment hosts use `CanopyHtmlAssets.GetRuntime(view)` to select the script and matching stylesheet through `GetScript` and `GetStyle`. If any view on a page requires `CanopyRuntime.InteractiveTreeGrid`, include that entry point once for all views. It includes the standard tree runtime.
+
+In the browser, `api.setChecked(id, checked)` changes a loaded node. `api.setCheckIntents([{ path, checked }])` replaces the complete intent without loading paths. `getCheckState(id)` returns `true`, `false`, `"mixed"`, or `null` for an unavailable node; `getCheckIntents()` returns a copied snapshot suitable for the host to interpret. A complete loaded sibling set can combine into one branch rule; partial pages preserve exceptions without claiming unseen siblings. Rules survive sorting, reload, and cache eviction. Saved views include them, and both outline renderers show readonly check states.
+
+Space checks the focused row; Control+Space or Command+Space keeps row selection. F2 enters the native checkbox. `isCheckable(node)` disables direct changes to a node's control. It does not restrict an ancestor's branch intent: the host evaluates its own eligibility and authorization when interpreting that intent. `beforeCheck(node, intents, { previous, reason })` and the cancelable `canopyx:beforecheck` event can veto a complete proposal, including saved-state restoration. Vetoes return synchronously. `onCheck` and `canopyx:check` report accepted changes. Checking controls pause while a saved view restores.
+
+The generated `checkboxes.html` example demonstrates lazy branches, paging, exceptions, keyboard controls, and saved choices.
+
+## Host Actions, Editing, and Moving Nodes
+
+The interactive runtime presents operations to hooks supplied by the host. It sends immutable IDs, complete paths, and proposed values; the host validates authorization and executes the operation against its own data.
+
+```csharp
+view.Columns[0].Editable = true;
+view.DragDrop = true;
+view.ContextActions.Add(new CanopyContextAction("inspect", "Inspect record"));
+```
+
+Page and bundle writers choose the interactive assets automatically. Fragment hosts include the interactive script and matching stylesheet once. Configure hooks before mounting:
+
+```js
+CanopyX.configure("records", {
+  canEdit: (node, column) => node.kind === "task",
+  canDrag: node => node.kind === "task",
+  onEdit: async (proposal, request) => {
+    // The host validates the path, column, value, and current authorization.
+    return await records.acceptEdit(proposal, request.signal);
+  },
+  onDrop: (proposal, request) => records.acceptMove(proposal, request.signal),
+  onAction: (proposal, request) => records.runAction(proposal, request.signal)
+});
+```
+
+Hooks return `true` for acceptance or `false` for rejection, directly or through a promise. Exceptions report failure. Each request supplies an abort signal, its reason, and the current remote query and dataset revision when applicable. The default deadline is 30 seconds; `interactionTimeoutMs` sets a positive deadline. Cancellation, a newer proposal, destruction, or replacement of affected data retires pending work. Hosts observe cancellation before committing their own writes.
+
+Alt+Enter opens an editor for an editable cell; F2 retains cell navigation. Right-click, the Menu key, or Shift+F10 opens actions. The menu provides move destinations, including before and after a node. Control+Shift+X marks a node or its selected group for moving; Control+Shift+V proposes moving into the destination. Native internal drag offers the same placements. A missing hook makes its operation unavailable. `canEdit`, `canDrag`, `canDrop`, and `isActionEnabled` provide synchronous eligibility; the host still enforces authorization.
+
+The API exposes `beginEdit(nodeId, columnId)`, `openActions(nodeId)`, `requestEdit(nodeId, columnId, value)`, `requestDrop(nodeIds, targetId, placement)`, `requestAction(nodeId, actionId)`, and `cancelInteraction()`. Request methods resolve to an acceptance boolean and accept an optional `{ signal, reason }` argument. Edit values are finite JSON scalars. A drop uses loaded nodes, excludes nested sources when their ancestor is also moved, and rejects a destination within the source subtree. An API drop into the root uses `null` with `"inside"`.
+
+Cancelable `canopyx:beforeedit`, `canopyx:beforedrop`, and `canopyx:beforeaction` events can veto a proposal before execution. `canopyx:edit`, `canopyx:drop`, and `canopyx:action` report `{ proposal, accepted, reason }`. After acceptance, the host supplies fresh data through `applyCounts` or `reload`; return from the hook before refreshing affected data so the operation can report its accepted result. The `interactions.html` example demonstrates this flow, host rejection, and keyboard controls. Translations for these controls are properties of `CanopyLabels`.
+
 ## Documentation
+
+Host filter bars use `grid.updateActiveFilters({ remove: ["day", "week"], add: ["week"] })` to replace one choice while retaining unrelated selections, including changes in a pending query. The grid commits the final filter set atomically; failed queries retain accepted rows and controls.
+
+For hosted data, `CanopySource.RemoteQuery` lets endpoints sort and filter the complete dataset before paging. Every supplied endpoint receives `{viewQuery}` and returns its dataset revision. In the browser, `await grid.sort("value", "desc")` or `await grid.setActiveFilters(["flagged"])` stages a replacement while accepted rows remain visible. Failed queries keep the old view, and stale pages cannot mix revisions. The [remote query contract](docs/data-protocol.md#queries-before-remote-paging) describes request fields, events, cancellation, and selection semantics; `query-records.html` demonstrates the host source.
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
 - [Data protocol](docs/data-protocol.md): the `canopyx/2` documents, bundle file layout, and remote endpoints, with a JSON schema in `docs/schema`.

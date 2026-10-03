@@ -112,8 +112,8 @@
       const top = frame.top + grid.clientTop + this.head.offsetHeight;
       const bottom = frame.top + grid.clientTop + grid.clientHeight;
       const box = target.getBoundingClientRect();
-      if (box.top < top) grid.scrollTop -= top - box.top;
-      else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+      if (box.top < top) this.setLogicalTop(this.logicalTop() - (top - box.top));
+      else if (box.bottom > bottom) this.setLogicalTop(this.logicalTop() + Math.min(box.bottom - bottom, box.top - top));
     },
 
     /**
@@ -144,16 +144,14 @@
     },
 
     /**
-     * Shift+Tab from a cell or a control in a row goes where it goes from the row: before the grid. The row, the
-     * grid's tab stop, comes before its cells in document order and would take the step; it is skipped once.
+     * Shift+Tab from a row or its cells reaches the last header control in one step. Explicit focus also handles
+     * browsers that retain a clicked label as the native traversal starting point after the row receives focus.
      */
-    skipRowTabStop(rowEl) {
-      if (rowEl.tabIndex < 0) return;
-      rowEl.tabIndex = -1;
-      // The browser moves focus right after this keydown; the row is the tab stop again after that.
-      setTimeout(() => {
-        if (!this.destroyed && rowEl._tab === 0) rowEl.tabIndex = 0;
-      }, 0);
+    focusBeforeRows(event) {
+      const previous = this.headRow.querySelector(".cx-hcell:last-child .cx-resize");
+      if (!previous) return;
+      event.preventDefault();
+      previous.focus();
     },
 
     /** Where focus is inside a rendered row's cells, so a repaint that replaces the cell can put it back. */

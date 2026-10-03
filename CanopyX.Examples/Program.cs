@@ -108,6 +108,15 @@ barOptions.HiddenFilterIds.Add("large");
 WriteTemplate("filter-bar.html", Path.Combine(output, "filter-bar.html"), barView.ToHtmlFragment(barOptions));
 WriteTemplate("live-records.html", Path.Combine(output, "live-records.html"),
     LiveRecordsView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "60vh" }));
+WriteTemplate("query-records.html", Path.Combine(output, "query-records.html"),
+    QueryRecordsView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }));
+WriteTemplate("long-document.html", Path.Combine(output, "long-document.html"),
+    LongDocumentView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }));
+CanopyHtmlAssets.WriteTo(Path.Combine(output, "checkbox-assets"), CanopyAssetNaming.ContentHash, CanopyRuntime.InteractiveTreeGrid);
+WriteTemplate("checkboxes.html", Path.Combine(output, "checkboxes.html"),
+    CheckboxView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
+WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
+    InteractionView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 
@@ -139,9 +148,16 @@ static bool FlagLarge(CanopyX.CanopyNode node) {
 
 static void Report(FormattableString message) => Console.WriteLine(message.ToString(CultureInfo.InvariantCulture));
 
-static void WriteTemplate(string name, string path, string content) {
+static void WriteTemplate(string name, string path, string content, CanopyRuntime runtime = CanopyRuntime.TreeGrid) {
+    File.WriteAllText(path, ReadTemplate(name).Replace("{{content}}", content)
+        .Replace("{{example-style}}", ReadTemplate("examples.css"))
+        .Replace("{{style}}", CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime))
+        .Replace("{{script}}", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime)), new UTF8Encoding(false));
+}
+
+static string ReadTemplate(string name) {
     using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates." + name)
         ?? throw new InvalidOperationException("Missing template " + name);
     using var reader = new StreamReader(stream);
-    File.WriteAllText(path, reader.ReadToEnd().Replace("{{content}}", content).Replace("{{style}}", CanopyHtmlAssets.HashedStyleFileName).Replace("{{script}}", CanopyHtmlAssets.HashedScriptFileName), new UTF8Encoding(false));
+    return reader.ReadToEnd();
 }

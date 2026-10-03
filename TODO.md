@@ -19,14 +19,20 @@ References to "the TestimoX plan" mean `docs/roadmaps/Reporting-Platform-EndToEn
 Consumers: HtmlForgeX tree documents and the live and offline tree explorers described below. These requirements complete their selection and data lifecycle before adding another view type.
 
 - [x] Prompt navigation cancellation, host-owned keyboard events, disposable fragment configuration, bounded remote requests, and viewport-aware toolbar panels.
-- [ ] Correct ordering of fully materialized inline siblings before paging; query-aware hosted sorting and filtering with cursor invalidation.
+- [x] Correct ordering of fully materialized inline siblings before paging, with stable retained selection and expansion.
+- [x] Query-aware hosted sorting and filtering with cursor invalidation and dataset revision checks.
 - [x] Programmatic selection, selectability and veto hooks, and explicit select-all scope that never fetches unloaded data.
-- [ ] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
+- [x] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
 - [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
 - [x] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
-- [ ] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
-- [ ] Bounded client caches, large logical-height scrolling, and measured normal/4x rendering within the existing budgets.
-- [ ] Focused Firefox/WebKit coverage, manual reader qualification, JavaScript distribution/types, and representative HtmlForgeX migration proof.
+- [x] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
+- [x] Bounded inactive subtree and sidecar pack retention, with navigation-owned prefetch pins.
+- [x] Large logical-height scrolling with reachable rows and preserved logical anchors.
+- [ ] Qualify the final runtime assets at normal speed and 4x CPU slowdown against the existing tree-scrolling budgets.
+- [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
+- [x] JavaScript module and classic distribution with typed host contracts, an isolated package-consumer check, and server-safe imports.
+- [x] Firefox and WebKit browser contracts, alongside Chromium, with engine-specific coverage in CI.
+- [ ] Manual reader qualification and representative HtmlForgeX migration proof.
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 
@@ -69,6 +75,7 @@ If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the 
 
 Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-30), each as a generic API:
 
+- [x] Fixed-size rows contain layout and painting; detail rows retain content measurement. Five paired, alternating before/after runs of `scroll-benchmark.mjs` (Edge headless, 5,005 expanded rows, nine columns) measure 6.70% → 5.89% frames over 50 ms at 4x CPU slowdown, within the 6% gate. At normal speed both medians are 0%, and neither version shows a blank row. The 4x after-run range is 5.45% to 6.75%; these measurements qualify this fixture on the validation machine.
 - [x] Bundle packing: children pages share pack files up to the file budget (152,601 files became 3,457 on the packing benchmark).
 - [x] Streaming bundle writer: `Write(view, directory, roots, children)` reads the tree from the host node by node.
 - [x] Detail rows as tall as their content (measured), inside the visible width, with wrapping tables and column width shares.
@@ -129,7 +136,7 @@ Left open by that work:
 - On the packed catalog at 4x, "identity gateway" (a service far down a region of 1,000) stays at about 210 ms on a busy machine, over the 200 ms margin and under the 250 ms budget. A trace (Edge, 4x): the search is 70 to 80 ms (19 index files; inserting their script elements alone costs about 17 ms), attaching the region's 1,000 services from one 229 KB pack about 25 ms, the forced layout of the rows in view about 20 ms, and the paint and commit 30 to 40 ms. What is left is the search (it ranks five times `maxResults` candidates and reads the entry files of all of them) and the size of the list a hit sits in; the path itself already loads in one round and renders once.
 - The pages of a list larger than the file budget, and the top-level pages, that lie between a list's first page and the one that holds a hit still load one after another.
 - The streamed writer holds the search entries of a top-level node's subtree until that node is finished, because the location fields of an entry are known only once the lists on its path are paged: for a tree with one top-level node, the whole entry table (about the size of the entry files, twice in memory as UTF-16). Keeping the pending entries as UTF-8 or spilling them to a file would bound it, if a consumer's tree needs that.
-- While a hit's files are prefetched nothing shows, also past 250 ms; the files stay pinned in the sidecar source until the next path opens.
+- While a hit's files are prefetched nothing shows, also past 250 ms. Prefetched files are released when their navigation completes or is cancelled.
 - Scroll benchmark numbers for renderers and time zones on a quiet machine; the runs recorded in PR #10 were taken while other builds ran and differ by less than their noise.
 
 Tree grid follow-ups without a milestone yet, each with the consumer that will pull it in:
@@ -156,7 +163,7 @@ Gate: the live GPO explorer answers each expand and search within 400 ms round t
 Consumers: HtmlForgeX documents that use `FancyTree` today, and TestimoX reports that HtmlForgeX renders. The work happens in HtmlForgeX and needs CanopyX 0.1; this entry tracks it because it is the first external consumer of `CanopyX.Html`.
 
 - [ ] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX): registers the CanopyX assets as a library, maps HtmlForgeX design tokens onto the CanopyX base colours, and emits the fragment.
-- [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) that CanopyX only plans for 1.0, so check outside callers before deleting.
+- [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) and host-specific hooks, so inventory those contracts before migration.
 - [ ] Delete the component and its jQuery and fancytree assets.
 - [ ] `HtmlForgeX.Email` renders tree content through the CanopyX static renderer, because email clients run no script.
 
@@ -187,7 +194,7 @@ Consumers: an Active Directory users and computers browser (ADPlayground and Tes
 - [ ] Master-detail layout and a property sheet for the selected node.
 - [ ] Column chooser and saved views.
 - [ ] Filter builder.
-- [ ] Context actions that call host-provided, host-governed write hooks. CanopyX never performs a write itself.
+- [x] Context actions that call host-provided, host-governed write hooks. CanopyX never performs a write itself.
 - [ ] Remote sources with 1,000,000 rows.
 
 Gate: the directory browser runs on the TestimoX L directory fixture (1.5 million objects) and the certificates overview on 1 million issued certificates from the TestimoX scale fixtures, both without product code in CanopyX, and every write goes through a host hook.
@@ -196,10 +203,10 @@ Gate: the directory browser runs on the TestimoX L directory fixture (1.5 millio
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.
 
-- [ ] Editing, drag and drop, and tri-state checkboxes. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
+- [x] Editing and drag and drop. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
 - [ ] Documentation website built with PowerForge.Web.
 - [ ] Published benchmarks with reproducible commands.
-- [ ] Optional npm distribution of the built runtime for hosts that are not .NET.
+- [x] Optional npm distribution of the built runtime for hosts that are not .NET.
 
 Gate: no breaking changes to the public API or to `canopyx/2` during 1.x, and the website documents every public entry point with a working example.
 

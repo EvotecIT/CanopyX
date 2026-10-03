@@ -41,6 +41,10 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `rowHeight` | integer 20 to 64 | Height of every row in CSS pixels. |
 | `pageSize` | integer 1 to 10,000 | For inline sources, how many children show before a "show more" row. |
 | `selection` | `single` or `multiple` | Selection mode. |
+| `checkboxes` | `independent` or `hierarchical` | Optional. Checking is separate from selection and requires the interactive tree entry point. Absent means no checkboxes. |
+| `checkIntents` | array of `{ path, checked }` | Optional when checkboxes are enabled. Complete node-ID paths and boolean values; paths are unique and may name unloaded descendants. |
+| `dragDrop` | boolean | Optional. Enables internal move proposals when the host supplies a drop hook. |
+| `contextActions` | array of `{ id, label }` | Optional. Unique action IDs and visible menu labels; the host supplies execution and authorization. |
 | `columns` | array of columns | The first column is the tree column. At least one. |
 | `icons` | object | Optional. Icon key to trusted SVG markup, declared once and referenced by nodes. |
 | `search` | object | Optional. Shows the search box. When present it has `minLength` (1 to 16; at least 2 for sidecar sources) and `maxResults` (1 to 500), and optionally `placeholder` (the box's placeholder and accessible name; `labels.searchPlaceholder` when absent) and `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
@@ -53,7 +57,49 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 | `source` | object | Where nodes come from (see [Sources](#sources)). |
 | `roots` | array of nodes | Top-level nodes; present only for inline sources. |
 
-A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable` and `hidden`. The tree column cannot be hidden. Widths are initial: the reader drags a column edge, and a host sets one with `grid.setColumnWidth(columnId, pixels)`, for example to narrow the tree column on a small screen. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
+A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable`, `hidden`, and `editable`. `editable` enables edit proposals when the host supplies an edit hook. The tree column cannot be hidden. Widths are initial: the reader drags a column edge, and a host sets one with `grid.setColumnWidth(columnId, pixels)`, for example to narrow the tree column on a small screen. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
+
+### Host Interaction Proposals
+
+Optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly.
+
+| Proposal | Fields |
+| --- | --- |
+| Edit | `nodeId`, complete `path`, `column`, `previous`, `value`; values are finite JSON scalars. |
+| Drop | `nodes: [{ nodeId, path }]`, `target: { nodeId, path }`, `placement: "inside" | "before" | "after"`. A root target has `nodeId: null` and an empty path. |
+| Context action | `nodeId`, complete `path`, `action`; the action ID comes from `contextActions`. |
+
+The runtime freezes proposals and nested paths before invoking `onEdit`, `onDrop`, or `onAction`. The second argument contains `signal`, `reason`, and accepted `query` and dataset `revision` when the source is query-aware. Hooks return a boolean or a promise of one. The cancelable `canopyx:beforeedit`, `canopyx:beforedrop`, and `canopyx:beforeaction` events can veto execution. Completion events carry `{ proposal, accepted, reason }`. Host hooks authorize and execute against current source data; UI eligibility is an additional presentation constraint.
+
+One proposal owns pending interaction work. Supersession, caller cancellation, destruction, affected data replacement, and the configured deadline settle it. A drop rejects a loaded destination beneath its source and removes descendant sources already covered by a moved ancestor. It does not fetch unloaded data or prove domain eligibility. Refresh accepted data after returning from the hook; a refresh inside the hook retires an operation whose data snapshot changed.
+
+When an accepted children, count, or query update cancels an interaction, its abort listeners run after the synchronous replacement is attached. A listener that opens another proposal or editor therefore reads current data, accepted query, and revision; a removed node is unavailable. Page and transport cancellation retain their own data lifetime.
+
+Starting a count refresh cancels a pending proposal for an affected node before the read changes ownership. Unrelated count reads leave it intact. Local row layout or column changes close editors and menus; abort listeners run after the complete sort or column visibility change, so a replacement editor uses the committed layout. Cancelling an editor clears its pending announcement.
+
+Number columns use numeric editors even when their current cell is empty; an accepted first value reaches the host as a finite number. Move menus, keyboard moves, and pointer indicators evaluate `canDrop` against the same immutable proposal as the drop request, including its actual placement and ancestor-normalized source paths. A rejected keyboard move leaves the command available to the host.
+
+Interaction control translations use the view's `labels`: `actions`, `editValue`, `saveEdit`, `cancelEdit`, `invalidEdit`, `interactionPending`, `interactionRejected`, `interactionFailed`, `markMove`, `moveHere`, `moveBefore`, `moveAfter`, and `cancelMove`. `editValue` and `invalidEdit` accept `{column}`; `interactionFailed` accepts `{error}`. Include the interactive entry point when overriding these labels.
+
+### Checking Intent
+
+An enabled `checkboxes` mode is independent of `selection`. In `independent` mode each rule applies only to its exact path. In `hierarchical` mode a rule applies to the path's branch, including unloaded descendants; a deeper rule overrides it. The default is unchecked. A branch with a checked descendant or an exception to its own checked rule is mixed. Complete loaded sibling sets can combine into one branch intent; partially loaded lists and server-filtered lists never imply a choice for unseen siblings.
+
+```json
+"checkboxes": "hierarchical",
+"checkIntents": [
+  { "path": ["project-a"], "checked": true },
+  { "path": ["project-a", "task-1"], "checked": false }
+]
+```
+
+Paths are complete, nonempty, and contain no repeated IDs. An intent array cannot contain the same path twice. Rules may name unloaded nodes and require no reads. Readers normalize redundant hierarchical rules without changing their meaning. Node IDs retain their exact Unicode and case. Detail rows have no checking control.
+
+The schema rejects repeated identical intent objects. Path uniqueness across different `checked` values is an additional semantic constraint enforced by C# writers and browser readers; JSON Schema's `uniqueItems` compares whole items rather than one property. Hosts validating hand-written documents apply both structural and semantic validation.
+
+The interactive tree entry point reads these fields. C# HTML writers select it automatically; hosts writing fragments include that entry point once for the whole page. Standard readers ignore these optional fields. Version 1 saved views may additionally carry `checkboxes` and `checkIntents`; a mismatched checkbox mode or malformed rules reject the whole restore before changes. Legacy expansion-only state preserves current checks. A modern saved view without checking fields restores the unchecked default. Restoration reports `onCheck` and `canopyx:check` when it accepts the checking presentation. These accepted rules can survive cancellation of later path loading; a restore rejected before presentation changes reports no checking change.
+
+Checkbox state is a presentation intent. The library does not enumerate an unloaded branch, authorize its members, or perform a write. A host interprets rules against its own data and governs the resulting operation.
 
 ### Labels
 
@@ -74,6 +120,7 @@ The runtime writes some text of its own: the search box's hints and announcement
 | `columnWidth` | {width} pixels | `width` |
 | `loading` | Loading… | |
 | `loadError` | Could not load: {error} (Enter to retry) | `error` |
+| `queryFailed` | Could not update the view: {error} | `error` |
 | `showMore` | Show more ({loaded} of {total} loaded) | `loaded`, `total` |
 | `showMoreUnknownTotal` | Show more ({loaded} loaded) | `loaded` |
 | `pageLoaded` | {loaded} of {total} loaded | `loaded`, `total` |
@@ -90,6 +137,10 @@ The runtime writes some text of its own: the search box's hints and announcement
 A node matches a filter when its `flags` contain the filter's `flag`; a matching node keeps its whole subtree. A node that does not match stays visible, with its children filtered, when a loaded descendant matches or when it carries the `ancestorFlag`. The runtime never walks data it has not loaded, so a host that wants a collapsed branch to stay visible under a filter marks it with the ancestor flag. Rollup flags like these are always computed by the host.
 
 The toolbar draws a switch for every filter that is not `hidden`. A C# host that writes pages with and without a filter bar of its own from one view names the filters to hide per page in `CanopyHtmlOptions.HiddenFilterIds` (or `CanopyView.ToJson(hiddenFilterIds)`), which writes them as `hidden` without changing the view. A hidden filter is for a host that draws its own control, for example one "only changed" button in front of a filter per time window: it declares the filters, turns one on or off with `grid.setFilterActive(id, active)` or sets the whole active set at once with `grid.setActiveFilters(ids)` (one row rebuild and at most one event, for a control that switches from one filter to another), reads `grid.getActiveFilters()`, and listens for the `canopyx:filter` event on the host element, whose `detail.active` lists the ids of the active filters. The event fires only when the set changes, also when the grid itself turns the filters off: when a search hit or a deep link leads to a row the filters hide, and when the host sets a predicate of its own with `grid.setFilter`, which replaces the declared filters. `setFilterActive` and `setActiveFilters` reject an id the view does not declare, before they change anything.
+
+To replace one group of alternatives while preserving other selections, use `grid.updateActiveFilters({ remove: ["day", "week"], add: ["week"] })`. Both arrays are optional. The method applies removals before additions, validates every named filter before changing state, and commits one transaction. It uses the latest pending filter set on query-backed views, so a choice made while another query is loading retains that query's unrelated selections. `getActiveFilters()` continues to report accepted filters until the replacement succeeds.
+
+For a query-aware remote source, the host applies declared filters before paging and supplies the ancestor rows needed to reach matches. Filter methods return promises, and local predicates do not turn those server filters off. See [Queries Before Remote Paging](#queries-before-remote-paging).
 
 ## Node
 
@@ -195,6 +246,7 @@ Table and property cells follow the cell rules above. In the interactive browser
 - `offset` is the index of the first item among all of the parent's children.
 - `total` is optional; when present it is at least `offset` plus the number of items. A continuation is required exactly when that sum is below the known total.
 - `next` is an opaque continuation. The data source passes it back to get the next page; `null` means the last page. The runtime shows a "show more" row while `next` is set.
+- `revision` is an optional nonempty identifier for the dataset snapshot. Query-aware sources require it on every page, search result, and counts document; ordinary inline, sidecar, and remote sources do not require it.
 - Items may carry inline `children`. A node with a lazy `ref` or positive `childCount` and no inline children must declare `hasChildren: true`; readers reject the otherwise unreachable children before attaching the page.
 
 ## Search
@@ -227,7 +279,7 @@ A host with a link scheme of its own passes two callbacks to the runtime and the
 - `formatLink(path, node)` returns the fragment for a selected row, without the `#`, for example `record/42` or `record/42/rev/3`. Returning `null` leaves the URL as it is, for a row the scheme has no link for. When the selection becomes empty it is called with an empty path and `null`; an empty string then clears the fragment.
 - `parseLink(fragment)` returns the id path the fragment names, or a promise of it when the host has to look the path up, or `null` when the fragment is not a link into this view. It also gets the empty fragment of a page opened without one.
 
-The two callbacks are given together. One view per page can own the fragment this way; views with the default scheme share it through their `cx.<view id>` parameters. A newer fragment cancels one that is still being opened, and a fragment that could not be opened can be tried again.
+The two callbacks are given together. One view per page can own the fragment this way; views with the default scheme share it through their `cx.<view id>` parameters. A newer fragment cancels one that is still being opened, and a fragment that could not be opened can be tried again. Cancellation covers asynchronous parsing as well as path loading: a replacement query or destruction settles the old caller even when the host's parser never returns. A retired parser cannot navigate the replacement snapshot; an explicit `readLocation()` can retry the same fragment against it.
 
 The fragment is written onto the page's own address (`location`), replacing the current history entry. A `<base href>` in the page, which some hosts inject so that the relative links of an uploaded report resolve against its library, does not change where a deep link points. It does change where relative data URLs resolve: a relative sidecar `base` and relative remote endpoint templates follow the document's base URL, like every other relative URL of the page.
 
@@ -378,6 +430,24 @@ The runtime fills the placeholders with URL-encoded values and sends `GET` reque
 - `counts` (optional): `{ids}` is the node ids, each encoded twice with `encodeURIComponent`, joined with a literal comma and inserted without further encoding. After normal query-parameter decoding, split on commas and decode each component once more; for example, the id `a,b` arrives as `a%2Cb` in the decoded parameter, so it remains one id. The runtime sends at most 50 ids per request and splits larger sets. The response is a `counts` document.
 
 A response with a non-success status, invalid JSON, or the wrong `protocol` or `type` shows an error row with a retry action in place of the children. Authorization, page-size limits, and query-time limits belong to the host's endpoints.
+
+### Queries Before Remote Paging
+
+`CanopySource.RemoteQuery` declares `queryAware: true`. Every endpoint it provides contains `{viewQuery}` before any fragment. The placeholder carries URL-encoded JSON, separate from the search text in `{query}`:
+
+```json
+{ "version": 1, "sort": { "column": "value", "direction": "desc" }, "filters": ["flagged"] }
+```
+
+`sort` is `null` or one sortable column ID and `asc` or `desc`. `filters` holds unique IDs declared by the view. Its schema is `$defs/viewQuery`; it is a request parameter, not a document envelope. The host validates these IDs against its own allowlist and applies the query to the complete dataset before paging. It supplies ancestors needed to reach filtered descendants. The runtime preserves the order and membership it receives, including inline children inside remote pages.
+
+`grid.getQuery()` returns the accepted query. `await grid.setQuery(query, { signal })`, `await grid.sort(column, direction)`, and the declared-filter methods stage a new root page. Accepted rows, selection, and sort indicators remain until validation succeeds. Failure rejects the promise and emits `canopyx:error`; caller cancellation, destruction, or a newer query returns `false`. An equivalent query returns `true` without fetching. On acceptance, `canopyx:query` reports `{ query, revision }`, and changed declared filters emit `canopyx:filter`. A local `setFilter` predicate can further narrow the accepted rows without changing the host query or its filter switches.
+
+Every page, search result, and counts document carries the same `revision` for one accepted snapshot. `{revision}` is an optional URL placeholder: empty for a new root query, otherwise the accepted revision. Hosts bind continuations to the query and revision and reject stale cursors. A mismatched revision is rejected before rows, hits, or counts are applied. Use `grid.reload()` to accept a new root revision; it stages through the loaded root range. Child reloads stay in the accepted revision.
+
+A query replacement retires old page, search, counts, reload, and navigation consumers. A custom source receives `query` as a frozen snapshot and `revision` alongside `signal` in its request argument for `page(node, cursor, request)`, `search(text, limit, request)`, `counts(ids, request)`, and optional `prefetch(opens, finds, request)`. Its transport still owns cancellation and deadlines; the grid can release a consumer even if that transport ignores its signal. Custom page results and search results include `revision`; custom counts return a counts document with that field.
+
+Loaded roots and complete inline descendants preserve surviving identities. Old lazy child lists are discarded because their membership and order may have changed; open surviving parents load their new children. Row selection is pruned when its data leaves the loaded snapshot. A saved view applies its query before restoring columns, paths, selection, and position. The generated `query-records.html` example demonstrates host ordering, filtering, failures, and reloads from a source that also works from disk.
 
 ## Security Notes
 

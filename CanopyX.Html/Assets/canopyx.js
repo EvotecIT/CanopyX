@@ -1,14 +1,11 @@
 /*
- * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
- * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
+ * CanopyX browser runtime: canopyx/2.
  */
 (function (global) {
 "use strict";
-
 if (global.CanopyX) {
 return;
 }
-
 const PROTOCOL = "canopyx/2";
 const OVERSCAN = 8;
 const TYPEAHEAD_MS = 600;
@@ -18,13 +15,13 @@ const SHARD_CACHE = 24;
 const ENTRY_CACHE = 32;
 const ENTRY_BATCH = 8;
 const PACK_CACHE = 6;
+const PACK_CACHE_BYTES = 2 * 1024 * 1024;
 const DATE_CACHE = 4096;
 const SEARCH_CANDIDATES = 5;
 const MAX_PROTOCOL_INTEGER = 2147483647;
 const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
 const activeGrids = new WeakMap();
 let instanceSeq = 0;
-
 function h(tag, className) {
 const element = document.createElement(tag);
 if (className) {
@@ -32,25 +29,20 @@ element.className = className;
 }
 return element;
 }
-
 function setText(element, value) {
 element.textContent = value == null ? "" : String(value);
 }
-
 function safeId(value) {
 return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
 }
-
 function validStructuralCount(value) {
 return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
 }
-
 function requireFlags(flags, name) {
 if (!Array.isArray(flags) || flags.some((flag) => typeof flag !== "string" || !flag.length)) {
 throw new Error("CanopyX: " + name + " must be an array of nonempty strings.");
 }
 }
-
 function checkDocument(doc, type) {
 if (!doc || typeof doc !== "object") {
 throw new Error("CanopyX: expected a " + type + " document, got " + typeof doc);
@@ -61,6 +53,7 @@ throw new Error("CanopyX: unsupported protocol '" + doc.protocol + "' (this runt
 if (doc.type !== type) {
 throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
 }
+if (Object.prototype.hasOwnProperty.call(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
 if (type === "search") {
 validateSearchResult(doc);
 if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
@@ -87,7 +80,6 @@ if (Object.prototype.hasOwnProperty.call(item, "flags")) requireFlags(item.flags
 }
 return doc;
 }
-
 function validateSearchHit(hit) {
 if (!hit || typeof hit !== "object" || !Array.isArray(hit.path) || !hit.path.length || typeof hit.label !== "string") {
 throw new Error("CanopyX: search hit needs an ID path and string label.");
@@ -103,13 +95,11 @@ if ((Object.prototype.hasOwnProperty.call(hit, "kind") && typeof hit.kind !== "s
 throw new Error("CanopyX: search hit kind and context must be strings.");
 }
 }
-
 function validateSearchResult(result) {
 if (!result || !Array.isArray(result.hits)) throw new Error("CanopyX: search hits must be an array.");
 result.hits.forEach(validateSearchHit);
 return result;
 }
-
 function checkPage(doc, node) {
 checkDocument(doc, "page");
 if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
@@ -123,18 +113,14 @@ const parent = node ? node.id : null;
 if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
 return doc;
 }
-
 function isCellObject(cell) {
 return cell !== null && typeof cell === "object";
 }
-
 function cellValue(cell) {
 return isCellObject(cell) ? (cell.value === undefined ? null : cell.value) : (cell === undefined ? null : cell);
 }
-
 const NO_TONE = { cls: "", host: null };
 const tones = new Map();
-
 function toneOf(name) {
 let tone = typeof name === "string" ? tones.get(name) : NO_TONE;
 if (!tone) {
@@ -147,12 +133,10 @@ if (tones.size < 256) tones.set(name, tone);
 }
 return tone;
 }
-
 function applyTone(element, base, tone) {
 element.className = base + tone.cls;
 toneColors(element, tone);
 }
-
 function toneColors(element, tone) {
 if ((element._tone || null) === tone.host) {
 return;
@@ -166,7 +150,6 @@ element.style.removeProperty("--cx-t");
 element.style.removeProperty("--cx-t-bg");
 }
 }
-
 const numberFormats = new Map();
 function numberFormat(lang) {
 const key = lang || "";
@@ -177,17 +160,15 @@ format = new Intl.NumberFormat(lang || undefined, { maximumFractionDigits: 3 });
 } catch (e) {
 format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
 }
+if (numberFormats.size >= 16) numberFormats.delete(numberFormats.keys().next().value);
 numberFormats.set(key, format);
 }
 return format;
 }
-
 function pad2(value) {
 return value < 10 ? "0" + value : String(value);
 }
-
 const dateTexts = new Map();
-
 function dateText(value) {
 let texts = dateTexts.get(value);
 if (texts === undefined) {
@@ -201,19 +182,18 @@ dateTexts.set(value, texts);
 }
 return texts;
 }
-
-const DEFAULT_LABELS = Object.freeze({
+let DEFAULT_LABELS = Object.freeze({
 searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
 searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
 searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
 searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
 columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
 loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
+queryFailed: "Could not update the view: {error}",
 showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
 pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
 utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
 });
-
 function labelsFor(...sources) {
 const labels = Object.assign({}, DEFAULT_LABELS);
 for (const source of sources) {
@@ -228,21 +208,17 @@ labels[name] = source[name];
 }
 return Object.freeze(labels);
 }
-
 function fill(template, values) {
 return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
 }
-
 function formatting(lang, local, labels) {
 const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
 return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
 }
-
 function formatDate(value, fmt) {
 const texts = dateText(value);
 return texts ? (fmt.local ? texts[1] : fmt.utc[0] + texts[0] + fmt.utc[1]) : String(value);
 }
-
 function otherZone(cell, column, fmt) {
 const value = cellValue(cell);
 if (column.kind !== "datetime" || typeof value !== "string" || (isCellObject(cell) && typeof cell.text === "string")) {
@@ -251,7 +227,6 @@ return null;
 const texts = dateText(value);
 return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
 }
-
 function formatValue(value, kind, fmt) {
 if (value === null || value === undefined) {
 return "";
@@ -267,16 +242,13 @@ return formatDate(value, fmt);
 }
 return String(value);
 }
-
 function cellText(cell, column, fmt) {
 if (isCellObject(cell) && typeof cell.text === "string") {
 return cell.text;
 }
 return formatValue(cellValue(cell), column.kind, fmt);
 }
-
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-
 function sortKey(cell, column) {
 let value = cellValue(cell);
 if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
@@ -299,7 +271,6 @@ return { rank: 0, value: time };
 }
 return { rank: 1, value: String(value) };
 }
-
 function compareKeys(a, b, direction) {
 if (a.rank !== b.rank) {
 return a.rank - b.rank;
@@ -310,16 +281,18 @@ return 0;
 const order = a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : collator.compare(a.value, b.value);
 return order * direction;
 }
-
-const EXTRA_FOLD_PAIRS = "QQBhAEIAYgBDAGMARABkAEUAZQBGAGYARwBnAEgAaABJAGkASgBqAEsAawBMAGwATQBtAE4AbgBPAG8AUABwAFEAcQBSAHIAUwBzAFQAdABVAHUAVgB2AFcAdwBYAHgAWQB5AFoAegDAAOAAwQDhAMIA4gDDAOMAxADkAMUA5QDGAOYAxwDnAMgA6ADJAOkAygDqAMsA6wDMAOwAzQDtAM4A7gDPAO8A0ADwANEA8QDSAPIA0wDzANQA9ADVAPUA1gD2ANgA+ADZAPkA2gD6ANsA+wDcAPwA3QD9AN4A/gAAAQEBAgEDAQQBBQEGAQcBCAEJAQoBCwEMAQ0BDgEPARABEQESARMBFAEVARYBFwEYARkBGgEbARwBHQEeAR8BIAEhASIBIwEkASUBJgEnASgBKQEqASsBLAEtAS4BLwEyATMBNAE1ATYBNwE5AToBOwE8AT0BPgE/AUABQQFCAUMBRAFFAUYBRwFIAUoBSwFMAU0BTgFPAVABUQFSAVMBVAFVAVYBVwFYAVkBWgFbAVwBXQFeAV8BYAFhAWIBYwFkAWUBZgFnAWgBaQFqAWsBbAFtAW4BbwFwAXEBcgFzAXQBdQF2AXcBeAH/AHkBegF7AXwBfQF+AYEBUwKCAYMBhAGFAYYBVAKHAYgBiQFWAooBVwKLAYwBjgHdAY8BWQKQAVsCkQGSAZMBYAKUAWMClgFpApcBaAKYAZkBnAFvAp0BcgKfAXUCoAGhAaIBowGkAaUBpgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwBywHMAc0BzgHPAdAB0QHSAdMB1AHVAdYB1wHYAdkB2gHbAdwB3gHfAeAB4QHiAeMB5AHlAeYB5wHoAekB6gHrAewB7QHuAe8B8QHzAfIB8wH0AfUB9gGVAfcBvwH4AfkB+gH7AfwB/QH+Af8BAAIBAgICAwIEAgUCBgIHAggCCQIKAgsCDAINAg4CDwIQAhECEgITAhQCFQIWAhcCGAIZAhoCGwIcAh0CHgIfAiACngEiAiMCJAIlAiYCJwIoAikCKgIrAiwCLQIuAi8CMAIxAjICMwI6AmUsOwI8Aj0CmgE+AmYsQQJCAkMCgAFEAokCRQKMAkYCRwJIAkkCSgJLAkwCTQJOAk8CcANxA3IDcwN2A3cDfwPzA4YDrAOIA60DiQOuA4oDrwOMA8wDjgPNA48DzgORA7EDkgOyA5MDswOUA7QDlQO1A5YDtgOXA7cDmAO4A5kDuQOaA7oDmwO7A5wDvAOdA70DngO+A58DvwOgA8ADoQPBA6MDwwOkA8QDpQPFA6YDxgOnA8cDqAPIA6kDyQOqA8oDqwPLA88D1wPYA9kD2gPbA9wD3QPeA98D4APhA+ID4wPkA+UD5gPnA+gD6QPqA+sD7APtA+4D7wP0A7gD9wP4A/kD8gP6A/sD/QN7A/4DfAP/A30DAARQBAEEUQQCBFIEAwRTBAQEVAQFBFUEBgRWBAcEVwQIBFgECQRZBAoEWgQLBFsEDARcBA0EXQQOBF4EDwRfBBAEMAQRBDEEEgQyBBMEMwQUBDQEFQQ1BBYENgQXBDcEGAQ4BBkEOQQaBDoEGwQ7BBwEPAQdBD0EHgQ+BB8EPwQgBEAEIQRBBCIEQgQjBEMEJAREBCUERQQmBEYEJwRHBCgESAQpBEkEKgRKBCsESwQsBEwELQRNBC4ETgQvBE8EYARhBGIEYwRkBGUEZgRnBGgEaQRqBGsEbARtBG4EbwRwBHEEcgRzBHQEdQR2BHcEeAR5BHoEewR8BH0EfgR/BIAEgQSKBIsEjASNBI4EjwSQBJEEkgSTBJQElQSWBJcEmASZBJoEmwScBJ0EngSfBKAEoQSiBKMEpASlBKYEpwSoBKkEqgSrBKwErQSuBK8EsASxBLIEswS0BLUEtgS3BLgEuQS6BLsEvAS9BL4EvwTABM8EwQTCBMMExATFBMYExwTIBMkEygTLBMwEzQTOBNAE0QTSBNME1ATVBNYE1wTYBNkE2gTbBNwE3QTeBN8E4AThBOIE4wTkBOUE5gTnBOgE6QTqBOsE7ATtBO4E7wTwBPEE8gTzBPQE9QT2BPcE+AT5BPoE+wT8BP0E/gT/BAAFAQUCBQMFBAUFBQYFBwUIBQkFCgULBQwFDQUOBQ8FEAURBRIFEwUUBRUFFgUXBRgFGQUaBRsFHAUdBR4FHwUgBSEFIgUjBSQFJQUmBScFKAUpBSoFKwUsBS0FLgUvBTEFYQUyBWIFMwVjBTQFZAU1BWUFNgVmBTcFZwU4BWgFOQVpBToFagU7BWsFPAVsBT0FbQU+BW4FPwVvBUAFcAVBBXEFQgVyBUMFcwVEBXQFRQV1BUYFdgVHBXcFSAV4BUkFeQVKBXoFSwV7BUwFfAVNBX0FTgV+BU8FfwVQBYAFUQWBBVIFggVTBYMFVAWEBVUFhQVWBYYFoBAALaEQAS2iEAItoxADLaQQBC2lEAUtphAGLacQBy2oEAgtqRAJLaoQCi2rEAstrBAMLa0QDS2uEA4trxAPLbAQEC2xEBEtshASLbMQEy20EBQttRAVLbYQFi23EBctuBAYLbkQGS26EBotuxAbLbwQHC29EB0tvhAeLb8QHy3AECAtwRAhLcIQIi3DECMtxBAkLcUQJS3HECctzRAtLaATcKuhE3GrohNyq6MTc6ukE3SrpRN1q6YTdqunE3erqBN4q6kTeauqE3qrqxN7q6wTfKutE32rrhN+q68Tf6uwE4CrsROBq7ITgquzE4OrtBOEq7UThau2E4artxOHq7gTiKu5E4mruhOKq7sTi6u8E4yrvRONq74Tjqu/E4+rwBOQq8ETkavCE5KrwxOTq8QTlKvFE5WrxhOWq8cTl6vIE5iryROZq8oTmqvLE5urzBOcq80TnavOE56rzxOfq9AToKvRE6Gr0hOiq9MTo6vUE6Sr1ROlq9YTpqvXE6er2BOoq9kTqavaE6qr2xOrq9wTrKvdE62r3hOuq98Tr6vgE7Cr4ROxq+ITsqvjE7Or5BO0q+UTtavmE7ar5xO3q+gTuKvpE7mr6hO6q+sTu6vsE7yr7RO9q+4TvqvvE7+r8BP4E/ET+RPyE/oT8xP7E/QT/BP1E/0TiRyKHJAc0BCRHNEQkhzSEJMc0xCUHNQQlRzVEJYc1hCXHNcQmBzYEJkc2RCaHNoQmxzbEJwc3BCdHN0QnhzeEJ8c3xCgHOAQoRzhEKIc4hCjHOMQpBzkEKUc5RCmHOYQpxznEKgc6BCpHOkQqhzqEKsc6xCsHOwQrRztEK4c7hCvHO8QsBzwELEc8RCyHPIQsxzzELQc9BC1HPUQthz2ELcc9xC4HPgQuRz5ELoc+hC9HP0Qvhz+EL8c/xAAHgEeAh4DHgQeBR4GHgceCB4JHgoeCx4MHg0eDh4PHhAeER4SHhMeFB4VHhYeFx4YHhkeGh4bHhweHR4eHh8eIB4hHiIeIx4kHiUeJh4nHigeKR4qHiseLB4tHi4eLx4wHjEeMh4zHjQeNR42HjceOB45HjoeOx48Hj0ePh4/HkAeQR5CHkMeRB5FHkYeRx5IHkkeSh5LHkweTR5OHk8eUB5RHlIeUx5UHlUeVh5XHlgeWR5aHlseXB5dHl4eXx5gHmEeYh5jHmQeZR5mHmceaB5pHmoeax5sHm0ebh5vHnAecR5yHnMedB51HnYedx54Hnkeeh57HnwefR5+Hn8egB6BHoIegx6EHoUehh6HHogeiR6KHosejB6NHo4ejx6QHpEekh6THpQelR6eHt8AoB6hHqIeox6kHqUeph6nHqgeqR6qHqserB6tHq4erx6wHrEesh6zHrQetR62HrceuB65Hroeux68Hr0evh6/HsAewR7CHsMexB7FHsYexx7IHskeyh7LHswezR7OHs8e0B7RHtIe0x7UHtUe1h7XHtge2R7aHtse3B7dHt4e3x7gHuEe4h7jHuQe5R7mHuce6B7pHuoe6x7sHu0e7h7vHvAe8R7yHvMe9B71HvYe9x74Hvke+h77Hvwe/R7+Hv8eCB8AHwkfAR8KHwIfCx8DHwwfBB8NHwUfDh8GHw8fBx8YHxAfGR8RHxofEh8bHxMfHB8UHx0fFR8oHyAfKR8hHyofIh8rHyMfLB8kHy0fJR8uHyYfLx8nHzgfMB85HzEfOh8yHzsfMx88HzQfPR81Hz4fNh8/HzcfSB9AH0kfQR9KH0IfSx9DH0wfRB9NH0UfWR9RH1sfUx9dH1UfXx9XH2gfYB9pH2Efah9iH2sfYx9sH2QfbR9lH24fZh9vH2cfiB+AH4kfgR+KH4Ifix+DH4wfhB+NH4Ufjh+GH48fhx+YH5AfmR+RH5ofkh+bH5MfnB+UH50flR+eH5Yfnx+XH6gfoB+pH6Efqh+iH6sfox+sH6QfrR+lH64fph+vH6cfuB+wH7kfsR+6H3Afux9xH7wfsx/IH3IfyR9zH8ofdB/LH3UfzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIWAhcCFhIXEhYiFyIWMhcyFkIXQhZSF1IWYhdiFnIXchaCF4IWkheSFqIXohayF7IWwhfCFtIX0hbiF+IW8hfyGDIYQhtiTQJLck0SS4JNIkuSTTJLok1CS7JNUkvCTWJL0k1yS+JNgkvyTZJMAk2iTBJNskwiTcJMMk3STEJN4kxSTfJMYk4CTHJOEkyCTiJMkk4yTKJOQkyyTlJMwk5iTNJOckziToJM8k6SQALDAsASwxLAIsMiwDLDMsBCw0LAUsNSwGLDYsByw3LAgsOCwJLDksCiw6LAssOywMLDwsDSw9LA4sPiwPLD8sECxALBEsQSwSLEIsEyxDLBQsRCwVLEUsFixGLBcsRywYLEgsGSxJLBosSiwbLEssHCxMLB0sTSweLE4sHyxPLCAsUCwhLFEsIixSLCMsUywkLFQsJSxVLCYsViwnLFcsKCxYLCksWSwqLFosKyxbLCwsXCwtLF0sLixeLC8sXyxgLGEsYixrAmMsfR1kLH0CZyxoLGksaixrLGwsbSxRAm4scQJvLFACcCxSAnIscyx1LHYsfiw/An8sQAKALIEsgiyDLIQshSyGLIcsiCyJLIosiyyMLI0sjiyPLJAskSySLJMslCyVLJYslyyYLJksmiybLJwsnSyeLJ8soCyhLKIsoyykLKUspiynLKgsqSyqLKssrCytLK4sryywLLEssiyzLLQstSy2LLcsuCy5LLosuyy8LL0sviy/LMAswSzCLMMsxCzFLMYsxyzILMksyizLLMwszSzOLM8s0CzRLNIs0yzULNUs1izXLNgs2SzaLNss3CzdLN4s3yzgLOEs4izjLOss7CztLO4s8izzLECmQaZCpkOmRKZFpkamR6ZIpkmmSqZLpkymTaZOpk+mUKZRplKmU6ZUplWmVqZXplimWaZaplumXKZdpl6mX6ZgpmGmYqZjpmSmZaZmpmemaKZppmqma6Zspm2mgKaBpoKmg6aEpoWmhqaHpoimiaaKpoumjKaNpo6mj6aQppGmkqaTppSmlaaWppemmKaZppqmm6YipyOnJKclpyanJ6copymnKqcrpyynLacupy+nMqczpzSnNac2pzenOKc5pzqnO6c8pz2nPqc/p0CnQadCp0OnRKdFp0anR6dIp0mnSqdLp0ynTadOp0+nUKdRp1KnU6dUp1WnVqdXp1inWadap1unXKddp16nX6dgp2GnYqdjp2SnZadmp2enaKdpp2qna6dsp22nbqdvp3mneqd7p3ynfad5HX6nf6eAp4GngqeDp4SnhaeGp4eni6eMp42nZQKQp5GnkqeTp5anl6eYp5mnmqebp5ynnaeep5+noKehp6Kno6ekp6Wnpqenp6inqaeqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6u0p7Wntqe3p7inuae6p7unvKe9p76nv6fAp8GnwqfDp8SnlKfFp4ICxqeOHcenyKfJp8qny6dkAsynzafQp9Gn1qfXp9in2afap9un3KebAfWn9qch/0H/Iv9C/yP/Q/8k/0T/Jf9F/yb/Rv8n/0f/KP9I/yn/Sf8q/0r/K/9L/yz/TP8t/03/Lv9O/y//T/8w/1D/Mf9R/zL/Uv8z/1P/NP9U/zX/Vf82/1b/N/9X/zj/WP85/1n/Ov9a/w==";
+const EXTRA_FOLD_PAIRS = "//9BAGEAGgABAP//wADgABcAAQD//9gA+AAHAAEA//8AAQEBGAACAP//MgEzAQMAAgD//zkBOgEIAAIA//9KAUsBFwACAHgB/wD//3kBegEDAAIAgQFTAoIBgwGEAYUBhgFUAocBiAGJAVYCigFXAosBjAGOAd0BjwFZApABWwKRAZIBkwFgApQBYwKWAWkClwFoApgBmQGcAW8CnQFyAp8BdQL//6ABoQEDAAIApgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwB///LAcwBCQACAP//3gHfAQkAAgDxAfMB8gHzAfQB9QH2AZUB9wG/Af//+AH5ARQAAgAgAp4B//8iAiMCCQACADoCZSw7AjwCPQKaAT4CZixBAkICQwKAAUQCiQJFAowC//9GAkcCBQACAHADcQNyA3MDdgN3A38D8wOGA6wD//+IA60DAwABAIwDzAOOA80DjwPOA///kQOxAxEAAQD//6MDwwMJAAEAzwPXA///2APZAwwAAgD0A7gD9wP4A/kD8gP6A/sD///9A3sDAwABAP//AARQBBAAAQD//xAEMAQgAAEA//9gBGEEEQACAP//igSLBBsAAgDABM8E///BBMIEBwACAP//0ATRBDAAAgD//zEFYQUmAAEA//+gEAAtJgABAMcQJy3NEC0t//+gE3CrUAABAP//8BP4EwYAAQCJHIoc//+QHNAQKwABAP//vRz9EAMAAQD//wAeAR5LAAIAnh7fAP//oB6hHjAAAgD//wgfAB8IAAEA//8YHxAfBgABAP//KB8gHwgAAQD//zgfMB8IAAEA//9IH0AfBgABAP//WR9RHwQAAgD//2gfYB8IAAEA//+IH4AfCAABAP//mB+QHwgAAQD//6gfoB8IAAEAuB+wH7kfsR+6H3Afux9xH7wfsx///8gfch8EAAEAzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIf//YCFwIRAAAQCDIYQh//+2JNAkGgABAP//ACwwLDAAAQBgLGEsYixrAmMsfR1kLH0C//9nLGgsAwACAG0sUQJuLHECbyxQAnAsUgJyLHMsdSx2LH4sPwJ/LEAC//+ALIEsMgACAOss7CztLO4s8izzLP//QKZBphcAAgD//4CmgaYOAAIA//8ipyOnBwACAP//Mqczpx8AAgB5p3qne6d8p32neR3//36nf6cFAAIAi6eMp42nZQKQp5GnkqeTp///lqeXpwoAAgCqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6v//7SntacIAAIAxKeUp8WnggLGp44dx6fIp8mnyqfLp2QCzKfNp9Cn0af//9an16cDAAIA3KebAfWn9qf//yH/Qf8aAAEA";
 const EXTRA_LOWERCASE = new Map();
 const extraBytes = atob(EXTRA_FOLD_PAIRS);
-for (let i = 0; i < extraBytes.length; i += 4) {
-EXTRA_LOWERCASE.set(extraBytes.charCodeAt(i) | (extraBytes.charCodeAt(i + 1) << 8),
-extraBytes.charCodeAt(i + 2) | (extraBytes.charCodeAt(i + 3) << 8));
+let extraOffset = 0;
+const extraWord = () => extraBytes.charCodeAt(extraOffset++) | (extraBytes.charCodeAt(extraOffset++) << 8);
+while (extraOffset < extraBytes.length) {
+let from = extraWord(), to, count = 1, step = 1;
+if (from === 0xFFFF) { from = extraWord(); to = extraWord(); count = extraWord(); step = extraWord(); }
+else to = extraWord();
+for (let i = 0; i < count; i++) EXTRA_LOWERCASE.set(from + i * step, to + i * step);
 }
 const GREEK_ACCENTED = { 0x0386: 0x03AC, 0x0388: 0x03AD, 0x0389: 0x03AE, 0x038A: 0x03AF, 0x038C: 0x03CC, 0x038E: 0x03CD, 0x038F: 0x03CE };
-
 function foldCode(c) {
 if (c < 0x80) {
 return c >= 65 && c <= 90 ? c + 32 : c;
@@ -348,15 +321,12 @@ return c + 0x30;
 if (GREEK_ACCENTED[c]) return GREEK_ACCENTED[c];
 return EXTRA_LOWERCASE.get(c) || c;
 }
-
 function foldUnit(unit) {
 return String.fromCharCode(foldCode(unit.charCodeAt(0)));
 }
-
 function isSeparator(code) {
 return code < 128 && !((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122));
 }
-
 function foldText(text) {
 const source = String(text == null ? "" : text);
 let out = "";
@@ -365,7 +335,6 @@ out += foldUnit(source.charAt(i));
 }
 return out;
 }
-
 function words(text) {
 const folded = foldText(text);
 const out = [];
@@ -385,23 +354,19 @@ out.push(current);
 }
 return out;
 }
-
 function matchesWords(labelWords, queryWords) {
 return queryWords.every((q) => labelWords.some((w) => w.startsWith(q)));
 }
-
 function trimSeparators(text) {
 let start = 0, end = text.length;
 while (start < end && isSeparator(text.charCodeAt(start))) start++;
 while (end > start && isSeparator(text.charCodeAt(end - 1))) end--;
 return text.slice(start, end);
 }
-
 function rankLabel(label, foldedQuery) {
 const l = trimSeparators(foldText(label));
 return l === foldedQuery ? 0 : l.startsWith(foldedQuery) ? 1 : 2;
 }
-
 function shardKey(prefix) {
 let out = "";
 for (let i = 0; i < prefix.length; i++) {
@@ -410,14 +375,11 @@ out += (code >= 97 && code <= 122) || (code >= 48 && code <= 57) ? prefix.charAt
 }
 return out;
 }
-
 const sidecarDocs = new Map();
 const sidecarWaiters = new Map();
-
 function sidecarKey(view, ref) {
 return JSON.stringify([view, ref]);
 }
-
 function acceptSidecar(entry) {
 if (!Array.isArray(entry) || entry.length !== 3) {
 return;
@@ -431,7 +393,6 @@ waiter.resolve(entry[2]);
 sidecarDocs.set(key, entry[2]);
 }
 }
-
 const sidecarQueue = global.CanopyXSidecar = global.CanopyXSidecar || [];
 sidecarQueue.forEach(acceptSidecar);
 sidecarQueue.length = 0;
@@ -441,7 +402,6 @@ acceptSidecar(arguments[i]);
 }
 return 0;
 };
-
 function loadSidecar(base, view, ref) {
 if (ref.split("/").some((part) => part === "." || part === "..")) {
 return Promise.reject(new Error("Sidecar reference cannot contain a dot path component: " + ref));
@@ -482,16 +442,12 @@ waiter.reject(new Error("Sidecar file is missing: " + ref));
 document.head.appendChild(script);
 return waiter.promise;
 }
-
-
 function badIndex(what) {
 return new Error("CanopyX: search " + what + " does not match the manifest or is malformed.");
 }
-
 function isCount(value) {
 return Number.isInteger(value) && value >= 0;
 }
-
 function checkSearchIndex(index) {
 if (!index || !isCount(index.entryCount) || !Array.isArray(index.entryFiles) || !Array.isArray(index.kinds) ||
 !index.shards || typeof index.shards !== "object" || (index.entryCount > 0) !== (index.entryFiles.length > 0) ||
@@ -508,7 +464,6 @@ index.shardPacks.some((key, i) => typeof key !== "string" || !Object.prototype.h
 throw badIndex("index packs");
 }
 }
-
 function resolveShards(shards, keys, word) {
 const bases = keys.filter((key) => !/\.\d+$/.test(key));
 const parts = (selected) => selected.flatMap((key) => [key].concat(keys.filter((part) => part.startsWith(key + "."))
@@ -522,25 +477,31 @@ if (length === word.length) return parts(deeper);
 }
 return [];
 }
-
-function recentCache(limit, loadDoc) {
+function recentCache(limit, loadDoc, maxBytes = Infinity, bytesOf = () => 0) {
 const cache = new Map();
+let bytes = 0;
 const get = (key) => {
-let pending = cache.get(key);
-if (pending) {
+let entry = cache.get(key);
+if (entry) {
 cache.delete(key);
 } else {
-pending = loadDoc(key);
-pending.catch(() => cache.get(key) === pending && cache.delete(key));
+entry = { pending: loadDoc(key), ready: false, bytes: 0 };
+entry.pending.then(doc => {
+if (cache.get(key) !== entry) return;
+entry.ready = true; entry.bytes = bytesOf(doc); bytes += entry.bytes;
+for (const [oldKey, old] of cache) {
+if (cache.size <= limit && bytes <= maxBytes) break;
+if (old.ready) { cache.delete(oldKey); bytes -= old.bytes; }
 }
-cache.set(key, pending);
-if (cache.size > limit) cache.delete(cache.keys().next().value);
-return pending;
+}, () => { if (cache.get(key) === entry) cache.delete(key); });
+}
+cache.set(key, entry);
+return entry.pending;
 };
-get.clear = () => cache.clear();
+get.clear = () => { cache.clear(); bytes = 0; };
 return get;
 }
-
+const packBytes = pages => pages.reduce((bytes, text) => bytes + (typeof text === "string" ? text.length * 2 : 0), 0);
 function checkShard(doc, key, count, entryCount) {
 checkDocument(doc, "searchShard");
 if (doc.key !== key) throw badIndex("shard key");
@@ -560,7 +521,6 @@ if (last >= entryCount) throw badIndex("shard");
 if (total !== count) throw badIndex("shard posting count");
 return doc;
 }
-
 function mergePostings(lists) {
 const out = [];
 let ascending = true;
@@ -578,7 +538,6 @@ if (ascending) return out;
 out.sort((a, b) => a - b);
 return out.filter((value, i) => !i || value !== out[i - 1]);
 }
-
 function intersectPostings(a, b) {
 let j = 0;
 return a.filter((value) => {
@@ -586,7 +545,6 @@ while (j < b.length && b[j] < value) j++;
 return b[j] === value;
 });
 }
-
 function labelToken(folded) {
 let hash = 2166136261;
 for (let i = 0; i < folded.length; i++) {
@@ -594,11 +552,9 @@ hash = Math.imul(hash ^ folded.charCodeAt(i), 16777619);
 }
 return "\u0000" + ("0000000" + (hash >>> 0).toString(16)).slice(-8);
 }
-
 function entryReference(value) {
 return value === undefined || value === null || isIdentifier(value);
 }
-
 function entryFile(doc, first, count) {
 checkDocument(doc, "searchEntries");
 if (doc.first !== first || !Array.isArray(doc.stem) || !Array.isArray(doc.entries) || doc.entries.length !== count) throw badIndex("entry file");
@@ -628,7 +584,6 @@ kind: item[5] == null ? undefined : item[5], ref: item[6] || null, at: item[7] |
 return records.get(n);
 };
 }
-
 function entryHit(record, kinds) {
 const path = [];
 for (let r = record; r; r = r.parent) path.unshift(r.id);
@@ -642,7 +597,6 @@ if (parent) hit.context = parent.parent ? parent.parent.label + " / " + parent.l
 validateSearchHit(hit);
 return hit;
 }
-
 function entryFileOf(starts, n) {
 let low = 0;
 let high = starts.length - 1;
@@ -653,14 +607,13 @@ else high = mid - 1;
 }
 return low;
 }
-
 function sidecarSearch(load, manifest, hints) {
 const index = async () => (await manifest()).search;
 const loadPack = recentCache(PACK_CACHE, async (number) => {
 const doc = checkDocument(await load("q/" + number), "pack");
-if (!Array.isArray(doc.pages)) throw badIndex("pack");
+if (!Array.isArray(doc.pages) || doc.pages.some(text => typeof text !== "string")) throw badIndex("pack");
 return doc.pages;
-});
+}, PACK_CACHE_BYTES, packBytes);
 const sortedKeys = new WeakMap();
 const packed = async (pack, slot) => {
 const text = (await loadPack(pack))[slot];
@@ -689,7 +642,6 @@ const first = search.entryFiles[file];
 const end = file + 1 < search.entryFiles.length ? search.entryFiles[file + 1] : search.entryCount;
 return entryFile(await loadIndexDoc(search, "e", file), first, end - first);
 });
-
 async function postingsOf(search, keys, word) {
 const lists = [];
 for (const shard of await Promise.all(resolveShards(search.shards, keys, word).map(loadShard))) {
@@ -697,7 +649,6 @@ shard.words.forEach((indexed, i) => indexed.startsWith(word) && lists.push(shard
 }
 return mergePostings(lists);
 }
-
 async function run(query, queryWords, limit, sequence) {
 const search = await index();
 if (!search) {
@@ -748,7 +699,6 @@ ranked.hits.forEach((hit) => { for (let r = records.get(hit); r; r = r.parent) h
 }
 return ranked;
 }
-
 let latest = 0;
 return (query, limit) => {
 const queryWords = words(query);
@@ -768,22 +718,18 @@ throw err;
 });
 };
 }
-
-
 function slicePage(all, cursor, pageSize) {
 const offset = cursor ? Number(cursor) || 0 : 0;
 const items = all.slice(offset, offset + pageSize);
 const end = offset + items.length;
 return { items: items, total: all.length, next: end < all.length ? String(end) : null, offset: offset };
 }
-
 function rankHits(hits, query, limit) {
 const folded = trimSeparators(foldText(query));
 const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
 ranked.sort((a, b) => a.rank - b.rank || collator.compare(a.hit.label, b.hit.label));
 return { hits: ranked.slice(0, limit).map((item) => item.hit), total: hits.length, truncated: hits.length > limit };
 }
-
 function inlineSource(view) {
 const pageSize = view.pageSize || 100;
 const labelWords = new WeakMap();
@@ -828,7 +774,6 @@ return Promise.resolve(rankHits(hits, query, limit));
 }
 };
 }
-
 function sidecarSource(view) {
 const supplied = view.source.base;
 if (typeof supplied !== "string" || !supplied || /[?#]/.test(supplied)) throw new Error("CanopyX: sidecar base must be a folder path without a query or fragment.");
@@ -847,15 +792,11 @@ throw err;
 }));
 const loadPack = recentCache(PACK_CACHE, async (number) => {
 const doc = checkDocument(await load("p/" + number), "pack");
-if (!Array.isArray(doc.pages)) throw new Error("CanopyX: pack pages must be an array.");
+if (!Array.isArray(doc.pages) || doc.pages.some(text => typeof text !== "string")) throw new Error("CanopyX: pack pages must be an array of strings.");
 return doc.pages;
-});
-let pinned = new Map();
-const pin = (key, promise) => {
-pinned.set(key, promise);
-promise.catch(() => pinned.get(key) === promise && pinned.delete(key));
-return promise;
-};
+}, PACK_CACHE_BYTES, packBytes);
+const pinned = new Map();
+let releaseLoose;
 const packOf = async (ref) => {
 const packed = /^p\/(0|[1-9]\d*)#(0|[1-9]\d*)$/.exec(ref);
 return packed && (await manifest()).packs !== undefined ? packed : null;
@@ -863,11 +804,11 @@ return packed && (await manifest()).packs !== undefined ? packed : null;
 const loadPage = async (ref) => {
 const packed = await packOf(ref);
 if (!packed) {
-const doc = pinned.get("file:" + ref);
-if (doc) pinned.delete("file:" + ref);
-return doc || load(ref);
+const entry = pinned.get("file:" + ref);
+return entry ? entry.pending : load(ref);
 }
-const text = Number(packed[1]) < (await manifest()).packs ? (await (pinned.get("pack:" + packed[1]) || loadPack(packed[1])))[Number(packed[2])] : undefined;
+const entry = pinned.get("pack:" + packed[1]);
+const text = Number(packed[1]) < (await manifest()).packs ? (await (entry ? entry.pending : loadPack(packed[1])))[Number(packed[2])] : undefined;
 if (typeof text !== "string") throw new Error("CanopyX: the bundle has no packed page " + ref + ".");
 return JSON.parse(text);
 };
@@ -876,16 +817,40 @@ return {
 kind: "sidecar",
 canSearch: true,
 manifest: manifest,
-async prefetch(opens, finds) {
+async prefetch(opens, finds, request) {
+const held = new Set(), signal = request && request.signal;
+let live = true;
+const release = () => {
+if (!live) return;
+live = false;
+if (signal) signal.removeEventListener("abort", release);
+for (const entry of held) if (!--entry.users && pinned.get(entry.key) === entry) pinned.delete(entry.key);
+held.clear();
+};
+if (signal) {
+if (signal.aborted) { release(); return release; }
+signal.addEventListener("abort", release, { once: true });
+} else {
+if (releaseLoose) releaseLoose();
+releaseLoose = release;
+}
 const refs = new Set();
 opens.forEach((id) => { const hint = hints.get(id); if (hint && hint.ref) refs.add(hint.ref); });
 finds.forEach((id) => { const hint = hints.get(id); if (hint && hint.at) refs.add(hint.at); });
-pinned = new Map();
 await Promise.all(Array.from(refs, async (ref) => {
 const packed = await packOf(ref);
+if (!live) return;
 const key = packed ? "pack:" + packed[1] : "file:" + ref;
-if (!pinned.has(key)) await pin(key, packed ? loadPack(packed[1]) : load(ref));
+let entry = pinned.get(key);
+if (!entry) {
+entry = { key, users: 0, pending: packed ? loadPack(packed[1]) : load(ref) };
+pinned.set(key, entry);
+entry.pending.catch(() => { if (pinned.get(key) === entry) pinned.delete(key); });
+}
+if (!held.has(entry)) { held.add(entry); entry.users++; }
+await entry.pending;
 }).map((pending) => pending.catch(() => {})));
+return release;
 },
 async page(node, cursor) {
 const ref = cursor || (node ? node.ref || node.id : (await manifest()).root);
@@ -898,9 +863,12 @@ return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc
 search: sidecarSearch(load, manifest, hints)
 };
 }
-
 function remoteSource(view, options) {
 const source = view.source;
+if (source.queryAware !== undefined && typeof source.queryAware !== "boolean") throw new Error("CanopyX: queryAware must be a boolean.");
+if (source.queryAware) for (const name of ["children", "search", "counts"]) {
+if (source[name] != null && !/^[^#]*\{viewQuery\}/.test(source[name])) throw new Error("CanopyX: query-aware " + name + " needs {viewQuery} before its fragment.");
+}
 const settings = options || {};
 const timeoutMs = settings.timeoutMs === undefined ? 30000 : settings.timeoutMs;
 if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
@@ -908,39 +876,46 @@ throw new Error("CanopyX: request timeout must be an integer from 1 to 214748364
 }
 const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
 const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
+const queryValues = request => {
+if (!source.queryAware) return {};
+if (!request || !request.query || request.query.version !== 1) throw new Error("CanopyX: a query-aware request needs a view query.");
+return { viewQuery: encodeURIComponent(JSON.stringify(request.query)), revision: encodeURIComponent(request.revision || "") };
+};
 return {
 kind: "remote",
+queryAware: source.queryAware === true,
 canSearch: !!source.search,
 async page(node, cursor, request) {
-const doc = checkPage(await getJson(fill(source.children, {
+const doc = checkPage(await getJson(fill(source.children, Object.assign(queryValues(request), {
 ref: node ? encodeURIComponent(node.ref || node.id) : "",
 cursor: cursor ? encodeURIComponent(cursor) : ""
-}), "page", request), node);
-return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0 };
+})), "page", request), node);
+return { items: doc.items, total: doc.total, next: doc.next || null, offset: doc.offset || 0, revision: doc.revision };
 },
 async search(query, limit, request) {
 if (!source.search) {
-return { hits: [], total: 0, truncated: false };
+return { hits: [], total: 0, truncated: false, revision: request && request.revision };
 }
-const doc = await getJson(fill(source.search, { query: encodeURIComponent(query), limit: String(limit) }), "search", request);
+const doc = await getJson(fill(source.search, Object.assign(queryValues(request), { query: encodeURIComponent(query), limit: String(limit) })), "search", request);
 if (doc.query !== query) throw new Error("CanopyX: search response query does not match the request.");
 if (doc.total != null && (doc.total < doc.hits.length || doc.truncated !== (doc.total > doc.hits.length))) {
 throw new Error("CanopyX: search total and truncated flag disagree with the returned hits.");
 }
-return { hits: doc.hits, total: doc.total, truncated: doc.truncated };
+return { hits: doc.hits, total: doc.total, truncated: doc.truncated, revision: doc.revision };
 },
 counts: source.counts ? async (ids, request) => {
 const items = [];
+let revision = request && request.revision;
 for (let i = 0; i < ids.length; i += COUNTS_BATCH) {
 const batch = ids.slice(i, i + COUNTS_BATCH).map((id) => encodeURIComponent(encodeURIComponent(id))).join(",");
-const doc = await getJson(fill(source.counts, { ids: batch }), "counts", request);
+const doc = await getJson(fill(source.counts, Object.assign(queryValues(request), { ids: batch })), "counts", request);
+if (source.queryAware) revision = snapshotRevision(doc, revision);
 items.push.apply(items, doc.items);
 }
-return { protocol: PROTOCOL, type: "counts", items: items };
+return Object.assign({ protocol: PROTOCOL, type: "counts", items: items }, source.queryAware ? { revision } : {});
 } : null
 };
 }
-
 function sourceFor(view, options) {
 const kind = view.source && view.source.kind;
 if (kind === "sidecar") {
@@ -955,7 +930,6 @@ return inlineSource(view);
 }
 throw new Error("CanopyX: unknown source kind '" + kind + "'.");
 }
-
 async function remoteJson(url, type, timeoutMs, lifetime, signal) {
 const controller = new AbortController();
 const signals = Array.from(new Set([lifetime, signal].filter(Boolean)));
@@ -982,7 +956,6 @@ clearTimeout(timer);
 signals.forEach((item) => item.removeEventListener("abort", abort));
 }
 }
-
 class TreeGrid {
 constructor(host, options) {
 const view = checkDocument(options.view, "view");
@@ -996,8 +969,16 @@ if (options[name] !== undefined && typeof options[name] !== "function") throw ne
 this.id = "cx" + ++instanceSeq;
 this.lifetime = new AbortController();
 this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
+this.queryAware = this.source.queryAware === true;
+this.dataLifetime = new AbortController();
+this.acceptedQuery = Object.freeze({ version: 1, sort: null, filters: Object.freeze([]) });
+this.datasetRevision = null;
 this.rowH = view.rowHeight || 28;
 this.pageSize = view.pageSize || 100;
+this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
+if (!validStructuralCount(this.retainedNodeLimit)) throw new Error("CanopyX: retainedNodeLimit must be a nonnegative 32-bit integer.");
+this.inactiveNodeLimit = options.inactiveNodeLimit === undefined ? 4096 : options.inactiveNodeLimit;
+if (!validStructuralCount(this.inactiveNodeLimit)) throw new Error("CanopyX: inactiveNodeLimit must be a nonnegative 32-bit integer.");
 this.multi = view.selection === "multiple";
 this.lang = document.documentElement.lang || undefined;
 this.labels = labelsFor(view.labels, options.labels);
@@ -1048,11 +1029,16 @@ this.build();
 this.buildToolbar();
 this.ready = this.init();
 }
-
 async search(query, limit) {
-return validateSearchResult(await this.source.search(query, limit));
+if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
+const navigation = navigationScope(this, this.dataLifetime.signal);
+try {
+const result = await navigation.wait(this.source.search(query, limit, this.sourceRequest(this.dataLifetime.signal)));
+if (navigation.cancelled()) throw new DOMException("Search snapshot was retired.", "AbortError");
+if (this.queryAware) snapshotRevision(result, this.datasetRevision);
+return validateSearchResult(result);
+} finally { navigation.dispose(); }
 }
-
 buildIcons(icons) {
 const templates = new Map();
 Object.keys(icons).forEach((key) => {
@@ -1063,45 +1049,42 @@ templates.set(key, holder);
 });
 return templates;
 }
-
 async init() {
 try {
 this.rootsReady = this.loadRoots();
 await this.rootsReady;
 await this.restoreState();
 await this.expandInitial(this.root);
-await this.openDeepLink();
+if (!this.linkChanged || !this.linkChanged.aborted) await this.openDeepLink();
 } finally {
 this.initializing = false;
 }
 if (this.destroyed) return;
 await this.flushPendingToggles();
-if (this.linkChanged) await this.openDeepLink();
+if (this.linkChanged && !this.linkChanged.aborted) await this.openDeepLink();
 if (!this.destroyed) {
 this.host.setAttribute("data-cx-ready", "true");
 this.emit("ready", {});
+this.scheduleRender();
 }
 }
-
 loadRoots() {
 if (!this.root.inlineItems) {
 return this.loadPage(this.root, null);
 }
 validateNodes(this.root.inlineItems, this.keyMap, true);
-const first = slicePage(this.root.inlineItems, null, this.pageSize);
 this.root.inline = true;
-this.root.children = first.items.map((node, i) => this.wrap(node, this.root, i));
+const first = this.inlinePage(this.root, null);
+this.root.children = first.items.map((node, i) => this.wrap(node, this.root, first.positions[i]));
 this.root.total = first.total;
 this.root.next = first.next;
 this.applySort(this.root, false);
 this.relayout();
 return Promise.resolve();
 }
-
 expandable(w) {
-return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length)));
+return !!(w && w.h && !w.h.detail && (w.h.hasChildren || (w.children && w.children.length) || (w.inline && w.h.children.length)));
 }
-
 statusRow(parent, kind) {
 kind = parent.loading ? "loading" : parent.error ? "error" : kind;
 let row = parent._status;
@@ -1117,7 +1100,6 @@ parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.for
 row._v = 0;
 return row;
 }
-
 cellOf(node, column, index) {
 const cells = node.cells;
 if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
@@ -1125,7 +1107,6 @@ return cells[column.id];
 }
 return index === 0 ? node.label : undefined;
 }
-
 emit(name, detail) {
 if (this.destroyed) return;
 this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
@@ -1150,7 +1131,6 @@ for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
 }
 }
 },
-
 createWrapper(data, owner, position) {
 requireIdentifier(data.id, "node ID");
 if (data.ref != null) requireIdentifier(data.ref, "node reference");
@@ -1163,7 +1143,6 @@ content: nodeContent(data)
 this.keyMap.set(data.id, w);
 return w;
 },
-
 wrap(node, parent, index, suppressExpansion) {
 const initialExpansion = !suppressExpansion && !this.restoring;
 const root = this.createWrapper(node, parent, index);
@@ -1172,14 +1151,15 @@ while (pending.length) {
 const w = pending.pop();
 const data = w.h;
 if (Array.isArray(data.children)) {
-const first = slicePage(data.children, null, this.pageSize);
 w.inline = true;
-w.children = first.items.map((child, i) => this.createWrapper(child, w, i));
+const first = this.inlinePage(w, null);
+w.children = first.items.map((child, i) => this.createWrapper(child, w, first.positions[i]));
 w.total = first.total;
 w.next = first.next;
 w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
 for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
 this.applySort(w, false);
+this.rememberInactive(w);
 } else if (data.hasChildren) {
 w.total = typeof data.childCount === "number" ? data.childCount : null;
 w.autoExpand = !!data.expanded && initialExpansion;
@@ -1189,7 +1169,6 @@ return root;
 }
 });
 const LAYOUT_HOLD_MS = 250;
-
 Object.assign(TreeGrid.prototype, {
 matchState(w) {
 const pending = [{ node: w, visited: false }];
@@ -1212,7 +1191,6 @@ if (child._fm === undefined) pending.push({ node: child, visited: false });
 }
 return w._fm;
 },
-
 relayout(now) {
 if (this.destroyed) return;
 if (this.layoutHolds && !this.layoutLate && !now) {
@@ -1270,7 +1248,6 @@ this.grid.focus({ preventScroll: true });
 this.grid.tabIndex = rows.length ? -1 : 0;
 this.scheduleRender();
 },
-
 holdLayout() {
 if (!this.layoutHolds) {
 this.layoutTimer = setTimeout(() => {
@@ -1291,14 +1268,13 @@ this.layoutLate = false;
 return this.flushLayout();
 };
 },
-
 flushLayout() {
 if (!this.layoutDirty) return false;
 this.relayout(true);
 return true;
 },
-
 retop() {
+const top = this.logicalTop();
 const rows = this.rows;
 const tops = new Array(rows.length + 1);
 let y = 0;
@@ -1310,14 +1286,23 @@ y += rows[i].hpx;
 tops[rows.length] = y;
 this.tops = tops;
 this.total = y;
-this.canvas.style.height = y + "px";
+this.syncScrollRange(top);
 },
-
 applySort(parent, deep) {
+if (this.queryAware) return;
 const pending = [parent];
 while (pending.length) {
-const children = pending.pop().children;
+const owner = pending.pop();
+let children = owner.children;
 if (!children) continue;
+if (owner.inline) {
+const first = this.inlinePage(owner, null, children.length || this.pageSize);
+if (first.items.some((node, index) => !children[index] || children[index].key !== node.id) || first.items.length !== children.length) {
+this.retirePage(owner);
+this.reconcileList(owner, first.items, first.total, first.next, first.positions, true);
+children = owner.children;
+}
+}
 const state = this.sortState;
 const column = state && this.columns.find((c) => c.id === state.column);
 if (column) {
@@ -1337,21 +1322,21 @@ children.sort((a, b) => compareKeys(keyOf(a), keyOf(b), direction) || a.idx - b.
 children.sort((a, b) => a.idx - b.idx);
 }
 if (deep) {
-for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
+const all = this.modelChildren(owner);
+for (let i = all.length - 1; i >= 0; i--) pending.push(all[i]);
 }
 }
+this.trimInlineCache();
 }
 });
 function isIdentifier(value) {
 return typeof value === "string" && /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])+$/.test(value);
 }
-
 function requireIdentifier(value, name) {
 if (!isIdentifier(value)) {
 throw new Error("CanopyX: " + name + " must be a nonempty, well-formed Unicode identifier");
 }
 }
-
 function validateNodes(nodes, existing, inlineOnly = false) {
 if (!Array.isArray(nodes)) throw new Error("CanopyX: page items must be an array.");
 const seen = new Set();
@@ -1395,10 +1380,10 @@ for (const child of node.children) pending.push(child);
 }
 }
 }
-
 function validatePage(page, existing, expectedOffset) {
 if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
 const items = page.items;
+if (page.revision !== undefined) requireIdentifier(page.revision, "dataset revision");
 if (Object.prototype.hasOwnProperty.call(page, "next") && page.next !== null) {
 requireIdentifier(page.next, "page continuation");
 }
@@ -1414,7 +1399,159 @@ throw new Error("CanopyX: page continuation disagrees with its total.");
 validateNodes(items, existing);
 return items;
 }
-
+Object.assign(TreeGrid.prototype, {
+modelChildren(w) {
+const children = w.children || [];
+return w.inlineCache && w.inlineCache.size ? children.concat(Array.from(w.inlineCache.values())) : children;
+},
+inlinePage(w, cursor, count, supplied) {
+const source = supplied || (w === this.root ? w.inlineItems : w.h.children);
+let order = w.inlineOrder;
+const version = this.inlineOrderVersion || 0, generation = w.dataGeneration || 0;
+if (!order || order.source !== source || order.version !== version || order.generation !== generation) {
+const indices = Uint32Array.from({ length: source.length }, (_, index) => index);
+const state = !this.queryAware && this.sortState, column = state && this.columns.find(c => c.id === state.column);
+if (column) {
+const columnIndex = this.columns.indexOf(column), direction = state.direction === "desc" ? -1 : 1;
+const keys = source.map(node => sortKey(this.cellOf(node, column, columnIndex), column));
+indices.sort((a, b) => compareKeys(keys[a], keys[b], direction) || a - b);
+}
+order = w.inlineOrder = { source, indices, version, generation };
+}
+const offset = cursor ? Number(cursor) : 0, end = Math.min(source.length, offset + (count || this.pageSize));
+const positions = Array.from(order.indices.subarray(offset, end));
+return { items: positions.map(index => source[index]), positions, total: source.length,
+offset, next: end < source.length ? String(end) : null };
+},
+inlineReplacement(owner, items, positions) {
+const source = owner === this.root ? owner.inlineItems : owner.h.children;
+const prior = new Map(this.modelChildren(owner).map(w => [w.key, w]));
+const attached = new Set(items.map(node => node.id)), cached = [], extraPositions = [];
+source.forEach((data, index) => {
+if (prior.has(data.id) && !attached.has(data.id)) { cached.push(data); extraPositions.push(index); }
+});
+return { items: items.concat(cached), positions: (positions || items.map((_, index) => index)).concat(extraPositions), attached: items.length };
+},
+retainInline(w, cached) {
+const retained = this.inlineRetained || (this.inlineRetained = new Map());
+w._cached = cached;
+if (cached) { retained.delete(w.key); retained.set(w.key, w); }
+else retained.delete(w.key);
+},
+trimInlineCache() {
+const retained = this.inlineRetained;
+if (!retained || !retained.size) return;
+const groups = [];
+let size = 0;
+for (const w of retained.values()) {
+if (w._invalidated || !w._cached) { retained.delete(w.key); continue; }
+let ancestor = w.parent;
+while (ancestor && !ancestor._cached) ancestor = ancestor.parent;
+if (ancestor) continue;
+const nodes = [w].concat(Array.from(this.descendants(w).values()));
+size += nodes.length; groups.push({ w, nodes });
+}
+for (const group of groups) {
+if (size <= this.retainedNodeLimit) break;
+if (group.nodes.some(w => this.cachePinned(w))) continue;
+group.w.parent.inlineCache.delete(group.w.key);
+for (const w of group.nodes) this.retireWrapper(w);
+size -= group.nodes.length;
+}
+}
+});
+Object.assign(TreeGrid.prototype, {
+cachePinned(w) {
+const focus = this.focused;
+const filter = this.filter;
+return w.expanded || w.autoExpand || w.loading || w.reloadController || this.selected.has(w) ||
+w === (focus && focus.status ? focus.parent : focus) || w === this.anchor ||
+this.pendingRestorationToggles && this.pendingRestorationToggles.has(w) ||
+filter && (filter.match(w.h) || filter.keep && filter.keep(w.h));
+},
+rememberInactive(w) {
+if (this.destroyed || w._invalidated) return;
+const cache = this.inactiveCache || (this.inactiveCache = new Set());
+cache.delete(w);
+if (w !== this.root && w.children && (w.children.length || w.inlineCache && w.inlineCache.size) && !w.expanded) cache.add(w);
+this.cacheDirty = true;
+},
+trimInactiveCache() {
+if (!this.cacheDirty || this.destroyed || this.initializing || this.restoring || this.replayingToggles || this.layoutHolds) return;
+this.cacheDirty = false;
+this.trimInlineCache();
+const cache = this.inactiveCache;
+if (!cache || !cache.size) return;
+const groups = [];
+let size = 0;
+for (const w of cache) {
+if (w._invalidated || !w.children || w.expanded) { cache.delete(w); continue; }
+}
+for (const w of cache) {
+let ancestor = w.parent;
+while (ancestor && !cache.has(ancestor)) ancestor = ancestor.parent;
+if (ancestor) continue;
+const nodes = Array.from(this.descendants(w).values());
+groups.push({ w, nodes }); size += nodes.length;
+}
+for (const { w, nodes } of groups) {
+if (size <= this.inactiveNodeLimit) break;
+if (w.loading || w.reloadController || nodes.some(node => this.cachePinned(node))) continue;
+this.invalidateChildren(w);
+cache.delete(w);
+for (const node of nodes) cache.delete(node);
+size -= nodes.length;
+}
+}
+});
+function readQuery(grid, value) {
+if (!value || value.version !== 1 || !Array.isArray(value.filters) ||
+value.sort === undefined || typeof value !== "object") throw new Error("CanopyX: query needs version 1, sort, and filters.");
+let sort = null;
+if (value.sort !== null) {
+const state = value.sort, column = state && grid.columns.find(c => c.id === state.column && c.sortable);
+if (!column || state.direction !== "asc" && state.direction !== "desc") throw new Error("CanopyX: invalid query sort.");
+sort = Object.freeze({ column: column.id, direction: state.direction });
+}
+const named = new Set(value.filters);
+if (named.size !== value.filters.length || value.filters.some(id => !(grid.view.filters || []).some(f => f.id === id)))
+throw new Error("CanopyX: query filters must be unique declared IDs.");
+const filters = Object.freeze((grid.view.filters || []).filter(f => named.has(f.id)).map(f => f.id));
+return Object.freeze({ version: 1, sort, filters });
+}
+function snapshotRevision(value, expected) {
+requireIdentifier(value && value.revision, "dataset revision");
+if (expected != null && value.revision !== expected) throw new Error("CanopyX: dataset revision changed; reload the roots before continuing.");
+return value.revision;
+}
+Object.assign(TreeGrid.prototype, {
+getQuery() {
+return { version: 1, sort: this.sortState && Object.assign({}, this.sortState), filters: Array.from(this.activeFilters) };
+},
+sourceRequest(signal) {
+return this.queryAware ? { signal: signal || this.dataLifetime.signal, query: this.acceptedQuery, revision: this.datasetRevision } : { signal };
+},
+syncQueryControls() {
+this.toolbar.querySelectorAll("[data-cx-filter]").forEach(input => { input.checked = this.activeFilters.has(input.getAttribute("data-cx-filter")); });
+},
+querySortHeader(id) {
+const query = this.pendingQuery || this.acceptedQuery, state = query.sort && query.sort.column === id ? query.sort.direction : null;
+this.sort(id, state === "asc" ? "desc" : state === "desc" ? null : "asc").catch(() => {});
+}
+});
+Object.assign(TreeGrid.prototype, {
+retireWrapper(w) {
+w._invalidated = true;
+this.retirePage(w);
+if (this.inlineRetained && this.inlineRetained.get(w.key) === w) this.inlineRetained.delete(w.key);
+if (this.inactiveCache) this.inactiveCache.delete(w);
+if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
+w.children = null; w.inlineCache = null; w.inlineOrder = null;
+const selected = this.selected.delete(w);
+if (this.anchor === w) this.anchor = null;
+return selected ? w : null;
+}
+});
 Object.assign(TreeGrid.prototype, {
 build() {
 const host = this.host;
@@ -1483,11 +1620,9 @@ this.scheduleRender();
 });
 this.resizeObserver.observe(grid);
 },
-
 visibleColumns() {
 return this.columns.filter((column) => !column.hidden);
 },
-
 buildHeader() {
 const active = document.activeElement;
 const focusedColumn = active && this.headRow.contains(active) ? active.closest(".cx-hcell").getAttribute("data-cx-column") : null;
@@ -1514,7 +1649,7 @@ cell.setAttribute("aria-sort", sorted === "asc" ? "ascending" : sorted === "desc
 const button = h("button", "cx-sort");
 button.type = "button";
 setText(button, column.title);
-button.addEventListener("click", () => this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
+button.addEventListener("click", () => this.queryAware ? this.querySortHeader(column.id) : this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
 cell.appendChild(button);
 } else {
 const title = h("span", "cx-htext");
@@ -1549,7 +1684,6 @@ button.focus();
 }
 }
 },
-
 scheduleRender() {
 if (this.destroyed) return;
 if (!this.rafId) {
@@ -1559,7 +1693,6 @@ this.render();
 });
 }
 },
-
 rowAt(y) {
 const tops = this.tops;
 let lo = 0;
@@ -1574,12 +1707,10 @@ hi = mid - 1;
 }
 return Math.max(0, lo);
 },
-
 indexOf(w) {
 const i = w ? w._ri : undefined;
 return i !== undefined && this.rows[i] === w ? i : -1;
 },
-
 render() {
 let measured = false;
 for (let pass = 0; !this.destroyed; pass++) {
@@ -1593,7 +1724,6 @@ break;
 }
 return measured;
 },
-
 renderPass() {
 if (this.destroyed) {
 return;
@@ -1601,7 +1731,8 @@ return;
 const grid = this.grid;
 const held = this.heldCell();
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
-const top = grid.scrollTop;
+const top = this.logicalTop();
+const shift = this.scaledScroll ? top - grid.scrollTop : 0;
 const n = this.rows.length;
 const over = this.lean ? 0 : OVERSCAN;
 const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
@@ -1649,7 +1780,8 @@ if (w._v !== this.version || rowEl._w !== w) {
 this.fillRow(rowEl, w);
 w._v = this.version;
 } else if (!w.status) this.refreshRowState(rowEl, w);
-const y = this.tops[index];
+const y = this.scaledScroll && (index < first || index > last) ?
+(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.tops[index] - shift;
 if (rowEl._top !== y) {
 rowEl.style.transform = "translateY(" + y + "px)";
 rowEl._top = y;
@@ -1670,7 +1802,6 @@ rowEl._tab = tab;
 }
 }
 for (const rowEl of free) {
-rowEl.remove();
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 if (this.pool.length < 200) {
@@ -1683,9 +1814,9 @@ this.canvas.appendChild(fragment);
 this.window = { first: first, last: last };
 this.keepDomOrder(first, last);
 if (held) this.restoreCell(held);
+this.trimInactiveCache();
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 applyWidths() {
 let sum = 0;
@@ -1709,7 +1840,6 @@ else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].sty
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
 },
-
 setColumnWidth(columnId, width) {
 const column = this.columns.find((c) => c.id === columnId);
 if (!column || !Number.isFinite(width)) {
@@ -1720,12 +1850,10 @@ column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
 this.applyWidths();
 this.stateChanged();
 },
-
 setTreeColumnPinned(pinned) {
 this.host.classList.toggle("cx-pin-tree", !!pinned);
 this.stateChanged();
 },
-
 startResize(e, column) {
 if (this.destroyed || e.button !== 0) return;
 if (this.cancelResize) this.cancelResize();
@@ -1754,7 +1882,6 @@ global.addEventListener("pointercancel", end);
 global.addEventListener("blur", stop);
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 keepDomOrder(first, last) {
 const ordered = [];
@@ -1828,7 +1955,83 @@ prev = ordered[k];
 }
 }
 });
-
+const NATIVE_HEIGHT = 8000000;
+Object.assign(TreeGrid.prototype, {
+scrollRange() {
+const view = Math.max(0, this.grid.clientHeight - this.head.offsetHeight);
+return { logical: Math.max(0, this.total - view), native: Math.max(0, NATIVE_HEIGHT - view) };
+},
+logicalTop() {
+const physical = this.grid.scrollTop;
+if (!this.scaledScroll) return physical;
+const range = this.scrollRange();
+const point = this.scrollPosition;
+return Math.min(range.logical, point && point.native === physical ? point.logical :
+range.native ? physical * range.logical / range.native : 0);
+},
+setLogicalTop(value) {
+if (!this.scaledScroll) { this.grid.scrollTop = value; this.scrollPosition = null; return; }
+const range = this.scrollRange(), logical = Math.max(0, Math.min(range.logical, value));
+this.grid.scrollTop = range.logical ? logical * range.native / range.logical : 0;
+this.scrollPosition = { native: this.grid.scrollTop, logical };
+this.scheduleRender(); this.stateChanged();
+},
+syncScrollRange(top) {
+const scaled = this.total > NATIVE_HEIGHT;
+this.canvas.style.height = Math.min(this.total, NATIVE_HEIGHT) + "px";
+if (scaled !== !!this.scaledScroll) {
+this.scaledScroll = scaled;
+this.canvas.toggleAttribute("data-cx-scaled", scaled);
+if (!this.onScaledWheel) {
+this.onScaledWheel = event => this.scaledWheel(event);
+this.onScaledTouchStart = event => {
+if (!event.defaultPrevented && event.touches.length === 1) {
+const touch = event.touches[0];
+this.touchScroll = { x: touch.clientX, y: touch.clientY, top: this.logicalTop(), left: this.grid.scrollLeft };
+} else this.touchScroll = null;
+};
+this.onScaledTouchMove = event => this.scaledTouch(event);
+this.onScaledTouchEnd = () => { this.touchScroll = null; };
+}
+const method = scaled ? "addEventListener" : "removeEventListener";
+this.grid[method]("wheel", this.onScaledWheel, { passive: false });
+this.grid[method]("touchstart", this.onScaledTouchStart, { passive: true });
+this.grid[method]("touchmove", this.onScaledTouchMove, { passive: false });
+this.grid[method]("touchend", this.onScaledTouchEnd);
+this.grid[method]("touchcancel", this.onScaledTouchEnd);
+this.touchScroll = null;
+}
+this.setLogicalTop(top);
+},
+scaledWheel(event) {
+if (event.defaultPrevented || event.ctrlKey || event.shiftKey || !event.deltaY || !event.cancelable) return;
+if (this.nestedScroll(event.target, event.deltaY)) return;
+const unit = event.deltaMode === 1 ? this.rowH : event.deltaMode === 2 ? this.grid.clientHeight - this.head.offsetHeight : 1;
+const top = this.logicalTop(), next = Math.max(0, Math.min(this.scrollRange().logical, top + event.deltaY * unit));
+if (next === top) return; // Preserve native scroll chaining at either boundary.
+event.preventDefault();
+this.grid.scrollLeft += event.deltaX * unit;
+this.setLogicalTop(next);
+},
+scaledTouch(event) {
+const start = this.touchScroll;
+if (!start || event.defaultPrevented || event.touches.length !== 1 || !event.cancelable) { this.touchScroll = null; return; }
+const touch = event.touches[0], dy = start.y - touch.clientY, dx = start.x - touch.clientX;
+if (Math.abs(dx) > Math.abs(dy)) return;
+if (this.nestedScroll(event.target, dy)) { this.touchScroll = null; return; }
+const next = Math.max(0, Math.min(this.scrollRange().logical, start.top + dy));
+if (next === this.logicalTop()) return;
+event.preventDefault(); this.grid.scrollLeft = start.left + dx; this.setLogicalTop(next);
+},
+nestedScroll(target, delta) {
+for (let element = target; element && element !== this.grid; element = element.parentElement) {
+if (element.clientHeight && element.scrollHeight > element.clientHeight &&
+/^(auto|scroll)$/.test(getComputedStyle(element).overflowY) &&
+(delta > 0 ? element.scrollTop + element.clientHeight < element.scrollHeight - 1 : element.scrollTop > 0)) return true;
+}
+return false;
+}
+});
 function setAttr(element, name, value) {
 const cache = element._attrs || (element._attrs = {});
 if (cache[name] === value) {
@@ -1841,7 +2044,6 @@ element.removeAttribute(name);
 element.setAttribute(name, value);
 }
 }
-
 function setClass(element, value) {
 if (element._cls !== value) {
 element.className = value;
@@ -1849,7 +2051,6 @@ element._cls = value;
 element._alt = false;
 }
 }
-
 Object.assign(TreeGrid.prototype, {
 fillRow(rowEl, w) {
 rowEl._w = w;
@@ -1873,7 +2074,6 @@ this.paintDetailRow(rowEl, w);
 this.paintNodeRow(rowEl, w);
 }
 },
-
 buildRow(rowEl, kind) {
 rowEl.textContent = "";
 ["aria-expanded", "aria-busy", "aria-setsize", "aria-posinset", "aria-selected", "data-cx-id", "data-cx-status", "data-kind"].forEach((name) => rowEl.removeAttribute(name));
@@ -1914,7 +2114,6 @@ slot.text = slot.textSpan.appendChild(document.createTextNode(""));
 return slot;
 });
 },
-
 paintStatusRow(rowEl, w) {
 setClass(rowEl, "cx-row cx-status cx-" + w.status);
 setAttr(rowEl, "data-cx-status", w.status);
@@ -1925,7 +2124,6 @@ if (slot.text.data !== w.h.label) {
 slot.text.data = w.h.label;
 }
 },
-
 paintDetailRow(rowEl, w) {
 const node = w.h;
 setClass(rowEl, "cx-row cx-detail" + (w.auto ? " cx-detail-auto" : "") + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
@@ -1942,7 +2140,6 @@ this.renderDetail(node, cell);
 quietControls(cell);
 if (w.auto) this.measureNeeded = true;
 },
-
 paintNodeRow(rowEl, w) {
 const node = w.h;
 setClass(rowEl, "cx-row" + (node.group ? " cx-group" : "") + (node.className ? " " + node.className : ""));
@@ -1958,7 +2155,6 @@ this.paintTreeSlot(slot, w);
 this.paintSlot(slot, node, this.cols[i], this.columnIndex[i], w);
 }
 },
-
 paintRowState(rowEl, w) {
 const node = w.h;
 setAttr(rowEl, "data-cx-id", node.id);
@@ -1967,14 +2163,12 @@ setAttr(rowEl, "data-cx-status", null);
 setAttr(rowEl, "aria-selected", this.selected.has(w) ? "true" : "false");
 this.setPosition(rowEl, w);
 },
-
 refreshRowState(rowEl, w) {
 setAttr(rowEl, "aria-expanded", this.expandable(w) ? (w._open ? "true" : "false") : null);
 setAttr(rowEl, "aria-busy", w.loading ? "true" : null);
 this.setPosition(rowEl, w);
 if (rowEl._kind === "node") this.paintTreeSlot(rowEl._cells[0], w);
 },
-
 setPosition(rowEl, w) {
 const parent = w.parent;
 const loaded = parent.children ? parent.children.length : 0;
@@ -1982,7 +2176,6 @@ const size = parent.childrenFiltered ? (parent.next ? -1 : parent.visibleCount) 
 setAttr(rowEl, "aria-setsize", String(size));
 setAttr(rowEl, "aria-posinset", String(w.pos));
 },
-
 paintTreeSlot(slot, w) {
 const level = w.level;
 if (slot.level !== level) {
@@ -2006,7 +2199,6 @@ slot.cell.insertBefore(slot.iconEl, slot.content);
 slot.iconKey = key;
 }
 },
-
 paintSlot(slot, node, column, index, w) {
 const value = this.cellOf(node, column, index);
 const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
@@ -2041,7 +2233,6 @@ slot.title = title;
 }
 this.paintBadges(slot, (index === 0 && node.badges) || null, object && value.badges ? value.badges : null);
 },
-
 paintBadges(slot, first, second) {
 const count = (first ? first.length : 0) + (second ? second.length : 0);
 for (let k = 0; k < count; k++) {
@@ -2074,7 +2265,6 @@ while (slot.badges.length > count) {
 slot.badges.pop().remove();
 }
 },
-
 setTimeZone(zone) {
 if (zone !== "local" && zone !== "utc") {
 throw new Error("CanopyX: the time zone is 'local' or 'utc'.");
@@ -2088,13 +2278,11 @@ this.version++;
 this.scheduleRender();
 this.stateChanged();
 },
-
 cell(rowEl, index, width, kind) {
 const cell = this.newCell(index, width, kind);
 rowEl.appendChild(cell);
 return cell;
 },
-
 newCell(index, width, kind) {
 const cell = h("div", "cx-cell" + (kind ? " cx-kind-" + kind : ""));
 cell.setAttribute("role", "gridcell");
@@ -2103,8 +2291,6 @@ cell.style.width = width + "px";
 return cell;
 }
 });
-
-
 function badgeElement(badge) {
 const span = h("span");
 applyTone(span, "cx-badge", toneOf(badge.tone || "neutral"));
@@ -2112,7 +2298,6 @@ setText(span, badge.text);
 if (badge.title) span.title = badge.title;
 return span;
 }
-
 function hostBadge(badge) {
 if (!badge || typeof badge !== "object" || typeof badge.text !== "string" ||
 (badge.tone != null && typeof badge.tone !== "string") || (badge.title != null && typeof badge.title !== "string")) {
@@ -2120,7 +2305,6 @@ throw new Error("CanopyX: badge needs { text, tone?, title? } with string values
 }
 return badgeElement(badge);
 }
-
 function attributeShape(element) {
 let shape = "";
 for (const attribute of element.attributes) {
@@ -2128,7 +2312,6 @@ shape += attribute.name + "=" + attribute.value + "\n";
 }
 return shape;
 }
-
 Object.assign(TreeGrid.prototype, {
 paintHostSlot(slot, node, column, index, w) {
 const tree = slot.content !== slot.cell;
@@ -2168,7 +2351,6 @@ fresh.appendChild(slot.textSpan);
 }
 return slot.mode;
 },
-
 setSlotContent(slot, element, tree) {
 slot.content = element;
 if (!tree) {
@@ -2176,10 +2358,8 @@ slot.cell = element;
 }
 }
 });
-
 const detailColumn = { kind: "text" };
 const DETAIL_ESTIMATE_SLOTS = 16;
-
 function detailCell(tag, cell, fmt) {
 const element = h(tag);
 setText(element, cellText(cell, detailColumn, fmt));
@@ -2194,7 +2374,6 @@ element.title = cell.title;
 }
 return element;
 }
-
 Object.assign(TreeGrid.prototype, {
 renderDetail(node, element, plainHtml = false) {
 const body = element.appendChild(h("div", "cx-detail-body"));
@@ -2249,7 +2428,6 @@ if (plainHtml) setText(body, detail.html || "");
 else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
 }
 },
-
 detailHeight(detail) {
 if (detail.height > 0) {
 return detail.height * this.rowH;
@@ -2257,7 +2435,6 @@ return detail.height * this.rowH;
 const slots = detail.type === "table" ? (detail.rows || []).length + (detail.caption ? 2 : 1) : detail.type === "properties" ? (detail.items || []).length : 6;
 return Math.max(1, Math.min(DETAIL_ESTIMATE_SLOTS, slots)) * this.rowH;
 },
-
 observeDetail(rowEl, auto) {
 if (!!rowEl._auto === auto) {
 return;
@@ -2276,13 +2453,12 @@ this.measureNeeded = true;
 this.detailObserver.unobserve(rowEl);
 }
 },
-
 measureDetails() {
 if (!this.measureNeeded) {
 return false;
 }
 this.measureNeeded = false;
-const top = this.grid.scrollTop;
+const top = this.logicalTop();
 let shift = 0;
 let changed = false;
 for (const [w, rowEl] of this.rendered) {
@@ -2297,12 +2473,11 @@ changed = true;
 }
 if (changed) {
 this.retop();
-if (shift) this.grid.scrollTop = top + shift;
+this.setLogicalTop(top + shift);
 }
 return changed;
 }
 });
-
 function hostControl(target) {
 const row = target.closest(".cx-row");
 const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
@@ -2315,8 +2490,8 @@ if (this.head.contains(e.target)) {
 return;
 }
 const rowEl = e.target.closest(".cx-row");
-if (rowEl && rowEl !== e.target && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
-this.skipRowTabStop(rowEl);
+if (rowEl && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
+this.focusBeforeRows(e);
 return;
 }
 if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
@@ -2377,7 +2552,6 @@ e.preventDefault();
 e.stopPropagation();
 }
 },
-
 activate(w, enter) {
 if (w.status === "more") {
 this.loadMore(w.parent);
@@ -2397,12 +2571,10 @@ if (accepted && deferred && revision === this.selectionRevision)
 this.notifySelection(w, Array.from(this.selected).map((selected) => selected.h), revision);
 }
 },
-
 async retryPage(status) {
 const parent = status.parent;
 await this.loadStatusPage(parent, status, parent.next || null);
 },
-
 typeAhead(e, i) {
 if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) {
 return false;
@@ -2422,23 +2594,19 @@ break;
 }
 return true;
 },
-
 announce(message) {
 setText(this.live, message);
 }
 });
-
 const CELL_CONTROLS = "a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])," +
 "[role=button],[role=checkbox],[role=radio],[role=link],[role=switch],[role=tab],[role=menuitem],[role=textbox],[role=combobox]";
 const OWN_ARROWS = ".cx-detail-body,textarea,select,[contenteditable]:not([contenteditable=false]),[aria-activedescendant]," +
 "[role=textbox],[role=combobox],[role=spinbutton],[role=slider],[role=radio],[role=tab],[role=menuitem],[role=listbox],[role=tree],[role=grid]," +
 "input:not([type=button]):not([type=checkbox]):not([type=submit]):not([type=reset]):not([type=image]):not([type=file]):not([type=color])";
-
 function reachable(control) {
 return !control.matches(":disabled") && !control.closest("[inert],[aria-hidden=true]") &&
 (control.checkVisibility ? control.checkVisibility({ visibilityProperty: true }) : control.getClientRects().length > 0);
 }
-
 function cellControls(cell) {
 const controls = Array.prototype.filter.call(cell.querySelectorAll(CELL_CONTROLS), (control) =>
 !control.classList.contains("cx-detail-body") && reachable(control));
@@ -2446,18 +2614,15 @@ const body = cell.querySelector(":scope > .cx-detail-body");
 if (body && (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)) controls.push(body);
 return controls;
 }
-
 function quietControls(cell) {
 cell.querySelectorAll(CELL_CONTROLS).forEach((control) => {
 if (control.tabIndex >= 0) control.tabIndex = -1;
 });
 }
-
 Object.assign(TreeGrid.prototype, {
 rowCells(rowEl) {
 return rowEl && rowEl._cells && rowEl._kind !== "status" ? rowEl._cells.map((slot) => slot.cell) : [];
 },
-
 enterCells(w) {
 const cells = this.rowCells(this.rendered.get(w));
 const index = cells.findIndex((cell) => cellControls(cell).length > 0);
@@ -2465,7 +2630,6 @@ if (index < 0) return false;
 this.focusCell(w, index, 0);
 return true;
 },
-
 focusCell(w, index, control, enter) {
 this.setFocus(w, false);
 const cells = this.rowCells(this.rendered.get(w));
@@ -2488,7 +2652,6 @@ if (target === cell) cell.setAttribute("tabindex", "-1");
 target.focus({ preventScroll: true });
 this.revealInRow(cell, target, cells[0]);
 },
-
 revealInRow(cell, target, treeCell) {
 const grid = this.grid;
 if (cell.parentNode && cell.parentNode._kind === "node") {
@@ -2510,10 +2673,9 @@ const frame = grid.getBoundingClientRect();
 const top = frame.top + grid.clientTop + this.head.offsetHeight;
 const bottom = frame.top + grid.clientTop + grid.clientHeight;
 const box = target.getBoundingClientRect();
-if (box.top < top) grid.scrollTop -= top - box.top;
-else if (box.bottom > bottom) grid.scrollTop += Math.min(box.bottom - bottom, box.top - top);
+if (box.top < top) this.setLogicalTop(this.logicalTop() - (top - box.top));
+else if (box.bottom > bottom) this.setLogicalTop(this.logicalTop() + Math.min(box.bottom - bottom, box.top - top));
 },
-
 revealInCell(cell, target) {
 if (target === cell || !cell.contains(target) || !cell.parentNode || cell.parentNode._kind !== "node") return;
 const outer = cell.getBoundingClientRect();
@@ -2524,7 +2686,6 @@ if (inner.left < start) cell.scrollLeft -= start - inner.left;
 else if (inner.right > end) cell.scrollLeft += Math.min(inner.right - end, inner.left - start);
 if (cell.scrollLeft) this.scrolledCell = cell;
 },
-
 settleCell(next) {
 const cell = this.scrolledCell;
 if (cell && !cell.contains(next || document.activeElement)) {
@@ -2532,15 +2693,12 @@ cell.scrollLeft = 0;
 this.scrolledCell = null;
 }
 },
-
-skipRowTabStop(rowEl) {
-if (rowEl.tabIndex < 0) return;
-rowEl.tabIndex = -1;
-setTimeout(() => {
-if (!this.destroyed && rowEl._tab === 0) rowEl.tabIndex = 0;
-}, 0);
+focusBeforeRows(event) {
+const previous = this.headRow.querySelector(".cx-hcell:last-child .cx-resize");
+if (!previous) return;
+event.preventDefault();
+previous.focus();
 },
-
 heldCell() {
 const active = document.activeElement;
 const rowEl = active && active.closest ? active.closest(".cx-row") : null;
@@ -2550,7 +2708,6 @@ const index = cells.findIndex((cell) => cell.contains(active));
 if (index < 0) return null;
 return { w: rowEl._w, index: index, control: active === cells[index] ? -1 : Array.prototype.indexOf.call(cells[index].querySelectorAll(CELL_CONTROLS), active) };
 },
-
 restoreCell(held) {
 const active = document.activeElement;
 if (!held || this.destroyed || (active && active !== document.body) || !this.rendered.has(held.w)) return;
@@ -2562,7 +2719,6 @@ if (target === cell) cell.setAttribute("tabindex", "-1");
 target.focus({ preventScroll: true });
 this.revealInCell(cell, target);
 },
-
 onCellKey(e) {
 const rowEl = e.target.closest(".cx-row");
 const w = rowEl && rowEl._w;
@@ -2657,7 +2813,6 @@ this.relayout();
 }
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 async toggle(w, expand, automatic = false) {
 if (this.destroyed || !w || w._invalidated || w.status || !this.expandable(w)) {
@@ -2675,6 +2830,7 @@ if (want === open && (!want || w.children)) {
 return;
 }
 w.expanded = want;
+this.rememberInactive(w);
 const revision = w.toggleRevision = (w.toggleRevision || 0) + 1;
 w.filterCollapsed = !want && !!this.filter;
 try {
@@ -2693,7 +2849,6 @@ if (this.opts.onToggle) {
 this.opts.onToggle(w.h, w.expanded);
 }
 },
-
 loadPage(w, cursor) {
 if (this.destroyed || w._invalidated) return Promise.resolve();
 if (w.loading) {
@@ -2707,6 +2862,7 @@ const restoration = this.restoreGeneration || 0;
 const suppressInitial = !!this.restoring;
 const token = w.pageToken = {};
 const controller = w.pageController = new AbortController();
+const navigation = navigationScope(this, controller.signal);
 const generation = w.dataGeneration || 0;
 const obsolete = () => this.destroyed || w._invalidated || w.pageToken !== token || generation !== (w.dataGeneration || 0);
 const run = (async () => {
@@ -2716,12 +2872,25 @@ let removedSelection = null;
 let removed = false;
 try {
 const inlineItems = w === this.root ? this.root.inlineItems : w.inline ? w.h.children : null;
-const page = inlineItems ? slicePage(inlineItems, cursor, this.pageSize) : await this.source.page(w === this.root ? null : w.h, cursor, { signal: controller.signal });
+const page = inlineItems ? this.inlinePage(w, cursor) : await navigation.wait(this.source.page(w === this.root ? null : w.h, cursor, this.sourceRequest(controller.signal)));
 if (obsolete()) return;
-const items = validatePage(page, this.keyMap, cursor ? (w.children || []).length : 0);
+const existing = inlineItems ? new Map(this.keyMap) : this.keyMap;
+if (inlineItems) for (const key of this.descendants(w).keys()) existing.delete(key);
+const items = validatePage(page, existing, cursor ? (w.children || []).length : 0);
+if (this.queryAware && !inlineItems) {
+const revision = snapshotRevision(page, this.datasetRevision);
+if (this.datasetRevision == null) this.datasetRevision = revision;
+}
 if (cursor != null && !items.length && page.next === cursor) {
 throw new Error("CanopyX: page continuation did not advance.");
 }
+if (inlineItems) {
+const prefix = cursor ? w.children || [] : [];
+const combined = prefix.map(child => child.h).concat(items);
+validateNodes(combined, existing, this.root.inlineItems != null);
+this.reconcileList(w, combined, page.total, page.next || null, prefix.map(child => child.idx).concat(page.positions), true,
+suppressInitial || restoration !== (this.restoreGeneration || 0));
+} else {
 if (!cursor || !w.children) {
 w.children = [];
 }
@@ -2730,6 +2899,7 @@ const suppressExpansion = suppressInitial || restoration !== (this.restoreGenera
 items.forEach((node, i) => w.children.push(this.wrap(node, w, base + i, suppressExpansion)));
 w.total = typeof page.total === "number" ? page.total : page.next ? null : w.children.length;
 w.next = page.next || null;
+}
 if (w !== this.root && !w.next && !w.children.length) {
 w.h.hasChildren = false;
 w.h.childCount = 0;
@@ -2742,6 +2912,7 @@ if (obsolete()) return;
 w.error = err && err.message ? err.message : String(err);
 this.emit("error", { node: w.h, message: w.error });
 } finally {
+navigation.dispose();
 controller.abort();
 if (w.pageToken !== token) return;
 w.pageToken = null;
@@ -2777,25 +2948,28 @@ this.emit("load", info);
 if (this.opts.onLoad) this.opts.onLoad(w.h, info);
 }
 } finally {
+try {
 if (!this.destroyed && !w._invalidated && !w.error && (w !== this.root || !this.initializing) && (w === this.root || w.expanded) && !suppressInitial && restoration === (this.restoreGeneration || 0)) await this.expandInitial(w);
+} finally {
+if (!this.destroyed && !w._invalidated) { this.rememberInactive(w); this.scheduleRender(); }
+}
 }
 })();
 w._pending = run;
 return run;
 },
-
 async loadMore(w) {
 if (w.children && w.next) {
 await this.loadStatusPage(w, this.statusRow(w, "more"), w.next);
 }
 },
-
 setFocus(w, domFocus) {
 if (!w) {
 return;
 }
 this.focusRevision = (this.focusRevision || 0) + 1;
 this.focused = w;
+this.cacheDirty = true;
 this.ensureVisible(w);
 if (this.render()) {
 this.ensureVisible(w);
@@ -2807,7 +2981,6 @@ rowEl.focus({ preventScroll: true });
 }
 this.stateChanged();
 },
-
 ensureVisible(w) {
 const i = this.indexOf(w);
 if (i < 0) {
@@ -2817,15 +2990,14 @@ const grid = this.grid;
 const y = this.tops[i];
 const height = w.hpx;
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
-const before = grid.scrollTop;
+const before = this.logicalTop();
 if (y < before) {
-grid.scrollTop = y;
+this.setLogicalTop(y);
 } else if (y + height > before + viewHeight) {
-grid.scrollTop = y + height - viewHeight;
+this.setLogicalTop(y + height - viewHeight);
 }
-if (Math.abs(grid.scrollTop - before) > viewHeight) this.leanReveal();
+if (Math.abs(this.logicalTop() - before) > viewHeight) this.leanReveal();
 },
-
 leanReveal() {
 if (this.lean) return;
 this.lean = true;
@@ -2834,12 +3006,10 @@ this.lean = false;
 this.scheduleRender();
 }));
 },
-
 rowFromEvent(e) {
 const rowEl = e.target.closest(".cx-row");
 return rowEl && rowEl._w && !rowEl._w._invalidated ? rowEl._w : null;
 },
-
 onClick(e) {
 const w = this.rowFromEvent(e);
 if (!w) {
@@ -2867,38 +3037,44 @@ this.toggle(w);
 this.select(w, { toggle: e.ctrlKey || e.metaKey, range: e.shiftKey });
 }
 },
-
 onDblClick(e) {
 const w = this.rowFromEvent(e);
 if (w && !w.status && !hostControl(e.target)) {
 this.toggle(w);
 }
 },
-
 setFilter(filter, options) {
 this.filter = typeof filter === "function" ? { match: filter } : filter || null;
+this.cacheDirty = true;
 this.filterExpand = !!(options && options.autoExpand);
 this.keyMap.forEach((w) => { w.filterCollapsed = false; });
 this.relayout();
 },
-
 setFilterActive(id, active) {
-const next = new Set(this.activeFilters);
-if (active) next.add(id);
-else next.delete(id);
-this.applyActiveFilters([id], next);
+return this.updateActiveFilters(active ? { add: [id] } : { remove: [id] });
 },
-
+updateActiveFilters(change) {
+const { add = [], remove = [] } = change || {};
+if (!change || typeof change !== "object" || !Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: filter changes need add/remove arrays.");
+this.validateFilterIds(add.concat(remove));
+const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
+remove.forEach(id => next.delete(id)); add.forEach(id => next.add(id));
+return this.setActiveFilters(Array.from(next));
+},
 setActiveFilters(ids) {
 if (!Array.isArray(ids)) throw new Error("CanopyX: setActiveFilters needs an array of filter ids.");
+if (this.queryAware) return this.setQuery({ version: 1, sort: (this.pendingQuery || this.acceptedQuery).sort, filters: ids });
 this.applyActiveFilters(ids, new Set(ids));
 },
-
-applyActiveFilters(named, next) {
+validateFilterIds(ids) {
 const declared = this.view.filters || [];
-named.forEach((id) => {
+ids.forEach((id) => {
 if (!declared.some((f) => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
 });
+},
+applyActiveFilters(named, next) {
+this.validateFilterIds(named);
+const declared = this.view.filters || [];
 const changed = next.size !== this.activeFilters.size || Array.from(next).some((id) => !this.activeFilters.has(id));
 if (!changed && this.filter === this.declaredFilter) return;
 this.activeFilters = next;
@@ -2913,15 +3089,15 @@ this.declaredFilter = this.filter;
 if (changed) this.emit("filter", { active: Array.from(next) });
 this.stateChanged();
 },
-
 sort(columnId, direction) {
+if (this.queryAware) return this.setQuery({ version: 1, sort: direction ? { column: columnId, direction } : null, filters: (this.pendingQuery || this.acceptedQuery).filters });
 this.sortState = direction ? { column: columnId, direction: direction } : null;
+this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
 this.buildHeader();
 this.applySort(this.root, true);
 this.relayout();
 this.stateChanged();
 },
-
 setColumnVisible(columnId, visible) {
 const index = this.columns.findIndex((c) => c.id === columnId);
 if (index <= 0) {
@@ -2937,21 +3113,21 @@ this.relayout();
 this.stateChanged();
 }
 });
-
-function navigationScope(grid, signal) {
-const signals = Array.from(new Set([grid.lifetime.signal].concat(signal || []).filter(Boolean)));
+function navigationScope(grid, signal, dataBound = false) {
+const signals = Array.from(new Set([grid.lifetime.signal, dataBound && grid.dataLifetime.signal].concat(signal || []).filter(Boolean)));
+const controller = new AbortController();
 let abort;
-const stopped = new Promise((resolve) => { abort = () => resolve(); });
+const stopped = new Promise((resolve) => { abort = () => { controller.abort(); resolve(); }; });
 signals.forEach((item) => item.addEventListener("abort", abort, { once: true }));
 const cancelled = () => signals.some((item) => item.aborted);
 if (cancelled()) abort();
 return {
 cancelled,
+signal: controller.signal,
 wait: (pending) => Promise.race([pending, stopped]),
-dispose: () => signals.forEach((item) => item.removeEventListener("abort", abort))
+dispose: () => { signals.forEach((item) => item.removeEventListener("abort", abort)); controller.abort(); }
 };
 }
-
 Object.assign(TreeGrid.prototype, {
 async openForPath(w, navigation) {
 if (navigation.cancelled() || w._invalidated) return false;
@@ -2971,20 +3147,18 @@ await navigation.wait(this.expandInitial(w));
 }
 return !navigation.cancelled() && !w._invalidated && w.expanded && (w.toggleRevision || 0) === revision;
 },
-
 async expandPath(ids, options) {
-const navigation = navigationScope(this, options && options.signal);
+const navigation = navigationScope(this, options && options.signal, true);
 try { return await this.navigatePath(ids, options, navigation); }
 finally { navigation.dispose(); }
 },
-
 async navigatePath(ids, options, navigation) {
 const o = options || {};
 const cancelled = navigation.cancelled;
 if (cancelled()) return null;
 await navigation.wait(this.rootsReady);
 if (cancelled()) return null;
-await navigation.wait(this.prefetchPath(ids, !!o.expandLast));
+await navigation.wait(this.prefetchPath(ids, !!o.expandLast, navigation.signal));
 if (cancelled()) return null;
 const release = this.holdLayout();
 let w;
@@ -2998,7 +3172,7 @@ if (cancelled() || w === undefined) return null;
 if (w && (o.focus !== false || o.reveal !== false) && this.flushLayout()) rebuilt = true;
 if (w && rebuilt && (o.focus !== false || o.reveal !== false)) this.leanReveal();
 if (w && o.reveal !== false && this.filter && this.indexOf(w) < 0) {
-this.clearDeclaredFilters();
+if (!this.queryAware) this.clearDeclaredFilters();
 this.setFilter(null);
 this.flushLayout();
 }
@@ -3013,8 +3187,7 @@ this.ensureVisible(w);
 }
 return w ? w.h : null;
 },
-
-async prefetchPath(ids, openLast) {
+async prefetchPath(ids, openLast, signal) {
 if (typeof this.source.prefetch !== "function") return;
 const opens = [];
 const finds = [];
@@ -3022,17 +3195,16 @@ let parent = this.root;
 ids.forEach((id, k) => {
 if (k > 0 && !(parent && parent.children)) opens.push(ids[k - 1]);
 const w = this.keyMap.get(id);
-if (!(w && parent && w.parent === parent)) finds.push(id);
-parent = w && w.parent === parent ? w : null;
+if (!(w && parent && w.parent === parent && !w._cached)) finds.push(id);
+parent = w && w.parent === parent && !w._cached ? w : null;
 });
 if (openLast && ids.length && !(parent && parent.children)) opens.push(ids[ids.length - 1]);
 if (!opens.length && !finds.length) return;
 try {
-await this.source.prefetch(opens, finds);
+await this.source.prefetch(opens, finds, this.sourceRequest(signal));
 } catch (err) {
 }
 },
-
 async openPath(ids, o, navigation) {
 const cancelled = navigation.cancelled;
 let parent = this.root;
@@ -3047,7 +3219,7 @@ opened.push([parent, parent.toggleRevision || 0]);
 if (cancelled() || parent._invalidated || (parent !== this.root && !parent.expanded)) return undefined;
 w = this.keyMap.get(ids[k]);
 const seenCursors = new Set();
-while ((!w || w.parent !== parent) && parent.children && parent.next) {
+while ((!w || w.parent !== parent || w._cached) && parent.children && parent.next) {
 const before = parent.children.length;
 const cursor = parent.next;
 if (seenCursors.has(cursor)) {
@@ -3061,7 +3233,7 @@ throw new Error("CanopyX: could not load more children of '" + (parent.key || "t
 }
 w = this.keyMap.get(ids[k]);
 }
-if (!w || w.parent !== parent) {
+if (!w || w.parent !== parent || w._cached) {
 throw new Error("CanopyX: id not found on the path: " + ids[k]);
 }
 parent = w;
@@ -3095,7 +3267,6 @@ next.clear(); next.add(w);
 }
 return this.commitSelection(next, w, { notify: !o.deferNotify, reason: "row", anchor: w, revision });
 },
-
 selectRange(w, revision = this.selectionRevision || 0) {
 const from = this.indexOf(this.anchor);
 const to = this.indexOf(w);
@@ -3109,11 +3280,9 @@ if (!node.status && !node._invalidated && this.isSelectable(node)) next.add(node
 }
 return this.commitSelection(next, w, { reason: "range", revision });
 },
-
 isSelectable(w) {
 return !this.opts.isSelectable || this.opts.isSelectable(w.h) !== false;
 },
-
 commitSelection(next, target, options) {
 if (this.destroyed) return false;
 const o = options || {};
@@ -3139,7 +3308,6 @@ this.selected = next;
 if (Object.prototype.hasOwnProperty.call(o, "anchor")) this.anchor = o.anchor;
 return this.selectionChanged(target, o.notify !== false);
 },
-
 setSelection(ids) {
 if (this.destroyed) return false;
 if (!Array.isArray(ids)) throw new Error("CanopyX: setSelection needs an array of loaded node ids.");
@@ -3154,7 +3322,6 @@ if (!this.multi && next.size > 1) throw new Error("CanopyX: this view allows onl
 const target = Array.from(next).pop() || null;
 return this.commitSelection(next, target, { reason: ids.length ? "api" : "clear", anchor: target });
 },
-
 selectAll(options) {
 if (this.destroyed) return false;
 if (!this.multi) throw new Error("CanopyX: selectAll requires multiple selection.");
@@ -3166,9 +3333,9 @@ const next = new Set(candidates.filter(w => !w.status && !w._invalidated && this
 const target = Array.from(next).pop() || null;
 return this.commitSelection(next, target, { reason: "all", anchor: target, revision });
 },
-
 selectionChanged(w, notify = true) {
 this.selectionRevision = (this.selectionRevision || 0) + 1;
+this.cacheDirty = true;
 const revision = this.selectionRevision;
 for (const [node, row] of this.rendered) {
 if (!node.status) setAttr(row, "aria-selected", this.selected.has(node) ? "true" : "false");
@@ -3181,7 +3348,6 @@ this.stateChanged();
 if (notify) this.notifySelection(w, nodes, revision);
 return revision === this.selectionRevision && !this.destroyed;
 },
-
 notifySelection(w, nodes, revision = this.selectionRevision) {
 const node = w ? w.h : null;
 this.emit("select", { node, nodes });
@@ -3192,15 +3358,14 @@ this.opts.onSelect(node, nodes);
 });
 Object.assign(TreeGrid.prototype, {
 descendants(parent) {
-const found = new Map(), pending = (parent.children || []).slice();
+const found = new Map(), pending = this.modelChildren(parent).slice();
 while (pending.length) {
 const w = pending.pop();
 found.set(w.key, w);
-for (const child of w.children || []) pending.push(child);
+for (const child of this.modelChildren(w)) pending.push(child);
 }
 return found;
 },
-
 retirePage(w, reloadOwner, clearDeferred = true) {
 w.dataGeneration = (w.dataGeneration || 0) + 1;
 w.pageToken = null;
@@ -3211,72 +3376,75 @@ w.loading = false;
 if (w.reloadController && w.reloadController !== reloadOwner) w.reloadController.abort();
 if (clearDeferred) w.pendingChildCount = null;
 },
-
-reconcileList(parent, items, total, next) {
+reconcileList(parent, items, total, next, positions, ordering = false, suppressExpansion = false, resetLazy = false) {
 const old = this.descendants(parent), retained = new Set(), incoming = new Set();
 const pendingData = items.slice();
 while (pendingData.length) {
 const data = pendingData.pop(); incoming.add(data.id);
 for (const child of data.children || []) pendingData.push(child);
 }
-if (this.countRevisions) {
-const ids = new Set([...old.keys(), ...incoming]);
-if (parent.key != null) ids.add(parent.key);
-for (const id of ids) this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+if (!ordering) {
+for (const w of [parent, ...old.values()]) w.countRevision = (w.countRevision || 0) + 1;
 }
-const pending = [{ owner: parent, items, total, next }];
+const pending = [{ owner: parent, items, total, next, positions }];
 while (pending.length) {
 const entry = pending.pop(), owner = entry.owner;
-const children = entry.items.map((data, index) => {
+const replacement = owner.inline ? this.inlineReplacement(owner, entry.items, entry.positions) :
+{ items: entry.items, positions: entry.positions, attached: entry.items.length };
+const children = replacement.items.map((data, index) => {
+const position = replacement.positions ? replacement.positions[index] : index;
 let w = old.get(data.id);
 const reused = !!w;
-if (!w) w = this.createWrapper(data, owner, index);
+if (!w) w = this.createWrapper(data, owner, position);
 else {
-w.parent = owner; w.idx = index; w.level = owner.level + 1;
+w.parent = owner; w.idx = position; w.level = owner.level + 1;
 const content = nodeContent(data);
 if (w.content !== content) w._v = 0;
 w.h = data; w.content = content;
 w.hpx = data.detail ? this.detailHeight(data.detail) : this.rowH;
 w.auto = !!data.detail && !(data.detail.height > 0);
 }
+this.retainInline(w, index >= replacement.attached);
 retained.add(w);
 if (Array.isArray(data.children)) {
 const count = Math.max(this.pageSize, reused && w.children ? w.children.length : 0);
-const first = slicePage(data.children, null, count);
 this.retirePage(w); w.inline = true;
-pending.push({ owner: w, items: first.items, total: first.total, next: first.next });
-if (!reused) w.expanded = !!data.expanded && first.items.length > 0;
+const first = this.inlinePage(w, null, count);
+pending.push({ owner: w, items: first.items, total: first.total, next: first.next, positions: first.positions });
+if (!reused) w.expanded = !suppressExpansion && !this.restoring && !!data.expanded && first.items.length > 0;
 } else if (!data.hasChildren || data.detail) {
-this.retirePage(w); w.inline = false; w.children = null; w.next = null; w.total = null; w.expanded = false;
+this.retirePage(w); w.inline = false; w.children = null; w.inlineCache = null; w.next = null; w.total = null; w.expanded = false;
 } else {
 w.inline = false;
 const cached = this.descendants(w);
 const conflict = Array.from(cached.keys()).some(id => incoming.has(id));
-if (conflict || data.childCount != null && w.children &&
+if (resetLazy || conflict || data.childCount != null && w.children &&
 (data.childCount < w.children.length || !w.next && data.childCount !== w.children.length)) {
-this.retirePage(w); w.children = null; w.next = null;
+this.retirePage(w); w.children = null; w.inlineCache = null; w.next = null;
 } else {
 for (const child of cached.values()) { child.level = child.parent.level + 1; retained.add(child); }
 }
 w.total = data.childCount == null ? w.total : data.childCount;
-if (!reused) w.autoExpand = !!data.expanded;
+if (!reused || resetLazy) w.autoExpand = !suppressExpansion && !this.restoring && !!(data.expanded || resetLazy && w.expanded);
 }
 return w;
 });
-owner.children = children; owner.total = entry.total; owner.next = entry.next;
+owner.children = children.slice(0, replacement.attached);
+owner.inlineCache = new Map(children.slice(replacement.attached).map(w => [w.key, w]));
+owner.total = entry.total; owner.next = entry.next;
 owner.error = null;
 if (owner !== this.root && !children.length && !entry.next) owner.expanded = false;
 }
 let removedSelection = null;
 for (const w of old.values()) {
 if (retained.has(w)) continue;
-w._invalidated = true;
-this.retirePage(w);
-if (this.keyMap.get(w.key) === w) this.keyMap.delete(w.key);
-if (this.selected.delete(w) && !removedSelection) removedSelection = w;
-if (this.anchor === w) this.anchor = null;
+const removed = this.retireWrapper(w);
+if (!removedSelection) removedSelection = removed;
 }
-this.applySort(parent, true);
+if (!ordering) this.applySort(parent, true);
+for (const w of retained) this.rememberInactive(w);
+this.rememberInactive(parent);
+this.trimInlineCache();
 if (parent !== this.root && !parent.inline) {
 if (total != null) parent.h.childCount = total;
 parent.h.hasChildren = !!(parent.children.length || next || total > 0);
@@ -3284,9 +3452,9 @@ parent.h.hasChildren = !!(parent.children.length || next || total > 0);
 this.relayout(true);
 if (removedSelection) this.selectionChanged(null);
 },
-
 async reload(id, options) {
 if (this.destroyed) return false;
+if (id == null && this.queryAware) return this.setQuery(this.acceptedQuery, Object.assign({}, options, { force: true }));
 const parent = id == null ? this.root : this.keyMap.get(id);
 if (!parent || parent._invalidated) throw new Error("CanopyX: reload needs a loaded parent ID, or null for roots.");
 if (parent !== this.root && !this.expandable(parent)) throw new Error("CanopyX: reload needs a node with children.");
@@ -3299,22 +3467,25 @@ const started = performance.now();
 try {
 const old = this.descendants(parent), outside = new Map(this.keyMap);
 for (const key of old.keys()) outside.delete(key);
-const items = [], seen = new Set();
+const items = [], positions = [], seen = new Set();
 const inlineOnly = this.root.inlineItems != null;
-const inline = parent === this.root ? inlineOnly ? this.view.roots : null : parent.inline ? parent.h.children : null;
-if (inlineOnly) validateNodes(inline, outside, true);
+const isInline = parent === this.root ? inlineOnly : parent.inline;
+const inline = isInline ? parent === this.root ? this.view.roots : parent.h.children : null;
+if (isInline) validateNodes(inline, outside, inlineOnly);
 let cursor = null, total = null, next = null;
 do {
 if (navigation.cancelled() || parent._invalidated) return false;
-const page = inline ? slicePage(inline, cursor, this.pageSize) :
-await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, { signal: controller.signal }));
+const page = isInline ? this.inlinePage(parent, cursor, this.pageSize, inline) :
+await navigation.wait(this.source.page(parent === this.root ? null : parent.h, cursor, this.sourceRequest(controller.signal)));
 if (navigation.cancelled() || parent._invalidated) return false;
 validatePage(page, outside, items.length);
+if (this.queryAware && !isInline) snapshotRevision(page, this.datasetRevision);
 const pending = page.items.slice();
 while (pending.length) {
 const node = pending.pop(); outside.set(node.id, true);
 for (const child of node.children || []) pending.push(child);
 }
+if (page.positions) positions.push(...page.positions);
 items.push(...page.items); total = page.total; next = page.next || null;
 if (next && (seen.has(next) || next === cursor)) throw new Error("CanopyX: reload continuation did not advance.");
 if (next) seen.add(next);
@@ -3323,11 +3494,11 @@ cursor = next;
 if (navigation.cancelled() || parent._invalidated) return false;
 const current = new Map(this.keyMap);
 for (const key of this.descendants(parent).keys()) current.delete(key);
-validateNodes(items, current, inlineOnly);
+validateNodes(isInline ? inline : items, current, inlineOnly);
 const anchor = this.captureScrollAnchor();
 this.retirePage(parent, controller);
 if (parent === this.root && inlineOnly) parent.inlineItems = inline;
-this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next);
+this.reconcileList(parent, items, total == null ? next ? null : items.length : total, next, isInline ? positions : null);
 this.restoreScrollAnchor(anchor);
 this.stateChanged();
 this.emit("reload", { node: parent.h, count: items.length, total: parent.total, ms: performance.now() - started });
@@ -3341,19 +3512,91 @@ navigation.dispose(); controller.abort();
 if (parent.reloadController === controller) parent.reloadController = null;
 }
 },
-
 captureScrollAnchor() {
-const index = this.rowAt(this.grid.scrollTop);
+const top = this.logicalTop();
+const index = this.rowAt(top);
 const w = this.rows[Math.min(index, this.rows.length - 1)];
-return w && !w.status ? { id: w.key, offset: this.grid.scrollTop - this.tops[this.indexOf(w)] } : null;
+return w && !w.status ? { id: w.key, offset: top - this.tops[this.indexOf(w)] } : null;
 },
-
 restoreScrollAnchor(anchor) {
 const w = anchor && this.keyMap.get(anchor.id), index = this.indexOf(w);
-if (index >= 0) this.grid.scrollTop = Math.max(0, this.tops[index] + anchor.offset);
+if (index >= 0) this.setLogicalTop(Math.max(0, this.tops[index] + anchor.offset));
 }
 });
-
+Object.assign(TreeGrid.prototype, {
+async setQuery(value, options, restoreOwner) {
+if (this.destroyed) return false;
+if (options && options.signal && options.signal.aborted) return false;
+if (!this.queryAware) throw new Error("CanopyX: this source does not support view queries.");
+const query = readQuery(this, value), force = !!(options && options.force);
+if (this.restoreController && this.restoreController !== restoreOwner) this.restoreController.abort();
+if (this.queryController) this.queryController.abort();
+if (!force && this.datasetRevision != null && JSON.stringify(query) === JSON.stringify(this.acceptedQuery)) {
+this.pendingQuery = null; this.syncQueryControls(); return true;
+}
+const controller = this.queryController = new AbortController();
+const navigation = navigationScope(this, [controller.signal, options && options.signal]);
+this.pendingQuery = query;
+const started = performance.now(), target = force ? Math.max(this.pageSize, (this.root.children || []).length) : 1;
+try {
+const items = [], seen = new Set(), existing = new Map();
+let cursor = null, next = null, total = null, revision = null;
+do {
+if (navigation.cancelled()) return false;
+const page = await navigation.wait(this.source.page(null, cursor, { signal: controller.signal, query, revision }));
+if (navigation.cancelled()) return false;
+validatePage(page, existing, items.length);
+revision = snapshotRevision(page, revision);
+for (const node of page.items) {
+const pending = [node];
+while (pending.length) { const data = pending.pop(); existing.set(data.id, true); for (const child of data.children || []) pending.push(child); }
+}
+items.push(...page.items); total = page.total; next = page.next || null;
+if (next && (next === cursor || seen.has(next))) throw new Error("CanopyX: query continuation did not advance.");
+if (next) seen.add(next);
+cursor = next;
+} while (next && items.length < target);
+if (navigation.cancelled()) return false;
+const anchor = force ? this.captureScrollAnchor() : null;
+const filtersChanged = JSON.stringify(query.filters) !== JSON.stringify(this.acceptedQuery.filters);
+this.applyQuerySnapshot(query, revision, items, total, next, anchor);
+if (navigation.cancelled()) return false;
+this.emit("query", { query: this.getQuery(), revision });
+if (filtersChanged && !navigation.cancelled()) this.emit("filter", { active: Array.from(this.activeFilters) });
+if (force && !navigation.cancelled()) this.emit("reload", { node: null, count: items.length, total: this.root.total, ms: performance.now() - started });
+if (!this.restoring && !navigation.cancelled()) await navigation.wait(this.expandInitial(this.root));
+return !navigation.cancelled();
+} catch (error) {
+if (navigation.cancelled()) return false;
+this.announce(fill(this.labels.queryFailed, { error: error.message || String(error) }));
+this.emit("error", { node: null, message: error.message || String(error) });
+throw error;
+} finally {
+navigation.dispose(); controller.abort();
+if (this.queryController === controller) {
+this.queryController = null; this.pendingQuery = null; this.syncQueryControls();
+}
+}
+},
+applyQuerySnapshot(query, revision, items, total, next, anchor) {
+this.dataLifetime.abort(); this.dataLifetime = new AbortController();
+if (this.cancelSearch) this.cancelSearch();
+this.retirePage(this.root);
+for (const node of this.keyMap.values()) this.retirePage(node);
+if (this.inactiveCache) this.inactiveCache.clear();
+this.acceptedQuery = query; this.datasetRevision = revision;
+this.sortState = query.sort; this.activeFilters = new Set(query.filters);
+this.filter = null; this.declaredFilter = null;
+this.buildHeader(); this.syncQueryControls();
+this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
+this.rootsReady = Promise.resolve();
+if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
+const count = numberFormat(this.lang);
+this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
+fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
+this.stateChanged();
+}
+});
 Object.assign(TreeGrid.prototype, {
 buildToolbar() {
 const bar = this.toolbar;
@@ -3368,7 +3611,10 @@ const label = h("label", "cx-switch");
 const input = h("input");
 input.type = "checkbox";
 input.setAttribute("data-cx-filter", filter.id);
-input.addEventListener("change", () => this.setFilterActive(filter.id, input.checked));
+input.addEventListener("change", () => {
+const pending = this.setFilterActive(filter.id, input.checked);
+if (pending && pending.catch) pending.catch(() => {});
+});
 label.appendChild(input);
 label.appendChild(document.createTextNode(filter.label));
 bar.appendChild(label);
@@ -3380,7 +3626,6 @@ any = true;
 }
 bar.hidden = !any;
 },
-
 clearDeclaredFilters() {
 if (!this.activeFilters.size) {
 return;
@@ -3390,7 +3635,6 @@ this.toolbar.querySelectorAll("[data-cx-filter]").forEach((input) => { input.che
 this.emit("filter", { active: [] });
 this.stateChanged();
 },
-
 buildSearch(bar, options) {
 const box = h("div", "cx-search");
 const input = h("input", "cx-search-input");
@@ -3543,14 +3787,13 @@ clearTimeout(timer);
 clearTimeout(blurTimer);
 blurTimer = setTimeout(close, 150);
 });
-this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); };
+this.cancelSearch = () => { cancelNavigation(); sequence++; clearTimeout(timer); clearTimeout(blurTimer); hits = []; close(); };
 box.appendChild(input);
 box.appendChild(list);
 box.appendChild(status);
 bar.appendChild(box);
 this.searchInput = input;
 },
-
 buildColumnChooser(bar) {
 const details = h("details", "cx-columns");
 const summary = h("summary");
@@ -3578,7 +3821,6 @@ details.addEventListener("toggle", flyout.position);
 this.disposeColumnChooser = flyout.dispose;
 }
 });
-
 function watchFlyout(anchorElement, panel, isOpen) {
 const position = () => {
 if (!isOpen()) return;
@@ -3609,7 +3851,6 @@ if (!Array.isArray(path) || !path.length) throw new Error("CanopyX: state paths 
 return path.map(id => { requireIdentifier(id, "state path ID"); return id; });
 });
 }
-
 Object.assign(TreeGrid.prototype, {
 getState() {
 const anchor = this.captureScrollAnchor(), anchorNode = anchor && this.keyMap.get(anchor.id);
@@ -3620,7 +3861,6 @@ timeZone: this.local ? "local" : "utc", pinTreeColumn: this.host.classList.conta
 focus: this.focused && !this.focused.status && !this.focused._invalidated ? this.pathOf(this.focused) : null,
 anchor: anchorNode ? { path: this.pathOf(anchorNode), offset: anchor.offset } : null };
 },
-
 readState(state) {
 if (!state || typeof state !== "object") return null;
 try {
@@ -3659,7 +3899,6 @@ result.anchor = { path: statePaths([state.anchor.path])[0], offset: state.anchor
 return result;
 } catch (error) { return null; }
 },
-
 applyStatePresentation(state) {
 if (!state.version) return;
 if (this.cancelResize) this.cancelResize();
@@ -3672,29 +3911,32 @@ const column = this.columns.find(c => c.id === input.getAttribute("data-cx-colum
 if (column) input.checked = !column.hidden;
 });
 this.sortState = state.sort;
+this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
 this.setTreeColumnPinned(state.pinTreeColumn);
 this.setTimeZone(state.timeZone);
 this.buildHeader();
 this.applySort(this.root, true);
-this.setActiveFilters(state.filters);
+if (!this.queryAware) this.setActiveFilters(state.filters);
 },
-
 async loadStatePaths(state, current) {
 const paths = state.selection.concat(state.focus ? [state.focus] : [], state.anchor ? [state.anchor.path] : []);
+const attached = new Set([state.focus, state.anchor && state.anchor.path].filter(Boolean).map(path => JSON.stringify(path)));
 for (const path of paths) {
 if (this.destroyed || current.signal.aborted) return;
 const existing = this.keyMap.get(path[path.length - 1]);
-if (existing && this.pathOf(existing).join("\u0000") === path.join("\u0000")) continue;
+let cached = false;
+for (let node = existing; node; node = node.parent) if (node._cached) cached = true;
+if (existing && JSON.stringify(this.pathOf(existing)) === JSON.stringify(path) &&
+(!attached.has(JSON.stringify(path)) || !cached)) continue;
 try { await this.expandPath(path, { select: false, focus: false, reveal: false, signal: current.signal }); }
 catch (error) { /* Nodes removed since the snapshot are skipped. */ }
 }
 },
-
 applyStatePosition(state, current) {
 if (!state.version) return;
 const valid = path => {
 const w = path && this.keyMap.get(path[path.length - 1]);
-return w && this.pathOf(w).join("\u0000") === path.join("\u0000") ? w : null;
+return w && JSON.stringify(this.pathOf(w)) === JSON.stringify(path) ? w : null;
 };
 this.setSelection(state.selection.map(valid).filter(Boolean).map(w => w.key));
 if (this.destroyed || current.signal.aborted) return;
@@ -3704,11 +3946,9 @@ const anchor = state.anchor && valid(state.anchor.path);
 if (anchor) this.restoreScrollAnchor({ id: anchor.key, offset: state.anchor.offset });
 }
 });
-
 function escapeHtml(value) {
 return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
 }
-
 Object.assign(TreeGrid.prototype, {
 pathOf(w) {
 const path = [];
@@ -3717,22 +3957,19 @@ path.push(node.key);
 }
 return path.reverse();
 },
-
 getExpandedPaths() {
 const out = [];
-const pending = (this.root.children || []).slice().reverse();
+const pending = this.modelChildren(this.root).slice().reverse();
 while (pending.length) {
 const child = pending.pop();
 if (child.expanded && this.expandable(child)) {
 out.push(this.pathOf(child));
-if (child.children) {
-for (let i = child.children.length - 1; i >= 0; i--) pending.push(child.children[i]);
-}
+const children = this.modelChildren(child);
+for (let i = children.length - 1; i >= 0; i--) pending.push(children[i]);
 }
 }
 return out;
 },
-
 async setState(state) {
 if (this.destroyed) return false;
 state = this.readState(state);
@@ -3749,6 +3986,8 @@ let restored = 0;
 let fallback = false;
 const release = this.holdLayout();
 try {
+if (this.queryAware && state.version && !await this.setQuery({ version: 1, sort: state.sort, filters: state.filters }, { signal: current.signal }, current)) return false;
+if (this.destroyed || current.signal.aborted) return false;
 this.applyStatePresentation(state);
 if (state.version) await this.loadStatePaths(state, current);
 if (this.destroyed || current.signal.aborted) return false;
@@ -3788,6 +4027,9 @@ return !this.destroyed && !current.signal.aborted;
 release();
 if (this.restoreController === current) {
 this.restoring = false;
+this.keyMap.forEach(w => this.rememberInactive(w));
+this.cacheDirty = true;
+this.scheduleRender();
 this.restoreController = null;
 if (fallback && !this.initializing) await this.expandInitial(this.root);
 if (!this.initializing) await this.flushPendingToggles();
@@ -3795,7 +4037,6 @@ if (!this.initializing) this.stateChanged();
 }
 }
 },
-
 async flushPendingToggles() {
 if (this.pendingToggleFlush) {
 try { await this.pendingToggleFlush; }
@@ -3823,17 +4064,17 @@ await run;
 } finally {
 if (this.pendingToggleFlush === run) this.pendingToggleFlush = null;
 this.replayingToggles = false;
+this.cacheDirty = true;
+this.scheduleRender();
 if (this.pendingRestorationToggles === pending && !pending.size) {
 this.pendingRestorationToggles = null;
 if (!this.destroyed) this.stateChanged();
 }
 }
 },
-
 stateKey() {
 return this.view.stateKey == null ? null : "canopyx:" + this.view.stateKey;
 },
-
 stateChanged() {
 const key = this.stateKey();
 if (this.destroyed || !key || this.restoring || this.initializing || this.replayingToggles) {
@@ -3848,7 +4089,6 @@ sessionStorage.setItem(key, JSON.stringify(this.getState()));
 }
 }, 250);
 },
-
 async restoreState() {
 const key = this.stateKey();
 if (!key) {
@@ -3862,11 +4102,9 @@ state = null;
 }
 await this.setState(state);
 },
-
 visibleRows() {
 return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
 },
-
 toOutline() {
 const cols = this.visibleColumns();
 const out = ["<table class=\"cx-outline-table\"><thead><tr>"];
@@ -3901,30 +4139,28 @@ out.push("</tr>");
 out.push("</tbody></table>");
 return out.join("");
 },
-
 invalidateChildren(w) {
-const pending = (w.children || []).slice();
+const pending = this.modelChildren(w).slice();
 let removedSelection = null;
 while (pending.length) {
 const child = pending.pop();
-if (child.children) for (const descendant of child.children) pending.push(descendant);
-child._invalidated = true;
-if (child.pageController) child.pageController.abort();
-if (child.reloadController) child.reloadController.abort();
-if (this.keyMap.get(child.key) === child) this.keyMap.delete(child.key);
-if (this.selected.delete(child) && !removedSelection) removedSelection = child;
-if (this.anchor === child) this.anchor = null;
+for (const descendant of this.modelChildren(child)) pending.push(descendant);
+const removed = this.retireWrapper(child);
+if (!removedSelection) removedSelection = removed;
 }
 w.children = null;
+w.inlineCache = null;
+w.inlineOrder = null;
+if (this.inactiveCache) this.inactiveCache.delete(w);
 w.next = null;
 w.error = null;
 w.expanded = false;
 return removedSelection;
 },
-
 applyCounts(doc, fromRefresh = false) {
 if (this.destroyed) return;
 checkDocument(doc, "counts");
+if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
 let removedSelection = null;
 let removed = false;
 doc.items.forEach((item) => {
@@ -3933,9 +4169,10 @@ if (w && w.inline && item.childCount != null && item.childCount !== w.h.children
 throw new Error("CanopyX: inline childCount must equal children length.");
 }
 });
-if (!fromRefresh && this.countRevisions) {
+if (!fromRefresh) {
 for (const id of new Set(doc.items.map((item) => item.id))) {
-this.countRevisions.set(id, (this.countRevisions.get(id) || 0) + 1);
+const w = this.keyMap.get(id);
+if (w) w.countRevision = (w.countRevision || 0) + 1;
 }
 }
 doc.items.forEach((item) => {
@@ -3970,61 +4207,43 @@ w.h.flags = item.flags.slice();
 }
 w.content = nodeContent(w.h);
 });
+this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
+this.cacheDirty = true;
 this.applySort(this.root, true);
 this.relayout(removed);
 if (removedSelection) this.selectionChanged(removedSelection);
 },
-
 async refreshCounts(ids) {
 if (this.destroyed || !this.source.counts) {
 return null;
 }
-const wanted = ids || this.rows.filter((w) => !w.status).map((w) => w.key);
-const revisions = this.countRevisions || (this.countRevisions = new Map());
-const mine = new Map(wanted.map((id) => [id, (revisions.get(id) || 0) + 1]));
-mine.forEach((revision, id) => revisions.set(id, revision));
-const doc = await this.source.counts(wanted);
-if (this.destroyed) return null;
+const wanted = Array.from(new Set(ids || this.rows.filter((w) => !w.status).map((w) => w.key)));
+const mine = new Map();
+for (const id of wanted) {
+const w = this.keyMap.get(id);
+if (w) { w.countRevision = (w.countRevision || 0) + 1; mine.set(id, { w, revision: w.countRevision }); }
+}
+const navigation = navigationScope(this, this.dataLifetime.signal);
+let doc;
+try { doc = await navigation.wait(this.source.counts(wanted, this.sourceRequest(this.dataLifetime.signal))); }
+finally { navigation.dispose(); }
+if (navigation.cancelled()) return null;
+if (this.queryAware) snapshotRevision(doc, this.datasetRevision);
 checkDocument(doc, "counts");
-this.applyCounts(Object.assign({}, doc, { items: doc.items.filter((item) => mine.has(item.id) && mine.get(item.id) === revisions.get(item.id)) }), true);
+this.applyCounts(Object.assign({}, doc, { items: doc.items.filter(item => {
+const captured = mine.get(item.id);
+return captured && this.keyMap.get(item.id) === captured.w && captured.w.countRevision === captured.revision;
+}) }), true);
 return doc;
-},
-
-destroy() {
-if (this.destroyed) return;
-this.destroyed = true;
-this.lifetime.abort();
-if (this.restoreController) this.restoreController.abort();
-if (this.cancelResize) this.cancelResize();
-clearTimeout(this.saveTimer);
-clearTimeout(this.layoutTimer);
-if (this.cancelSearch) this.cancelSearch();
-if (this.disposeColumnChooser) this.disposeColumnChooser();
-if (this.disposeSearchFlyout) this.disposeSearchFlyout();
-cancelAnimationFrame(this.rafId);
-this.resizeObserver.disconnect();
-if (this.detailObserver) this.detailObserver.disconnect();
-this.grid.removeEventListener("scroll", this.onScroll);
-global.removeEventListener("beforeprint", this.onPrint);
-global.removeEventListener("hashchange", this.onHash);
-global.removeEventListener("popstate", this.onHash);
-if (this.linkOpening) this.linkOpening.abort();
-[this.toolbar, this.grid, this.live, this.outline].forEach((element) => element.remove());
-this.host.classList.remove("cx-pin-tree");
-this.host.removeAttribute("data-cx-ready");
-this.host.removeAttribute("data-canopyx-mounted");
 }
 });
-
 Object.assign(TreeGrid.prototype, {
 deepLinkName() {
 return "cx." + encodeURIComponent(this.view.id);
 },
-
 hashParams() {
 return (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
 },
-
 currentLink() {
 if (this.opts.parseLink) {
 return (global.location.hash || "").replace(/^#/, "");
@@ -4033,7 +4252,6 @@ const prefix = this.deepLinkName() + "=";
 const param = this.hashParams().find((p) => p.startsWith(prefix));
 return param ? param.slice(prefix.length) : null;
 },
-
 readLocation() {
 if (this.destroyed) return Promise.resolve();
 if (this.initializing) {
@@ -4041,12 +4259,11 @@ if (this.linkOpening && this.currentLink() !== this.link) {
 this.linkOpening.abort();
 this.link = null; // Deferred reopening must not reuse the canceled link if the address changes back.
 }
-this.linkChanged = true;
+this.linkChanged = this.dataLifetime.signal;
 return this.ready.then(() => undefined, () => undefined);
 }
 return this.openDeepLink();
 },
-
 openDeepLink() {
 const link = this.view.deepLink ? this.currentLink() : null;
 if (link !== this.link && this.linkOpening) this.linkOpening.abort();
@@ -4064,22 +4281,29 @@ if (this.linkTask && this.linkTask.promise === promise) this.linkTask = null;
 });
 return promise;
 },
-
 async openLink(link, current) {
+const navigation = navigationScope(this, current.signal, true);
 try {
-const ids = this.opts.parseLink ? await this.opts.parseLink(link) : link.split("/").filter(Boolean).map(decodeURIComponent);
-if (Array.isArray(ids) && ids.length && !this.destroyed && !current.signal.aborted &&
-!await this.expandPath(ids, { select: true, focus: false, signal: current.signal }) && !current.signal.aborted) {
+const ids = this.opts.parseLink ? await navigation.wait(this.opts.parseLink(link)) : link.split("/").filter(Boolean).map(decodeURIComponent);
+if (Array.isArray(ids) && ids.length && !navigation.cancelled() &&
+!await this.navigatePath(ids, { select: true, focus: false }, navigation) && !navigation.cancelled()) {
 this.link = null;
 }
 } catch (e) {
-if (!current.signal.aborted) {
+if (!navigation.cancelled()) {
 this.link = null;
 this.announce(e && e.message ? e.message : String(e));
 }
+} finally {
+const cancelled = navigation.cancelled();
+navigation.dispose();
+if (this.linkOpening === current) {
+if (cancelled && this.link === link) this.link = null;
+this.linkOpening = null;
+}
+current.abort();
 }
 },
-
 writeDeepLink(w, revision = this.selectionRevision) {
 if (!this.view.deepLink) {
 return;
@@ -4111,7 +4335,52 @@ this.link = this.currentLink();
 this.locationEvent = null;
 }
 });
-
+Object.assign(TreeGrid.prototype, {
+destroy() {
+if (this.destroyed) return;
+this.destroyed = true;
+this.lifetime.abort();
+this.dataLifetime.abort();
+if (this.queryController) this.queryController.abort();
+if (this.restoreController) this.restoreController.abort();
+if (this.cancelResize) this.cancelResize();
+clearTimeout(this.saveTimer);
+clearTimeout(this.layoutTimer);
+if (this.cancelSearch) this.cancelSearch();
+if (this.disposeColumnChooser) this.disposeColumnChooser();
+if (this.disposeSearchFlyout) this.disposeSearchFlyout();
+cancelAnimationFrame(this.rafId);
+this.resizeObserver.disconnect();
+if (this.detailObserver) this.detailObserver.disconnect();
+this.grid.removeEventListener("scroll", this.onScroll);
+this.grid.removeEventListener("wheel", this.onScaledWheel);
+this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
+this.grid.removeEventListener("touchmove", this.onScaledTouchMove);
+this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
+this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
+global.removeEventListener("beforeprint", this.onPrint);
+global.removeEventListener("hashchange", this.onHash);
+global.removeEventListener("popstate", this.onHash);
+if (this.linkOpening) this.linkOpening.abort();
+[this.toolbar, this.grid, this.live, this.outline].forEach(element => element.remove());
+this.host.classList.remove("cx-pin-tree");
+this.host.removeAttribute("data-cx-ready");
+this.host.removeAttribute("data-canopyx-mounted");
+this.keyMap.clear(); this.selected.clear(); this.rendered.clear(); this.pool.length = 0;
+if (this.inactiveCache) this.inactiveCache.clear();
+if (this.inlineRetained) this.inlineRetained.clear();
+this.rows = []; this.tops = [0]; this.total = 0;
+this.root.children = null; this.root.inlineCache = null; this.root.inlineOrder = null;
+this.focused = null; this.anchor = null; this.source = null; this.touchScroll = null;
+this.opts = {};
+for (const column of this.columns) column.render = null;
+this.filter = null; this.declaredFilter = null; this.pendingRestorationToggles = null;
+this.scrolledCell = null; this.focusHandoff = null;
+this.cancelResize = null; this.cancelSearch = null;
+this.disposeColumnChooser = null; this.disposeSearchFlyout = null;
+this.canvas.replaceChildren(); this.outline.replaceChildren();
+}
+});
 function createTreeGrid(host, options) {
 if (!host || !options || !options.view) {
 throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
@@ -4119,16 +4388,19 @@ throw new Error("CanopyX: createTreeGrid needs a host element and a view documen
 const existing = activeGrids.get(host);
 if (existing) return existing;
 const grid = new TreeGrid(host, options);
-const api = Object.freeze({
+const api = Object.freeze(Object.assign({
 element: host,
 view: grid.view,
 ready: grid.ready,
 expandPath: (ids, o) => grid.expandPath(ids, o),
-setFilter: (filter, o) => { grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
+setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
 setFilterActive: (id, active) => grid.setFilterActive(id, active),
 setActiveFilters: (ids) => grid.setActiveFilters(ids),
+updateActiveFilters: (change) => grid.updateActiveFilters(change),
 getActiveFilters: () => Array.from(grid.activeFilters),
 sort: (columnId, direction) => grid.sort(columnId, direction),
+getQuery: () => grid.getQuery(),
+setQuery: (query, options) => grid.setQuery(query, options),
 setColumnVisible: (columnId, visible) => grid.setColumnVisible(columnId, visible),
 setColumnWidth: (columnId, width) => grid.setColumnWidth(columnId, width),
 setTreeColumnPinned: (pinned) => grid.setTreeColumnPinned(pinned),
@@ -4163,15 +4435,13 @@ grid.destroy();
 if (activeGrids.get(host) === api) activeGrids.delete(host);
 if (host.canopyx === api) delete host.canopyx;
 }
-});
+}, grid.interactionApi && grid.interactionApi()));
 activeGrids.set(host, api);
 host.setAttribute("data-canopyx-mounted", "true");
 host.canopyx = api;
 return api;
 }
-
 const configured = new Map();
-
 function configure(viewId, options) {
 requireIdentifier(viewId, "view ID");
 if (!options || typeof options !== "object") {
@@ -4186,12 +4456,10 @@ return () => {
 if (configured.get(viewId) === registration) configured.delete(viewId);
 };
 }
-
 function unconfigure(viewId) {
 requireIdentifier(viewId, "view ID");
 return configured.delete(viewId);
 }
-
 function mount(root, automatic) {
 const scope = root || document;
 const created = [];
@@ -4235,7 +4503,6 @@ showError(host, err, null, view);
 });
 return created;
 }
-
 global.CanopyX = Object.freeze({
 protocol: PROTOCOL,
 createTreeGrid: createTreeGrid,
@@ -4246,7 +4513,6 @@ sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: r
 badge: hostBadge,
 labels: DEFAULT_LABELS
 });
-
 const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
 if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
 document.addEventListener("DOMContentLoaded", () => mount(document, true));

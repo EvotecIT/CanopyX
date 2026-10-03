@@ -18,7 +18,7 @@ dotnet test .\CanopyX.sln -c Release
 
 The solution also holds `CanopyX.Tests.NetFramework`, which runs the framework-sensitive contract tests (search folding) against the `net472` build. It builds on every platform and runs on Windows.
 
-Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging.
+Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging. `-BrowserTestTimeoutSeconds` separately bounds the browser suite; CI uses 2400 seconds for the full engine matrix.
 
 ## Browser Tests
 
@@ -29,12 +29,14 @@ Install the test dependencies once, then let the quality loop generate the examp
 ```powershell
 cd tests/browser
 npm ci
-node node_modules/@playwright/test/cli.js install chromium
+dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium
 cd ../..
 ./Build.ps1 -Configuration Release -SkipPack
 ```
 
 To rerun only the browser tests against the pages already generated, run `npm test` in `tests/browser` (it opens the Release examples; set `CANOPYX_EXAMPLES` to another output folder, for example after a Debug build). Set `CANOPYX_BROWSER_CHANNEL=msedge` (or `chrome`) to use an installed browser instead of Playwright's Chromium. After a visible change, refresh the README screenshots with `node tools/screenshots.mjs`.
+
+The local loop uses Chromium by default. Set `CANOPYX_TEST_BROWSERS=chromium,firefox,webkit` to run all three engines, or choose a comma-separated subset. Install the chosen engines with `dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium firefox webkit` in `tests/browser`. This test-only executable uses the published HtmlTinkerX installer and verifies that its Playwright version matches the browser tests. On Linux, set `HTMLTINKERX_PLAYWRIGHT_WITH_DEPS=1` when system dependencies also need installation; root CI runners install them automatically. Installed-browser channels and `CANOPYX_BROWSER_EXECUTABLE` apply only to the Chromium project. CI runs all three engines on Linux, Chromium and Firefox on Windows, and Chromium and WebKit on macOS.
 
 The suite covers a smoke pass over every Must feature of the tree grid, an axe-core scan in light and dark themes, a keyboard walkthrough, and performance budgets on the large bundle example.
 
@@ -60,6 +62,10 @@ node bench/scroll-benchmark.mjs --runs 5 --cpu 1,4
 ```
 
 Add `--host-columns status,changes,links,finding` to measure a host that draws some columns itself through `renderers`. Put the median results in the pull request description. The benchmark records frames over 50 ms and 33 ms, the 95th percentile frame time, and blank viewport samples while scrolling a large expanded tree. For changes to loading, expanding, or search, report the timings the Playwright performance tests print for the large bundle example before and after the change.
+
+The JSON report records the runtime and stylesheet paths and SHA-256 hashes, the generated fixture hash and viewport, Node version, and each run's browser version and frame cadence. Keep the browser, viewport, CPU placement, process priority, and power plan consistent across a comparison; alternate before and after runs and retain outliers. The blank-row probe runs on the main thread and does not measure compositor checkerboarding. With `--out <folder>/scroll.json`, both the report and its generated HTML fixture stay in that folder.
+
+For a diagnostic run, `--profile-dir <folder>` saves a Chrome DevTools CPU profile for each run and slowdown. Keep these runs separate from timing comparisons: profiling changes their overhead. Use a task-owned output folder, retain the summary needed to explain the result, and clean superseded generated benchmark pages and traces.
 
 Changes to the bundle search index or to sidecar search also need the search benchmark. It reports the index size next to the pages, and the cold and warm time from a query to an expanded hit, on the large bundle example, on two benchmark bundles (an adversarial deep tree and a directory-shaped tree), and on the packed catalog of the packing benchmark (write it with `--pack-bench` first):
 

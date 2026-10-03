@@ -42,14 +42,15 @@
         const w = pending.pop();
         const data = w.h;
         if (Array.isArray(data.children)) {
-          const first = slicePage(data.children, null, this.pageSize);
           w.inline = true;
-          w.children = first.items.map((child, i) => this.createWrapper(child, w, i));
+          const first = this.inlinePage(w, null);
+          w.children = first.items.map((child, i) => this.createWrapper(child, w, first.positions[i]));
           w.total = first.total;
           w.next = first.next;
           w.expanded = !!data.expanded && initialExpansion && w.children.length > 0;
           for (let i = w.children.length - 1; i >= 0; i--) pending.push(w.children[i]);
           this.applySort(w, false);
+          this.rememberInactive(w);
         } else if (data.hasChildren) {
           w.total = typeof data.childCount === "number" ? data.childCount : null;
           w.autoExpand = !!data.expanded && initialExpansion;

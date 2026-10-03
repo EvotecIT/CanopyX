@@ -10,18 +10,79 @@ if (-not $foldAssignment.Success) { throw 'The canonical search folding table is
 $foldPieces = [regex]::Matches($foldAssignment.Groups['parts'].Value, '"([A-Za-z0-9+/=]+)"')
 $foldPairs = -join @($foldPieces | ForEach-Object { $_.Groups[1].Value })
 
+# Keep the frozen C# table as the canonical input. Consecutive pairs with a stride of one or two use a range
+# record instead of repeating both words. All words are little-endian; U+FFFF is the range marker, not a mapped
+# character. This changes only the browser representation, never the protocol's lowercase mapping.
+$foldBytes = [Convert]::FromBase64String($foldPairs)
+$foldEntries = for ($foldOffset = 0; $foldOffset -lt $foldBytes.Length; $foldOffset += 4) {
+    [pscustomobject]@{
+        From = [int]$foldBytes[$foldOffset] -bor ([int]$foldBytes[$foldOffset + 1] -shl 8)
+        To = [int]$foldBytes[$foldOffset + 2] -bor ([int]$foldBytes[$foldOffset + 3] -shl 8)
+    }
+}
+$foldCompact = [System.Collections.Generic.List[byte]]::new()
+for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
+    $foldEntry = $foldEntries[$foldOffset]
+    if ($foldEntry.From -eq 65535) { throw 'The folding range marker must not be a mapped character.' }
+    $foldCount = 1
+    $foldStep = if ($foldOffset + 1 -lt $foldEntries.Count) { $foldEntries[$foldOffset + 1].From - $foldEntry.From } else { 0 }
+    if ($foldStep -in @(1, 2)) {
+        while ($foldOffset + $foldCount -lt $foldEntries.Count -and
+            $foldEntries[$foldOffset + $foldCount].From -eq $foldEntry.From + $foldCount * $foldStep -and
+            $foldEntries[$foldOffset + $foldCount].To -eq $foldEntry.To + $foldCount * $foldStep) { $foldCount++ }
+    }
+    $foldWords = if ($foldCount -ge 3) { @(65535, $foldEntry.From, $foldEntry.To, $foldCount, $foldStep) }
+        else { @($foldEntry.From, $foldEntry.To) }
+    foreach ($foldWord in $foldWords) {
+        $foldCompact.Add([byte]($foldWord -band 255))
+        $foldCompact.Add([byte]($foldWord -shr 8))
+    }
+    $foldOffset += $(if ($foldCount -ge 3) { $foldCount } else { 1 })
+}
+$foldPairs = [Convert]::ToBase64String($foldCompact.ToArray())
+
 $assets = @(
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
         Target = 'CanopyX.Html/Assets/canopyx.js'
+        Folding = $true
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Target = 'CanopyX.Html/Assets/canopyx.css'
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source'
+        Target = 'CanopyX.Html/Assets/canopyx-interactive.js'
+        Folding = $true
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css'
+        Target = 'CanopyX.Html/Assets/canopyx-interactive.css'
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source'
+        Target = 'CanopyX.Html/Assets/canopyx-module.mjs'
+        Folding = $true
+        Module = $true
     }
 )
 
 function Join-AssetSource {
-    param([string] $SourcePath)
+    param([string] $SourcePath, [string] $ExtensionPath)
 
-    $parts = Get-ChildItem -Path $SourcePath -Filter '*.js' -File |
-        Sort-Object Name
+    $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
+        else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
+
+    if ($ExtensionPath) {
+        $extra = if (Test-Path -LiteralPath $ExtensionPath -PathType Leaf) { @(Get-Item -LiteralPath $ExtensionPath) }
+            else { @(Get-ChildItem -LiteralPath $ExtensionPath -Filter '*.js' -File | Sort-Object Name) }
+        if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { $parts = @($parts) + @($extra) }
+        else { $parts = @($parts | Where-Object Name -LT '90-') + @($extra) + @($parts | Where-Object Name -GE '90-') }
+    }
 
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
@@ -65,7 +126,7 @@ function Remove-CommentLines {
             continue
         }
 
-        if ($text.StartsWith('//', $ordinal)) {
+        if ($text.Length -eq 0 -or $text.StartsWith('//', $ordinal)) {
             continue
         }
 
@@ -76,15 +137,47 @@ function Remove-CommentLines {
         $kept.Add($text)
     }
 
-    $kept -join "`n"
+    ($kept -join "`n") + "`n"
+}
+
+function ConvertTo-Module {
+    param([string] $Content)
+
+    # The module uses the same implementation as the interactive classic script. Only its host, automatic
+    # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
+    $footer = '})(typeof window !== "undefined" ? window : this);'
+    $automatic = 'const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;'
+    if (-not $Content.EndsWith($footer + "`n", [System.StringComparison]::Ordinal) -or
+        ([regex]::Matches($Content, [regex]::Escape($automatic))).Count -ne 1) {
+        throw 'The canonical runtime mount boundary changed; update the module assembly explicitly.'
+    }
+    $Content = $Content.Replace($automatic, "if (typeof document !== `"undefined`") {`n" + $automatic)
+    $Content = $Content.Substring(0, $Content.Length - $footer.Length - 1) + "}`n})(runtimeHost);`n"
+    $header = @'
+const runtimeHost = typeof window === "undefined" ? {} : window;
+if (runtimeHost.CanopyX && (runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)) {
+throw new Error("CanopyX: load the interactive runtime or module before the core script.");
+}
+'@
+    $exports = @'
+const CanopyX = runtimeHost.CanopyX;
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels };
+export default CanopyX;
+'@
+    $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
 
 foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
-    $generated = Join-AssetSource -SourcePath $sourcePath
-    if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
-    $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
+    $extensionPath = if ($asset.Extension) { Join-Path $root $asset.Extension } else { $null }
+    $generated = Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath
+    if ($asset.Folding) {
+        if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
+        $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
+    }
+    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }
