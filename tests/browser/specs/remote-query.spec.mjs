@@ -10,6 +10,34 @@ async function open(page) {
   await page.goto("https://query.test/"); await page.waitForSelector("[data-cx-ready]"); await nextFrames(page);
 }
 
+test("partial filter changes retain unrelated pending choices and reject invalid IDs atomically", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async definition => {
+    const host = document.querySelector(".cx-host"); host.canopyx.destroy();
+    definition.filters.push(...["day", "week", "open"].map(id => ({ id, label: id, flag: id })));
+    const requests = [], complete = [], events = [];
+    const api = CanopyX.createTreeGrid(host, { view: definition, source: { queryAware: true, page: (node, cursor, request) => {
+      if (!request.query.filters.length) return Promise.resolve({ items: [{ id: "old", label: "Old" }], next: null, revision: "old" });
+      requests.push(request.query.filters.slice());
+      return new Promise(resolve => complete.push(() => resolve({ items: [{ id: "fresh", label: "Fresh" }], next: null, revision: "fresh" })));
+    } } });
+    await api.ready; host.addEventListener("canopyx:filter", event => events.push(event.detail.active));
+    const first = api.setFilterActive("flagged", true);
+    const second = api.updateActiveFilters({ remove: ["day", "week"], add: ["week"] });
+    const third = api.updateActiveFilters({ add: ["open"] });
+    let invalid;
+    try { api.updateActiveFilters({ remove: ["missing"] }); } catch (error) { invalid = error.message; }
+    const acceptedBefore = api.getActiveFilters();
+    complete[2]();
+    const settled = await Promise.all([first, second, third]);
+    complete[0](); complete[1]();
+    return { requests, settled, invalid, acceptedBefore, accepted: api.getActiveFilters(), events };
+  }, view);
+  expect(result).toEqual({ requests: [["flagged"], ["flagged", "week"], ["flagged", "week", "open"]],
+    settled: [false, false, true], invalid: "CanopyX: the view declares no filter 'missing'.", acceptedBefore: [],
+    accepted: ["flagged", "week", "open"], events: [["flagged", "week", "open"]] });
+});
+
 test("host order, global filtering, and cursors follow the accepted query without client reordering", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(async data => {

@@ -44,6 +44,7 @@
       setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
       setFilterActive: (id, active) => grid.setFilterActive(id, active),
       setActiveFilters: (ids) => grid.setActiveFilters(ids),
+      updateActiveFilters: (change) => grid.updateActiveFilters(change),
       getActiveFilters: () => Array.from(grid.activeFilters),
       sort: (columnId, direction) => grid.sort(columnId, direction),
       getQuery: () => grid.getQuery(),

@@ -3235,14 +3235,21 @@ this.relayout();
 },
 
 setFilterActive(id, active) {
+return this.updateActiveFilters(active ? { add: [id] } : { remove: [id] });
+},
+
+updateActiveFilters(change) {
+if (!change || typeof change !== "object") throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
+const add = change.add === undefined ? [] : change.add;
+const remove = change.remove === undefined ? [] : change.remove;
+if (!Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
+const declared = this.view.filters || [];
+add.concat(remove).forEach(id => {
+if (!declared.some(filter => filter.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+});
 const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
-if (active) next.add(id);
-else next.delete(id);
-if (this.queryAware) {
-if (!(this.view.filters || []).some(f => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+remove.forEach(id => next.delete(id)); add.forEach(id => next.add(id));
 return this.setActiveFilters(Array.from(next));
-}
-this.applyActiveFilters([id], next);
 },
 
 setActiveFilters(ids) {
@@ -4629,6 +4636,7 @@ expandPath: (ids, o) => grid.expandPath(ids, o),
 setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
 setFilterActive: (id, active) => grid.setFilterActive(id, active),
 setActiveFilters: (ids) => grid.setActiveFilters(ids),
+updateActiveFilters: (change) => grid.updateActiveFilters(change),
 getActiveFilters: () => Array.from(grid.activeFilters),
 sort: (columnId, direction) => grid.sort(columnId, direction),
 getQuery: () => grid.getQuery(),

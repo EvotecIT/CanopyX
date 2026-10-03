@@ -63,6 +63,9 @@ await api.requestEdit("a", "name", "New label");
 await api.requestDrop(["a"], null, "inside");
 await api.requestAction("a", "inspect");
 api.selectAll({ scope: "loaded" });
+await api.updateActiveFilters({ add: ["flagged"], remove: ["other"] });
+// @ts-expect-error Filter changes contain arrays of declared IDs.
+api.updateActiveFilters({ remove: "other" });
 CanopyX.badge({ text: labels.saveEdit, tone: "success" });
 await sources.inline(view).page(null, null);
 

@@ -264,14 +264,22 @@
 
     /** Turns a declarative flag filter from the view on or off; active filters must all match. */
     setFilterActive(id, active) {
+      return this.updateActiveFilters(active ? { add: [id] } : { remove: [id] });
+    },
+
+    /** Changes part of the filter set atomically, retaining unrelated pending query changes. Additions win over removals. */
+    updateActiveFilters(change) {
+      if (!change || typeof change !== "object") throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
+      const add = change.add === undefined ? [] : change.add;
+      const remove = change.remove === undefined ? [] : change.remove;
+      if (!Array.isArray(add) || !Array.isArray(remove)) throw new Error("CanopyX: updateActiveFilters needs add and remove arrays of filter ids.");
+      const declared = this.view.filters || [];
+      add.concat(remove).forEach(id => {
+        if (!declared.some(filter => filter.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
+      });
       const next = new Set(this.queryAware ? (this.pendingQuery || this.acceptedQuery).filters : this.activeFilters);
-      if (active) next.add(id);
-      else next.delete(id);
-      if (this.queryAware) {
-        if (!(this.view.filters || []).some(f => f.id === id)) throw new Error("CanopyX: the view declares no filter '" + id + "'.");
-        return this.setActiveFilters(Array.from(next));
-      }
-      this.applyActiveFilters([id], next);
+      remove.forEach(id => next.delete(id)); add.forEach(id => next.add(id));
+      return this.setActiveFilters(Array.from(next));
     },
 
     /**

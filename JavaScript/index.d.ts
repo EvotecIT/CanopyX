@@ -18,6 +18,8 @@ export interface TreeGrid {
   setFilter(filter: NodeFilter | null, options?: FilterOptions): void;
   setFilterActive(id: string, active: boolean): void | Promise<boolean>;
   setActiveFilters(ids: string[]): void | Promise<boolean>;
+  /** Applies removals, then additions, in one transaction using the latest pending query. */
+  updateActiveFilters(change: { add?: readonly string[]; remove?: readonly string[] }): void | Promise<boolean>;
   getActiveFilters(): string[];
   sort(columnId: string, direction?: SortDirection | null): void | Promise<boolean>;
   getQuery(): ViewQuery;

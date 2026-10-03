@@ -258,6 +258,8 @@ Cancelable `canopyx:beforeedit`, `canopyx:beforedrop`, and `canopyx:beforeaction
 
 ## Documentation
 
+Host filter bars use `grid.updateActiveFilters({ remove: ["day", "week"], add: ["week"] })` to replace one choice while retaining unrelated selections, including changes in a pending query. The grid commits the final filter set atomically; failed queries retain accepted rows and controls.
+
 For hosted data, `CanopySource.RemoteQuery` lets endpoints sort and filter the complete dataset before paging. Every supplied endpoint receives `{viewQuery}` and returns its dataset revision. In the browser, `await grid.sort("value", "desc")` or `await grid.setActiveFilters(["flagged"])` stages a replacement while accepted rows remain visible. Failed queries keep the old view, and stale pages cannot mix revisions. The [remote query contract](docs/data-protocol.md#queries-before-remote-paging) describes request fields, events, cancellation, and selection semantics; `query-records.html` demonstrates the host source.
 
 - [Architecture](docs/architecture.md): packages, delivery modes, the runtime's structure, rendering model, accessibility contract, theming, and performance budgets.
