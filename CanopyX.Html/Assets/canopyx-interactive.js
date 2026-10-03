@@ -4771,7 +4771,7 @@ if (this.destroyed || !this.checkMode || this.initializing || this.restoring) re
 const revision = this.checkRevision, w = this.keyMap.get(id);
 if (!w || !this.canCheck(w) || revision !== this.checkRevision) return false;
 let next = this.checks.with(this.pathOf(w), checked);
-if (this.checkMode === "hierarchical") {
+if (this.checkMode === "hierarchical" && !(this.queryAware && this.acceptedQuery.filters.length)) {
 for (let parent = w.parent; parent && parent !== this.root; parent = parent.parent) {
 if (!parent.children || parent.next || !parent.children.length || parent.total != null && parent.total !== parent.children.length ||
 parent.children.some(child => child.h.detail)) break;
@@ -4829,13 +4829,14 @@ super.onClick(event);
 
 onKey(event) {
 const row = event.target.closest(".cx-row");
+const w = row && row === event.target && this.rowFromEvent(event);
 if (!event.defaultPrevented && !event.isComposing && this.checkMode && row === event.target && event.key === " " &&
+w && !w.status && !w.h.detail &&
 !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey &&
 !(this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS)) {
 event.preventDefault();
 event.stopPropagation();
-const w = this.rowFromEvent(event);
-if (w && !w.status && !w.h.detail) this.toggleCheck(w, "keyboard");
+this.toggleCheck(w, "keyboard");
 return;
 }
 super.onKey(event);
@@ -4888,19 +4889,19 @@ if (!parsed || this.destroyed) return false;
 const revision = ++this.checkRevision;
 if (parsed.checkIntents && !this.voteCheck(new CheckIntents(parsed.checkIntents, this.checkMode), null, "restore", revision)) return false;
 const operation = super.setState(parsed);
-const generation = this.restoreGeneration;
 this.paintCheckedRows();
 try {
-const accepted = await operation;
-if (accepted && this.checkMode && !this.destroyed && generation === this.restoreGeneration) this.notifyCheck(null, "restore");
-return accepted;
+return await operation;
 }
 finally { this.paintCheckedRows(); }
 }
 
 applyStatePresentation(state) {
 super.applyStatePresentation(state);
-if (state.checkIntents) { this.checks = new CheckIntents(state.checkIntents, this.checkMode); this.checkRevision++; }
+if (state.checkIntents) {
+this.checks = new CheckIntents(state.checkIntents, this.checkMode); this.checkRevision++;
+this.paintCheckedRows(); this.notifyCheck(null, "restore");
+}
 }
 
 destroy() {

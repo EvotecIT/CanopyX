@@ -59,7 +59,7 @@ A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or 
 
 ### Checking Intent
 
-An enabled `checkboxes` mode is independent of `selection`. In `independent` mode each rule applies only to its exact path. In `hierarchical` mode a rule applies to the path's branch, including unloaded descendants; a deeper rule overrides it. The default is unchecked. A branch with a checked descendant or an exception to its own checked rule is mixed. Complete loaded sibling sets can combine into one branch intent; partially loaded lists never imply a choice for unseen siblings.
+An enabled `checkboxes` mode is independent of `selection`. In `independent` mode each rule applies only to its exact path. In `hierarchical` mode a rule applies to the path's branch, including unloaded descendants; a deeper rule overrides it. The default is unchecked. A branch with a checked descendant or an exception to its own checked rule is mixed. Complete loaded sibling sets can combine into one branch intent; partially loaded lists and server-filtered lists never imply a choice for unseen siblings.
 
 ```json
 "checkboxes": "hierarchical",
@@ -71,7 +71,7 @@ An enabled `checkboxes` mode is independent of `selection`. In `independent` mod
 
 Paths are complete, nonempty, and contain no repeated IDs. An intent array cannot contain the same path twice. Rules may name unloaded nodes and require no reads. Readers normalize redundant hierarchical rules without changing their meaning. Node IDs retain their exact Unicode and case. Detail rows have no checking control.
 
-The interactive tree entry point reads these fields. C# HTML writers select it automatically; hosts writing fragments include that entry point once for the whole page. Standard readers ignore these optional fields. Version 1 saved views may additionally carry `checkboxes` and `checkIntents`; a mismatched checkbox mode or malformed rules reject the whole restore before changes. Legacy expansion-only state preserves current checks. A modern saved view without checking fields restores the unchecked default.
+The interactive tree entry point reads these fields. C# HTML writers select it automatically; hosts writing fragments include that entry point once for the whole page. Standard readers ignore these optional fields. Version 1 saved views may additionally carry `checkboxes` and `checkIntents`; a mismatched checkbox mode or malformed rules reject the whole restore before changes. Legacy expansion-only state preserves current checks. A modern saved view without checking fields restores the unchecked default. Restoration reports `onCheck` and `canopyx:check` when it accepts the checking presentation. These accepted rules can survive cancellation of later path loading; a restore rejected before presentation changes reports no checking change.
 
 Checkbox state is a presentation intent. The library does not enumerate an unloaded branch, authorize its members, or perform a write. A host interprets rules against its own data and governs the resulting operation.
 

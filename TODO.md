@@ -22,7 +22,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Correct ordering of fully materialized inline siblings before paging, with stable retained selection and expansion.
 - [x] Query-aware hosted sorting and filtering with cursor invalidation and dataset revision checks.
 - [x] Programmatic selection, selectability and veto hooks, and explicit select-all scope that never fetches unloaded data.
-- [ ] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
+- [x] Hierarchical checkbox selection with branch intent for unloaded descendants, separate from focus and row selection.
 - [x] Versioned reload and accepted data updates that preserve surviving identities, focus, selection, expansion, and scroll anchors.
 - [x] Versioned saved view state for columns, sorting, declared filters, selection, expansion, timezone, and scroll anchors.
 - [ ] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
@@ -200,7 +200,7 @@ Gate: the directory browser runs on the TestimoX L directory fixture (1.5 millio
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.
 
-- [ ] Editing, drag and drop, and tri-state checkboxes. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
+- [ ] Editing and drag and drop. Edits and drops are raised as proposals to host hooks; CanopyX applies nothing on its own.
 - [ ] Documentation website built with PowerForge.Web.
 - [ ] Published benchmarks with reproducible commands.
 - [ ] Optional npm distribution of the built runtime for hosts that are not .NET.

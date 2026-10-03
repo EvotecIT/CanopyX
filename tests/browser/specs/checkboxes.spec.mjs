@@ -165,6 +165,75 @@ test("restore reports accepted checking state and rejects a change while lazy re
   expect(await page.evaluate(()=>window.notifications)).toEqual(['restore']);
 });
 
+test('checking a complete filtered page does not claim siblings hidden by its server query',async({page})=>{
+  const definition={...view('hierarchical',[]),filters:[{id:'flagged',label:'Flagged',flag:'hit'}]};
+  await mount(page,definition,`{source:{queryAware:true,page:async(node,cursor,request)=>{
+    const filtered=request.query.filters.length>0;
+    return {items:node ? [{id:'a0',label:'Planning',flags:['hit']},...(filtered?[]:[{id:'a1',label:'Delivery'}])] :
+      [{id:'a',label:'Atlas',hasChildren:true}],total:node?(filtered?1:2):1,next:null,revision:'records-1'};
+  }}}`);
+  const result=await page.evaluate(async()=>{
+    const api=document.querySelector('.cx-host').canopyx;
+    await api.setFilterActive('flagged',true);
+    await api.expandPath(['a'],{expandLast:true,select:false,focus:false,reveal:false});
+    api.setChecked('a0',true);const intents=api.getCheckIntents();
+    await api.setFilterActive('flagged',false);
+    return {intents,chosen:api.getCheckState('a0'),hidden:api.getCheckState('a1')};
+  });
+  expect(result).toEqual({intents:[{path:['a','a0'],checked:true}],chosen:true,hidden:false});
+});
+
+for(const kind of ['more','error','detail']) test(`Space keeps the core ${kind} row action in a checkbox view`,async({page})=>{
+  if(kind==='more') await mount(page,{...view('hierarchical',[{id:'a',label:'Atlas'},{id:'b',label:'Beacon'}]),pageSize:1});
+  else if(kind==='error') await mount(page,view('independent',[]),`{source:{page:async()=>{
+    if(!window.retried){window.retried=true;throw new Error('Unavailable')}
+    return {items:[{id:'b',label:'Beacon'}],total:1};
+  }}}`);
+  else await mount(page,view('hierarchical',[{id:'detail',label:'Details',detail:{type:'html',height:2,html:'<p>Details</p>'}}]));
+  const target=kind==='detail'?row(page,'detail'):page.locator('[data-cx-status="'+kind+'"]');
+  await target.focus();await page.keyboard.press('Space');
+  if(kind==='detail') expect(await page.evaluate(()=>document.querySelector('.cx-host').canopyx.getSelected().map(node=>node.id))).toEqual(['detail']);
+  else await expect(row(page,'b')).toBeVisible();
+});
+
+test('accepted checking presentation notifies even when a user query cancels the remaining restore',async({page})=>{
+  const definition={...view('hierarchical',[]),columns:[{id:'name',title:'Name',width:300,sortable:true}]};
+  await mount(page,definition,`{onCheck:(node,intents,context)=>{(window.checkNotifications||=[]).push({intents,reason:context.reason})},
+    source:{queryAware:true,page:async(node,cursor,request)=>{
+      if(cursor){window.restorePathStarted=true;return new Promise(()=>{})}
+      return {items:[{id:'a',label:'Atlas'}],next:request.query.sort?null:'more',revision:'records-1'};
+    }}}`);
+  await page.evaluate(()=>{
+    const host=document.querySelector('.cx-host'),api=host.canopyx,saved=api.getState();window.checkEvents=[];
+    host.addEventListener('canopyx:check',event=>window.checkEvents.push(event.detail.intents));
+    saved.selection=[['missing']];saved.checkIntents=[{path:['a'],checked:true}];window.checkRestoration=api.setState(saved);
+  });
+  await page.waitForFunction(()=>window.restorePathStarted);
+  const result=await page.evaluate(async()=>{
+    const api=document.querySelector('.cx-host').canopyx;await api.sort('name','desc');
+    return {restored:await window.checkRestoration,intents:api.getCheckIntents(),notifications:window.checkNotifications||[],events:window.checkEvents};
+  });
+  const intents=[{path:['a'],checked:true}];
+  expect(result).toEqual({restored:false,intents,notifications:[{intents,reason:'restore'}],events:[intents]});
+});
+
+test('a failed restoration query never applies or reports its proposed checking rules',async({page})=>{
+  const intents=[{path:['a'],checked:true}];
+  const definition={...view('hierarchical',[]),checkIntents:intents,filters:[{id:'flagged',label:'Flagged',flag:'hit'}]};
+  await mount(page,definition,`{onCheck:()=>{window.checkNotifications=(window.checkNotifications||0)+1},
+    source:{queryAware:true,page:async(node,cursor,request)=>{
+      if(request.query.filters.length)throw new Error('Query unavailable');
+      return {items:[{id:'a',label:'Atlas'}],next:null,revision:'records-1'};
+    }}}`);
+  const result=await page.evaluate(async()=>{
+    const api=document.querySelector('.cx-host').canopyx,saved=api.getState();
+    saved.filters=['flagged'];saved.checkIntents=[];
+    const error=await api.setState(saved).then(()=>null,error=>error.message);
+    return {error,intents:api.getCheckIntents(),notifications:window.checkNotifications||0};
+  });
+  expect(result).toEqual({error:'Query unavailable',intents,notifications:0});
+});
+
 test("the generated project checklist loads pages and restores its saved checks", async ({ page }) => {
   await openExample(page, 'checkboxes.html');
   await expect(row(page, 'atlas').locator('.cx-check')).toHaveAttribute('aria-checked','mixed');
