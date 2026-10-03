@@ -5,6 +5,33 @@ namespace CanopyX.Tests.Grids;
 
 public sealed class GridProtocolTests {
     [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void GridRows_PreserveNonfiniteCellsAsEmptyWhileQueryOperandsRemainInvalid(double value) {
+        var view = View();
+        var row = new CanopyGridRow("undefined-metric");
+        row.Cells["amount"] = new CanopyCell(value) { Text = "N/A" };
+        row.Cells["name"] = value;
+        row.Cells["date"] = value;
+        view.Rows.Add(row);
+        var inline = view.ToJson();
+        ProtocolSchema.AssertValid(inline, "nonfinite inline cells");
+        using var document = JsonDocument.Parse(inline);
+        var cells = document.RootElement.GetProperty("rows")[0].GetProperty("cells");
+        Assert.Equal(JsonValueKind.Null, cells.GetProperty("amount").GetProperty("value").ValueKind);
+        Assert.Equal("N/A", cells.GetProperty("amount").GetProperty("text").GetString());
+        Assert.Equal(JsonValueKind.Null, cells.GetProperty("name").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cells.GetProperty("date").ValueKind);
+        var page = new CanopyGridPage(view.Id, "revision", 0, 1, 1);
+        page.Rows.Add(row);
+        ProtocolSchema.AssertValid(page.ToJson(view), "nonfinite definition-bound page cells");
+        var query = new CanopyGridQuery(view.Id);
+        query.Filters.Add(new CanopyGridFilter("amount", CanopyGridFilterOperator.Equal, new CanopyCell(value)));
+        Assert.Throws<InvalidOperationException>(() => query.ToJson(view));
+    }
+
+    [Theory]
     [InlineData("amount")]
     [InlineData("date")]
     [InlineData("name")]

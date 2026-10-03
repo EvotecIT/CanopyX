@@ -30,7 +30,7 @@ public sealed class CanopyGridRow {
             if (columnIds != null && !columnIds.Contains(cell.Key)) {
                 throw new InvalidOperationException("Grid row '" + Id + "' uses undeclared column '" + cell.Key + "'.");
             }
-            if (columns != null && columns.TryGetValue(cell.Key, out var column)) CanopyGridValues.Validate(cell.Value?.Value, column);
+            if (columns != null && columns.TryGetValue(cell.Key, out var column)) CanopyGridValues.ValidateCell(cell.Value, column);
         }
     }
 

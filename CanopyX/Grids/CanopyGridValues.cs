@@ -4,6 +4,14 @@ namespace CanopyX;
 
 /// <summary>Checks the raw value contract shared by grid rows and query operands.</summary>
 internal static class CanopyGridValues {
+    internal static void ValidateCell(CanopyCell? cell, CanopyColumn column) {
+        var value = cell?.Value;
+        // Cell writers preserve the existing empty-value contract for nonfinite numbers.
+        // Query operands remain strict because an empty comparison operand is ambiguous.
+        if (value is double real && (double.IsNaN(real) || double.IsInfinity(real))) value = null;
+        Validate(value, column);
+    }
+
     internal static void Validate(object? value, CanopyColumn column) {
         if (value == null) return;
         var numeric = value is long || value is decimal || value is double real && !double.IsNaN(real) && !double.IsInfinity(real);
