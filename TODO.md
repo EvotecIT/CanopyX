@@ -176,6 +176,15 @@ Consumer: the HtmlForgeX `DataExplorer` (branch `feature/report-datasets`, owned
 - [ ] Extract one shared virtual-scroll core (offset table, row pool, windowed rendering, cell reuse) used by both the tree grid and the data grid. Do this once and only with the `DataExplorer` owner's agreement; do not copy the code into HtmlForgeX.
 - [ ] Data grid view on that core, reading the same data sources.
 
+First grid release, with the HtmlForgeX inventory and one TestimoX results view as migration proofs:
+
+- [ ] Flat row identities, typed cells, full-dataset search/filtering, and stable multi-column sorting before paging.
+- [ ] Search and typed filters, column resize/visibility/order, sticky headers, and resettable saved views.
+- [ ] Virtual rows, bounded caches, query cancellation, stale-response rejection, and loading/error states.
+- [ ] Flat-grid keyboard and ARIA contracts, selection, copying, and host-composed details, while preserving the tree contracts.
+- [ ] Filtered, selected, and all-result export scopes with defined columns/order; large Office exports call host hooks.
+- [ ] Compare and migrate representative formatting, responsive layout, filters, selection, saved state, and exports in both consumers.
+
 Gate: the `DataExplorer` inventories run on the shared core within the plan section 7.2 interaction budget, and the tree grid performance tests still pass on the same core.
 
 ## 0.4 Matrix View

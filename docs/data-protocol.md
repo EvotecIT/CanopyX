@@ -22,6 +22,9 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `type` | Written by | Read when |
 | --- | --- | --- |
 | `view` | `CanopyView.ToJson()` | The page loads; it defines columns, behavior, the data source, and inline nodes |
+| `grid` | `CanopyGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
+| `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
+| `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -31,6 +34,22 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `searchEntries` | Bundle writer | A sidecar search needs the nodes its matches refer to |
 
 All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U+2029 as `\u` sequences, so a document can sit inside an HTML `<script>` element unchanged. Hosts writing documents by hand must do the same before inlining one. The C# writer also escapes the backtick, and a `$` that is followed by `{`, so a document can sit inside a JavaScript template literal unchanged (see [Packs](#packs)).
+
+## Flat Grid Documents
+
+Flat grids use their own document types, without parents, child references, or a special tree column. Existing tree documents and readers retain their contracts. A host uses a grid-capable runtime to consume `grid` and `gridPage` documents; a tree-only runtime does not reinterpret them as trees.
+
+A `grid` definition contains `id`, `label`, `rowHeight`, `pageSize`, `selection`, `search`, `columns`, and `source`. Column definitions and cells have the same value, display text, tooltip, tone, and badge contract as tree views. Any column can start hidden, but at least one must remain visible. Flat-grid definitions do not expose tree edit proposals. Optional `stateKey`, `timeZone`, and `labels` retain their shared meanings.
+
+The source is `{ "kind": "inline" }` or `{ "kind": "host" }`. Inline definitions contain the complete `rows` array. A row is `{ "id": "stable-key", "cells": { "column-id": 123 } }`; omitted cells and null entries are empty values. Identities are unique throughout the dataset and survive ordering, filtering, paging, and reloads. Display text never replaces the raw value used for sorting. Host definitions omit `rows`; a host hook owns query execution, transport, and authorization and can read an in-memory dataset, a sidecar dataset, or a remote service.
+
+A `gridPage` contains `view`, `revision`, `offset`, `total`, `matched`, and `items`, alongside its protocol envelope. `total` is the full unfiltered dataset size; `matched` is its size after filtering and search, before paging. `offset` is measured in the ordered matching rows. The host filters and sorts the full dataset before slicing a result page, using stable row identity as the final tie-breaker. All pages in one accepted query share a dataset revision. A changed revision invalidates retained pages and selection assumptions rather than mixing snapshots.
+
+Counts satisfy `0 <= offset <= matched <= total`, and returned rows cannot extend beyond `matched`. A result page contains at most 10,000 rows. Empty pages are valid only at the end of matching rows. Writers and readers also reject duplicate row identities. Inline definitions check declared columns; `CanopyGridPage.ToJson(view)` also checks page columns against its definition. Readers perform that check when accepting host pages. JSON Schema alone cannot express all cross-field and dataset-wide invariants.
+
+A `gridQuery` contains `view`, `offset`, `limit`, `search`, `sort`, and `filters`, with an optional expected `revision`. A definition can contain an initial `query`. Search is case-insensitive over raw values of declared columns, independent of display text. All column predicates combine with AND. Sort keys are `{ "column": "amount", "direction": "asc" }` or `desc`, applied in array order; keys identify unique declared sortable columns. Missing values sort last in either direction, and ordinal row identity breaks final ties, including when no explicit sort is requested. The source applies the result window last.
+
+A filter is `{ "column": "amount", "operator": "ge", "values": [10] }`. Operators are `eq`, `ne`, `contains`, `startsWith`, `in`, `gt`, `ge`, `lt`, `le`, `isNull`, and `isNotNull`. Equality and text matching are case-insensitive for text values. Numeric and date operands use their raw numeric and ISO 8601 UTC values; localized display strings do not enter the query. Text matching is for text columns; range comparisons are for number and date columns. A null or missing cell fails value predicates, including `ne`; use `isNull` to include it explicitly. An empty string is a value, not a null. Null predicates take no operands, `in` takes 1 to 1,000, and other predicates take one. A query has at most 64 predicates. The C# filter API accepts `CanopyCell` operands but serializes only their raw values, without display text or decorations.
 
 ## View
 

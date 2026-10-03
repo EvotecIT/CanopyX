@@ -210,7 +210,8 @@ public sealed class CanopyCell {
         writer.EndObject();
     }
 
-    private void WriteValue(CanopyJsonWriter writer) {
+    /// <summary>Writes only the typed value, for cells and flat-grid query operands.</summary>
+    internal void WriteValue(CanopyJsonWriter writer) {
         switch (_value) {
             case null:
                 writer.Null();
