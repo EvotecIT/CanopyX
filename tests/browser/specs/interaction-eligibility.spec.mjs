@@ -22,7 +22,9 @@ for (const cells of [undefined, { amount: null }, { amount: { text: "Not set" } 
     await expect(editor).toBeVisible();
     await page.getByRole("button", { name: "Save", exact: true }).click();
     expect(await page.evaluate(() => window.edit)).toBeUndefined();
-    await editor.fill("23.5"); await page.getByRole("button", { name: "Save", exact: true }).click();
+    await editor.fill("23.5");
+    expect(await editor.evaluate(input => input.validity.valid)).toBe(true);
+    await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect.poll(() => page.evaluate(() => window.edit)).toEqual({
       nodeId: "a", path: ["a"], column: "amount", previous: null, value: 23.5
     });

@@ -112,6 +112,8 @@
       if (input.type === "number") { input.step = "any"; input.required = true; }
       input.checked = value === true;
       input.value = value == null ? "" : String(value); input.setAttribute("aria-label", label);
+      // A corrected value must dismiss the previous custom error before the next save.
+      input.addEventListener("input", () => input.setCustomValidity(""));
       const controls = h("div", "cx-interaction-buttons");
       const save = h("button"), cancel = h("button"); save.type = cancel.type = "button";
       setText(save, this.labels.saveEdit); setText(cancel, this.labels.cancelEdit);
