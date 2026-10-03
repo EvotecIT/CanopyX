@@ -6,5 +6,8 @@ public enum CanopyRuntime {
     TreeGrid,
 
     /// <summary>The tree grid with optional checking controls and host interaction hooks.</summary>
-    InteractiveTreeGrid
+    InteractiveTreeGrid,
+
+    /// <summary>The flat data grid and both tree runtimes, for pages that combine their views.</summary>
+    DataGrid
 }

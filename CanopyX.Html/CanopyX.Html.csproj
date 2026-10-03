@@ -49,6 +49,8 @@
     <EmbeddedResource Include="Assets\canopyx.css" LogicalName="CanopyX.Html.Assets.canopyx.css" />
     <EmbeddedResource Include="Assets\canopyx-interactive.js" LogicalName="CanopyX.Html.Assets.canopyx-interactive.js" />
     <EmbeddedResource Include="Assets\canopyx-interactive.css" LogicalName="CanopyX.Html.Assets.canopyx-interactive.css" />
+    <EmbeddedResource Include="Assets\canopyx-grid.js" LogicalName="CanopyX.Html.Assets.canopyx-grid.js" />
+    <EmbeddedResource Include="Assets\canopyx-grid.css" LogicalName="CanopyX.Html.Assets.canopyx-grid.css" />
     <EmbeddedResource Include="Assets\page.html" LogicalName="CanopyX.Html.Assets.page.html" />
   </ItemGroup>
 </Project>

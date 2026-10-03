@@ -19,7 +19,10 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        var json = view.ToJson(options.HiddenFilterIds);
+        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
+    }
+
+    private static string FragmentDocument(string json, CanopyHtmlOptions options) {
         var builder = new StringBuilder(json.Length + 160);
         builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
         if (!options.AutoMount) {
@@ -42,7 +45,7 @@ internal static class CanopyHtmlWriter {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
-            ["head"] = Head(view, options),
+            ["head"] = Head(RuntimeFor(view, options), options),
             ["body"] = Fragment(view, fragmentOptions)
         };
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
@@ -51,8 +54,26 @@ internal static class CanopyHtmlWriter {
     internal static CanopyRuntime RuntimeFor(CanopyView view, CanopyHtmlOptions options)
         => CanopyHtmlAssets.GetRuntime(view, options.Runtime);
 
-    private static string Head(CanopyView view, CanopyHtmlOptions options) {
-        var runtime = RuntimeFor(view, options);
+    internal static string Fragment(CanopyGridView view, CanopyHtmlOptions options) {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
+        return FragmentDocument(view.ToJson(), options);
+    }
+
+    internal static string Page(CanopyGridView view, CanopyHtmlOptions options) {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        var values = new Dictionary<string, string>(StringComparer.Ordinal) {
+            ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
+            ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
+            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount })
+        };
+        if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
+        return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
+    }
+
+    private static string Head(CanopyRuntime runtime, CanopyHtmlOptions options) {
         if (options.AssetMode == CanopyAssetMode.External) {
             return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming, runtime)) + "\">\n"
                 + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming, runtime)) + "\" defer></script>";

@@ -1,0 +1,114 @@
+  // ---------- flat-grid wire boundaries ----------
+  function gridScalar(cell, column) {
+    const value = cellValue(cell);
+    if (value == null) return null;
+    if (column.kind === "number") {
+      if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("CanopyX: numeric grid cells need finite numbers.");
+      return value;
+    }
+    if (column.kind === "datetime") {
+      if (typeof value !== "string" || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) || !Number.isFinite(Date.parse(value)))
+        throw new Error("CanopyX: date grid cells need ISO dates with an explicit time zone.");
+      return Date.parse(value);
+    }
+    if (typeof value !== "string" && typeof value !== "boolean") throw new Error("CanopyX: text grid cells need strings or booleans.");
+    return value;
+  }
+
+  function validateGridRows(rows, columns) {
+    if (!Array.isArray(rows)) throw new Error("CanopyX: grid rows must be an array.");
+    const ids = new Set(), declared = new Map(columns.map(column => [column.id, column]));
+    for (const row of rows) {
+      requireIdentifier(row && row.id, "grid row ID");
+      if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
+      ids.add(row.id);
+      if (Object.keys(row).some(name => !["id", "cells"].includes(name)) || !row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
+        throw new Error("CanopyX: flat rows contain only id and cells.");
+      for (const id of Object.keys(row.cells)) {
+        if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
+        const cell = row.cells[id];
+        if (isCellObject(cell)) {
+          if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "title", "tone", "badges"].includes(name)) ||
+              ["text", "title", "tone"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
+              cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
+                ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
+            throw new Error("CanopyX: malformed grid cell.");
+        }
+        gridScalar(cell, declared.get(id));
+      }
+    }
+    return rows;
+  }
+
+  function validateGridView(view) {
+    checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
+    if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
+      throw new Error("CanopyX: a grid needs a label and columns.");
+    const ids = new Set();
+    for (const column of view.columns) {
+      requireIdentifier(column && column.id, "grid column ID");
+      if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
+          !Number.isInteger(column.width) || column.width < 40)
+        throw new Error("CanopyX: grid columns need unique IDs, supported kinds and valid widths.");
+      ids.add(column.id);
+    }
+    if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+    if (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64 ||
+        !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
+        !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
+    if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
+    if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
+    else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
+    if (view.query !== undefined) gridQuery(view, view.query);
+    return view;
+  }
+
+  function gridQuery(view, input) {
+    input = input || {};
+    if (typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(name =>
+        !["protocol", "type", "view", "revision", "search", "sort", "filters", "offset", "limit"].includes(name)) ||
+        input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== "gridQuery" ||
+        input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
+    const query = { protocol: PROTOCOL, type: "gridQuery", view: view.id, offset: input.offset === undefined ? 0 : input.offset,
+      limit: input.limit === undefined ? view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
+    if (!validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
+      throw new Error("CanopyX: invalid grid query window or search.");
+    if (input.revision !== undefined) { requireIdentifier(input.revision, "grid revision"); query.revision = input.revision; }
+    const columns = new Map(view.columns.map(column => [column.id, column])), sorts = new Set();
+    if (input.sort !== undefined && !Array.isArray(input.sort) || input.filters !== undefined && !Array.isArray(input.filters))
+      throw new Error("CanopyX: grid sort and filters must be arrays.");
+    query.sort = (input.sort || []).map(sort => {
+      if (!sort || !columns.has(sort.column) || !columns.get(sort.column).sortable || sorts.has(sort.column) ||
+          !["asc", "desc"].includes(sort.direction) || Object.keys(sort).some(name => !["column", "direction"].includes(name)))
+        throw new Error("CanopyX: invalid grid sort column or direction.");
+      sorts.add(sort.column); return Object.freeze({ column: sort.column, direction: sort.direction });
+    });
+    if ((input.filters || []).length > 64) throw new Error("CanopyX: at most 64 grid predicates are supported.");
+    query.filters = (input.filters || []).map(filter => {
+      const column = filter && columns.get(filter.column), values = filter && filter.values;
+      if (!column || !["eq", "ne", "contains", "startsWith", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"].includes(filter.operator) ||
+          !Array.isArray(values) || Object.keys(filter).some(name => !["column", "operator", "values"].includes(name)))
+        throw new Error("CanopyX: invalid grid predicate.");
+      const nullTest = filter.operator === "isNull" || filter.operator === "isNotNull";
+      if (nullTest ? values.length !== 0 : filter.operator === "in" ? values.length < 1 || values.length > 1000 : values.length !== 1)
+        throw new Error("CanopyX: invalid grid predicate arity.");
+      if (["contains", "startsWith"].includes(filter.operator) && (column.kind !== "text" || values.some(value => typeof value !== "string")) ||
+          ["gt", "ge", "lt", "le"].includes(filter.operator) && !["number", "datetime"].includes(column.kind))
+        throw new Error("CanopyX: predicate does not match the column kind.");
+      values.forEach(value => { if (value == null || typeof value === "object") throw new Error("CanopyX: predicate operands are non-null raw values."); gridScalar(value, column); });
+      return Object.freeze({ column: column.id, operator: filter.operator, values: Object.freeze(values.slice()) });
+    });
+    Object.freeze(query.sort); Object.freeze(query.filters); return Object.freeze(query);
+  }
+
+  function validateGridPage(page, view, query, accepted) {
+    checkDocument(page, "gridPage"); requireIdentifier(page.revision, "grid revision");
+    if (page.view !== view.id || page.offset !== query.offset || !validStructuralCount(page.total) || !validStructuralCount(page.matched) ||
+        page.matched > page.total || page.offset > page.matched || !Array.isArray(page.items) ||
+        page.items.length !== Math.min(query.limit, page.matched - page.offset)) throw new Error("CanopyX: grid page does not cover its requested window.");
+    if (query.revision !== undefined && page.revision !== query.revision || accepted &&
+        (page.revision !== accepted.revision || page.total !== accepted.total || page.matched !== accepted.matched))
+      throw new Error("CanopyX: grid page snapshot changed.");
+    validateGridRows(page.items, view.columns);
+    return Object.assign({}, page, { items: JSON.parse(JSON.stringify(page.items)) });
+  }

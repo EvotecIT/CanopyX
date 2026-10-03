@@ -26,6 +26,14 @@ Every document on the wire carries `"protocol": "canopyx/2"`. The runtime reject
 
 ## Assets and Caching
 
+Flat grids use the optional `canopyx-grid.js` entry point and its stylesheet. This entry point also contains the interactive tree runtime, so a mixed page loads one runtime. Ordinary tree pages retain their smaller entry points. The data-grid assets have an 80 KiB combined gzip budget; core trees retain their 48 KiB budget and interactive trees retain 64 KiB.
+
+`CanopyGridView` carries typed columns and stable record identities. An inline source queries its complete dataset before returning a window. A host source implements `query(query, { signal })` and returns a `gridPage` covering the requested window, or the remaining rows at its end. The host owns transport, authorization and full-dataset query execution. Every accepted query records the returned revision; subsequent windows must keep that revision and the same total and matching counts. A failed replacement query keeps the accepted rows and offers a retry.
+
+Trees and flat grids share logical scrolling, focused-row retention, row recycling and DOM ordering. Trees keep hierarchy and measured details; flat grids use fixed-height records and bounded page caches. Missing host rows are temporary status rows, so a million-record result does not allocate a million browser wrappers. Selection stores record IDs independently of cached windows. The flat-grid container uses `role="grid"` and rows have no tree levels or expanders. Keyboard navigation follows visible cells.
+
+`CanopyStaticHtml.RenderGrid` renders a script-free fallback for the same definition. An inline definition retains source order; a host grid requires an explicit result page. Supply a query-result page when the fallback needs accepted filtering or sorting. A partial snapshot includes a note naming the number shown and the matching total.
+
 The runtime and the data it reads come from the same build. A page, the runtime it loads, and its sidecar files are written by one version of CanopyX and published together; an older runtime cannot be expected to read newer data (a runtime from before packs cannot open a packed bundle), and nothing promises the reverse either.
 
 File names keep that rule when files are cached or shared:

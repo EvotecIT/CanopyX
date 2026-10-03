@@ -1,6 +1,6 @@
 
-  // ---------- tree grid: DOM order of the virtual rows ----------
-  Object.assign(TreeGrid.prototype, {
+  // ---------- shared virtual rows: DOM order ----------
+  const ROW_DOM_ORDER = {
     // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
     // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
     // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
@@ -12,7 +12,7 @@
         ordered.push(focusedEl);
       }
       for (let i = first; i <= last; i++) {
-        const rowEl = this.rendered.get(this.rows[i]);
+        const rowEl = this.rendered.get(this.rowItem(i));
         if (rowEl) {
           ordered.push(rowEl);
         }
@@ -75,4 +75,5 @@
         prev = ordered[k];
       }
     }
-  });
+  };
+  Object.assign(TreeGrid.prototype, ROW_DOM_ORDER);

@@ -33,7 +33,7 @@ public sealed class RuntimeSelectionTests {
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(view));
         view.Checkboxes = CanopyCheckboxMode.None;
         Assert.Equal(CanopyRuntime.TreeGrid, CanopyHtmlAssets.GetRuntime(view));
-        Assert.Throws<ArgumentNullException>(() => CanopyHtmlAssets.GetRuntime(null!));
+        Assert.Throws<ArgumentNullException>(() => CanopyHtmlAssets.GetRuntime((CanopyView)null!));
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyHtmlAssets.GetRuntime(view, (CanopyRuntime)42));
     }
 }

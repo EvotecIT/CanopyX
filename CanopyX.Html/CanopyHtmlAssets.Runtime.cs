@@ -16,11 +16,21 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="preferred"/> is unknown.</exception>
     public static CanopyRuntime GetRuntime(CanopyView view, CanopyRuntime preferred = CanopyRuntime.TreeGrid) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        if (preferred != CanopyRuntime.TreeGrid && preferred != CanopyRuntime.InteractiveTreeGrid)
+        if (preferred != CanopyRuntime.TreeGrid && preferred != CanopyRuntime.InteractiveTreeGrid && preferred != CanopyRuntime.DataGrid)
             throw new ArgumentOutOfRangeException(nameof(preferred), preferred, "Unknown browser runtime.");
+        if (preferred == CanopyRuntime.DataGrid) return preferred;
         if (view.Checkboxes != CanopyCheckboxMode.None || view.DragDrop || view.ContextActions.Count > 0 || view.Labels.RequiresInteractiveRuntime)
             return CanopyRuntime.InteractiveTreeGrid;
         foreach (var column in view.Columns) if (column.Editable) return CanopyRuntime.InteractiveTreeGrid;
         return preferred;
+    }
+
+    /// <summary>Gets the entry point required for a flat grid and any trees sharing its page.</summary>
+    /// <param name="view">The flat-grid definition.</param>
+    /// <returns>The data-grid entry point, which includes the tree runtimes.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    public static CanopyRuntime GetRuntime(CanopyGridView view) {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        return CanopyRuntime.DataGrid;
     }
 }
