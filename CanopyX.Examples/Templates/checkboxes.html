@@ -6,19 +6,14 @@
 <title>CanopyX project checklist</title>
 <link rel="stylesheet" href="checkbox-assets/{{style}}">
 <script src="checkbox-assets/{{script}}" defer></script>
-<style>
-body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-h1 { margin: 0 0 8px; font-size: 22px; }
-p { max-width: 75ch; }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-button { min-height: 32px; }
-pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
-</style>
+<style>{{example-style}}</style>
 </head>
-<body>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
 <h1>Project checklist</h1>
 <p>Check a branch to include its tasks before opening it. Uncheck individual tasks to create an exception. Row selection stays independent: Space checks a row, Control+Space selects it, and F2 enters its checkbox.</p>
-<div class="controls">
+<div class="check-controls">
 <button id="clear-checks" disabled>Clear checks</button>
 <button id="save-checks" disabled>Save view</button>
 <button id="restore-checks" disabled>Restore view</button>
@@ -60,5 +55,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   update();
 });
 </script>
+</main>
 </body>
 </html>

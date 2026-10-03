@@ -6,16 +6,11 @@
 <title>CanopyX queries and paged records</title>
 <link rel="stylesheet" href="bundle/assets/{{style}}">
 <script src="bundle/assets/{{script}}" defer></script>
-<style>
-body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-h1 { margin: 0 0 8px; font-size: 22px; }
-p { max-width: 75ch; }
-.query-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.query-controls button { min-height: 32px; }
-.query-controls label { display: inline-flex; gap: 4px; align-items: center; }
-</style>
+<style>{{example-style}}</style>
 </head>
-<body class="cx-page">
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
 <h1>Queries and paged records</h1>
 <p>Only six of sixty records arrive initially. Sort Value to fetch the lowest or highest records first, or enable Flagged records to query that subset. Show more reads the next page in the accepted order.</p>
 <p>This page uses a host source with the same query and revision contract as HTTP endpoints. It adds a short delay so the accepted rows stay visible while a new query loads.</p>
@@ -90,5 +85,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   status.textContent = "Accepted records-1.";
 });
 </script>
+</main>
 </body>
 </html>

@@ -149,10 +149,15 @@ static bool FlagLarge(CanopyX.CanopyNode node) {
 static void Report(FormattableString message) => Console.WriteLine(message.ToString(CultureInfo.InvariantCulture));
 
 static void WriteTemplate(string name, string path, string content, CanopyRuntime runtime = CanopyRuntime.TreeGrid) {
+    File.WriteAllText(path, ReadTemplate(name).Replace("{{content}}", content)
+        .Replace("{{example-style}}", ReadTemplate("examples.css"))
+        .Replace("{{style}}", CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime))
+        .Replace("{{script}}", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime)), new UTF8Encoding(false));
+}
+
+static string ReadTemplate(string name) {
     using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates." + name)
         ?? throw new InvalidOperationException("Missing template " + name);
     using var reader = new StreamReader(stream);
-    File.WriteAllText(path, reader.ReadToEnd().Replace("{{content}}", content)
-        .Replace("{{style}}", CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime))
-        .Replace("{{script}}", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime)), new UTF8Encoding(false));
+    return reader.ReadToEnd();
 }

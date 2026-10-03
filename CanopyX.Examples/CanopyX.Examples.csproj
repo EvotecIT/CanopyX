@@ -9,6 +9,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Templates\examples.css" LogicalName="CanopyX.Examples.Templates.examples.css" />
     <ProjectReference Include="..\CanopyX.Html\CanopyX.Html.csproj" />
   </ItemGroup>
   <ItemGroup>

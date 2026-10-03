@@ -6,16 +6,11 @@
 <title>CanopyX live records and saved views</title>
 <link rel="stylesheet" href="bundle/assets/{{style}}">
 <script src="bundle/assets/{{script}}" defer></script>
-<style>
-body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-h1 { margin: 0 0 8px; font-size: 22px; }
-p { max-width: 75ch; }
-.record-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.record-controls button { min-height: 32px; }
-.record-controls label { display: inline-flex; gap: 4px; align-items: center; }
-</style>
+<style>{{example-style}}</style>
 </head>
-<body class="cx-page">
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
 <h1>Live records and saved views</h1>
 <p>Select records, resize or hide a column, and save the view. Reload records to replace their values while keeping surviving selections and open groups. Restore the saved view after changing the layout.</p>
 <p>Sort Value in descending order to bring the highest records into the first page of each group. Inline sorting uses every record in the group, including records not yet shown.</p>
@@ -69,5 +64,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   status.textContent = "Record snapshot 1 loaded.";
 });
 </script>
+</main>
 </body>
 </html>

@@ -118,7 +118,7 @@
       // A corrected value must dismiss the previous custom error before the next save.
       input.addEventListener("input", () => input.setCustomValidity(""));
       const controls = h("div", "cx-interaction-buttons");
-      const save = h("button"), cancel = h("button"); save.type = cancel.type = "button";
+      const save = h("button", "cx-save"), cancel = h("button"); save.type = cancel.type = "button";
       setText(save, this.labels.saveEdit); setText(cancel, this.labels.cancelEdit);
       const title = h("div", "cx-interaction-title"); setText(title, label);
       controls.append(save, cancel); panel.append(title, input, controls);

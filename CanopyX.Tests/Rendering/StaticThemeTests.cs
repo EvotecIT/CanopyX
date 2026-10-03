@@ -70,6 +70,8 @@ public sealed class StaticThemeTests {
     public void Theme_PresetsAndMixes_AreTheOnesOfTheRuntimeStylesheet() {
         // An outline and a grid with the same base colours look alike only while both sides hold the same numbers.
         var css = CanopyX.Html.CanopyHtmlAssets.Style;
+        // Formatting does not change the palette shared by the interactive grid and static outline.
+        var compactCss = Regex.Replace(css, @"([:;,])\s+", "$1");
         string[] Values(string property) => Regex.Matches(css, Regex.Escape(property) + ":\\s*(#[0-9a-f]{6});").Select(match => match.Groups[1].Value).ToArray();
         foreach (var (property, light, dark) in new[] {
             ("--cx-surface", CanopyStaticTheme.Light().Surface, CanopyStaticTheme.Dark().Surface),
@@ -88,11 +90,11 @@ public sealed class StaticThemeTests {
         view.Roots[0].Badges.Add(new CanopyBadge("3"));
         var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { UseThemeVariables = true, MaxRows = 1 });
         foreach (var (property, percent) in new[] { ("--cx-muted", 72), ("--cx-head-bg", 5), ("--cx-alt-bg", 3), ("--cx-line-strong", 28) }) {
-            Assert.Contains(property + ": color-mix(in srgb, var(--cx-text) " + percent + "%, var(--cx-surface));", css);
+            Assert.Contains(property + ":color-mix(in srgb,var(--cx-text) " + percent + "%,var(--cx-surface));", compactCss);
             Assert.Contains("color-mix(in srgb,var(--cx-text,#1f2328) " + percent + "%,var(--cx-surface,#ffffff))", html);
         }
 
-        Assert.Contains("color-mix(in srgb, var(--cx-tone-danger) 12%, var(--cx-surface))", css);
+        Assert.Contains("color-mix(in srgb,var(--cx-tone-danger) 12%,var(--cx-surface))", compactCss);
         Assert.Contains("color-mix(in srgb,var(--cx-tone-danger,#b3261e) 12%,var(--cx-surface,#ffffff))", html);
     }
 

@@ -1,6 +1,5 @@
 /*
- * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
- * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
+ * CanopyX browser runtime: canopyx/2.
  */
 (function (global) {
 "use strict";
@@ -4975,7 +4974,7 @@ input.checked = value === true;
 input.value = value == null ? "" : String(value); input.setAttribute("aria-label", label);
 input.addEventListener("input", () => input.setCustomValidity(""));
 const controls = h("div", "cx-interaction-buttons");
-const save = h("button"), cancel = h("button"); save.type = cancel.type = "button";
+const save = h("button", "cx-save"), cancel = h("button"); save.type = cancel.type = "button";
 setText(save, this.labels.saveEdit); setText(cancel, this.labels.cancelEdit);
 const title = h("div", "cx-interaction-title"); setText(title, label);
 controls.append(save, cancel); panel.append(title, input, controls);

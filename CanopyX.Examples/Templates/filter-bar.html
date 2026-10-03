@@ -6,14 +6,13 @@
 <title>CanopyX with a filter bar of the host's own</title>
 <link rel="stylesheet" href="bundle/assets/{{style}}">
 <script src="bundle/assets/{{script}}" defer></script>
-<style>
-body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-.host-bar { display: flex; gap: 12px; align-items: center; margin: 0 0 8px; padding: 0; border: 0; }
-.host-bar legend { float: left; margin-right: 4px; font-weight: 600; }
-.host-bar label { display: inline-flex; gap: 4px; align-items: center; }
-</style>
+<style>{{example-style}}</style>
 </head>
-<body class="cx-page">
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Custom filter bar</h1>
+<p>A host-owned filter control sets the view’s active filters in one step.</p>
 <!-- The page leaves the view's own switches for these filters out (CanopyHtmlOptions.HiddenFilterIds) and draws one
      choice instead. Switching the choice sets the active filters in one step, with setActiveFilters. -->
 <fieldset class="host-bar">
@@ -38,5 +37,6 @@ body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Se
   });
 })();
 </script>
+</main>
 </body>
 </html>

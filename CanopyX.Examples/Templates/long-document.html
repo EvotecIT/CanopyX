@@ -6,16 +6,11 @@
 <title>CanopyX long document</title>
 <link rel="stylesheet" href="bundle/assets/{{style}}">
 <script src="bundle/assets/{{script}}" defer></script>
-<style>
-body { margin: 0; padding: 16px 24px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-h1 { margin: 0 0 8px; font-size: 22px; }
-p { max-width: 75ch; }
-.document-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.document-controls button { min-height: 32px; }
-.section-card { box-sizing: border-box; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 16px; }
-</style>
+<style>{{example-style}}</style>
 </head>
-<body class="cx-page">
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
 <h1>Long document</h1>
 <p>Browse 20,000 tall sections. Jump to the middle or the end, use Home and End inside the view, and save a position to return to it. Each section keeps its full height while the scrollbar spans the whole document.</p>
 <div class="document-controls">
@@ -45,5 +40,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   status.textContent = "20,000 sections loaded.";
 });
 </script>
+</main>
 </body>
 </html>
