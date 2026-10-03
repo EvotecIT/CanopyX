@@ -75,6 +75,8 @@ One proposal owns pending interaction work. Supersession, caller cancellation, d
 
 When an accepted children or count update cancels an interaction, its abort listeners run after the synchronous replacement is attached. A listener that opens another proposal or editor therefore reads current data; a removed node is unavailable.
 
+Starting a count refresh cancels a pending proposal for an affected node before the read changes ownership. Unrelated count reads leave it intact. Local row layout or column changes close editors and menus; an abort listener that reopens an editor after sorting uses the committed row order.
+
 Interaction control translations use the view's `labels`: `actions`, `editValue`, `saveEdit`, `cancelEdit`, `invalidEdit`, `interactionPending`, `interactionRejected`, `interactionFailed`, `markMove`, `moveHere`, `moveBefore`, `moveAfter`, and `cancelMove`. `editValue` and `invalidEdit` accept `{column}`; `interactionFailed` accepts `{error}`. Include the interactive entry point when overriding these labels.
 
 ### Checking Intent

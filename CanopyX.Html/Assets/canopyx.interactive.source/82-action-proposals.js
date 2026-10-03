@@ -68,6 +68,14 @@
       return result;
     }
 
+    refreshCounts(ids) {
+      if (!this.destroyed && this.source.counts && this.pendingInteraction) {
+        const wanted = new Set(ids || this.rows.filter(w => !w.status).map(w => w.key));
+        if (Array.from(this.interactionPins).some(w => wanted.has(w.key))) this.cancelInteraction();
+      }
+      return super.refreshCounts(ids);
+    }
+
     interactionNode(id) {
       requireIdentifier(id, "interaction node ID");
       const w = this.keyMap.get(id);

@@ -4,6 +4,32 @@
       return super.cachePinned(w) || this.panelNode === w || !!(this.moveNodes && this.moveNodes.includes(w));
     }
 
+    refreshCounts(ids) {
+      return this.withInteractionReplacement(() => super.refreshCounts(ids));
+    }
+
+    sort(...args) {
+      return this.withInteractionReplacement(() => super.sort(...args));
+    }
+
+    relayout(now) {
+      return this.withInteractionReplacement(() => {
+        const focus = this.closeInteractionPanel(false);
+        const result = super.relayout(now);
+        this.restoreInteractionFocus(focus);
+        return result;
+      });
+    }
+
+    buildHeader(...args) {
+      return this.withInteractionReplacement(() => {
+        const focus = this.closeInteractionPanel(false);
+        const result = super.buildHeader(...args);
+        this.restoreInteractionFocus(focus);
+        return result;
+      });
+    }
+
     reconcileList(parent, ...args) {
       return this.withInteractionReplacement(() => {
         const ordering = args[4] === true;
