@@ -5,33 +5,39 @@
     }
 
     reconcileList(parent, ...args) {
-      const ordering = args[4] === true;
-      let focus;
-      if (!ordering) {
-        this.moveNodes = null;
-        if (this.panelNode && (parent === this.root || parent === this.panelNode || this.pathOf(this.panelNode).includes(parent.key)))
-          focus = this.closeInteractionPanel(false);
-      }
-      const result = super.reconcileList(parent, ...args);
-      focus = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
-      this.restoreInteractionFocus(focus);
-      return result;
+      return this.withInteractionReplacement(() => {
+        const ordering = args[4] === true;
+        let focus;
+        if (!ordering) {
+          this.moveNodes = null;
+          if (this.panelNode && (parent === this.root || parent === this.panelNode || this.pathOf(this.panelNode).includes(parent.key)))
+            focus = this.closeInteractionPanel(false);
+        }
+        const result = super.reconcileList(parent, ...args);
+        focus = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
+        this.restoreInteractionFocus(focus);
+        return result;
+      });
     }
 
     retireWrapper(w) {
-      if (this.panelNode === w) this.interactionFocusHandoff = this.closeInteractionPanel(false) || this.interactionFocusHandoff;
-      if (this.moveNodes && this.moveNodes.includes(w)) this.moveNodes = null;
-      return super.retireWrapper(w);
+      return this.withInteractionReplacement(() => {
+        if (this.panelNode === w) this.interactionFocusHandoff = this.closeInteractionPanel(false) || this.interactionFocusHandoff;
+        if (this.moveNodes && this.moveNodes.includes(w)) this.moveNodes = null;
+        return super.retireWrapper(w);
+      });
     }
 
     applyCounts(doc, fromRefresh = false) {
-      const panel = this.interactionPanel, node = this.panelNode, moving = this.moveNodes;
-      const result = super.applyCounts(doc, fromRefresh);
-      const focus = node && this.interactionPanel === panel && doc.items.some(item => item.id === node.key) ? this.closeInteractionPanel(false) : null;
-      if (moving && this.moveNodes === moving && doc.items.some(item => moving.some(w => w.key === item.id))) this.moveNodes = null;
-      const handoff = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
-      this.restoreInteractionFocus(handoff);
-      return result;
+      return this.withInteractionReplacement(() => {
+        const panel = this.interactionPanel, node = this.panelNode, moving = this.moveNodes;
+        const result = super.applyCounts(doc, fromRefresh);
+        const focus = node && this.interactionPanel === panel && doc.items.some(item => item.id === node.key) ? this.closeInteractionPanel(false) : null;
+        if (moving && this.moveNodes === moving && doc.items.some(item => moving.some(w => w.key === item.id))) this.moveNodes = null;
+        const handoff = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
+        this.restoreInteractionFocus(handoff);
+        return result;
+      });
     }
 
     applyStatePresentation(state) {

@@ -73,6 +73,8 @@ The runtime freezes proposals and nested paths before invoking `onEdit`, `onDrop
 
 One proposal owns pending interaction work. Supersession, caller cancellation, destruction, affected data replacement, and the configured deadline settle it. A drop rejects a loaded destination beneath its source and removes descendant sources already covered by a moved ancestor. It does not fetch unloaded data or prove domain eligibility. Refresh accepted data after returning from the hook; a refresh inside the hook retires an operation whose data snapshot changed.
 
+When an accepted children or count update cancels an interaction, its abort listeners run after the synchronous replacement is attached. A listener that opens another proposal or editor therefore reads current data; a removed node is unavailable.
+
 Interaction control translations use the view's `labels`: `actions`, `editValue`, `saveEdit`, `cancelEdit`, `invalidEdit`, `interactionPending`, `interactionRejected`, `interactionFailed`, `markMove`, `moveHere`, `moveBefore`, `moveAfter`, and `cancelMove`. `editValue` and `invalidEdit` accept `{column}`; `interactionFailed` accepts `{error}`. Include the interactive entry point when overriding these labels.
 
 ### Checking Intent

@@ -106,6 +106,38 @@ test('closing an editor preserves a replacement opened by a host abort listener'
   await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeEnabled();
 });
 
+for(const kind of ['proposal','editor','api-editor']) test(`a root replacement commits fresh data before delivering interaction aborts (${kind})`,async({page})=>{
+  const options=`{source:{page:async()=>({items:window.freshRoots||[{id:'a',label:'Atlas'},{id:'b',label:'Beacon'}],total:2,next:null})},
+    onEdit(p,r){r.signal.addEventListener('abort',()=>{const api=document.querySelector('.cx-host').canopyx;
+      if('${kind}'!=='proposal')api.beginEdit('b','name');else window.newer=api.requestAction('b','inspect');},{once:true});return new Promise(()=>{})},
+    onAction(p,r){window.observed=document.querySelector('.cx-host').canopyx.visibleRows().find(row=>row.node.id==='b').node.cells?.name;
+      return new Promise(resolve=>window.finish=resolve)}}`;
+  await mount(page,options);
+  if(kind==='api-editor')await page.evaluate(()=>{window.old=document.querySelector('.cx-host').canopyx.requestEdit('a','name','old')});
+  else {await row(page,'a').focus();await page.keyboard.press('Alt+Enter');await page.keyboard.press('Enter');}
+  expect(await page.evaluate(async kind=>{window.freshRoots=[{id:'a',label:'Atlas'},{id:'b',label:'Beacon',cells:{name:'Fresh Beacon'}}];
+    if(kind==='api-editor')window.freshRoots.reverse();return document.querySelector('.cx-host').canopyx.reload()},kind)).toBe(true);
+  if(kind!=='proposal'){
+    await expect(page.getByRole('textbox',{name:'Edit Name'})).toHaveValue('Fresh Beacon');
+    await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeFocused();
+    await nextFrames(page);
+    expect(await page.evaluate(()=>Math.abs(Number.parseFloat(document.querySelector('.cx-interaction-panel').style.top)-
+      document.querySelector('[data-cx-id="b"]').getBoundingClientRect().bottom))).toBeLessThanOrEqual(1);
+  }else expect(await page.evaluate(async()=>{window.finish(true);return {accepted:await window.newer,observed:window.observed}}))
+    .toEqual({accepted:true,observed:'Fresh Beacon'});
+});
+
+test('child retirement commits removal before an abort listener requests its former node',async({page})=>{
+  await mount(page,`{source:{page:async node=>node?{items:[{id:'a',label:'Atlas'}],total:1,next:null}:
+      {items:[{id:'parent',label:'Parent',hasChildren:true,childCount:1}],total:1,next:null}},
+    onEdit(p,r){r.signal.addEventListener('abort',()=>{window.newer=document.querySelector('.cx-host').canopyx.requestAction('a','inspect')},{once:true});return new Promise(()=>{})},
+    onAction(){window.calls=(window.calls||0)+1;return true}}`);
+  expect(await page.evaluate(async()=>{const api=document.querySelector('.cx-host').canopyx;
+    await api.expandPath(['parent'],{expandLast:true,select:false,focus:false});const old=api.requestEdit('a','name','old');
+    api.applyCounts({protocol:'canopyx/2',type:'counts',items:[{id:'parent',childCount:0}]});
+    return {old:await old,newer:await window.newer,calls:window.calls||0};})).toEqual({old:false,newer:false,calls:0});
+});
+
 test('an editor opened during cancellation wins over the superseding editor request',async({page})=>{
   await mount(page,`{onEdit(p,r){r.signal.addEventListener('abort',()=>{
     document.querySelector('.cx-host').canopyx.beginEdit('b','name');},{once:true});return new Promise(()=>{})}}`);

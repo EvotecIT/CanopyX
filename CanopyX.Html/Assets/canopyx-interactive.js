@@ -5092,8 +5092,28 @@ if (!operation) return false;
 this.pendingInteraction = null;
 this.interactionRevision++; this.interactionPins.clear(); this.cacheDirty = true;
 this.scheduleRender();
-operation.controller.abort();
+this.abortInteractionController(operation.controller);
 return true;
+}
+
+abortInteractionController(controller) {
+if (!controller || controller.signal.aborted) return;
+if (this.interactionReplacementDepth) {
+if (!this.interactionAbortQueue) this.interactionAbortQueue = new Set();
+this.interactionAbortQueue.add(controller);
+} else controller.abort();
+}
+
+withInteractionReplacement(work) {
+this.interactionReplacementDepth = (this.interactionReplacementDepth || 0) + 1;
+try { return work(); }
+finally {
+this.interactionReplacementDepth--;
+if (!this.interactionReplacementDepth) {
+const controllers = this.interactionAbortQueue; this.interactionAbortQueue = null;
+if (controllers) for (const controller of controllers) controller.abort();
+}
+}
 }
 
 destroy() {
@@ -5137,6 +5157,9 @@ openActions: id => { const w = this.interactionNode(id); return !!w && this.open
 openInteractionPanel(w, anchor, role, label) {
 const revision = (this.uiWorkRevision || 0) + (this.interactionPanel ? 1 : 0);
 this.closeInteractionPanel(false);
+if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision) return null;
+this.render();
+anchor = this.rendered.get(w);
 if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision || !anchor || !anchor.isConnected) return null;
 const panel = this.interactionPanel = h("div", "cx-interaction-panel");
 panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
@@ -5163,7 +5186,7 @@ this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
 const focus = owned ? { node: w, revision: this.uiWorkRevision } : null;
 this.interactionPanel = null; this.panelNode = null; this.editorController = null;
 panel.remove();
-if (controller) controller.abort();
+this.abortInteractionController(controller);
 if (restoreFocus) this.restoreInteractionFocus(focus);
 return focus;
 }
@@ -5268,6 +5291,7 @@ return super.cachePinned(w) || this.panelNode === w || !!(this.moveNodes && this
 }
 
 reconcileList(parent, ...args) {
+return this.withInteractionReplacement(() => {
 const ordering = args[4] === true;
 let focus;
 if (!ordering) {
@@ -5279,15 +5303,19 @@ const result = super.reconcileList(parent, ...args);
 focus = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
 this.restoreInteractionFocus(focus);
 return result;
+});
 }
 
 retireWrapper(w) {
+return this.withInteractionReplacement(() => {
 if (this.panelNode === w) this.interactionFocusHandoff = this.closeInteractionPanel(false) || this.interactionFocusHandoff;
 if (this.moveNodes && this.moveNodes.includes(w)) this.moveNodes = null;
 return super.retireWrapper(w);
+});
 }
 
 applyCounts(doc, fromRefresh = false) {
+return this.withInteractionReplacement(() => {
 const panel = this.interactionPanel, node = this.panelNode, moving = this.moveNodes;
 const result = super.applyCounts(doc, fromRefresh);
 const focus = node && this.interactionPanel === panel && doc.items.some(item => item.id === node.key) ? this.closeInteractionPanel(false) : null;
@@ -5295,6 +5323,7 @@ if (moving && this.moveNodes === moving && doc.items.some(item => moving.some(w 
 const handoff = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
 this.restoreInteractionFocus(handoff);
 return result;
+});
 }
 
 applyStatePresentation(state) {

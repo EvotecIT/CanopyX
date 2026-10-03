@@ -179,8 +179,29 @@
       this.pendingInteraction = null;
       this.interactionRevision++; this.interactionPins.clear(); this.cacheDirty = true;
       this.scheduleRender();
-      operation.controller.abort();
+      this.abortInteractionController(operation.controller);
       return true;
+    }
+
+    abortInteractionController(controller) {
+      if (!controller || controller.signal.aborted) return;
+      if (this.interactionReplacementDepth) {
+        if (!this.interactionAbortQueue) this.interactionAbortQueue = new Set();
+        this.interactionAbortQueue.add(controller);
+      } else controller.abort();
+    }
+
+    // Abort listeners may synchronously open another editor or proposal. Deliver them after fresh data is attached.
+    withInteractionReplacement(work) {
+      this.interactionReplacementDepth = (this.interactionReplacementDepth || 0) + 1;
+      try { return work(); }
+      finally {
+        this.interactionReplacementDepth--;
+        if (!this.interactionReplacementDepth) {
+          const controllers = this.interactionAbortQueue; this.interactionAbortQueue = null;
+          if (controllers) for (const controller of controllers) controller.abort();
+        }
+      }
     }
 
     destroy() {

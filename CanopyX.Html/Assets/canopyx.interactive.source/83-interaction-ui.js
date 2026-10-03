@@ -32,6 +32,9 @@
     openInteractionPanel(w, anchor, role, label) {
       const revision = (this.uiWorkRevision || 0) + (this.interactionPanel ? 1 : 0);
       this.closeInteractionPanel(false);
+      if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision) return null;
+      this.render();
+      anchor = this.rendered.get(w);
       if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision || !anchor || !anchor.isConnected) return null;
       const panel = this.interactionPanel = h("div", "cx-interaction-panel");
       panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
@@ -58,7 +61,7 @@
       const focus = owned ? { node: w, revision: this.uiWorkRevision } : null;
       this.interactionPanel = null; this.panelNode = null; this.editorController = null;
       panel.remove();
-      if (controller) controller.abort();
+      this.abortInteractionController(controller);
       if (restoreFocus) this.restoreInteractionFocus(focus);
       return focus;
     }
