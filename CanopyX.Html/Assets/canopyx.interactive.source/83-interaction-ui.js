@@ -57,6 +57,10 @@
       const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
       if (!panel) return null;
       const owned = panel.contains(document.activeElement);
+      if (controller && this.uiPendingRevision === this.uiWorkRevision) {
+        this.uiPendingRevision = null;
+        setText(this.live, "");
+      }
       this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
       const focus = owned ? { node: w, revision: this.uiWorkRevision } : null;
       this.interactionPanel = null; this.panelNode = null; this.editorController = null;
@@ -78,6 +82,7 @@
 
     async performInteraction(work) {
       const revision = this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+      this.uiPendingRevision = revision;
       setText(this.live, this.labels.interactionPending);
       try {
         const accepted = await work();
@@ -86,6 +91,8 @@
       } catch (error) {
         if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
         return false;
+      } finally {
+        if (this.uiPendingRevision === revision) this.uiPendingRevision = null;
       }
     }
 
@@ -100,7 +107,8 @@
       if (!panel) return false;
       const controller = this.editorController = new AbortController();
       const raw = this.cellOf(w.h, column, index), value = isCellObject(raw) ? raw.value : raw;
-      const input = h("input", "cx-editor"); input.type = typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : "text";
+      const input = h("input", "cx-editor");
+      input.type = column.kind === "number" || typeof value === "number" ? "number" : typeof value === "boolean" ? "checkbox" : "text";
       if (input.type === "number") { input.step = "any"; input.required = true; }
       input.checked = value === true;
       input.value = value == null ? "" : String(value); input.setAttribute("aria-label", label);
@@ -112,7 +120,7 @@
       const submit = async () => {
         if (save.disabled) return;
         let next = input.type === "checkbox" ? input.checked : input.value;
-        if (typeof value === "number") {
+        if (input.type === "number") {
           if (!input.value.trim() || !Number.isFinite(Number(input.value))) {
             input.setCustomValidity(fill(this.labels.invalidEdit, { column: column.title })); input.reportValidity(); return;
           }

@@ -99,3 +99,26 @@ test("an aborted editor can reopen against the committed local sort", async ({ p
     return Math.abs(Number.parseFloat(panel.style.top) - anchor.getBoundingClientRect().bottom);
   })).toBeLessThanOrEqual(1);
 });
+
+test("an aborted editor can reopen after the complete column visibility change", async ({ page }) => {
+  await mount(page, `{onEdit(proposal,context){context.signal.addEventListener('abort',()=>{
+    document.querySelector('.cx-host').canopyx.beginEdit('b','name')},{once:true});return new Promise(()=>{})}}`);
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.beginEdit("b", "amount"));
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("spinbutton", { name: "Edit Amount" })).toBeDisabled();
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.setColumnVisible("amount", false));
+  await expect(page.getByRole("textbox", { name: "Edit Name" })).toBeEnabled();
+  await expect(page.getByRole("textbox", { name: "Edit Name" })).toHaveValue("Beacon");
+  await expect(page.getByRole("textbox", { name: "Edit Name" })).toBeFocused();
+  await expect(page.locator('.cx-hcell').filter({ hasText: "Amount" })).toHaveCount(0);
+  await expect(page.locator('.cx-live')).toBeEmpty();
+});
+
+test("cancelling an editor clears its pending announcement", async ({ page }) => {
+  await mount(page, "{onEdit:()=>new Promise(()=>{})}");
+  await row(page, "b").press("Alt+Enter"); await page.keyboard.press("Enter");
+  await expect(page.locator('.cx-live')).toHaveText("Waiting for the host…");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator('.cx-live')).toBeEmpty();
+});

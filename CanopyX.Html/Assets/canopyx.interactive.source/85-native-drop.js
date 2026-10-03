@@ -13,17 +13,18 @@
       }, { signal });
       this.grid.addEventListener("dragover", event => {
         const row = event.target.closest(".cx-row");
-        if (this.dragLease && event.dataTransfer && Array.from(event.dataTransfer.types).includes("application/x-canopyx-move") && row && this.moveTarget(row._w)) {
+        const placement = row && this.dropPlacement(event, row);
+        if (this.dragLease && event.dataTransfer && Array.from(event.dataTransfer.types).includes("application/x-canopyx-move") && row && this.moveTarget(row._w, placement)) {
           event.preventDefault(); event.dataTransfer.dropEffect = "move";
           if (this.dropRow !== row) { this.clearDropRow(); this.dropRow = row; row.classList.add("cx-drop-target"); }
-          row.setAttribute("data-cx-drop-placement", this.dropPlacement(event, row));
-        } else this.clearDropRow();
+          row.setAttribute("data-cx-drop-placement", placement);
+        } else { this.clearDropRow(); if (event.dataTransfer) event.dataTransfer.dropEffect = "none"; }
       }, { signal });
       this.grid.addEventListener("drop", event => {
         const row = event.target.closest(".cx-row");
-        if (!this.dragLease || !event.dataTransfer || event.dataTransfer.getData("application/x-canopyx-move") !== this.id || !row || !this.moveTarget(row._w)) return;
+        const placement = row && this.dropPlacement(event, row);
+        if (!this.dragLease || !event.dataTransfer || event.dataTransfer.getData("application/x-canopyx-move") !== this.id || !row || !this.moveTarget(row._w, placement)) return;
         event.preventDefault();
-        const placement = this.dropPlacement(event, row);
         this.clearDropRow(); this.dragLease = null; this.moveTo(row._w, placement, "pointer");
       }, { signal });
       this.grid.addEventListener("dragend", () => {

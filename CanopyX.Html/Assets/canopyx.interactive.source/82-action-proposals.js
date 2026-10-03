@@ -107,6 +107,15 @@
 
     async requestDrop(ids, targetId, placement = "inside", options) {
       if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
+      const revision = this.interactionRevision, prepared = this.prepareDrop(ids, targetId, placement);
+      if (!prepared) return false;
+      const { proposal, roots, target } = prepared;
+      return this.dispatchProposal("drop", proposal, roots.concat(target || []), revision, options,
+        () => roots.every(w => this.eligible("canDrag", w.h)) && this.eligible("canDrop", proposal));
+    }
+
+    // UI affordances and dispatch use the same normalized, immutable proposal and host eligibility policy.
+    prepareDrop(ids, targetId, placement) {
       if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) throw new Error("CanopyX: a drop needs unique loaded node IDs.");
       if (!["inside", "before", "after"].includes(placement)) throw new Error("CanopyX: drop placement is inside, before, or after.");
       const revision = this.interactionRevision, nodes = ids.map(id => this.interactionNode(id));
@@ -118,8 +127,9 @@
       const proposal = Object.freeze({ nodes: Object.freeze(roots.map(w => Object.freeze({ nodeId: w.key, path: frozenPath(this.pathOf(w)) }))),
         target: Object.freeze({ nodeId: targetId, path: frozenPath(targetPath) }), placement });
       if (!this.eligible("canDrop", proposal)) return false;
-      return this.dispatchProposal("drop", proposal, roots.concat(target || []), revision, options,
-        () => roots.every(w => this.eligible("canDrag", w.h)) && this.eligible("canDrop", proposal));
+      if (this.destroyed || this.interactionClosing || revision !== this.interactionRevision ||
+          nodes.concat(target || []).some(w => w._invalidated || this.keyMap.get(w.key) !== w)) return false;
+      return { proposal, roots, target };
     }
 
     async requestAction(id, actionId, options) {

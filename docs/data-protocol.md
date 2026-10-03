@@ -75,7 +75,9 @@ One proposal owns pending interaction work. Supersession, caller cancellation, d
 
 When an accepted children or count update cancels an interaction, its abort listeners run after the synchronous replacement is attached. A listener that opens another proposal or editor therefore reads current data; a removed node is unavailable.
 
-Starting a count refresh cancels a pending proposal for an affected node before the read changes ownership. Unrelated count reads leave it intact. Local row layout or column changes close editors and menus; an abort listener that reopens an editor after sorting uses the committed row order.
+Starting a count refresh cancels a pending proposal for an affected node before the read changes ownership. Unrelated count reads leave it intact. Local row layout or column changes close editors and menus; abort listeners run after the complete sort or column visibility change, so a replacement editor uses the committed layout. Cancelling an editor clears its pending announcement.
+
+Number columns use numeric editors even when their current cell is empty; an accepted first value reaches the host as a finite number. Move menus, keyboard moves, and pointer indicators evaluate `canDrop` against the same immutable proposal as the drop request, including its actual placement and ancestor-normalized source paths. A rejected keyboard move leaves the command available to the host.
 
 Interaction control translations use the view's `labels`: `actions`, `editValue`, `saveEdit`, `cancelEdit`, `invalidEdit`, `interactionPending`, `interactionRejected`, `interactionFailed`, `markMove`, `moveHere`, `moveBefore`, `moveAfter`, and `cancelMove`. `editValue` and `invalidEdit` accept `{column}`; `interactionFailed` accepts `{error}`. Include the interactive entry point when overriding these labels.
 

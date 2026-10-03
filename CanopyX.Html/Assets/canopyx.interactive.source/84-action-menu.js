@@ -12,6 +12,10 @@
       return this.withInteractionReplacement(() => super.sort(...args));
     }
 
+    setColumnVisible(...args) {
+      return this.withInteractionReplacement(() => super.setColumnVisible(...args));
+    }
+
     relayout(now) {
       return this.withInteractionReplacement(() => {
         const focus = this.closeInteractionPanel(false);
@@ -82,14 +86,15 @@
       return true;
     }
 
-    moveTarget(w) {
+    moveTarget(w, placement = "inside") {
       if (!this.moveNodes || !w || w.status || w.h.detail || this.destroyed) return false;
-      const path = this.pathOf(w);
-      return this.moveNodes.every(node => !node._invalidated && this.keyMap.get(node.key) === node && !path.includes(node.key));
+      const nodes = this.moveNodes;
+      if (nodes.some(node => node._invalidated || this.keyMap.get(node.key) !== node)) return false;
+      return !!this.prepareDrop(nodes.map(node => node.key), w.key, placement) && this.moveNodes === nodes;
     }
 
     async moveTo(w, placement, reason = "menu") {
-      if (!this.moveTarget(w)) return false;
+      if (!this.moveTarget(w, placement)) return false;
       const nodes = this.moveNodes; this.moveNodes = null; this.cacheDirty = true;
       return this.performInteraction(() => this.requestDrop(nodes.map(node => node.key), w.key, placement, { reason }));
     }
@@ -108,7 +113,7 @@
         items.push({ label: this.labels.markMove, disabled: !this.eligible("canDrag", w.h), run: () => this.markMove(w) });
         if (this.moveNodes) {
           for (const [placement, label] of [["inside", "moveHere"], ["before", "moveBefore"], ["after", "moveAfter"]])
-            items.push({ label: this.labels[label], disabled: !this.moveTarget(w), run: () => this.moveTo(w, placement) });
+            items.push({ label: this.labels[label], disabled: !this.moveTarget(w, placement), run: () => this.moveTo(w, placement) });
           items.push({ label: this.labels.cancelMove, run: () => { this.moveNodes = null; this.cacheDirty = true; } });
         }
       }
