@@ -3765,22 +3765,7 @@ cursor = next;
 if (navigation.cancelled()) return false;
 const anchor = force ? this.captureScrollAnchor() : null;
 const filtersChanged = JSON.stringify(query.filters) !== JSON.stringify(this.acceptedQuery.filters);
-this.dataLifetime.abort(); this.dataLifetime = new AbortController();
-if (this.cancelSearch) this.cancelSearch();
-this.retirePage(this.root);
-for (const node of this.keyMap.values()) this.retirePage(node);
-if (this.inactiveCache) this.inactiveCache.clear();
-this.acceptedQuery = query; this.datasetRevision = revision;
-this.sortState = query.sort; this.activeFilters = new Set(query.filters);
-this.filter = null; this.declaredFilter = null;
-this.buildHeader(); this.syncQueryControls();
-this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
-this.rootsReady = Promise.resolve();
-if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
-const count = numberFormat(this.lang);
-this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
-fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
-this.stateChanged();
+this.applyQuerySnapshot(query, revision, items, total, next, anchor);
 if (navigation.cancelled()) return false;
 this.emit("query", { query: this.getQuery(), revision });
 if (filtersChanged && !navigation.cancelled()) this.emit("filter", { active: Array.from(this.activeFilters) });
@@ -3798,6 +3783,25 @@ if (this.queryController === controller) {
 this.queryController = null; this.pendingQuery = null; this.syncQueryControls();
 }
 }
+},
+
+applyQuerySnapshot(query, revision, items, total, next, anchor) {
+this.dataLifetime.abort(); this.dataLifetime = new AbortController();
+if (this.cancelSearch) this.cancelSearch();
+this.retirePage(this.root);
+for (const node of this.keyMap.values()) this.retirePage(node);
+if (this.inactiveCache) this.inactiveCache.clear();
+this.acceptedQuery = query; this.datasetRevision = revision;
+this.sortState = query.sort; this.activeFilters = new Set(query.filters);
+this.filter = null; this.declaredFilter = null;
+this.buildHeader(); this.syncQueryControls();
+this.reconcileList(this.root, items, total == null ? next ? null : items.length : total, next, null, false, !!this.restoring, true);
+this.rootsReady = Promise.resolve();
+if (anchor) this.restoreScrollAnchor(anchor); else this.setLogicalTop(0);
+const count = numberFormat(this.lang);
+this.announce(this.root.total != null && items.length < this.root.total ? fill(this.labels.pageLoaded, { loaded: count.format(items.length), total: count.format(this.root.total) }) :
+fill(this.labels.itemsLoaded, { count: count.format(items.length) }));
+this.stateChanged();
 }
 });
 
@@ -5024,6 +5028,14 @@ return this.dispatchProposal("edit", proposal, [w], revision, options, () => thi
 
 async requestDrop(ids, targetId, placement = "inside", options) {
 if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
+const revision = this.interactionRevision, prepared = this.prepareDrop(ids, targetId, placement);
+if (!prepared) return false;
+const { proposal, roots, target } = prepared;
+return this.dispatchProposal("drop", proposal, roots.concat(target || []), revision, options,
+() => roots.every(w => this.eligible("canDrag", w.h)) && this.eligible("canDrop", proposal));
+}
+
+prepareDrop(ids, targetId, placement) {
 if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) throw new Error("CanopyX: a drop needs unique loaded node IDs.");
 if (!["inside", "before", "after"].includes(placement)) throw new Error("CanopyX: drop placement is inside, before, or after.");
 const revision = this.interactionRevision, nodes = ids.map(id => this.interactionNode(id));
@@ -5035,8 +5047,9 @@ const roots = nodes.filter(w => !this.pathOf(w).slice(0, -1).some(id => ids.incl
 const proposal = Object.freeze({ nodes: Object.freeze(roots.map(w => Object.freeze({ nodeId: w.key, path: frozenPath(this.pathOf(w)) }))),
 target: Object.freeze({ nodeId: targetId, path: frozenPath(targetPath) }), placement });
 if (!this.eligible("canDrop", proposal)) return false;
-return this.dispatchProposal("drop", proposal, roots.concat(target || []), revision, options,
-() => roots.every(w => this.eligible("canDrag", w.h)) && this.eligible("canDrop", proposal));
+if (this.destroyed || this.interactionClosing || revision !== this.interactionRevision ||
+nodes.concat(target || []).some(w => w._invalidated || this.keyMap.get(w.key) !== w)) return false;
+return { proposal, roots, target };
 }
 
 async requestAction(id, actionId, options) {
@@ -5060,7 +5073,7 @@ const controller = new AbortController(), operation = { controller, proposal, ki
 this.pendingInteraction = operation;
 this.interactionRevision++;
 this.interactionPins = new Set(nodes); this.cacheDirty = true;
-const navigation = navigationScope(this, [controller.signal, options && options.signal], true);
+const navigation = navigationScope(this, [controller.signal, options && options.signal]);
 const live = () => !navigation.cancelled() && this.pendingInteraction === operation && versions.every(({ w, count, path }) => {
 const current = this.pathOf(w);
 return !w._invalidated && this.keyMap.get(w.key) === w && (w.countRevision || 0) === count &&
@@ -5194,6 +5207,10 @@ closeInteractionPanel(restoreFocus = true) {
 const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
 if (!panel) return null;
 const owned = panel.contains(document.activeElement);
+if (controller && this.uiPendingOperation && this.uiPendingOperation.controller === controller) {
+this.uiPendingOperation = null;
+setText(this.live, "");
+}
 this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
 const focus = owned ? { node: w, revision: this.uiWorkRevision } : null;
 this.interactionPanel = null; this.panelNode = null; this.editorController = null;
@@ -5213,16 +5230,19 @@ if (target) this.setFocus(target, true);
 else { this.grid.tabIndex = 0; this.grid.focus({ preventScroll: true }); }
 }
 
-async performInteraction(work) {
-const revision = this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+async performInteraction(work, controller = null) {
+this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
+const operation = this.uiPendingOperation = { controller };
 setText(this.live, this.labels.interactionPending);
 try {
 const accepted = await work();
-if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, accepted ? "" : this.labels.interactionRejected);
+if (!this.destroyed && this.uiPendingOperation === operation) setText(this.live, accepted ? "" : this.labels.interactionRejected);
 return accepted;
 } catch (error) {
-if (!this.destroyed && revision === this.uiWorkRevision) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
+if (!this.destroyed && this.uiPendingOperation === operation) setText(this.live, fill(this.labels.interactionFailed, { error: error && error.message || String(error) }));
 return false;
+} finally {
+if (this.uiPendingOperation === operation) this.uiPendingOperation = null;
 }
 }
 
@@ -5237,7 +5257,8 @@ const panel = this.openInteractionPanel(w, row, "dialog", label);
 if (!panel) return false;
 const controller = this.editorController = new AbortController();
 const raw = this.cellOf(w.h, column, index), value = isCellObject(raw) ? raw.value : raw;
-const input = h("input", "cx-editor"); input.type = typeof value === "boolean" ? "checkbox" : typeof value === "number" ? "number" : "text";
+const input = h("input", "cx-editor");
+input.type = column.kind === "number" || typeof value === "number" ? "number" : typeof value === "boolean" ? "checkbox" : "text";
 if (input.type === "number") { input.step = "any"; input.required = true; }
 input.checked = value === true;
 input.value = value == null ? "" : String(value); input.setAttribute("aria-label", label);
@@ -5249,7 +5270,7 @@ controls.append(save, cancel); panel.append(title, input, controls);
 const submit = async () => {
 if (save.disabled) return;
 let next = input.type === "checkbox" ? input.checked : input.value;
-if (typeof value === "number") {
+if (input.type === "number") {
 if (!input.value.trim() || !Number.isFinite(Number(input.value))) {
 input.setCustomValidity(fill(this.labels.invalidEdit, { column: column.title })); input.reportValidity(); return;
 }
@@ -5257,7 +5278,7 @@ next = Number(input.value);
 }
 input.setCustomValidity(""); input.disabled = save.disabled = true;
 cancel.focus();
-const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }));
+const accepted = await this.performInteraction(() => this.requestEdit(id, columnId, next, { signal: controller.signal, reason: "editor" }), controller);
 if (this.interactionPanel !== panel) return;
 if (accepted) this.closeInteractionPanel();
 else { input.disabled = save.disabled = false; input.focus(); }
@@ -5308,6 +5329,17 @@ return this.withInteractionReplacement(() => super.refreshCounts(ids));
 
 sort(...args) {
 return this.withInteractionReplacement(() => super.sort(...args));
+}
+
+setColumnVisible(...args) {
+return this.withInteractionReplacement(() => super.setColumnVisible(...args));
+}
+
+applyQuerySnapshot(...args) {
+return this.withInteractionReplacement(() => {
+this.cancelInteraction();
+return super.applyQuerySnapshot(...args);
+});
 }
 
 relayout(now) {
@@ -5371,23 +5403,30 @@ this.restoreInteractionFocus(focus);
 return result;
 }
 
-markMove(w) {
+moveSources(w) {
 if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
 const nodes = this.selected.has(w) ? Array.from(this.selected).filter(node => !node.h.detail) : [w];
 if (!nodes.length || !nodes.every(node => this.keyMap.get(node.key) === node && !node._invalidated && this.eligible("canDrag", node.h))) return false;
+return nodes;
+}
+
+markMove(w) {
+const nodes = this.moveSources(w);
+if (!nodes) return false;
 this.moveNodes = nodes; this.cacheDirty = true;
 setText(this.live, this.labels.markMove);
 return true;
 }
 
-moveTarget(w) {
+moveTarget(w, placement = "inside") {
 if (!this.moveNodes || !w || w.status || w.h.detail || this.destroyed) return false;
-const path = this.pathOf(w);
-return this.moveNodes.every(node => !node._invalidated && this.keyMap.get(node.key) === node && !path.includes(node.key));
+const nodes = this.moveNodes;
+if (nodes.some(node => node._invalidated || this.keyMap.get(node.key) !== node)) return false;
+return !!this.prepareDrop(nodes.map(node => node.key), w.key, placement) && this.moveNodes === nodes;
 }
 
 async moveTo(w, placement, reason = "menu") {
-if (!this.moveTarget(w)) return false;
+if (!this.moveTarget(w, placement)) return false;
 const nodes = this.moveNodes; this.moveNodes = null; this.cacheDirty = true;
 return this.performInteraction(() => this.requestDrop(nodes.map(node => node.key), w.key, placement, { reason }));
 }
@@ -5403,10 +5442,10 @@ if (this.opts.onAction) for (const action of this.interactions.actions) items.pu
 disabled: !this.eligible("isActionEnabled", w.h, action),
 run: () => this.performInteraction(() => this.requestAction(w.key, action.id, { reason: "menu" })) });
 if (this.view.dragDrop && this.opts.onDrop) {
-items.push({ label: this.labels.markMove, disabled: !this.eligible("canDrag", w.h), run: () => this.markMove(w) });
+items.push({ label: this.labels.markMove, disabled: !this.moveSources(w), run: () => this.markMove(w) });
 if (this.moveNodes) {
 for (const [placement, label] of [["inside", "moveHere"], ["before", "moveBefore"], ["after", "moveAfter"]])
-items.push({ label: this.labels[label], disabled: !this.moveTarget(w), run: () => this.moveTo(w, placement) });
+items.push({ label: this.labels[label], disabled: !this.moveTarget(w, placement), run: () => this.moveTo(w, placement) });
 items.push({ label: this.labels.cancelMove, run: () => { this.moveNodes = null; this.cacheDirty = true; } });
 }
 }
@@ -5467,17 +5506,18 @@ event.dataTransfer.setData("application/x-canopyx-move", this.id);
 }, { signal });
 this.grid.addEventListener("dragover", event => {
 const row = event.target.closest(".cx-row");
-if (this.dragLease && event.dataTransfer && Array.from(event.dataTransfer.types).includes("application/x-canopyx-move") && row && this.moveTarget(row._w)) {
+const placement = row && this.dropPlacement(event, row);
+if (this.dragLease && event.dataTransfer && Array.from(event.dataTransfer.types).includes("application/x-canopyx-move") && row && this.moveTarget(row._w, placement)) {
 event.preventDefault(); event.dataTransfer.dropEffect = "move";
 if (this.dropRow !== row) { this.clearDropRow(); this.dropRow = row; row.classList.add("cx-drop-target"); }
-row.setAttribute("data-cx-drop-placement", this.dropPlacement(event, row));
-} else this.clearDropRow();
+row.setAttribute("data-cx-drop-placement", placement);
+} else { this.clearDropRow(); if (event.dataTransfer) event.dataTransfer.dropEffect = "none"; }
 }, { signal });
 this.grid.addEventListener("drop", event => {
 const row = event.target.closest(".cx-row");
-if (!this.dragLease || !event.dataTransfer || event.dataTransfer.getData("application/x-canopyx-move") !== this.id || !row || !this.moveTarget(row._w)) return;
+const placement = row && this.dropPlacement(event, row);
+if (!this.dragLease || !event.dataTransfer || event.dataTransfer.getData("application/x-canopyx-move") !== this.id || !row || !this.moveTarget(row._w, placement)) return;
 event.preventDefault();
-const placement = this.dropPlacement(event, row);
 this.clearDropRow(); this.dragLease = null; this.moveTo(row._w, placement, "pointer");
 }, { signal });
 this.grid.addEventListener("dragend", () => {
