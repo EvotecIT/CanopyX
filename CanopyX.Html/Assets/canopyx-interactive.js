@@ -2645,8 +2645,8 @@ if (this.head.contains(e.target)) {
 return;
 }
 const rowEl = e.target.closest(".cx-row");
-if (rowEl && rowEl !== e.target && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
-this.skipRowTabStop(rowEl);
+if (rowEl && e.key === "Tab" && e.shiftKey && !e.defaultPrevented) {
+this.focusBeforeRows(e);
 return;
 }
 if (rowEl && rowEl !== e.target && this.onCellKey(e)) {
@@ -2863,12 +2863,11 @@ this.scrolledCell = null;
 }
 },
 
-skipRowTabStop(rowEl) {
-if (rowEl.tabIndex < 0) return;
-rowEl.tabIndex = -1;
-setTimeout(() => {
-if (!this.destroyed && rowEl._tab === 0) rowEl.tabIndex = 0;
-}, 0);
+focusBeforeRows(event) {
+const previous = this.headRow.querySelector(".cx-hcell:last-child .cx-resize");
+if (!previous) return;
+event.preventDefault();
+previous.focus();
 },
 
 heldCell() {

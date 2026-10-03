@@ -31,7 +31,8 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [ ] Measured normal/4x rendering within the existing budgets.
 - [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
 - [x] JavaScript module and classic distribution with typed host contracts, an isolated package-consumer check, and server-safe imports.
-- [ ] Focused Firefox/WebKit coverage, manual reader qualification, and representative HtmlForgeX migration proof.
+- [x] Firefox and WebKit browser contracts, alongside Chromium, with engine-specific coverage in CI.
+- [ ] Manual reader qualification and representative HtmlForgeX migration proof.
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 

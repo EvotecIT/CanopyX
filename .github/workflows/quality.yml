@@ -21,14 +21,18 @@ jobs:
         include:
           - name: Linux
             runner: '["self-hosted","Linux","X64","root"]'
+            browsers: chromium,firefox,webkit
           - name: Windows
             runner: '["self-hosted","Windows","X64"]'
+            browsers: chromium,firefox
           - name: macOS
             runner: '["self-hosted","macOS","ARM64"]'
+            browsers: chromium,webkit
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      CANOPYX_TEST_BROWSERS: ${{ matrix.browsers }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -81,6 +85,9 @@ jobs:
           $browserPath = Join-Path $directory $executable
           if (-not (Test-Path -LiteralPath $browserPath -PathType Leaf)) { throw "Browser executable missing: $browserPath" }
           Add-Content -LiteralPath $env:GITHUB_ENV -Value "CANOPYX_BROWSER_EXECUTABLE=$browserPath" -Encoding utf8
+          $otherEngines = $env:CANOPYX_TEST_BROWSERS -split ',' | Where-Object { $_ -ne 'chromium' }
+          node node_modules/@playwright/test/cli.js install --with-deps @otherEngines
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run quality loop
         shell: pwsh

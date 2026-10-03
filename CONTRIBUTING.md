@@ -36,6 +36,8 @@ cd ../..
 
 To rerun only the browser tests against the pages already generated, run `npm test` in `tests/browser` (it opens the Release examples; set `CANOPYX_EXAMPLES` to another output folder, for example after a Debug build). Set `CANOPYX_BROWSER_CHANNEL=msedge` (or `chrome`) to use an installed browser instead of Playwright's Chromium. After a visible change, refresh the README screenshots with `node tools/screenshots.mjs`.
 
+The local loop uses Chromium by default. Set `CANOPYX_TEST_BROWSERS=chromium,firefox,webkit` to run all three engines, or choose a comma-separated subset. Install the chosen engines with `node node_modules/@playwright/test/cli.js install --with-deps chromium firefox webkit` in `tests/browser`. Installed-browser channels and `CANOPYX_BROWSER_EXECUTABLE` apply only to the Chromium project. CI runs all three engines on Linux, Chromium and Firefox on Windows, and Chromium and WebKit on macOS.
+
 The suite covers a smoke pass over every Must feature of the tree grid, an axe-core scan in light and dark themes, a keyboard walkthrough, and performance budgets on the large bundle example.
 
 ## Runtime Source Parts

@@ -17,6 +17,19 @@ export function exampleUrl(name) {
   return pathToFileURL(file).href;
 }
 
+/** Records script loads from the DOM, including file URLs browsers omit from network events. */
+export async function trackScriptLoads(page) {
+  await page.addInitScript(() => {
+    window.__canopyxScriptLoads = [];
+    new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node.nodeName === "SCRIPT" && node.src) window.__canopyxScriptLoads.push(node.src);
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  return () => page.evaluate(() => window.__canopyxScriptLoads.splice(0));
+}
+
 export function nextFrames(page) {
   return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }

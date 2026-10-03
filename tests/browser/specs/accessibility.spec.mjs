@@ -64,6 +64,10 @@ test("axe finds no violations on the bundle example and the static outline", asy
 
 test("keyboard walkthrough follows the row-focus model", async ({ page }) => {
   await openExample(page, "inline.html");
+  await page.evaluate(() => {
+    const outlet = document.createElement("button"); outlet.textContent = "After tree"; outlet.type = "button";
+    document.body.appendChild(outlet);
+  });
   await row(page, "share-a").click();
   expect(await focusedId(page)).toBe("share-a");
 
@@ -101,7 +105,7 @@ test("keyboard walkthrough follows the row-focus model", async ({ page }) => {
 
   await expect(page.locator(".cx-row[tabindex='0']")).toHaveCount(1);
   await page.keyboard.press("Tab");
-  expect(await page.evaluate(() => !!document.activeElement.closest(".cx-grid"))).toBeFalsy();
+  await expect(page.getByRole("button", { name: "After tree", exact: true })).toBeFocused();
 });
 
 test("rows are back in DOM order once scrolling pauses", async ({ page }) => {

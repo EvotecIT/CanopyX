@@ -39,7 +39,7 @@ test("a throwing toggle callback cannot prevent state persistence", async ({ pag
   await expect(page.locator('[data-cx-id="parent"]')).toHaveAttribute("aria-expanded", "true");
   await page.waitForFunction(() => sessionStorage.getItem("canopyx:twelfth-toggle") !== null, null, { timeout: 2000 });
   expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-toggle")))).toMatchObject({ version: 1, expanded: [["parent"]] });
-  expect(errors).toContain("host toggle failure");
+  expect(errors.some(message => message.includes("host toggle failure"))).toBe(true);
 });
 
 test("a throwing load callback cannot prevent persistence of applied lazy expansion", async ({ page }) => {
@@ -61,7 +61,7 @@ test("a throwing load callback cannot prevent persistence of applied lazy expans
   await expect(page.locator('[data-cx-id="child"]')).toBeVisible();
   await page.waitForFunction(() => sessionStorage.getItem("canopyx:twelfth-lazy") !== null, null, { timeout: 2000 });
   expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:twelfth-lazy")))).toMatchObject({ version: 1, expanded: [["lazy"]] });
-  expect(errors).toContain("host load failure");
+  expect(errors.some(message => message.includes("host load failure"))).toBe(true);
 });
 
 test("sidecar manifest owner is checked before caching and can be retried", async ({ page }) => {

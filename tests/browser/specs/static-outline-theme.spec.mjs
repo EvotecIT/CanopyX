@@ -50,7 +50,7 @@ test("a host that sets the runtime's properties from its own tokens themes the o
   const before = await colors(page);
   // What a host stylesheet does for the grid, here for the host's own element around the outline.
   await page.evaluate(() => {
-    const wrapper = document.querySelector(".cx-static");
+    const wrapper = document.querySelector("main .cx-static");
     wrapper.className = "report-outline";
     wrapper.removeAttribute("data-cx-theme");
   });
@@ -64,8 +64,8 @@ test("a host that sets the runtime's properties from its own tokens themes the o
 
 test("without the stylesheet the literals apply", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.route("**/canopyx.*.css", (route) => route.abort());
   await page.goto(exampleUrl("outline-page.html"));
+  await page.evaluate(() => document.querySelectorAll('link[rel="stylesheet"]').forEach(link => link.remove()));
   const seen = await colors(page);
   expect({ surface: seen.surface, text: seen.text }).toEqual(LIGHT);
 });
