@@ -1,5 +1,5 @@
 import CanopyX, {
-  createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type DataSource, type ViewState, type CheckState
+  createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 
 const view: CanopyView = {
@@ -84,3 +84,32 @@ const missingRoots: CanopyView = { ...view, source: { kind: "inline" }, roots: u
 const missingDetailItems: CanopyNode = { id: "bad", label: "Bad", detail: { type: "properties" } };
 // @ts-expect-error Table details cannot carry HTML content.
 const wrongDetailPayload: CanopyNode = { id: "bad", label: "Bad", detail: { type: "table", columns: [], rows: [], html: "<p>Bad</p>" } };
+
+// @ts-expect-error A sidecar factory needs a sidecar view and its base.
+sources.sidecar(view);
+const sidecarView = { ...view, source: { kind: "sidecar" as const, base: "data/" }, roots: undefined };
+// @ts-expect-error A remote factory needs remote URL templates.
+sources.remote(sidecarView);
+// @ts-expect-error An inline factory needs inline roots.
+sources.inline(sidecarView);
+await sources.sidecar(sidecarView).page(null, null);
+await sources.remote({ ...sidecarView, source: { kind: "remote", children: "/children?parent={parent}&cursor={cursor}" } }).page(null, null);
+
+// @ts-expect-error A host link scheme supplies both hooks.
+createTreeGrid(document.createElement("div"), { view, formatLink: () => "record/a" });
+// @ts-expect-error A host link scheme supplies both hooks.
+CanopyX.configure("files", { parseLink: () => ["a"] });
+CanopyX.configure("files", { formatLink: path => path.join("/"), parseLink: fragment => fragment.split("/") });
+
+// Normalized custom pages can omit terminal metadata; wire documents retain required offsets and continuations.
+const terminalSource: DataSource = { page: () => ({ items: [] }) };
+// @ts-expect-error Wire pages keep their required continuation and offset.
+const incompleteWirePage: PageDocument = { protocol: "canopyx/2", type: "page", parent: null, items: [] };
+// @ts-expect-error Search availability requires a search implementation.
+const missingSearch: DataSource = { canSearch: true, page: () => ({ items: [], next: null, offset: 0 }) };
+const hiddenSearch: DataSource = { canSearch: false, page: () => ({ items: [] }), search: () => ({ hits: [], truncated: false }) };
+if (source.canSearch) await source.search("atlas", 10);
+
+const { checkboxes: ignoredMode, ...withoutCheckboxes } = view;
+// @ts-expect-error Initial checking intents need a checkbox mode.
+const missingCheckboxes: CanopyView = { ...withoutCheckboxes, checkIntents: [{ path: ["a"], checked: true }] };

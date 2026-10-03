@@ -102,7 +102,7 @@ export interface RemoteSourceDefinition {
 }
 export type SourceDefinition = InlineSourceDefinition | SidecarSourceDefinition | RemoteSourceDefinition;
 
-export interface ViewDefinition {
+interface ViewDefinitionBase {
   protocol: "canopyx/2";
   type: "view";
   id: string;
@@ -119,21 +119,24 @@ export interface ViewDefinition {
   stateKey?: string;
   deepLink?: boolean;
   labels?: CanopyLabels;
-  checkboxes?: CheckMode;
-  checkIntents?: readonly CheckIntent[];
   dragDrop?: boolean;
   contextActions?: ContextAction[];
 }
-/** Inline views own roots. Sidecar and remote views read roots from their source. */
-export type CanopyView = ViewDefinition & (
-  | { source: InlineSourceDefinition; roots: CanopyNode[] }
-  | { source: SidecarSourceDefinition | RemoteSourceDefinition; roots?: never }
+/** Checking intents describe a view only when its checkbox mode is enabled. */
+export type ViewDefinition = ViewDefinitionBase & (
+  | { checkboxes: CheckMode; checkIntents?: readonly CheckIntent[] }
+  | { checkboxes?: never; checkIntents?: never }
 );
+/** Inline views own roots. Sidecar and remote views read roots from their source. */
+export type InlineView = ViewDefinition & { source: InlineSourceDefinition; roots: CanopyNode[] };
+export type SidecarView = ViewDefinition & { source: SidecarSourceDefinition; roots?: never };
+export type RemoteView = ViewDefinition & { source: RemoteSourceDefinition; roots?: never };
+export type CanopyView = InlineView | SidecarView | RemoteView;
 
 export interface PageResult {
   items: CanopyNode[];
-  next: string | null;
-  offset: number;
+  next?: string | null;
+  offset?: number;
   total?: number;
   revision?: string;
 }
@@ -141,6 +144,8 @@ export interface PageDocument extends PageResult {
   protocol: "canopyx/2";
   type: "page";
   parent: string | null;
+  next: string | null;
+  offset: number;
 }
 export interface SearchHit { path: string[]; label: string; kind?: string; context?: string; }
 export interface SearchResult { hits: SearchHit[]; truncated: boolean; total?: number; revision?: string; }
