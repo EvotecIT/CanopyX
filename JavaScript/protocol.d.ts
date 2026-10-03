@@ -15,6 +15,23 @@ export interface CanopyCell {
 }
 export type Cell = CellValue | CanopyCell;
 
+export interface TableDetail {
+  type: "table";
+  height?: number;
+  caption?: string;
+  columns: string[];
+  widths?: number[];
+  rows: Cell[][];
+}
+export interface PropertiesDetail {
+  type: "properties";
+  height?: number;
+  items: { name: string; value: Cell }[];
+}
+/** HTML details contain content the host explicitly trusts. */
+export interface HtmlDetail { type: "html"; height?: number; html: string; }
+export type CanopyDetail = TableDetail | PropertiesDetail | HtmlDetail;
+
 /** A host-owned node. IDs are unique within the view; lazy nodes omit children. */
 export interface CanopyNode {
   id: string;
@@ -31,7 +48,7 @@ export interface CanopyNode {
   ref?: string;
   children?: CanopyNode[];
   expanded?: boolean;
-  detail?: { type: string; height?: number };
+  detail?: CanopyDetail;
   className?: string;
 }
 
@@ -55,6 +72,12 @@ export interface ContextAction { id: string; label: string; }
 export interface CheckIntent { readonly path: readonly string[]; readonly checked: boolean; }
 export interface Sort { column: string; direction: SortDirection; }
 export interface ViewQuery { version: 1; sort: Sort | null; filters: string[]; }
+/** Source callbacks observe frozen query snapshots, including their sort and filter values. */
+export interface ReadonlyViewQuery {
+  readonly version: 1;
+  readonly sort: Readonly<Sort> | null;
+  readonly filters: readonly string[];
+}
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =

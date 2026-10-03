@@ -1,5 +1,5 @@
 import CanopyX, {
-  createTreeGrid, sources, labels, type CanopyView, type DataSource, type ViewState, type CheckState
+  createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type DataSource, type ViewState, type CheckState
 } from "@evotecit/canopyx";
 
 const view: CanopyView = {
@@ -7,15 +7,26 @@ const view: CanopyView = {
   selection: "multiple", checkboxes: "hierarchical", dragDrop: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 320, editable: true }],
   contextActions: [{ id: "inspect", label: "Inspect" }],
-  source: { kind: "inline" }, roots: [{ id: "a", label: "Atlas" }]
+  source: { kind: "inline" }, roots: [{ id: "a", label: "Atlas" },
+    { id: "properties", label: "Properties", detail: { type: "properties", items: [{ name: "Owner", value: "A" }] } },
+    { id: "table", label: "Table", detail: { type: "table", caption: "Values", columns: ["Name"], widths: [1], rows: [[{ value: 12, text: "Twelve" }]] } },
+    { id: "html", label: "HTML", detail: { type: "html", height: 2, html: "<p>Trusted content</p>" } }]
 };
 const source: DataSource = {
   queryAware: true, canSearch: true,
   async page(node, cursor, request) {
     request?.signal.throwIfAborted();
+    const revision: string | null | undefined = request?.revision;
+    const filters: readonly string[] | undefined = request?.query?.filters;
+    // @ts-expect-error Source query snapshots freeze the filter array.
+    request?.query?.filters.push("active");
+    // @ts-expect-error Source query snapshots freeze the sort object.
+    if (request?.query?.sort) request.query.sort.direction = "desc";
+    // @ts-expect-error The source cannot replace a frozen query field.
+    if (request?.query) request.query.sort = null;
     return { items: [{ id: "a", label: "Atlas" }], next: null, offset: 0, revision: request?.revision || "r1" };
   },
-  async search(query, limit, request) { return { hits: [], truncated: false, revision: request?.revision }; }
+  async search(query, limit, request) { return { hits: [], truncated: false, revision: request?.revision ?? undefined }; }
 };
 const api = createTreeGrid(document.createElement("div"), {
   view, source,
@@ -24,13 +35,25 @@ const api = createTreeGrid(document.createElement("div"), {
   onEdit(proposal, context) {
     const previous: string | number | boolean | null = proposal.previous;
     context.signal.throwIfAborted();
+    const queryVersion: number | undefined = context.query?.version;
+    const revision: string | null = context.revision;
+    // @ts-expect-error Non-query interactions carry a null query.
+    context.query.version;
+    // @ts-expect-error A first or non-query interaction can have a null revision.
+    context.revision.toUpperCase();
     // @ts-expect-error Host proposals are immutable.
     proposal.path.push("other");
     return true;
   },
   async onDrop(proposal) { return proposal.target.nodeId !== null && proposal.nodes.length > 0; },
   async onAction(proposal) { return proposal.action === "inspect"; },
-  renderers: { name(node, element, context) { element.textContent = node.label; return context.level > 0; } }
+  renderers: { name(node, element, context) {
+    const column: string = context.column;
+    element.textContent = column + ": " + node.label;
+    // @ts-expect-error Renderer contexts supply a column ID.
+    context.column.id;
+    return context.level > 0;
+  } }
 });
 const state: ViewState = api.getState();
 const checked: CheckState | null = api.getCheckState("a");
@@ -57,3 +80,7 @@ api.requestEdit("a", "name", { label: "Invalid" });
 createTreeGrid(document.createElement("div"), { view, labels: { missingLabel: "Missing" } });
 // @ts-expect-error Inline views require roots.
 const missingRoots: CanopyView = { ...view, source: { kind: "inline" }, roots: undefined };
+// @ts-expect-error Properties details require their items.
+const missingDetailItems: CanopyNode = { id: "bad", label: "Bad", detail: { type: "properties" } };
+// @ts-expect-error Table details cannot carry HTML content.
+const wrongDetailPayload: CanopyNode = { id: "bad", label: "Bad", detail: { type: "table", columns: [], rows: [], html: "<p>Bad</p>" } };

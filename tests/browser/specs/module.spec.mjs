@@ -28,7 +28,9 @@ test("module exports mount a complete interactive tree and reuse its host", asyn
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await serve(page, `import CanopyX, {createTreeGrid,protocol,labels} from '/runtime.mjs';
-    window.api=createTreeGrid(document.getElementById('tree'),{view:${JSON.stringify(view)},onEdit(){return true}});
+    window.api=createTreeGrid(document.getElementById('tree'),{view:${JSON.stringify(view)},
+      renderers:{name(node,element,context){window.rendererColumn=context.column;return false}},
+      onEdit(proposal,context){window.editContext={query:context.query,revision:context.revision};return true}});
     await api.ready;
     window.moduleState={same:api===CanopyX.createTreeGrid(api.element,{view:api.view}),global:CanopyX===window.CanopyX,protocol,save:labels.saveEdit};`);
   await expect.poll(() => page.evaluate(() => window.moduleState)).toEqual({ same: true, global: true, protocol: "canopyx/2", save: "Save" });
@@ -38,6 +40,10 @@ test("module exports mount a complete interactive tree and reuse its host", asyn
   await expect(page.getByRole("dialog", { name: "Edit Name" })).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(row(page, "a")).toBeFocused();
+  expect(await page.evaluate(() => window.rendererColumn)).toBe("name");
+  expect(await page.evaluate(() => { api.toOutline(); return window.rendererColumn; })).toBe("name");
+  expect(await page.evaluate(() => api.requestEdit("a", "name", "Updated"))).toBe(true);
+  expect(await page.evaluate(() => window.editContext)).toEqual({ query: null, revision: null });
   expect(errors).toEqual([]);
 });
 

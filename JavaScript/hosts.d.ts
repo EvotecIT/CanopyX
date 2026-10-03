@@ -1,11 +1,11 @@
 import type {
   CanopyNode, CanopyColumn, CanopyView, CanopyLabels, CellValue, CheckIntent,
-  CountsDocument, PageResult, SearchResult, ViewQuery, ContextAction
+  CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction
 } from "./protocol.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
 /** Query-aware hosts answer from one accepted dataset revision. */
-export interface SourceRequest { signal: AbortSignal; query?: ViewQuery; revision?: string; }
+export interface SourceRequest { signal: AbortSignal; query?: ReadonlyViewQuery; revision?: string | null; }
 export interface DataSource {
   kind?: string;
   queryAware?: boolean;
@@ -39,13 +39,13 @@ export interface ActionProposal extends NodeReference { readonly action: string;
 export interface InteractionContext {
   readonly signal: AbortSignal;
   readonly reason: string;
-  readonly query?: ViewQuery;
-  readonly revision?: string;
+  readonly query: ViewQuery | null;
+  readonly revision: string | null;
 }
 export interface InteractionOptions { signal?: AbortSignal; reason?: string; }
 export interface SelectionContext { previous: CanopyNode[]; reason: string; }
 export interface CheckContext { readonly previous: readonly CheckIntent[]; readonly reason: string; }
-export interface CellContext { column: CanopyColumn; level: number; expanded: boolean; index: number; }
+export interface CellContext { column: string; level: number; expanded: boolean; index: number; }
 export interface LoadInfo { node: CanopyNode | null; count: number; total: number | null; ms: number; }
 
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */

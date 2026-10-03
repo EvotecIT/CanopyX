@@ -4985,6 +4985,14 @@ Array.from(this.interactionPins).some(w => w.key === item.id))) this.cancelInter
 return result;
 }
 
+refreshCounts(ids) {
+if (!this.destroyed && this.source.counts && this.pendingInteraction) {
+const wanted = new Set(ids || this.rows.filter(w => !w.status).map(w => w.key));
+if (Array.from(this.interactionPins).some(w => wanted.has(w.key))) this.cancelInteraction();
+}
+return super.refreshCounts(ids);
+}
+
 interactionNode(id) {
 requireIdentifier(id, "interaction node ID");
 const w = this.keyMap.get(id);
@@ -5292,6 +5300,32 @@ this.interactionUiLifetime = null;
 TreeGrid = class extends TreeGrid {
 cachePinned(w) {
 return super.cachePinned(w) || this.panelNode === w || !!(this.moveNodes && this.moveNodes.includes(w));
+}
+
+refreshCounts(ids) {
+return this.withInteractionReplacement(() => super.refreshCounts(ids));
+}
+
+sort(...args) {
+return this.withInteractionReplacement(() => super.sort(...args));
+}
+
+relayout(now) {
+return this.withInteractionReplacement(() => {
+const focus = this.closeInteractionPanel(false);
+const result = super.relayout(now);
+this.restoreInteractionFocus(focus);
+return result;
+});
+}
+
+buildHeader(...args) {
+return this.withInteractionReplacement(() => {
+const focus = this.closeInteractionPanel(false);
+const result = super.buildHeader(...args);
+this.restoreInteractionFocus(focus);
+return result;
+});
 }
 
 reconcileList(parent, ...args) {
