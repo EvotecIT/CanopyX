@@ -186,3 +186,96 @@ test("invalid result windows and revisions cannot replace accepted rows", async 
   expect(error).toContain("requested window"); expect(await ids(page)).toEqual(["good"]);
   await expect(page.getByRole("grid")).toHaveAttribute("aria-busy", "false");
 });
+
+test("text equality and category membership ignore case without treating missing values as unequal", async ({ page }) => {
+  const view = definition([
+    { id: "a", cells: { name: "Archive" } }, { id: "b", cells: { name: "ARCHIVE" } },
+    { id: "c", cells: { name: "Active" } }, { id: "d", cells: {} },
+    { id: "e", cells: { name: "Árchive" } }
+  ]);
+  await openGrid(page, view); await page.waitForSelector("[data-cx-ready]");
+  for (const [operator, expected] of [["eq", ["a", "b"]], ["in", ["a", "b"]], ["ne", ["c", "e"]]]) {
+    await page.evaluate(async operator => document.querySelector("[data-canopyx-host]").canopyx.setQuery({
+      filters: [{ column: "name", operator, values: ["archive"] }]
+    }), operator);
+    expect(await ids(page)).toEqual(expected);
+  }
+});
+
+test("rapid header and search changes compose against the pending host query", async ({ page }) => {
+  const setup = `window.pending=[]; CanopyX.configure('inventory',{source:{query(query) {
+    const response=()=>({protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'v1',offset:query.offset,
+      total:1,matched:1,items:[{id:'record',cells:{name:'Record',size:1}}]});
+    if (!query.search && !query.sort.length) return response();
+    return new Promise(resolve=>window.pending.push({query,resolve:()=>resolve(response())}));
+  }}});`;
+  await openGrid(page, hostView(), setup); await page.waitForSelector("[data-cx-ready]");
+  await page.getByRole("button", { name: "Name", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.pending.length)).toBe(1);
+  await page.getByRole("button", { name: "Size", exact: true }).click({ modifiers: ["Shift"] });
+  await expect.poll(() => page.evaluate(() => window.pending.length)).toBe(2);
+  await page.getByRole("searchbox").fill("Record"); await page.getByRole("searchbox").press("Enter");
+  await expect.poll(() => page.evaluate(() => window.pending.length)).toBe(3);
+  await page.getByRole("button", { name: "Date", exact: true }).click({ modifiers: ["Shift"] });
+  await expect.poll(() => page.evaluate(() => window.pending.length)).toBe(4);
+  const sorts = [{ column: "name", direction: "asc" }, { column: "size", direction: "asc" }, { column: "date", direction: "asc" }];
+  expect(await page.evaluate(() => window.pending[3].query)).toMatchObject({ search: "Record", sort: sorts });
+  // Until the latest result is accepted, public callers and exports still see the previous query.
+  expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).toMatchObject({ search: "", sort: [] });
+  await page.evaluate(() => window.pending[3].resolve());
+  await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().sort)).toEqual(sorts);
+  expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().search)).toBe("Record");
+  await page.getByRole("searchbox").fill("Changed"); await page.getByRole("searchbox").press("Enter");
+  await expect.poll(() => page.evaluate(() => window.pending.length)).toBe(5);
+  await page.evaluate(() => { window.sorted = document.querySelector("[data-canopyx-host]").canopyx.sort([{ column: "size", direction: "desc" }]).catch(error => error.message); });
+  await expect.poll(() => page.evaluate(() => window.pending.length)).toBe(6);
+  expect(await page.evaluate(() => window.pending[5].query)).toMatchObject({ search: "Changed", sort: [{ column: "size", direction: "desc" }] });
+  await page.evaluate(async () => { window.pending[5].resolve(); await window.sorted; });
+  await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().search)).toBe("Changed");
+});
+
+for (const leave of [false, true]) test(`an arriving host page ${leave ? "preserves focus outside the grid" : "keeps keyboard focus on the requested row"}`, async ({ page }) => {
+  const setup = `window.pending=[]; CanopyX.configure('inventory',{source:{query(query) {
+    const response=()=>({protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'v1',offset:query.offset,
+      total:200,matched:200,items:Array.from({length:Math.min(query.limit,200-query.offset)},(_,i)=>
+        ({id:'row-'+(query.offset+i),cells:{name:'Record '+(query.offset+i)}}))});
+    if (query.offset < 100) return response();
+    return new Promise(resolve=>window.pending.push({query,resolve:()=>resolve(response())}));
+  }}});`;
+  await openGrid(page, hostView(), setup); await page.waitForSelector("[data-cx-ready]");
+  await page.locator('.cx-row[data-cx-id="row-0"]').focus(); await page.keyboard.press("Control+End");
+  await expect(page.locator('.cx-row[aria-rowindex="201"][data-cx-status="loading"]')).toBeFocused();
+  await expect.poll(() => page.evaluate(() => window.pending.some(item => item.query.offset === 190))).toBe(true);
+  if (leave) await page.evaluate(() => {
+    const after = document.body.appendChild(document.createElement("button")); after.id = "after-grid"; after.textContent = "Next action";
+  });
+  if (leave) { await page.keyboard.press("Tab"); await expect(page.locator("#after-grid")).toBeFocused(); }
+  await page.evaluate(() => window.pending.filter(item => item.query.offset >= 170).forEach(item => item.resolve()));
+  await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeVisible();
+  if (leave) await expect(page.locator("#after-grid")).toBeFocused();
+  else {
+    await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeFocused();
+    await page.keyboard.press("ArrowUp"); await expect(page.locator('.cx-row[data-cx-id="row-198"]')).toBeFocused();
+  }
+});
+
+test("keyboard cell navigation reaches every host control and respects controls that own arrows", async ({ page }) => {
+  const setup = `CanopyX.configure('inventory',{renderers:{name(row,element) {
+    for (const label of ['First','Second']) { const button=element.appendChild(document.createElement('button')); button.textContent=label; }
+    const input=element.appendChild(document.createElement('input')); input.setAttribute('aria-label','Record note'); input.value='abc';
+  }}});`;
+  await openGrid(page, definition([{ id: "one", cells: { name: "One", size: 1 } }]), setup);
+  await page.waitForSelector("[data-cx-ready]");
+  const row = page.locator('.cx-row[data-cx-id="one"]'), firstCell = row.locator(".cx-cell").nth(0);
+  await row.focus(); await page.keyboard.press("F2"); await expect(row.getByRole("button", { name: "First" })).toBeFocused();
+  await page.keyboard.press("ArrowRight"); await expect(row.getByRole("button", { name: "Second" })).toBeFocused();
+  await page.keyboard.press("ArrowLeft"); await expect(row.getByRole("button", { name: "First" })).toBeFocused();
+  await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight"); await expect(firstCell).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(row.getByRole("textbox", { name: "Record note" })).toBeFocused();
+  await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight");
+  await expect(row.getByRole("textbox", { name: "Record note" })).toBeFocused();
+  expect(await row.getByRole("textbox").evaluate(input => input.selectionStart)).toBe(1);
+  await page.keyboard.press("Escape"); await expect(firstCell).toBeFocused();
+  await page.keyboard.press("ArrowRight"); await expect(row.locator(".cx-cell").nth(1)).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(row).toBeFocused();
+});

@@ -173,14 +173,14 @@ Gate: HtmlForgeX ships no fancytree asset, and a tree in an HtmlForgeX email ren
 
 Consumer: the HtmlForgeX `DataExplorer` (branch `feature/report-datasets`, owned by another maintainer).
 
-- [ ] Extract one shared virtual-scroll core (offset table, row pool, windowed rendering, cell reuse) used by both the tree grid and the data grid. Do this once and only with the `DataExplorer` owner's agreement; do not copy the code into HtmlForgeX.
+- [x] One shared virtual-scroll core handles row metrics, pooling, windowed rendering, cell reuse, DOM order, and large logical heights for tree and flat views. The maintainer agreed to integration in separate branches; the consumer migration uses this core.
 - [ ] Data grid view on that core, reading the same data sources.
 
 First grid release, with the HtmlForgeX inventory and one TestimoX results view as migration proofs:
 
-- [ ] Flat row identities, typed cells, full-dataset search/filtering, and stable multi-column sorting before paging.
+- [x] Flat row identities, typed cells, full-dataset search/filtering, and stable multi-column sorting before paging.
 - [ ] Search and typed filters, column resize/visibility/order, sticky headers, and resettable saved views.
-- [ ] Virtual rows, bounded caches, query cancellation, stale-response rejection, and loading/error states.
+- [x] Virtual rows, bounded caches, query cancellation, stale-response rejection, and loading/error states.
 - [ ] Flat-grid keyboard and ARIA contracts, selection, copying, and host-composed details, while preserving the tree contracts.
 - [ ] Filtered, selected, and all-result export scopes with defined columns/order; large Office exports call host hooks.
 - [ ] Compare and migrate representative formatting, responsive layout, filters, selection, saved state, and exports in both consumers.

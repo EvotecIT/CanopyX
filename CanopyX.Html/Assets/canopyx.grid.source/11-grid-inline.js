@@ -10,11 +10,12 @@
   }
 
   function gridMatches(row, predicate, column) {
-    const value = gridScalar(row.cells[column.id], column), op = predicate.operator;
-    if (op === "isNull") return value === null;
-    if (op === "isNotNull") return value !== null;
-    if (value === null) return false;
-    const values = predicate.values.map(operand => gridScalar(operand, column)), operand = values[0];
+    const scalar = gridScalar(row.cells[column.id], column), op = predicate.operator;
+    if (op === "isNull") return scalar === null;
+    if (op === "isNotNull") return scalar !== null;
+    if (scalar === null) return false;
+    const normalize = value => column.kind === "text" ? foldText(value) : value;
+    const value = normalize(scalar), values = predicate.values.map(operand => normalize(gridScalar(operand, column))), operand = values[0];
     switch (op) {
       case "eq": return value === operand;
       case "ne": return value !== operand;

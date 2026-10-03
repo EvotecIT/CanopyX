@@ -11,7 +11,7 @@
         input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
         const update = () => {
           clearTimeout(this.searchTimer);
-          this.setQuery(Object.assign({}, this.acceptedQuery || {}, { offset: 0, search: input.value, revision: undefined })).catch(() => {});
+          this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
         };
         input.addEventListener("input", () => { clearTimeout(this.searchTimer); this.searchTimer = setTimeout(update, 200); }, { signal: signal });
         input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });

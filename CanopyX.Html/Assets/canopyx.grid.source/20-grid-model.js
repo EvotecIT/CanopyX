@@ -40,6 +40,7 @@
 
     stateChanged() { if (!this.destroyed) this.emit("state", { query: this.acceptedQuery || null }); }
     getQuery() { return this.acceptedQuery || null; }
+    queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
 
     async setQuery(input) {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
@@ -82,7 +83,7 @@
     }
 
     querySortHeader(id, event) {
-      const previous = this.acceptedQuery || gridQuery(this.view, {}), sorts = previous.sort.slice();
+      const previous = gridQuery(this.view, this.queryForChange()), sorts = previous.sort.slice();
       const found = sorts.findIndex(sort => sort.column === id), old = found >= 0 ? sorts[found].direction : null;
       const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
       const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
@@ -91,7 +92,7 @@
     }
 
     sort(sorts) {
-      return this.setQuery(Object.assign({}, this.acceptedQuery || {}, { offset: 0, sort: sorts, revision: undefined }));
+      return this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, sort: sorts, revision: undefined }));
     }
 
     rowCount() { return this.snapshot ? this.snapshot.matched : 0; }

@@ -27,12 +27,18 @@
         if (existing && existing.key !== row.key) throw new Error("CanopyX: a grid position changed identity in one snapshot.");
       }
       const retained = rows.map(row => this.rowCache.get(row._ri) || row);
+      let restoreFocus = false;
       for (const row of retained) {
         const placeholder = this.placeholders.get(row._ri);
-        if (this.focused === placeholder) this.focused = row;
+        if (this.focused === placeholder) {
+          const element = this.rendered.get(placeholder);
+          restoreFocus = !!(element && element.contains(document.activeElement));
+          this.focused = row;
+        }
         this.placeholders.delete(row._ri); this.rowCache.set(row._ri, row);
       }
       this.pages.set(page.offset, { rows: retained, offset: page.offset }); this.version++;
+      return restoreFocus;
     },
 
     trimPages() {
@@ -67,7 +73,8 @@
       const token = {}; this.pendingPages.set(offset, token);
       this.requestPage(query, lifetime.signal).then(page => {
         if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
-        this.storePage(validateGridPage(page, this.view, query, snapshot)); this.scheduleRender();
+        const restoreFocus = this.storePage(validateGridPage(page, this.view, query, snapshot));
+        if (restoreFocus) this.setFocus(this.focused, true); else this.scheduleRender();
       }).catch(error => {
         if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
         this.pages.set(offset, { error: error, offset: offset }); this.version++;

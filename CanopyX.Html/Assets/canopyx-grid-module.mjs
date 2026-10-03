@@ -4514,11 +4514,12 @@ const result = gridOrder(column.kind === "text" ? String(a) : a, column.kind ===
 return direction === "desc" ? -result : result;
 }
 function gridMatches(row, predicate, column) {
-const value = gridScalar(row.cells[column.id], column), op = predicate.operator;
-if (op === "isNull") return value === null;
-if (op === "isNotNull") return value !== null;
-if (value === null) return false;
-const values = predicate.values.map(operand => gridScalar(operand, column)), operand = values[0];
+const scalar = gridScalar(row.cells[column.id], column), op = predicate.operator;
+if (op === "isNull") return scalar === null;
+if (op === "isNotNull") return scalar !== null;
+if (scalar === null) return false;
+const normalize = value => column.kind === "text" ? foldText(value) : value;
+const value = normalize(scalar), values = predicate.values.map(operand => normalize(gridScalar(operand, column))), operand = values[0];
 switch (op) {
 case "eq": return value === operand;
 case "ne": return value !== operand;
@@ -4596,6 +4597,7 @@ try { callback(detail); } catch (error) { if (global.console) global.console.err
 }
 stateChanged() { if (!this.destroyed) this.emit("state", { query: this.acceptedQuery || null }); }
 getQuery() { return this.acceptedQuery || null; }
+queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
 async setQuery(input) {
 if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
 const query = gridQuery(this.view, input), epoch = ++this.queryEpoch;
@@ -4636,7 +4638,7 @@ throw error;
 }
 }
 querySortHeader(id, event) {
-const previous = this.acceptedQuery || gridQuery(this.view, {}), sorts = previous.sort.slice();
+const previous = gridQuery(this.view, this.queryForChange()), sorts = previous.sort.slice();
 const found = sorts.findIndex(sort => sort.column === id), old = found >= 0 ? sorts[found].direction : null;
 const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
 const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
@@ -4644,7 +4646,7 @@ if (next) changed.splice(event && event.shiftKey && found >= 0 ? Math.min(found,
 this.setQuery(Object.assign({}, previous, { offset: 0, sort: changed, revision: undefined })).catch(() => {});
 }
 sort(sorts) {
-return this.setQuery(Object.assign({}, this.acceptedQuery || {}, { offset: 0, sort: sorts, revision: undefined }));
+return this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, sort: sorts, revision: undefined }));
 }
 rowCount() { return this.snapshot ? this.snapshot.matched : 0; }
 rowTop(index) { return index * this.rowH; }
@@ -4725,12 +4727,18 @@ const existing = this.rowCache.get(row._ri);
 if (existing && existing.key !== row.key) throw new Error("CanopyX: a grid position changed identity in one snapshot.");
 }
 const retained = rows.map(row => this.rowCache.get(row._ri) || row);
+let restoreFocus = false;
 for (const row of retained) {
 const placeholder = this.placeholders.get(row._ri);
-if (this.focused === placeholder) this.focused = row;
+if (this.focused === placeholder) {
+const element = this.rendered.get(placeholder);
+restoreFocus = !!(element && element.contains(document.activeElement));
+this.focused = row;
+}
 this.placeholders.delete(row._ri); this.rowCache.set(row._ri, row);
 }
 this.pages.set(page.offset, { rows: retained, offset: page.offset }); this.version++;
+return restoreFocus;
 },
 trimPages() {
 if (!this.window || this.pages.size <= this.cachePageLimit) return;
@@ -4761,7 +4769,8 @@ const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offse
 const token = {}; this.pendingPages.set(offset, token);
 this.requestPage(query, lifetime.signal).then(page => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
-this.storePage(validateGridPage(page, this.view, query, snapshot)); this.scheduleRender();
+const restoreFocus = this.storePage(validateGridPage(page, this.view, query, snapshot));
+if (restoreFocus) this.setFocus(this.focused, true); else this.scheduleRender();
 }).catch(error => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
 this.pages.set(offset, { error: error, offset: offset }); this.version++;
@@ -4788,7 +4797,7 @@ const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-
 input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
 const update = () => {
 clearTimeout(this.searchTimer);
-this.setQuery(Object.assign({}, this.acceptedQuery || {}, { offset: 0, search: input.value, revision: undefined })).catch(() => {});
+this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
 };
 input.addEventListener("input", () => { clearTimeout(this.searchTimer); this.searchTimer = setTimeout(update, 200); }, { signal: signal });
 input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });
@@ -4886,8 +4895,14 @@ const element = event.target.closest(".cx-row"), row = element && element._w;
 if (!row || event.defaultPrevented || event.isComposing || event.altKey) return;
 const cells = this.rowCells(element), column = cells.findIndex(cell => cell.contains(event.target));
 const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
-if (control && control.matches(OWN_ARROWS) && event.key !== "Escape") return;
-let index = row._ri, nextColumn = column;
+const controls = cell ? cellControls(cell) : [];
+if (control && control.matches(OWN_ARROWS)) {
+if (event.key !== "Escape") return;
+this.focusCell(row, column, null); cell._cxAt = controls.indexOf(control);
+event.preventDefault(); event.stopPropagation(); return;
+}
+const at = control ? controls.indexOf(control) : cell && cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
+let index = row._ri, nextColumn = column, nextControl = null;
 switch (event.key) {
 case "ArrowUp": index--; break;
 case "ArrowDown": index++; break;
@@ -4895,13 +4910,21 @@ case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.he
 case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
 case "Home": if (event.ctrlKey || event.metaKey) index = 0; else nextColumn = 0; break;
 case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = cells.length - 1; break;
-case "ArrowLeft": nextColumn = Math.max(0, column - 1); break;
-case "ArrowRight": nextColumn = Math.min(cells.length - 1, column + 1); break;
+case "ArrowLeft":
+if (at > 0) nextControl = at - 1;
+else if (column > 0) { nextColumn--; nextControl = -1; }
+else { this.setFocus(row, true); event.preventDefault(); return; }
+break;
+case "ArrowRight":
+if (at >= 0 && at < controls.length - 1) nextControl = at + 1;
+else nextColumn = Math.min(cells.length - 1, column + 1);
+break;
 case "Escape": this.setFocus(row, true); event.preventDefault(); return;
-case "Enter":
 case "F2":
+if (column >= 0) { this.setFocus(row, true); event.preventDefault(); return; }
+case "Enter":
 if (row.status) { if (row.status === "error") this.retry().catch(() => {}); }
-else if (!control) this.focusCell(row, Math.max(0, column), 0, true);
+else if (!control) this.focusCell(row, Math.max(0, column), Math.max(0, at), true);
 else return;
 event.preventDefault(); return;
 case " ":
@@ -4914,7 +4937,7 @@ default: return;
 index = Math.max(0, Math.min(this.rowCount() - 1, index));
 const next = this.rowItem(index);
 if (nextColumn < 0 || !next || next.status) this.setFocus(next, true);
-else this.focusCell(next, nextColumn, null);
+else this.focusCell(next, nextColumn, nextControl);
 event.preventDefault(); event.stopPropagation();
 }
 });

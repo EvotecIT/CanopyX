@@ -1,7 +1,7 @@
 import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
-import GridRuntime, { createDataGrid, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
+import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
@@ -21,6 +21,12 @@ dataGrid.setSelection(["row-1"]);
 createDataGrid(document.createElement("div"), { view: gridView });
 const inlineGrid: InlineGridView = { ...gridView, source: { kind: "inline" }, rows: [{ id: "row-1", cells: { name: "Atlas" } }] };
 createDataGrid(document.createElement("div"), { view: inlineGrid });
+for (const controller of [...mountViews(document), ...GridRuntime.mount(document)]) {
+  // @ts-expect-error A mixed fragment mount does not promise tree controllers.
+  controller.expandPath(["row-1"]);
+  if ("getSelection" in controller) controller.getSelection();
+  else controller.expandPath(["tree-1"]);
+}
 
 const view: CanopyView = {
   protocol: "canopyx/2", type: "view", id: "files", label: "Files", rowHeight: 28, pageSize: 100,

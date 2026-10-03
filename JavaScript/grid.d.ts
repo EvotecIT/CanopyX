@@ -1,4 +1,5 @@
 import CanopyX from "./index.js";
+import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
 import type { HostOptions } from "./hosts.js";
 export * from "./index.js";
@@ -98,5 +99,8 @@ export interface DataGrid {
 export function createDataGrid(host: HTMLElement, options: GridOptions): DataGrid;
 /** Registers options before either a tree or flat-grid fragment mounts. */
 export function configure(viewId: string, options: HostOptions | GridHostOptions): () => void;
-declare const gridRuntime: Omit<typeof CanopyX, "configure"> & { createDataGrid: typeof createDataGrid; configure: typeof configure };
+/** Mounts tree and flat-grid fragments below root. Narrow a controller before using view-specific methods. */
+export function mount(root?: ParentNode): Array<TreeGrid | DataGrid>;
+
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
