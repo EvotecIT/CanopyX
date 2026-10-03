@@ -12,7 +12,7 @@
       this.interactionUiLifetime = new AbortController();
       const signal = this.interactionUiLifetime.signal;
       this.grid.addEventListener("scroll", () => this.closeInteractionPanel(false), { signal, passive: true });
-      global.addEventListener("resize", () => this.closeInteractionPanel(false), { signal });
+      global.addEventListener("resize", () => this.closeInteractionPanel(), { signal });
       document.addEventListener("pointerdown", event => {
         if (this.interactionPanel && !this.interactionPanel.contains(event.target)) this.closeInteractionPanel(false);
       }, { signal });
@@ -30,8 +30,9 @@
     }
 
     openInteractionPanel(w, anchor, role, label) {
+      const revision = (this.uiWorkRevision || 0) + (this.interactionPanel ? 1 : 0);
       this.closeInteractionPanel(false);
-      if (this.destroyed || !anchor || !anchor.isConnected) return null;
+      if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision || !anchor || !anchor.isConnected) return null;
       const panel = this.interactionPanel = h("div", "cx-interaction-panel");
       panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
       this.panelNode = w;
@@ -50,13 +51,26 @@
     }
 
     closeInteractionPanel(restoreFocus = true) {
-      if (!this.interactionPanel) return;
-      const w = this.panelNode;
+      const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
+      if (!panel) return null;
+      const owned = panel.contains(document.activeElement);
       this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
-      if (this.editorController) this.editorController.abort();
-      this.editorController = null;
-      this.interactionPanel.remove(); this.interactionPanel = null; this.panelNode = null;
-      if (restoreFocus && !this.destroyed && w && this.keyMap.get(w.key) === w && !w._invalidated) this.setFocus(w);
+      const focus = owned ? { node: w, revision: this.uiWorkRevision } : null;
+      this.interactionPanel = null; this.panelNode = null; this.editorController = null;
+      panel.remove();
+      if (controller) controller.abort();
+      if (restoreFocus) this.restoreInteractionFocus(focus);
+      return focus;
+    }
+
+    restoreInteractionFocus(focus) {
+      if (!focus || this.destroyed || this.interactionClosing || this.interactionPanel || focus.revision !== this.uiWorkRevision) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== document.documentElement && active.isConnected) return;
+      const visible = w => w && !w._invalidated && this.keyMap.get(w.key) === w && this.indexOf(w) >= 0;
+      const target = visible(focus.node) ? focus.node : visible(this.focused) ? this.focused : this.rows.find(visible);
+      if (target) this.setFocus(target, true);
+      else { this.grid.tabIndex = 0; this.grid.focus({ preventScroll: true }); }
     }
 
     async performInteraction(work) {
@@ -73,7 +87,7 @@
     }
 
     beginEdit(id, columnId) {
-      if (this.destroyed || this.initializing || this.restoring || !this.opts.onEdit) return false;
+      if (this.destroyed || this.interactionClosing || this.initializing || this.restoring || !this.opts.onEdit) return false;
       const w = this.interactionNode(id), index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
       if (!w || !column || !column.editable || column.hidden || !this.eligible("canEdit", w.h, column)) return false;
       const row = this.rendered.get(w);
@@ -136,6 +150,7 @@
     }
 
     destroy() {
+      this.interactionClosing = true;
       this.closeInteractionPanel(false);
       if (this.interactionUiLifetime) this.interactionUiLifetime.abort();
       super.destroy();

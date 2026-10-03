@@ -86,7 +86,7 @@
     }
 
     async requestEdit(id, columnId, value, options) {
-      if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+      if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
       if (!scalarValue(value)) throw new Error("CanopyX: an edit value must be a finite JSON scalar.");
       const revision = this.interactionRevision, w = this.interactionNode(id);
       const index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
@@ -98,7 +98,7 @@
     }
 
     async requestDrop(ids, targetId, placement = "inside", options) {
-      if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+      if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
       if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) throw new Error("CanopyX: a drop needs unique loaded node IDs.");
       if (!["inside", "before", "after"].includes(placement)) throw new Error("CanopyX: drop placement is inside, before, or after.");
       const revision = this.interactionRevision, nodes = ids.map(id => this.interactionNode(id));
@@ -115,7 +115,7 @@
     }
 
     async requestAction(id, actionId, options) {
-      if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+      if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
       const revision = this.interactionRevision, w = this.interactionNode(id);
       const action = this.interactions.actions.find(item => item.id === actionId);
       if (!w || !action || !this.eligible("isActionEnabled", w.h, action)) return false;
@@ -125,10 +125,12 @@
 
     async dispatchProposal(kind, proposal, nodes, revision, options, eligible) {
       const handler = this.opts["on" + kind[0].toUpperCase() + kind.slice(1)];
-      if (!handler || this.destroyed || this.initializing || this.restoring || revision !== this.interactionRevision ||
+      if (!handler || this.destroyed || this.interactionClosing || this.initializing || this.restoring || revision !== this.interactionRevision ||
           options && options.signal && options.signal.aborted) return false;
       const versions = nodes.map(w => ({ w, count: w.countRevision || 0, path: this.pathOf(w) }));
+      const afterCancellation = this.interactionRevision + (this.pendingInteraction ? 1 : 0);
       this.cancelInteraction();
+      if (this.destroyed || this.interactionClosing || this.interactionRevision !== afterCancellation) return false;
       const controller = new AbortController(), operation = { controller, proposal, kind };
       this.pendingInteraction = operation;
       this.interactionRevision++;
@@ -144,7 +146,11 @@
       try {
         const event = new CustomEvent("canopyx:before" + kind, { bubbles: true, cancelable: true, detail: proposal });
         if (!this.host.dispatchEvent(event) || !live() || !eligible() || !live()) return false;
-        timer = setTimeout(() => { timedOut = true; controller.abort(); }, this.interactions.timeout);
+        timer = setTimeout(() => {
+          timedOut = true;
+          if (this.pendingInteraction === operation) this.cancelInteraction();
+          else controller.abort();
+        }, this.interactions.timeout);
         const context = Object.freeze({ signal: navigation.signal, reason,
           query: this.queryAware ? this.getQuery() : null, revision: this.datasetRevision == null ? null : this.datasetRevision });
         const accepted = await navigation.wait(handler(proposal, context));
@@ -158,23 +164,27 @@
         if (navigation.cancelled()) return false;
         throw error;
       } finally {
-        clearTimeout(timer); navigation.dispose(); controller.abort();
+        clearTimeout(timer);
         if (this.pendingInteraction === operation) {
           this.pendingInteraction = null; this.interactionPins.clear(); this.cacheDirty = true;
           this.scheduleRender();
         }
+        navigation.dispose(); controller.abort();
       }
     }
 
     cancelInteraction() {
-      if (!this.pendingInteraction) return false;
-      this.pendingInteraction.controller.abort(); this.pendingInteraction = null;
+      const operation = this.pendingInteraction;
+      if (!operation) return false;
+      this.pendingInteraction = null;
       this.interactionRevision++; this.interactionPins.clear(); this.cacheDirty = true;
       this.scheduleRender();
+      operation.controller.abort();
       return true;
     }
 
     destroy() {
+      this.interactionClosing = true;
       this.cancelInteraction();
       super.destroy();
       this.interactions = null;

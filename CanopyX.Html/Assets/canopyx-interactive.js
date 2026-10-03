@@ -4999,7 +4999,7 @@ return result !== false;
 }
 
 async requestEdit(id, columnId, value, options) {
-if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
 if (!scalarValue(value)) throw new Error("CanopyX: an edit value must be a finite JSON scalar.");
 const revision = this.interactionRevision, w = this.interactionNode(id);
 const index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
@@ -5011,7 +5011,7 @@ return this.dispatchProposal("edit", proposal, [w], revision, options, () => thi
 }
 
 async requestDrop(ids, targetId, placement = "inside", options) {
-if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
 if (!Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length) throw new Error("CanopyX: a drop needs unique loaded node IDs.");
 if (!["inside", "before", "after"].includes(placement)) throw new Error("CanopyX: drop placement is inside, before, or after.");
 const revision = this.interactionRevision, nodes = ids.map(id => this.interactionNode(id));
@@ -5028,7 +5028,7 @@ return this.dispatchProposal("drop", proposal, roots.concat(target || []), revis
 }
 
 async requestAction(id, actionId, options) {
-if (this.destroyed || options && options.signal && options.signal.aborted) return false;
+if (this.destroyed || this.interactionClosing || options && options.signal && options.signal.aborted) return false;
 const revision = this.interactionRevision, w = this.interactionNode(id);
 const action = this.interactions.actions.find(item => item.id === actionId);
 if (!w || !action || !this.eligible("isActionEnabled", w.h, action)) return false;
@@ -5038,10 +5038,12 @@ return this.dispatchProposal("action", proposal, [w], revision, options, () => t
 
 async dispatchProposal(kind, proposal, nodes, revision, options, eligible) {
 const handler = this.opts["on" + kind[0].toUpperCase() + kind.slice(1)];
-if (!handler || this.destroyed || this.initializing || this.restoring || revision !== this.interactionRevision ||
+if (!handler || this.destroyed || this.interactionClosing || this.initializing || this.restoring || revision !== this.interactionRevision ||
 options && options.signal && options.signal.aborted) return false;
 const versions = nodes.map(w => ({ w, count: w.countRevision || 0, path: this.pathOf(w) }));
+const afterCancellation = this.interactionRevision + (this.pendingInteraction ? 1 : 0);
 this.cancelInteraction();
+if (this.destroyed || this.interactionClosing || this.interactionRevision !== afterCancellation) return false;
 const controller = new AbortController(), operation = { controller, proposal, kind };
 this.pendingInteraction = operation;
 this.interactionRevision++;
@@ -5057,7 +5059,11 @@ let timer, timedOut = false;
 try {
 const event = new CustomEvent("canopyx:before" + kind, { bubbles: true, cancelable: true, detail: proposal });
 if (!this.host.dispatchEvent(event) || !live() || !eligible() || !live()) return false;
-timer = setTimeout(() => { timedOut = true; controller.abort(); }, this.interactions.timeout);
+timer = setTimeout(() => {
+timedOut = true;
+if (this.pendingInteraction === operation) this.cancelInteraction();
+else controller.abort();
+}, this.interactions.timeout);
 const context = Object.freeze({ signal: navigation.signal, reason,
 query: this.queryAware ? this.getQuery() : null, revision: this.datasetRevision == null ? null : this.datasetRevision });
 const accepted = await navigation.wait(handler(proposal, context));
@@ -5071,23 +5077,27 @@ if (timedOut) throw new Error("CanopyX: interaction timed out after " + this.int
 if (navigation.cancelled()) return false;
 throw error;
 } finally {
-clearTimeout(timer); navigation.dispose(); controller.abort();
+clearTimeout(timer);
 if (this.pendingInteraction === operation) {
 this.pendingInteraction = null; this.interactionPins.clear(); this.cacheDirty = true;
 this.scheduleRender();
 }
+navigation.dispose(); controller.abort();
 }
 }
 
 cancelInteraction() {
-if (!this.pendingInteraction) return false;
-this.pendingInteraction.controller.abort(); this.pendingInteraction = null;
+const operation = this.pendingInteraction;
+if (!operation) return false;
+this.pendingInteraction = null;
 this.interactionRevision++; this.interactionPins.clear(); this.cacheDirty = true;
 this.scheduleRender();
+operation.controller.abort();
 return true;
 }
 
 destroy() {
+this.interactionClosing = true;
 this.cancelInteraction();
 super.destroy();
 this.interactions = null;
@@ -5107,7 +5117,7 @@ super.build();
 this.interactionUiLifetime = new AbortController();
 const signal = this.interactionUiLifetime.signal;
 this.grid.addEventListener("scroll", () => this.closeInteractionPanel(false), { signal, passive: true });
-global.addEventListener("resize", () => this.closeInteractionPanel(false), { signal });
+global.addEventListener("resize", () => this.closeInteractionPanel(), { signal });
 document.addEventListener("pointerdown", event => {
 if (this.interactionPanel && !this.interactionPanel.contains(event.target)) this.closeInteractionPanel(false);
 }, { signal });
@@ -5125,8 +5135,9 @@ openActions: id => { const w = this.interactionNode(id); return !!w && this.open
 }
 
 openInteractionPanel(w, anchor, role, label) {
+const revision = (this.uiWorkRevision || 0) + (this.interactionPanel ? 1 : 0);
 this.closeInteractionPanel(false);
-if (this.destroyed || !anchor || !anchor.isConnected) return null;
+if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision || !anchor || !anchor.isConnected) return null;
 const panel = this.interactionPanel = h("div", "cx-interaction-panel");
 panel.setAttribute("role", role); panel.setAttribute("aria-label", label);
 this.panelNode = w;
@@ -5145,13 +5156,26 @@ panel.style.top = Math.max(8, Math.min(top, global.innerHeight - bounds.height -
 }
 
 closeInteractionPanel(restoreFocus = true) {
-if (!this.interactionPanel) return;
-const w = this.panelNode;
+const panel = this.interactionPanel, controller = this.editorController, w = this.panelNode;
+if (!panel) return null;
+const owned = panel.contains(document.activeElement);
 this.uiWorkRevision = (this.uiWorkRevision || 0) + 1;
-if (this.editorController) this.editorController.abort();
-this.editorController = null;
-this.interactionPanel.remove(); this.interactionPanel = null; this.panelNode = null;
-if (restoreFocus && !this.destroyed && w && this.keyMap.get(w.key) === w && !w._invalidated) this.setFocus(w);
+const focus = owned ? { node: w, revision: this.uiWorkRevision } : null;
+this.interactionPanel = null; this.panelNode = null; this.editorController = null;
+panel.remove();
+if (controller) controller.abort();
+if (restoreFocus) this.restoreInteractionFocus(focus);
+return focus;
+}
+
+restoreInteractionFocus(focus) {
+if (!focus || this.destroyed || this.interactionClosing || this.interactionPanel || focus.revision !== this.uiWorkRevision) return;
+const active = document.activeElement;
+if (active && active !== document.body && active !== document.documentElement && active.isConnected) return;
+const visible = w => w && !w._invalidated && this.keyMap.get(w.key) === w && this.indexOf(w) >= 0;
+const target = visible(focus.node) ? focus.node : visible(this.focused) ? this.focused : this.rows.find(visible);
+if (target) this.setFocus(target, true);
+else { this.grid.tabIndex = 0; this.grid.focus({ preventScroll: true }); }
 }
 
 async performInteraction(work) {
@@ -5168,7 +5192,7 @@ return false;
 }
 
 beginEdit(id, columnId) {
-if (this.destroyed || this.initializing || this.restoring || !this.opts.onEdit) return false;
+if (this.destroyed || this.interactionClosing || this.initializing || this.restoring || !this.opts.onEdit) return false;
 const w = this.interactionNode(id), index = this.columns.findIndex(column => column.id === columnId), column = this.columns[index];
 if (!w || !column || !column.editable || column.hidden || !this.eligible("canEdit", w.h, column)) return false;
 const row = this.rendered.get(w);
@@ -5231,6 +5255,7 @@ super.onKey(event);
 }
 
 destroy() {
+this.interactionClosing = true;
 this.closeInteractionPanel(false);
 if (this.interactionUiLifetime) this.interactionUiLifetime.abort();
 super.destroy();
@@ -5244,16 +5269,20 @@ return super.cachePinned(w) || this.panelNode === w || !!(this.moveNodes && this
 
 reconcileList(parent, ...args) {
 const ordering = args[4] === true;
+let focus;
 if (!ordering) {
 this.moveNodes = null;
 if (this.panelNode && (parent === this.root || parent === this.panelNode || this.pathOf(this.panelNode).includes(parent.key)))
-this.closeInteractionPanel(false);
+focus = this.closeInteractionPanel(false);
 }
-return super.reconcileList(parent, ...args);
+const result = super.reconcileList(parent, ...args);
+focus = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
+this.restoreInteractionFocus(focus);
+return result;
 }
 
 retireWrapper(w) {
-if (this.panelNode === w) this.closeInteractionPanel(false);
+if (this.panelNode === w) this.interactionFocusHandoff = this.closeInteractionPanel(false) || this.interactionFocusHandoff;
 if (this.moveNodes && this.moveNodes.includes(w)) this.moveNodes = null;
 return super.retireWrapper(w);
 }
@@ -5261,18 +5290,22 @@ return super.retireWrapper(w);
 applyCounts(doc, fromRefresh = false) {
 const panel = this.interactionPanel, node = this.panelNode, moving = this.moveNodes;
 const result = super.applyCounts(doc, fromRefresh);
-if (node && this.interactionPanel === panel && doc.items.some(item => item.id === node.key)) this.closeInteractionPanel(false);
+const focus = node && this.interactionPanel === panel && doc.items.some(item => item.id === node.key) ? this.closeInteractionPanel(false) : null;
 if (moving && this.moveNodes === moving && doc.items.some(item => moving.some(w => w.key === item.id))) this.moveNodes = null;
+const handoff = focus || this.interactionFocusHandoff; this.interactionFocusHandoff = null;
+this.restoreInteractionFocus(handoff);
 return result;
 }
 
 applyStatePresentation(state) {
-this.closeInteractionPanel(false); this.moveNodes = null; this.cancelInteraction();
-return super.applyStatePresentation(state);
+const focus = this.closeInteractionPanel(false); this.moveNodes = null; this.cancelInteraction();
+const result = super.applyStatePresentation(state);
+this.restoreInteractionFocus(focus);
+return result;
 }
 
 markMove(w) {
-if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
+if (!this.view.dragDrop || !this.opts.onDrop || this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail) return false;
 const nodes = this.selected.has(w) ? Array.from(this.selected).filter(node => !node.h.detail) : [w];
 if (!nodes.length || !nodes.every(node => this.keyMap.get(node.key) === node && !node._invalidated && this.eligible("canDrag", node.h))) return false;
 this.moveNodes = nodes; this.cacheDirty = true;
@@ -5293,7 +5326,7 @@ return this.performInteraction(() => this.requestDrop(nodes.map(node => node.key
 }
 
 openActionMenu(w, anchor) {
-if (this.destroyed || this.initializing || this.restoring || !w || w.status || w.h.detail || !anchor || !anchor.isConnected) return false;
+if (this.destroyed || this.interactionClosing || this.initializing || this.restoring || !w || w.status || w.h.detail || !anchor || !anchor.isConnected) return false;
 const items = [];
 if (this.opts.onEdit) for (const column of this.columns) {
 if (column.editable && !column.hidden) items.push({ label: fill(this.labels.editValue, { column: column.title }),

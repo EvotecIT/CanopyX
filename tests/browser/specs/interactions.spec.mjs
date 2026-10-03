@@ -80,6 +80,57 @@ test('pre-aborted calls skip host hooks, deadlines settle hung hooks and invalid
     invalid:'CanopyX: a host interaction hook must return a boolean acceptance result.'});
 });
 
+for(const kind of ['cancel','supersede','counts','reload','destroy']) test(`abort listeners preserve the newest proposal owner (${kind})`,async({page})=>{
+  await mount(page,`{onEdit(p,r){window.signal=r.signal;r.signal.addEventListener('abort',()=>{
+    window.newer=document.querySelector('.cx-host').canopyx.requestAction('b','inspect');},{once:true});return new Promise(()=>{})},
+    onAction(p,r){window.newSignal=r.signal;(window.calls||(window.calls=[])).push(p.nodeId);return new Promise(resolve=>window.finish=resolve)}}`);
+  expect(await page.evaluate(async(kind)=>{
+    const api=document.querySelector('.cx-host').canopyx,old=api.requestEdit('a','name','old');
+    let superseded;
+    if(kind==='cancel')api.cancelInteraction();else if(kind==='destroy')api.destroy();
+    else if(kind==='counts')api.applyCounts({protocol:'canopyx/2',type:'counts',items:[{id:'a',cells:{name:'Fresh'}}]});
+    else if(kind==='reload')await api.reload('a');else superseded=api.requestAction('a','inspect');
+    const oldResult=await old;
+    if(window.finish)window.finish(true);
+    return {oldResult,newer:await window.newer,superseded:superseded?await superseded:null,calls:window.calls||[]};
+  },kind)).toEqual({oldResult:false,newer:kind!=='destroy',superseded:kind==='supersede'?false:null,calls:kind==='destroy'?[]:['b']});
+});
+
+test('closing an editor preserves a replacement opened by a host abort listener',async({page})=>{
+  await mount(page,`{onEdit(p,r){r.signal.addEventListener('abort',()=>{
+    document.querySelector('.cx-host').canopyx.beginEdit('b','name');},{once:true});return new Promise(()=>{})}}`);
+  await row(page,'a').focus();await page.keyboard.press('Alt+Enter');await page.keyboard.press('Enter');
+  await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeDisabled();await page.keyboard.press('Escape');
+  await expect(page.getByRole('textbox',{name:'Edit Name'})).toHaveValue('Beacon');
+  await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeFocused();
+  await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeEnabled();
+});
+
+test('an editor opened during cancellation wins over the superseding editor request',async({page})=>{
+  await mount(page,`{onEdit(p,r){r.signal.addEventListener('abort',()=>{
+    document.querySelector('.cx-host').canopyx.beginEdit('b','name');},{once:true});return new Promise(()=>{})}}`);
+  await row(page,'a').focus();await page.keyboard.press('Alt+Enter');await page.keyboard.press('Enter');
+  expect(await page.evaluate(()=>document.querySelector('.cx-host').canopyx.beginEdit('a','name'))).toBe(false);
+  await expect(page.getByRole('textbox',{name:'Edit Name'})).toHaveValue('Beacon');
+  await expect(page.getByRole('dialog')).toHaveCount(1);await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeFocused();
+});
+
+for(const kind of ['surviving','removed','empty']) test(`accepted reload returns editor focus to a current row (${kind})`,async({page})=>{
+  const definition=view();definition.roots=[];
+  await mount(page,'{onEdit:()=>true}');
+  await page.evaluate(async definition=>{
+    const host=document.querySelector('.cx-host');host.canopyx.destroy();
+    window.rootItems=[{id:'a',label:'Atlas'},{id:'b',label:'Beacon'}];
+    const api=CanopyX.createTreeGrid(host,{view:definition,onEdit:()=>true,source:{page:async()=>({items:window.rootItems,total:window.rootItems.length,next:null})}});
+    await api.ready;
+  },definition);await nextFrames(page);
+  await row(page,'a').focus();await page.keyboard.press('Alt+Enter');
+  await page.evaluate(kind=>window.rootItems=kind==='surviving'?[{id:'a',label:'Fresh'},{id:'b',label:'Beacon'}]:kind==='empty'?[]:[{id:'b',label:'Beacon'}],kind);
+  expect(await page.evaluate(()=>document.querySelector('.cx-host').canopyx.reload())).toBe(true);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(kind==='empty'?page.locator('.cx-grid'):row(page,kind==='surviving'?'a':'b')).toBeFocused();
+});
+
 test('Alt+Enter edits through the host while F2 retains cell navigation',async({page})=>{
   await mount(page,`{onEdit(p){window.edit=p;return true}}`);
   await row(page,'a').focus(); await page.keyboard.press('Alt+Enter');
@@ -157,12 +208,23 @@ test('translated editor and action controls have no axe violations',async({page}
   await expect(page.getByRole('menu',{name:'Akcje'})).toBeVisible(); await analyze();
 });
 
-test('accepted cell updates close an editor instead of retaining a stale draft',async({page})=>{
+for(const kind of ['draft','accepted']) test(`accepted cell updates close an editor and preserve focus (${kind})`,async({page})=>{
   await mount(page,`{onEdit:()=>true}`);
   await row(page,'a').focus();await page.keyboard.press('Alt+Enter');
   await page.getByRole('textbox',{name:'Edit Name'}).fill('Stale draft');
-  await page.evaluate(()=>document.querySelector('.cx-host').canopyx.applyCounts({protocol:'canopyx/2',type:'counts',items:[{id:'a',cells:{name:'Fresh value'}}]}));
+  await page.evaluate(kind=>{
+    const host=document.querySelector('.cx-host'),update=()=>host.canopyx.applyCounts({protocol:'canopyx/2',type:'counts',items:[{id:'a',cells:{name:'Fresh value'}}]});
+    if(kind==='draft')update();else host.addEventListener('canopyx:edit',update,{once:true});
+  },kind);
+  if(kind==='accepted')await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog')).toHaveCount(0);await expect(row(page,'a')).toContainText('Fresh value');
+  await expect(row(page,'a')).toBeFocused();
+});
+
+test('a viewport resize closes the editor and returns focus to its row',async({page})=>{
+  await mount(page,'{onEdit:()=>true}');await row(page,'a').focus();await page.keyboard.press('Alt+Enter');
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.getByRole('dialog')).toHaveCount(0);await expect(row(page,'a')).toBeFocused();
 });
 
 test('accepted saved state closes interaction controls and cancels pending host work',async({page})=>{
