@@ -60,3 +60,24 @@ test("selected rows and keyboard focus remain distinguishable in forced colors",
   await page.keyboard.press("ArrowDown");
   await expect(row(page, "beacon")).toBeFocused();
 });
+
+test("printing dark examples restores paper colors and returning to screen preserves the chosen theme", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  for (const name of ["interactions.html", "checkboxes.html", "live-records.html", "query-records.html", "long-document.html", "index.html"]) {
+    if (name === "index.html") await page.goto(exampleUrl(name));
+    else {
+      await openExample(page, name);
+      await page.getByRole("checkbox", { name: "Dark theme", exact: true }).check();
+    }
+    await page.emulateMedia({ media: "print" });
+    expect(await page.evaluate(() => {
+      const style = getComputedStyle(document.body);
+      return { background: style.backgroundColor, text: style.color, scheme: style.colorScheme };
+    }), name).toEqual({ background: "rgb(255, 255, 255)", text: "rgb(31, 35, 40)", scheme: "light" });
+    await page.emulateMedia({ media: "screen" });
+    expect(await page.evaluate(() => {
+      const style = getComputedStyle(document.body);
+      return { surface: style.getPropertyValue("--example-surface").trim(), scheme: style.colorScheme };
+    }), name).toEqual({ surface: "#0d1117", scheme: "dark" });
+  }
+});
