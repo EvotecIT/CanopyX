@@ -132,6 +132,11 @@ CanopyX.configure("files", { isActionEnabled(node, action) {
   return action.id === "inspect";
 } });
 const inlineBranch: InlineNode = { id: "branch", label: "Branch", children: [{ id: "leaf", label: "Leaf" }], hasChildren: true };
+const emptyLeaf: InlineNode = { id: "empty", label: "Empty", children: [], hasChildren: false };
+const emptyImplicitLeaf: CanopyNode = { id: "empty-implicit", label: "Empty", children: [] };
+sources.inline({ ...view, roots: [{ id: "parent", label: "Parent", children: [emptyLeaf] }] });
+// @ts-expect-error An explicitly declared leaf cannot contain child nodes.
+const populatedLeaf: InlineNode = { id: "populated", label: "Populated", hasChildren: false, children: [{ id: "child", label: "Child" }] };
 const lazySource: DataSource = { queryAware: true,
   page: () => ({ items: [{ id: "lazy", label: "Lazy", hasChildren: true, ref: "children" }], revision: "r1" }),
   counts: () => ({ protocol: "canopyx/2", type: "counts", items: [], revision: "r1" })

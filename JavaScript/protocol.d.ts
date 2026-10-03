@@ -74,7 +74,7 @@ export interface ReadonlyViewQuery {
   readonly filters: readonly string[];
 }
 export type LeafNode = NodeDefinition & {
-  hasChildren?: false; children?: never; childCount?: never; ref?: never; detail?: never;
+  hasChildren?: false; children?: []; childCount?: never; ref?: never; detail?: never;
 };
 export type DetailNode = NodeDefinition & {
   detail: CanopyDetail; hasChildren?: false; children?: never; childCount?: never; ref?: never;
