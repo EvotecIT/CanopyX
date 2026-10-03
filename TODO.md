@@ -28,7 +28,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
 - [x] Bounded inactive subtree and sidecar pack retention, with navigation-owned prefetch pins.
 - [x] Large logical-height scrolling with reachable rows and preserved logical anchors.
-- [x] Measured normal/4x rendering within the existing budgets for the qualified tree-scrolling fixture.
+- [ ] Qualify the final runtime assets at normal speed and 4x CPU slowdown against the existing tree-scrolling budgets.
 - [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
 - [x] JavaScript module and classic distribution with typed host contracts, an isolated package-consumer check, and server-safe imports.
 - [x] Firefox and WebKit browser contracts, alongside Chromium, with engine-specific coverage in CI.
