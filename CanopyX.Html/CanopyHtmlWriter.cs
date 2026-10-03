@@ -48,13 +48,8 @@ internal static class CanopyHtmlWriter {
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 
-    internal static CanopyRuntime RuntimeFor(CanopyView view, CanopyHtmlOptions options) {
-        if (options.Runtime != CanopyRuntime.TreeGrid && options.Runtime != CanopyRuntime.InteractiveTreeGrid)
-            throw new ArgumentOutOfRangeException(nameof(options), "Unknown browser runtime.");
-        if (view.Checkboxes != CanopyCheckboxMode.None || view.DragDrop || view.ContextActions.Count > 0 || view.Labels.RequiresInteractiveRuntime) return CanopyRuntime.InteractiveTreeGrid;
-        foreach (var column in view.Columns) if (column.Editable) return CanopyRuntime.InteractiveTreeGrid;
-        return options.Runtime;
-    }
+    internal static CanopyRuntime RuntimeFor(CanopyView view, CanopyHtmlOptions options)
+        => CanopyHtmlAssets.GetRuntime(view, options.Runtime);
 
     private static string Head(CanopyView view, CanopyHtmlOptions options) {
         var runtime = RuntimeFor(view, options);

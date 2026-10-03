@@ -12,8 +12,9 @@ namespace CanopyX.Html;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Hosts that assemble their own pages (for example a report framework) include <see cref="Style"/> and
-/// <see cref="Script"/> once per page, or write them as files with <see cref="WriteTo(string)"/> and reference them.
+/// Hosts that assemble their own pages (for example a report framework) select the entry point with
+/// <see cref="GetRuntime"/> and include its <see cref="GetStyle"/> and <see cref="GetScript"/> once per page.
+/// They can also write the assets as files and reference them.
 /// The script mounts every CanopyX fragment on the page when it loads.
 /// </para>
 /// <para>

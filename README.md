@@ -215,7 +215,7 @@ view.CheckIntents.Add(new CanopyCheckIntent(new[] { "project-a" }, true));
 view.CheckIntents.Add(new CanopyCheckIntent(new[] { "project-a", "task-1" }, false));
 ```
 
-`CanopyCheckboxMode.Independent` checks individual nodes. Page and bundle writers choose the interactive runtime automatically for checkbox views. For a page assembled from fragments, include `CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)` and its matching `GetStyle` once. The interactive entry point includes the standard tree runtime; use one entry point per page.
+`CanopyCheckboxMode.Independent` checks individual nodes. Page and bundle writers choose the interactive runtime automatically for checkbox views. Fragment hosts use `CanopyHtmlAssets.GetRuntime(view)` to select the script and matching stylesheet through `GetScript` and `GetStyle`. If any view on a page requires `CanopyRuntime.InteractiveTreeGrid`, include that entry point once for all views. It includes the standard tree runtime.
 
 In the browser, `api.setChecked(id, checked)` changes a loaded node. `api.setCheckIntents([{ path, checked }])` replaces the complete intent without loading paths. `getCheckState(id)` returns `true`, `false`, `"mixed"`, or `null` for an unavailable node; `getCheckIntents()` returns a copied snapshot suitable for the host to interpret. A complete loaded sibling set can combine into one branch rule; partial pages preserve exceptions without claiming unseen siblings. Rules survive sorting, reload, and cache eviction. Saved views include them, and both outline renderers show readonly check states.
 
