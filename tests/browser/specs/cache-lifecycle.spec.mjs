@@ -232,8 +232,12 @@ for (const mode of ["restoration","initialization"]) test(`a queued descendant t
     }
   },mode);
   await page.waitForFunction(()=>typeof window.finishRestoration==="function");
-  for (const id of mode==="initialization"?["a","e","d","a0","c"]:["d","a0","c"])
-    await page.locator(`[data-cx-id="${id}"] .cx-exp`).click();
+  await nextFrames(page);
+  // Enqueue this burst before the held layout's 250 ms loading redraw. Pointer actionability waits can
+  // outlast that deadline on a busy browser, correctly removing a0 before the test has clicked it.
+  await page.evaluate(ids=>{
+    for (const id of ids) document.querySelector(`[data-cx-id="${id}"] .cx-exp`).click();
+  },mode==="initialization"?["a","e","d","a0","c"]:["d","a0","c"]);
   await page.evaluate(()=>window.finishRestoration({items:[{id:"b0",label:"b0"}],total:1}));
   await page.waitForFunction(()=>typeof window.finishSlowReplay==="function"); await nextFrames(page);
   await page.evaluate(async()=>{
