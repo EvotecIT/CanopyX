@@ -237,6 +237,10 @@ test("Shift+Tab from a cell or a control in a row leaves the grid in one step, a
   await page.keyboard.press("Shift+Tab");
   expect(await outsideRows(), await describe()).toBe(true);
   const fromRow = await describe();
+  expect(await page.evaluate(() => {
+    const style = getComputedStyle(document.activeElement);
+    return { style: style.outlineStyle, width: style.outlineWidth };
+  })).toEqual({ style: "solid", width: "2px" });
   // From a control, and from a cell, focus lands on that same element, not on the row.
   for (const keys of [["ArrowRight"], ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]]) {
     await row(page, "r1").locator(".cx-text").first().click();
