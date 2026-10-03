@@ -85,7 +85,7 @@ jobs:
           $browserPath = Join-Path $directory $executable
           if (-not (Test-Path -LiteralPath $browserPath -PathType Leaf)) { throw "Browser executable missing: $browserPath" }
           Add-Content -LiteralPath $env:GITHUB_ENV -Value "CANOPYX_BROWSER_EXECUTABLE=$browserPath" -Encoding utf8
-          $otherEngines = $env:CANOPYX_TEST_BROWSERS -split ',' | Where-Object { $_ -ne 'chromium' }
+          $otherEngines = @($env:CANOPYX_TEST_BROWSERS -split ',' | Where-Object { $_ -ne 'chromium' })
           node node_modules/@playwright/test/cli.js install --with-deps @otherEngines
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
