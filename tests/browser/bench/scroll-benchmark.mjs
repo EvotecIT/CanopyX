@@ -5,7 +5,7 @@
 //                                   [--style path/to/canopyx.css] [--channel msedge] [--label name] [--out file.json]
 //                                   [--pause-every 6 --pause-ms 700] [--host-columns status,changes,links,finding]
 //                                   [--host-api renderers|renderCell] [--host-share 0.2]
-//                                   [--profile-dir path] (diagnostic runs; do not compare their timings)
+//                                   [--view tree|grid] [--profile-dir path] (diagnostic runs; do not compare their timings)
 //
 // Method (same as the D21 spike): a fresh browser per run, viewport 1680 x 950, 500 px wheel steps 16 ms apart, each
 // step awaited. Frames over 50 ms and 33 ms, the 95th percentile and the maximum frame time come from a
@@ -25,7 +25,7 @@ import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { pageHtml, scrollView } from "./fixture.mjs";
+import { pageHtml, scrollView, scrollGridView } from "./fixture.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../../..");
@@ -37,6 +37,8 @@ const option = (name, fallback) => {
 const runs = Number(option("runs", "5"));
 const cpus = option("cpu", "1,4").split(",").map(Number);
 const rows = Number(option("rows", "5000"));
+const viewKind = option("view", "tree");
+if (!["tree", "grid"].includes(viewKind)) throw new Error("--view must be tree or grid.");
 const runtime = path.resolve(option("runtime", path.join(repo, "CanopyX.Html/Assets/canopyx.js")));
 const stylesheet = path.resolve(option("style", path.join(repo, "CanopyX.Html/Assets/canopyx.css")));
 const channel = option("channel", process.env.CANOPYX_BROWSER_CHANNEL || undefined);
@@ -74,7 +76,7 @@ async function scrollOnce(pageUrl, cpu, run) {
     await page.waitForSelector("[data-cx-ready]", { timeout: 120000 });
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const expandedRows = await page.locator(".cx-grid").getAttribute("aria-rowcount");
-    if (Number(expandedRows) - 1 !== 5 * (Math.ceil(rows / 5) + 1)) {
+    if (Number(expandedRows) - 1 !== 5 * (Math.ceil(rows / 5) + (viewKind === "tree" ? 1 : 0))) {
       throw new Error("Scroll benchmark did not render the expected expanded fixture");
     }
     const canScroll = await page.locator(".cx-grid").evaluate(grid => grid.scrollHeight > grid.clientHeight + 2);
@@ -196,11 +198,12 @@ fs.mkdirSync(path.dirname(out), { recursive: true });
 const pageFile = path.join(path.dirname(out), "scroll-" + label + ".html");
 const runtimeBytes = fs.readFileSync(runtime);
 const stylesheetBytes = fs.readFileSync(stylesheet);
-const pageSource = pageHtml(runtimeBytes.toString("utf8"), stylesheetBytes.toString("utf8"), scrollView(5, Math.ceil(rows / 5)), host);
+const fixtureView = viewKind === "grid" ? scrollGridView : scrollView;
+const pageSource = pageHtml(runtimeBytes.toString("utf8"), stylesheetBytes.toString("utf8"), fixtureView(5, Math.ceil(rows / 5)), host);
 fs.writeFileSync(pageFile, pageSource);
 const pageUrl = pathToFileURL(pageFile).href;
 const report = {
-  label: label, host: host, pauseEvery: pauseEvery, pauseMs: pauseEvery ? pauseMs : 0,
+  label: label, host: host, view: viewKind, pauseEvery: pauseEvery, pauseMs: pauseEvery ? pauseMs : 0,
   runtime: runtime, stylesheet: stylesheet, channel: channel || "chromium", at: new Date().toISOString(),
   assets: { runtimeSha256: sha256(runtimeBytes), stylesheetSha256: sha256(stylesheetBytes) },
   fixture: { path: pageFile, sha256: sha256(pageSource), viewport: viewport, deviceScaleFactor: deviceScaleFactor, requestedRows: rows },
