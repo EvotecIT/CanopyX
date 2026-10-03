@@ -75,6 +75,7 @@ If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the 
 
 Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-30), each as a generic API:
 
+- [x] Fixed-size rows contain layout and painting; detail rows retain content measurement. Five paired, alternating before/after runs of `scroll-benchmark.mjs` (Edge headless, 5,005 expanded rows, nine columns) measure 6.70% → 5.89% frames over 50 ms at 4x CPU slowdown, within the 6% gate. At normal speed both medians are 0%, and neither version shows a blank row. The 4x after-run range is 5.45% to 6.75%; these measurements qualify this fixture on the validation machine.
 - [x] Bundle packing: children pages share pack files up to the file budget (152,601 files became 3,457 on the packing benchmark).
 - [x] Streaming bundle writer: `Write(view, directory, roots, children)` reads the tree from the host node by node.
 - [x] Detail rows as tall as their content (measured), inside the visible width, with wrapping tables and column width shares.

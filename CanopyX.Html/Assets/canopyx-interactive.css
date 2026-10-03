@@ -116,7 +116,7 @@ font-weight: 600; font-size: .92em; color: var(--cx-text); border-right: 1px sol
 .cx-canvas[data-cx-scaled] { overflow: clip; }
 .cx-row {
 position: absolute; left: 0; top: 0; display: flex; height: var(--cx-row-h); min-width: 100%;
-background: var(--cx-surface); border-bottom: 1px solid var(--cx-line); cursor: default; contain: layout style;
+background: var(--cx-surface); border-bottom: 1px solid var(--cx-line); cursor: default; contain: strict;
 }
 .cx-row.cx-alt { background: var(--cx-alt-bg); }
 .cx-row:hover { background: var(--cx-hover-bg); }
@@ -174,7 +174,7 @@ color: var(--cx-text); background: var(--cx-alt-bg); border: 1px solid var(--cx-
 .cx-toned { color: var(--cx-t, inherit); }
 .cx-badge.cx-toned { color: var(--cx-t, var(--cx-text)); background: var(--cx-t-bg, color-mix(in srgb, var(--cx-t, var(--cx-text)) 12%, var(--cx-surface))); border-color: transparent; }
 .cx-row[aria-selected="true"] :is(.cx-tone-muted, .cx-badge.cx-tone-muted) { color: var(--cx-text); }
-.cx-row.cx-detail { background: var(--cx-alt-bg); cursor: auto; }
+.cx-row.cx-detail { background: var(--cx-alt-bg); cursor: auto; contain: layout style; }
 .cx-row.cx-detail > .cx-cell { align-items: stretch; padding: 0; white-space: normal; overflow: visible; }
 .cx-detail-body { overflow: auto; padding: 4px 8px 6px; }
 .cx-row .cx-detail-body {

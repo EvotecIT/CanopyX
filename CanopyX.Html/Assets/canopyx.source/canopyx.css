@@ -126,9 +126,10 @@
 .cx-pin-tree .cx-row:focus-visible > .cx-tree { outline: 2px solid var(--cx-accent); outline-offset: -2px; }
 .cx-canvas { position: relative; min-width: 100%; }
 .cx-canvas[data-cx-scaled] { overflow: clip; }
+/* Fixed row dimensions let the browser contain layout and painting during scroll. Details measure their content below. */
 .cx-row {
   position: absolute; left: 0; top: 0; display: flex; height: var(--cx-row-h); min-width: 100%;
-  background: var(--cx-surface); border-bottom: 1px solid var(--cx-line); cursor: default; contain: layout style;
+  background: var(--cx-surface); border-bottom: 1px solid var(--cx-line); cursor: default; contain: strict;
 }
 .cx-row.cx-alt { background: var(--cx-alt-bg); }
 .cx-row:hover { background: var(--cx-hover-bg); }
@@ -193,7 +194,7 @@
 .cx-row[aria-selected="true"] :is(.cx-tone-muted, .cx-badge.cx-tone-muted) { color: var(--cx-text); }
 
 /* ---------- detail rows ---------- */
-.cx-row.cx-detail { background: var(--cx-alt-bg); cursor: auto; }
+.cx-row.cx-detail { background: var(--cx-alt-bg); cursor: auto; contain: layout style; }
 .cx-row.cx-detail > .cx-cell { align-items: stretch; padding: 0; white-space: normal; overflow: visible; }
 .cx-detail-body { overflow: auto; padding: 4px 8px 6px; }
 /* In the grid the body stays inside the visible width: it sticks at the row's indent while the grid scrolls sideways. */
