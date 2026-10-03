@@ -14,7 +14,7 @@
     if (op === "isNull") return scalar === null;
     if (op === "isNotNull") return scalar !== null;
     if (scalar === null) return false;
-    const normalize = value => column.kind === "text" ? foldText(value) : value;
+    const normalize = value => column.kind === "text" && typeof value === "string" ? foldText(value) : value;
     const value = normalize(scalar), values = predicate.values.map(operand => normalize(gridScalar(operand, column))), operand = values[0];
     switch (op) {
       case "eq": return value === operand;

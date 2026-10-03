@@ -202,6 +202,23 @@ test("text equality and category membership ignore case without treating missing
   }
 });
 
+test("text-column equality keeps boolean raw values distinct from their display strings", async ({ page }) => {
+  await openGrid(page, definition([
+    { id: "a", cells: { name: true } }, { id: "b", cells: { name: "TRUE" } },
+    { id: "c", cells: { name: false } }, { id: "d", cells: { name: "FALSE" } }, { id: "missing", cells: {} }
+  ]));
+  await page.waitForSelector("[data-cx-ready]");
+  for (const [operator, operand, expected] of [
+    ["eq", "true", ["b"]], ["in", "false", ["d"]], ["ne", "true", ["a", "c", "d"]],
+    ["eq", true, ["a"]], ["in", false, ["c"]], ["ne", false, ["a", "b", "d"]]
+  ]) {
+    await page.evaluate(async ({operator, operand}) => document.querySelector("[data-canopyx-host]").canopyx.setQuery({
+      filters: [{ column: "name", operator, values: [operand] }]
+    }), {operator, operand});
+    expect(await ids(page)).toEqual(expected);
+  }
+});
+
 test("rapid header and search changes compose against the pending host query", async ({ page }) => {
   const setup = `window.pending=[]; CanopyX.configure('inventory',{source:{query(query) {
     const response=()=>({protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'v1',offset:query.offset,
@@ -234,7 +251,11 @@ test("rapid header and search changes compose against the pending host query", a
   await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().search)).toBe("Changed");
 });
 
-for (const leave of [false, true]) test(`an arriving host page ${leave ? "preserves focus outside the grid" : "keeps keyboard focus on the requested row"}`, async ({ page }) => {
+for (const [scenario, outcome] of [
+  ["stay", "keeps keyboard focus on the requested row"], ["leave", "preserves focus outside the grid"],
+  ["scroll", "preserves an intervening scroll while retaining row focus"]
+]) test(`an arriving host page ${outcome}`, async ({ page }) => {
+  const leave = scenario === "leave", scroll = scenario === "scroll";
   const setup = `window.pending=[]; CanopyX.configure('inventory',{source:{query(query) {
     const response=()=>({protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'v1',offset:query.offset,
       total:200,matched:200,items:Array.from({length:Math.min(query.limit,200-query.offset)},(_,i)=>
@@ -246,15 +267,22 @@ for (const leave of [false, true]) test(`an arriving host page ${leave ? "preser
   await page.locator('.cx-row[data-cx-id="row-0"]').focus(); await page.keyboard.press("Control+End");
   await expect(page.locator('.cx-row[aria-rowindex="201"][data-cx-status="loading"]')).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.pending.some(item => item.query.offset === 190))).toBe(true);
+  if (scroll) {
+    await page.getByRole("grid").evaluate(grid => { grid.scrollTop = 0; });
+    await expect.poll(() => page.getByRole("grid").evaluate(grid => grid.scrollTop)).toBe(0);
+    await nextFrames(page);
+    await expect(page.locator('.cx-row[aria-rowindex="201"][data-cx-status="loading"]')).toBeFocused();
+  }
   if (leave) await page.evaluate(() => {
     const after = document.body.appendChild(document.createElement("button")); after.id = "after-grid"; after.textContent = "Next action";
   });
   if (leave) { await page.keyboard.press("Tab"); await expect(page.locator("#after-grid")).toBeFocused(); }
   await page.evaluate(() => window.pending.filter(item => item.query.offset >= 170).forEach(item => item.resolve()));
-  await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeVisible();
+  await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeAttached();
   if (leave) await expect(page.locator("#after-grid")).toBeFocused();
   else {
     await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeFocused();
+    if (scroll) expect(await page.getByRole("grid").evaluate(grid => grid.scrollTop)).toBe(0);
     await page.keyboard.press("ArrowUp"); await expect(page.locator('.cx-row[data-cx-id="row-198"]')).toBeFocused();
   }
 });

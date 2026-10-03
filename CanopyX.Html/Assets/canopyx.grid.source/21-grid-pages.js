@@ -74,7 +74,11 @@
       this.requestPage(query, lifetime.signal).then(page => {
         if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
         const restoreFocus = this.storePage(validateGridPage(page, this.view, query, snapshot));
-        if (restoreFocus) this.setFocus(this.focused, true); else this.scheduleRender();
+        if (restoreFocus) {
+          this.render();
+          const active = document.activeElement, element = this.rendered.get(this.focused);
+          if (element && (!active || active === document.body)) element.focus({ preventScroll: true });
+        } else this.scheduleRender();
       }).catch(error => {
         if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
         this.pages.set(offset, { error: error, offset: offset }); this.version++;

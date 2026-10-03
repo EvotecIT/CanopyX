@@ -4518,7 +4518,7 @@ const scalar = gridScalar(row.cells[column.id], column), op = predicate.operator
 if (op === "isNull") return scalar === null;
 if (op === "isNotNull") return scalar !== null;
 if (scalar === null) return false;
-const normalize = value => column.kind === "text" ? foldText(value) : value;
+const normalize = value => column.kind === "text" && typeof value === "string" ? foldText(value) : value;
 const value = normalize(scalar), values = predicate.values.map(operand => normalize(gridScalar(operand, column))), operand = values[0];
 switch (op) {
 case "eq": return value === operand;
@@ -4770,7 +4770,11 @@ const token = {}; this.pendingPages.set(offset, token);
 this.requestPage(query, lifetime.signal).then(page => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
 const restoreFocus = this.storePage(validateGridPage(page, this.view, query, snapshot));
-if (restoreFocus) this.setFocus(this.focused, true); else this.scheduleRender();
+if (restoreFocus) {
+this.render();
+const active = document.activeElement, element = this.rendered.get(this.focused);
+if (element && (!active || active === document.body)) element.focus({ preventScroll: true });
+} else this.scheduleRender();
 }).catch(error => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
 this.pages.set(offset, { error: error, offset: offset }); this.version++;

@@ -173,7 +173,7 @@ Gate: HtmlForgeX ships no fancytree asset, and a tree in an HtmlForgeX email ren
 
 Consumer: the HtmlForgeX `DataExplorer` (branch `feature/report-datasets`, owned by another maintainer).
 
-- [x] One shared virtual-scroll core handles row metrics, pooling, windowed rendering, cell reuse, DOM order, and large logical heights for tree and flat views. The maintainer agreed to integration in separate branches; the consumer migration uses this core.
+- [x] One shared virtual-scroll core handles row metrics, pooling, windowed rendering, cell reuse, DOM order, and large logical heights for tree and flat views. The maintainer agreed to integration in separate branches; consumer migration remains in the checklist below.
 - [ ] Data grid view on that core, reading the same data sources.
 
 First grid release, with the HtmlForgeX inventory and one TestimoX results view as migration proofs:
