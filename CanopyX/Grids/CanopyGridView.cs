@@ -124,7 +124,7 @@ public sealed class CanopyGridView {
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
         if (Source == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
-        CanopyGridRows.Validate(Rows, columnIds);
+        CanopyGridRows.Validate(Rows, columnIds, Columns);
         Query?.Validate(this);
         return columnIds;
     }

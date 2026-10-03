@@ -4,6 +4,24 @@ using CanopyX.Tests.Protocol;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridProtocolTests {
+    [Theory]
+    [InlineData("amount")]
+    [InlineData("date")]
+    [InlineData("name")]
+    public void GridRows_RejectRawValuesThatDoNotMatchTheirDeclaredColumn(string column) {
+        var view = View();
+        var row = Row("bad", 1, "one");
+        row.Cells[column] = column == "amount" ? (CanopyCell)"not a number" : (CanopyCell)123L;
+        view.Rows.Add(row);
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        view.Rows.Clear();
+        var page = new CanopyGridPage(view.Id, "revision", 0, 1, 1);
+        page.Rows.Add(row);
+        Assert.Throws<InvalidOperationException>(() => page.ToJson(view));
+        row.Cells[column] = null!;
+        ProtocolSchema.AssertValid(page.ToJson(view), "nullable typed cell");
+    }
+
     [Fact]
     public void InlineGrid_PreservesIdentityAndRawValuesIndependentlyOfDisplayAndPaging() {
         var view = View();

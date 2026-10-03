@@ -52,10 +52,7 @@ public sealed class CanopyGridFilter {
         if (comparison && column.Kind == CanopyColumnKind.Text) throw new InvalidOperationException("Range filters require a numeric or date column.");
         foreach (var operand in Values) {
             var value = operand.Value;
-            var numeric = value is long || value is decimal || value is double real && !double.IsNaN(real) && !double.IsInfinity(real);
-            if (column.Kind == CanopyColumnKind.Number && !numeric) throw new InvalidOperationException("A numeric filter requires finite numeric operands.");
-            if (column.Kind == CanopyColumnKind.DateTime && !(value is DateTime)) throw new InvalidOperationException("A date filter requires UTC date operands.");
-            if (column.Kind == CanopyColumnKind.Text && !(value is string) && !(value is bool)) throw new InvalidOperationException("A text filter requires text or boolean operands.");
+            CanopyGridValues.Validate(value, column);
             if (textMatch && !(value is string)) throw new InvalidOperationException("A text-matching operand must be text.");
         }
     }

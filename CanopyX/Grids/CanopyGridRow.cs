@@ -23,13 +23,14 @@ public sealed class CanopyGridRow {
     /// <summary>Gets cells keyed by column identity. Omitted cells and null entries are empty values.</summary>
     public IDictionary<string, CanopyCell> Cells { get; } = new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
 
-    internal void Validate(ISet<string>? columnIds = null) {
+    internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null) {
         CanopyCell.ValidateEntries(Cells);
         foreach (var cell in Cells) {
             CanopyIdentifiers.Require(cell.Key, nameof(Cells));
             if (columnIds != null && !columnIds.Contains(cell.Key)) {
                 throw new InvalidOperationException("Grid row '" + Id + "' uses undeclared column '" + cell.Key + "'.");
             }
+            if (columns != null && columns.TryGetValue(cell.Key, out var column)) CanopyGridValues.Validate(cell.Value?.Value, column);
         }
     }
 
