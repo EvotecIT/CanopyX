@@ -48,6 +48,17 @@ public sealed class CheckboxContractTests {
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
     }
 
+    [Fact]
+    public void Schema_RejectsIdenticalRulesAndWritersRejectConflictingPaths() {
+        var view = View(CanopyCheckboxMode.Hierarchical);
+        view.CheckIntents.Add(new CanopyCheckIntent(new[] { "a" }, true));
+        var doc = JsonNode.Parse(view.ToJson())!.AsObject();
+        doc["checkIntents"]!.AsArray().Add(doc["checkIntents"]![0]!.DeepClone());
+        Assert.False(ProtocolSchema.Evaluate(doc.ToJsonString()).IsValid);
+        view.CheckIntents.Add(new CanopyCheckIntent(new[] { "a" }, false));
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+    }
+
     [Theory]
     [InlineData(CanopyCheckboxMode.Independent, "false")]
     [InlineData(CanopyCheckboxMode.Hierarchical, "true")]

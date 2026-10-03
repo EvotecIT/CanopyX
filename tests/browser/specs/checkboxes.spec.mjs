@@ -140,6 +140,30 @@ test("recycled checkbox rows expose their own state and an outline preserves cur
   expect(outline).not.toContain('<script');
 });
 
+test('checkbox and icon order stays consistent when virtual rows reuse different icons',async({page})=>{
+  const roots=Array.from({length:300},(_,i)=>({id:'row-'+i,label:'Record '+i,icon:i<150?'one':'two'}));
+  const definition={...view('independent',roots),pageSize:1000,icons:{one:'<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="4"/></svg>',
+    two:'<svg viewBox="0 0 16 16"><rect width="12" height="12"/></svg>'}};
+  await mount(page,definition);
+  const order=element=>Array.from(element.querySelector('.cx-tree').children).filter(e=>e.matches('.cx-icon,.cx-check')).map(e=>e.className);
+  const initial=await row(page,'row-0').evaluate(order);
+  await page.locator('.cx-grid').evaluate(grid=>grid.scrollTop=grid.scrollHeight);
+  await expect(row(page,'row-299')).toBeVisible();
+  expect(await row(page,'row-299').evaluate(order)).toEqual(initial);
+  await page.locator('.cx-grid').evaluate(grid=>grid.scrollTop=0);
+  await expect(row(page,'row-0')).toBeVisible();
+  expect(await row(page,'row-0').evaluate(order)).toEqual(initial);
+});
+
+for(const checked of [true,false]) test(`checking rules reject a repeated path with checked=${checked}`,async({page})=>{
+  await mount(page,view('independent',[{id:'a',label:'Atlas'}]));
+  expect(await page.evaluate(checked=>{
+    try {document.querySelector('.cx-host').canopyx.setCheckIntents([{path:['a'],checked:true},{path:['a'],checked}]);return 'accepted'}
+    catch(error){return error.message}
+  },checked)).toContain('duplicate');
+  await expect(row(page,'a').getByRole('checkbox')).not.toBeChecked();
+});
+
 test("a veto that disables its target cannot commit, and an async veto fails before changing checks", async ({ page }) => {
   await mount(page, view("independent", [{id:'a',label:'Atlas'}]),
     `{isCheckable:()=>!window.locked,beforeCheck(){window.locked=true}}`);

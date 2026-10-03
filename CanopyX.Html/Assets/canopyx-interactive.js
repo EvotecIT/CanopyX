@@ -4794,8 +4794,8 @@ if (!slot.check) {
 slot.check = h("input", "cx-check");
 slot.check.type = "checkbox";
 slot.check.tabIndex = -1;
-slot.cell.insertBefore(slot.check, slot.content);
 }
+if (slot.check.nextSibling !== slot.content) slot.cell.insertBefore(slot.check, slot.content);
 this.paintCheck(slot.check, w);
 }
 

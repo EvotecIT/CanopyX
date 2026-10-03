@@ -244,6 +244,8 @@
         "checkboxes": { "description": "Checking is independent of row selection; hierarchical rules include unloaded descendants.", "enum": ["independent", "hierarchical"] },
         "checkIntents": {
           "type": "array",
+          "uniqueItems": true,
+          "$comment": "Writers and readers also require unique paths when checked values differ; JSON Schema uniqueItems compares complete items.",
           "items": {
             "type": "object", "required": ["path", "checked"], "additionalProperties": false,
             "properties": {
