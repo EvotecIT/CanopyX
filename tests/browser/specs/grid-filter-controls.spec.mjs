@@ -133,3 +133,17 @@ test("header controls track stable column identities after reordering and reset"
   await expect(button).toBeFocused(); await page.getByRole("button", { name: "Reset view", exact: true }).click();
   await expect(button).toHaveAttribute("data-cx-filtered", "false"); expect((await query(page)).filters).toEqual([]);
 });
+
+test("header entry brings the editable control into view and focuses typed boolean choices", async ({ page }) => {
+  await open(page, { query: { filters: [
+    { column: "amount", operator: "ge", values: [1] }, { column: "amount", operator: "le", values: [15] }
+  ] } });
+  await page.getByRole("button", { name: "Filter Category", exact: true }).click();
+  const value = filters(page).last().getByRole("textbox", { name: "Value (UTC for dates)", exact: true });
+  await expect(value).toBeFocused(); await expect(value).toBeInViewport();
+  await page.evaluate(async () => document.querySelector('[data-canopyx-host]').canopyx.setQuery({
+    filters: [{ column: "flag", operator: "eq", values: [false] }]
+  }));
+  await page.getByRole("button", { name: "Filter Flag", exact: true }).click();
+  await expect(filters(page).first().getByRole("combobox", { name: "Boolean value", exact: true })).toBeFocused();
+});

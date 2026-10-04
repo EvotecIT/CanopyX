@@ -6867,7 +6867,13 @@ if (!row && rows.children.length < 64) {
 this.addGridFilter(rows, null); row = rows.lastElementChild;
 row._filter.column.value = requested; row._filter.column.dispatchEvent(new Event("change"));
 }
-if (row) row._filter.input.focus({ preventScroll: true }); else apply.focus({ preventScroll: true });
+const target = row ? [row._filter.boolean, row._filter.input, row._filter.multiple, row._filter.operator]
+.find(control => control && !control.disabled && !control.closest("[hidden]")) : apply;
+target.focus({ preventScroll: true });
+queueMicrotask(() => {
+if (!this.destroyed && target.isConnected && this.reportingFilters.details.open && document.activeElement === target)
+target.scrollIntoView({ block: "nearest", inline: "nearest" });
+});
 this.reportingFilterColumn = null;
 }
 },
@@ -6881,7 +6887,7 @@ const upperField = gridInputLabel(this.labels.gridRangeEnd, upper), categoryFiel
 booleanField = gridInputLabel(this.labels.gridBooleanValue, boolean);
 boolean.append(gridOption("true", this.labels.gridTrue), gridOption("false", this.labels.gridFalse));
 row.insertBefore(upperField, row.lastElementChild); row.insertBefore(categoryField, row.lastElementChild); row.insertBefore(booleanField, row.lastElementChild);
-fields.upper = upper;
+fields.upper = upper; fields.boolean = boolean;
 const refresh = () => {
 const column = this.columns.find(item => item.id === fields.column.value), rangeKind = column.kind === "number" || column.kind === "datetime";
 if (rangeKind && ![...fields.operator.options].some(option => option.value === "between"))
