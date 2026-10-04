@@ -51,6 +51,10 @@ A `gridQuery` contains `view`, `offset`, `limit`, `search`, `sort`, and `filters
 
 A filter is `{ "column": "amount", "operator": "ge", "values": [10] }`. Operators are `eq`, `ne`, `contains`, `startsWith`, `in`, `gt`, `ge`, `lt`, `le`, `isNull`, and `isNotNull`. Equality and text matching are case-insensitive for text values. Numeric and date operands use their raw numeric and ISO 8601 UTC values; localized display strings do not enter the query. Text matching is for text columns; range comparisons are for number and date columns. A null or missing cell fails value predicates, including `ne`; use `isNull` to include it explicitly. An empty string is a value, not a null. Null predicates take no operands, `in` takes 1 to 1,000, and other predicates take one. A query has at most 64 predicates. The C# filter API accepts `CanopyCell` operands but serializes only their raw values, without display text or decorations.
 
+Flat-grid view snapshots are browser presentation state, separate from the wire query and tree snapshots. `getState()` returns `{ version: 1, view, columns, query, timeZone, selection, scrollTop }`. Columns appear in display order and carry `id`, `width` and `hidden`; selection contains stable row IDs independently of cached pages. The query omits a dataset revision and starts at offset zero, so restoration obtains a fresh accepted snapshot before applying presentation. Invalid state leaves the current query and layout intact. A newer query or restoration supersedes an older restore. Removed column/filter/sort references are skipped, while at least one known column must remain visible.
+
+`stateKey` scopes the current snapshot and at most 20 named snapshots in session storage, together with the view ID. Unavailable storage leaves the in-memory controls usable. `resetView()` restores the original definition; removing a named view is a separate explicit action. The `grid*` label names localize flat-grid controls and require the data-grid entry point.
+
 ## View
 
 | Field | Type | Meaning |

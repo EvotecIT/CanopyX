@@ -98,7 +98,8 @@ export type LabelName =
   | "showMore" | "showMoreUnknownTotal" | "pageLoaded" | "itemsLoaded" | "yes" | "no"
   | "utcTime" | "localTime" | "mountError" | "actions" | "editValue" | "saveEdit" | "cancelEdit"
   | "invalidEdit" | "interactionPending" | "interactionRejected" | "interactionFailed"
-  | "markMove" | "moveHere" | "moveBefore" | "moveAfter" | "cancelMove";
+  | "markMove" | "moveHere" | "moveBefore" | "moveAfter" | "cancelMove"
+  | "gridFilters" | "gridColumn" | "gridOperator" | "gridValue" | "gridValueType" | "gridText" | "gridBoolean" | "gridAddFilter" | "gridRemoveFilter" | "gridApply" | "gridClearFilters" | "gridMoveEarlier" | "gridMoveLater" | "gridViews" | "gridViewName" | "gridSaveView" | "gridRemoveView" | "gridResetView" | "gridChooseView" | "gridInvalidFilter" | "gridContains" | "gridStartsWith" | "gridIn" | "gridIsNull" | "gridIsNotNull";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

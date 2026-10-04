@@ -26,8 +26,9 @@
       this.queryAware = true; this.queryEpoch = 0; this.version = 1; this.total = 0;
       this.pages = new Map(); this.rowCache = new Map(); this.placeholders = new Map(); this.pendingPages = new Map();
       this.rendered = new Map(); this.pool = []; this.selected = new Set(); this.focused = null; this.rafId = 0;
+      this.prepareState();
       this.build();
-      this.ready = this.setQuery(this.view.query || {});
+      this.ready = this.initializeState();
     }
 
     emit(name, detail) {
@@ -38,7 +39,14 @@
       }
     }
 
-    stateChanged() { if (!this.destroyed) this.emit("state", { query: this.acceptedQuery || null }); }
+    stateChanged() {
+      if (this.destroyed || this.restoringEpoch === this.queryEpoch) return;
+      clearTimeout(this.stateTimer);
+      this.stateTimer = setTimeout(() => {
+        if (this.destroyed) return;
+        const state = this.getState(); this.writeStoredState(state); this.emit("state", { query: this.getQuery(), state: state });
+      }, 200);
+    }
     getQuery() { return this.acceptedQuery || null; }
     queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
 
@@ -124,6 +132,7 @@
       const next = new Set(ids);
       if (this.view.selection === "none" && next.size || !this.multi && next.size > 1) throw new Error("CanopyX: selection exceeds the view's mode.");
       this.selected = next; this.version++; this.scheduleRender(); this.emit("select", { ids: [...next] });
+      this.stateChanged();
     }
 
     setColumnVisible(id, visible) {
@@ -131,13 +140,17 @@
       if (!column || typeof visible !== "boolean") throw new Error("CanopyX: visibility needs a declared column and boolean.");
       if (!visible && this.visibleColumns().length === 1 && !column.hidden) throw new Error("CanopyX: keep at least one column visible.");
       column.hidden = !visible; this.buildHeader(); this.scheduleRender(); this.stateChanged();
+      this.syncColumnControls();
     }
 
     destroy() {
       if (this.destroyed) return;
+      this.writeStoredState(this.getState());
       this.destroyed = true; this.queryEpoch++; this.lifetime.abort(); this.dataLifetime.abort();
       if (this.rafId) cancelAnimationFrame(this.rafId);
       clearTimeout(this.searchTimer);
+      clearTimeout(this.stateTimer);
+      if (this.disposeControls) this.disposeControls();
       if (this.cancelResize) this.cancelResize();
       this.resizeObserver.disconnect();
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);

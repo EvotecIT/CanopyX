@@ -5,7 +5,7 @@
       host.classList.add("cx-host", "cx-data-grid");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       host.style.setProperty("--cx-row-h", this.rowH + "px");
-      this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = !this.view.search;
+      this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
       if (this.view.search) {
         const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input");
         input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
@@ -17,6 +17,7 @@
         input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });
         search.appendChild(input); this.toolbar.appendChild(search);
       }
+      this.buildGridControls();
       const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
       grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
       if (this.multi) grid.setAttribute("aria-multiselectable", "true");

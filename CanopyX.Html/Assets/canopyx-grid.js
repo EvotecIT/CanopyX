@@ -4581,8 +4581,9 @@ this.fmt = formatting(this.lang, this.local, this.labels); this.multi = this.vie
 this.queryAware = true; this.queryEpoch = 0; this.version = 1; this.total = 0;
 this.pages = new Map(); this.rowCache = new Map(); this.placeholders = new Map(); this.pendingPages = new Map();
 this.rendered = new Map(); this.pool = []; this.selected = new Set(); this.focused = null; this.rafId = 0;
+this.prepareState();
 this.build();
-this.ready = this.setQuery(this.view.query || {});
+this.ready = this.initializeState();
 }
 emit(name, detail) {
 this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail }));
@@ -4591,7 +4592,14 @@ if (typeof callback === "function") {
 try { callback(detail); } catch (error) { if (global.console) global.console.error(error); }
 }
 }
-stateChanged() { if (!this.destroyed) this.emit("state", { query: this.acceptedQuery || null }); }
+stateChanged() {
+if (this.destroyed || this.restoringEpoch === this.queryEpoch) return;
+clearTimeout(this.stateTimer);
+this.stateTimer = setTimeout(() => {
+if (this.destroyed) return;
+const state = this.getState(); this.writeStoredState(state); this.emit("state", { query: this.getQuery(), state: state });
+}, 200);
+}
 getQuery() { return this.acceptedQuery || null; }
 queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
 async setQuery(input) {
@@ -4670,18 +4678,23 @@ ids.forEach(id => requireIdentifier(id, "selection ID"));
 const next = new Set(ids);
 if (this.view.selection === "none" && next.size || !this.multi && next.size > 1) throw new Error("CanopyX: selection exceeds the view's mode.");
 this.selected = next; this.version++; this.scheduleRender(); this.emit("select", { ids: [...next] });
+this.stateChanged();
 }
 setColumnVisible(id, visible) {
 const column = this.columns.find(item => item.id === id);
 if (!column || typeof visible !== "boolean") throw new Error("CanopyX: visibility needs a declared column and boolean.");
 if (!visible && this.visibleColumns().length === 1 && !column.hidden) throw new Error("CanopyX: keep at least one column visible.");
 column.hidden = !visible; this.buildHeader(); this.scheduleRender(); this.stateChanged();
+this.syncColumnControls();
 }
 destroy() {
 if (this.destroyed) return;
+this.writeStoredState(this.getState());
 this.destroyed = true; this.queryEpoch++; this.lifetime.abort(); this.dataLifetime.abort();
 if (this.rafId) cancelAnimationFrame(this.rafId);
 clearTimeout(this.searchTimer);
+clearTimeout(this.stateTimer);
+if (this.disposeControls) this.disposeControls();
 if (this.cancelResize) this.cancelResize();
 this.resizeObserver.disconnect();
 this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
@@ -4791,7 +4804,7 @@ const host = this.host, signal = this.lifetime.signal;
 host.classList.add("cx-host", "cx-data-grid");
 if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
 host.style.setProperty("--cx-row-h", this.rowH + "px");
-this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = !this.view.search;
+this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
 if (this.view.search) {
 const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input");
 input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
@@ -4803,6 +4816,7 @@ input.addEventListener("input", () => { clearTimeout(this.searchTimer); this.sea
 input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });
 search.appendChild(input); this.toolbar.appendChild(search);
 }
+this.buildGridControls();
 const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
 grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
 if (this.multi) grid.setAttribute("aria-multiselectable", "true");
@@ -4941,6 +4955,290 @@ else this.focusCell(next, nextColumn, nextControl);
 event.preventDefault(); event.stopPropagation();
 }
 });
+function gridStateColumns(grid, input) {
+if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
+const seen = new Set(), declared = new Map(grid.columns.map(column => [column.id, column]));
+const columns = input.map(column => {
+requireIdentifier(column && column.id, "state column ID");
+if (seen.has(column.id) || !Number.isFinite(column.width) || column.width < 40 || column.width > MAX_COLUMN_WIDTH || typeof column.hidden !== "boolean")
+throw new Error("CanopyX: invalid state column.");
+seen.add(column.id); return { id: column.id, width: column.width, hidden: column.hidden };
+}).filter(column => declared.has(column.id));
+for (const column of grid.columns) if (!seen.has(column.id)) columns.push({ id: column.id, width: column.width, hidden: !!column.hidden });
+if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
+return columns;
+}
+Object.assign(DataGrid.prototype, {
+prepareState() {
+this.storageKey = this.view.stateKey ? "cx:grid:" + this.view.stateKey + ":" + this.view.id : null;
+this.savedViews = new Map();
+this.defaultState = { version: 1, view: this.view.id,
+columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
+query: gridQuery(this.view, Object.assign({}, this.view.query || {}, { offset: 0, revision: undefined })),
+timeZone: this.local ? "local" : "utc", selection: [], scrollTop: 0 };
+const stored = this.readStoredState();
+if (stored && Array.isArray(stored.views)) {
+for (const entry of stored.views.slice(0, 20)) {
+try { this.savedViews.set(this.viewName(entry.name), this.readGridState(entry.state)); } catch (_) { /* Removed or invalid saved views are skipped. */ }
+}
+}
+try { this.initialState = stored && stored.current ? this.readGridState(stored.current) : null; } catch (_) { this.initialState = null; }
+},
+initializeState() { return this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {}); },
+getState() {
+const query = this.getQuery() || this.defaultState.query;
+return { version: 1, view: this.view.id,
+columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
+query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: 0, revision: undefined }))),
+timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
+},
+readGridState(state) {
+if (!state || state.version !== 1 || state.view !== this.view.id || !["utc", "local"].includes(state.timeZone) ||
+!Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER || !Array.isArray(state.selection))
+throw new Error("CanopyX: invalid or incompatible grid state.");
+const columns = gridStateColumns(this, state.columns);
+const selection = [...new Set(state.selection.map(id => { requireIdentifier(id, "state selection ID"); return id; }))];
+if (this.view.selection === "none" && selection.length || !this.multi && selection.length > 1) throw new Error("CanopyX: invalid state selection.");
+const input = state.query;
+if (!input || typeof input !== "object" || !Array.isArray(input.sort) || !Array.isArray(input.filters)) throw new Error("CanopyX: invalid state query.");
+const known = id => this.columns.some(column => column.id === id);
+const query = gridQuery(this.view, Object.assign({}, input, { offset: 0, revision: undefined,
+sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
+return { version: 1, view: this.view.id, columns: columns, query: query,
+timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
+},
+async setState(input) {
+const state = this.readGridState(input), pending = this.setQuery(state.query), epoch = this.queryEpoch;
+this.restoringEpoch = epoch;
+try {
+await pending;
+if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
+if (this.cancelResize) this.cancelResize();
+const current = new Map(this.columns.map(column => [column.id, column]));
+this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { width: saved.width, hidden: saved.hidden }));
+this.setTimeZone(state.timeZone); this.setSelection(state.selection);
+this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
+return this.getQuery();
+} finally {
+if (this.restoringEpoch === epoch) { this.restoringEpoch = null; this.stateChanged(); }
+}
+},
+setColumnOrder(ids) {
+if (!Array.isArray(ids) || ids.length !== this.columns.length || new Set(ids).size !== ids.length ||
+ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: column order must name every declared column exactly once.");
+if (this.cancelResize) this.cancelResize();
+const columns = new Map(this.columns.map(column => [column.id, column]));
+this.columns = ids.map(id => columns.get(id)); this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
+},
+viewName(name) {
+if (typeof name !== "string" || !name.trim() || name.trim().length > 100) throw new Error("CanopyX: a saved view needs a name of 1 to 100 characters.");
+return name.trim();
+},
+getSavedViews() { return [...this.savedViews.keys()]; },
+saveView(name) {
+name = this.viewName(name);
+if (!this.getQuery()) throw new Error("CanopyX: wait for an accepted query before saving a view.");
+if (!this.savedViews.has(name) && this.savedViews.size >= 20) throw new Error("CanopyX: at most 20 saved views are supported.");
+this.savedViews.set(name, this.getState()); this.writeStoredState(this.getState()); this.syncSavedViews();
+if (this.savedChoice) this.savedChoice.value = name;
+},
+applySavedView(name) {
+const state = this.savedViews.get(this.viewName(name));
+if (!state) throw new Error("CanopyX: the saved view does not exist.");
+return this.setState(state);
+},
+removeSavedView(name) { this.savedViews.delete(this.viewName(name)); this.writeStoredState(this.getState()); this.syncSavedViews(); },
+resetView() { return this.setState(this.defaultState); },
+readStoredState() {
+if (!this.storageKey) return null;
+try { return JSON.parse(global.sessionStorage.getItem(this.storageKey)); } catch (_) { return null; }
+},
+writeStoredState(state) {
+if (!this.storageKey || this.destroyed) return;
+try { global.sessionStorage.setItem(this.storageKey, JSON.stringify({ current: state, views: [...this.savedViews].map(([name, value]) => ({ name: name, state: value })) })); }
+catch (_) { /* A disabled or full storage leaves the current session usable. */ }
+}
+});
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridFilters: "Filters", gridColumn: "Column", gridOperator: "Condition", gridValue: "Value (UTC for dates)",
+gridValueType: "Raw value type", gridText: "Text", gridBoolean: "Boolean", gridAddFilter: "Add filter",
+gridRemoveFilter: "Remove {column} filter", gridApply: "Apply", gridClearFilters: "Clear filters",
+gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later",
+gridViews: "Saved views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",
+gridResetView: "Reset view", gridChooseView: "Choose a saved view", gridInvalidFilter: "Enter a valid filter value.",
+gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of (one per line)", gridIsNull: "is missing", gridIsNotNull: "is present"
+}));
+function gridButton(text, run) {
+const button = h("button", "cx-button"); button.type = "button"; setText(button, text);
+button.addEventListener("click", run); return button;
+}
+function gridInputLabel(text, input) {
+const label = h("label", "cx-grid-field"); label.appendChild(document.createTextNode(text)); label.appendChild(input); return label;
+}
+Object.assign(DataGrid.prototype, {
+buildGridControls() {
+this.controlFlyouts = [];
+this.buildGridColumns(); this.buildGridFilters(); this.buildSavedViews();
+this.toolbar.appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
+this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
+document.addEventListener("pointerdown", event => {
+this.toolbar.querySelectorAll("details[open]").forEach(details => { if (!details.contains(event.target)) details.open = false; });
+}, { signal: this.lifetime.signal });
+},
+controlPanel(title, className, onOpen) {
+const details = h("details", "cx-columns " + className), summary = h("summary"), panel = h("div", "cx-columns-list cx-grid-panel");
+setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);
+const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
+details.addEventListener("toggle", () => { if (details.open) { if (onOpen) onOpen(panel); flyout.position(); } });
+details.addEventListener("keydown", event => {
+if (event.key === "Escape" && details.open) { details.open = false; summary.focus(); event.preventDefault(); event.stopPropagation(); }
+});
+return { details: details, panel: panel };
+},
+buildGridColumns() {
+this.columnPanel = this.controlPanel(this.labels.columns, "cx-grid-columns", () => this.syncColumnControls()).panel;
+this.syncColumnControls();
+},
+syncColumnControls() {
+if (!this.columnPanel) return;
+const active = document.activeElement, columnId = active && active.getAttribute("data-cx-layout-column"), action = active && active.getAttribute("data-cx-layout-action");
+this.columnPanel.textContent = "";
+this.columns.forEach((column, index) => {
+const row = h("div", "cx-grid-column-choice"), input = h("input"); input.type = "checkbox"; input.checked = !column.hidden;
+input.disabled = !column.hidden && this.visibleColumns().length === 1;
+input.setAttribute("data-cx-layout-column", column.id); input.setAttribute("data-cx-layout-action", "visible");
+input.addEventListener("change", () => this.setColumnVisible(column.id, input.checked));
+row.appendChild(gridInputLabel(column.title, input));
+for (const [delta, label] of [[-1, "gridMoveEarlier"], [1, "gridMoveLater"]]) {
+const move = gridButton(delta < 0 ? "↑" : "↓", () => {
+const ids = this.columns.map(item => item.id), at = ids.indexOf(column.id), next = at + delta;
+if (next >= 0 && next < ids.length) { [ids[at], ids[next]] = [ids[next], ids[at]]; this.setColumnOrder(ids); }
+});
+move.disabled = index + delta < 0 || index + delta >= this.columns.length;
+move.setAttribute("aria-label", fill(this.labels[label], { column: column.title }));
+move.setAttribute("data-cx-layout-column", column.id); move.setAttribute("data-cx-layout-action", delta < 0 ? "earlier" : "later"); row.appendChild(move);
+}
+this.columnPanel.appendChild(row);
+});
+if (columnId) {
+const target = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].find(input =>
+input.getAttribute("data-cx-layout-column") === columnId && input.getAttribute("data-cx-layout-action") === action && !input.disabled);
+if (target) target.focus({ preventScroll: true });
+}
+},
+buildSavedViews() {
+const panel = this.controlPanel(this.labels.gridViews, "cx-grid-views").panel;
+const choice = this.savedChoice = h("select"), name = h("input"); name.type = "text"; name.maxLength = 100;
+choice.setAttribute("aria-label", this.labels.gridChooseView);
+panel.appendChild(choice); panel.appendChild(gridInputLabel(this.labels.gridViewName, name));
+const error = h("p", "cx-grid-control-error"); error.setAttribute("role", "status");
+const run = action => {
+try { Promise.resolve(action()).then(() => setText(error, ""), failure => setText(error, failure.message)); }
+catch (failure) { setText(error, failure.message); }
+};
+panel.appendChild(gridButton(this.labels.gridApply, () => run(() => this.applySavedView(choice.value))));
+panel.appendChild(gridButton(this.labels.gridSaveView, () => run(() => this.saveView(name.value))));
+panel.appendChild(gridButton(this.labels.gridRemoveView, () => run(() => this.removeSavedView(choice.value)))); panel.appendChild(error);
+this.syncSavedViews();
+},
+syncSavedViews() {
+if (!this.savedChoice) return;
+const selected = this.savedChoice.value; this.savedChoice.textContent = "";
+const empty = h("option"); empty.value = ""; setText(empty, this.labels.gridChooseView); this.savedChoice.appendChild(empty);
+this.getSavedViews().forEach(name => { const option = h("option"); option.value = name; setText(option, name); this.savedChoice.appendChild(option); });
+if (this.savedViews.has(selected)) this.savedChoice.value = selected;
+}
+});
+const GRID_FILTER_LABELS = { eq: "=", ne: "≠", contains: "gridContains", startsWith: "gridStartsWith", in: "gridIn",
+gt: ">", ge: "≥", lt: "<", le: "≤", isNull: "gridIsNull", isNotNull: "gridIsNotNull" };
+Object.assign(DataGrid.prototype, {
+buildGridFilters() {
+this.controlPanel(this.labels.gridFilters, "cx-grid-filters", panel => this.renderGridFilters(panel));
+},
+renderGridFilters(panel) {
+panel.textContent = "";
+const form = h("form", "cx-grid-filter-form"), rows = h("div"), error = h("p", "cx-grid-control-error");
+error.setAttribute("role", "status");
+const add = predicate => this.addGridFilter(rows, predicate);
+(this.queryForChange().filters || []).forEach(add);
+form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
+const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
+form.appendChild(gridButton(this.labels.gridClearFilters, () => {
+rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+}));
+form.appendChild(error); panel.appendChild(form);
+form.addEventListener("submit", event => {
+event.preventDefault();
+try {
+const filters = [...rows.children].map(row => this.readGridFilter(row));
+this.setQuery(Object.assign({}, this.queryForChange(), { filters: filters, offset: 0, revision: undefined }))
+.then(() => setText(error, ""), failure => setText(error, failure.message));
+} catch (failure) { setText(error, failure.message); }
+});
+},
+addGridFilter(parent, predicate) {
+if (parent.children.length >= 64) return;
+const row = h("fieldset", "cx-grid-filter"), column = h("select"), operator = h("select"), input = h("input", "cx-grid-filter-value"),
+multiple = h("textarea", "cx-grid-filter-value"), type = h("select");
+let remove;
+const legend = h("legend", "cx-sr-only"); setText(legend, this.labels.gridFilters); row.appendChild(legend);
+multiple.rows = 2; input.step = "any";
+for (const item of this.columns) { const option = h("option"); option.value = item.id; setText(option, item.title); column.appendChild(option); }
+if (predicate) column.value = predicate.column;
+for (const [value, name] of [["string", "gridText"], ["boolean", "gridBoolean"]]) {
+const option = h("option"); option.value = value; setText(option, this.labels[name]); type.appendChild(option);
+}
+if (predicate && predicate.values.length && typeof predicate.values[0] === "boolean") type.value = "boolean";
+const columnField = gridInputLabel(this.labels.gridColumn, column), conditionField = gridInputLabel(this.labels.gridOperator, operator);
+const typeField = gridInputLabel(this.labels.gridValueType, type), valueField = gridInputLabel(this.labels.gridValue, input),
+multipleField = gridInputLabel(this.labels.gridValue, multiple);
+multipleField.hidden = true; row.append(columnField, conditionField, typeField, valueField, multipleField);
+const change = () => {
+const definition = this.columns.find(item => item.id === column.value), previous = operator.value;
+const operators = definition.kind === "text" ? ["eq", "ne", "contains", "startsWith", "in", "isNull", "isNotNull"] :
+["eq", "ne", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"];
+operator.textContent = "";
+operators.forEach(name => { const option = h("option"); option.value = name; setText(option, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name]); operator.appendChild(option); });
+if (operators.includes(previous)) operator.value = previous;
+input.type = definition.kind === "number" ? "number" : definition.kind === "datetime" ? "datetime-local" : "text";
+if (remove) setText(remove, fill(this.labels.gridRemoveFilter, { column: definition.title }));
+typeField.hidden = definition.kind !== "text"; update();
+};
+const update = () => {
+const raw = multipleField.hidden ? input.value : multiple.value, none = ["isNull", "isNotNull"].includes(operator.value), many = operator.value === "in";
+valueField.hidden = none || many; multipleField.hidden = none || !many;
+if (many) multiple.value = raw; else input.value = raw;
+};
+column.addEventListener("change", change); operator.addEventListener("change", update); change();
+if (predicate) {
+operator.value = predicate.operator;
+input.value = input.type === "datetime-local" && predicate.values.length ? new Date(predicate.values[0]).toISOString().slice(0, -1) : predicate.values.join("\n");
+if (operator.value === "in") { multiple.value = predicate.values.join("\n"); valueField.hidden = true; multipleField.hidden = false; } else update();
+}
+remove = gridButton(fill(this.labels.gridRemoveFilter, { column: this.columns.find(item => item.id === column.value).title }), () => row.remove());
+row.appendChild(remove); row._filter = { column: column, operator: operator, input: input, multiple: multiple, type: type }; parent.appendChild(row);
+},
+readGridFilter(row) {
+const fields = row._filter, column = this.columns.find(item => item.id === fields.column.value), operator = fields.operator.value;
+const value = operator === "in" ? fields.multiple.value : fields.input.value;
+const values = ["isNull", "isNotNull"].includes(operator) ? [] : (operator === "in" ? value.split(/\r?\n/) : [value]).map(raw => {
+if (column.kind === "number") {
+if (!raw.trim() || !Number.isFinite(Number(raw))) throw new Error(this.labels.gridInvalidFilter);
+return Number(raw);
+}
+if (column.kind === "datetime") {
+const text = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : raw + "Z";
+gridScalar(text, column); return text;
+}
+if (fields.type.value === "boolean") {
+if (!["true", "false"].includes(raw)) throw new Error(this.labels.gridInvalidFilter);
+return raw === "true";
+}
+return raw;
+});
+return { column: column.id, operator: operator, values: values };
+}
+});
 function createDataGrid(host, options) {
 if (!host || !options || !options.view) throw new Error("CanopyX: createDataGrid needs a host element and a grid document.");
 const existing = activeGrids.get(host);
@@ -4950,6 +5248,10 @@ const api = Object.freeze({
 element: host, view: grid.view, ready: grid.ready,
 getQuery: () => grid.getQuery(), setQuery: query => grid.setQuery(query), sort: sorts => grid.sort(sorts),
 setColumnWidth: (id, width) => grid.setColumnWidth(id, width), setColumnVisible: (id, visible) => grid.setColumnVisible(id, visible),
+setColumnOrder: ids => grid.setColumnOrder(ids),
+getState: () => grid.getState(), setState: state => grid.setState(state), resetView: () => grid.resetView(),
+getSavedViews: () => grid.getSavedViews(), saveView: name => grid.saveView(name),
+applySavedView: name => grid.applySavedView(name), removeSavedView: name => grid.removeSavedView(name),
 setTimeZone: zone => grid.setTimeZone(zone), getTimeZone: () => grid.local ? "local" : "utc",
 getSelection: () => [...grid.selected], setSelection: ids => grid.setSelection(ids), clearSelection: () => grid.setSelection([]),
 focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),

@@ -62,7 +62,19 @@ export interface GridPage {
 export interface GridSource { query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
 export interface GridQueryEvent { query: GridQuery; revision: string; total: number; matched: number; }
 export interface GridCellContext { column: string; index: number; }
+/** Versioned view settings. Queries omit dataset revisions; restoration revalidates against the current source. */
+export interface GridState {
+  version: 1;
+  view: string;
+  columns: { id: string; width: number; hidden: boolean }[];
+  query: GridQuery;
+  timeZone: TimeZone;
+  selection: string[];
+  scrollTop: number;
+}
 export interface GridHostOptions {
+  /** False lets a host compose controls around the same grid controller. */
+  toolbar?: boolean;
   source?: GridSource;
   labels?: Partial<CanopyLabels>;
   renderers?: Record<string, (row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void>;
@@ -71,7 +83,7 @@ export interface GridHostOptions {
   onQuery?: (event: GridQueryEvent) => void;
   onSelect?: (event: { ids: string[] }) => void;
   onError?: (event: { error: Error }) => void;
-  onState?: (event: { query: GridQuery | null }) => void;
+  onState?: (event: { query: GridQuery | null; state: GridState }) => void;
 }
 export type GridOptions = GridHostOptions & ({ view: InlineGridView } | { view: HostGridView; source: GridSource });
 
@@ -85,6 +97,14 @@ export interface DataGrid {
   sort(sorts: readonly GridSort[]): Promise<GridQuery>;
   setColumnWidth(id: string, width: number): void;
   setColumnVisible(id: string, visible: boolean): void;
+  setColumnOrder(ids: string[]): void;
+  getState(): GridState;
+  setState(state: GridState): Promise<GridQuery>;
+  resetView(): Promise<GridQuery>;
+  getSavedViews(): string[];
+  saveView(name: string): void;
+  applySavedView(name: string): Promise<GridQuery>;
+  removeSavedView(name: string): void;
   setTimeZone(zone: TimeZone): void;
   getTimeZone(): TimeZone;
   getSelection(): string[];

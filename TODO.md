@@ -179,7 +179,7 @@ Consumer: the HtmlForgeX `DataExplorer` (branch `feature/report-datasets`, owned
 First grid release, with the HtmlForgeX inventory and one TestimoX results view as migration proofs:
 
 - [x] Flat row identities, typed cells, full-dataset search/filtering, and stable multi-column sorting before paging.
-- [ ] Search and typed filters, column resize/visibility/order, sticky headers, and resettable saved views.
+- [x] Search and typed filters, column resize/visibility/order, sticky headers, and resettable session views with named snapshots.
 - [x] Virtual rows, bounded caches, query cancellation, stale-response rejection, and loading/error states.
 - [ ] Flat-grid keyboard and ARIA contracts, selection, copying, and host-composed details, while preserving the tree contracts.
 - [ ] Filtered, selected, and all-result export scopes with defined columns/order; large Office exports call host hooks.

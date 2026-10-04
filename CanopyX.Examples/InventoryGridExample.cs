@@ -7,7 +7,7 @@ namespace CanopyX.Examples;
 internal static class InventoryGridExample {
     internal static void Write(string output) {
         var view = new CanopyGridView("inventory-grid", "File inventory") {
-            Selection = CanopySelectionMode.Multiple, PageSize = 100, TimeZone = CanopyTimeZone.Utc
+            Selection = CanopySelectionMode.Multiple, PageSize = 100, TimeZone = CanopyTimeZone.Utc, StateKey = "file-inventory"
         };
         view.Columns.Add(new CanopyColumn("name", "Record") { Width = 300, Sortable = true });
         view.Columns.Add(new CanopyColumn("category", "Category") { Width = 140, Sortable = true });
