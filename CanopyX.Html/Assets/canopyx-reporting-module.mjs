@@ -7914,11 +7914,13 @@ this.viewPersistenceError = null; this.setViewPreferenceError("");
 } catch (error) { this.viewPersistenceError = error; this.setViewPreferenceError(error.message); }
 },
 pullBrowserViewMetadata() {
-if (this.opts.viewStore || this.view.reporting?.viewStorage !== "local" || !this.storageKey || this.viewStorageRejected) return;
+if (this.opts.viewStore || this.view.reporting?.viewStorage !== "local" || !this.storageKey || this.viewStorageRejected ||
+this.viewSettingsIntent !== (this.viewBrowserSyncedIntent || 0)) return;
 try {
 const text = global.localStorage.getItem(this.storageKey); if (!text) return;
 const settings = reportingStoredSettings(this, JSON.parse(text));
 this.savedViews = new Map(settings.views.map(entry => [entry.name, entry.state])); this.defaultSavedView = settings.defaultView;
+if (this.viewStorageRejected) this.setViewPreferenceError(this.viewPreferenceError);
 this.syncSavedViews();
 } catch (error) { this.viewStorageRejected = true; this.setViewPreferenceError(error.message); }
 },
@@ -7942,7 +7944,12 @@ this.savedViews = new Map([...this.savedViews].map(([name, state]) => [name === 
 if (this.defaultSavedView === oldName) this.defaultSavedView = newName;
 this.writeStoredState(this.getState()); this.syncSavedViews(); if (this.savedChoice) this.savedChoice.value = newName;
 },
-saveView(name) { this.requireViewSettingsReady(); this.pullBrowserViewMetadata(); this.viewSettingsIntent++; return VIEW_STATE_BASE.saveView.call(this, name); },
+saveView(name) {
+this.requireViewSettingsReady(); this.pullBrowserViewMetadata();
+const intent = this.viewSettingsIntent; this.viewSettingsIntent++;
+try { return VIEW_STATE_BASE.saveView.call(this, name); }
+catch (error) { this.viewSettingsIntent = intent; throw error; }
+},
 removeSavedView(name) {
 this.requireViewSettingsReady();
 this.pullBrowserViewMetadata();

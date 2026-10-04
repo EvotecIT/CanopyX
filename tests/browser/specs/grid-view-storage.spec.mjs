@@ -21,6 +21,44 @@ const state = (view = definition()) => ({ version: 1, view: view.id, columns: vi
   timeZone: "utc", selection: [], scrollTop: 0, paging: { pageLength: 5, offset: 0 } });
 const settings = () => ({ version: 1, view: "prefs", current: state(), views: [{ name: "Archives", state: state() }], defaultView: "Archives" });
 
+test('a rejected named save leaves cross-tab metadata refresh available for the next autosave',async({page,context})=>{
+  await open(page);await page.evaluate(api+".saveView('Original')");await page.evaluate(api+".setDefaultView('Original')");
+  const other=await context.newPage();
+  try {
+    await open(other);
+    expect(await page.evaluate(`(()=>{try{${api}.saveView('');}catch(e){return e.message;}})()`)).toBeTruthy();
+    await other.evaluate(api+".removeSavedView('Original')");await other.evaluate(api+'.flushViewSettings()');
+    await page.evaluate(api+".setColumnWidth('name',220)");await page.evaluate(api+'.flushViewSettings()');
+    expect(await page.evaluate(api+'.getSavedViews()')).toEqual([]);
+    expect(await page.evaluate("JSON.parse(localStorage.getItem('cx:grid:report-reader:prefs')).views")).toEqual([]);
+  } finally {await other.close();}
+});
+
+test('failed browser writes retain earlier in-memory named edits instead of pulling an older envelope',async({page})=>{
+  await open(page);await page.evaluate(api+".saveView('Stored')");
+  await page.evaluate(`(()=>{window.originalWrite=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw new Error('Quota is full.');};
+    ${api}.saveView('Memory A');${api}.saveView('Memory B');${api}.renameSavedView('Memory A','Memory renamed');${api}.setDefaultView('Memory renamed');})()`);
+  expect(await page.evaluate(api+'.getSavedViews()')).toEqual(['Stored','Memory renamed','Memory B']);
+  expect(await page.evaluate(api+'.getDefaultView()')).toBe('Memory renamed');
+  await expect(page.locator('.cx-grid-view-storage')).toContainText('Quota is full');
+  await page.evaluate('Storage.prototype.setItem=originalWrite');await page.evaluate(api+'.flushViewSettings()');
+  expect(await page.evaluate("JSON.parse(localStorage.getItem('cx:grid:report-reader:prefs')).views.map(v=>v.name)")).toEqual(['Stored','Memory renamed','Memory B']);
+});
+
+test('a newly incompatible browser envelope reports a persistent recovery warning in an already mounted tab',async({page})=>{
+  for(const field of ['current','named']) {
+    await open(page);await page.evaluate(api+".saveView('Stored')");
+    await page.evaluate(field=>{const key='cx:grid:report-reader:prefs',value=JSON.parse(localStorage.getItem(key));
+      if(field==='current')value.current.timeZone='unsupported';else value.views.push({name:'Recoverable',state:{...value.current,timeZone:'unsupported'}});
+      localStorage.setItem(key,JSON.stringify(value));window.recoverableText=localStorage.getItem(key);},field);
+    await page.evaluate(api+".setColumnWidth('name',220)");await page.evaluate(()=>new Promise(resolve=>setTimeout(resolve,400)));
+    await expect(page.locator('.cx-grid-view-storage')).toContainText('persistence is paused until reset');
+    expect(await page.evaluate("localStorage.getItem('cx:grid:report-reader:prefs')===recoverableText")).toBe(true);
+    await page.evaluate(api+'.resetView()');await page.evaluate(api+'.flushViewSettings()');
+    await expect(page.locator('.cx-grid-view-storage')).toHaveText('');
+  }
+});
+
 for (const host of [false, true]) test(`partially incompatible ${host ? 'host' : 'browser'} preferences stay recoverable until explicit reset`, async ({page}) => {
   const envelope = settings(); delete envelope.defaultView;
   envelope.views.push({name:'Recoverable',state:{...state(),timeZone:'unsupported'}});
