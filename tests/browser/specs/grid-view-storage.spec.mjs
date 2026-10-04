@@ -166,6 +166,22 @@ test("keyboard resizing during preference loading and presentation edits during 
   expect(await page.evaluate(api+'.getQuery().search')).toBe('Archive');
 });
 
+test("readiness follows a queued search that supersedes slow initialization but exposes real query failures",async({page})=>{
+  const view=definition();view.searchDelayMs=100;
+  for (const failing of [false,true]) {
+    await open(page,view,`window.failSearch=${failing};CanopyX.configure('prefs',{viewStore:{
+      load(){return new Promise(r=>window.loadResolve=r);},save(){}},source:{query(q){
+      if(q.search){if(failSearch)throw new Error('Search source failed');return {protocol:'canopyx/2',type:'gridPage',view:'prefs',
+        revision:'v1',offset:0,total:40,matched:20,items:${JSON.stringify(definition().rows.filter(r=>r.cells.name==='Source').slice(0,10))}};}
+      return new Promise(r=>window.definitionResolve=r);}}});`,false);
+    await page.evaluate(input=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;
+      window.readiness=grid.ready.then(()=>grid.getQuery().search,e=>e.name+': '+e.message);
+      const search=document.querySelector('.cx-search-input');search.value='Source';
+      search.dispatchEvent(new InputEvent('input',{bubbles:true}));loadResolve(input);},settings());
+    expect(await page.evaluate('readiness')).toBe(failing?'Error: Search source failed':'Source');
+  }
+});
+
 test("a timed-out uncooperative save is cancelled and never followed by a concurrent overwrite", async ({ page }) => {
   await open(page, definition(), `window.saved=[];CanopyX.configure('prefs',{requestTimeoutMs:100,viewStore:{load(){return null;},
     save(event){saved.push(event);return new Promise(resolve=>window.lateSave=resolve);}}});`);

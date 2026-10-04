@@ -5299,7 +5299,7 @@ return state;
 readGridState(state) {
 if (!state || state.version !== 1 || state.view !== this.view.id || !["utc", "local"].includes(state.timeZone) ||
 !Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER * this.rowH || !Array.isArray(state.selection))
-throw new Error("CanopyX: invalid or incompatible grid state.");
+throw new Error("CanopyX: invalid grid state.");
 const columns = gridStateColumns(this, state.columns);
 const selection = [...new Set(state.selection.map(id => { requireIdentifier(id, "state selection ID"); return id; }))];
 if (this.view.selection === "none" && selection.length || !this.multi && selection.length > 1) throw new Error("CanopyX: invalid state selection.");
@@ -5324,40 +5324,41 @@ return parsed;
 },
 async setState(input) {
 const state = this.readGridState(input);
-const preference = this.viewPreferenceIntent;
 clearTimeout(this.searchTimer); this.searchTimer = null;
 const pending = this.setQuery(Object.assign({}, state.query, { offset: state.paging ? state.paging.offset : 0 }), state.paging), epoch = this.queryEpoch;
 this.restoringEpoch = epoch;
 try {
 await pending;
 if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
-if (preference !== this.viewPreferenceIntent) return this.getQuery();
-if (this.cancelResize) this.cancelResize();
-const current = new Map(this.columns.map(column => [column.id, column]));
-this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
-this.setTimeZone(state.timeZone); this.setSelection(state.selection);
-this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
+this.applyStatePresentation(state);
 return this.getQuery();
 } finally {
 if (this.restoringEpoch === epoch) { this.restoringEpoch = null; this.stateChanged(); }
 }
 },
+applyStatePresentation(state) {
+if (this.cancelResize) this.cancelResize();
+const current = new Map(this.columns.map(column => [column.id, column]));
+this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
+this.setTimeZone(state.timeZone); this.setSelection(state.selection);
+this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
+},
 setColumnOrder(ids) {
 if (!Array.isArray(ids) || ids.length !== this.columns.length || new Set(ids).size !== ids.length ||
-ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: column order must name every declared column exactly once.");
+ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: name each column once.");
 if (this.cancelResize) this.cancelResize();
 const columns = new Map(this.columns.map(column => [column.id, column]));
 this.columns = ids.map(id => columns.get(id)); this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
 },
 viewName(name) {
-if (typeof name !== "string" || !name.trim() || name.trim().length > 100) throw new Error("CanopyX: a saved view needs a name of 1 to 100 characters.");
+if (typeof name !== "string" || !name.trim() || name.trim().length > 100) throw new Error("CanopyX: view names need 1 to 100 nonblank characters.");
 return name.trim();
 },
 getSavedViews() { return [...this.savedViews.keys()]; },
 saveView(name) {
 name = this.viewName(name);
-if (!this.getQuery()) throw new Error("CanopyX: wait for an accepted query before saving a view.");
-if (!this.savedViews.has(name) && this.savedViews.size >= 20) throw new Error("CanopyX: at most 20 saved views are supported.");
+if (!this.getQuery()) throw new Error("CanopyX: saving needs an accepted query.");
+if (!this.savedViews.has(name) && this.savedViews.size >= 20) throw new Error("CanopyX: maximum 20 saved views.");
 this.savedViews.set(name, this.getState()); this.writeStoredState(this.getState()); this.syncSavedViews();
 if (this.savedChoice) this.savedChoice.value = name;
 },
@@ -5393,15 +5394,15 @@ if (this.destroyed || this.searchComposing) return;
 if (this.queryForChange().search === input.value) return;
 this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
 };
-const schedule = this.scheduleGridSearch = (delay = this.searchDelayMs) => {
+GRID_REPORTING.search?.(this, update);
+const schedule = () => {
 clearTimeout(this.searchTimer); this.searchTimer = null;
 if (this.searchComposing) return;
-this.searchDeadline = performance.now() + delay;
-if (delay === 0) update(); else this.searchTimer = setTimeout(update, delay);
+if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
 };
-input.addEventListener("compositionstart", () => { this.noteViewPreferenceIntent?.(); this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
-input.addEventListener("compositionend", () => { this.noteViewPreferenceIntent?.(); this.searchComposing = false; schedule(); }, { signal: signal });
-input.addEventListener("input", event => { this.noteViewPreferenceIntent?.(); if (!event.isComposing) schedule(); }, { signal: signal });
+input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
+input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
+input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
 input.addEventListener("keydown", event => {
 if (event.key === "Enter" && !this.searchComposing && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); update(); }
 }, { signal: signal });
