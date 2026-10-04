@@ -7116,6 +7116,11 @@ input.search !== request.search || input.includeCurrentFilter !== request.includ
 !Array.isArray(input.items) || input.items.length > request.limit || input.items.length > input.totalValues ||
 !input.items.length && input.totalValues > 0 || input.truncated !== (input.items.length < input.totalValues))
 throw new Error("CanopyX: facet response must match its accepted revision, projection and bounded counts.");
+const widened = !request.includeCurrentFilter &&
+gridResultShape(reportingFacetProjection(request.query, request.column)) !== gridResultShape(request.query);
+if (Number.isInteger(grid.snapshot.total) && input.matched > grid.snapshot.total || Number.isInteger(grid.snapshot.matched) &&
+(widened ? input.matched < grid.snapshot.matched : input.matched !== grid.snapshot.matched))
+throw new Error("CanopyX: facet counts contradict the known accepted dataset counts.");
 const keys = new Set(); let occurrences = 0;
 const items = input.items.map(item => {
 if (!item || !Object.prototype.hasOwnProperty.call(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
@@ -7781,7 +7786,7 @@ const column = this.columns.find(item => item.id === fields.column.value), numbe
 page.items.forEach((item, index) => {
 const text = item.value === null ? this.labels.gridIsNull : column.kind === "text" ?
 (typeof item.value === "boolean" ? this.labels.gridBoolean + ": " + (item.value ? this.labels.gridTrue : this.labels.gridFalse) :
-this.labels.gridText + ": " + item.value) : column.kind === "number" ? numbers.format(item.value) : item.value;
+this.labels.gridText + ": " + item.value) : column.kind === "number" ? String(item.value) : item.value;
 choice.appendChild(gridOption(String(index), text + " (" + numbers.format(item.count) + ")"));
 });
 choice.disabled = !items.length;

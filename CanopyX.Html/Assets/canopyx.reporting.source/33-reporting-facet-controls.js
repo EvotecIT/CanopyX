@@ -60,7 +60,7 @@
           page.items.forEach((item, index) => {
             const text = item.value === null ? this.labels.gridIsNull : column.kind === "text" ?
               (typeof item.value === "boolean" ? this.labels.gridBoolean + ": " + (item.value ? this.labels.gridTrue : this.labels.gridFalse) :
-                this.labels.gridText + ": " + item.value) : column.kind === "number" ? numbers.format(item.value) : item.value;
+                this.labels.gridText + ": " + item.value) : column.kind === "number" ? String(item.value) : item.value;
             choice.appendChild(gridOption(String(index), text + " (" + numbers.format(item.count) + ")"));
           });
           choice.disabled = !items.length;
