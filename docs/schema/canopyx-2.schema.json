@@ -10,6 +10,8 @@
     { "$ref": "#/$defs/gridQuery" },
     { "$ref": "#/$defs/gridCursorPage" },
     { "$ref": "#/$defs/gridCursorQuery" },
+    { "$ref": "#/$defs/gridFacetQuery" },
+    { "$ref": "#/$defs/gridFacetPage" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -70,6 +72,31 @@
         "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
       }]
     },
+    "gridFacetQuery": {
+      "type": "object", "required": ["protocol", "type", "query", "column", "search", "limit", "includeCurrentFilter"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetQuery" },
+        "column": { "$ref": "#/$defs/identifier" }, "search": { "type": "string", "maxLength": 16384 },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 200 }, "includeCurrentFilter": { "type": "boolean" },
+        "query": { "allOf": [{ "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] }, { "required": ["revision"] }] }
+      },
+      "$comment": "The target must be opted in by reporting.facetColumns. Window and sort do not limit counts. Excluding the current facet replaces its predicates with true; host authorization is preserved."
+    },
+    "gridFacetPage": {
+      "type": "object", "required": ["protocol", "type", "view", "revision", "column", "search", "includeCurrentFilter", "matched", "totalValues", "truncated", "items"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetPage" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
+        "search": { "type": "string", "maxLength": 16384 }, "includeCurrentFilter": { "type": "boolean" },
+        "matched": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "totalValues": { "type": "integer", "minimum": 0, "maximum": 2147483647 }, "truncated": { "type": "boolean" },
+        "items": { "type": "array", "maxItems": 200, "items": {
+          "type": "object", "required": ["value", "count"], "additionalProperties": false,
+          "properties": { "value": { "$ref": "#/$defs/cellValue" }, "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 } }
+        } }
+      },
+      "$comment": "Runtime checks the request identity/projection/revision, raw column kind, distinct typed canonical buckets and count relations. Without value search a complete response accounts for every matching row, including one missing/null bucket."
+    },
     "gridReporting": {
       "type": "object", "additionalProperties": false,
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
@@ -77,6 +104,7 @@
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "headerFilters": { "type": "boolean" },
         "filterGroups": { "type": "boolean" },
+        "facetColumns": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "columnReorder": { "type": "boolean" },
         "responsive": { "type": "boolean" },
         "minimumCenterWidth": { "type": "integer", "minimum": 40, "maximum": 4096 },

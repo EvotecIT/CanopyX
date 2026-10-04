@@ -47,9 +47,12 @@
 
   GRID_REPORTING.validate = view => {
     const options = view.reporting;
-    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth"].includes(key)) ||
+    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth"].includes(key)) ||
         ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
       throw new Error("CanopyX: invalid reporting options.");
+    if (options.facetColumns !== undefined && (!Array.isArray(options.facetColumns) ||
+        new Set(options.facetColumns).size !== options.facetColumns.length || options.facetColumns.some(id => !view.columns.some(column => column?.id === id))))
+      throw new Error("CanopyX: facets need unique declared column identities.");
     if (options.ordering === undefined) return;
     if (!options.ordering || typeof options.ordering !== "object" || Array.isArray(options.ordering))
       throw new Error("CanopyX: reporting ordering is keyed by column identity.");

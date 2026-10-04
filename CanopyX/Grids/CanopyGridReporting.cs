@@ -15,6 +15,10 @@ public sealed class CanopyGridReporting {
     /// <remarks>Groups reuse the existing query contract; ordinary predicates remain an outer conjunction.</remarks>
     public bool FilterGroups { get; set; }
 
+    /// <summary>Gets the declared columns offering full-query raw value/count facets.</summary>
+    /// <remarks>Host grids require an explicit source facet hook. Counts are never inferred from cached windows.</remarks>
+    public IList<string> FacetColumns { get; } = new List<string>();
+
     /// <summary>Gets or sets whether headers offer pointer dragging and keyboard column move controls.</summary>
     public bool ColumnReorder { get; set; }
 
@@ -35,6 +39,12 @@ public sealed class CanopyGridReporting {
     public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
 
     internal void Validate(IList<CanopyColumn> columns) {
+        var facets = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var id in FacetColumns) {
+            CanopyColumn? declared = null;
+            foreach (var column in columns) if (column.Id == id) declared = column;
+            if (declared == null || !facets.Add(id)) throw new InvalidOperationException("Facet columns must be unique declared identities.");
+        }
         if (MinimumCenterWidth < 40 || MinimumCenterWidth > 4096)
             throw new InvalidOperationException("MinimumCenterWidth must be from 40 to 4096 CSS pixels.");
         foreach (var pair in Layout) {
@@ -69,6 +79,11 @@ public sealed class CanopyGridReporting {
         writer.BeginObject();
         if (HeaderFilters) writer.Property("headerFilters", true);
         if (FilterGroups) writer.Property("filterGroups", true);
+        if (FacetColumns.Count != 0) {
+            writer.Name("facetColumns").BeginArray();
+            foreach (var id in FacetColumns) writer.String(id);
+            writer.EndArray();
+        }
         if (ColumnReorder) writer.Property("columnReorder", true);
         if (Responsive) writer.Property("responsive", true);
         if (MinimumCenterWidth != 128) writer.Property("minimumCenterWidth", MinimumCenterWidth);

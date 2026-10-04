@@ -4595,14 +4595,17 @@ const rows = view.rows, columns = new Map(view.columns.map(column => [column.id,
 const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
 const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
 let lastShape = null, ordered = null;
-return {
+const matching = query => {
+const terms = gridSearchTerms(query.search, query.searchMode);
+return rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+};
+const source = {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
 const shape = gridResultShape(query);
 if (shape !== lastShape) {
-const terms = gridSearchTerms(query.search, query.searchMode);
-ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
-query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+ordered = matching(query);
 ordered.sort((a, b) => {
 for (const sort of query.sort) {
 const compared = compare(a, b, columns.get(sort.column), sort.direction);
@@ -4616,6 +4619,8 @@ return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline"
 total: rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
 }
 };
+GRID_REPORTING.inlineSource?.(source, view, matching);
+return source;
 }
 function gridCursor(cursor) {
 requireIdentifier(cursor, "grid cursor");
@@ -6776,9 +6781,12 @@ return gridOrder(a.length - i, b.length - j);
 }
 GRID_REPORTING.validate = view => {
 const options = view.reporting;
-if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth"].includes(key)) ||
+if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth"].includes(key)) ||
 ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
 throw new Error("CanopyX: invalid reporting options.");
+if (options.facetColumns !== undefined && (!Array.isArray(options.facetColumns) ||
+new Set(options.facetColumns).size !== options.facetColumns.length || options.facetColumns.some(id => !view.columns.some(column => column?.id === id))))
+throw new Error("CanopyX: facets need unique declared column identities.");
 if (options.ordering === undefined) return;
 if (!options.ordering || typeof options.ordering !== "object" || Array.isArray(options.ordering))
 throw new Error("CanopyX: reporting ordering is keyed by column identity.");
@@ -7056,6 +7064,75 @@ return group;
 return read(roots.firstElementChild);
 }
 });
+function reportingFacetKey(value, column) {
+if (value !== null && typeof value === "object" || value === undefined) throw new Error("CanopyX: facet values are raw scalars.");
+const scalar = gridScalar(value, column);
+if (scalar === null) return "null";
+return column.kind === "datetime" ? "d:" + scalar : typeof scalar === "string" ? "s:" + foldText(scalar) :
+typeof scalar === "boolean" ? "b:" + scalar : "n:" + scalar;
+}
+function reportingFacetProjection(query, column) {
+const project = group => {
+if (!group) return undefined;
+const filters = group.filters.filter(filter => filter.column !== column), groups = group.groups.map(project);
+if (group.operator === "or" && (filters.length !== group.filters.length || groups.some(child => !child))) return undefined;
+const children = groups.filter(Boolean);
+return filters.length || children.length ? { operator: group.operator, filters, groups: children } : undefined;
+};
+return { ...query, filters: query.filters.filter(filter => filter.column !== column), filterGroup: project(query.filterGroup) };
+}
+function reportingFacetPage(input, grid, request) {
+checkDocument(input, "gridFacetPage");
+const column = grid.view.columns.find(item => item.id === request.column);
+if (input.view !== grid.view.id || input.revision !== request.query.revision || input.column !== request.column ||
+input.search !== request.search || input.includeCurrentFilter !== request.includeCurrentFilter ||
+!Number.isInteger(input.matched) || input.matched < 0 || input.matched > MAX_PROTOCOL_INTEGER ||
+!Number.isInteger(input.totalValues) || input.totalValues < 0 || input.totalValues > input.matched ||
+!Array.isArray(input.items) || input.items.length > request.limit || input.items.length > input.totalValues ||
+!input.items.length && input.totalValues > 0 || input.truncated !== (input.items.length < input.totalValues))
+throw new Error("CanopyX: facet response must match its accepted revision, projection and bounded counts.");
+const keys = new Set(); let occurrences = 0;
+const items = input.items.map(item => {
+if (!item || !Object.prototype.hasOwnProperty.call(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
+throw new Error("CanopyX: invalid facet value/count bucket.");
+const key = reportingFacetKey(item.value, column);
+if (keys.has(key)) throw new Error("CanopyX: duplicate typed facet bucket.");
+keys.add(key); occurrences += item.count;
+return { value: item.value, count: item.count };
+});
+if (occurrences > input.matched || !request.search && !input.truncated && occurrences !== input.matched)
+throw new Error("CanopyX: facet buckets contradict the matching row count.");
+return gridFreeze({ protocol: PROTOCOL, type: "gridFacetPage", view: input.view, revision: input.revision,
+column: input.column, search: input.search, includeCurrentFilter: input.includeCurrentFilter,
+matched: input.matched, totalValues: input.totalValues, truncated: input.truncated, items });
+}
+GRID_REPORTING.inlineSource = (source, view, matching) => {
+if (!view.reporting?.facetColumns?.length) return;
+source.facet = (request, options) => {
+if (options.signal.aborted) throw new DOMException("Facet request was cancelled.", "AbortError");
+const column = view.columns.find(item => item.id === request.column), query = request.includeCurrentFilter ? request.query :
+reportingFacetProjection(request.query, column.id);
+const rows = matching(query), buckets = new Map(), needle = foldText(request.search);
+for (const row of rows) {
+const scalar = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && scalar !== null ? new Date(scalar).toISOString() : scalar;
+const key = reportingFacetKey(value, column), existing = buckets.get(key);
+if (existing) {
+existing.count++;
+if (typeof value === "string" && value < existing.value) existing.value = value;
+} else buckets.set(key, { value, count: 1 });
+}
+const items = [...buckets.values()].filter(item => foldText(item.value).includes(needle));
+items.sort((a, b) => {
+if (a.value === null || b.value === null) return a.value === b.value ? 0 : a.value === null ? 1 : -1;
+if (column.kind !== "text") return gridOrder(gridScalar(a.value, column), gridScalar(b.value, column));
+if (typeof a.value !== typeof b.value) return typeof a.value === "boolean" ? -1 : 1;
+return gridOrder(typeof a.value === "string" ? foldText(a.value) : a.value, typeof b.value === "string" ? foldText(b.value) : b.value);
+});
+return { protocol: PROTOCOL, type: "gridFacetPage", view: view.id, revision: "inline", column: column.id,
+search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: rows.length,
+totalValues: items.length, truncated: items.length > request.limit, items: items.slice(0, request.limit) };
+};
+};
 const LAYOUT_VALIDATE = GRID_REPORTING.validate, LAYOUT_PREPARE = DataGrid.prototype.prepareState;
 GRID_REPORTING.api = (api, grid) => { api.autoFitColumn = id => GRID_REPORTING.fitColumn(grid, id); };
 function reportingLayout(grid, column) { return grid.columnLayouts.get(column.id) || { minimum: 40, maximum: MAX_COLUMN_WIDTH, flex: 0 }; }
@@ -7583,6 +7660,32 @@ else this.setFocus(element ? element._w : this.focused || this.rowItem(this.rowA
 }
 }, { once: true });
 dialog.showModal(); content.focus();
+};
+const FACET_API = GRID_REPORTING.api;
+GRID_REPORTING.api = (api, grid) => {
+FACET_API?.(api, grid);
+api.getFacets = (column, options) => grid.getFacets(column, options);
+};
+DataGrid.prototype.getFacets = async function (column, options = {}) {
+if (this.destroyed || this.pendingQuery || !this.acceptedQuery || !this.view.reporting?.facetColumns?.includes(column) || typeof this.source.facet !== "function")
+throw new Error("CanopyX: facets need an accepted query, opted-in column and explicit source capability.");
+const search = options.search === undefined ? "" : options.search, limit = options.limit === undefined ? 100 : options.limit,
+includeCurrentFilter = options.includeCurrentFilter === undefined ? true : options.includeCurrentFilter;
+if (typeof search !== "string" || search.length > 16384 || !Number.isInteger(limit) || limit < 1 || limit > 200 || typeof includeCurrentFilter !== "boolean")
+throw new Error("CanopyX: invalid bounded facet request.");
+const controller = new AbortController(), dataSignal = this.dataLifetime.signal, epoch = this.queryEpoch;
+const abort = () => controller.abort();
+dataSignal.addEventListener("abort", abort, { once: true }); options.signal?.addEventListener("abort", abort, { once: true });
+if (options.signal?.aborted) abort();
+const request = gridFreeze({ protocol: PROTOCOL, type: "gridFacetQuery", column, search, limit, includeCurrentFilter, query: this.acceptedQuery });
+try {
+const page = await this.runGridHook(signal => this.source.facet(request, { signal }), controller.signal);
+gridOperationActive(this, controller.signal);
+if (epoch !== this.queryEpoch) throw new DOMException("Facet request was superseded.", "AbortError");
+return reportingFacetPage(page, this, request);
+} finally {
+dataSignal.removeEventListener("abort", abort); options.signal?.removeEventListener("abort", abort); controller.abort();
+}
 };
 function createTreeGrid(host, options) {
 if (!host || !options || !options.view) {

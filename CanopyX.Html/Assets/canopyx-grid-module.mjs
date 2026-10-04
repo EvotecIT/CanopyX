@@ -4599,14 +4599,17 @@ const rows = view.rows, columns = new Map(view.columns.map(column => [column.id,
 const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
 const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
 let lastShape = null, ordered = null;
-return {
+const matching = query => {
+const terms = gridSearchTerms(query.search, query.searchMode);
+return rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+};
+const source = {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
 const shape = gridResultShape(query);
 if (shape !== lastShape) {
-const terms = gridSearchTerms(query.search, query.searchMode);
-ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
-query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+ordered = matching(query);
 ordered.sort((a, b) => {
 for (const sort of query.sort) {
 const compared = compare(a, b, columns.get(sort.column), sort.direction);
@@ -4620,6 +4623,8 @@ return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline"
 total: rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
 }
 };
+GRID_REPORTING.inlineSource?.(source, view, matching);
+return source;
 }
 function gridCursor(cursor) {
 requireIdentifier(cursor, "grid cursor");

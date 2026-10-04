@@ -36,6 +36,8 @@ export interface GridReporting {
   readonly headerFilters?: boolean;
   /** Offer a bounded nested AND/OR editor over the accepted query's filterGroup. */
   readonly filterGroups?: boolean;
+  /** Full accepted-query values/counts. Hosted grids require an explicit source facet capability. */
+  readonly facetColumns?: readonly string[];
   /** Declared column identities; an explicit custom renderer takes precedence. */
   readonly presenters?: Readonly<Record<string, GridPresenter>>;
 }
@@ -136,7 +138,22 @@ export interface GridPage {
   items: GridRow[];
 }
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
-export interface GridSource { readonly navigation?: "offset"; query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
+export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; }
+/** Facet values/counts ignore the query window and sort; excluding the current column replaces its predicates by true. */
+export interface GridFacetQuery<Q extends AcceptedGridQuery = AcceptedGridQuery> {
+  readonly protocol: "canopyx/2"; readonly type: "gridFacetQuery"; readonly query: Q;
+  readonly column: string; readonly search: string; readonly limit: number; readonly includeCurrentFilter: boolean;
+}
+export interface GridFacetPage {
+  readonly protocol: "canopyx/2"; readonly type: "gridFacetPage"; readonly view: string; readonly revision: string;
+  readonly column: string; readonly search: string; readonly includeCurrentFilter: boolean;
+  readonly matched: number; readonly totalValues: number; readonly truncated: boolean;
+  readonly items: readonly { readonly value: CellValue; readonly count: number }[];
+}
+export interface GridFacetSource<Q extends AcceptedGridQuery = AcceptedGridQuery> {
+  facet?(request: GridFacetQuery<Q>, options: { signal: AbortSignal }): GridFacetPage | PromiseLike<GridFacetPage>;
+}
+export interface GridSource extends GridFacetSource<GridQuery> { readonly navigation?: "offset"; query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
 /** One complete visible page. Null counts remain unknown; ordinal positions do not grant random access. */
 export interface GridCursorPage extends Omit<GridPage, "type" | "total" | "matched"> {
   type: "gridCursorPage";
@@ -145,7 +162,7 @@ export interface GridCursorPage extends Omit<GridPage, "type" | "total" | "match
   nextCursor?: string;
   previousCursor?: string;
 }
-export interface GridCursorSource {
+export interface GridCursorSource extends GridFacetSource<GridCursorQuery> {
   readonly navigation: "cursor";
   query(query: GridCursorQuery, options: { signal: AbortSignal }): GridCursorPage | PromiseLike<GridCursorPage>;
 }
@@ -245,6 +262,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   autoFitColumn?(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
   setColumnPinned?(id: string, pin: GridColumnPin): void;
   getColumnLayout?(): readonly GridColumnPlacement[];
+  /** Reporting runtime only: revisioned, bounded full-query aggregation. Never reads the viewport cache for counts. */
+  getFacets?(column: string, options?: GridFacetOptions): Promise<GridFacetPage>;
   setColumnVisible(id: string, visible: boolean): void;
   setColumnOrder(ids: string[]): void;
   getState(): GridState<Q>;
