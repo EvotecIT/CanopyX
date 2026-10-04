@@ -52,5 +52,20 @@ internal static class RichGridExample {
                 view.SaveHtmlPage(Path.Combine(output, name), new CanopyHtmlOptions { Title = "CanopyX rich reporting grid", Theme = theme });
             }
         }
+        view.Reporting.Responsive = true;
+        view.Reporting.Layout["name"] = new CanopyGridColumnLayout(160, 320, pin: CanopyGridColumnPin.Left, priority: 0, alwaysVisible: true);
+        view.Reporting.Layout["status"] = new CanopyGridColumnLayout(100, 240, pin: CanopyGridColumnPin.Right, priority: 1);
+        view.Reporting.Layout["progress"] = new CanopyGridColumnLayout(100, 300, priority: 2);
+        view.Reporting.Layout["enabled"] = new CanopyGridColumnLayout(80, 200, priority: 3);
+        view.Reporting.Layout["owners"] = new CanopyGridColumnLayout(140, 380, 1, priority: 4);
+        view.Reporting.Layout["notes"] = new CanopyGridColumnLayout(180, 800, 2, priority: 5);
+        foreach (var presentation in new[] { CanopyGridPresentation.Paged, CanopyGridPresentation.Continuous }) {
+            view.Presentation = presentation;
+            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+                var name = "responsive-grid" + (presentation == CanopyGridPresentation.Continuous ? "-continuous" : "") +
+                    (theme == CanopyTheme.Dark ? "-dark" : "") + ".html";
+                InventoryGridExample.WritePage(view, output, name, theme);
+            }
+        }
     }
 }

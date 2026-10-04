@@ -3,7 +3,7 @@ using CanopyX.Json;
 
 namespace CanopyX;
 
-/// <summary>Immutable width constraints and optional flexible sizing for a reporting column.</summary>
+/// <summary>Immutable width, flexible sizing, pin and responsive retention policies for a reporting column.</summary>
 public sealed class CanopyGridColumnLayout {
     /// <summary>Creates width constraints in CSS pixels and a relative weight for unused viewport width.</summary>
     /// <param name="minimum">Minimum width, at least 40 pixels.</param>
@@ -12,7 +12,7 @@ public sealed class CanopyGridColumnLayout {
     /// <param name="pin">Requested edge placement. Pins are temporarily suspended when they cannot leave the configured center width.</param>
     /// <param name="priority">Responsive retention priority; smaller values remain visible longer. Equal priorities hide from the end of the current order.</param>
     /// <param name="alwaysVisible">Whether responsive layout must retain the column. Explicit user hiding remains possible.</param>
-    /// <exception cref="ArgumentOutOfRangeException">The bounds or weight are invalid.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The bounds, weight, pin or priority are invalid.</exception>
     public CanopyGridColumnLayout(int minimum = 40, int maximum = int.MaxValue, double flex = 0,
         CanopyGridColumnPin pin = CanopyGridColumnPin.None, int priority = int.MaxValue, bool alwaysVisible = false) {
         if (minimum < CanopyColumn.MinWidth) throw new ArgumentOutOfRangeException(nameof(minimum));

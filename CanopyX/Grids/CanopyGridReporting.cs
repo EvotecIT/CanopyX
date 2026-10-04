@@ -21,7 +21,7 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets or sets the minimum center width left by effective pinned groups, from 40 to 4096 CSS pixels.</summary>
     public int MinimumCenterWidth { get; set; } = 128;
 
-    /// <summary>Gets immutable width and flex policies keyed by declared column identities.</summary>
+    /// <summary>Gets immutable width, flex, pin and responsive retention policies keyed by declared column identities.</summary>
     public IDictionary<string, CanopyGridColumnLayout> Layout { get; } = new Dictionary<string, CanopyGridColumnLayout>(StringComparer.Ordinal);
 
     /// <summary>Gets immutable text ordering policies keyed by declared sortable text-column identities.</summary>

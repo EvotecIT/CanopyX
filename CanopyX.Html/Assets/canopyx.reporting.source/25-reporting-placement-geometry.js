@@ -51,6 +51,10 @@
     this.cols.forEach((column, index) => this.applyColumnPin(this.headCells[index], column));
     for (const row of [...this.rendered.values(), ...this.pool]) if (row._kind === "node")
       this.cols.forEach((column, index) => { if (row.children[index]) this.applyColumnPin(row.children[index], column); });
+    const active = document.activeElement;
+    if (active && this.headRow.contains(active)) this.focusReportingHeader(active);
+    const cell = active && active.closest(".cx-cell");
+    if (cell && this.canvas.contains(cell)) this.revealInRow(cell, active, false);
   };
   DataGrid.prototype.applyColumnPin = function (cell, column) {
     const pin = column.effectivePin || "none";

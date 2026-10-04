@@ -10,7 +10,8 @@ const view = { protocol: "canopyx/2", type: "grid", id: "placement", label: "Res
   rows: Array.from({ length: 100 }, (_, i) => ({ id: "r" + i, cells: { name: "Record " + i, region: "West", owner: "Alex",
     notes: "Find this hidden field " + i, action: "Inspect" } })) };
 async function open(page, patch = {}) {
-  await page.route("http://canopyx.test/placement", route => route.fulfill({ contentType: "text/html", body: viewPage({ ...view, ...patch }) }));
+  await page.route("http://canopyx.test/placement", route => route.fulfill({ contentType: "text/html", body: viewPage({ ...view, ...patch })
+    .replace('<body class="cx-page">', '<body class="cx-page"><main><h1>Responsive inventory</h1>').replace('</body>', '</main></body>') }));
   await page.goto("http://canopyx.test/placement"); await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await nextFrames(page);
 }
 const api = (page, run) => page.evaluate(run);
@@ -41,7 +42,7 @@ test("responsive hiding retains searchable and exported fields while user hiding
   await page.setViewportSize({ width: 390, height: 700 }); await open(page, { reporting: { ...view.reporting, responsive: true } });
   expect(await headerOrder(page)).toEqual(["name", "action"]);
   const current = await layout(page); expect(current.find(column => column.id === "notes")).toMatchObject({ visible: false, responsiveHidden: true });
-  await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.search("hidden field 17"));
+  await page.getByRole("searchbox").fill("hidden field 17"); await page.getByRole("searchbox").press("Enter");
   await expect(page.locator('.cx-row[data-cx-id="r17"]')).toBeVisible();
   const request = await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.prepareExport({ scope: "filtered" }).request);
   expect(request.columns.map(column => column.id)).toEqual(["name", "region", "owner", "notes", "action"]);
@@ -78,7 +79,7 @@ test("header moves cross pinned groups and the column chooser preserves its own 
   expect(await headerOrder(page)).toEqual(["region", "name", "owner", "notes", "action"]);
   await expect(header(page, "region").locator(".cx-column-move")).toBeFocused();
   await page.locator(".cx-grid-columns > summary").click();
-  const chooser = page.getByLabel("owner: pinned region"); await chooser.selectOption("right"); await expect(chooser).toBeFocused();
+  const chooser = page.getByLabel("owner: pinned region"); await chooser.focus(); await chooser.selectOption("right"); await expect(chooser).toBeFocused();
   expect(await headerOrder(page)).toEqual(["region", "name", "notes", "owner", "action"]);
   const earlier = page.getByRole("button", { name: "Move owner earlier", exact: true }); await earlier.press("Enter");
   await expect(earlier).toBeFocused(); expect((await layout(page)).find(c => c.id === "owner").requestedPin).toBe("none");
@@ -103,4 +104,53 @@ test("an oversized outer pin suspends its whole edge prefix and leaves center na
   await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("ArrowRight");
   const frame = await page.locator(".cx-grid").boundingBox(), focused = await page.evaluate(() => document.activeElement.getBoundingClientRect().toJSON());
   expect(focused.left).toBeGreaterThanOrEqual(frame.x - 1); expect(focused.right).toBeLessThanOrEqual(frame.x + frame.width - 160 + 1);
+});
+
+test("growing a pinned edge leaves the focused center header control uncovered", async ({ page }) => {
+  await page.setViewportSize({ width: 650, height: 700 }); await open(page);
+  const grip = header(page, "notes").getByRole("separator"); await grip.focus(); await grip.press("ArrowLeft");
+  await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnWidth("action", 240)); await nextFrames(page);
+  await expect(grip).toBeFocused();
+  const focused = await grip.boundingBox(), edge = await header(page, "action").boundingBox();
+  expect(focused.x + focused.width).toBeLessThanOrEqual(edge.x + 1);
+});
+
+test("growing a pinned edge also reveals the entered center cell", async ({ page }) => {
+  await page.setViewportSize({ width: 650, height: 700 }); await open(page);
+  await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("End"); await page.keyboard.press("ArrowLeft");
+  await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnWidth("action", 240)); await nextFrames(page);
+  const focused = await page.evaluate(() => document.activeElement.getBoundingClientRect().toJSON()), edge = await header(page, "action").boundingBox();
+  expect(focused.right).toBeLessThanOrEqual(edge.x + 1);
+  expect(await page.evaluate(() => document.activeElement.textContent)).toContain("hidden field 0");
+});
+
+test("pin changes preserve the same reachable host control and reject after disposal", async ({ page }) => {
+  await open(page);
+  await api(page, () => {
+    const host = document.querySelector('[data-canopyx-host]'), definition = host.canopyx.view;
+    host.canopyx.destroy(); host.replaceChildren();
+    host.canopyx = CanopyX.createDataGrid(host, { view: definition, renderers: { owner: (_, cell) => {
+      const hidden = document.createElement("button"); hidden.hidden = true; cell.append(hidden);
+      const input = document.createElement("input"); input.setAttribute("aria-label", "Owner note"); input.value = "Alex"; cell.append(input); return true;
+    } } }); return host.canopyx.ready;
+  });
+  const note = page.locator('.cx-row[data-cx-id="r0"]').getByLabel("Owner note"); await note.focus();
+  await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnPinned("owner", "right"));
+  await expect(note).toBeFocused(); await note.press("End"); await note.press("x"); await expect(note).toHaveValue("Alexx");
+  expect(await api(page, () => { const grid = document.querySelector('[data-canopyx-host]').canopyx; grid.destroy();
+    try { grid.setColumnPinned("owner", "none"); return false; } catch { return true; } })).toBe(true);
+});
+
+test("responsive record details receive complete immutable cells, including fields absent from the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 }); await open(page, { reporting: { ...view.reporting, responsive: true } });
+  await api(page, () => {
+    const host = document.querySelector('[data-canopyx-host]'), definition = host.canopyx.view;
+    host.canopyx.destroy(); host.replaceChildren();
+    host.canopyx = CanopyX.createDataGrid(host, { view: definition, onDetails({ row, query, returnFocus }) {
+      window.detailProof = { row, query, frozen: Object.isFrozen(row.cells), connected: returnFocus.isConnected };
+    } }); return host.canopyx.ready;
+  });
+  await page.locator('.cx-row[data-cx-id="r0"]').press("Control+Enter");
+  await expect.poll(() => page.evaluate(() => window.detailProof)).toMatchObject({ row: { id: "r0", cells: {
+    owner: "Alex", notes: "Find this hidden field 0" } }, frozen: true, connected: true });
 });

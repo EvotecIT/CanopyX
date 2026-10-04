@@ -59,6 +59,8 @@ The reporting filter editor provides inclusive numeric/date ranges, category sug
 
 Reporting grids support direct pointer/keyboard header moves, per-column minimum/maximum widths and optional flex sizing. Auto-fit explicitly samples up to 200 loaded accepted-query records and applies a bounded width estimate. Manual sizing disables flex until reset or saved-state restoration; column identities continue to govern sorting, visibility and export order.
 
+Reporting layouts also support left/right pins and responsive retention priorities. Pins suspend when space is needed for the scrolling center. Temporary responsive hiding preserves saved visibility intent, full-record details, search and default export columns; the column chooser distinguishes these temporary decisions from explicit user hiding.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX

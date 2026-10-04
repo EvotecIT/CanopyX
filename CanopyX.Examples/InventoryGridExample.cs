@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using CanopyX.Html;
 
 namespace CanopyX.Examples;
@@ -48,18 +49,21 @@ internal static class InventoryGridExample {
         WritePage(view, output, "inventory-grid-query-dark.html", CanopyTheme.Dark);
     }
 
-    private static void WritePage(CanopyGridView view, string output, string name, CanopyTheme theme) {
-        var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX file inventory", Theme = theme });
+    internal static void WritePage(CanopyGridView view, string output, string name, CanopyTheme theme) {
+        var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX " + view.Label, Theme = theme });
         const string details = """
-<dialog id="record-details" aria-labelledby="record-title" style="max-width:min(36rem,80vw);border:1px solid #8c959f;border-radius:8px">
+<dialog id="record-details" aria-labelledby="record-title" style="box-sizing:border-box;width:min(42rem,90vw);max-height:85vh;overflow:auto;padding:20px;border:1px solid var(--cx-line);border-radius:8px;background:var(--cx-surface);color:var(--cx-text)">
 <h2 id="record-title">Record details</h2><dl id="record-fields"></dl><form method="dialog"><button>Close details</button></form></dialog>
 <script>
 (() => {
   const dialog = document.getElementById('record-details'), fields = document.getElementById('record-fields');
   let back;
   dialog.addEventListener('close', () => { if (back && back.isConnected) back.focus({preventScroll:true}); });
-  CanopyX.configure('inventory-grid', { onDetails({row, returnFocus}) {
+  CanopyX.configure(__VIEW_ID__, { onQuery() { back = null; if (dialog.open) dialog.close(); }, onDetails({row, returnFocus}) {
     back = returnFocus; fields.replaceChildren();
+    const host = document.querySelector('[data-canopyx-host]'), theme = getComputedStyle(host);
+    for (const name of ['--cx-surface','--cx-text','--cx-line','--cx-accent']) dialog.style.setProperty(name, theme.getPropertyValue(name));
+    dialog.style.colorScheme = theme.colorScheme;
     for (const [name, cell] of Object.entries(row.cells)) {
       const value = cell && typeof cell === 'object' ? (cell.text ?? cell.value) : cell;
       const term = fields.appendChild(document.createElement('dt')); term.textContent = name;
@@ -70,6 +74,6 @@ internal static class InventoryGridExample {
 })();
 </script>
 """;
-        File.WriteAllText(Path.Combine(output, name), page.Replace("</body>", details + "</body>"));
+        File.WriteAllText(Path.Combine(output, name), page.Replace("</body>", details.Replace("__VIEW_ID__", JsonSerializer.Serialize(view.Id)) + "</body>"));
     }
 }

@@ -9,9 +9,17 @@ const reportingHost = document.createElement("div");
 const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
   source: { kind: "inline" }, rows: [], rowHeight: 28, pageSize: 100, selection: "none", search: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 200, sortable: true }],
-  reporting: { columnReorder: true, layout: { name: { minimum: 120, maximum: 800, flex: 1 } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
+  reporting: { columnReorder: true, responsive: true, minimumCenterWidth: 160,
+    layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
+reportingApi.setColumnPinned?.("name", "right");
+const placement = reportingApi.getColumnLayout?.()[0];
+if (placement) {
+  const requested: import("@evotecit/canopyx/grid").GridColumnPin = placement.requestedPin;
+  // @ts-expect-error Effective layout snapshots are read-only.
+  placement.responsiveHidden = false;
+}
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,

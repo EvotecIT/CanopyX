@@ -41,7 +41,7 @@
 
   DataGrid.prototype.setColumnPinned = function (id, pin) {
     const column = this.columns.find(item => item.id === id);
-    if (!column || !COLUMN_PINS.includes(pin)) throw new Error("CanopyX: pin needs a declared column and none, left or right.");
+    if (this.destroyed || !column || !COLUMN_PINS.includes(pin)) throw new Error("CanopyX: pin needs a live grid, declared column and none, left or right.");
     if (this.cancelResize) this.cancelResize();
     const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
     column.pin = pin; this.buildHeader(); this.syncColumnControls(); this.render();

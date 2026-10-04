@@ -110,6 +110,16 @@ Reporting grids also offer direct header moves with `inventory.Reporting.ColumnR
 
 Press Enter on a reporting-grid resize separator, double-click it, or call `api.autoFitColumn("name")` to fit loaded values. The method measures at most 200 cached records from the accepted query, limits each measured display value to 2,048 code units, and caps its estimate at 800 pixels before applying declared width constraints. It does not fetch unseen records or inspect a custom renderer's DOM. The result states the sampled count and `scope: "loaded"`.
 
+Reporting layouts can retain important fields at the edges and adapt the rest to the available width:
+
+```csharp
+inventory.Reporting.Responsive = true;
+inventory.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 600,
+    pin: CanopyGridColumnPin.Left, priority: 0, alwaysVisible: true);
+```
+
+Lower priorities remain visible longer. Temporary responsive hiding preserves the user's saved visibility choices, search, full record details and default export columns. The column chooser can pin fields left or right; pins suspend when they cannot leave the configured scrolling center and return when space permits. `api.getColumnLayout()` distinguishes requested pins and temporary layout decisions. The generated `responsive-grid.html` example combines pinning, rich cells and a host-owned record dialog in paged/continuous and light/dark variants.
+
 Use `api.getState()` and `await api.setState(state)` to save and restore the accepted query, column layout, time zone, selection IDs and scroll position. `api.saveView("Archives")` saves a named snapshot; `await api.applySavedView("Archives")` restores it, and `api.removeSavedView("Archives")` removes it. A grid's `StateKey` remembers the current settings and up to 20 named views in session storage. `await api.resetView()` restores the original definition and clears selection while retaining named views. A host that supplies its own toolbar passes `toolbar: false` and uses these same controller methods.
 
 Grid pages choose the entry point required by their definition, which also hosts interactive trees. For mixed fragments, use `CanopyHtmlAssets.GetRuntime(view)` with `CanopyHtmlAssets.WriteTo` and include the largest required entry point once. Load that entry point first; a smaller tree or ordinary-grid runtime cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.

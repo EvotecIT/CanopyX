@@ -6780,7 +6780,7 @@ return gridOrder(a.length - i, b.length - j);
 }
 GRID_REPORTING.validate = view => {
 const options = view.reporting;
-if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "presenters", "layout", "columnReorder"].includes(key)) ||
+if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth"].includes(key)) ||
 options.headerFilters !== undefined && typeof options.headerFilters !== "boolean")
 throw new Error("CanopyX: invalid reporting options.");
 if (options.ordering === undefined) return;
@@ -6986,7 +6986,7 @@ if (!options.layout || typeof options.layout !== "object" || Array.isArray(optio
 for (const [id, policy] of Object.entries(options.layout)) {
 const column = view.columns.find(item => item && item.id === id);
 if (!column || !policy || typeof policy !== "object" || Array.isArray(policy) ||
-Object.keys(policy).some(key => !["minimum", "maximum", "flex"].includes(key)) ||
+Object.keys(policy).some(key => !["minimum", "maximum", "flex", "pin", "priority", "alwaysVisible"].includes(key)) ||
 !Number.isInteger(policy.minimum) || policy.minimum < 40 || !Number.isInteger(policy.maximum) ||
 policy.maximum < policy.minimum || policy.maximum > MAX_COLUMN_WIDTH ||
 policy.flex !== undefined && (!Number.isFinite(policy.flex) || policy.flex < 0 || policy.flex > 100) ||
@@ -7190,6 +7190,187 @@ this.cancelColumnDrag = stop;
 this.lifetime.signal.addEventListener("abort", stop, { once: true });
 global.addEventListener("pointermove", move); global.addEventListener("pointerup", end);
 global.addEventListener("pointercancel", cancel); global.addEventListener("blur", stop); global.addEventListener("keydown", key);
+};
+const COLUMN_PINS = ["none", "left", "right"], PLACEMENT_VALIDATE = GRID_REPORTING.validate,
+PLACEMENT_PREPARE = DataGrid.prototype.prepareState, PLACEMENT_STATE_COLUMN = gridStateColumn,
+PLACEMENT_STATE_COLUMNS = gridStateColumns, PLACEMENT_API = GRID_REPORTING.api;
+GRID_REPORTING.validate = view => {
+PLACEMENT_VALIDATE(view);
+const options = view.reporting;
+if (options.responsive !== undefined && typeof options.responsive !== "boolean" || options.minimumCenterWidth !== undefined &&
+(!Number.isInteger(options.minimumCenterWidth) || options.minimumCenterWidth < 40 || options.minimumCenterWidth > 4096))
+throw new Error("CanopyX: invalid responsive flag or minimum center width.");
+for (const policy of Object.values(options.layout || {})) {
+if (policy.pin !== undefined && !COLUMN_PINS.includes(policy.pin) || policy.priority !== undefined &&
+(!Number.isInteger(policy.priority) || policy.priority < 0 || policy.priority > MAX_PROTOCOL_INTEGER) ||
+policy.alwaysVisible !== undefined && typeof policy.alwaysVisible !== "boolean")
+throw new Error("CanopyX: invalid reporting placement policy.");
+}
+};
+DataGrid.prototype.prepareState = function () {
+const policies = this.view.reporting && this.view.reporting.layout || {};
+for (const column of this.columns) column.pin = policies[column.id] && policies[column.id].pin || "none";
+return PLACEMENT_PREPARE.call(this);
+};
+gridStateColumn = column => Object.assign(PLACEMENT_STATE_COLUMN(column), { pin: column.pin });
+gridStateColumns = (grid, input) => {
+const result = PLACEMENT_STATE_COLUMNS(grid, input), sources = new Map(input.map(column => [column.id, column]));
+for (const saved of result) {
+const source = sources.get(saved.id) || saved;
+if (source.pin !== undefined && !COLUMN_PINS.includes(source.pin)) throw new Error("CanopyX: invalid saved column pin.");
+saved.pin = source.pin === undefined ? reportingLayout(grid, saved).pin || "none" : source.pin;
+}
+return result;
+};
+GRID_REPORTING.api = (api, grid) => {
+PLACEMENT_API(api, grid);
+api.setColumnPinned = (id, pin) => grid.setColumnPinned(id, pin);
+api.getColumnLayout = () => grid.columns.map(column => Object.freeze({ id: column.id, requestedPin: column.pin,
+pin: column.effectivePin || "none", visible: !column.hidden && !column.responsiveHidden,
+responsiveHidden: !!column.responsiveHidden, width: column.renderWidth || column.width }));
+};
+DataGrid.prototype.setColumnPinned = function (id, pin) {
+const column = this.columns.find(item => item.id === id);
+if (this.destroyed || !column || !COLUMN_PINS.includes(pin)) throw new Error("CanopyX: pin needs a live grid, declared column and none, left or right.");
+if (this.cancelResize) this.cancelResize();
+const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
+column.pin = pin; this.buildHeader(); this.syncColumnControls(); this.render();
+this.restoreReportingFocus(held, columnId); this.stateChanged();
+};
+const PLACEMENT_WIDTHS = DataGrid.prototype.applyWidths, PLACEMENT_CELL = DataGrid.prototype.newCell;
+DataGrid.prototype.visibleColumns = function () {
+const requested = this.columns.filter(column => !column.hidden), options = this.view.reporting || {};
+for (const column of this.columns) column.responsiveHidden = false;
+if (options.responsive && this.grid && this.grid.clientWidth) {
+let total = requested.reduce((sum, column) => sum + reportingWidth(this, column, column.width), 0), remaining = requested.length;
+const candidates = requested.filter(column => !reportingLayout(this, column).alwaysVisible).sort((a, b) =>
+(reportingLayout(this, b).priority ?? MAX_PROTOCOL_INTEGER) - (reportingLayout(this, a).priority ?? MAX_PROTOCOL_INTEGER) ||
+requested.indexOf(b) - requested.indexOf(a));
+for (const column of candidates) {
+if (total <= this.grid.clientWidth || remaining === 1) break;
+column.responsiveHidden = true; total -= reportingWidth(this, column, column.width); remaining--;
+}
+}
+const visible = requested.filter(column => !column.responsiveHidden);
+return ["left", "none", "right"].flatMap(pin => visible.filter(column => column.pin === pin));
+};
+DataGrid.prototype.applyWidths = function () {
+const visible = this.visibleColumns();
+if (this.cols && (visible.length !== this.cols.length || visible.some((column, index) => column !== this.cols[index]))) {
+const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
+const heldHeader = this.headRow.contains(document.activeElement);
+this.buildHeader(); this.syncColumnControls(); this.render(); this.restoreReportingFocus(held, columnId);
+if (heldHeader && document.activeElement === document.body) {
+if (this.focused) this.setFocus(this.focused, true);
+else this.focusReportingHeader(this.headRow.querySelector("button,.cx-resize"));
+}
+return;
+}
+PLACEMENT_WIDTHS.call(this);
+const budget = Math.max(0, this.grid.clientWidth - ((this.view.reporting || {}).minimumCenterWidth || 128));
+for (const column of this.columns) column.effectivePin = "none";
+const left = this.cols.filter(column => column.pin === "left"), right = this.cols.filter(column => column.pin === "right").reverse();
+let used = 0; const stopped = [false, false];
+for (let index = 0; index < Math.max(left.length, right.length); index++) {
+for (const [side, column] of [left[index], right[index]].entries()) if (column && !stopped[side]) {
+if (used + column.renderWidth > budget) stopped[side] = true;
+else { used += column.renderWidth; column.effectivePin = column.pin; }
+}
+}
+let start = 0, end = 0;
+for (const column of this.cols) {
+column.pinOffset = column.effectivePin === "left" ? start : 0;
+if (column.effectivePin === "left") start += column.renderWidth;
+}
+for (const column of [...this.cols].reverse()) if (column.effectivePin === "right") {
+column.pinOffset = end; end += column.renderWidth;
+}
+this.pinnedLeftWidth = start; this.pinnedRightWidth = end;
+this.cols.forEach((column, index) => this.applyColumnPin(this.headCells[index], column));
+for (const row of [...this.rendered.values(), ...this.pool]) if (row._kind === "node")
+this.cols.forEach((column, index) => { if (row.children[index]) this.applyColumnPin(row.children[index], column); });
+const active = document.activeElement;
+if (active && this.headRow.contains(active)) this.focusReportingHeader(active);
+const cell = active && active.closest(".cx-cell");
+if (cell && this.canvas.contains(cell)) this.revealInRow(cell, active, false);
+};
+DataGrid.prototype.applyColumnPin = function (cell, column) {
+const pin = column.effectivePin || "none";
+if (pin === "none") cell.removeAttribute("data-cx-pin"); else cell.setAttribute("data-cx-pin", pin);
+cell.style.left = pin === "left" ? column.pinOffset + "px" : "";
+cell.style.right = pin === "right" ? column.pinOffset + "px" : "";
+};
+DataGrid.prototype.newCell = function (index, width, kind) {
+const cell = PLACEMENT_CELL.call(this, index, width, kind);
+if (kind && this.cols[index]) this.applyColumnPin(cell, this.cols[index]); return cell;
+};
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridPinColumn: "{column}: pinned region", gridPinNone: "Scroll", gridPinLeft: "Left", gridPinRight: "Right",
+gridResponsiveHidden: "Hidden at this width"
+}));
+function reportingColumnOrder(columns) { return ["left", "none", "right"].flatMap(pin => columns.filter(column => column.pin === pin)); }
+const PLACEMENT_HEADER = DataGrid.prototype.buildHeader, PLACEMENT_MOVE = DataGrid.prototype.moveReportingColumn,
+PLACEMENT_CONTROLS = DataGrid.prototype.syncColumnControls;
+DataGrid.prototype.buildHeader = function () {
+this.columns = reportingColumnOrder(this.columns); return PLACEMENT_HEADER.call(this);
+};
+DataGrid.prototype.moveReportingColumn = function (column, target, after) {
+column.pin = target.pin; return PLACEMENT_MOVE.call(this, column, target, after);
+};
+DataGrid.prototype.syncColumnControls = function () {
+const active = document.activeElement, held = active && active.getAttribute("data-cx-layout-column"), action = active && active.getAttribute("data-cx-layout-action");
+PLACEMENT_CONTROLS.call(this); if (!this.columnPanel) return;
+this.columns.forEach((column, index) => {
+const row = this.columnPanel.children[index], input = row.querySelector("input[type=checkbox]"), pin = h("select");
+input.disabled = !column.hidden && this.columns.filter(item => !item.hidden).length === 1;
+if (column.responsiveHidden) { const note = h("span", "cx-grid-responsive-note"); setText(note, this.labels.gridResponsiveHidden); row.append(note); }
+pin.setAttribute("aria-label", fill(this.labels.gridPinColumn, { column: column.title }));
+pin.setAttribute("data-cx-layout-column", column.id); pin.setAttribute("data-cx-layout-action", "pin");
+[["none", "gridPinNone"], ["left", "gridPinLeft"], ["right", "gridPinRight"]].forEach(([value, label]) => pin.append(gridOption(value, this.labels[label])));
+pin.value = column.pin; pin.addEventListener("change", () => this.setColumnPinned(column.id, pin.value)); row.append(pin);
+for (const [delta, action] of [[-1, "earlier"], [1, "later"]]) {
+const previous = row.querySelector('[data-cx-layout-action="' + action + '"]'), button = previous.cloneNode(true);
+previous.replaceWith(button); button.addEventListener("click", () => {
+const at = this.columns.indexOf(column), target = this.columns[at + delta]; if (!target) return;
+column.pin = target.pin;
+const ids = this.columns.map(item => item.id); [ids[at], ids[at + delta]] = [ids[at + delta], ids[at]]; this.setColumnOrder(ids);
+});
+}
+});
+if (held) {
+const choices = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].filter(control =>
+control.getAttribute("data-cx-layout-column") === held && !control.disabled);
+(choices.find(control => control.getAttribute("data-cx-layout-action") === action) || choices[0] ||
+this.columnPanel.parentNode.querySelector("summary")).focus({ preventScroll: true });
+}
+};
+DataGrid.prototype.setColumnVisible = function (id, visible) {
+const column = this.columns.find(item => item.id === id);
+if (!column || typeof visible !== "boolean") throw new Error("CanopyX: visibility needs a declared column and boolean.");
+if (!visible && !column.hidden && this.columns.filter(item => !item.hidden).length === 1) throw new Error("CanopyX: keep at least one column visible.");
+const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
+column.hidden = !visible; this.buildHeader(); this.syncColumnControls(); this.render(); this.restoreReportingFocus(held, columnId); this.stateChanged();
+};
+const PLACEMENT_REVEAL = DataGrid.prototype.revealInRow, PLACEMENT_FOCUS_HEADER = DataGrid.prototype.focusReportingHeader,
+PLACEMENT_EXPORT = DataGrid.prototype.prepareExport;
+function revealReportingCenter(grid, target, pin) {
+if (pin && pin !== "none") return;
+const frame = grid.grid.getBoundingClientRect(), left = frame.left + grid.grid.clientLeft + (grid.pinnedLeftWidth || 0),
+right = frame.left + grid.grid.clientLeft + grid.grid.clientWidth - (grid.pinnedRightWidth || 0), box = target.getBoundingClientRect();
+if (box.left < left) grid.grid.scrollLeft -= left - box.left;
+else if (box.right > right) grid.grid.scrollLeft += Math.min(box.right - right, Math.max(0, box.left - left));
+}
+DataGrid.prototype.revealInRow = function (cell, target, treeCell) {
+PLACEMENT_REVEAL.call(this, cell, target, treeCell);
+if (cell.parentNode && cell.parentNode._kind === "node") revealReportingCenter(this, target, cell.getAttribute("data-cx-pin"));
+};
+DataGrid.prototype.focusReportingHeader = function (control) {
+PLACEMENT_FOCUS_HEADER.call(this, control);
+if (control) revealReportingCenter(this, control, control.closest(".cx-hcell").getAttribute("data-cx-pin"));
+};
+DataGrid.prototype.prepareExport = function (options) {
+const columns = options && options.columns === undefined ? reportingColumnOrder(this.columns.filter(column => !column.hidden)).map(column => column.id) : undefined;
+return PLACEMENT_EXPORT.call(this, columns ? Object.assign({}, options, { columns }) : options);
 };
 DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
 gridExpandCell: "{column}: show complete text", gridCloseCell: "Close complete text"

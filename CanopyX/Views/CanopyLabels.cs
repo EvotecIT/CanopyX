@@ -143,6 +143,7 @@ public sealed partial class CanopyLabels {
         nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
         nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter), nameof(GridExpandCell), nameof(GridCloseCell),
         nameof(GridMoveColumn), nameof(GridResizeHelp), nameof(GridColumnMoved),
+        nameof(GridPinColumn), nameof(GridPinNone), nameof(GridPinLeft), nameof(GridPinRight), nameof(GridResponsiveHidden),
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
         nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
         nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
