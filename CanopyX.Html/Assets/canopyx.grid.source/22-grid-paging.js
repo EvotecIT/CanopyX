@@ -10,16 +10,15 @@
   Object.assign(DataGrid.prototype, {
     getPaging() {
       const window = this.cursorWindow, count = this.cursor ? window ? window.end - this.pageOffset : 0 : this.rowCount();
-      const paging = { presentation: this.paged ? "paged" : "continuous", pageLength: this.pageLength,
+      return Object.freeze({ presentation: this.paged ? "paged" : "continuous", pageLength: this.pageLength,
         first: count ? this.pageOffset + 1 : 0, last: this.cursor ? count ? window.end : 0 :
           this.paged ? Math.min(count, this.pageOffset + this.pageLength) : count,
         matched: this.snapshot ? this.snapshot.matched : this.cursor ? null : 0,
-        total: this.snapshot ? this.snapshot.total : this.cursor ? null : 0 };
-      Object.assign(paging, this.cursor ? { navigation: "cursor", pageIndex: null, pageCount: null,
+        total: this.snapshot ? this.snapshot.total : this.cursor ? null : 0,
+        ...this.cursor ? { navigation: "cursor", pageIndex: null, pageCount: null,
         hasNext: !!(window && window.next !== undefined), hasPrevious: !!(window && window.previous !== undefined) } : {
         pageIndex: this.paged ? Math.floor(this.pageOffset / this.pageLength) : 0,
-        pageCount: this.paged ? Math.ceil(count / this.pageLength) : count ? 1 : 0 });
-      return Object.freeze(paging);
+        pageCount: this.paged ? Math.ceil(count / this.pageLength) : count ? 1 : 0 } });
     },
     goToPage(index) {
       if (this.cursor || !this.paged || !this.acceptedQuery || !Number.isInteger(index) || index < 0)
