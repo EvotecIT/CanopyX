@@ -13,6 +13,17 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
+const storedPreferences = reportingApi.getViewSettings?.();
+if (storedPreferences?.current) {
+  // @ts-expect-error A retained preference snapshot is immutable.
+  storedPreferences.current.columns[0].width = 400;
+  await reportingApi.setState(storedPreferences.current);
+}
+reportingApi.renameSavedView?.("Old", "New");
+reportingApi.setDefaultView?.("New");
+const sharedPreferences = reportingApi.getShareState?.();
+if (sharedPreferences) await reportingApi.setState(sharedPreferences);
+await reportingApi.flushViewSettings?.();
 reportingApi.setColumnPinned?.("name", "right");
 const facetPage = await reportingApi.getFacets?.("name", { search: "Pinned", limit: 100, includeCurrentFilter: false });
 if (facetPage) {
@@ -42,6 +53,10 @@ const gridSource: GridSource = { async query(query, { signal }) {
     search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: 0, totalValues: 0, truncated: false, items: [] };
 } };
 const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: 300,
+  viewStore: { load({ key, signal }) { return null; }, save({ settings, signal }) {
+    // @ts-expect-error Host preference callbacks receive immutable snapshots.
+    settings.views.push({ name: "Injected", state: dataGrid.getState() });
+  } },
   labels: { gridResultCount: "{count} / {total}", gridRemoveCondition: "Remove: {condition}" } });
 const offsetCount: number = dataGrid.getPaging().matched;
 const cursorView: CursorGridView = { ...gridView, source: { kind: "host", navigation: "cursor" }, presentation: "paged", query: undefined };

@@ -26,6 +26,8 @@ export type GridPresenter =
   | { readonly kind: "longText" };
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
+  /** Session preferences by default; local storage requires an explicit stateKey and retains sensitive query settings. */
+  readonly viewStorage?: "session" | "local";
   readonly columnReorder?: boolean;
   readonly responsive?: boolean;
   /** Pins are temporarily suspended to leave this many CSS pixels for the center; default 128, range 40..4096. */
@@ -220,7 +222,27 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
   paging?: { pageLength: number; offset: number };
 }
+/** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
+export type GridPreferenceState<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<GridState<Q>, "columns" | "selection" | "paging">> & {
+  readonly columns: readonly Readonly<GridState<Q>["columns"][number]>[];
+  readonly selection: readonly string[];
+  readonly paging?: Readonly<{ pageLength: number; offset: number }>;
+};
+export interface GridViewSettings<Q extends AcceptedGridQuery = GridQuery> {
+  readonly version: 1;
+  readonly view: string;
+  readonly current?: GridPreferenceState<Q>;
+  readonly views: readonly { readonly name: string; readonly state: GridPreferenceState<Q> }[];
+  readonly defaultView?: string;
+}
+/** Hosts authenticate preference access and honor cancellation. Saves are serial/coalesced per grid instance. */
+export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
+  load(event: { key: string; view: string; signal: AbortSignal }): GridViewSettings<Q> | null | PromiseLike<GridViewSettings<Q> | null>;
+  save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
+}
 export interface GridHostOptions<Q extends AcceptedGridQuery = GridQuery> {
+  /** Reporting runtime only. Hosts govern preference storage/authentication; an explicit stateKey is required. */
+  viewStore?: GridViewStore<Q>;
   /** False lets a host compose controls around the same grid controller. */
   toolbar?: boolean;
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
@@ -267,12 +289,21 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   setColumnVisible(id: string, visible: boolean): void;
   setColumnOrder(ids: string[]): void;
   getState(): GridState<Q>;
-  setState(state: GridState<Q>): Promise<Q>;
+  setState(state: GridState<Q> | GridPreferenceState<Q>): Promise<Q>;
   resetView(): Promise<Q>;
   getSavedViews(): string[];
   saveView(name: string): void;
   applySavedView(name: string): Promise<Q>;
   removeSavedView(name: string): void;
+  /** Reporting runtime only: bounded, versioned preferences including current and named view snapshots. */
+  getViewSettings?(): GridViewSettings<Q>;
+  getDefaultView?(): string | null;
+  setDefaultView?(name: string | null): void;
+  renameSavedView?(oldName: string, newName: string): void;
+  /** Reporting runtime only. Omits search, filters, selection, revision, cursor, page offset and scroll position. */
+  getShareState?(): GridPreferenceState<Q>;
+  /** Waits for serial/coalesced host saves; persistence failures leave the current grid usable and reject this call. */
+  flushViewSettings?(): Promise<void>;
   setTimeZone(zone: TimeZone): void;
   getTimeZone(): TimeZone;
   getSelection(): string[];

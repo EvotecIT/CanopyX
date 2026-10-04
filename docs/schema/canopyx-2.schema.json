@@ -97,11 +97,47 @@
       },
       "$comment": "Runtime checks the request identity/projection/revision, raw column kind, distinct typed canonical buckets and count relations. Without value search a complete response accounts for every matching row, including one missing/null bucket."
     },
+    "gridState": {
+      "description": "Canonical browser preference snapshot. Runtime binds columns, queries and selection policy to the current definition.",
+      "type": "object", "required": ["version", "view", "columns", "query", "timeZone", "selection", "scrollTop"], "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 }, "view": { "$ref": "#/$defs/identifier" },
+        "columns": { "type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["id", "width", "hidden"], "additionalProperties": false,
+          "properties": { "id": { "$ref": "#/$defs/identifier" }, "width": { "type": "number", "minimum": 40, "maximum": 2147483647 },
+            "hidden": { "type": "boolean" }, "flex": { "type": "boolean" }, "pin": { "enum": ["none", "left", "right"] } }
+        } },
+        "query": { "allOf": [
+          { "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] },
+          { "not": { "anyOf": [{ "required": ["revision"] }, { "required": ["cursor"] }] } }
+        ] },
+        "timeZone": { "enum": ["utc", "local"] },
+        "selection": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "scrollTop": { "type": "number", "minimum": 0, "maximum": 137438953408 },
+        "paging": { "type": "object", "required": ["pageLength", "offset"], "additionalProperties": false,
+          "properties": { "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
+            "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 } } }
+      }
+    },
+    "gridViewSettings": {
+      "description": "Versioned preference envelope, separate from data authorization and dataset revisions. Serialized envelopes are bounded to 1048576 UTF-16 code units.",
+      "type": "object", "required": ["version", "view", "views"], "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 }, "view": { "$ref": "#/$defs/identifier" }, "current": { "$ref": "#/$defs/gridState" },
+        "views": { "type": "array", "maxItems": 20, "items": {
+          "type": "object", "required": ["name", "state"], "additionalProperties": false,
+          "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 100 }, "state": { "$ref": "#/$defs/gridState" } }
+        } },
+        "defaultView": { "type": "string", "minLength": 1, "maxLength": 100 }
+      },
+      "$comment": "Runtime checks unique trimmed names, owning view, default membership and current definition compatibility. Legacy session envelopes without version/view remain readable."
+    },
     "gridReporting": {
       "type": "object", "additionalProperties": false,
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
+        "viewStorage": { "enum": ["session", "local"] },
         "headerFilters": { "type": "boolean" },
         "filterGroups": { "type": "boolean" },
         "facetColumns": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
@@ -604,6 +640,12 @@
             "gridFacetChoose": { "$ref": "#/$defs/accessibleLabel" },
             "gridFacetCounts": { "$ref": "#/$defs/accessibleLabel" },
             "gridFacetReload": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRenameView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDefaultView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearDefaultView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDefaultViewName": { "$ref": "#/$defs/accessibleLabel" },
+            "gridNoDefaultView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDefaultViewOption": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterMatch": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAll": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAny": { "$ref": "#/$defs/accessibleLabel" },

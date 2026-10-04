@@ -61,6 +61,8 @@ Reporting grids support direct pointer/keyboard header moves, per-column minimum
 
 Reporting layouts also support left/right pins and responsive retention priorities. Pins suspend when space is needed for the scrolling center. Temporary responsive hiding preserves saved visibility intent, full-record details, search and default export columns; the column chooser distinguishes these temporary decisions from explicit user hiding.
 
+Set an explicit `StateKey` and `Reporting.ViewStorage = CanopyGridViewStorage.Local` for preferences that survive browser sessions. Saved views offer rename, delete and default choices; reset restores the definition and keeps named views. JavaScript host storage hooks govern remote preference delivery, and shareable state strips searches, filters, selected identities and dataset positions. Preferences never authorize record access.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX

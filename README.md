@@ -147,6 +147,8 @@ Set `Reporting.FilterGroups = true` (JavaScript `reporting: { filterGroups: true
 
 Declare `Reporting.FacetColumns.Add("status")` to add values and counts to that column's filter editor. Inline grids count the entire accepted query; hosted grids supply `source.facet(request, { signal })`. The control searches available values, preserves raw types and lets users include or exclude that column's applied conditions from the counts. Choosing a value edits the draft until Apply. Counts never come from just the visible page, and changing the accepted query retires stale choices. `api.getFacets("status", { search: "review", limit: 100, includeCurrentFilter: false })` exposes the same bounded source contract; see the [facet protocol](docs/data-protocol.md#flat-grid-documents) for projection and snapshot rules.
 
+Saved reporting views can survive browser sessions with `inventory.StateKey = "inventory-reader"` and `inventory.Reporting.ViewStorage = CanopyGridViewStorage.Local`. The Saved views menu offers rename and default choices; Reset view restores the definition while keeping named views. JavaScript hosts can supply `viewStore.load/save` hooks for governed preference storage instead. Use `api.flushViewSettings()` before disposal when the host must acknowledge a save. `api.getShareState()` keeps layout and sorting while removing searches, filters, selected IDs and dataset positions. See the [preference contract](docs/data-protocol.md#flat-grid-documents) for bounds, schema evolution, cancellation and privacy.
+
 Safe cell presenters are optional reporting configuration:
 
 ```csharp

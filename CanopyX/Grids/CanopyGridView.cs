@@ -174,6 +174,8 @@ public sealed class CanopyGridView {
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
         Reporting?.Validate(Columns);
+        if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))
+            throw new InvalidOperationException("Durable reporting preferences require a state key of 1 to 512 characters.");
         var searchable = new HashSet<string>(StringComparer.Ordinal);
         foreach (var id in SearchColumns) {
             if (id == null || !columnIds.Contains(id) || !searchable.Add(id)) throw new InvalidOperationException("Search columns must identify unique declared columns.");

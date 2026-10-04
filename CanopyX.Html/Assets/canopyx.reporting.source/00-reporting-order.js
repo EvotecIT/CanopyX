@@ -47,9 +47,12 @@
 
   GRID_REPORTING.validate = view => {
     const options = view.reporting;
-    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth"].includes(key)) ||
+    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage"].includes(key)) ||
         ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
       throw new Error("CanopyX: invalid reporting options.");
+    if (options.viewStorage !== undefined && !["session", "local"].includes(options.viewStorage) || options.viewStorage === "local" &&
+        (typeof view.stateKey !== "string" || !view.stateKey.trim() || view.stateKey.length > 512))
+      throw new Error("CanopyX: durable reporting preferences need session/local storage and an explicit bounded state key.");
     if (options.facetColumns !== undefined && (!Array.isArray(options.facetColumns) ||
         new Set(options.facetColumns).size !== options.facetColumns.length || options.facetColumns.some(id => !view.columns.some(column => column?.id === id))))
       throw new Error("CanopyX: facets need unique declared column identities.");

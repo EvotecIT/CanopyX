@@ -7,6 +7,10 @@ namespace CanopyX;
 /// <summary>Optional reporting capabilities carried by the reporting-grid runtime.</summary>
 /// <remarks>Ordinary flat grids and trees do not include these optional presentation and query policies.</remarks>
 public sealed class CanopyGridReporting {
+    /// <summary>Gets or sets the explicitly keyed browser preference storage. Default session.</summary>
+    /// <remarks>A host-provided view store overrides browser storage. Local storage requires a nonempty view state key.</remarks>
+    public CanopyGridViewStorage ViewStorage { get; set; }
+
     /// <summary>Gets or sets whether each visible header offers a filter-editor button.</summary>
     /// <remarks>The editor queries all records; the button does not filter only the mounted rows.</remarks>
     public bool HeaderFilters { get; set; }
@@ -39,6 +43,8 @@ public sealed class CanopyGridReporting {
     public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
 
     internal void Validate(IList<CanopyColumn> columns) {
+        if (ViewStorage != CanopyGridViewStorage.Session && ViewStorage != CanopyGridViewStorage.Local)
+            throw new ArgumentOutOfRangeException(nameof(ViewStorage));
         var facets = new HashSet<string>(StringComparer.Ordinal);
         foreach (var id in FacetColumns) {
             CanopyColumn? declared = null;
@@ -77,6 +83,7 @@ public sealed class CanopyGridReporting {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
+        if (ViewStorage == CanopyGridViewStorage.Local) writer.Property("viewStorage", "local");
         if (HeaderFilters) writer.Property("headerFilters", true);
         if (FilterGroups) writer.Property("filterGroups", true);
         if (FacetColumns.Count != 0) {
