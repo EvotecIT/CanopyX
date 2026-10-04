@@ -70,10 +70,22 @@
       if (!busy && this.pageButtons.includes(active) && active.disabled && !this.pageNumber.disabled) this.pageNumber.focus({ preventScroll: true });
     },
     async focusResult(index, focus, column, control) {
+      const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
       if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
       if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
-      const row = this.rowItem(index);
-      if (column == null || column < 0 || !row || row.status) this.setFocus(row, focus);
-      else this.focusCell(row, column, control);
+      const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
+      this.setFocus(this.rowItem(index), ownsFocus);
+      const navigationTop = this.logicalTop();
+      const row = await this.waitForRow(index, epoch);
+      if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+      if (focus && (!ownsFocus || !this.canvas.contains(document.activeElement) || !this.focused || this.focused._ri !== index)) return;
+      const currentColumn = columnId ? this.visibleColumns().findIndex(item => item.id === columnId) : -1;
+      if (!focus || currentColumn < 0 || !row || row.status) {
+        if (this.logicalTop() === navigationTop) this.setFocus(row, focus);
+      } else {
+        const currentTop = this.logicalTop();
+        this.focusCell(row, currentColumn, control);
+        if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(); }
+      }
     }
   });

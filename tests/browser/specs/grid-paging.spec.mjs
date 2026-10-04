@@ -78,6 +78,43 @@ test("keyboard and host position navigation cross page boundaries with global ro
   expect(await page.evaluate(controller + ".getPaging().pageIndex")).toBe(22);
 });
 
+for (const presentation of ["paged", "continuous"]) {
+test(`cell navigation retains its column when the destination needs another source window (${presentation})`, async ({ page }) => {
+  await open(page, definition({ presentation }));
+  await page.evaluate(controller + (presentation === "paged" ? ".goToPage(1)" : ".scrollToRow(25)"));
+  await page.locator('.cx-row[data-cx-id="row-25"]').focus();
+  await page.keyboard.press("Enter"); await page.keyboard.press("ArrowRight");
+  await expect(page.locator('.cx-row[data-cx-id="row-25"]').getByRole("gridcell").nth(1)).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(page.locator('.cx-row[data-cx-id="row-24"]').getByRole("gridcell").nth(1)).toBeFocused();
+  await page.keyboard.press("Control+End");
+  await expect(page.locator('.cx-row[data-cx-id="row-136"]').getByRole("gridcell").nth(1)).toBeFocused();
+  const target = await page.locator(".cx-grid").evaluate(grid => 136 - Math.max(1,
+    Math.floor((grid.clientHeight - grid.querySelector(".cx-head").offsetHeight) / 28)));
+  await page.keyboard.press("PageUp");
+  await expect(page.locator('.cx-row[data-cx-id="row-' + target + '"]').getByRole("gridcell").nth(1)).toBeFocused();
+});
+
+test(`delayed keyboard navigation preserves a later focus choice outside the grid (${presentation})`, async ({ page }) => {
+  const view = definition({ presentation, pageSize: 25 }); view.source = { kind: "host" }; delete view.rows;
+  await open(page, view, `window.pending=[];CanopyX.configure('inventory',{source:{query(query){
+    const result={protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:query.offset,total:137,matched:137,
+      items:Array.from({length:Math.min(query.limit,137-query.offset)},(_,i)=>({id:'row-'+(query.offset+i),cells:{name:'Row '+(query.offset+i),amount:query.offset+i}}))};
+    return query.offset===25?new Promise(resolve=>pending.push(()=>resolve(result))):result;
+  }}});`);
+  await page.evaluate(controller + ".scrollToRow(24)");
+  await expect(page.locator('.cx-row[data-cx-id="row-24"]')).toBeVisible();
+  await page.locator('.cx-row[data-cx-id="row-24"]').focus();
+  await page.keyboard.press("ArrowDown");
+  await expect.poll(() => page.evaluate(() => pending.length)).toBe(1);
+  await page.getByRole("searchbox").focus();
+  await page.evaluate(() => pending[0]());
+  if (presentation === "paged") await expect(page.locator(".cx-grid-page-range")).toHaveText("26–50 of 137 rows");
+  await expect(page.locator('.cx-row[data-cx-id="row-25"]')).toBeVisible();
+  await expect(page.getByRole("searchbox")).toBeFocused();
+});
+}
+
 test("restored page state clamps against a refreshed host count before installing its layout", async ({ page }) => {
   const view = definition(); view.source = { kind: "host", navigation: "offset" }; delete view.rows;
   await open(page, view, `window.count=137;window.revision='r1';window.requests=[];CanopyX.configure('inventory',{source:{navigation:'offset',query(query){

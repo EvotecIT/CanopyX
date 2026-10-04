@@ -4855,10 +4855,11 @@ if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) thi
 }
 },
 loadPage(offset) {
+if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
 const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
 const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: offset, limit: this.pageSize, revision: snapshot.revision }));
 const token = {}; this.pendingPages.set(offset, token);
-this.requestPage(query, lifetime.signal).then(page => {
+token.promise = this.requestPage(query, lifetime.signal).then(page => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
 const restoreFocus = this.storePage(validateGridPage(page, this.view, query, snapshot));
 if (restoreFocus) {
@@ -4873,6 +4874,18 @@ this.setNotice(fill(this.labels.loadError, { error: error.message }), true); thi
 }).finally(() => {
 if (this.pendingPages.get(offset) === token) { this.pendingPages.delete(offset); this.loadWindow(); }
 });
+return token.promise;
+},
+async waitForRow(index, epoch) {
+while (!this.destroyed && epoch === this.queryEpoch) {
+const row = this.rowItem(index);
+if (!row || row.status !== "loading") return row;
+const offset = Math.floor(index / this.pageSize) * this.pageSize, pending = this.pendingPages.get(offset);
+if (pending) await pending.promise;
+else if (this.pendingPages.size < 4) await this.loadPage(offset);
+else await Promise.race([...this.pendingPages.values()].map(token => token.promise));
+}
+throw new DOMException("Grid navigation was superseded.", "AbortError");
 },
 retry() {
 if (this.lastFailedQuery) return this.setQuery(this.lastFailedQuery, this.lastFailedPaging);
@@ -4950,11 +4963,23 @@ const active = document.activeElement;
 if (!busy && this.pageButtons.includes(active) && active.disabled && !this.pageNumber.disabled) this.pageNumber.focus({ preventScroll: true });
 },
 async focusResult(index, focus, column, control) {
+const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
 if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
 if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
-const row = this.rowItem(index);
-if (column == null || column < 0 || !row || row.status) this.setFocus(row, focus);
-else this.focusCell(row, column, control);
+const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
+this.setFocus(this.rowItem(index), ownsFocus);
+const navigationTop = this.logicalTop();
+const row = await this.waitForRow(index, epoch);
+if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+if (focus && (!ownsFocus || !this.canvas.contains(document.activeElement) || !this.focused || this.focused._ri !== index)) return;
+const currentColumn = columnId ? this.visibleColumns().findIndex(item => item.id === columnId) : -1;
+if (!focus || currentColumn < 0 || !row || row.status) {
+if (this.logicalTop() === navigationTop) this.setFocus(row, focus);
+} else {
+const currentTop = this.logicalTop();
+this.focusCell(row, currentColumn, control);
+if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(); }
+}
 }
 });
 Object.assign(DataGrid.prototype, {
