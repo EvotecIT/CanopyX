@@ -51,6 +51,8 @@ inventory.SaveHtmlPage("inventory.html");
 
 Raw values drive filtering and sorting; display text remains presentation. The toolbar provides column visibility and ordering, resizing, typed filters and resettable saved views. CSV exports and row copying distinguish filtered results, selected records and all results, independently of rows on screen. Large Office exports and record drawers call host hooks. `CanopyStaticHtml.RenderGrid(inventory)` supplies a script-free fallback.
 
+Optional `CanopyGridView.Reporting` policies add deterministic ordinal, folded and natural text ordering, plus host-defined category order. `CanopyGridOrdering` supplies the same comparer to host queries, and the page writer selects the reporting runtime. Represent exact large identifiers and decimals as text; JSON numbers use binary64 precision and numeric magnitudes are limited to the safe-integer range.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX
