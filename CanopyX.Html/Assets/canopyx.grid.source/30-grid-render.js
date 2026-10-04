@@ -31,6 +31,11 @@
       this.buildHeader();
       grid.addEventListener("scroll", () => { this.scheduleRender(); this.stateChanged(); }, { passive: true, signal: signal });
       grid.addEventListener("click", event => this.onClick(event), { signal: signal });
+      grid.addEventListener("dblclick", event => {
+        const element = event.target.closest(".cx-row"), row = element && element._w;
+        if (row && !row.status && typeof this.opts.onDetails === "function" && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
+          this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
+      }, { signal: signal });
       grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");

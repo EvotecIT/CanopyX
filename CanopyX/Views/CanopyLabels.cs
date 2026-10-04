@@ -37,6 +37,13 @@ public sealed class CanopyLabels {
         [nameof(SearchFailed)] = "Search failed: {error}",
         [nameof(Columns)] = "Columns",
         [nameof(GridFilters)] = "Filters",
+        [nameof(GridExport)] = "Export",
+        [nameof(GridFilteredResults)] = "Filtered results",
+        [nameof(GridSelectedRows)] = "Selected rows",
+        [nameof(GridAllResults)] = "All results",
+        [nameof(GridDownloadCsv)] = "Download CSV",
+        [nameof(GridCopy)] = "Copy",
+        [nameof(GridDetails)] = "Record details",
         [nameof(GridColumn)] = "Column",
         [nameof(GridOperator)] = "Condition",
         [nameof(GridValue)] = "Value (UTC for dates)",
@@ -97,6 +104,7 @@ public sealed class CanopyLabels {
 
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
         nameof(SearchNoResults), nameof(SearchTooShort), nameof(SearchWordTooShort), nameof(SearchFailed), nameof(Columns), nameof(VisibleColumns),
@@ -115,6 +123,21 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the placeholder and accessible name of the search box when the view's search options set none (<see cref="CanopySearchOptions.Placeholder"/>). Default "Search".</summary>
     public string SearchPlaceholder { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the grid export panel label. Default "Export".</summary>
+    public string GridExport { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the filtered export scope label. Default "Filtered results".</summary>
+    public string GridFilteredResults { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the selected export scope label. Default "Selected rows".</summary>
+    public string GridSelectedRows { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the full dataset export scope label. Default "All results".</summary>
+    public string GridAllResults { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the client CSV action label. Default "Download CSV".</summary>
+    public string GridDownloadCsv { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the clipboard action label. Default "Copy".</summary>
+    public string GridCopy { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the host record-details action label. Default "Record details".</summary>
+    public string GridDetails { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the accessible name of the list of search results. Default "Search results".</summary>
     public string SearchResults { get => Get(); set => Set(value); }

@@ -6,6 +6,8 @@ export * from "./index.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; }
+/** An immutable record projected onto the declared export columns. */
+export interface GridExportRow { readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>; }
 export type GridColumn = Omit<CanopyColumn, "editable"> & { editable?: false };
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 export type GridFilter = {
@@ -61,6 +63,32 @@ export interface GridPage {
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
 export interface GridSource { query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
 export interface GridQueryEvent { query: GridQuery; revision: string; total: number; matched: number; }
+/** Exports retain the accepted revision, query ordering, columns and selected IDs at invocation. */
+export interface GridExportRequest {
+  readonly scope: "filtered" | "selected" | "all";
+  readonly query: GridQuery;
+  readonly revision: string;
+  readonly total: number;
+  readonly matched: number;
+  readonly selection: readonly string[];
+  readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];
+  readonly values: "raw" | "display";
+  readonly timeZone: TimeZone;
+}
+export interface GridExportOptions {
+  scope: GridExportRequest["scope"];
+  /** Defaults to visible columns in their current order. */
+  columns?: string[];
+  values?: GridExportRequest["values"];
+  signal?: AbortSignal;
+  /** Client CSV defaults to 50000; clipboard to 10000. Larger results use a host hook. */
+  maxRows?: number;
+}
+export interface GridExport {
+  readonly request: GridExportRequest;
+  /** Each enumeration requests fresh serial windows from the captured revision, independently of the viewport. */
+  rows(): AsyncIterable<GridExportRow>;
+}
 export interface GridCellContext { column: string; index: number; }
 /** Versioned view settings. Queries omit dataset revisions; restoration revalidates against the current source. */
 export interface GridState {
@@ -84,6 +112,10 @@ export interface GridHostOptions {
   onSelect?: (event: { ids: string[] }) => void;
   onError?: (event: { error: Error }) => void;
   onState?: (event: { query: GridQuery | null; state: GridState }) => void;
+  /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
+  onExport?: (event: { format: string; request: GridExportRequest; signal: AbortSignal }) => void | PromiseLike<void>;
+  /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
+  onDetails?: (event: { row: GridExportRow; query: GridQuery; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
 }
 export type GridOptions = GridHostOptions & ({ view: InlineGridView } | { view: HostGridView; source: GridSource });
 
@@ -110,6 +142,12 @@ export interface DataGrid {
   getSelection(): string[];
   setSelection(ids: string[]): void;
   clearSelection(): void;
+  prepareExport(options: GridExportOptions): GridExport;
+  toCsv(options: GridExportOptions): Promise<string>;
+  copy(options: GridExportOptions): Promise<string>;
+  exportToHost(format: string, options: GridExportOptions): Promise<void>;
+  /** Details are opened for loaded records, by toolbar, double click or Ctrl/Command+Enter. */
+  openDetails(id: string): Promise<void>;
   focus(): void;
   retry(): Promise<GridQuery | void>;
   refresh(): void;

@@ -22,6 +22,7 @@
     buildGridControls() {
       this.controlFlyouts = [];
       this.buildGridColumns(); this.buildGridFilters(); this.buildSavedViews();
+      this.buildExportControls();
       this.toolbar.appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
       document.addEventListener("pointerdown", event => {

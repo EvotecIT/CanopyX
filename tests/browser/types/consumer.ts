@@ -17,6 +17,15 @@ const dataGrid = createDataGrid(document.createElement("div"), { view: gridView,
 GridRuntime.configure(gridView.id, { source: gridSource });
 dataGrid.setQuery({ filters: [{ column: "name", operator: "in", values: ["Atlas"] }] });
 dataGrid.setSelection(["row-1"]);
+const exported = dataGrid.prepareExport({ scope: "selected", columns: ["name"], values: "raw" });
+for await (const record of exported.rows()) {
+  // @ts-expect-error Exported rows and cells are immutable snapshots.
+  record.cells.name = "Changed";
+}
+// @ts-expect-error An export scope is mandatory.
+dataGrid.toCsv({ columns: ["name"] });
+await dataGrid.toCsv({ scope: "filtered", maxRows: 1000 });
+await dataGrid.exportToHost("xlsx", { scope: "all" });
 // @ts-expect-error Host views require a query source.
 createDataGrid(document.createElement("div"), { view: gridView });
 const inlineGrid: InlineGridView = { ...gridView, source: { kind: "inline" }, rows: [{ id: "row-1", cells: { name: "Atlas" } }] };

@@ -92,6 +92,7 @@ export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =
+  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
   | "searchPlaceholder" | "searchResults" | "searchResultCount" | "searchResultCountOfTotal"
   | "searchResultCountOfMany" | "searchNoResults" | "searchTooShort" | "searchWordTooShort" | "searchFailed"
   | "columns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"

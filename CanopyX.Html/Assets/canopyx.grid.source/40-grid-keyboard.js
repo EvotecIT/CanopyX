@@ -26,6 +26,14 @@
       if (!row || event.defaultPrevented || event.isComposing || event.altKey) return;
       const cells = this.rowCells(element), column = cells.findIndex(cell => cell.contains(event.target));
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
+      if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
+        if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
+          event.preventDefault(); this.copyFocused(row, cell).catch(error => this.emit("error", { error: error })); return;
+        }
+        if (event.key === "Enter" && typeof this.opts.onDetails === "function") {
+          event.preventDefault(); this.openDetails(row.key).catch(error => this.emit("error", { error: error })); return;
+        }
+      }
       const controls = cell ? cellControls(cell) : [];
       if (control && control.matches(OWN_ARROWS)) {
         if (event.key !== "Escape") return;
