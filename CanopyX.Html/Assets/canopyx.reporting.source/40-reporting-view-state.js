@@ -7,7 +7,7 @@
     if (typeof json !== "string" || json.length > VIEW_SETTINGS_LIMIT) throw new Error("CanopyX: view preferences exceed the 1,048,576-character limit.");
     const value = JSON.parse(json);
     if (!value || Array.isArray(value) || Object.keys(value).some(key => !["version", "view", "current", "views", "defaultView"].includes(key)) ||
-        value.version !== undefined && value.version !== 1 || value.view !== undefined && value.view !== grid.view.id ||
+        (value.version !== undefined || value.view !== undefined) && (value.version !== 1 || value.view !== grid.view.id) ||
         !Array.isArray(value.views) || value.views.length > 20)
       throw new Error("CanopyX: invalid or incompatible view preferences.");
     const names = new Set(), views = [];

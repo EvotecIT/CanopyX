@@ -61,6 +61,7 @@ test("versioned and legacy settings adapt added/removed columns while incompatib
 
 test("incompatible envelopes, duplicate names and excessive input leave a usable definition with visible feedback", async ({ page }) => {
   for (const input of [{ ...settings(), version: 2 }, { ...settings(), view: "other" },
+    { ...settings(), view: undefined }, { ...settings(), version: undefined },
     { ...settings(), views: [settings().views[0], settings().views[0]] }, { ...settings(), defaultView: "Missing" }]) {
     await open(page, definition(), `localStorage.setItem('cx:grid:report-reader:prefs',${JSON.stringify(JSON.stringify(input))});`);
     expect(await page.evaluate(api + ".getQuery().search")).toBe(""); expect(await page.evaluate(api + ".getSavedViews()")).toEqual([]);
