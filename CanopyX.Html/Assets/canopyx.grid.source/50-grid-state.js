@@ -56,7 +56,9 @@
     },
 
     async setState(input) {
-      const state = this.readGridState(input), pending = this.setQuery(state.query), epoch = this.queryEpoch;
+      const state = this.readGridState(input);
+      clearTimeout(this.searchTimer);
+      const pending = this.setQuery(state.query), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
         await pending;

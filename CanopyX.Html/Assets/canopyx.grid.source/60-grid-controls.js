@@ -68,7 +68,10 @@
       if (columnId) {
         const target = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].find(input =>
           input.getAttribute("data-cx-layout-column") === columnId && input.getAttribute("data-cx-layout-action") === action && !input.disabled);
-        if (target) target.focus({ preventScroll: true });
+        const available = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].filter(input =>
+          input.getAttribute("data-cx-layout-column") === columnId && !input.disabled);
+        const fallback = available.find(input => input.getAttribute("data-cx-layout-action") !== "visible") || available[0];
+        (target || fallback || this.columnPanel.parentNode.querySelector("summary")).focus({ preventScroll: true });
       }
     },
 
