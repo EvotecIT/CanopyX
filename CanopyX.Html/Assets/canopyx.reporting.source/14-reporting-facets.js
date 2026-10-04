@@ -28,6 +28,9 @@
         !Array.isArray(input.items) || input.items.length > request.limit || input.items.length > input.totalValues ||
         !input.items.length && input.totalValues > 0 || input.truncated !== (input.items.length < input.totalValues))
       throw new Error("CanopyX: facet response must match its accepted revision, projection and bounded counts.");
+    if (Number.isInteger(grid.snapshot.total) && input.matched > grid.snapshot.total || Number.isInteger(grid.snapshot.matched) &&
+        (request.includeCurrentFilter ? input.matched !== grid.snapshot.matched : input.matched < grid.snapshot.matched))
+      throw new Error("CanopyX: facet counts contradict the known accepted dataset counts.");
     const keys = new Set(); let occurrences = 0;
     const items = input.items.map(item => {
       if (!item || !Object.prototype.hasOwnProperty.call(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)

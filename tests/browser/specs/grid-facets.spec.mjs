@@ -92,6 +92,40 @@ test("invalid requests and missing host capabilities reject without deriving fac
     catch (error) { return error.message; } })).toContain("explicit source capability");
 });
 
+test("host facet counts must respect known accepted matched/total counts while unknown cursor counts stay supported", async ({ page }) => {
+  await open(page, {}, hostSetup.replace("total:100,matched:100", "total:200,matched:100"), true);
+  const attempts = [[true, 5, true], [true, 101, true], [false, 99, true], [false, 201, true], [false, 150, false]];
+  for (const [index, [includeCurrentFilter, matched, rejected]] of attempts.entries()) {
+    await page.evaluate(includeCurrentFilter => { window.facetResult = document.querySelector('[data-canopyx-host]').canopyx
+      .getFacets('category', {includeCurrentFilter}).catch(error => ({error:error.message})); }, includeCurrentFilter);
+    await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(index + 1);
+    const request = await page.evaluate(index => facetRequests[index].request, index);
+    await page.evaluate(({index,value}) => facetResolvers[index](value), {index, value:response(request,{matched,items:[{value:'Host',count:matched}]})});
+    const result = await page.evaluate(() => facetResult);
+    if (rejected) expect(result.error).toContain('CanopyX:'); else expect(result.matched).toBe(150);
+  }
+  const cursorView = {...definition,source:{kind:'host',navigation:'cursor'},rows:undefined};
+  await page.evaluate(async view => { const host=document.querySelector('[data-canopyx-host]');host.canopyx.destroy();
+    const grid=CanopyX.createDataGrid(host,{view,source:{query(q){return {protocol:'canopyx/2',type:'gridCursorPage',view:q.view,
+      revision:'unknown',offset:0,total:null,matched:null,items:[]};},facet(request){return {protocol:'canopyx/2',type:'gridFacetPage',
+      view:request.query.view,revision:'unknown',column:request.column,search:request.search,includeCurrentFilter:request.includeCurrentFilter,
+      matched:7,totalValues:1,truncated:false,items:[{value:'Host',count:7}]};}}});await grid.ready; }, cursorView);
+  expect((await facets(page)).matched).toBe(7);
+});
+
+test("numeric facet choices preserve distinct raw binary64 values instead of rounding them to identical labels", async ({ page }) => {
+  await open(page);
+  await page.evaluate(async () => { const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();
+    view.reporting.facetColumns=['amount'];view.rows=[{id:'a',cells:{amount:0.0001}},{id:'b',cells:{amount:0.0002}}];
+    await CanopyX.createDataGrid(host,{view}).ready; });
+  await page.locator('.cx-grid-filters > summary').click(); await page.getByRole('button',{name:'Add filter',exact:true}).click();
+  const row=page.locator('.cx-grid-filter').first();await row.getByRole('combobox',{name:'Column',exact:true}).selectOption('amount');
+  await row.locator('.cx-grid-facet > summary').click();const choice=row.getByRole('combobox',{name:'Choose a value',exact:true});
+  await expect(choice.locator('option')).toHaveText(['Choose a value','0.0001 (1)','0.0002 (1)']);
+  await choice.selectOption({label:'0.0002 (1)'});await page.getByRole('button',{name:'Apply',exact:true}).click();
+  expect((await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filters).toEqual([filter('amount','eq',0.0002)]);
+});
+
 async function editor(page) {
   await page.locator(".cx-grid-filters > summary").click();
   if (!(await page.locator(".cx-grid-filter").count())) await page.getByRole("button", { name: "Add filter", exact: true }).click();
