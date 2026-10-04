@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage } from "./support.mjs";
+import { viewPage, nextFrames } from "./support.mjs";
 
 const definition = () => ({ protocol: "canopyx/2", type: "grid", id: "prefs", label: "Preference inventory",
   source: { kind: "inline" }, rowHeight: 28, pageSize: 10, presentation: "paged", pageLength: 5,
@@ -173,6 +173,19 @@ test("host preference saves are serial, immutable and coalesce waiting changes t
   await page.evaluate("saveResolvers[1]()"); await page.evaluate("flushed");
 });
 
+test('identical concurrent preference flushes share one host acknowledgement',async({page})=>{
+  await open(page,definition(),`window.hold=false;window.saved=[];window.resolvers=[];CanopyX.configure('prefs',{viewStore:{load(){return null;},
+    save(event){if(!hold)return;saved.push(event.settings);return new Promise(resolve=>resolvers.push(resolve));}}});`);
+  await page.evaluate(api+'.flushViewSettings()');
+  await page.evaluate(()=>{hold=true;const grid=document.querySelector('[data-canopyx-host]').canopyx;
+    grid.saveView('One');grid.saveView('Transient');grid.removeSavedView('Transient');
+    window.finished=Promise.all([grid.flushViewSettings(),grid.flushViewSettings()]).catch(e=>e.message);});
+  await expect.poll(()=>page.evaluate('saved.length')).toBe(1);
+  await page.evaluate('resolvers[0]()');await nextFrames(page);
+  expect(await page.evaluate('saved.length')).toBe(1);
+  await page.evaluate('finished');
+});
+
 test("delayed preferences retain newer column, time-zone and selection intent while importing named views", async ({ page }) => {
   await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
   await page.evaluate(() => {
@@ -210,7 +223,8 @@ test("delayed preferences preserve a queued search deadline and composition text
 });
 
 test("a corrected bounded envelope flushes only after a fresh host acknowledgement", async ({ page }) => {
-  await open(page,definition(),"window.saved=[];CanopyX.configure('prefs',{viewStore:{load(){return null;},save({settings}){saved.push(settings);return new Promise(r=>window.saveResolve=r);}}});");
+  await open(page,definition(),"window.saved=[];window.hold=false;CanopyX.configure('prefs',{viewStore:{load(){return null;},save({settings}){if(!hold)return;saved.push(settings);return new Promise(r=>window.saveResolve=r);}}});");
+  await page.evaluate(api+'.flushViewSettings()');await page.evaluate('hold=true');
   await page.evaluate(()=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;
     grid.setSelection(Array.from({length:5000},(_,i)=>'record-'+i+'x'.repeat(220)));});
   expect(await page.evaluate(api+'.flushViewSettings().catch(e=>e.message)')).toContain('limit');
