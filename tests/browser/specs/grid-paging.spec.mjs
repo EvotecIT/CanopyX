@@ -134,6 +134,29 @@ for (const composing of [false, true]) test(`host row positions use the accepted
   } else await expect(input).toHaveValue("");
 });
 
+for (const savedPresentation of ["paged", "continuous"]) test(`large hosted ${savedPresentation} positions restore beyond the row-count bound in pixels`, async ({ page }) => {
+  const view = definition({ presentation: "continuous" }); view.source = { kind: "host", navigation: "offset" }; delete view.rows;
+  await open(page, view, `CanopyX.configure('inventory',{source:{navigation:'offset',query(query){
+    const count=150000000;return {protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:query.offset,total:count,matched:count,
+      items:Array.from({length:Math.min(query.limit,count-query.offset)},(_,i)=>({id:'row-'+(query.offset+i),cells:{name:'Row '+(query.offset+i),amount:query.offset+i}}))};}}});`);
+  const expected = 100000000 * 28 + 56;
+  await page.evaluate(async presentation => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx, state = grid.getState();
+    state.scrollTop = presentation === "paged" ? 56 : 100000000 * 28 + 56;
+    if (presentation === "paged") state.paging = { pageLength: 25, offset: 100000000 };
+    await grid.setState(state);
+  }, savedPresentation);
+  expect(await page.evaluate(controller + ".getState().scrollTop")).toBe(expected);
+  await expect(page.locator('.cx-row[data-cx-id="row-100000002"]')).toBeVisible();
+  await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    grid.saveView("Large position"); await grid.scrollToRow(0); await grid.applySavedView("Large position");
+  });
+  expect(await page.evaluate(controller + ".getState().scrollTop")).toBe(expected);
+  await expect(page.locator('.cx-row[data-cx-id="row-100000002"]')).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("large-saved-position.png") });
+});
+
 for (const direction of ["down", "up"]) for (const action of ["continue", "column", "reverse", "escape"])
 test(`rapid ${direction} page navigation preserves later ${action} intent without restarting the same request`, async ({ page }) => {
   const view = definition({ pageSize: 25 }); view.source = { kind: "host" }; delete view.rows;

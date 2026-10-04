@@ -5223,7 +5223,7 @@ return state;
 },
 readGridState(state) {
 if (!state || state.version !== 1 || state.view !== this.view.id || !["utc", "local"].includes(state.timeZone) ||
-!Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER || !Array.isArray(state.selection))
+!Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER * this.rowH || !Array.isArray(state.selection))
 throw new Error("CanopyX: invalid or incompatible grid state.");
 const columns = gridStateColumns(this, state.columns);
 const selection = [...new Set(state.selection.map(id => { requireIdentifier(id, "state selection ID"); return id; }))];
@@ -5243,7 +5243,7 @@ throw new Error("CanopyX: invalid paged view state.");
 if (this.paged) {
 parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
 if (!state.paging) parsed.scrollTop = 0;
-} else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER, paging.offset * this.rowH + state.scrollTop);
+} else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER * this.rowH, paging.offset * this.rowH + state.scrollTop);
 }
 return parsed;
 },
