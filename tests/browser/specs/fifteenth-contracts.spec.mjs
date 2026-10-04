@@ -15,6 +15,7 @@ async function open(page, data = view) {
 async function waitForLoad(page, id, completion) {
   await page.waitForFunction(name => typeof window[name] === "function", completion);
   await expect(page.locator(`[data-cx-id="${id}"]`)).toHaveAttribute("aria-busy", "true");
+  await expect(page.locator(`[data-cx-id="${id}"]`)).toHaveAttribute("aria-expanded", "true");
   // Restoration inserts a loading row on its next paint; click the requested row after that movement.
   await nextFrames(page);
 }
