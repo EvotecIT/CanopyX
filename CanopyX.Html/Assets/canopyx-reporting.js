@@ -7214,8 +7214,10 @@ if (column === target) return;
 const ids = this.columns.map(item => item.id).filter(id => id !== column.id), at = ids.indexOf(target.id) + (after ? 1 : 0);
 ids.splice(at, 0, column.id); this.setColumnOrder(ids);
 const position = this.cols.findIndex(item => item.id === column.id);
-this.focusReportingHeader(this.headCells[position].querySelector(".cx-column-move"));
-setText(this.live, fill(this.labels.gridColumnMoved, { column: column.title, position: position + 1 }));
+const destination = position < 0 ? this.cols.findIndex(item => item.id === target.id) : position;
+this.focusReportingHeader(this.headCells[Math.max(0, destination)]?.querySelector(".cx-column-move"));
+const order = position < 0 ? this.columns.filter(item => !item.hidden).indexOf(column) : position;
+setText(this.live, fill(this.labels.gridColumnMoved, { column: column.title, position: order + 1 }));
 };
 DataGrid.prototype.startColumnDrag = function (event, column) {
 if (this.destroyed || event.button !== 0) return;
@@ -7227,13 +7229,13 @@ let ghost = null, target = null, after = false, latest = event.clientX, frame = 
 const clear = () => this.headCells.forEach(cell => cell.classList.remove("cx-drop-before", "cx-drop-after"));
 const locate = () => {
 clear(); target = null;
-for (let index = 0; index < this.headCells.length; index++) {
-const box = this.headCells[index].getBoundingClientRect();
-if (latest < box.right || index === this.headCells.length - 1) {
-target = this.cols[index]; after = latest > box.left + box.width / 2;
-this.headCells[index].classList.add(after ? "cx-drop-after" : "cx-drop-before"); break;
-}
-}
+const frame = this.grid.getBoundingClientRect(), row = this.headRow.getBoundingClientRect();
+const x = Math.max(frame.left + this.grid.clientLeft + 1, Math.min(latest, frame.left + this.grid.clientLeft + this.grid.clientWidth - 1));
+const cell = document.elementFromPoint(x, row.top + row.height / 2)?.closest(".cx-hcell");
+const index = this.headCells.indexOf(cell);
+if (index < 0) return;
+const box = cell.getBoundingClientRect(); target = this.cols[index]; after = latest > box.left + box.width / 2;
+cell.classList.add(after ? "cx-drop-after" : "cx-drop-before");
 };
 const scroll = () => {
 const box = this.grid.getBoundingClientRect(), delta = latest < box.left + 36 ? -12 : latest > box.right - 36 ? 12 : 0;
@@ -7432,7 +7434,7 @@ const held = this.heldCell(), columnId = held && this.cols[held.index] && this.c
 column.hidden = !visible; this.buildHeader(); this.syncColumnControls(); this.render(); this.restoreReportingFocus(held, columnId); this.stateChanged();
 };
 const PLACEMENT_REVEAL = DataGrid.prototype.revealInRow, PLACEMENT_FOCUS_HEADER = DataGrid.prototype.focusReportingHeader,
-PLACEMENT_EXPORT = DataGrid.prototype.prepareExport;
+PLACEMENT_EXPORT = DataGrid.prototype.prepareExport, PLACEMENT_ACCESS_HEADER = DataGrid.prototype.buildHeader;
 function revealReportingCenter(grid, target, pin) {
 if (pin && pin !== "none") return;
 const frame = grid.grid.getBoundingClientRect(), left = frame.left + grid.grid.clientLeft + (grid.pinnedLeftWidth || 0),
@@ -7447,6 +7449,16 @@ if (cell.parentNode && cell.parentNode._kind === "node") revealReportingCenter(t
 DataGrid.prototype.focusReportingHeader = function (control) {
 PLACEMENT_FOCUS_HEADER.call(this, control);
 if (control) revealReportingCenter(this, control, control.closest(".cx-hcell").getAttribute("data-cx-pin"));
+};
+DataGrid.prototype.buildHeader = function () {
+if (!this.pinnedHeaderFocus) {
+this.pinnedHeaderFocus = true;
+this.headRow.addEventListener("focusin", event => {
+const cell = event.target.closest(".cx-hcell");
+if (cell && this.headRow.contains(cell)) revealReportingCenter(this, event.target, cell.getAttribute("data-cx-pin"));
+}, { signal: this.lifetime.signal });
+}
+return PLACEMENT_ACCESS_HEADER.call(this);
 };
 DataGrid.prototype.prepareExport = function (options) {
 const columns = options && options.columns === undefined ? reportingColumnOrder(this.columns.filter(column => !column.hidden)).map(column => column.id) : undefined;
