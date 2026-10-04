@@ -27,6 +27,9 @@ export type GridPresenter =
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
   readonly columnReorder?: boolean;
+  readonly responsive?: boolean;
+  /** Pins are temporarily suspended to leave this many CSS pixels for the center; default 128, range 40..4096. */
+  readonly minimumCenterWidth?: number;
   readonly layout?: Readonly<Record<string, GridColumnLayout>>;
   readonly ordering?: Readonly<Record<string, GridOrdering>>;
   /** Header buttons open the complete-query filter editor. */
@@ -35,7 +38,20 @@ export interface GridReporting {
   readonly presenters?: Readonly<Record<string, GridPresenter>>;
 }
 /** CSS pixel bounds and a weight from zero to 100 for unused viewport space. Manual sizing disables flex until reset/state restoration. */
-export interface GridColumnLayout { readonly minimum: number; readonly maximum: number; readonly flex?: number; }
+export type GridColumnPin = "none" | "left" | "right";
+export interface GridColumnLayout {
+  readonly minimum: number; readonly maximum: number; readonly flex?: number;
+  readonly pin?: GridColumnPin;
+  /** Smaller values remain visible longer; equal priorities hide from the end of current order. */
+  readonly priority?: number;
+  /** Retain unless explicitly hidden by the user. */
+  readonly alwaysVisible?: boolean;
+}
+/** Effective layout is distinct from saved intent; responsive fields retain query and explicit export meanings. */
+export interface GridColumnPlacement {
+  readonly id: string; readonly requestedPin: GridColumnPin; readonly pin: GridColumnPin;
+  readonly visible: boolean; readonly responsiveHidden: boolean; readonly width: number;
+}
 export type GridFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
@@ -177,7 +193,7 @@ export interface GridCellContext { column: string; index: number; }
 export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   version: 1;
   view: string;
-  columns: { id: string; width: number; hidden: boolean; flex?: boolean }[];
+  columns: { id: string; width: number; hidden: boolean; flex?: boolean; pin?: GridColumnPin }[];
   query: Q;
   timeZone: TimeZone;
   selection: string[];
@@ -225,6 +241,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   setColumnWidth(id: string, width: number): void;
   /** Reporting runtime only: samples at most 200 cached accepted-query records and 2048 display code units per value, capped at 800 CSS pixels before declared constraints. No fetching or viewport scraping. */
   autoFitColumn?(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
+  setColumnPinned?(id: string, pin: GridColumnPin): void;
+  getColumnLayout?(): readonly GridColumnPlacement[];
   setColumnVisible(id: string, visible: boolean): void;
   setColumnOrder(ids: string[]): void;
   getState(): GridState<Q>;

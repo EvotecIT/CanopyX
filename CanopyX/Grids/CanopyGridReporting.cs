@@ -14,6 +14,13 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets or sets whether headers offer pointer dragging and keyboard column move controls.</summary>
     public bool ColumnReorder { get; set; }
 
+    /// <summary>Gets or sets whether low-priority columns are temporarily hidden to fit the viewport.</summary>
+    /// <remarks>Hidden fields retain their full query and explicit export semantics and are available to host details.</remarks>
+    public bool Responsive { get; set; }
+
+    /// <summary>Gets or sets the minimum center width left by effective pinned groups, from 40 to 4096 CSS pixels.</summary>
+    public int MinimumCenterWidth { get; set; } = 128;
+
     /// <summary>Gets immutable width and flex policies keyed by declared column identities.</summary>
     public IDictionary<string, CanopyGridColumnLayout> Layout { get; } = new Dictionary<string, CanopyGridColumnLayout>(StringComparer.Ordinal);
 
@@ -24,6 +31,8 @@ public sealed class CanopyGridReporting {
     public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
 
     internal void Validate(IList<CanopyColumn> columns) {
+        if (MinimumCenterWidth < 40 || MinimumCenterWidth > 4096)
+            throw new InvalidOperationException("MinimumCenterWidth must be from 40 to 4096 CSS pixels.");
         foreach (var pair in Layout) {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
@@ -56,6 +65,8 @@ public sealed class CanopyGridReporting {
         writer.BeginObject();
         if (HeaderFilters) writer.Property("headerFilters", true);
         if (ColumnReorder) writer.Property("columnReorder", true);
+        if (Responsive) writer.Property("responsive", true);
+        if (MinimumCenterWidth != 128) writer.Property("minimumCenterWidth", MinimumCenterWidth);
         if (Layout.Count != 0) {
             writer.Name("layout").BeginObject();
             foreach (var pair in Layout) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }

@@ -77,6 +77,8 @@
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "headerFilters": { "type": "boolean" },
         "columnReorder": { "type": "boolean" },
+        "responsive": { "type": "boolean" },
+        "minimumCenterWidth": { "type": "integer", "minimum": 40, "maximum": 4096 },
         "layout": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridColumnLayout" } },
         "presenters": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridPresenter" } }
       }
@@ -86,7 +88,10 @@
       "properties": {
         "minimum": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "maximum": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
-        "flex": { "type": "number", "minimum": 0, "maximum": 100 }
+        "flex": { "type": "number", "minimum": 0, "maximum": 100 },
+        "pin": { "enum": ["none", "left", "right"] },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "alwaysVisible": { "type": "boolean" }
       },
       "$comment": "Writers/readers require minimum <= initial column width <= maximum. Runtime state preserves base width and flex-enabled intent separately from viewport allocation."
     },
@@ -557,6 +562,11 @@
             "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
             "gridColumnMoved": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinNone": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinLeft": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinRight": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResponsiveHidden": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
