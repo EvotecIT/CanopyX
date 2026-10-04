@@ -2,7 +2,7 @@
 // level after level, and the path renders once. See "Search Index" in docs/data-protocol.md for the location fields
 // of an entry.
 import { expect, test } from "@playwright/test";
-import { viewPage } from "./support.mjs";
+import { viewPage, nextFrames } from "./support.mjs";
 
 const view = { protocol: "canopyx/2", type: "view", id: "paths", label: "Paths", columns: [{ id: "name", title: "Name", width: 400 }],
   search: { minLength: 2, maxResults: 20 }, source: { kind: "sidecar", base: "/data/" } };
@@ -66,12 +66,15 @@ test("a search hit loads every pack on its path at once and renders the path onc
   const server = await serve(page, bundle());
   const hit = await page.evaluate(async () => (await document.querySelector(".cx-host").canopyx.search("needle")).hits[0]);
   expect(hit.path).toEqual(["a", "a/2", "a/2/x"]);
+  // Mounting also schedules the initial viewport/ResizeObserver paint. Count this navigation after it settles.
+  await nextFrames(page);
   await countRenders(page);
   server.hold();
   await page.evaluate((path) => { window.opening = document.querySelector(".cx-host").canopyx.expandPath(path); }, hit.path);
   // The first children page of "a", the later page that holds "a/2", and the children of "a/2": three packs, asked
   // for before the first one arrives.
   await expect.poll(() => server.requested.filter((ref) => ref.startsWith("p/")).sort(), { timeout: 1000 }).toEqual(["p/0", "p/1", "p/2"]);
+  expect(await page.evaluate(() => window.renders)).toBe(0);
   server.release();
   expect(await page.evaluate(async () => ({ node: (await window.opening).id, renders: window.renders }))).toEqual({ node: "a/2/x", renders: 1 });
   await expect(page.locator('.cx-row[data-cx-id="a/2/x"]')).toHaveAttribute("aria-selected", "true");
