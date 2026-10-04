@@ -22,6 +22,9 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `type` | Written by | Read when |
 | --- | --- | --- |
 | `view` | `CanopyView.ToJson()` | The page loads; it defines columns, behavior, the data source, and inline nodes |
+| `grid` | `CanopyGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
+| `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
+| `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -31,6 +34,38 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `searchEntries` | Bundle writer | A sidecar search needs the nodes its matches refer to |
 
 All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U+2029 as `\u` sequences, so a document can sit inside an HTML `<script>` element unchanged. Hosts writing documents by hand must do the same before inlining one. The C# writer also escapes the backtick, and a `$` that is followed by `{`, so a document can sit inside a JavaScript template literal unchanged (see [Packs](#packs)).
+
+## Flat Grid Documents
+
+Flat grids use their own document types, without parents, child references, or a special tree column. Existing tree documents and readers retain their contracts. A host uses a grid-capable runtime to consume `grid` and `gridPage` documents; a tree-only runtime does not reinterpret them as trees.
+
+### Export, clipboard and record details
+
+`grid.prepareExport({ scope })` captures the accepted dataset revision, query, selected IDs, column order and time zone immediately. Its immutable `request` describes the operation; `rows()` enumerates fresh serial source windows, independently of the viewport and its cache. A later UI query does not change an export already prepared. A source must continue to serve that revision or reject it. Counts, duplicate identities and revision changes fail the export rather than silently mixing data.
+
+Choose `filtered` for the accepted search and predicates, `selected` for selected stable IDs across the full dataset, or `all` for the full dataset. All three retain the accepted sort order. Selected and all exports clear search and predicates; a selected ID absent from that revision is an error. Columns default to visible columns in their current order, or an explicit ordered list of declared IDs. `values: "display"` retains display text and date formatting; `values: "raw"` exports underlying typed values. The request's `matched` records the accepted filtered count even when its effective export query clears the filters.
+
+`await grid.toCsv({ scope })` produces CSV with quoted fields and spreadsheet formula protection for text. The client limit is 50,000 rows by default; exceeding it fails without truncation. `await grid.copy({ scope })` produces tab-separated text with a default 10,000-row limit and rejects unavailable or denied clipboard access. Ctrl/Command+C copies selected records, or the focused cell or row when there is no selection; native controls and selected text keep their copying behavior.
+
+For large Office exports, configure `onExport` and call `grid.exportToHost("xlsx", { scope })`. The host receives the immutable request and a cancellation signal, and owns authorization, query replay, document generation and delivery. CanopyX does not load an Office engine or materialize the result first. Source requests and host hooks have bounded deadlines; caller cancellation and grid destruction settle operations even when a source ignores its signal.
+
+Configure `onDetails` to open a host-owned drawer for a loaded record. Its context contains an immutable raw row, accepted query, cancellation signal and `returnFocus`. The toolbar, double click and Ctrl/Command+Enter invoke the hook; Enter and F2 retain their cell-navigation behavior. A newer details request or query cancels an unfinished opening operation. The host owns the completed drawer, its content and focus restoration when it closes.
+
+A `grid` definition contains `id`, `label`, `rowHeight`, `pageSize`, `selection`, `search`, `columns`, and `source`. Column definitions and cells have the same value, display text, tooltip, tone, and badge contract as tree views. Any column can start hidden, but at least one must remain visible. Flat-grid definitions do not expose tree edit proposals. Optional `stateKey`, `timeZone`, and `labels` retain their shared meanings.
+
+The source is `{ "kind": "inline" }` or `{ "kind": "host" }`. Inline definitions contain the complete `rows` array. A row is `{ "id": "stable-key", "cells": { "column-id": 123 } }`; omitted cells and null entries are empty values. Identities are unique throughout the dataset and survive ordering, filtering, paging, and reloads. Display text never replaces the raw value used for sorting. Host definitions omit `rows`; a host hook owns query execution, transport, and authorization and can read an in-memory dataset, a sidecar dataset, or a remote service.
+
+A `gridPage` contains `view`, `revision`, `offset`, `total`, `matched`, and `items`, alongside its protocol envelope. `total` is the full unfiltered dataset size; `matched` is its size after filtering and search, before paging. `offset` is measured in the ordered matching rows. The host filters and sorts the full dataset before slicing a result page, using stable row identity as the final tie-breaker. All pages in one accepted query share a dataset revision. A changed revision invalidates retained pages and selection assumptions rather than mixing snapshots.
+
+Counts satisfy `0 <= offset <= matched <= total`, and returned rows cannot extend beyond `matched`. A result page contains at most 10,000 rows. Empty pages are valid only at the end of matching rows. Writers and readers also reject duplicate row identities. Inline definitions check declared columns; `CanopyGridPage.ToJson(view)` also checks page columns against its definition. Readers perform that check when accepting host pages. JSON Schema alone cannot express all cross-field and dataset-wide invariants.
+
+A `gridQuery` contains `view`, `offset`, `limit`, `search`, `sort`, and `filters`, with an optional expected `revision`. A definition can contain an initial `query`. Search is case-insensitive over raw values of declared columns, independent of display text. All column predicates combine with AND. Sort keys are `{ "column": "amount", "direction": "asc" }` or `desc`, applied in array order; keys identify unique declared sortable columns. Missing values sort last in either direction, and ordinal row identity breaks final ties, including when no explicit sort is requested. The source applies the result window last.
+
+A filter is `{ "column": "amount", "operator": "ge", "values": [10] }`. Operators are `eq`, `ne`, `contains`, `startsWith`, `in`, `gt`, `ge`, `lt`, `le`, `isNull`, and `isNotNull`. Equality and text matching are case-insensitive for text values. Numeric and date operands use their raw numeric and ISO 8601 UTC values; localized display strings do not enter the query. Text matching is for text columns; range comparisons are for number and date columns. A null or missing cell fails value predicates, including `ne`; use `isNull` to include it explicitly. An empty string is a value, not a null. Null predicates take no operands, `in` takes 1 to 1,000, and other predicates take one. A query has at most 64 predicates. The C# filter API accepts `CanopyCell` operands but serializes only their raw values, without display text or decorations.
+
+Flat-grid view snapshots are browser presentation state, separate from the wire query and tree snapshots. `getState()` returns `{ version: 1, view, columns, query, timeZone, selection, scrollTop }`. Columns appear in display order and carry `id`, `width` and `hidden`; selection contains stable row IDs independently of cached pages. The query omits a dataset revision and starts at offset zero, so restoration obtains a fresh accepted snapshot before applying presentation. Invalid state leaves the current query and layout intact. A newer query or restoration supersedes an older restore. Removed column/filter/sort references are skipped, while at least one known column must remain visible.
+
+`stateKey` scopes the current snapshot and at most 20 named snapshots in session storage, together with the view ID. Unavailable storage leaves the in-memory controls usable. `resetView()` restores the original definition; removing a named view is a separate explicit action. The `grid*` label names localize flat-grid controls and require the data-grid entry point.
 
 ## View
 

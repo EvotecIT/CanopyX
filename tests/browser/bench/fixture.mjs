@@ -14,6 +14,16 @@ function random(seed) {
   };
 }
 
+/** The same typed report cells as a complete flat dataset, without hierarchy or group rows. */
+export function scrollGridView(groups, perGroup) {
+  const tree = scrollView(groups, perGroup);
+  return { protocol: tree.protocol, type: "grid", id: tree.id, label: tree.label,
+    rowHeight: tree.rowHeight, pageSize: 100, selection: tree.selection, search: false,
+    columns: tree.columns, source: { kind: "inline" }, rows: tree.roots.flatMap(group => group.children.map(node => ({
+      id: node.id, cells: Object.assign({ name: { value: node.label, badges: node.badges || [] } }, node.cells)
+    }))) };
+}
+
 export function scrollView(groups, perGroup) {
   const next = random(20260927);
   const roots = [];
@@ -83,7 +93,7 @@ function hostMount(columns, api, share) {
     + (api === "renderCell"
       ? "options.renderCell = function (node, id, element) { return columns.indexOf(id) >= 0 ? draw(node, id, element) : false; };"
       : "options.renderers = {}; columns.forEach(function (id) { options.renderers[id] = function (node, element) { return draw(node, id, element); }; });")
-    + "CanopyX.createTreeGrid(document.getElementById('bench'), options); })();";
+    + "(view.type === 'grid' ? CanopyX.createDataGrid : CanopyX.createTreeGrid)(document.getElementById('bench'), options); })();";
 }
 
 /** A standalone page with the runtime and stylesheet inlined. With host, the page mounts the view with host renderers. */

@@ -69,17 +69,38 @@ $assets = @(
         Folding = $true
         Module = $true
     }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source')
+        Target = 'CanopyX.Html/Assets/canopyx-grid.js'
+        Folding = $true
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css')
+        Target = 'CanopyX.Html/Assets/canopyx-grid.css'
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source')
+        Target = 'CanopyX.Html/Assets/canopyx-grid-module.mjs'
+        Folding = $true
+        Module = $true
+        Grid = $true
+    }
 )
 
 function Join-AssetSource {
-    param([string] $SourcePath, [string] $ExtensionPath)
+    param([string] $SourcePath, [string[]] $ExtensionPath)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
 
     if ($ExtensionPath) {
-        $extra = if (Test-Path -LiteralPath $ExtensionPath -PathType Leaf) { @(Get-Item -LiteralPath $ExtensionPath) }
-            else { @(Get-ChildItem -LiteralPath $ExtensionPath -Filter '*.js' -File | Sort-Object Name) }
+        $extra = foreach ($extension in $ExtensionPath) {
+            if (Test-Path -LiteralPath $extension -PathType Leaf) { Get-Item -LiteralPath $extension }
+            else { Get-ChildItem -LiteralPath $extension -Filter '*.js' -File | Sort-Object Name }
+        }
         if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { $parts = @($parts) + @($extra) }
         else { $parts = @($parts | Where-Object Name -LT '90-') + @($extra) + @($parts | Where-Object Name -GE '90-') }
     }
@@ -141,7 +162,7 @@ function Remove-CommentLines {
 }
 
 function ConvertTo-Module {
-    param([string] $Content)
+    param([string] $Content, [switch] $Grid)
 
     # The module uses the same implementation as the interactive classic script. Only its host, automatic
     # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
@@ -165,19 +186,24 @@ const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge,
 export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels };
 export default CanopyX;
 '@
+    if ($Grid) {
+        $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
+        $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
+    }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
 
 foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
-    $extensionPath = if ($asset.Extension) { Join-Path $root $asset.Extension } else { $null }
+    $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
     $generated = Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
-    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated }
+    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

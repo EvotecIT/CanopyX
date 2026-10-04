@@ -18,11 +18,11 @@
     <PackageId>CanopyX</PackageId>
     <Version>$(CanopyXProductVersion)</Version>
     <Authors>Evotec</Authors>
-    <Description>Dependency-free view definitions, versioned data protocol, sidecar bundle writer, and script-free outline renderer for large interactive data views such as virtualized tree grids.</Description>
-    <PackageReleaseNotes>CanopyX 0.1.0 is the first release: tree grid view definitions, the canopyx/2 protocol, the sidecar bundle writer, and the static outline renderer.</PackageReleaseNotes>
+    <Description>Dependency-free tree and flat-grid definitions, typed queries, the versioned canopyx/2 data protocol, a sidecar tree bundle writer, and script-free fallback rendering for large interactive data views.</Description>
+    <PackageReleaseNotes>Tree and flat-grid definitions, typed filtering and stable sorting, the canopyx/2 protocol, tree bundle writing, and script-free fallback rendering.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>tree-grid;treegrid;treeview;virtualization;lazy-loading;data-views;html;reports;zero-dependency;aot;trimming</PackageTags>
+    <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;reports;zero-dependency;aot;trimming</PackageTags>
     <PackageProjectUrl>https://github.com/EvotecIT/CanopyX</PackageProjectUrl>
     <RepositoryUrl>https://github.com/EvotecIT/CanopyX</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

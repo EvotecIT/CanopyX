@@ -1,0 +1,23 @@
+/* Flat grids share the tree viewport, theme and reusable cell styles. */
+.cx-data-grid .cx-grid-notice { flex:none;padding:6px 8px;color:var(--cx-muted); }
+.cx-data-grid .cx-grid-notice[hidden] { display:none; }
+.cx-data-grid .cx-grid-notice[role="alert"] { color:var(--cx-tone-danger); }
+.cx-data-grid .cx-grid-retry { max-width:100%;white-space:normal;text-align:start;color:inherit; }
+.cx-data-grid .cx-hcell[data-cx-sort="asc"] .cx-sort::after { content:"\25B2";font-size:9px; }
+.cx-data-grid .cx-hcell[data-cx-sort="desc"] .cx-sort::after { content:"\25BC";font-size:9px; }
+.cx-data-grid .cx-hcell[aria-sort="other"] .cx-sort::before { content:attr(data-cx-sort-priority); }
+.cx-data-grid .cx-grid-panel { width:min(360px,calc(100vw - 32px));display:flex;flex-wrap:wrap;gap:8px; }
+.cx-data-grid .cx-grid-column-choice { display:flex;gap:4px;align-items:center;width:100%; }
+.cx-data-grid .cx-grid-column-choice label { flex:1;display:flex;flex-direction:row-reverse;justify-content:flex-end; }
+.cx-data-grid .cx-button { min-height:32px;padding:4px 8px;border:1px solid var(--cx-line-strong);border-radius:5px;background:var(--cx-surface);color:var(--cx-text);cursor:pointer; }
+.cx-data-grid .cx-button:hover { background:var(--cx-hover-bg); }
+.cx-data-grid .cx-button:disabled { opacity:.5;cursor:default; }
+.cx-data-grid .cx-grid-field { display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:0; }
+.cx-data-grid .cx-grid-field :is(input:not([type="checkbox"]),select,textarea),.cx-data-grid .cx-grid-panel > select { box-sizing:border-box;min-width:0;width:100%;max-width:100%;height:auto;padding:6px;border:1px solid var(--cx-line-strong);border-radius:4px;background:var(--cx-surface);color:var(--cx-text);font:inherit; }
+.cx-data-grid .cx-grid-filter-form,.cx-data-grid .cx-grid-filter-form > div,.cx-data-grid .cx-grid-filter { display:flex;flex-direction:column;gap:8px;width:100%;min-width:0; }
+.cx-data-grid .cx-grid-filter { box-sizing:border-box;border:1px solid var(--cx-line);padding:8px; }
+.cx-data-grid .cx-grid-control-error { color:var(--cx-tone-danger);margin:0;width:100%;overflow-wrap:anywhere; }
+.cx-data-grid .cx-grid-views .cx-grid-field { width:100%; }
+.cx-data-grid .cx-grid-views .cx-button { align-self:flex-start; }
+.cx-data-grid :is(button,select,input,textarea):focus-visible { outline:2px solid var(--cx-accent);outline-offset:2px; }
+.cx-data-grid [hidden] { display:none!important; }

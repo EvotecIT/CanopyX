@@ -13,12 +13,17 @@ public sealed class RuntimeAssetTests {
     [Theory]
     [InlineData(CanopyRuntime.TreeGrid)]
     [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    [InlineData(CanopyRuntime.DataGrid)]
     public void Script_MatchesItsSourceParts(CanopyRuntime runtime) {
         var root = RepositoryPaths.Root;
         var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
             .OrderBy(Path.GetFileName, StringComparer.Ordinal).ToArray();
-        if (runtime == CanopyRuntime.InteractiveTreeGrid) {
+        if (runtime != CanopyRuntime.TreeGrid) {
+            var extensions = runtime == CanopyRuntime.DataGrid
+                ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.grid.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
+                : Enumerable.Empty<string>();
             files = files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") < 0)
+                .Concat(extensions)
                 .Concat(Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.interactive.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal))
                 .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
         }
@@ -51,10 +56,13 @@ public sealed class RuntimeAssetTests {
     [Theory]
     [InlineData(CanopyRuntime.TreeGrid)]
     [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    [InlineData(CanopyRuntime.DataGrid)]
     public void Style_MatchesItsSource(CanopyRuntime runtime) {
         var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "canopyx.css"));
-        if (runtime == CanopyRuntime.InteractiveTreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
+        if (runtime != CanopyRuntime.TreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.interactive.source", "canopyx.css"));
+        if (runtime == CanopyRuntime.DataGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "canopyx.css"));
         Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
     }
 
@@ -69,6 +77,12 @@ public sealed class RuntimeAssetTests {
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.InteractiveTreeGrid));
         Assert.True(compressed <= 64 * 1024, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 64 KiB.");
+    }
+
+    [Fact]
+    public void GridAssets_StayWithinTheirCompressedBudget() {
+        var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
+        Assert.True(compressed <= 80 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 80 KiB.");
     }
 
     [Fact]

@@ -5,6 +5,9 @@
   "description": "Every canopyx/2 document. The schema lists every field of the current revision and rejects unknown ones, so it doubles as a writer check. Readers must ignore unknown fields so documents from a newer canopyx/2 writer still load.",
   "oneOf": [
     { "$ref": "#/$defs/view" },
+    { "$ref": "#/$defs/grid" },
+    { "$ref": "#/$defs/gridPage" },
+    { "$ref": "#/$defs/gridQuery" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -15,6 +18,105 @@
   ],
   "$defs": {
     "protocol": { "const": "canopyx/2" },
+    "gridRow": {
+      "description": "A flat row with a dataset-stable identity. Writers and readers also enforce unique identities across the dataset.",
+      "type": "object",
+      "required": ["id", "cells"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } }
+      }
+    },
+    "grid": {
+      "description": "A flat data-grid definition. All columns contain cells; none represents hierarchy.",
+      "type": "object",
+      "required": ["protocol", "type", "id", "label", "rowHeight", "pageSize", "selection", "search", "columns", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "grid" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "$ref": "#/$defs/accessibleLabel" },
+        "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "selection": { "enum": ["single", "multiple"] },
+        "search": { "type": "boolean" },
+        "columns": {
+          "type": "array", "minItems": 1,
+          "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
+          "contains": { "not": { "required": ["hidden"], "properties": { "hidden": { "const": true } } } }
+        },
+        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] } } },
+        "stateKey": { "type": "string" },
+        "timeZone": { "enum": ["utc", "local"] },
+        "labels": { "$ref": "#/$defs/view/properties/labels" },
+        "query": { "$ref": "#/$defs/gridQuery" },
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } }
+      },
+      "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
+      "then": { "required": ["rows"] },
+      "else": { "not": { "required": ["rows"] } }
+    },
+    "gridPage": {
+      "description": "A page after full-dataset filtering and sorting. Writers and readers check offset <= matched <= total, page bounds, and unique row identities.",
+      "type": "object",
+      "required": ["protocol", "type", "view", "revision", "offset", "total", "matched", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridPage" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" },
+        "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "matched": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "items": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/gridRow" } }
+      }
+    },
+    "gridQuery": {
+      "description": "Search and AND-combined typed predicates precede ordered sorting and paging. Missing values sort last; row identity breaks final ties.",
+      "type": "object",
+      "required": ["protocol", "type", "view", "offset", "limit", "search", "sort", "filters"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridQuery" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" },
+        "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "search": { "type": "string" },
+        "sort": {
+          "type": "array",
+          "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": {
+            "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] }
+          } }
+        },
+        "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilter" } }
+      }
+    },
+    "gridFilter": {
+      "type": "object",
+      "required": ["column", "operator", "values"],
+      "additionalProperties": false,
+      "properties": {
+        "column": { "$ref": "#/$defs/identifier" },
+        "operator": { "enum": ["eq", "ne", "contains", "startsWith", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"] },
+        "values": { "type": "array", "items": { "allOf": [{ "$ref": "#/$defs/cellValue" }, { "not": { "type": "null" } }] } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "operator": { "enum": ["isNull", "isNotNull"] } } },
+          "then": { "properties": { "values": { "maxItems": 0 } } },
+          "else": {
+            "if": { "properties": { "operator": { "const": "in" } } },
+            "then": { "properties": { "values": { "minItems": 1, "maxItems": 1000 } } },
+            "else": { "properties": { "values": { "minItems": 1, "maxItems": 1 } } }
+          }
+        }
+      ]
+    },
     "accessibleLabel": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "nonEmptyString": { "type": "string", "minLength": 1 },
     "identifier": { "type": "string", "minLength": 1, "pattern": "^(?:[^\\uD800-\\uDFFF]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF])+$" },
@@ -295,6 +397,38 @@
             "searchWordTooShort": { "$ref": "#/$defs/accessibleLabel" },
             "searchFailed": { "$ref": "#/$defs/accessibleLabel" },
             "columns": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFilters": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExport": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFilteredResults": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectedRows": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAllResults": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDownloadCsv": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCopy": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDetails": { "$ref": "#/$defs/accessibleLabel" },
+            "gridColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridOperator": { "$ref": "#/$defs/accessibleLabel" },
+            "gridValue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridValueType": { "$ref": "#/$defs/accessibleLabel" },
+            "gridText": { "$ref": "#/$defs/accessibleLabel" },
+            "gridBoolean": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAddFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRemoveFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "gridApply": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearFilters": { "$ref": "#/$defs/accessibleLabel" },
+            "gridMoveEarlier": { "$ref": "#/$defs/accessibleLabel" },
+            "gridMoveLater": { "$ref": "#/$defs/accessibleLabel" },
+            "gridViews": { "$ref": "#/$defs/accessibleLabel" },
+            "gridViewName": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSaveView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRemoveView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResetView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChooseView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridInvalidFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "gridContains": { "$ref": "#/$defs/accessibleLabel" },
+            "gridStartsWith": { "$ref": "#/$defs/accessibleLabel" },
+            "gridIn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridIsNull": { "$ref": "#/$defs/accessibleLabel" },
+            "gridIsNotNull": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },

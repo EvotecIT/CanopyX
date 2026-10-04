@@ -58,7 +58,7 @@ export function focusedId(page) {
 
 /** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves. */
 export function runtimeAssets(runtime = "tree") {
-  const stem = runtime === "interactive" ? "canopyx-interactive" : "canopyx";
+  const stem = runtime === "grid" ? "canopyx-grid" : runtime === "interactive" ? "canopyx-interactive" : "canopyx";
   return {
     script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8"),
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8")
@@ -68,7 +68,7 @@ export function runtimeAssets(runtime = "tree") {
 /** A page with one view mounted from a view document, served by the test through page.route. */
 export function viewPage(view) {
   const interactive = view.checkboxes || view.dragDrop || view.contextActions && view.contextActions.length || view.columns.some(column => column.editable);
-  const { script, style } = runtimeAssets(interactive ? "interactive" : "tree");
+  const { script, style } = runtimeAssets(view.type === "grid" ? "grid" : interactive ? "interactive" : "tree");
   const json = JSON.stringify(view).replace(/</g, "\\" + "u003c");
   return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
     + "</script></head><body class=\"cx-page\"><div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\"><script type=\"application/json\" class=\"cx-config\">"

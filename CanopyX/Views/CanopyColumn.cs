@@ -4,8 +4,8 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>
-/// A column of a tree view. The first column of a view is the tree column: it shows the node label, the indent, and
-/// the expander.
+/// A typed column shared by tree and flat-grid views. The first column of a tree view shows the node label,
+/// indent, and expander; flat-grid columns all display cell values.
 /// </summary>
 public sealed class CanopyColumn {
     /// <summary>The narrowest width a column can have, in CSS pixels.</summary>
@@ -50,14 +50,14 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets how values are formatted, aligned, and sorted.</summary>
     public CanopyColumnKind Kind { get; set; }
 
-    /// <summary>Gets or sets whether clicking the header sorts siblings by this column's cell values.</summary>
+    /// <summary>Gets or sets whether the column can sort cell values; tree views sort siblings.</summary>
     public bool Sortable { get; set; }
 
     /// <summary>Gets or sets whether the interactive runtime offers an editor for this column.</summary>
     /// <remarks>The host edit hook validates and executes proposals. The runtime never changes the node value itself.</remarks>
     public bool Editable { get; set; }
 
-    /// <summary>Gets or sets whether the column starts hidden. The tree column cannot be hidden.</summary>
+    /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
     public bool Hidden { get; set; }
 
     internal void WriteJson(CanopyJsonWriter writer) {

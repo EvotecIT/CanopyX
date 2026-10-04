@@ -36,6 +36,38 @@ public sealed class CanopyLabels {
         [nameof(SearchWordTooShort)] = "Type a word of at least {min} characters",
         [nameof(SearchFailed)] = "Search failed: {error}",
         [nameof(Columns)] = "Columns",
+        [nameof(GridFilters)] = "Filters",
+        [nameof(GridExport)] = "Export",
+        [nameof(GridFilteredResults)] = "Filtered results",
+        [nameof(GridSelectedRows)] = "Selected rows",
+        [nameof(GridAllResults)] = "All results",
+        [nameof(GridDownloadCsv)] = "Download CSV",
+        [nameof(GridCopy)] = "Copy",
+        [nameof(GridDetails)] = "Record details",
+        [nameof(GridColumn)] = "Column",
+        [nameof(GridOperator)] = "Condition",
+        [nameof(GridValue)] = "Value (UTC for dates)",
+        [nameof(GridValueType)] = "Raw value type",
+        [nameof(GridText)] = "Text",
+        [nameof(GridBoolean)] = "Boolean",
+        [nameof(GridAddFilter)] = "Add filter",
+        [nameof(GridRemoveFilter)] = "Remove {column} filter",
+        [nameof(GridApply)] = "Apply",
+        [nameof(GridClearFilters)] = "Clear filters",
+        [nameof(GridMoveEarlier)] = "Move {column} earlier",
+        [nameof(GridMoveLater)] = "Move {column} later",
+        [nameof(GridViews)] = "Saved views",
+        [nameof(GridViewName)] = "View name",
+        [nameof(GridSaveView)] = "Save view",
+        [nameof(GridRemoveView)] = "Remove view",
+        [nameof(GridResetView)] = "Reset view",
+        [nameof(GridChooseView)] = "Choose a saved view",
+        [nameof(GridInvalidFilter)] = "Enter a valid filter value.",
+        [nameof(GridContains)] = "contains",
+        [nameof(GridStartsWith)] = "starts with",
+        [nameof(GridIn)] = "is any of (one per line)",
+        [nameof(GridIsNull)] = "is missing",
+        [nameof(GridIsNotNull)] = "is present",
         [nameof(VisibleColumns)] = "Visible columns",
         [nameof(ResizeColumn)] = "Resize {column}",
         [nameof(ColumnWidth)] = "{width} pixels",
@@ -72,7 +104,9 @@ public sealed class CanopyLabels {
 
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
+        nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
         nameof(SearchNoResults), nameof(SearchTooShort), nameof(SearchWordTooShort), nameof(SearchFailed), nameof(Columns), nameof(VisibleColumns),
         nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(QueryFailed), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
         nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError),
@@ -89,6 +123,21 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the placeholder and accessible name of the search box when the view's search options set none (<see cref="CanopySearchOptions.Placeholder"/>). Default "Search".</summary>
     public string SearchPlaceholder { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the grid export panel label. Default "Export".</summary>
+    public string GridExport { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the filtered export scope label. Default "Filtered results".</summary>
+    public string GridFilteredResults { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the selected export scope label. Default "Selected rows".</summary>
+    public string GridSelectedRows { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the full dataset export scope label. Default "All results".</summary>
+    public string GridAllResults { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the client CSV action label. Default "Download CSV".</summary>
+    public string GridDownloadCsv { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the clipboard action label. Default "Copy".</summary>
+    public string GridCopy { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the host record-details action label. Default "Record details".</summary>
+    public string GridDetails { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the accessible name of the list of search results. Default "Search results".</summary>
     public string SearchResults { get => Get(); set => Set(value); }
@@ -116,6 +165,89 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the button of the column chooser. Default "Columns".</summary>
     public string Columns { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Filters".</summary>
+    public string GridFilters { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Column".</summary>
+    public string GridColumn { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Condition".</summary>
+    public string GridOperator { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Value (UTC for dates)".</summary>
+    public string GridValue { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Raw value type".</summary>
+    public string GridValueType { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Text".</summary>
+    public string GridText { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Boolean".</summary>
+    public string GridBoolean { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Add filter".</summary>
+    public string GridAddFilter { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Remove {column} filter".</summary>
+    public string GridRemoveFilter { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Apply".</summary>
+    public string GridApply { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Clear filters".</summary>
+    public string GridClearFilters { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Move {column} earlier".</summary>
+    public string GridMoveEarlier { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Move {column} later".</summary>
+    public string GridMoveLater { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Saved views".</summary>
+    public string GridViews { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "View name".</summary>
+    public string GridViewName { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Save view".</summary>
+    public string GridSaveView { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Remove view".</summary>
+    public string GridRemoveView { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Reset view".</summary>
+    public string GridResetView { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Choose a saved view".</summary>
+    public string GridChooseView { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "Enter a valid filter value.".</summary>
+    public string GridInvalidFilter { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "contains".</summary>
+    public string GridContains { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "starts with".</summary>
+    public string GridStartsWith { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "is any of (one per line)".</summary>
+    public string GridIn { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "is missing".</summary>
+    public string GridIsNull { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the flat-grid control text. Default "is present".</summary>
+    public string GridIsNotNull { get => Get(); set => Set(value); }
+
+    /// <summary>Gets whether translations require the flat-grid superset runtime.</summary>
+    public bool RequiresDataGridRuntime {
+        get {
+            foreach (var name in _values.Keys) if (name.StartsWith("Grid", StringComparison.Ordinal)) return true;
+            return false;
+        }
+    }
 
     /// <summary>Gets or sets the accessible name of the column chooser's list. Default "Visible columns".</summary>
     public string VisibleColumns { get => Get(); set => Set(value); }

@@ -3,7 +3,7 @@
   // relative to its logical top, avoiding browser limits on element heights and transform coordinates.
   const NATIVE_HEIGHT = 8000000;
 
-  Object.assign(TreeGrid.prototype, {
+  const ROW_SCROLLING = {
     scrollRange() {
       const view = Math.max(0, this.grid.clientHeight - this.head.offsetHeight);
       return { logical: Math.max(0, this.total - view), native: Math.max(0, NATIVE_HEIGHT - view) };
@@ -86,4 +86,5 @@
       }
       return false;
     }
-  });
+  };
+  Object.assign(TreeGrid.prototype, ROW_SCROLLING);

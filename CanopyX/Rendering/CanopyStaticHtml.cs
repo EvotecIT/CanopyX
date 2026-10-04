@@ -18,7 +18,7 @@ namespace CanopyX.Rendering;
 /// last row says how many and can link to the full report. The colours come from
 /// <see cref="CanopyStaticHtmlOptions.Theme"/>: light, dark, or the host's own.
 /// </remarks>
-public static class CanopyStaticHtml {
+public static partial class CanopyStaticHtml {
     private const int IndentPixels = 16;
 
     /// <summary>Renders the outline of the view's <see cref="CanopyView.Roots"/>.</summary>

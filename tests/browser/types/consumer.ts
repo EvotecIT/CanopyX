@@ -1,6 +1,41 @@
 import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
+import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
+
+const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
+  pageSize: 100, selection: "multiple", search: true };
+const gridSource: GridSource = { async query(query, { signal }) {
+  if (signal.aborted) throw new Error("Cancelled");
+  // @ts-expect-error Host callbacks cannot mutate an accepted query snapshot.
+  query.sort.push({ column: "name", direction: "asc" });
+  return { protocol: "canopyx/2", type: "gridPage", view: query.view, revision: "v1", offset: query.offset,
+    total: 0, matched: 0, items: [] };
+} };
+const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource });
+GridRuntime.configure(gridView.id, { source: gridSource });
+dataGrid.setQuery({ filters: [{ column: "name", operator: "in", values: ["Atlas"] }] });
+dataGrid.setSelection(["row-1"]);
+const exported = dataGrid.prepareExport({ scope: "selected", columns: ["name"], values: "raw" });
+for await (const record of exported.rows()) {
+  // @ts-expect-error Exported rows and cells are immutable snapshots.
+  record.cells.name = "Changed";
+}
+// @ts-expect-error An export scope is mandatory.
+dataGrid.toCsv({ columns: ["name"] });
+await dataGrid.toCsv({ scope: "filtered", maxRows: 1000 });
+await dataGrid.exportToHost("xlsx", { scope: "all" });
+// @ts-expect-error Host views require a query source.
+createDataGrid(document.createElement("div"), { view: gridView });
+const inlineGrid: InlineGridView = { ...gridView, source: { kind: "inline" }, rows: [{ id: "row-1", cells: { name: "Atlas" } }] };
+createDataGrid(document.createElement("div"), { view: inlineGrid });
+for (const controller of [...mountViews(document), ...GridRuntime.mount(document)]) {
+  // @ts-expect-error A mixed fragment mount does not promise tree controllers.
+  controller.expandPath(["row-1"]);
+  if ("getSelection" in controller) controller.getSelection();
+  else controller.expandPath(["tree-1"]);
+}
 
 const view: CanopyView = {
   protocol: "canopyx/2", type: "view", id: "files", label: "Files", rowHeight: 28, pageSize: 100,

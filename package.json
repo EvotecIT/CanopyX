@@ -13,7 +13,13 @@
     "./styles.css": "./CanopyX.Html/Assets/canopyx-interactive.css",
     "./core.css": "./CanopyX.Html/Assets/canopyx.css",
     "./classic.js": "./CanopyX.Html/Assets/canopyx-interactive.js",
-    "./core.js": "./CanopyX.Html/Assets/canopyx.js"
+    "./core.js": "./CanopyX.Html/Assets/canopyx.js",
+    "./grid": {
+      "types": "./JavaScript/grid.d.ts",
+      "import": "./CanopyX.Html/Assets/canopyx-grid-module.mjs"
+    },
+    "./grid.css": "./CanopyX.Html/Assets/canopyx-grid.css",
+    "./grid.js": "./CanopyX.Html/Assets/canopyx-grid.js"
   },
   "files": [
     "JavaScript/*.d.ts",
@@ -21,7 +27,10 @@
     "CanopyX.Html/Assets/canopyx-interactive.js",
     "CanopyX.Html/Assets/canopyx-interactive.css",
     "CanopyX.Html/Assets/canopyx.js",
-    "CanopyX.Html/Assets/canopyx.css"
+    "CanopyX.Html/Assets/canopyx.css",
+    "CanopyX.Html/Assets/canopyx-grid-module.mjs",
+    "CanopyX.Html/Assets/canopyx-grid.js",
+    "CanopyX.Html/Assets/canopyx-grid.css"
   ],
   "keywords": ["treegrid", "treeview", "virtualization", "accessibility", "lazy-loading"],
   "engines": { "node": ">=18" }

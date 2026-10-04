@@ -1,6 +1,6 @@
 # CanopyX
 
-CanopyX renders large interactive data views from .NET without runtime dependencies. The first view is a virtualized tree grid: a tree with columns, lazy children loaded in pages, search that expands to any node, detail rows, and ARIA tree grid semantics with a row-focus keyboard model and cell navigation for rows whose cells hold controls. A data grid and a 2D matrix view are planned (see [TODO.md](TODO.md)).
+CanopyX renders large interactive data views from .NET without runtime dependencies. Its tree grid supports hierarchy, paged lazy children, search that opens a node's path, details and accessible cell navigation. Its flat data grid queries typed records before paging, with stable identities, multi-column sorting and bounded virtual rows. A 2D matrix view is planned (see [TODO.md](TODO.md)).
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
 
@@ -76,6 +76,37 @@ A released consumer references the packages. A consumer that needs work that is 
 The package reference restores once that version is published. Until then, and for any API newer than the published package, the checkout is the only source: the version number does not change between releases, so a consumer built against the checkout must not be run against an older published package of the same version.
 
 A consumer with a solution or build list of its own adds the two CanopyX projects to it; otherwise the project reference builds them implicitly. The runtime and the data it reads must come from the same build: pages reference the runtime by a name that carries its content hash, and a consumer that serves it under the plain name `canopyx.js` instead republishes every page and its data whenever it rebuilds against a newer checkout ([Assets and Caching](docs/architecture.md#assets-and-caching)).
+
+## Flat Data Grid
+
+Define typed columns and complete inline records with `CanopyGridView`, then write a page or host fragment:
+
+```csharp
+var inventory = new CanopyGridView("inventory", "Inventory");
+inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
+inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
+var record = new CanopyGridRow("record-17");
+record.Cells["name"] = "Archive";
+record.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
+inventory.Rows.Add(record);
+inventory.SaveHtmlPage("inventory.html");
+```
+
+Sorting, search and typed predicates use raw values; display text and badges remain presentation. Missing values sort last in either direction, with ordinal record identity as the final tie-breaker. Filters and sort keys apply to the full dataset before returning a window.
+
+JavaScript hosts import `createDataGrid` from `@evotecit/canopyx/grid` and the matching `@evotecit/canopyx/grid.css`. A host source receives a frozen query and cancellation signal and returns a complete requested `gridPage` window. The host owns data access and authorization; CanopyX keeps accepted rows during a replacement request, rejects stale responses and bounds its page cache. See [the grid protocol](docs/data-protocol.md) for query operators and revision semantics.
+
+The grid toolbar provides typed filters, column visibility and ordering, and named saved views. Text/category membership accepts one raw value per line; date operands use ISO timestamps in UTC or with an explicit offset. Columns resize by dragging their separators or using Left/Right when a separator has focus. Headers stay visible while rows scroll.
+
+Use `api.getState()` and `await api.setState(state)` to save and restore the accepted query, column layout, time zone, selection IDs and scroll position. `api.saveView("Archives")` saves a named snapshot; `await api.applySavedView("Archives")` restores it, and `api.removeSavedView("Archives")` removes it. A grid's `StateKey` remembers the current settings and up to 20 named views in session storage. `await api.resetView()` restores the original definition and clears selection while retaining named views. A host that supplies its own toolbar passes `toolbar: false` and uses these same controller methods.
+
+Grid pages choose `CanopyRuntime.DataGrid`, which also hosts interactive trees. For mixed fragments, request that runtime from `CanopyHtmlAssets.WriteTo` and include it once. Load the grid entry point first on a mixed page; a smaller tree entry point cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
+
+The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
+
+Configure `onDetails` to open a host-owned drawer for a record. The hook receives its immutable row, accepted query, cancellation signal and a focus-return callback. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](docs/data-protocol.md#export-clipboard-and-record-details) for revision checks, limits, column selection and keyboard behavior.
+
+The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](TODO.md).
 
 ## Tree Grid Features
 
