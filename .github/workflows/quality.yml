@@ -64,9 +64,10 @@ jobs:
       - name: Run quality loop
         shell: pwsh
         run: |
-          # Preserve the two-browser allowance per engine when Linux runs all three engines serially.
+          # Windows' serial browser suite needs 25 minutes per engine; individual test timeouts stay unchanged.
           $browserCount = @($env:CANOPYX_TEST_BROWSERS -split ',').Count
-          ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds (1200 * $browserCount)
+          $secondsPerBrowser = if ('${{ matrix.name }}' -eq 'Windows') { 1500 } else { 1200 }
+          ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds ($secondsPerBrowser * $browserCount)
 
       - name: Upload packages
         uses: actions/upload-artifact@v7
