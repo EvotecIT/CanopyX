@@ -29,6 +29,11 @@
     gridScalar(value, column); return value;
   }
 
+  function reportingFilterError(element, message) {
+    setText(element, message);
+    if (message && element.getClientRects().length) element.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
   Object.assign(DataGrid.prototype, {
     buildGridFilters() {
       if (!this.view.reporting) return REPORT_FILTER_BASE.buildGridFilters.call(this);
@@ -46,6 +51,7 @@
       if (!this.view.reporting) return REPORT_FILTER_BASE.renderGridFilters.call(this, panel);
       panel.textContent = "";
       const form = h("form", "cx-grid-filter-form"), rows = h("div"), error = h("p", "cx-grid-control-error");
+      panel.classList.toggle("cx-grid-group-editor", !!this.view.reporting.filterGroups);
       error.setAttribute("role", "status");
       reportingRangeRows(this.queryForChange().filters || []).forEach(filter => this.addGridFilter(rows, filter));
       form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => this.addGridFilter(rows, null)));
@@ -54,7 +60,7 @@
       form.appendChild(gridButton(this.labels.gridClearFilters, () => {
         rows.textContent = "";
         if (groups) groups.textContent = "";
-        this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => setText(error, failure.message));
+        this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => reportingFilterError(error, failure.message));
       }));
       form.appendChild(error); panel.appendChild(form);
       form.addEventListener("submit", event => {
@@ -63,8 +69,8 @@
           const filters = [...rows.children].flatMap(row => this.readGridFilter(row));
           const filterGroup = groups ? this.readReportingFilterGroups(groups) : this.queryForChange().filterGroup;
           this.setQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }))
-            .then(() => setText(error, ""), failure => setText(error, failure.message));
-        } catch (failure) { setText(error, failure.message); }
+            .then(() => setText(error, ""), failure => reportingFilterError(error, failure.message));
+        } catch (failure) { reportingFilterError(error, failure.message); }
       });
       const requested = this.reportingFilterColumn;
       if (requested) {

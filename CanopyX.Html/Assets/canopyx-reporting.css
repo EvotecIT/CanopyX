@@ -306,6 +306,7 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;paddin
 .cx-grid-filter-group legend { max-width:100%;font-size:.875em;color:var(--cx-muted); }
 .cx-grid-filter-group-children { padding-inline-start:8px; }
 .cx-grid-filter-group-actions { display:flex;gap:6px;flex-wrap:wrap; }
+.cx-data-grid .cx-grid-group-editor { width:min(32rem,calc(100vw - 2rem));max-width:calc(100vw - 2rem);max-height:min(36rem,70vh); }
 .cx-grid-column-choice select { max-width:92px;min-width:0;min-height:28px;padding:2px 4px;border:1px solid var(--cx-line);border-radius:3px;background:var(--cx-surface);color:var(--cx-text);font:inherit; }
 .cx-grid-column-choice select:focus-visible { outline:2px solid var(--cx-accent);outline-offset:1px; }
 .cx-grid-responsive-note { flex-basis:100%;font-size:.85em;color:var(--cx-muted); }

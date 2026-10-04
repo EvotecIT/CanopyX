@@ -87,6 +87,10 @@ test("empty nested groups fail atomically and removal returns focus to an availa
   const root = first(page); await actions(root).getByRole("button", { name: "Add condition group", exact: true }).click();
   const child = root.locator(":scope > .cx-grid-filter-group-children > fieldset"); await apply(page);
   await expect(page.locator(".cx-grid-filters .cx-grid-control-error")).toContainText("empty grid filter group");
+  const errorBox = await page.locator(".cx-grid-filters .cx-grid-control-error").boundingBox();
+  const panelBox = await page.locator(".cx-grid-group-editor").boundingBox();
+  expect(errorBox.y).toBeGreaterThanOrEqual(panelBox.y);
+  expect(errorBox.y + errorBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height);
   expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().filterGroup)).toEqual(expression);
   await actions(child).getByRole("button", { name: "Remove condition group", exact: true }).focus();
   await actions(child).getByRole("button", { name: "Remove condition group", exact: true }).press("Enter");
