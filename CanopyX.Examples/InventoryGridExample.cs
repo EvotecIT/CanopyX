@@ -27,6 +27,12 @@ internal static class InventoryGridExample {
         view.Query.Sort.Add(new CanopyGridSort("size", descending: true));
         WritePage(view, output, "inventory-grid.html", CanopyTheme.Light);
         WritePage(view, output, "inventory-grid-dark.html", CanopyTheme.Dark);
+        view.Presentation = CanopyGridPresentation.Paged;
+        view.PageLength = 50;
+        view.StateKey = "file-inventory-paged";
+        WritePage(view, output, "inventory-grid-paged.html", CanopyTheme.Light);
+        WritePage(view, output, "inventory-grid-paged-dark.html", CanopyTheme.Dark);
+        view.Presentation = CanopyGridPresentation.Continuous;
         view.StateKey = "file-inventory-query";
         view.SearchColumns.Add("name");
         view.SearchColumns.Add("category");

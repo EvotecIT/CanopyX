@@ -62,6 +62,11 @@
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
     if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
+    if (view.source.navigation !== undefined && view.source.navigation !== "offset")
+      throw new Error("CanopyX: this grid source requires offset navigation with known counts.");
+    if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||
+        view.pageLength !== undefined && (!Number.isInteger(view.pageLength) || view.pageLength < 1 || view.pageLength > 10000))
+      throw new Error("CanopyX: invalid grid presentation or page length.");
     if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);

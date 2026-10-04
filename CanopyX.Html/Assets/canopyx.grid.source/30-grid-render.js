@@ -19,6 +19,7 @@
       this.notice = h("div", "cx-grid-notice"); this.notice.hidden = true;
       this.live = h("div", "cx-live cx-sr-only"); this.live.setAttribute("aria-live", "polite");
       host.appendChild(this.toolbar); host.appendChild(grid); host.appendChild(this.notice); host.appendChild(this.live);
+      this.buildPager();
       this.buildHeader();
       grid.addEventListener("scroll", () => { this.scheduleRender(); this.stateChanged(); }, { passive: true, signal: signal });
       grid.addEventListener("click", event => this.onClick(event), { signal: signal });

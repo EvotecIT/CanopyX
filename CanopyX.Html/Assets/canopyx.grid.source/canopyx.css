@@ -25,3 +25,7 @@
 .cx-data-grid .cx-grid-result-count { flex:none;font-variant-numeric:tabular-nums; }
 .cx-data-grid .cx-grid-query-chips { display:flex;flex-wrap:wrap;gap:6px;min-width:0; }
 .cx-data-grid .cx-grid-chip { max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:16px;background:var(--cx-hover-bg); }
+.cx-data-grid .cx-grid-pager { flex:none;display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding-top:8px; }
+.cx-data-grid .cx-grid-page-range { align-self:center;margin-inline-end:auto;font-variant-numeric:tabular-nums; }
+.cx-data-grid .cx-grid-pager .cx-grid-field { flex:none; }
+.cx-data-grid .cx-grid-pager :is(input,select) { box-sizing:border-box;width:7em;padding:5px;border:1px solid var(--cx-line-strong);border-radius:4px;background:var(--cx-surface);color:var(--cx-text);font:inherit; }

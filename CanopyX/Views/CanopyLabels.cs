@@ -38,6 +38,14 @@ public sealed class CanopyLabels {
         [nameof(Columns)] = "Columns",
         [nameof(GridFilters)] = "Filters",
         [nameof(GridResultCount)] = "{count} of {total} rows",
+        [nameof(GridPaging)] = "Result pages",
+        [nameof(GridPageRange)] = "{first}–{last} of {count} rows",
+        [nameof(GridPageNumber)] = "Page",
+        [nameof(GridPageLength)] = "Rows per page",
+        [nameof(GridFirstPage)] = "First page",
+        [nameof(GridPreviousPage)] = "Previous page",
+        [nameof(GridNextPage)] = "Next page",
+        [nameof(GridLastPage)] = "Last page",
         [nameof(GridClearQuery)] = "Clear search and filters",
         [nameof(GridRemoveSearch)] = "Clear search: {search}",
         [nameof(GridGroupedFilters)] = "Grouped filters ({count} conditions)",
@@ -111,6 +119,7 @@ public sealed class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
+        nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
         nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
@@ -178,6 +187,30 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the accepted-result summary using <c>{count}</c> and <c>{total}</c>. Default "{count} of {total} rows".</summary>
     public string GridResultCount { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the page navigation form name. Default "Result pages".</summary>
+    public string GridPaging { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the visible range using <c>{first}</c>, <c>{last}</c> and <c>{count}</c>. Default "{first}–{last} of {count} rows".</summary>
+    public string GridPageRange { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the page jump input label. Default "Page".</summary>
+    public string GridPageNumber { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the visible page length label. Default "Rows per page".</summary>
+    public string GridPageLength { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the first-page action. Default "First page".</summary>
+    public string GridFirstPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the previous-page action. Default "Previous page".</summary>
+    public string GridPreviousPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the next-page action. Default "Next page".</summary>
+    public string GridNextPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the last-page action. Default "Last page".</summary>
+    public string GridLastPage { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the action that clears search and every filter. Default "Clear search and filters".</summary>
     public string GridClearQuery { get => Get(); set => Set(value); }

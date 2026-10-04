@@ -12,6 +12,7 @@ namespace CanopyX;
 public sealed class CanopyGridView {
     private int _rowHeight = 28;
     private int _pageSize = 100;
+    private int _pageLength = 50;
     private int? _searchDelayMilliseconds;
     private CanopyLabels _labels = new CanopyLabels();
 
@@ -39,6 +40,18 @@ public sealed class CanopyGridView {
 
     /// <summary>Gets or sets whether rows come from the complete inline dataset or a host query hook.</summary>
     public CanopyGridSourceKind Source { get; set; }
+
+    /// <summary>Gets or sets continuous scrolling or paged presentation. Source requests remain offset based with known result counts.</summary>
+    public CanopyGridPresentation Presentation { get; set; }
+
+    /// <summary>Gets or sets the visible page length, from 1 to 10,000. Defaults to 50 and is independent of <see cref="PageSize"/>.</summary>
+    public int PageLength {
+        get => _pageLength;
+        set {
+            if (value < 1 || value > 10000) throw new ArgumentOutOfRangeException(nameof(value), value, "Visible page length must be between 1 and 10,000.");
+            _pageLength = value;
+        }
+    }
 
     /// <summary>Gets or sets the fixed row height in CSS pixels, between 20 and 64.</summary>
     public int RowHeight {
@@ -105,13 +118,14 @@ public sealed class CanopyGridView {
             .Name("columns").BeginArray();
         foreach (var column in Columns) column.WriteJson(writer);
         writer.EndArray();
+        if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
         if (SearchColumns.Count > 0) {
             writer.Name("searchColumns").BeginArray();
             foreach (var column in SearchColumns) writer.String(column);
             writer.EndArray();
         }
-        writer.Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host").EndObject();
+        writer.Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host").Property("navigation", "offset").EndObject();
         writer.OptionalProperty("stateKey", StateKey).OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         if (Query != null) {
             writer.Name("query");
@@ -134,6 +148,8 @@ public sealed class CanopyGridView {
             throw new ArgumentOutOfRangeException(nameof(Source), Source, "Unknown grid source.");
         }
         CanopyJsonNames.Selection(Selection);
+        if (Presentation != CanopyGridPresentation.Continuous && Presentation != CanopyGridPresentation.Paged)
+            throw new ArgumentOutOfRangeException(nameof(Presentation), Presentation, "Unknown grid presentation.");
         CanopyJsonNames.TimeZone(TimeZone);
         var columnIds = new HashSet<string>(StringComparer.Ordinal);
         var visible = 0;

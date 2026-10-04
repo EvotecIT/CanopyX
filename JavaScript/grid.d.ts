@@ -49,6 +49,9 @@ interface GridDefinition {
   columns: GridColumn[];
   rowHeight: number;
   pageSize: number;
+  /** Presentation only; pageSize remains the source fetch size. */
+  presentation?: "continuous" | "paged";
+  pageLength?: number;
   selection: "none" | "single" | "multiple";
   search: boolean;
   /** Search-input debounce (0..5000). Absent uses 0 for inline and 300 for host sources. */
@@ -60,8 +63,8 @@ interface GridDefinition {
   labels?: Partial<CanopyLabels>;
   query?: GridQuery;
 }
-export interface InlineGridView extends GridDefinition { source: { kind: "inline" }; rows: GridRow[]; }
-export interface HostGridView extends GridDefinition { source: { kind: "host" }; rows?: never; }
+export interface InlineGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rows: GridRow[]; }
+export interface HostGridView extends GridDefinition { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
 export type GridView = InlineGridView | HostGridView;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
@@ -76,7 +79,18 @@ export interface GridPage {
   items: GridRow[];
 }
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
-export interface GridSource { query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
+export interface GridSource { readonly navigation?: "offset"; query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
+/** Accepted presentation; indices are zero based, while the visible range is one based (0–0 when empty). */
+export interface GridPaging {
+  readonly presentation: "continuous" | "paged";
+  readonly pageLength: number;
+  readonly pageIndex: number;
+  readonly pageCount: number;
+  readonly first: number;
+  readonly last: number;
+  readonly matched: number;
+  readonly total: number;
+}
 export interface GridQueryEvent { query: GridQuery; revision: string; total: number; matched: number; }
 /** Exports retain the accepted revision, query ordering, columns and selected IDs at invocation. */
 export interface GridExportRequest {
@@ -114,6 +128,8 @@ export interface GridState {
   timeZone: TimeZone;
   selection: string[];
   scrollTop: number;
+  /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
+  paging?: { pageLength: number; offset: number };
 }
 export interface GridHostOptions {
   /** False lets a host compose controls around the same grid controller. */
@@ -144,6 +160,9 @@ export interface DataGrid {
   getQuery(): GridQuery | null;
   setQuery(query: GridQueryInput): Promise<GridQuery>;
   sort(sorts: readonly GridSort[]): Promise<GridQuery>;
+  getPaging(): GridPaging;
+  goToPage(index: number): Promise<GridQuery>;
+  setPageLength(length: number): Promise<GridQuery>;
   setColumnWidth(id: string, width: number): void;
   setColumnVisible(id: string, visible: boolean): void;
   setColumnOrder(ids: string[]): void;
@@ -167,7 +186,7 @@ export interface DataGrid {
   openDetails(id: string): Promise<void>;
   focus(): void;
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
-  scrollToRow(index: number): void;
+  scrollToRow(index: number): Promise<void>;
   retry(): Promise<GridQuery | void>;
   refresh(): void;
   destroy(): void;

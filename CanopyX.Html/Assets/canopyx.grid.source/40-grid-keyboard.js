@@ -75,9 +75,7 @@
         default: return;
       }
       index = Math.max(0, Math.min(this.rowCount() - 1, index));
-      const next = this.rowItem(index);
-      if (nextColumn < 0 || !next || next.status) this.setFocus(next, true);
-      else this.focusCell(next, nextColumn, nextControl);
+      this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error: error }); });
       event.preventDefault(); event.stopPropagation();
     }
   });

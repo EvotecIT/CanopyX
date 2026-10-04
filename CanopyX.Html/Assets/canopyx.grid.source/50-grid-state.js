@@ -21,6 +21,7 @@
         columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
         query: gridQuery(this.view, Object.assign({}, this.view.query || {}, { offset: 0, revision: undefined })),
         timeZone: this.local ? "local" : "utc", selection: [], scrollTop: 0 };
+      if (this.paged) this.defaultState.paging = { pageLength: this.pageLength, offset: 0 };
       const stored = this.readStoredState();
       if (stored && Array.isArray(stored.views)) {
         for (const entry of stored.views.slice(0, 20)) {
@@ -33,10 +34,12 @@
     initializeState() { return this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {}); },
     getState() {
       const query = this.getQuery() || this.defaultState.query;
-      return { version: 1, view: this.view.id,
+      const state = { version: 1, view: this.view.id,
         columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
         query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: 0, revision: undefined }))),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
+      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.pageOffset };
+      return state;
     },
 
     readGridState(state) {
@@ -51,14 +54,22 @@
       const known = id => this.columns.some(column => column.id === id);
       const query = gridQuery(this.view, Object.assign({}, input, { offset: 0, revision: undefined,
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
-      return { version: 1, view: this.view.id, columns: columns, query: query,
+      const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
         timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
+      if (this.paged) {
+        const paging = state.paging || this.defaultState.paging;
+        if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
+            !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER)
+          throw new Error("CanopyX: invalid paged view state.");
+        parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
+      }
+      return parsed;
     },
 
     async setState(input) {
       const state = this.readGridState(input);
       clearTimeout(this.searchTimer); this.searchTimer = null;
-      const pending = this.setQuery(state.query), epoch = this.queryEpoch;
+      const pending = this.setQuery(Object.assign({}, state.query, { offset: state.paging ? state.paging.offset : 0 }), state.paging), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
         await pending;

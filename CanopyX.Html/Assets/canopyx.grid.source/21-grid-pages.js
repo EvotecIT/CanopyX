@@ -59,7 +59,9 @@
     loadWindow() {
       if (!this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
       const offsets = new Set();
-      for (let index = this.window.first; index <= this.window.last; index++) if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
+      const bounds = this.rowBounds();
+      for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
+        if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
       if (this.focused && this.focused.status) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
       for (const offset of offsets) {
         if (this.pendingPages.size >= 4) break;
@@ -89,7 +91,7 @@
     },
 
     retry() {
-      if (this.lastFailedQuery) return this.setQuery(this.lastFailedQuery);
+      if (this.lastFailedQuery) return this.setQuery(this.lastFailedQuery, this.lastFailedPaging);
       for (const [offset, page] of this.pages) if (page.error) this.pages.delete(offset);
       this.version++; this.setNotice("", false); this.scheduleRender(); return Promise.resolve();
     }

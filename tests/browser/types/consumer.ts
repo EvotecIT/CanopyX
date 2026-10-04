@@ -16,6 +16,15 @@ const gridSource: GridSource = { async query(query, { signal }) {
 const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: 300,
   labels: { gridResultCount: "{count} / {total}", gridRemoveCondition: "Remove: {condition}" } });
 gridView.searchDelayMs = 0;
+gridView.presentation = "paged";
+gridView.pageLength = 50;
+gridView.source.navigation = "offset";
+await dataGrid.goToPage(1);
+await dataGrid.setPageLength(25);
+await dataGrid.scrollToRow(80);
+const paging: import("@evotecit/canopyx/grid").GridPaging = dataGrid.getPaging();
+// @ts-expect-error Cursor-only sources cannot masquerade as known-count offset sources.
+gridView.source.navigation = "cursor";
 // @ts-expect-error Debounce is a bounded number, not a textual duration.
 createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: "300ms" });
 gridView.searchColumns = ["name"];

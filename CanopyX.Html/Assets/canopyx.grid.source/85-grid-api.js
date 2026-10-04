@@ -8,6 +8,7 @@
     const api = Object.freeze({
       element: host, view: grid.view, ready: grid.ready,
       getQuery: () => grid.getQuery(), setQuery: query => grid.setQuery(query), sort: sorts => grid.sort(sorts),
+      getPaging: () => grid.getPaging(), goToPage: index => grid.goToPage(index), setPageLength: length => grid.setPageLength(length),
       setColumnWidth: (id, width) => grid.setColumnWidth(id, width), setColumnVisible: (id, visible) => grid.setColumnVisible(id, visible),
       setColumnOrder: ids => grid.setColumnOrder(ids),
       getState: () => grid.getState(), setState: state => grid.setState(state), resetView: () => grid.resetView(),
