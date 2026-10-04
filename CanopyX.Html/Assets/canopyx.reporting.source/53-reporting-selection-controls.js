@@ -83,7 +83,11 @@
           !event.target.closest("a,button,input,select,textarea,[contenteditable]") && (event.shiftKey || this.querySelection && (event.ctrlKey || event.metaKey))) {
         this.setFocus(row, true); this.reportingSelectionIntent(row, event.shiftKey || !this.reportingRowSelected(row), event.shiftKey, event.ctrlKey || event.metaKey); return;
       }
-      SELECTION_CONTROLS_BASE.onClick.call(this, event);
+      try { SELECTION_CONTROLS_BASE.onClick.call(this, event); }
+      catch (error) {
+        if (!this.view.reporting?.selectionControls) throw error;
+        this.runReportingSelection(() => { throw error; }); return;
+      }
       if (this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
           !event.target.closest("a,button,input,select,textarea,[contenteditable]")) this.selectionAnchor = row._ri;
     },

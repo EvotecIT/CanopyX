@@ -3,6 +3,7 @@
   for (const name of ["setSelection", "emit", "copyFocused", "readGridState"]) SELECTION_BASE[name] = DataGrid.prototype[name];
   GRID_REPORTING.api = (api, grid) => {
     SELECTION_API?.(api, grid);
+    if (!grid.view.reporting?.selectionControls) return;
     for (const name of ["getSelectionDescriptor", "selectAllMatching", "selectPage", "setRowSelected", "selectRange"])
       api[name] = grid[name].bind(grid);
     const getIds = api.getSelection;
@@ -63,7 +64,7 @@
         if (selected) this.selectionExcluded.delete(row.key); else this.selectionExcluded.add(row.key);
         this.publishQuerySelection();
       } else {
-        const ids = this.multi ? new Set(this.selected) : new Set();
+        const ids = this.multi || !selected ? new Set(this.selected) : new Set();
         if (selected) ids.add(row.key); else ids.delete(row.key); this.setSelection([...ids]);
       }
       this.selectionAnchor = row._ri;

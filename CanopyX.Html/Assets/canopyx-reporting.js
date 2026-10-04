@@ -8084,6 +8084,7 @@ const REPORTING_SELECTION_LIMIT = 10000, SELECTION_BASE = {}, SELECTION_API = GR
 for (const name of ["setSelection", "emit", "copyFocused", "readGridState"]) SELECTION_BASE[name] = DataGrid.prototype[name];
 GRID_REPORTING.api = (api, grid) => {
 SELECTION_API?.(api, grid);
+if (!grid.view.reporting?.selectionControls) return;
 for (const name of ["getSelectionDescriptor", "selectAllMatching", "selectPage", "setRowSelected", "selectRange"])
 api[name] = grid[name].bind(grid);
 const getIds = api.getSelection;
@@ -8143,7 +8144,7 @@ throw new Error("CanopyX: query selection supports at most 10,000 exclusions.");
 if (selected) this.selectionExcluded.delete(row.key); else this.selectionExcluded.add(row.key);
 this.publishQuerySelection();
 } else {
-const ids = this.multi ? new Set(this.selected) : new Set();
+const ids = this.multi || !selected ? new Set(this.selected) : new Set();
 if (selected) ids.add(row.key); else ids.delete(row.key); this.setSelection([...ids]);
 }
 this.selectionAnchor = row._ri;
@@ -8340,7 +8341,11 @@ if (this.view.reporting?.selectionControls && row && !row.status && !event.defau
 !event.target.closest("a,button,input,select,textarea,[contenteditable]") && (event.shiftKey || this.querySelection && (event.ctrlKey || event.metaKey))) {
 this.setFocus(row, true); this.reportingSelectionIntent(row, event.shiftKey || !this.reportingRowSelected(row), event.shiftKey, event.ctrlKey || event.metaKey); return;
 }
-SELECTION_CONTROLS_BASE.onClick.call(this, event);
+try { SELECTION_CONTROLS_BASE.onClick.call(this, event); }
+catch (error) {
+if (!this.view.reporting?.selectionControls) throw error;
+this.runReportingSelection(() => { throw error; }); return;
+}
 if (this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
 !event.target.closest("a,button,input,select,textarea,[contenteditable]")) this.selectionAnchor = row._ri;
 },

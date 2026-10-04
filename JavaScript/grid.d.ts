@@ -319,7 +319,7 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   getShareState?(): GridPreferenceState<Q>;
   /** Waits for serial/coalesced host saves; persistence failures leave the current grid usable and reject this call. */
   flushViewSettings?(): Promise<void>;
-  /** Reporting runtime: immutable IDs or accepted-query selection. Query selection is never persisted in a saved view. */
+  /** Requires reporting selection controls: immutable IDs or accepted-query selection, never persisted in a saved view. */
   getSelectionDescriptor?(): GridSelection<Q>;
   /** Requires selection controls and multiple selection. Query/revision changes retire this scope; paging preserves it. */
   selectAllMatching?(): void;

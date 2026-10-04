@@ -159,3 +159,28 @@ test('selection checkboxes retain focus across custom host cell paints and recyc
   expect(await page.evaluate(api+'.getSelectionDescriptor().excludedIds')).toEqual(['r0050']);
   expect(await next.locator('[role="gridcell"]').count()).toBe(2);
 });
+
+test('single-record deselection changes only the named identity',async({page})=>{
+  await open(page,definition({selection:'single'}));
+  await page.evaluate(api+".setSelection(['r0000'])");await page.evaluate(api+".setRowSelected('r0001',false)");
+  expect(await page.evaluate(api+'.getSelection()')).toEqual(['r0000']);
+  await page.evaluate(api+".setRowSelected('r0001',true)");expect(await page.evaluate(api+'.getSelection()')).toEqual(['r0001']);
+  await page.evaluate(api+".setRowSelected('r0001',false)");expect(await page.evaluate(api+'.getSelection()')).toEqual([]);
+});
+
+test('bounded selection descriptors require opt-in while legacy selection remains available',async({page})=>{
+  await open(page,definition({reporting:{columnReorder:true}}));
+  await page.evaluate(api+".setSelection(Array.from({length:10001},(_,i)=>'legacy-'+i))");
+  expect((await page.evaluate(api+'.getSelection()')).length).toBe(10001);
+  expect(await page.evaluate(`['getSelectionDescriptor','selectAllMatching','selectPage','selectRange','setRowSelected'].every(name=>${api}[name]===undefined)`)).toBe(true);
+});
+
+test('row-body clicks report a bounded selection failure without changing the selected identities',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));await open(page);
+  await page.evaluate(`(()=>{window.selectionErrors=[];document.querySelector('[data-canopyx-host]').addEventListener('canopyx:error',e=>selectionErrors.push(e.detail.error.message));
+    ${api}.setSelection(Array.from({length:10000},(_,i)=>'other-'+i));})()`);
+  await page.locator('.cx-row[data-cx-id="r0000"] .cx-text').first().click({modifiers:['Control']});
+  await expect(page.locator('.cx-grid-selection-status')).toContainText('10,000 IDs');
+  expect((await page.evaluate(api+'.getSelection()')).length).toBe(10000);
+  expect((await page.evaluate('selectionErrors')).length).toBe(1);expect(errors).toEqual([]);
+});
