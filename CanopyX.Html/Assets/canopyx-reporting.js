@@ -6937,7 +6937,7 @@ Object.assign(DataGrid.prototype, {
 buildHeader() {
 const active = document.activeElement, focused = active && this.headRow.contains(active) && active.getAttribute("data-cx-filter-column");
 REPORT_FILTER_BASE.buildHeader.call(this);
-if (!this.view.reporting || !this.view.reporting.headerFilters) return;
+if (!this.view.reporting || !this.view.reporting.headerFilters || this.opts.toolbar === false) return;
 for (const cell of this.headCells) {
 const id = cell.getAttribute("data-cx-column"), column = this.columns.find(item => item.id === id);
 const button = gridButton("⌕", () => this.openReportingColumnFilter(id)); button.classList.add("cx-grid-header-filter");

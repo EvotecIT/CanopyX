@@ -21,6 +21,22 @@ async function open(page, patch = {}) {
   await page.goto("http://canopyx.test/filters");
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready);
 }
+
+test("custom-toolbar grids do not offer header filters whose editor is hidden", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => {
+    const host = document.querySelector('[data-canopyx-host]'), view = host.canopyx.view;
+    host.canopyx.destroy(); host.replaceChildren();
+    host.canopyx = CanopyX.createDataGrid(host, { view, toolbar: false });
+    return host.canopyx.ready;
+  });
+  await expect(page.locator("[data-cx-filter-column]")).toHaveCount(0);
+  await expect(page.locator(".cx-sort").first()).toBeVisible();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setQuery({
+    filters: [{ column: "amount", operator: "ge", values: [15] }], sort: [{ column: "amount", direction: "desc" }]
+  }));
+  expect(await exported(page)).toEqual(["row-17", "row-16", "row-15"]);
+});
 const panel = page => page.locator(".cx-grid-filters");
 const filters = page => panel(page).locator("fieldset.cx-grid-filter");
 const query = page => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery());
