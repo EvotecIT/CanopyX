@@ -110,8 +110,9 @@
       boolean.addEventListener("change", () => { fields.input.value = boolean.value; fields.edited = true; });
       refresh();
       if (range) {
-        fields.operator.value = "between"; fields.rangeOriginal = predicate.values.slice();
+        fields.operator.value = "between";
         upper.value = upper.type === "datetime-local" ? new Date(predicate.values[1]).toISOString().slice(0, -1) : String(predicate.values[1]); refresh();
+        fields.rangeOriginal = { column: predicate.column, values: predicate.values.slice(), inputs: [fields.input.value, upper.value] };
       }
     },
 
@@ -119,9 +120,9 @@
       const fields = row._filter;
       if (!this.view.reporting || fields.operator.value !== "between") return REPORT_FILTER_BASE.readGridFilter.call(this, row);
       const column = this.columns.find(item => item.id === fields.column.value);
-      const values = fields.rangeOriginal && !fields.edited ? fields.rangeOriginal : [
-        reportingRangeValue(fields.input.value, column, this.labels), reportingRangeValue(fields.upper.value, column, this.labels)
-      ];
+      const original = fields.rangeOriginal, inputs = [fields.input.value, fields.upper.value];
+      const values = inputs.map((raw, index) => original && original.column === column.id && raw === original.inputs[index] ?
+        original.values[index] : reportingRangeValue(raw, column, this.labels));
       if (gridScalar(values[0], column) > gridScalar(values[1], column)) throw new Error(this.labels.gridInvalidRange);
       return [{ column: column.id, operator: "ge", values: [values[0]] }, { column: column.id, operator: "le", values: [values[1]] }];
     }

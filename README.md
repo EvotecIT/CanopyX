@@ -110,10 +110,12 @@ Use `api.getState()` and `await api.setState(state)` to save and restore the acc
 
 Grid pages choose the entry point required by their definition, which also hosts interactive trees. For mixed fragments, use `CanopyHtmlAssets.GetRuntime(view)` with `CanopyHtmlAssets.WriteTo` and include the largest required entry point once. Load that entry point first; a smaller tree or ordinary-grid runtime cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
 
-Reporting grids add explicit natural or case-folded text ordering and category order without enlarging the ordinary grid entry point:
+Reporting grids add natural or case-folded text ordering, category order and typed filter controls without enlarging the ordinary grid entry point:
+
+The reporting filter editor provides inclusive number/date ranges, category suggestions from declared ordering policies, and translated boolean choices. `HeaderFilters` adds a filter button beside each column title; Escape returns focus to that header. Ranges remain two ordinary typed predicates, so hosted queries and exports keep their existing meaning. Category suggestions leave free-text filtering available for values outside the declared list. Active-condition chips and counts describe the accepted full query, including predicates on hidden columns. `Labels.GridBetween`, `GridTrue`, `GridFalse` and `GridHeaderFilter` customize the new controls.
 
 ```csharp
-view.Reporting = new CanopyGridReporting();
+view.Reporting = new CanopyGridReporting { HeaderFilters = true };
 view.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
 view.Reporting.Ordering.Add("status", new CanopyGridOrdering(CanopyGridTextOrder.FoldedOrdinal,
     new[] { "Critical", "Warning", "Healthy" }));

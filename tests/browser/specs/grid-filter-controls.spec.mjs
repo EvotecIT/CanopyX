@@ -70,6 +70,22 @@ test("reversed ranges keep the accepted results and report an actionable error",
   expect((await query(page)).filters).toEqual([]); await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "19");
 });
 
+test("editing one date bound retains the untouched bound's original precision and offset", async ({ page }) => {
+  const upper = "2026-01-05T00:00:00.987654+02:00";
+  await open(page, { query: { filters: [
+    { column: "date", operator: "ge", values: ["2026-01-03T00:00:00.123456+02:00"] },
+    { column: "date", operator: "le", values: [upper] }
+  ] } });
+  await page.getByRole("button", { name: "Filter Date", exact: true }).click();
+  await filters(page).first().getByLabel("Value (UTC for dates)", { exact: true }).and(page.locator('input[type="datetime-local"]')).fill("2026-01-04T00:00");
+  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
+  await expect.poll(async () => (await query(page)).filters).toEqual([
+    { column: "date", operator: "ge", values: ["2026-01-04T00:00Z"] },
+    { column: "date", operator: "le", values: [upper] }
+  ]);
+  expect(await exported(page)).toEqual(["row-03"]);
+});
+
 test("category suggestions and translated boolean choices preserve typed raw predicates", async ({ page }) => {
   await open(page, { labels: { gridTrue: "Tak", gridFalse: "Nie" } });
   await page.getByRole("button", { name: "Filter Category", exact: true }).click();

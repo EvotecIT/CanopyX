@@ -53,6 +53,8 @@ Raw values drive filtering and sorting; display text remains presentation. The t
 
 Optional `CanopyGridView.Reporting` policies add deterministic ordinal, folded and natural text ordering, plus host-defined category order. `CanopyGridOrdering` supplies the same comparer to host queries, and the page writer selects the reporting runtime. Represent exact large identifiers and decimals as text; JSON numbers use binary64 precision and numeric magnitudes are limited to the safe-integer range.
 
+The reporting filter editor provides inclusive numeric/date ranges, category suggestions and translated boolean choices. Set `Reporting.HeaderFilters = true` to open the editor from a column header. Ranges use the existing typed predicates; filtering and exports apply to all accepted results before visible paging.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX
