@@ -1805,20 +1805,10 @@ ordered.push(focusedEl);
 }
 const kids = [...this.canvas.children];
 const n = ordered.length;
-let inOrder = kids.length === n;
-for (let k = 0; inOrder && k < n; k++) {
-inOrder = kids[k] === ordered[k];
-}
-if (inOrder) {
-return;
-}
+if (kids.length === n && ordered.every((rowEl, k) => kids[k] === rowEl)) return;
 if (kids.length === n && !focusedEl) {
 const shift = kids.indexOf(ordered[0]);
-let rotation = shift > 0;
-for (let k = 0; rotation && k < n; k++) {
-rotation = kids[(shift + k) % n] === ordered[k];
-}
-if (rotation) {
+if (shift > 0 && ordered.every((rowEl, k) => kids[(shift + k) % n] === rowEl)) {
 if (shift <= n - shift) {
 for (let k = 0; k < shift; k++) {
 this.canvas.appendChild(kids[k]);
@@ -1957,8 +1947,7 @@ const top = this.logicalTop();
 const shift = this.scaledScroll ? top - grid.scrollTop : 0;
 const n = rows.rowCount();
 const over = this.lean ? 0 : OVERSCAN;
-const firstVisible = n ? rows.rowAt(top) : 0;
-const first = Math.max(0, firstVisible - over);
+const first = n ? Math.max(0, rows.rowAt(top) - over) : 0;
 const last = n ? Math.min(n - 1, rows.rowAt(top + viewHeight) + over) : -1;
 const want = new Set();
 for (let i = first; i <= last; i++) want.add(rows.rowItem(i));
@@ -1978,7 +1967,7 @@ free.push(rowEl);
 }
 }
 }
-const tabRow = visibleFocus || rows.rowItem(firstVisible) || null;
+const tabRow = visibleFocus || rows.rowItem(n ? rows.rowAt(top) : 0) || null;
 const fragment = document.createDocumentFragment();
 for (const w of want) {
 const index = rows.indexOf(w);
@@ -4580,7 +4569,7 @@ case "le": return value <= operand;
 }
 return false;
 }
-function gridQueryRows(view, query, columns, compare) {
+function gridQueryRows(view, query, columns, compare = gridCompare) {
 const terms = gridSearchTerms(query.search, query.searchMode),
 searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
 const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
@@ -4595,7 +4584,7 @@ return gridOrder(a.id, b.id);
 }
 function inlineGridSource(view) {
 const columns = new Map(view.columns.map(column => [column.id, column]));
-const compare = GRID_REPORTING.compare?.(view) || gridCompare;
+const compare = GRID_REPORTING.compare?.(view);
 let lastShape = null, ordered = null;
 return {
 query(query, options) {
@@ -4877,7 +4866,7 @@ if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) thi
 },
 loadPage(offset) {
 if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
-const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
+const { queryEpoch: epoch, dataLifetime: lifetime, snapshot } = this;
 const query = gridQuery(this.view, { ...this.acceptedQuery, offset, limit: this.pageSize, revision: snapshot.revision });
 const token = {}; this.pendingPages.set(offset, token);
 token.promise = this.requestPage(query, lifetime.signal).then(page => {
@@ -7141,7 +7130,7 @@ source.facet = (request, options) => {
 if (options.signal.aborted) throw new DOMException("Facet request cancelled.", "AbortError");
 const column = view.columns.find(item => item.id === request.column), query = request.includeCurrentFilter ? request.query :
 reportingFacetProjection(request.query, column.id);
-const rows = gridQueryRows(view, query, columns), buckets = new Map(), needle = foldText(request.search);
+const rows = gridQueryRows(view, query, columns, false), buckets = new Map(), needle = foldText(request.search);
 for (const row of rows) {
 const scalar = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && scalar !== null ? new Date(scalar).toISOString() : scalar;
 const key = reportingFacetKey(value, column), existing = buckets.get(key);
@@ -8419,15 +8408,17 @@ throw new Error("CanopyX: summary aggregate bindings differ.");
 for (const aggregate of declarations) {
 const value = values[aggregate.id];
 if (!Object.hasOwn(values, aggregate.id) || value !== null && (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) ||
-aggregate.operation === "count" && (!validStructuralCount(value) || value > count)) throw new Error("CanopyX: invalid aggregate value.");
+aggregate.operation === "count" && (!validStructuralCount(value) || value > count) ||
+!count && aggregate.operation !== "count" && value !== null) throw new Error("CanopyX: invalid aggregate value.");
 }
 }
 function reportingSummaryResult(view, query, page, summary) {
 checkDocument(summary, "gridSummary");
 if (Object.keys(summary).some(key => !["protocol", "type", "view", "revision", "query", "matched", "groups", "aggregates"].includes(key)) ||
 JSON.stringify(summary).length > 4194304 || summary.view !== view.id || summary.revision !== page.revision || summary.matched !== page.matched ||
-!Array.isArray(summary.groups) || summary.groups.length > 10000 || !view.reporting.grouping && summary.groups.length ||
-!summary.query || summary.query.revision !== page.revision || summary.query.offset !== 0 ||
+!Array.isArray(summary.groups) || summary.groups.length > 10000 || !validStructuralCount(summary.matched + summary.groups.length) || !view.reporting.grouping && summary.groups.length ||
+!summary.query || !["protocol", "type", "view", "offset", "limit", "sort", "filters", "search", "revision"].every(key => Object.hasOwn(summary.query, key)) ||
+summary.query.type !== "gridQuery" || summary.query.protocol !== PROTOCOL || summary.query.revision !== page.revision || summary.query.offset !== 0 ||
 JSON.stringify(gridQuery(view, summary.query)) !== JSON.stringify(query)) throw new Error("CanopyX: summary ownership or counts differ.");
 reportingSummaryValues(view, summary.aggregates, summary.matched);
 let offset = 0; const keys = new Set(), column = view.columns.find(item => item.id === view.reporting.grouping?.column), values = new Set();
@@ -8448,7 +8439,7 @@ return gridFreeze(JSON.parse(JSON.stringify(summary)));
 Object.assign(DataGrid.prototype, {
 async requestPage(query, signal) {
 const page = await SUMMARY_BASE.requestPage.call(this, query, signal);
-if (!reportingSummaryEnabled(this.view)) return page;
+if (!reportingSummaryEnabled(this.view) || signal !== this.dataLifetime.signal) return page;
 validateGridPage(page, this.view, query);
 const request = reportingSummaryQuery(this.view, query, page.revision), key = JSON.stringify(request);
 if (this.summaryCandidate?.key !== key) {
@@ -8458,6 +8449,7 @@ const summary = await this.runGridHook(signal => hook.call(this.source, request,
 gridOperationActive(this, signal);
 this.summaryCandidate = { key, result: reportingSummaryResult(this.view, request, page, summary) };
 }
+if (this.summaryCandidate.result.matched !== page.matched) throw new Error("CanopyX: a page differs from its complete-query summary count.");
 if (this.view.reporting.grouping) {
 const column = this.view.columns.find(column => column.id === this.view.reporting.grouping.column);
 for (let i = 0; i < page.items.length; i++) {
@@ -8586,10 +8578,11 @@ this.stateChanged();
 });
 DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
 gridGroupHeading: "{column}: {value} ({count} records)", gridGroupMissing: "Missing value",
-gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals"
+gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals",
+gridGroupOrder: "Group order is fixed by this report"
 }));
 const GROUP_BASE = {}, GROUP_API = GRID_REPORTING.api;
-for (const name of ["buildGridControls", "fillRow", "setFocus", "focusResult", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
+for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "focusResult", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
 GRID_REPORTING.api = (api, grid) => {
 GROUP_API?.(api, grid);
 if (reportingSummaryEnabled(grid.view)) api.getSummary = () => grid.summary || null;
@@ -8599,6 +8592,12 @@ api.getCollapsedGroups = () => [...(grid.collapsedGroups || [])];
 }
 };
 Object.assign(DataGrid.prototype, {
+buildHeader() {
+GROUP_BASE.buildHeader.call(this);
+const column = this.view.reporting?.grouping?.column;
+const header = this.headCells.find(cell => cell.getAttribute("data-cx-column") === column), button = header?.querySelector(".cx-sort");
+if (button) { button.disabled = true; button.title = this.labels.gridGroupOrder; }
+},
 buildGridControls() {
 GROUP_BASE.buildGridControls.call(this);
 if (!reportingSummaryEnabled(this.view)) return;
@@ -8617,7 +8616,7 @@ element._attrs = {}; element._cls = null; element.className = "cx-row cx-grid-gr
 element.setAttribute("role", "row"); element.removeAttribute("data-cx-id"); element.removeAttribute("data-cx-status");
 element.removeAttribute("aria-selected"); element.removeAttribute("aria-busy"); element.dataset.cxGroup = row.group.key;
 element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
-const cell = this.cell(element, 0, this.rowWidth, "text"), button = h("button", "cx-grid-group-toggle");
+const cell = this.cell(element, 0, this.rowWidth), button = h("button", "cx-grid-group-toggle");
 cell.setAttribute("aria-colspan", String(this.cols.length));
 button.type = "button"; button.tabIndex = -1; const collapsed = this.collapsedGroups.has(row.group.key);
 button.disabled = !!this.pendingQuery;
@@ -8657,7 +8656,9 @@ if (!row || !this.rowProjection || event.defaultPrevented || event.isComposing |
 return GROUP_BASE.onKey.call(this, event);
 if (row.group && ["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) {
 if (event.target.closest("button") && ["Enter", " "].includes(event.key)) return;
-event.preventDefault(); this.setGroupCollapsed(row.group.key, event.key === "ArrowLeft" ? true : event.key === "ArrowRight" ? false : !this.collapsedGroups.has(row.group.key));
+event.preventDefault();
+if (this.pendingQuery) return;
+this.setGroupCollapsed(row.group.key, event.key === "ArrowLeft" ? true : event.key === "ArrowRight" ? false : !this.collapsedGroups.has(row.group.key));
 this.setFocus(this.focused, true); return;
 }
 if (row.group && ["Home", "End"].includes(event.key)) {
@@ -8685,7 +8686,7 @@ if (this.view.reporting?.grouping) state.collapsedGroups = [...(this.collapsedGr
 return state;
 },
 readGridState(input) {
-const state = GROUP_STATE_BASE.readGridState.call(this, input), groups = input.collapsedGroups || [];
+const state = GROUP_STATE_BASE.readGridState.call(this, input), groups = input.collapsedGroups === undefined ? [] : input.collapsedGroups;
 if (!Array.isArray(groups) || groups.length > 10000 || groups.some(key => typeof key !== "string" || !key.length || key.length > 4096))
 throw new Error("CanopyX: invalid bounded group collapse state.");
 groups.forEach(key => requireIdentifier(key, "group key"));

@@ -114,7 +114,7 @@ export type LabelName =
   | "gridRenameView" | "gridDefaultView" | "gridClearDefaultView" | "gridDefaultViewName" | "gridNoDefaultView" | "gridDefaultViewOption"
   | "gridSelection" | "gridSelectPage" | "gridSelectMatching" | "gridClearSelection" | "gridSelectionCount"
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
-  | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary";
+  | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

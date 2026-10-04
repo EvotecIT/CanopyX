@@ -48,15 +48,17 @@
     for (const aggregate of declarations) {
       const value = values[aggregate.id];
       if (!Object.hasOwn(values, aggregate.id) || value !== null && (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) ||
-          aggregate.operation === "count" && (!validStructuralCount(value) || value > count)) throw new Error("CanopyX: invalid aggregate value.");
+          aggregate.operation === "count" && (!validStructuralCount(value) || value > count) ||
+          !count && aggregate.operation !== "count" && value !== null) throw new Error("CanopyX: invalid aggregate value.");
     }
   }
   function reportingSummaryResult(view, query, page, summary) {
     checkDocument(summary, "gridSummary");
     if (Object.keys(summary).some(key => !["protocol", "type", "view", "revision", "query", "matched", "groups", "aggregates"].includes(key)) ||
         JSON.stringify(summary).length > 4194304 || summary.view !== view.id || summary.revision !== page.revision || summary.matched !== page.matched ||
-        !Array.isArray(summary.groups) || summary.groups.length > 10000 || !view.reporting.grouping && summary.groups.length ||
-        !summary.query || summary.query.revision !== page.revision || summary.query.offset !== 0 ||
+        !Array.isArray(summary.groups) || summary.groups.length > 10000 || !validStructuralCount(summary.matched + summary.groups.length) || !view.reporting.grouping && summary.groups.length ||
+        !summary.query || !["protocol", "type", "view", "offset", "limit", "sort", "filters", "search", "revision"].every(key => Object.hasOwn(summary.query, key)) ||
+        summary.query.type !== "gridQuery" || summary.query.protocol !== PROTOCOL || summary.query.revision !== page.revision || summary.query.offset !== 0 ||
         JSON.stringify(gridQuery(view, summary.query)) !== JSON.stringify(query)) throw new Error("CanopyX: summary ownership or counts differ.");
     reportingSummaryValues(view, summary.aggregates, summary.matched);
     let offset = 0; const keys = new Set(), column = view.columns.find(item => item.id === view.reporting.grouping?.column), values = new Set();
@@ -77,7 +79,8 @@
   Object.assign(DataGrid.prototype, {
     async requestPage(query, signal) {
       const page = await SUMMARY_BASE.requestPage.call(this, query, signal);
-      if (!reportingSummaryEnabled(this.view)) return page;
+      // Export/range readers have independent operation signals and need records, not display metadata.
+      if (!reportingSummaryEnabled(this.view) || signal !== this.dataLifetime.signal) return page;
       validateGridPage(page, this.view, query);
       const request = reportingSummaryQuery(this.view, query, page.revision), key = JSON.stringify(request);
       if (this.summaryCandidate?.key !== key) {
@@ -87,6 +90,7 @@
         gridOperationActive(this, signal);
         this.summaryCandidate = { key, result: reportingSummaryResult(this.view, request, page, summary) };
       }
+      if (this.summaryCandidate.result.matched !== page.matched) throw new Error("CanopyX: a page differs from its complete-query summary count.");
       if (this.view.reporting.grouping) {
         const column = this.view.columns.find(column => column.id === this.view.reporting.grouping.column);
         for (let i = 0; i < page.items.length; i++) {

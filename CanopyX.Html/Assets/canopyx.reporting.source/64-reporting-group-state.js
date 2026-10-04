@@ -8,7 +8,7 @@
       return state;
     },
     readGridState(input) {
-      const state = GROUP_STATE_BASE.readGridState.call(this, input), groups = input.collapsedGroups || [];
+      const state = GROUP_STATE_BASE.readGridState.call(this, input), groups = input.collapsedGroups === undefined ? [] : input.collapsedGroups;
       if (!Array.isArray(groups) || groups.length > 10000 || groups.some(key => typeof key !== "string" || !key.length || key.length > 4096))
         throw new Error("CanopyX: invalid bounded group collapse state.");
       groups.forEach(key => requireIdentifier(key, "group key"));

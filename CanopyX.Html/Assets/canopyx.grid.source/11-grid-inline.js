@@ -31,7 +31,7 @@
     return false;
   }
 
-  function gridQueryRows(view, query, columns, compare) {
+  function gridQueryRows(view, query, columns, compare = gridCompare) {
     const terms = gridSearchTerms(query.search, query.searchMode),
       searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
@@ -47,7 +47,7 @@
 
   function inlineGridSource(view) {
     const columns = new Map(view.columns.map(column => [column.id, column]));
-    const compare = GRID_REPORTING.compare?.(view) || gridCompare;
+    const compare = GRID_REPORTING.compare?.(view);
     let lastShape = null, ordered = null;
     return {
       query(query, options) {

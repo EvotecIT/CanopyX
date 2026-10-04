@@ -35,12 +35,12 @@ public sealed class CanopyGridSummary {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         Query.Validate(view);
-        if (Query.Revision != Revision || Query.Offset != 0 || Query.Cursor != null)
+        if (Query.Revision != Revision || Query.Offset != 0 || Query.Cursor != null || Query.Limit != view.PageSize)
             throw new InvalidOperationException("Summary query ownership cannot change after construction.");
         var reporting = view.Reporting;
         if (view.Id != View || reporting == null || reporting.Grouping == null && reporting.Aggregates.Count == 0)
             throw new InvalidOperationException("Summary metadata needs its owning opted-in reporting view.");
-        if (Groups.Count > 10000 || reporting.Grouping == null && Groups.Count != 0)
+        if (Groups.Count > 10000 || (long)Matched + Groups.Count > int.MaxValue || reporting.Grouping == null && Groups.Count != 0)
             throw new InvalidOperationException("Summary metadata supports at most 10,000 declared groups.");
         CanopyColumn? column = null;
         foreach (var declared in view.Columns) if (declared.Id == reporting.Grouping?.Column) column = declared;
@@ -77,6 +77,8 @@ public sealed class CanopyGridSummary {
                 throw new InvalidOperationException("Aggregate values must be declared finite numbers or null.");
             if (aggregate.Operation == CanopyGridAggregateOperation.Count && (!value.HasValue || value < 0 || value > count || value != Math.Floor(value.Value)))
                 throw new InvalidOperationException("A nonmissing-value count must be an integer within its record count.");
+            if (count == 0 && aggregate.Operation != CanopyGridAggregateOperation.Count && value.HasValue)
+                throw new InvalidOperationException("An empty result has no numeric aggregate value.");
             writer.Name(aggregate.Id); if (value.HasValue) writer.Number(value.Value); else writer.Null();
         }
         writer.EndObject();

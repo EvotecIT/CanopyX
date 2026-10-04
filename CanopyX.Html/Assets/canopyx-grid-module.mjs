@@ -1805,20 +1805,10 @@ ordered.push(focusedEl);
 }
 const kids = [...this.canvas.children];
 const n = ordered.length;
-let inOrder = kids.length === n;
-for (let k = 0; inOrder && k < n; k++) {
-inOrder = kids[k] === ordered[k];
-}
-if (inOrder) {
-return;
-}
+if (kids.length === n && ordered.every((rowEl, k) => kids[k] === rowEl)) return;
 if (kids.length === n && !focusedEl) {
 const shift = kids.indexOf(ordered[0]);
-let rotation = shift > 0;
-for (let k = 0; rotation && k < n; k++) {
-rotation = kids[(shift + k) % n] === ordered[k];
-}
-if (rotation) {
+if (shift > 0 && ordered.every((rowEl, k) => kids[(shift + k) % n] === rowEl)) {
 if (shift <= n - shift) {
 for (let k = 0; k < shift; k++) {
 this.canvas.appendChild(kids[k]);
@@ -1957,8 +1947,7 @@ const top = this.logicalTop();
 const shift = this.scaledScroll ? top - grid.scrollTop : 0;
 const n = rows.rowCount();
 const over = this.lean ? 0 : OVERSCAN;
-const firstVisible = n ? rows.rowAt(top) : 0;
-const first = Math.max(0, firstVisible - over);
+const first = n ? Math.max(0, rows.rowAt(top) - over) : 0;
 const last = n ? Math.min(n - 1, rows.rowAt(top + viewHeight) + over) : -1;
 const want = new Set();
 for (let i = first; i <= last; i++) want.add(rows.rowItem(i));
@@ -1978,7 +1967,7 @@ free.push(rowEl);
 }
 }
 }
-const tabRow = visibleFocus || rows.rowItem(firstVisible) || null;
+const tabRow = visibleFocus || rows.rowItem(n ? rows.rowAt(top) : 0) || null;
 const fragment = document.createDocumentFragment();
 for (const w of want) {
 const index = rows.indexOf(w);
@@ -4580,7 +4569,7 @@ case "le": return value <= operand;
 }
 return false;
 }
-function gridQueryRows(view, query, columns, compare) {
+function gridQueryRows(view, query, columns, compare = gridCompare) {
 const terms = gridSearchTerms(query.search, query.searchMode),
 searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
 const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
@@ -4595,7 +4584,7 @@ return gridOrder(a.id, b.id);
 }
 function inlineGridSource(view) {
 const columns = new Map(view.columns.map(column => [column.id, column]));
-const compare = GRID_REPORTING.compare?.(view) || gridCompare;
+const compare = GRID_REPORTING.compare?.(view);
 let lastShape = null, ordered = null;
 return {
 query(query, options) {
@@ -4877,7 +4866,7 @@ if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) thi
 },
 loadPage(offset) {
 if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
-const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
+const { queryEpoch: epoch, dataLifetime: lifetime, snapshot } = this;
 const query = gridQuery(this.view, { ...this.acceptedQuery, offset, limit: this.pageSize, revision: snapshot.revision });
 const token = {}; this.pendingPages.set(offset, token);
 token.promise = this.requestPage(query, lifetime.signal).then(page => {

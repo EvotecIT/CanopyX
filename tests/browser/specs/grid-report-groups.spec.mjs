@@ -27,6 +27,8 @@ async function open(page,view=definition(),setup='') {
 test('full-query totals and contiguous group ranges precede paging; missing values and display text are distinct',async({page})=>{
   const view=definition();view.rows[1].cells.amount={value:1,text:'999'};
   await open(page,view);
+  await expect(page.locator('[data-cx-column="category"] .cx-sort')).toBeDisabled();
+  await expect(page.locator('[data-cx-column="amount"] .cx-sort')).toBeEnabled();
   const summary=await page.evaluate(api+'.getSummary()');
   expect(summary.matched).toBe(24);expect(summary.groups.map(g=>[g.value,g.offset,g.count])).toEqual([['A',0,8],['B',8,8],[null,16,8]]);
   const values=view.rows.map(r=>typeof r.cells.amount==='object'&&r.cells.amount!==null?r.cells.amount.value:r.cells.amount).filter(v=>v!==null);
@@ -43,8 +45,12 @@ test('full-query totals and contiguous group ranges precede paging; missing valu
 });
 
 test('collapse is presentation only, preserves record selection/export/paging, and restores through named state',async({page})=>{
-  await open(page);const key=await page.evaluate(api+'.getSummary().groups[0].key');
+  const view=definition();view.reporting.layout={name:{minimum:40,maximum:400,pin:'left'},amount:{minimum:40,maximum:400,pin:'right'}};
+  await open(page,view);const key=await page.evaluate(api+'.getSummary().groups[0].key');
   await page.evaluate(api+'.selectPage()');await page.evaluate(api+`.setGroupCollapsed(${JSON.stringify(key)},true)`);
+  const heading=await page.locator('.cx-grid-group').first().evaluate(row=>({width:row.closest('.cx-grid').querySelector('.cx-hrow').getBoundingClientRect().width,
+    cell:row.firstElementChild.getBoundingClientRect().width,pin:row.firstElementChild.getAttribute('data-cx-pin')}));
+  expect(heading.cell).toBeCloseTo(heading.width,0);expect(heading.pin).toBe(null);
   expect(await page.locator('.cx-row[data-cx-id]').count()).toBe(0);
   expect((await page.evaluate(api+'.getSelection()')).length).toBe(5);
   const ids=await page.evaluate(`(async()=>{const ids=[];for await(const r of ${api}.prepareExport({scope:'filtered'}).rows())ids.push(r.id);return ids;})()`);
@@ -89,6 +95,7 @@ const hostedSetup=`window.summaryCalls=[];window.pageCalls=[];window.holdSummary
         groups:[{key:'first',value:'A',offset:0,count:500000,aggregates:{}},{key:'second',value:'B',offset:500000,count:500000,aggregates:{}}]};
       if(invalidSummary==='revision')result.revision='other';
       if(invalidSummary==='query')result.query={...q,search:'other'};
+      if(invalidSummary==='echo') {result.query={...q};delete result.query.type;}
       if(invalidSummary==='gap')result.groups[1].offset++;
       if(invalidSummary==='page')result.groups[0].value='Wrong';
       if(holdSummary)return new Promise(resolve=>window.resolveSummary=()=>resolve(result));return result;
@@ -125,11 +132,64 @@ test('host summary cancellation and stale responses cannot replace the accepted 
 
 test('inconsistent host summaries fail visibly without replacing the prior query or totals',async({page})=>{
   await open(page,hostedView(),hostedSetup);const before=await page.evaluate(api+'.getSummary()');
-  for(const mode of ['revision','query','gap','page']) {
+  for(const mode of ['revision','query','echo','gap','page']) {
     await page.evaluate(mode=>window.invalidSummary=mode,mode);
     const error=await page.evaluate(api+`.setQuery({search:${JSON.stringify(mode)}}).catch(e=>e.message)`);
     expect(error).toContain('CanopyX:');await expect(page.locator('.cx-grid-notice')).toBeVisible();
     expect(await page.evaluate(api+'.getSummary()')).toEqual(before);
     expect(await page.evaluate(api+'.getQuery().search')).toBe('');
   }
+});
+
+test('datetime groups merge equivalent instants and retain UTC millisecond order and missing-last semantics',async({page})=>{
+  const view=definition({presentation:'continuous',reporting:{grouping:{column:'when',direction:'desc'},aggregates:[]}});
+  view.columns.push({id:'when',title:'Updated',kind:'datetime',width:180,sortable:true});
+  const dates=['2026-10-04T12:00:00.001Z','2026-10-04T14:00:00.000+02:00','2026-10-04T12:00:00.0009Z',null];
+  view.rows=dates.map((when,i)=>({id:'r'+i,cells:{name:'Record',category:'A',amount:i,when}}));
+  await open(page,view);const groups=await page.evaluate(api+'.getSummary().groups');
+  expect(groups.map(g=>[g.offset,g.count])).toEqual([[0,1],[1,2],[3,1]]);
+  expect(groups[2].value).toBe(null);
+  const ids=await page.evaluate(`(async()=>{const ids=[];for await(const r of ${api}.prepareExport({scope:'filtered'}).rows())ids.push(r.id);return ids;})()`);
+  expect(ids).toEqual(['r0','r1','r2','r3']);
+});
+
+test('typed boolean groups and normalized text operators preserve distinct raw equality',async({page})=>{
+  const view=definition({presentation:'continuous',reporting:{grouping:{column:'category',direction:'asc'},aggregates:[]}});
+  view.rows=[true,'true',false,'FALSE'].map((category,i)=>({id:'r'+i,cells:{name:'Record',category,amount:i}}));
+  await open(page,view);
+  await page.evaluate(api+".setQuery({filters:[{column:'category',operator:'eq',values:[true]}]})");
+  expect(await page.evaluate(api+'.getSummary().matched')).toBe(1);
+  await page.evaluate(api+".setQuery({filters:[{column:'category',operator:'contains',values:['TRU']} ]})");
+  expect(await page.evaluate(api+'.getSummary().matched')).toBe(2);
+  expect((await page.evaluate(api+'.getSummary().groups')).map(g=>g.value)).toEqual([true,'true']);
+});
+
+test('pending query disables keyboard collapse and restored group preferences survive remount',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await open(page,hostedView(),hostedSetup);
+  await page.evaluate(`(()=>{holdSummary=true;window.pending=${api}.setQuery({search:'held'});})()`);
+  await expect.poll(()=>page.evaluate('summaryCalls.length')).toBe(2);
+  await page.locator('.cx-grid-group').first().focus();await page.keyboard.press('ArrowLeft');
+  expect(await page.evaluate(api+'.getCollapsedGroups()')).toEqual([]);expect(errors).toEqual([]);
+  await page.evaluate('resolveSummary()');await page.evaluate('pending');
+  await page.evaluate(api+".setGroupCollapsed('first',true)");
+  await page.evaluate(api+".saveView('Collapsed')");
+  // Use the inline fixture for persisted browser state, independent of host query ownership.
+  await page.goto('about:blank');await open(page);
+  const key=await page.evaluate(api+'.getSummary().groups[0].key');
+  await page.evaluate(api+`.setGroupCollapsed(${JSON.stringify(key)},true)`);
+  await page.evaluate(api+'.flushViewSettings()');
+  await page.reload();await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
+  expect(await page.evaluate(api+'.getCollapsedGroups()')).toEqual([key]);
+  expect(await page.locator('.cx-row[data-cx-id]').count()).toBe(0);
+  await page.evaluate(api+'.resetView()');expect(await page.evaluate(api+'.getCollapsedGroups()')).toEqual([]);
+});
+
+test('record export does not request or replace presentation summaries for a different scope',async({page})=>{
+  await open(page,hostedView(),hostedSetup);await page.evaluate(api+".setQuery({search:'filtered'})");
+  const summary=await page.evaluate(api+'.getSummary()'), calls=await page.evaluate('summaryCalls.length');
+  await page.evaluate("invalidSummary='revision'");
+  const first=await page.evaluate(`(async()=>{for await(const row of ${api}.prepareExport({scope:'all'}).rows())return row.id;})()`);
+  expect(first).toBe('host-0');expect(await page.evaluate('summaryCalls.length')).toBe(calls);
+  expect(await page.evaluate(api+'.getSummary()')).toEqual(summary);
 });

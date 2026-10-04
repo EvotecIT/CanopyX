@@ -58,7 +58,8 @@
       if (options.signal.aborted) throw new DOMException("Facet request cancelled.", "AbortError");
       const column = view.columns.find(item => item.id === request.column), query = request.includeCurrentFilter ? request.query :
         reportingFacetProjection(request.query, column.id);
-      const rows = gridQueryRows(view, query, columns), buckets = new Map(), needle = foldText(request.search);
+      // Facet counts need the complete filtered projection, without sorting that projection.
+      const rows = gridQueryRows(view, query, columns, false), buckets = new Map(), needle = foldText(request.search);
       for (const row of rows) {
         const scalar = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && scalar !== null ? new Date(scalar).toISOString() : scalar;
         const key = reportingFacetKey(value, column), existing = buckets.get(key);

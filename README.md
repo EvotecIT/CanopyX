@@ -158,6 +158,18 @@ Declare `Reporting.FacetColumns.Add("status")` to add values and counts to that 
 
 Saved reporting views can survive browser sessions with `inventory.StateKey = "inventory-reader"` and `inventory.Reporting.ViewStorage = CanopyGridViewStorage.Local`. The Saved views menu offers rename and default choices; Reset view restores the definition while keeping named views. JavaScript hosts can supply `viewStore.load/save` hooks for governed preference storage instead. Use `api.flushViewSettings()` before disposal when the host must acknowledge a save. `api.getShareState()` keeps layout and sorting while removing searches, filters, selected IDs and dataset positions. See the [preference contract](docs/data-protocol.md#flat-grid-documents) for bounds, schema evolution, cancellation and privacy.
 
+Grouped reporting views retain record-based paging and export scope:
+
+```csharp
+inventory.Reporting = new CanopyGridReporting {
+    Grouping = new CanopyGridGrouping("category"), SelectionControls = true
+};
+inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
+    "total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
+```
+
+The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts and totals; collapsing a group hides its rows without removing records from selections or exports. The toolbar totals follow the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](docs/data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
+
 Safe cell presenters are optional reporting configuration:
 
 ```csharp

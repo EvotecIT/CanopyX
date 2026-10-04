@@ -79,6 +79,7 @@ Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
 CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
+GroupedGridExample.Write(output);
 RichGridExample.Write(output);
 
 var largeTree = new SyntheticFileTree();

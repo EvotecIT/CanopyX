@@ -56,7 +56,7 @@
 
     loadPage(offset) {
       if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
-      const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
+      const { queryEpoch: epoch, dataLifetime: lifetime, snapshot } = this;
       const query = gridQuery(this.view, { ...this.acceptedQuery, offset, limit: this.pageSize, revision: snapshot.revision });
       const token = {}; this.pendingPages.set(offset, token);
       token.promise = this.requestPage(query, lifetime.signal).then(page => {

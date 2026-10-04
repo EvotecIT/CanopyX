@@ -22,20 +22,10 @@
       }
       const kids = [...this.canvas.children];
       const n = ordered.length;
-      let inOrder = kids.length === n;
-      for (let k = 0; inOrder && k < n; k++) {
-        inOrder = kids[k] === ordered[k];
-      }
-      if (inOrder) {
-        return;
-      }
+      if (kids.length === n && ordered.every((rowEl, k) => kids[k] === rowEl)) return;
       if (kids.length === n && !focusedEl) {
         const shift = kids.indexOf(ordered[0]);
-        let rotation = shift > 0;
-        for (let k = 0; rotation && k < n; k++) {
-          rotation = kids[(shift + k) % n] === ordered[k];
-        }
-        if (rotation) {
+        if (shift > 0 && ordered.every((rowEl, k) => kids[(shift + k) % n] === rowEl)) {
           if (shift <= n - shift) {
             for (let k = 0; k < shift; k++) {
               this.canvas.appendChild(kids[k]);

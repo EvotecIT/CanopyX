@@ -712,6 +712,7 @@
             "gridGroupExpand": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupCollapse": { "$ref": "#/$defs/accessibleLabel" },
             "gridSummary": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupOrder": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterMatch": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAll": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAny": { "$ref": "#/$defs/accessibleLabel" },

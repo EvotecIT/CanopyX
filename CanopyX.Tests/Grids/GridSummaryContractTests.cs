@@ -55,4 +55,38 @@ public sealed class GridSummaryContractTests {
         var result = new CanopyGridSummary(new CanopyGridQuery(view.Id) { Revision = "snapshot" }, 0); result.Aggregates.Add("sum", null); result.Aggregates.Add("count", 0);
         ProtocolSchema.AssertValid(result.ToJson(view), "empty ungrouped totals");
     }
+
+    [Fact]
+    public void GroupComparer_UsesRawTypedTiesMissingLastAndUtcMillisecondPrecision() {
+        var view = View();
+        view.Reporting!.Ordering.Add("category", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
+        var compare = view.Reporting.Grouping!.CreateComparer(view);
+        var values = new[] { "item2", "Item02", "item02", "ITEM2", "item10" }.Select(value => new CanopyCell(value)).ToList();
+        values.Sort(compare);
+        Assert.Equal(new[] { "ITEM2", "Item02", "item02", "item2", "item10" }, values.Select(cell => cell.Value));
+        Assert.True(compare.Compare(new CanopyCell(true), new CanopyCell("true")) < 0);
+        Assert.True(compare.Compare(null!, new CanopyCell("last")) > 0);
+        view.Columns.Add(new CanopyColumn("when", "When") { Kind = CanopyColumnKind.DateTime, Sortable = true });
+        var dateOrder = new CanopyGridGrouping("when", true).CreateComparer(view);
+        var instant = new DateTime(2026, 10, 4, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(0, dateOrder.Compare(new CanopyCell(instant), new CanopyCell(instant.AddTicks(9999))));
+        Assert.True(dateOrder.Compare(new CanopyCell(instant.AddMilliseconds(1)), new CanopyCell(instant)) < 0);
+        Assert.True(dateOrder.Compare(null!, new CanopyCell(instant)) > 0);
+        var numeric = new CanopyGridGrouping("amount").CreateComparer(view);
+        Assert.Throws<InvalidOperationException>(() => numeric.Compare(new CanopyCell(9007199254740992L), new CanopyCell(0)));
+    }
+
+    [Fact]
+    public void Summary_RejectsMutatedOwnershipIncompleteEchoAndEmptyNumericTotals() {
+        var view = View(); var result = Summary(view);
+        result.Query.Revision = "changed"; Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
+        result = Summary(view); result.Query.Offset = 1; Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
+        result = Summary(view); result.Query.Limit = view.PageSize + 1; Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
+        var valid = Summary(view).ToJson(view);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(valid, json => json["query"]!.AsObject().Remove("filters"))).IsValid);
+        view.Reporting!.Grouping = null;
+        result = new CanopyGridSummary(new CanopyGridQuery(view.Id) { Revision = "empty", Limit = view.PageSize }, 0);
+        result.Aggregates.Add("count", 0); result.Aggregates.Add("sum", 0);
+        Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
+    }
 }

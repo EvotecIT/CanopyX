@@ -151,6 +151,28 @@ Named preference edits wait for the initial host load to complete, so saving bef
 
 Selected exports add `request.querySelection` when this mode is active. They retain the captured query, revision, exclusions, columns and ordering even if the UI changes later. CSV/copy enumerate the captured source, verify excluded identities and enforce client limits; large Office exports use the host hook. Hosts validate query-selection descriptors, dataset revisions, authorization and exclusions before executing an export or a governed action. Query selection is ephemeral: preference snapshots save no query-selection descriptor or exclusions, and restoring a view returns to explicit selection.
 
+### Flat groups and complete-query totals
+
+Reporting definitions opt in through `grouping: { column, direction }`, `aggregates`, or both. Grouping uses one declared sortable raw column. Its key leads every query sort; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. These are flat-grid headings, with no tree hierarchy or tree keyboard semantics.
+
+Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
+
+Hosted sources provide `source.summary(query, { signal })`. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridSummary", "view": "inventory", "revision": "r1",
+  "query": { "protocol": "canopyx/2", "type": "gridQuery", "view": "inventory", "revision": "r1",
+    "offset": 0, "limit": 100, "search": "", "sort": [{ "column": "category", "direction": "asc" }], "filters": [] },
+  "matched": 3, "aggregates": { "total": 12 },
+  "groups": [{ "key": "category-a", "value": "A", "offset": 0, "count": 3, "aggregates": { "total": 12 } }] }
+```
+
+Groups cover every matching record in contiguous declared order. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges, aggregate bindings and page-to-group membership before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
+
+Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+
+`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)` and `getCollapsedGroups()` manage presentation. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+
 ### Safe cell presenters
 
 Optional `reporting.presenters` maps declared column IDs to safe display descriptors. An explicit trusted host renderer takes precedence. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:

@@ -35,9 +35,13 @@ public sealed class CanopyGridGrouping {
     }
     private int Compare(object? left, object? right, CanopyColumn column, CanopyGridOrdering? order) {
         CanopyGridValues.Validate(left, column); CanopyGridValues.Validate(right, column);
+        if (column.Kind == CanopyColumnKind.Number) {
+            if (left != null) left = Number(left);
+            if (right != null) right = Number(right);
+        }
         if (left == null || right == null) return left == right ? 0 : left == null ? 1 : -1;
         int result;
-        if (column.Kind == CanopyColumnKind.Number) result = Convert.ToDouble(left, CultureInfo.InvariantCulture).CompareTo(Convert.ToDouble(right, CultureInfo.InvariantCulture));
+        if (column.Kind == CanopyColumnKind.Number) result = ((double)left).CompareTo((double)right);
         else if (column.Kind == CanopyColumnKind.DateTime) result = (((DateTime)left).Ticks / TimeSpan.TicksPerMillisecond).CompareTo(((DateTime)right).Ticks / TimeSpan.TicksPerMillisecond);
         else {
             var a = left is bool flagA ? flagA ? "true" : "false" : (string)left;
@@ -46,6 +50,12 @@ public sealed class CanopyGridGrouping {
             if (result == 0) result = left is bool && right is string ? -1 : left is string && right is bool ? 1 : string.CompareOrdinal(a, b);
         }
         return Descending ? -result : result;
+    }
+    private static double Number(object value) {
+        var number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        if (Math.Abs(number) > 9007199254740991d)
+            throw new InvalidOperationException("Numeric group values must stay within the safe integer magnitude.");
+        return number;
     }
     internal void WriteJson(CanopyJsonWriter writer) => writer.BeginObject().Property("column", Column)
         .Property("direction", Descending ? "desc" : "asc").EndObject();

@@ -22,8 +22,7 @@
       const shift = this.scaledScroll ? top - grid.scrollTop : 0;
       const n = rows.rowCount();
       const over = this.lean ? 0 : OVERSCAN;
-      const firstVisible = n ? rows.rowAt(top) : 0;
-      const first = Math.max(0, firstVisible - over);
+      const first = n ? Math.max(0, rows.rowAt(top) - over) : 0;
       const last = n ? Math.min(n - 1, rows.rowAt(top + viewHeight) + over) : -1;
       const want = new Set();
       for (let i = first; i <= last; i++) want.add(rows.rowItem(i));
@@ -48,7 +47,7 @@
         }
       }
       // With nothing focused, the tab stop is the first row inside the viewport (not an overscan row).
-      const tabRow = visibleFocus || rows.rowItem(firstVisible) || null;
+      const tabRow = visibleFocus || rows.rowItem(n ? rows.rowAt(top) : 0) || null;
       const fragment = document.createDocumentFragment();
       for (const w of want) {
         const index = rows.indexOf(w);

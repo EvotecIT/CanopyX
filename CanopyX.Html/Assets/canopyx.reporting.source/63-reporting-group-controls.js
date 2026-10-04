@@ -1,10 +1,11 @@
   // ---------- flat-grid headings, summaries and keyboard traversal over projected rows ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridGroupHeading: "{column}: {value} ({count} records)", gridGroupMissing: "Missing value",
-    gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals"
+    gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals",
+    gridGroupOrder: "Group order is fixed by this report"
   }));
   const GROUP_BASE = {}, GROUP_API = GRID_REPORTING.api;
-  for (const name of ["buildGridControls", "fillRow", "setFocus", "focusResult", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
+  for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "focusResult", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
   GRID_REPORTING.api = (api, grid) => {
     GROUP_API?.(api, grid);
     if (reportingSummaryEnabled(grid.view)) api.getSummary = () => grid.summary || null;
@@ -14,6 +15,12 @@
     }
   };
   Object.assign(DataGrid.prototype, {
+    buildHeader() {
+      GROUP_BASE.buildHeader.call(this);
+      const column = this.view.reporting?.grouping?.column;
+      const header = this.headCells.find(cell => cell.getAttribute("data-cx-column") === column), button = header?.querySelector(".cx-sort");
+      if (button) { button.disabled = true; button.title = this.labels.gridGroupOrder; }
+    },
     buildGridControls() {
       GROUP_BASE.buildGridControls.call(this);
       if (!reportingSummaryEnabled(this.view)) return;
@@ -32,7 +39,8 @@
       element.setAttribute("role", "row"); element.removeAttribute("data-cx-id"); element.removeAttribute("data-cx-status");
       element.removeAttribute("aria-selected"); element.removeAttribute("aria-busy"); element.dataset.cxGroup = row.group.key;
       element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
-      const cell = this.cell(element, 0, this.rowWidth, "text"), button = h("button", "cx-grid-group-toggle");
+      // A spanning heading has no column kind: sizing and pinning policies apply only to record cells.
+      const cell = this.cell(element, 0, this.rowWidth), button = h("button", "cx-grid-group-toggle");
       cell.setAttribute("aria-colspan", String(this.cols.length));
       button.type = "button"; button.tabIndex = -1; const collapsed = this.collapsedGroups.has(row.group.key);
       button.disabled = !!this.pendingQuery;
@@ -72,7 +80,9 @@
         return GROUP_BASE.onKey.call(this, event);
       if (row.group && ["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) {
         if (event.target.closest("button") && ["Enter", " "].includes(event.key)) return;
-        event.preventDefault(); this.setGroupCollapsed(row.group.key, event.key === "ArrowLeft" ? true : event.key === "ArrowRight" ? false : !this.collapsedGroups.has(row.group.key));
+        event.preventDefault();
+        if (this.pendingQuery) return;
+        this.setGroupCollapsed(row.group.key, event.key === "ArrowLeft" ? true : event.key === "ArrowRight" ? false : !this.collapsedGroups.has(row.group.key));
         this.setFocus(this.focused, true); return;
       }
       if (row.group && ["Home", "End"].includes(event.key)) {

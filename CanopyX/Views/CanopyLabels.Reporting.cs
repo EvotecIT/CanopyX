@@ -88,5 +88,7 @@ public sealed partial class CanopyLabels {
         _values.ContainsKey(nameof(GridDefaultViewName)) || _values.ContainsKey(nameof(GridNoDefaultView)) || _values.ContainsKey(nameof(GridDefaultViewOption)) ||
         _values.ContainsKey(nameof(GridSelection)) || _values.ContainsKey(nameof(GridSelectPage)) || _values.ContainsKey(nameof(GridSelectMatching)) ||
         _values.ContainsKey(nameof(GridClearSelection)) || _values.ContainsKey(nameof(GridSelectionCount)) ||
-        _values.ContainsKey(nameof(GridSelectionQueryCount)) || _values.ContainsKey(nameof(GridSelectionQueryUnknown)) || _values.ContainsKey(nameof(GridSelectRecord));
+        _values.ContainsKey(nameof(GridSelectionQueryCount)) || _values.ContainsKey(nameof(GridSelectionQueryUnknown)) || _values.ContainsKey(nameof(GridSelectRecord)) ||
+        _values.ContainsKey(nameof(GridGroupHeading)) || _values.ContainsKey(nameof(GridGroupMissing)) || _values.ContainsKey(nameof(GridGroupExpand)) ||
+        _values.ContainsKey(nameof(GridGroupCollapse)) || _values.ContainsKey(nameof(GridSummary)) || _values.ContainsKey(nameof(GridGroupOrder));
 }

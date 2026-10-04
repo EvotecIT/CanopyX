@@ -11,4 +11,6 @@ public sealed partial class CanopyLabels {
     public string GridGroupCollapse { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the complete-query summary region label.</summary>
     public string GridSummary { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the explanation for the fixed grouping-column sort control.</summary>
+    public string GridGroupOrder { get => Get(); set => Set(value); }
 }
