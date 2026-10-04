@@ -8043,7 +8043,9 @@ queueViewSettings(settings) {
 if (this.viewStoreFaulted) return;
 const key = JSON.stringify(settings);
 if (this.viewStoreWriting && key === this.activeViewSettingsKey) { this.pendingViewSettings = null; return; }
-if (!this.viewStoreWriting && key === this.acknowledgedViewSettingsKey) return;
+if (!this.viewStoreWriting && key === this.acknowledgedViewSettingsKey) {
+this.setViewPreferenceError(""); return;
+}
 this.pendingViewSettings = settings;
 if (this.viewStoreWriting) return;
 this.viewStoreWriting = true;

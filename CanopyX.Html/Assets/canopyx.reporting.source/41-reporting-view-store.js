@@ -78,7 +78,9 @@
       // Explicit flush and a pending autosave can describe the same immutable envelope.
       // They share its acknowledgement; newer intent reverting to the active write retires an older queued envelope.
       if (this.viewStoreWriting && key === this.activeViewSettingsKey) { this.pendingViewSettings = null; return; }
-      if (!this.viewStoreWriting && key === this.acknowledgedViewSettingsKey) return;
+      if (!this.viewStoreWriting && key === this.acknowledgedViewSettingsKey) {
+        this.setViewPreferenceError(""); return;
+      }
       this.pendingViewSettings = settings;
       if (this.viewStoreWriting) return;
       this.viewStoreWriting = true;

@@ -236,6 +236,18 @@ test("a corrected bounded envelope flushes only after a fresh host acknowledgeme
   expect(await page.evaluate('flushResult')).toBe('acknowledged'); await expect(page.locator('.cx-grid-view-storage')).toHaveText('');
 });
 
+test("restoring an acknowledged envelope clears a recoverable size error without another host save", async ({ page }) => {
+  await open(page,definition(),"window.saved=[];CanopyX.configure('prefs',{viewStore:{load(){return null;},save({settings}){saved.push(settings);}}});");
+  await page.evaluate(api+'.flushViewSettings()'); const writes=await page.evaluate('saved.length');
+  await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx
+    .setSelection(Array.from({length:5000},(_,i)=>'record-'+i+'x'.repeat(220))));
+  expect(await page.evaluate(api+'.flushViewSettings().catch(e=>e.message)')).toContain('limit');
+  await expect(page.locator('.cx-grid-view-storage')).toContainText('limit');
+  await page.evaluate(api+'.setSelection([])'); await page.evaluate(api+'.flushViewSettings()');
+  expect(await page.evaluate('saved.length')).toBe(writes);
+  await expect(page.locator('.cx-grid-view-storage')).toHaveText('');
+});
+
 test("keyboard resizing during preference loading and presentation edits during query restoration win", async ({ page }) => {
   await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
   await page.locator('[data-cx-column="name"] .cx-resize').press('ArrowRight');
