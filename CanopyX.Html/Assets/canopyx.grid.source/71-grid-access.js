@@ -26,7 +26,7 @@
 
     async copy(options) {
       const exported = this.prepareExport(options);
-      const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t");
+      const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t", options.signal);
       await this.writeClipboard(text, options.signal); return text;
     },
     writeClipboard(text, signal) {

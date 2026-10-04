@@ -5348,7 +5348,7 @@ controller.abort(); this.lifetime.signal.removeEventListener("abort", abort);
 if (signal) signal.removeEventListener("abort", abort);
 }
 },
-async exportText(exported, maxRows, delimiter) {
+async exportText(exported, maxRows, delimiter, signal) {
 if (maxRows === undefined) maxRows = 50000;
 if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is between 1 and 1000000.");
 const request = exported.request, expected = request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
@@ -5361,9 +5361,10 @@ if (++count > maxRows) throw new Error("CanopyX: export exceeds the client row l
 lines.push(request.columns.map(column => gridExportField(request.values === "raw" ? cellValue(row.cells[column.id]) :
 cellText(row.cells[column.id], column, fmt), delimiter)).join(delimiter));
 }
+gridOperationActive(this, signal);
 return lines.join("\r\n") + "\r\n";
 },
-toCsv(options) { return this.exportText(this.prepareExport(options), options.maxRows, ","); },
+toCsv(options) { return this.exportText(this.prepareExport(options), options.maxRows, ",", options.signal); },
 exportToHost(format, options) {
 const exported = this.prepareExport(options);
 if (typeof format !== "string" || !format.trim() || typeof this.opts.onExport !== "function") throw new Error("CanopyX: host export needs a format and an onExport hook.");
@@ -5396,7 +5397,7 @@ if (signal) signal.removeEventListener("abort", abort);
 },
 async copy(options) {
 const exported = this.prepareExport(options);
-const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t");
+const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t", options.signal);
 await this.writeClipboard(text, options.signal); return text;
 },
 writeClipboard(text, signal) {

@@ -74,7 +74,7 @@
       }
     },
 
-    async exportText(exported, maxRows, delimiter) {
+    async exportText(exported, maxRows, delimiter, signal) {
       if (maxRows === undefined) maxRows = 50000;
       if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is between 1 and 1000000.");
       const request = exported.request, expected = request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
@@ -87,10 +87,11 @@
         lines.push(request.columns.map(column => gridExportField(request.values === "raw" ? cellValue(row.cells[column.id]) :
           cellText(row.cells[column.id], column, fmt), delimiter)).join(delimiter));
       }
+      gridOperationActive(this, signal);
       return lines.join("\r\n") + "\r\n";
     },
 
-    toCsv(options) { return this.exportText(this.prepareExport(options), options.maxRows, ","); },
+    toCsv(options) { return this.exportText(this.prepareExport(options), options.maxRows, ",", options.signal); },
 
     exportToHost(format, options) {
       const exported = this.prepareExport(options);

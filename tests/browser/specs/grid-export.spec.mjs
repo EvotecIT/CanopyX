@@ -133,11 +133,21 @@ test("export cancellation applies between fetched records and before an empty se
     const afterRow = await iterator.next().then(() => null, error => error.name);
     const already = new AbortController(); already.abort();
     const empty = await grid.toCsv({scope:'selected',signal:already.signal}).then(() => null, error => error.name);
+    const immediate = new AbortController(), pending = grid.toCsv({scope:'selected',signal:immediate.signal}); immediate.abort();
+    const completing = await pending.then(() => null, error => error.name);
     const second = grid.prepareExport({scope:'all'}).rows()[Symbol.asyncIterator](); await second.next(); grid.destroy();
     const destroyed = await second.next().then(() => null, error => error.name);
-    return {afterRow,empty,destroyed};
+    return {afterRow,empty,completing,destroyed};
   });
-  expect(result).toEqual({afterRow:'AbortError',empty:'AbortError',destroyed:'AbortError'});
+  expect(result).toEqual({afterRow:'AbortError',empty:'AbortError',completing:'AbortError',destroyed:'AbortError'});
+  const view = definition(); view.rows = [];
+  await open(page, view);
+  const emptyDestroyed = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    const pending = ['selected','filtered','all'].map(scope => grid.toCsv({scope}).then(() => null,error => error.name));
+    grid.destroy(); return Promise.all(pending);
+  });
+  expect(emptyDestroyed).toEqual(['AbortError','AbortError','AbortError']);
 });
 
 test("focused cell clipboard fields retain formula protection and tab escaping", async ({page}) => {
