@@ -18,11 +18,11 @@
     <PackageId>CanopyX.Html</PackageId>
     <Version>$(CanopyXProductVersion)</Version>
     <Authors>Evotec</Authors>
-    <Description>Self-contained browser runtime for CanopyX views (virtualized tree grid, inline, sidecar, and remote data sources, theme CSS) and the API that writes pages, fragments, bundles, and asset files.</Description>
-    <PackageReleaseNotes>CanopyX.Html 0.1.0 is the first release: the tree grid runtime and the page, fragment, bundle, and asset writers.</PackageReleaseNotes>
+    <Description>Self-contained tree and flat-grid browser runtimes with virtual rows, typed query controls, saved views, scoped exports, host data sources, and theme CSS, plus page, fragment, tree bundle, and asset writers.</Description>
+    <PackageReleaseNotes>Virtual tree and flat grids, typed query controls, saved views, scoped CSV and clipboard exports, host-governed Office exports and details, and page, fragment, bundle, and asset writers.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>tree-grid;treegrid;treeview;virtualization;lazy-loading;data-views;html;javascript;reports;zero-dependency;aot;trimming</PackageTags>
+    <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;javascript;reports;zero-dependency;aot;trimming</PackageTags>
     <PackageProjectUrl>https://github.com/EvotecIT/CanopyX</PackageProjectUrl>
     <RepositoryUrl>https://github.com/EvotecIT/CanopyX</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

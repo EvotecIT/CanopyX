@@ -102,7 +102,11 @@ Use `api.getState()` and `await api.setState(state)` to save and restore the acc
 
 Grid pages choose `CanopyRuntime.DataGrid`, which also hosts interactive trees. For mixed fragments, request that runtime from `CanopyHtmlAssets.WriteTo` and include it once. Load the grid entry point first on a mixed page; a smaller tree entry point cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
 
-The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. The grid supports sticky headers, resizing, visibility, keyboard cell navigation and stable-ID selection. Saved views, richer controls, details and export workflows are tracked in [TODO.md](TODO.md).
+The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
+
+Configure `onDetails` to open a host-owned drawer for a record. The hook receives its immutable row, accepted query, cancellation signal and a focus-return callback. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](docs/data-protocol.md#export-clipboard-and-record-details) for revision checks, limits, column selection and keyboard behavior.
+
+The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](TODO.md).
 
 ## Tree Grid Features
 

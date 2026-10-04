@@ -173,19 +173,23 @@ Gate: HtmlForgeX ships no fancytree asset, and a tree in an HtmlForgeX email ren
 
 Consumer: the HtmlForgeX `DataExplorer` (branch `feature/report-datasets`, owned by another maintainer).
 
-- [x] One shared virtual-scroll core handles row metrics, pooling, windowed rendering, cell reuse, DOM order, and large logical heights for tree and flat views. The maintainer agreed to integration in separate branches; consumer migration remains in the checklist below.
-- [ ] Data grid view on that core, reading the same data sources.
+- [x] One shared virtual-scroll core handles row metrics, pooling, windowed rendering, cell reuse, DOM order, and large logical heights for tree and flat views. The maintainer agreed to integration in separate branches; host adoption follows library qualification.
+- [x] Flat data grid on that core, using complete inline datasets or query-aware host sources.
 
-First grid release, with the HtmlForgeX inventory and one TestimoX results view as migration proofs:
+First grid release, validated with standalone examples and an HtmlForgeX inventory host:
 
 - [x] Flat row identities, typed cells, full-dataset search/filtering, and stable multi-column sorting before paging.
 - [x] Search and typed filters, column resize/visibility/order, sticky headers, and resettable session views with named snapshots.
 - [x] Virtual rows, bounded caches, query cancellation, stale-response rejection, and loading/error states.
-- [ ] Flat-grid keyboard and ARIA contracts, selection, copying, and host-composed details, while preserving the tree contracts.
-- [ ] Filtered, selected, and all-result export scopes with defined columns/order; large Office exports call host hooks.
-- [ ] Compare and migrate representative formatting, responsive layout, filters, selection, saved state, and exports in both consumers.
+- [x] Flat-grid keyboard and ARIA contracts, selection, copying, and host-composed details, while preserving the tree contracts.
+- [x] Filtered, selected, and all-result export scopes with defined columns/order; large Office exports call host hooks.
+- [x] Compare representative formatting, responsive layout, filters, selection, saved state and exports in the materialized HtmlForgeX inventory host, with source and isolated package-consumer checks and rendered wide/compact light/dark views.
+- [x] Qualify the final shared runtime at normal speed and 4x CPU slowdown: five alternating pairs on each processor domain in current Edge and standard Chromium, at roughly 144 Hz and 60 Hz. Final 4x medians of frames over 50 ms are 0.21%/0% and 0%/0%, below the existing 6% target; all 80 runs record zero blank samples and runtime errors. Every round and outlier is retained.
+- [ ] Investigate the environment sensitivity of the earlier roughly 55 Hz Edge runs, which exceeded the scrolling target. The current qualification does not establish the cause of that difference or guarantee the target on every host.
 
-Gate: the `DataExplorer` inventories run on the shared core within the plan section 7.2 interaction budget, and the tree grid performance tests still pass on the same core.
+Gate: standalone grid examples and the HtmlForgeX inventory host pass the contract, browser, package, keyboard/ARIA and performance checks on the shared core, while tree contracts remain intact. Product rollout is separate from this library release.
+
+- [ ] Later consumer adoption: evaluate a TestimoX results report after library qualification, including its standalone Excel export behavior. This migration is not part of the first grid release.
 
 ## 0.4 Matrix View
 
