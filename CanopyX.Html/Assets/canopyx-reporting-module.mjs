@@ -8021,6 +8021,11 @@ pending = this.viewQueryPromise;
 },
 queueViewSettings(settings) {
 if (this.viewStoreFaulted) return;
+const key = JSON.stringify(settings);
+if (this.viewStoreWriting && key === this.activeViewSettingsKey) { this.pendingViewSettings = null; return; }
+if (!this.viewStoreWriting && key === this.acknowledgedViewSettingsKey) {
+this.setViewPreferenceError(""); return;
+}
 this.pendingViewSettings = settings;
 if (this.viewStoreWriting) return;
 this.viewStoreWriting = true;
@@ -8028,14 +8033,16 @@ this.viewStoreWrite = (async () => {
 try {
 while (this.pendingViewSettings && !this.destroyed) {
 const current = this.pendingViewSettings; this.pendingViewSettings = null;
+this.activeViewSettingsKey = JSON.stringify(current);
 await this.runGridHook(signal => this.opts.viewStore.save({ key: this.storageKey, view: this.view.id, settings: current, signal }));
+this.acknowledgedViewSettingsKey = this.activeViewSettingsKey;
 gridOperationActive(this); this.setViewPreferenceError("");
 }
 } catch (error) {
 this.pendingViewSettings = null; this.viewStoreFaulted = true;
 if (!this.destroyed) this.setViewPreferenceError(error.message);
 throw error;
-} finally { this.viewStoreWriting = false; }
+} finally { this.viewStoreWriting = false; this.activeViewSettingsKey = null; }
 })();
 this.viewStoreWrite.catch(() => {});
 },
@@ -8588,7 +8595,7 @@ gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummar
 gridGroupOrder: "Group order is fixed by this report"
 }));
 const GROUP_BASE = {}, GROUP_API = GRID_REPORTING.api;
-for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "focusResult", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
+for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
 GRID_REPORTING.api = (api, grid) => {
 GROUP_API?.(api, grid);
 if (reportingSummaryEnabled(grid.view)) api.getSummary = () => grid.summary || null;
@@ -8644,6 +8651,10 @@ sync(); pending.then(sync, sync); return pending;
 },
 setFocus(row, focus) {
 if (!this.rowProjection) return GROUP_BASE.setFocus.call(this, row, focus);
+if (row && !row.group && !this.pendingQuery) {
+const group = this.summary?.groups.find(group => row._ri >= group.offset && row._ri < group.offset + group.count);
+if (group && this.collapsedGroups?.has(group.key)) this.setGroupCollapsed(group.key, false);
+}
 const index = this.rowProjection.indexOf(row); if (index < 0 || this.destroyed) return;
 this.pendingNavigation = null; this.focused = row;
 const top = index * this.rowH, height = this.grid.clientHeight - this.head.offsetHeight;
@@ -8651,15 +8662,16 @@ if (top < this.logicalTop()) this.setLogicalTop(top);
 else if (top + this.rowH > this.logicalTop() + height) this.setLogicalTop(top + this.rowH - height);
 this.render(); if (focus) this.rendered.get(this.focused)?.focus({ preventScroll: true });
 },
-focusResult(index, focus, column, control) {
-const group = this.summary?.groups.find(group => index >= group.offset && index < group.offset + group.count);
-if (group && this.collapsedGroups?.has(group.key)) this.setGroupCollapsed(group.key, false);
-return GROUP_BASE.focusResult.call(this, index, focus, column, control);
-},
 onKey(event) {
 const row = event.target.closest(".cx-row")?._w;
 if (!row || !this.rowProjection || event.defaultPrevented || event.isComposing || event.altKey || event.target.matches(OWN_ARROWS))
 return GROUP_BASE.onKey.call(this, event);
+const navigation = this.pendingNavigation;
+if (navigation?.focus && navigation.epoch === this.queryEpoch && this.focused === row)
+return GROUP_BASE.onKey.call(this, event);
+if (this.pendingQuery && ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) {
+event.preventDefault(); return;
+}
 if (row.group && ["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) {
 if (event.target.closest("button") && ["Enter", " "].includes(event.key)) return;
 event.preventDefault();

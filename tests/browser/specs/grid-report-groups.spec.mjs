@@ -102,6 +102,52 @@ const hostedSetup=`window.summaryCalls=[];window.pageCalls=[];window.holdSummary
   }}});`;
 const hostedView = () => definition({source:{kind:'host'},rows:undefined,presentation:'continuous',reporting:{grouping:{column:'category',direction:'asc'},aggregates:[]}});
 
+for (const direction of ['down','up']) for (const action of direction==='down'?['continue','column','reverse','escape']:['continue','reverse','escape'])
+test(`grouped held-page ${direction} navigation retains later ${action} intent`,async({page})=>{
+  const offset=direction==='down'?5:0,start=direction==='down'?4:5,step=direction==='down'?1:-1;
+  const setup=`window.pending=[];window.hold=false;CanopyX.configure('groups',{source:{query(q,{signal}){
+    const result={protocol:'canopyx/2',type:'gridPage',view:q.view,revision:'held',offset:q.offset,total:15,matched:15,
+      items:Array.from({length:Math.min(q.limit,15-q.offset)},(_,i)=>({id:'r'+(q.offset+i),cells:{name:'Record '+(q.offset+i),category:'A',amount:q.offset+i}}))};
+    return hold&&q.offset===${offset}?new Promise(resolve=>pending.push({signal,accept:()=>resolve(result)})):result;},
+    summary(q){return {protocol:'canopyx/2',type:'gridSummary',view:q.view,revision:'held',query:q,matched:15,aggregates:{},
+      groups:[{key:'a',value:'A',offset:0,count:15,aggregates:{}}]};}}});`;
+  await open(page,definition({source:{kind:'host'},rows:undefined,pageSize:5,pageLength:5,
+    reporting:{grouping:{column:'category',direction:'asc'},aggregates:[]}}),setup);
+  if(direction==='up')await page.evaluate(api+'.goToPage(1)');
+  await page.evaluate(api+'.scrollToRow('+start+')');
+  if(direction==='up')await page.locator('[data-cx-group="a"]').focus();
+  else {await page.locator('[data-cx-id="r'+start+'"]').focus();await page.keyboard.press('Enter');await page.keyboard.press('ArrowRight');}
+  await page.evaluate('hold=true');
+  const key=direction==='down'?'ArrowDown':'ArrowUp';await page.keyboard.press(key);
+  await expect.poll(()=>page.evaluate('pending.length')).toBe(1);
+  if(action==='column')await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press(action==='reverse'?(direction==='down'?'ArrowUp':'ArrowDown'):key);
+  if(action==='escape')await page.keyboard.press('Escape');
+  expect(await page.evaluate('pending.length')).toBe(1);
+  if(action==='reverse') {
+    const origin=page.locator('[data-cx-id="r'+start+'"]');
+    await expect(direction==='up'?origin:origin.getByRole('gridcell').nth(1)).toBeFocused();
+    expect(await page.evaluate('pending[0].signal.aborted')).toBe(true);
+  }
+  await page.evaluate('pending[0].accept()');
+  const destination=action==='reverse'?start:action==='escape'?offset:start+2*step;
+  const target=page.locator('[data-cx-id="r'+destination+'"]');
+  await expect(direction==='up'||action==='escape'?target:target.getByRole('gridcell').nth(action==='column'?0:1)).toBeFocused();
+});
+
+test('retained collapsed headings cannot navigate or expand groups during an unaccepted query',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await open(page,definition({source:{kind:'host'},rows:undefined,presentation:'paged',
+    reporting:{grouping:{column:'category',direction:'asc'},aggregates:[]}}),hostedSetup);
+  await page.evaluate(api+".setGroupCollapsed('first',true)");
+  await page.evaluate(`(()=>{holdSummary=true;window.queryPromise=${api}.setQuery({search:'queued'});})()`);
+  await expect.poll(()=>page.evaluate('summaryCalls.length')).toBe(2);
+  await page.locator('[data-cx-group="first"]').focus();
+  await page.keyboard.press('ArrowDown');await page.keyboard.press('Control+End');await nextFrames(page);
+  expect(errors).toEqual([]);expect(await page.evaluate(api+'.getCollapsedGroups()')).toEqual(['first']);
+  await page.evaluate('resolveSummary()');await page.evaluate('queryPromise');
+});
+
 test('a million hosted rows retain sparse groups, bounded pages and record-based scrolling',async({page})=>{
   await open(page,hostedView(),hostedSetup);
   expect((await page.evaluate(api+'.getSummary().groups')).length).toBe(2);
