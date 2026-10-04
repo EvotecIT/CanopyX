@@ -179,7 +179,7 @@ test('row-body clicks report a bounded selection failure without changing the se
   const errors=[];page.on('pageerror',error=>errors.push(error.message));await open(page);
   await page.evaluate(`(()=>{window.selectionErrors=[];document.querySelector('[data-canopyx-host]').addEventListener('canopyx:error',e=>selectionErrors.push(e.detail.error.message));
     ${api}.setSelection(Array.from({length:10000},(_,i)=>'other-'+i));})()`);
-  await page.locator('.cx-row[data-cx-id="r0000"] .cx-text').first().click({modifiers:['Control']});
+  await page.locator('.cx-row[data-cx-id="r0000"] .cx-text').first().click({modifiers:['ControlOrMeta']});
   await expect(page.locator('.cx-grid-selection-status')).toContainText('10,000 IDs');
   expect((await page.evaluate(api+'.getSelection()')).length).toBe(10000);
   expect((await page.evaluate('selectionErrors')).length).toBe(1);expect(errors).toEqual([]);
