@@ -3856,6 +3856,12 @@ global.removeEventListener("scroll", position, true);
 }
 };
 }
+function readStateColumn(c, seen) {
+requireIdentifier(c && c.id, "state column ID");
+if (seen.has(c.id) || !Number.isFinite(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
+throw new Error("CanopyX: invalid state column.");
+seen.add(c.id); return { id: c.id, width: c.width, hidden: c.hidden };
+}
 function statePaths(value) {
 if (!Array.isArray(value)) throw new Error("CanopyX: state paths must be arrays.");
 return value.map(path => {
@@ -3884,14 +3890,8 @@ result.selection = statePaths(state.selection);
 if (!this.multi && result.selection.length > 1) return null;
 if (!Array.isArray(state.columns) || !Array.isArray(state.filters)) return null;
 const seen = new Set();
-result.columns = state.columns.map(c => {
-requireIdentifier(c && c.id, "state column ID");
-if (seen.has(c.id) || !Number.isFinite(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
-throw new Error("CanopyX: invalid state column.");
-seen.add(c.id);
-if (c.id === this.columns[0].id && c.hidden) throw new Error("CanopyX: the tree column remains visible.");
-return { id: c.id, width: c.width, hidden: c.hidden };
-});
+result.columns = state.columns.map(c => readStateColumn(c, seen));
+if (result.columns.some(c => c.id === this.columns[0].id && c.hidden)) return null;
 result.filters = state.filters.map(id => { requireIdentifier(id, "state filter ID"); return id; })
 .filter(id => (this.view.filters || []).some(f => f.id === id));
 result.sort = null;

@@ -3,12 +3,7 @@
   function gridStateColumns(grid, input) {
     if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
     const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
-    const columns = input.map(column => {
-      requireIdentifier(column && column.id, "state column ID");
-      if (seen.has(column.id) || !Number.isFinite(column.width) || column.width < 40 || column.width > MAX_COLUMN_WIDTH || typeof column.hidden !== "boolean")
-        throw new Error("CanopyX: invalid state column.");
-      seen.add(column.id); return gridStateColumn(column);
-    }).filter(column => declared.has(column.id));
+    const columns = input.map(column => readStateColumn(column, seen)).filter(column => declared.has(column.id));
     for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
     if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
     return columns;
