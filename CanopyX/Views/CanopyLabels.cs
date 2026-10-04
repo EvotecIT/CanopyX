@@ -24,7 +24,7 @@ namespace CanopyX;
 /// <c>CanopyX.configure</c>, which applies on top of the view's.
 /// </para>
 /// </remarks>
-public sealed class CanopyLabels {
+public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",
@@ -80,6 +80,15 @@ public sealed class CanopyLabels {
         [nameof(GridResetView)] = "Reset view",
         [nameof(GridChooseView)] = "Choose a saved view",
         [nameof(GridInvalidFilter)] = "Enter a valid filter value.",
+        [nameof(GridBetween)] = "between (inclusive)",
+        [nameof(GridRangeEnd)] = "Upper value (UTC for dates)",
+        [nameof(GridInvalidRange)] = "Enter an upper value greater than or equal to the lower value.",
+        [nameof(GridSuggestedCategory)] = "Suggested category",
+        [nameof(GridChooseCategory)] = "Choose a category",
+        [nameof(GridBooleanValue)] = "Boolean value",
+        [nameof(GridTrue)] = "True",
+        [nameof(GridFalse)] = "False",
+        [nameof(GridHeaderFilter)] = "Filter {column}",
         [nameof(GridContains)] = "contains",
         [nameof(GridStartsWith)] = "starts with",
         [nameof(GridIn)] = "is any of (one per line)",
@@ -121,6 +130,8 @@ public sealed class CanopyLabels {
 
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
+        nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter),
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
         nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
         nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),

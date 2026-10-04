@@ -17,7 +17,11 @@ export interface GridOrdering {
   readonly categories?: readonly string[];
 }
 /** Include the reporting entry point when this optional capability set is present. */
-export interface GridReporting { readonly ordering?: Readonly<Record<string, GridOrdering>>; }
+export interface GridReporting {
+  readonly ordering?: Readonly<Record<string, GridOrdering>>;
+  /** Header buttons open the complete-query filter editor. */
+  readonly headerFilters?: boolean;
+}
 export type GridFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";

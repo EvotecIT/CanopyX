@@ -269,3 +269,6 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;paddin
 .cx-data-grid .cx-grid-page-range { align-self:center;margin-inline-end:auto;font-variant-numeric:tabular-nums; }
 .cx-data-grid .cx-grid-pager .cx-grid-field { flex:none; }
 .cx-data-grid .cx-grid-pager :is(input,select) { width:7em;padding:5px; }
+.cx-data-grid .cx-grid-header-filter { border:0;min-height:22px;min-width:24px;padding:1px 4px;margin-inline-start:auto;background:transparent;color:var(--cx-muted); }
+.cx-data-grid .cx-grid-header-filter[data-cx-filtered="true"] { color:var(--cx-accent);background:var(--cx-hover-bg); }
+.cx-data-grid .cx-hcell .cx-sort { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }

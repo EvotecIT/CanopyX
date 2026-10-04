@@ -1,1 +1,4 @@
 /* Optional reporting presentation rules belong here; ordinary grid and tree styles stay in their own source parts. */
+.cx-data-grid .cx-grid-header-filter { border:0;min-height:22px;min-width:24px;padding:1px 4px;margin-inline-start:auto;background:transparent;color:var(--cx-muted); }
+.cx-data-grid .cx-grid-header-filter[data-cx-filtered="true"] { color:var(--cx-accent);background:var(--cx-hover-bg); }
+.cx-data-grid .cx-hcell .cx-sort { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }

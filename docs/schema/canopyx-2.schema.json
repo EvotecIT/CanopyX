@@ -74,7 +74,8 @@
       "type": "object", "additionalProperties": false,
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
-        "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } }
+        "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
+        "headerFilters": { "type": "boolean" }
       }
     },
     "gridOrdering": {
@@ -520,6 +521,15 @@
             "gridIn": { "$ref": "#/$defs/accessibleLabel" },
             "gridIsNull": { "$ref": "#/$defs/accessibleLabel" },
             "gridIsNotNull": { "$ref": "#/$defs/accessibleLabel" },
+            "gridBetween": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRangeEnd": { "$ref": "#/$defs/accessibleLabel" },
+            "gridInvalidRange": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSuggestedCategory": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChooseCategory": { "$ref": "#/$defs/accessibleLabel" },
+            "gridBooleanValue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridTrue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFalse": { "$ref": "#/$defs/accessibleLabel" },
+            "gridHeaderFilter": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },

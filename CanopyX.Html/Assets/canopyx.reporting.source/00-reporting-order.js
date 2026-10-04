@@ -47,7 +47,8 @@
 
   GRID_REPORTING.validate = view => {
     const options = view.reporting;
-    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => key !== "ordering"))
+    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters"].includes(key)) ||
+        options.headerFilters !== undefined && typeof options.headerFilters !== "boolean")
       throw new Error("CanopyX: invalid reporting options.");
     if (options.ordering === undefined) return;
     if (!options.ordering || typeof options.ordering !== "object" || Array.isArray(options.ordering))

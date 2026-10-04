@@ -7,6 +7,10 @@ namespace CanopyX;
 /// <summary>Optional reporting capabilities carried by the reporting-grid runtime.</summary>
 /// <remarks>Ordinary flat grids and trees do not include these optional presentation and query policies.</remarks>
 public sealed class CanopyGridReporting {
+    /// <summary>Gets or sets whether each visible header offers a filter-editor button.</summary>
+    /// <remarks>The editor queries all records; the button does not filter only the mounted rows.</remarks>
+    public bool HeaderFilters { get; set; }
+
     /// <summary>Gets immutable text ordering policies keyed by declared sortable text-column identities.</summary>
     public IDictionary<string, CanopyGridOrdering> Ordering { get; } = new Dictionary<string, CanopyGridOrdering>(StringComparer.Ordinal);
 
@@ -21,6 +25,7 @@ public sealed class CanopyGridReporting {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
+        if (HeaderFilters) writer.Property("headerFilters", true);
         if (Ordering.Count != 0) {
             writer.Name("ordering").BeginObject();
             foreach (var pair in Ordering) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }

@@ -7,7 +7,7 @@ namespace CanopyX.Examples;
 internal static class ReportingGridExample {
     internal static void Write(string output) {
         var view = new CanopyGridView("reporting-grid", "Ordered inventory") {
-            Reporting = new CanopyGridReporting(), Selection = CanopySelectionMode.Multiple,
+            Reporting = new CanopyGridReporting { HeaderFilters = true }, Selection = CanopySelectionMode.Multiple,
             Presentation = CanopyGridPresentation.Paged, PageLength = 25, PageSize = 100
         };
         view.Columns.Add(new CanopyColumn("name", "Record") { Width = 240, Sortable = true });
