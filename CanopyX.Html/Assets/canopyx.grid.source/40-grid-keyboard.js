@@ -1,6 +1,7 @@
   // ---------- flat-grid focus and selection; no tree navigation ----------
   Object.assign(DataGrid.prototype, {
     setFocus(row, focus) {
+      this.pendingNavigation = null;
       if (!row || this.indexOf(row) < 0 || this.destroyed) return;
       this.focused = row;
       const top = this.rowTop(row._ri), viewport = this.grid.clientHeight - this.head.offsetHeight;
@@ -24,7 +25,11 @@
     onKey(event) {
       const element = event.target.closest(".cx-row"), row = element && element._w;
       if (!row || event.defaultPrevented || event.isComposing || event.altKey) return;
-      const cells = this.rowCells(element), column = cells.findIndex(cell => cell.contains(event.target));
+      const cells = this.rowCells(element), navigation = this.pendingNavigation;
+      let column = cells.findIndex(cell => cell.contains(event.target));
+      if (row.status && navigation && navigation.epoch === this.queryEpoch && navigation.index === row._ri && navigation.focus)
+        column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
+      const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
       if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
         if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
@@ -48,7 +53,7 @@
         case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
         case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
         case "Home": if (event.ctrlKey || event.metaKey) index = 0; else nextColumn = 0; break;
-        case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = cells.length - 1; break;
+        case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = columnCount - 1; break;
         case "ArrowLeft":
           if (at > 0) nextControl = at - 1;
           else if (column > 0) { nextColumn--; nextControl = -1; }
@@ -56,7 +61,7 @@
           break;
         case "ArrowRight":
           if (at >= 0 && at < controls.length - 1) nextControl = at + 1;
-          else nextColumn = Math.min(cells.length - 1, column + 1);
+          else nextColumn = Math.min(columnCount - 1, column + 1);
           break;
         case "Escape": this.setFocus(row, true); event.preventDefault(); return;
         case "F2":

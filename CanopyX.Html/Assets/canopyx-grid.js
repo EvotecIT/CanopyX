@@ -4964,13 +4964,19 @@ if (!busy && this.pageButtons.includes(active) && active.disabled && !this.pageN
 },
 async focusResult(index, focus, column, control) {
 const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
+const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, focus: focus };
+this.pendingNavigation = navigation;
+try {
 if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
+if (this.pendingNavigation !== navigation) return;
 if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
 const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
 this.setFocus(this.rowItem(index), ownsFocus);
+navigation.epoch = epoch; this.pendingNavigation = navigation;
 const navigationTop = this.logicalTop();
 const row = await this.waitForRow(index, epoch);
 if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+if (this.pendingNavigation !== navigation) return;
 if (focus && (!ownsFocus || !this.canvas.contains(document.activeElement) || !this.focused || this.focused._ri !== index)) return;
 const currentColumn = columnId ? this.visibleColumns().findIndex(item => item.id === columnId) : -1;
 if (!focus || currentColumn < 0 || !row || row.status) {
@@ -4980,6 +4986,7 @@ const currentTop = this.logicalTop();
 this.focusCell(row, currentColumn, control);
 if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(); }
 }
+} finally { if (this.pendingNavigation === navigation) this.pendingNavigation = null; }
 }
 });
 Object.assign(DataGrid.prototype, {
@@ -5014,7 +5021,12 @@ Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit
 grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
 this.canvas.addEventListener("focusin", event => {
 const element = event.target.closest(".cx-row");
-if (element && element._w && this.focused !== element._w) { this.focused = element._w; this.scheduleRender(); }
+if (element && element._w && this.focused !== element._w) {
+this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
+}
+}, { signal: signal });
+document.addEventListener("focusin", event => {
+if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
 }, { signal: signal });
 this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
 this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
@@ -5067,6 +5079,7 @@ else for (let i = 0; i < this.cols.length; i++) this.paintSlot(element._cells[i]
 });
 Object.assign(DataGrid.prototype, {
 setFocus(row, focus) {
+this.pendingNavigation = null;
 if (!row || this.indexOf(row) < 0 || this.destroyed) return;
 this.focused = row;
 const top = this.rowTop(row._ri), viewport = this.grid.clientHeight - this.head.offsetHeight;
@@ -5088,7 +5101,11 @@ this.setSelection([...next]);
 onKey(event) {
 const element = event.target.closest(".cx-row"), row = element && element._w;
 if (!row || event.defaultPrevented || event.isComposing || event.altKey) return;
-const cells = this.rowCells(element), column = cells.findIndex(cell => cell.contains(event.target));
+const cells = this.rowCells(element), navigation = this.pendingNavigation;
+let column = cells.findIndex(cell => cell.contains(event.target));
+if (row.status && navigation && navigation.epoch === this.queryEpoch && navigation.index === row._ri && navigation.focus)
+column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
+const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
 const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
 if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
 if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
@@ -5112,7 +5129,7 @@ case "ArrowDown": index++; break;
 case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
 case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
 case "Home": if (event.ctrlKey || event.metaKey) index = 0; else nextColumn = 0; break;
-case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = cells.length - 1; break;
+case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = columnCount - 1; break;
 case "ArrowLeft":
 if (at > 0) nextControl = at - 1;
 else if (column > 0) { nextColumn--; nextControl = -1; }
@@ -5120,7 +5137,7 @@ else { this.setFocus(row, true); event.preventDefault(); return; }
 break;
 case "ArrowRight":
 if (at >= 0 && at < controls.length - 1) nextControl = at + 1;
-else nextColumn = Math.min(cells.length - 1, column + 1);
+else nextColumn = Math.min(columnCount - 1, column + 1);
 break;
 case "Escape": this.setFocus(row, true); event.preventDefault(); return;
 case "F2":

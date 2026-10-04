@@ -31,7 +31,12 @@
       grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");
-        if (element && element._w && this.focused !== element._w) { this.focused = element._w; this.scheduleRender(); }
+        if (element && element._w && this.focused !== element._w) {
+          this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
+        }
+      }, { signal: signal });
+      document.addEventListener("focusin", event => {
+        if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
       this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);

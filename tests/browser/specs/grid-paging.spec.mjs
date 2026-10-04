@@ -79,6 +79,36 @@ test("keyboard and host position navigation cross page boundaries with global ro
 });
 
 for (const presentation of ["paged", "continuous"]) {
+for (const action of ["continue", "escape", "column", "last", "outside", "row"]) test(`loading cell navigation retains later ${action} intent (${presentation})`, async ({ page }) => {
+  const view = definition({ presentation }); view.source = { kind: "host" }; delete view.rows;
+  const offset = presentation === "paged" ? 21 : 133, destination = presentation === "paged" ? 24 : 136;
+  await open(page, view, `window.pending=[];CanopyX.configure('inventory',{source:{query(query){
+    const result={protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:query.offset,total:137,matched:137,
+      items:Array.from({length:Math.min(query.limit,137-query.offset)},(_,i)=>({id:'row-'+(query.offset+i),cells:{name:'Row '+(query.offset+i),amount:query.offset+i}}))};
+    return query.offset===${offset}?new Promise(resolve=>pending.push(()=>resolve(result))):result;
+  }}});`);
+  if (presentation === "paged") await page.evaluate(controller + ".goToPage(1)");
+  const start = presentation === "paged" ? 25 : 0;
+  await page.locator('.cx-row[data-cx-id="row-' + start + '"]').focus();
+  await page.keyboard.press("Enter"); await page.keyboard.press("ArrowRight");
+  await page.keyboard.press(presentation === "paged" ? "ArrowUp" : "Control+End");
+  const loading = page.locator('.cx-row[data-cx-status="loading"][aria-rowindex="' + (destination + 2) + '"]');
+  await expect(loading).toBeFocused();
+  await expect.poll(() => page.evaluate(() => pending.length)).toBe(1);
+  if (action === "escape") await page.keyboard.press("Escape");
+  else if (action === "row") await page.evaluate(controller + ".focus()");
+  else if (action === "outside") { await page.getByRole("searchbox").focus(); await loading.focus(); }
+  else {
+    if (action === "column") await page.keyboard.press("ArrowLeft");
+    if (action === "last") { await page.keyboard.press("Home"); await page.keyboard.press("End"); }
+    await page.keyboard.press("ArrowUp");
+  }
+  await page.evaluate(() => pending[0]());
+  const rowFocus = ["escape", "outside", "row"].includes(action);
+  const target = page.locator('.cx-row[data-cx-id="row-' + (rowFocus ? destination : destination - 1) + '"]');
+  await expect(rowFocus ? target : target.getByRole("gridcell").nth(action === "column" ? 0 : 1)).toBeFocused();
+});
+
 test(`cell navigation retains its column when the destination needs another source window (${presentation})`, async ({ page }) => {
   await open(page, definition({ presentation }));
   await page.evaluate(controller + (presentation === "paged" ? ".goToPage(1)" : ".scrollToRow(25)"));

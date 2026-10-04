@@ -71,21 +71,29 @@
     },
     async focusResult(index, focus, column, control) {
       const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
-      if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
-      if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
-      const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
-      this.setFocus(this.rowItem(index), ownsFocus);
-      const navigationTop = this.logicalTop();
-      const row = await this.waitForRow(index, epoch);
-      if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
-      if (focus && (!ownsFocus || !this.canvas.contains(document.activeElement) || !this.focused || this.focused._ri !== index)) return;
-      const currentColumn = columnId ? this.visibleColumns().findIndex(item => item.id === columnId) : -1;
-      if (!focus || currentColumn < 0 || !row || row.status) {
-        if (this.logicalTop() === navigationTop) this.setFocus(row, focus);
-      } else {
-        const currentTop = this.logicalTop();
-        this.focusCell(row, currentColumn, control);
-        if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(); }
-      }
+      // Loading rows have no cell DOM. Keep the latest column intent until arrival or an explicit focus change.
+      const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, focus: focus };
+      this.pendingNavigation = navigation;
+      try {
+        if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
+        if (this.pendingNavigation !== navigation) return;
+        if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+        const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
+        this.setFocus(this.rowItem(index), ownsFocus);
+        navigation.epoch = epoch; this.pendingNavigation = navigation;
+        const navigationTop = this.logicalTop();
+        const row = await this.waitForRow(index, epoch);
+        if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+        if (this.pendingNavigation !== navigation) return;
+        if (focus && (!ownsFocus || !this.canvas.contains(document.activeElement) || !this.focused || this.focused._ri !== index)) return;
+        const currentColumn = columnId ? this.visibleColumns().findIndex(item => item.id === columnId) : -1;
+        if (!focus || currentColumn < 0 || !row || row.status) {
+          if (this.logicalTop() === navigationTop) this.setFocus(row, focus);
+        } else {
+          const currentTop = this.logicalTop();
+          this.focusCell(row, currentColumn, control);
+          if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(); }
+        }
+      } finally { if (this.pendingNavigation === navigation) this.pendingNavigation = null; }
     }
   });
