@@ -14,12 +14,29 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets immutable text ordering policies keyed by declared sortable text-column identities.</summary>
     public IDictionary<string, CanopyGridOrdering> Ordering { get; } = new Dictionary<string, CanopyGridOrdering>(StringComparer.Ordinal);
 
+    /// <summary>Gets immutable safe presenters keyed by declared column identities.</summary>
+    public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
+
     internal void Validate(IList<CanopyColumn> columns) {
         foreach (var pair in Ordering) {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
             if (declared == null || declared.Kind != CanopyColumnKind.Text || !declared.Sortable || pair.Value == null)
                 throw new InvalidOperationException("Reporting ordering must identify a sortable text column and a non-null policy.");
+        }
+        foreach (var pair in Presenters) {
+            CanopyColumn? declared = null;
+            foreach (var column in columns) if (column.Id == pair.Key) declared = column;
+            if (declared == null || pair.Value == null) throw new InvalidOperationException("A presenter needs a declared column and a non-null descriptor.");
+            var presenter = pair.Value;
+            if (presenter.Kind == CanopyGridPresenterKind.Progress && declared.Kind != CanopyColumnKind.Number ||
+                (presenter.Kind == CanopyGridPresenterKind.Boolean || presenter.Kind == CanopyGridPresenterKind.List || presenter.Kind == CanopyGridPresenterKind.Link) && declared.Kind != CanopyColumnKind.Text)
+                throw new InvalidOperationException("The presenter is incompatible with the column's raw value kind.");
+            if (presenter.HrefColumn != null) {
+                CanopyColumn? href = null;
+                foreach (var column in columns) if (column.Id == presenter.HrefColumn) href = column;
+                if (href == null || href.Kind != CanopyColumnKind.Text) throw new InvalidOperationException("A link destination needs a declared text column.");
+            }
         }
     }
 
@@ -29,6 +46,11 @@ public sealed class CanopyGridReporting {
         if (Ordering.Count != 0) {
             writer.Name("ordering").BeginObject();
             foreach (var pair in Ordering) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }
+            writer.EndObject();
+        }
+        if (Presenters.Count != 0) {
+            writer.Name("presenters").BeginObject();
+            foreach (var pair in Presenters) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }
             writer.EndObject();
         }
         writer.EndObject();

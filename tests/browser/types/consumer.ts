@@ -9,7 +9,8 @@ const reportingHost = document.createElement("div");
 ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
   source: { kind: "inline" }, rows: [], rowHeight: 28, pageSize: 100, selection: "none", search: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 200, sortable: true }],
-  reporting: { ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } } } } });
+  reporting: { ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
+    presenters: { name: { kind: "link", newWindow: true } } } } });
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,

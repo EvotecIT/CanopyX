@@ -16,11 +16,21 @@ export interface GridOrdering {
   /** At most 512 distinct values after selected folding; remaining values follow declared categories. */
   readonly categories?: readonly string[];
 }
+/** Safe DOM presentations; raw values retain their search, ordering and export meanings. */
+export type GridPresenter =
+  | { readonly kind: "link"; readonly hrefColumn?: string; readonly newWindow?: boolean }
+  | { readonly kind: "icon"; readonly glyph: string }
+  | { readonly kind: "progress"; readonly maximum: number }
+  | { readonly kind: "boolean" }
+  | { readonly kind: "list"; readonly separator: string; readonly limit: number }
+  | { readonly kind: "longText" };
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
   readonly ordering?: Readonly<Record<string, GridOrdering>>;
   /** Header buttons open the complete-query filter editor. */
   readonly headerFilters?: boolean;
+  /** Declared column identities; an explicit custom renderer takes precedence. */
+  readonly presenters?: Readonly<Record<string, GridPresenter>>;
 }
 export type GridFilter = {
   readonly column: string;

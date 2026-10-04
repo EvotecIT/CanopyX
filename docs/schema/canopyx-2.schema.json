@@ -75,8 +75,19 @@
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
-        "headerFilters": { "type": "boolean" }
+        "headerFilters": { "type": "boolean" },
+        "presenters": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridPresenter" } }
       }
+    },
+    "gridPresenter": {
+      "oneOf": [
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "link" }, "hrefColumn": { "$ref": "#/$defs/identifier" }, "newWindow": { "type": "boolean" } } },
+        { "type": "object", "required": ["kind", "glyph"], "additionalProperties": false, "properties": { "kind": { "const": "icon" }, "glyph": { "type": "string", "minLength": 1, "maxLength": 32 } } },
+        { "type": "object", "required": ["kind", "maximum"], "additionalProperties": false, "properties": { "kind": { "const": "progress" }, "maximum": { "type": "number", "exclusiveMinimum": 0, "maximum": 9007199254740991 } } },
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "boolean" } } },
+        { "type": "object", "required": ["kind", "separator", "limit"], "additionalProperties": false, "properties": { "kind": { "const": "list" }, "separator": { "type": "string", "minLength": 1, "maxLength": 16 }, "limit": { "type": "integer", "minimum": 1, "maximum": 16 } } },
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "longText" } } }
+      ]
     },
     "gridOrdering": {
       "type": "object", "required": ["text"], "additionalProperties": false,
@@ -530,6 +541,8 @@
             "gridTrue": { "$ref": "#/$defs/accessibleLabel" },
             "gridFalse": { "$ref": "#/$defs/accessibleLabel" },
             "gridHeaderFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExpandCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },

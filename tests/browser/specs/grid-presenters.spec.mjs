@@ -1,0 +1,130 @@
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { viewPage, nextFrames } from "./support.mjs";
+
+const columns = [
+  { id: "name", title: "Record", width: 180, kind: "text", sortable: true },
+  { id: "url", title: "URL", width: 180, kind: "text", hidden: true },
+  { id: "status", title: "Status", width: 110, kind: "text" },
+  { id: "amount", title: "Progress", width: 170, kind: "number", sortable: true },
+  { id: "flag", title: "Enabled", width: 100, kind: "text" },
+  { id: "list", title: "Owners", width: 150, kind: "text" },
+  { id: "notes", title: "Notes", width: 220, kind: "text" }
+];
+const view = { protocol: "canopyx/2", type: "grid", id: "rich", label: "Rich inventory", source: { kind: "inline" },
+  rowHeight: 28, pageSize: 10, presentation: "paged", pageLength: 3, selection: "multiple", search: true, columns,
+  reporting: { presenters: { name: { kind: "link", hrefColumn: "url", newWindow: true }, status: { kind: "icon", glyph: "●" },
+    amount: { kind: "progress", maximum: 100 }, flag: { kind: "boolean" },
+    list: { kind: "list", separator: ",", limit: 2 }, notes: { kind: "longText" } } },
+  rows: [
+    { id: "a", cells: { name: { value: "A", text: "Open A" }, url: "https://example.com/a", status: { value: "Healthy", tone: "success", badges: [{ text: "Ready" }] },
+      amount: { value: 125, text: "125 units" }, flag: true, list: "Alex,Sam,Kim,Pat", notes: "<img src=x onerror=alert(1)>\nComplete plain text" } },
+    { id: "b", cells: { name: "B", url: "javascript:alert(1)", status: "Warning", amount: -5, flag: false, list: "Sam", notes: "Other notes" } },
+    { id: "c", cells: { name: "C", url: "data:text/html,hi", amount: null, flag: null, list: "", notes: "" } },
+    { id: "d", cells: { name: "D", url: "mailto:hello@example.com", amount: 25, flag: true, list: "Pat", notes: "Last record" } }
+  ] };
+async function open(page, patch = {}) {
+  await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: viewPage({ ...view, ...patch })
+    .replace('<body class="cx-page">', '<body class="cx-page"><main><h1>Rich inventory</h1>').replace('</body>', '</main></body>') }));
+  await page.goto("http://canopyx.test/rich");
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await nextFrames(page);
+}
+const row = (page, id) => page.locator('.cx-row[data-cx-id="' + id + '"]');
+
+test("safe links, glyph alternatives, boolean labels and progress retain full-query raw values", async ({ page }) => {
+  await open(page, { labels: { gridTrue: "Enabled", gridFalse: "Disabled" } });
+  const link = row(page, "a").getByRole("link", { name: "Open A" });
+  await expect(link).toHaveAttribute("href", "https://example.com/a"); await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(row(page, "b").getByRole("link")).toHaveCount(0); await expect(row(page, "c").getByRole("link")).toHaveCount(0);
+  await expect(row(page, "a").locator(".cx-presenter-icon")).toHaveAttribute("aria-hidden", "true");
+  await expect(row(page, "a").getByText("Healthy", { exact: true })).toBeVisible();
+  await expect(row(page, "a").getByText("Ready", { exact: true })).toBeVisible();
+  await expect(row(page, "a").getByText("Enabled", { exact: true })).toBeVisible();
+  expect(await row(page, "a").locator("progress").evaluate(item => item.value)).toBe(100);
+  expect(await row(page, "b").locator("progress").evaluate(item => item.value)).toBe(0);
+  await expect(row(page, "c").locator("progress")).toHaveCount(0);
+  const exported = await page.evaluate(async () => {
+    const api = document.querySelector('[data-canopyx-host]').canopyx;
+    await api.setQuery({ sort: [{ column: "amount", direction: "desc" }] });
+    const rows = []; for await (const row of api.prepareExport({ scope: "filtered", raw: true }).rows()) rows.push(row);
+    return rows;
+  });
+  expect(exported.map(item => item.id)).toEqual(["a", "d", "b", "c"]);
+  expect(exported[0].cells.amount).toEqual({ value: 125, text: "125 units" });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("text and list dialogs escape markup, return focus and leave fixed row height intact", async ({ page }) => {
+  await open(page);
+  const button = row(page, "a").getByRole("button", { name: "Notes: show complete text" }); await button.click();
+  const dialog = page.getByRole("dialog", { name: "Notes", exact: true });
+  await expect(dialog).toBeVisible(); await expect(dialog.locator("img")).toHaveCount(0);
+  await expect(dialog.locator("pre")).toHaveText(view.rows[0].cells.notes);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  expect(await row(page, "a").evaluate(item => item.getBoundingClientRect().height)).toBe(28);
+  await dialog.locator("pre").press("Escape"); await expect(dialog).toHaveCount(0); await expect(button).toBeFocused();
+  await row(page, "a").getByRole("button", { name: "Owners: show complete text" }).click();
+  await expect(page.getByRole("dialog").locator("pre")).toHaveText("Alex,Sam,Kim,Pat");
+  await page.getByRole("button", { name: "Close complete text" }).click(); await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("retiring a query or destroying a grid closes complete text and recycled links do not retain unsafe destinations", async ({ page }) => {
+  await open(page);
+  await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ search: "B" }));
+  await expect(page.getByRole("dialog")).toHaveCount(0); await expect(row(page, "b").getByRole("link")).toHaveCount(0);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ search: "A" }));
+  await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.destroy());
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("explicit trusted host renderers override presenters without changing exports", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => {
+    const host = document.querySelector('[data-canopyx-host]'), view = host.canopyx.view; host.canopyx.destroy(); host.replaceChildren();
+    host.canopyx = CanopyX.createDataGrid(host, { view, renderers: { name(row, element) {
+      element.textContent = "Host " + row.id; return true;
+    } } }); return host.canopyx.ready;
+  });
+  await expect(row(page, "a").getByText("Host a", { exact: true })).toBeVisible();
+  await expect(row(page, "a").getByRole("link")).toHaveCount(0);
+  const csv = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.toCsv({ scope: "filtered" }));
+  expect(csv).toContain("Open A"); expect(csv).not.toContain("Host a");
+});
+
+test("large notes and lists retain complete exports with bounded mounted previews", async ({ page }) => {
+  const notes = "Long paragraph ".repeat(10000), owners = "Owner, ".repeat(10000);
+  await open(page, { rows: [{ id: "large", cells: { name: "Large", notes, list: owners } }] });
+  const notesButton = row(page, "large").getByRole("button", { name: "Notes: show complete text" });
+  expect((await notesButton.textContent()).length).toBeLessThanOrEqual(258);
+  expect((await row(page, "large").getByRole("button", { name: "Owners: show complete text" }).textContent()).length).toBeLessThanOrEqual(258);
+  await notesButton.click(); await expect(page.getByRole("dialog").locator("pre")).toHaveText(notes);
+  await page.getByRole("button", { name: "Close complete text" }).click();
+  const csv = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.toCsv({ scope: "filtered" }));
+  expect(csv).toContain(notes); expect(csv).toContain(owners);
+});
+
+test("compact dark complete-text dialogs retain visible gutters and keyboard close controls", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 }); await open(page);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').setAttribute('data-cx-theme', 'dark'));
+  await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
+  const dialog = page.getByRole("dialog"), bounds = await dialog.boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(12); expect(bounds.x + bounds.width).toBeLessThanOrEqual(378);
+  await dialog.locator("pre").press("Tab");
+  const close = page.getByRole("button", { name: "Close complete text" }); await expect(close).toBeFocused();
+  await close.press("Enter"); await expect(dialog).toHaveCount(0);
+});
+
+test("complete text returns to the same record cell after a host refresh replaces its control", async ({ page }) => {
+  await open(page);
+  for (const column of ["Notes", "Owners"]) {
+    const button = row(page, "a").getByRole("button", { name: column + ": show complete text" });
+    await button.click();
+    await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.refresh()); await nextFrames(page);
+    await page.getByRole("button", { name: "Close complete text" }).click(); await expect(button).toBeFocused();
+  }
+  await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnVisible("notes", false)); await nextFrames(page);
+  await page.getByRole("button", { name: "Close complete text" }).click(); await expect(row(page, "a")).toBeFocused();
+});

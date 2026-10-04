@@ -111,6 +111,21 @@ Flat-grid view snapshots are browser presentation state, separate from the wire 
 
 `stateKey` scopes the current snapshot and at most 20 named snapshots in session storage, together with the view ID. Unavailable storage leaves the in-memory controls usable. `resetView()` restores the original definition; removing a named view is a separate explicit action. The `grid*` label names localize flat-grid controls and require the data-grid entry point.
 
+### Safe cell presenters
+
+Optional `reporting.presenters` maps declared column IDs to safe display descriptors. An explicit trusted host renderer takes precedence. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
+
+| Kind | Fields | Presentation |
+| --- | --- | --- |
+| `link` | Optional `hrefColumn` and `newWindow` | Text column with an HTTP(S), mailto or relative offline-file destination from that column or another declared text column. Invalid destinations remain plain text. New windows use `noopener noreferrer`. Explicit file, UNC, JavaScript, data and blob URLs are rejected. |
+| `icon` | Required plain-text `glyph`, 1–32 nonblank code units | Decorative glyph beside the existing text alternative; no markup is interpreted. |
+| `progress` | Required positive finite `maximum` within the safe-integer magnitude | Numeric column with a native progress indicator, visually clamped from zero to maximum; original formatted text and raw value are retained. Missing values remain ordinary cells. |
+| `boolean` | None | Text column whose JSON boolean values use translated true/false labels, unless the cell supplies explicit text. Missing and other values keep their existing formatting. |
+| `list` | Required literal `separator`, 1–16 code units, and integer `limit`, 1–16 | Text column with a bounded delimiter-separated preview and a complete-text dialog when truncated. |
+| `longText` | None | Plain-text expansion dialog outside the fixed-height virtual row. |
+
+Links are limited to 8,192 code units and reject control characters. Mounted list/note previews contain at most 256 code units plus an ellipsis, with no split surrogate pair. List previews read at most the configured number of items plus one. Complete values remain available to queries and exports. Long-text and list dialogs retain text literally, return focus on ordinary close, and close when the accepted query retires or the grid is destroyed. They do not add inline detail height. The dialog follows the grid's resolved theme. `gridExpandCell` and `gridCloseCell` provide translated control labels; boolean values reuse `gridTrue` and `gridFalse`.
+
 ## View
 
 | Field | Type | Meaning |

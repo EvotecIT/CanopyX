@@ -106,7 +106,8 @@ export type LabelName =
   | "invalidEdit" | "interactionPending" | "interactionRejected" | "interactionFailed"
   | "markMove" | "moveHere" | "moveBefore" | "moveAfter" | "cancelMove"
   | "gridFilters" | "gridColumn" | "gridOperator" | "gridValue" | "gridValueType" | "gridText" | "gridBoolean" | "gridAddFilter" | "gridRemoveFilter" | "gridApply" | "gridClearFilters" | "gridMoveEarlier" | "gridMoveLater" | "gridViews" | "gridViewName" | "gridSaveView" | "gridRemoveView" | "gridResetView" | "gridChooseView" | "gridInvalidFilter" | "gridContains" | "gridStartsWith" | "gridIn" | "gridIsNull" | "gridIsNotNull"
-  | "gridBetween" | "gridRangeEnd" | "gridInvalidRange" | "gridSuggestedCategory" | "gridChooseCategory" | "gridBooleanValue" | "gridTrue" | "gridFalse" | "gridHeaderFilter";
+  | "gridBetween" | "gridRangeEnd" | "gridInvalidRange" | "gridSuggestedCategory" | "gridChooseCategory" | "gridBooleanValue" | "gridTrue" | "gridFalse" | "gridHeaderFilter"
+  | "gridExpandCell" | "gridCloseCell";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

@@ -55,6 +55,8 @@ Optional `CanopyGridView.Reporting` policies add deterministic ordinal, folded a
 
 The reporting filter editor provides inclusive numeric/date ranges, category suggestions and translated boolean choices. Set `Reporting.HeaderFilters = true` to open the editor from a column header. Ranges use the existing typed predicates; filtering and exports apply to all accepted results before visible paging.
 
+`Reporting.Presenters` adds safe links, decorative icons with text alternatives, native progress, translated boolean values, compact lists and complete-text dialogs. For example, `inventory.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText())` expands notes without changing virtual row height. Query and export values remain independent of the display; explicit host renderers take precedence.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX

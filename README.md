@@ -129,6 +129,19 @@ Configure `onDetails` to open a host-owned drawer for a record. The hook receive
 
 The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](TODO.md).
 
+Safe cell presenters are optional reporting configuration:
+
+```csharp
+view.Reporting.Presenters.Add("name", CanopyGridPresenter.Link("address", newWindow: true));
+view.Reporting.Presenters.Add("status", CanopyGridPresenter.Icon("●"));
+view.Reporting.Presenters.Add("completion", CanopyGridPresenter.Progress(maximum: 100));
+view.Reporting.Presenters.Add("enabled", CanopyGridPresenter.Boolean());
+view.Reporting.Presenters.Add("owners", CanopyGridPresenter.List(", ", limit: 2));
+view.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText());
+```
+
+The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
+
 ## Tree Grid Features
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.

@@ -89,6 +89,8 @@ public sealed partial class CanopyLabels {
         [nameof(GridTrue)] = "True",
         [nameof(GridFalse)] = "False",
         [nameof(GridHeaderFilter)] = "Filter {column}",
+        [nameof(GridExpandCell)] = "{column}: show complete text",
+        [nameof(GridCloseCell)] = "Close complete text",
         [nameof(GridContains)] = "contains",
         [nameof(GridStartsWith)] = "starts with",
         [nameof(GridIn)] = "is any of (one per line)",
@@ -131,7 +133,7 @@ public sealed partial class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
         nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
-        nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter),
+        nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter), nameof(GridExpandCell), nameof(GridCloseCell),
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
         nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
         nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
