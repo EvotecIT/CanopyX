@@ -138,3 +138,24 @@ test('selection controls recover after a failed query and query selections remai
   await page.evaluate('fail=false');await page.evaluate(api+".applySavedView('Layout')");
   expect(await page.evaluate(api+'.getSelectionDescriptor().kind')).toBe('ids');
 });
+
+test('selection checkboxes retain focus across custom host cell paints and recycled records',async({page})=>{
+  await open(page,definition(),`CanopyX.configure('selections',{renderers:{name(row,cell){
+    const link=document.createElement('a');link.href='#'+row.id;link.textContent='Inspect '+row.id;cell.appendChild(link);return true;
+  }}});`);
+  const first=page.locator('.cx-row[data-cx-id="r0000"]');
+  await first.focus();await page.keyboard.press('Enter');
+  await expect(first.locator('.cx-grid-row-select')).toBeFocused();
+  await page.keyboard.press('Space');await nextFrames(page);
+  await expect(first.locator('.cx-grid-row-select')).toBeChecked();
+  await expect(first.locator('.cx-grid-row-select')).toBeFocused();
+  await expect(first.getByRole('link')).toHaveText('Inspect r0000');
+  await page.evaluate(api+'.selectAllMatching()');await nextFrames(page);
+  await expect(first.locator('.cx-grid-row-select')).toBeFocused();
+  await page.evaluate(api+'.nextPage()');await nextFrames(page);
+  const next=page.locator('.cx-row[data-cx-id="r0050"]');
+  await expect(next.locator('.cx-grid-row-select')).toHaveAttribute('aria-label','Select record r0050');
+  await next.locator('.cx-grid-row-select').click();
+  expect(await page.evaluate(api+'.getSelectionDescriptor().excludedIds')).toEqual(['r0050']);
+  expect(await next.locator('[role="gridcell"]').count()).toBe(2);
+});
