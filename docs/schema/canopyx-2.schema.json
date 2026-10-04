@@ -97,6 +97,24 @@
       },
       "$comment": "Runtime checks the request identity/projection/revision, raw column kind, distinct typed canonical buckets and count relations. Without value search a complete response accounts for every matching row, including one missing/null bucket."
     },
+    "gridSelection": {
+      "oneOf": [
+        { "type": "object", "required": ["kind", "revision", "ids"], "additionalProperties": false,
+          "properties": { "kind": { "const": "ids" }, "revision": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+            "ids": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } } } },
+        { "$ref": "#/$defs/gridQuerySelection" }
+      ]
+    },
+    "gridQuerySelection": {
+      "description": "Ephemeral accepted-query selection. Hosts validate query, revision, count and exclusion membership before acting.",
+      "type": "object", "required": ["kind", "query", "revision", "matched", "excludedIds"], "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "query" }, "revision": { "$ref": "#/$defs/identifier" },
+        "query": { "allOf": [{ "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] }, { "required": ["revision"] }] },
+        "matched": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "excludedIds": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } }
+      }
+    },
     "gridState": {
       "description": "Canonical browser preference snapshot. Runtime binds columns, queries and selection policy to the current definition.",
       "type": "object", "required": ["version", "view", "columns", "query", "timeZone", "selection", "scrollTop"], "additionalProperties": false,
@@ -138,6 +156,7 @@
       "properties": {
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "viewStorage": { "enum": ["session", "local"] },
+        "selectionControls": { "type": "boolean" },
         "headerFilters": { "type": "boolean" },
         "filterGroups": { "type": "boolean" },
         "facetColumns": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
@@ -646,6 +665,14 @@
             "gridDefaultViewName": { "$ref": "#/$defs/accessibleLabel" },
             "gridNoDefaultView": { "$ref": "#/$defs/accessibleLabel" },
             "gridDefaultViewOption": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelection": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectMatching": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearSelection": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectionCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectionQueryCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectionQueryUnknown": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectRecord": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterMatch": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAll": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAny": { "$ref": "#/$defs/accessibleLabel" },

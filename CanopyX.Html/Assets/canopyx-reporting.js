@@ -6779,9 +6779,11 @@ return gridOrder(a.length - i, b.length - j);
 }
 GRID_REPORTING.validate = view => {
 const options = view.reporting;
-if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage"].includes(key)) ||
+if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage", "selectionControls"].includes(key)) ||
 ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
 throw new Error("CanopyX: invalid reporting options.");
+if (options.selectionControls !== undefined && typeof options.selectionControls !== "boolean" || options.selectionControls && view.selection === "none")
+throw new Error("CanopyX: reporting selection controls need an enabled selection mode.");
 if (options.viewStorage !== undefined && !["session", "local"].includes(options.viewStorage) || options.viewStorage === "local" &&
 (typeof view.stateKey !== "string" || !view.stateKey.trim() || view.stateKey.length > 512))
 throw new Error("CanopyX: durable reporting preferences need session/local storage and an explicit bounded state key.");
@@ -8033,6 +8035,279 @@ setText(option, fill(this.labels.gridDefaultViewOption, { name: option.value }))
 if (this.viewDefaultStatus) setText(this.viewDefaultStatus, this.defaultSavedView ?
 fill(this.labels.gridDefaultViewName, { name: this.defaultSavedView }) : this.labels.gridNoDefaultView);
 };
+const REPORTING_SELECTION_LIMIT = 10000, SELECTION_BASE = {}, SELECTION_API = GRID_REPORTING.api;
+for (const name of ["setSelection", "emit", "copyFocused", "readGridState"]) SELECTION_BASE[name] = DataGrid.prototype[name];
+GRID_REPORTING.api = (api, grid) => {
+SELECTION_API?.(api, grid);
+for (const name of ["getSelectionDescriptor", "selectAllMatching", "selectPage", "setRowSelected", "selectRange"])
+api[name] = grid[name].bind(grid);
+const getIds = api.getSelection;
+api.getSelection = () => {
+if (grid.querySelection) throw new Error("CanopyX: all-matching selection uses getSelectionDescriptor(), not a materialized ID list.");
+return getIds();
+};
+};
+Object.assign(DataGrid.prototype, {
+readGridState(input) {
+const state = SELECTION_BASE.readGridState.call(this, input);
+if (this.view.reporting?.selectionControls && state.selection.length > REPORTING_SELECTION_LIMIT)
+throw new Error("CanopyX: explicit selection is bounded to 10,000 IDs.");
+return state;
+},
+requireReportingSelection(multiple = false) {
+if (this.destroyed || this.pendingQuery || !this.acceptedQuery || !this.view.reporting?.selectionControls ||
+this.view.selection === "none" || multiple && !this.multi)
+throw new Error("CanopyX: selection needs an accepted reporting query and an enabled selection mode.");
+},
+getSelectionDescriptor() {
+return this.querySelection ? gridFreeze({ ...this.querySelection, excludedIds: [...this.selectionExcluded] }) :
+gridFreeze({ kind: "ids", revision: this.snapshot?.revision ?? null, ids: [...this.selected] });
+},
+setSelection(ids) {
+if (this.view.reporting?.selectionControls && Array.isArray(ids) && ids.length > REPORTING_SELECTION_LIMIT)
+throw new Error("CanopyX: explicit selection is bounded to 10,000 IDs; use all-matching selection for large results.");
+if (!Array.isArray(ids)) return SELECTION_BASE.setSelection.call(this, ids);
+ids.forEach(id => requireIdentifier(id, "selection ID"));
+if (this.view.selection === "none" && ids.length || !this.multi && new Set(ids).size > 1)
+throw new Error("CanopyX: selection exceeds the view's mode.");
+this.selectionController?.abort();
+this.selectionAnchor = null;
+this.querySelection = null; this.selectionExcluded = null;
+return SELECTION_BASE.setSelection.call(this, ids);
+},
+selectAllMatching() {
+this.requireReportingSelection(true);
+this.selectionController?.abort();
+const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: undefined, limit: this.pageSize });
+this.querySelection = gridFreeze({ kind: "query", query, revision: this.snapshot.revision, matched: this.snapshot.matched });
+this.selectionExcluded = new Set(); this.selected.clear(); this.selectionAnchor = null;
+this.publishQuerySelection();
+},
+publishQuerySelection() {
+this.version++; this.scheduleRender(); this.emit("select", { ids: [], selection: this.getSelectionDescriptor() }); this.stateChanged();
+},
+reportingRowSelected(row) { return this.querySelection ? !this.selectionExcluded.has(row.key) : this.selected.has(row.key); },
+setReportingRowSelected(row, selected) {
+this.requireReportingSelection();
+if (!row || row.status || this.indexOf(row) < 0 || typeof selected !== "boolean")
+throw new Error("CanopyX: choose a loaded accepted record and a boolean selection intent.");
+this.selectionController?.abort();
+if (this.querySelection) {
+if (!selected && !this.selectionExcluded.has(row.key) && this.selectionExcluded.size >= REPORTING_SELECTION_LIMIT)
+throw new Error("CanopyX: query selection supports at most 10,000 exclusions.");
+if (selected) this.selectionExcluded.delete(row.key); else this.selectionExcluded.add(row.key);
+this.publishQuerySelection();
+} else {
+const ids = this.multi ? new Set(this.selected) : new Set();
+if (selected) ids.add(row.key); else ids.delete(row.key); this.setSelection([...ids]);
+}
+this.selectionAnchor = row._ri;
+},
+setRowSelected(id, selected) {
+requireIdentifier(id, "selection ID");
+return this.setReportingRowSelected([...this.rowCache.values()].find(row => row.key === id), selected);
+},
+emit(name, detail) {
+if (this.view.reporting?.selectionControls) {
+if (name === "query") {
+const key = JSON.stringify([detail.revision, gridResultShape(detail.query)]), previous = this.selectionScopeKey;
+if (previous !== undefined && previous !== key) {
+this.selectionAnchor = null;
+if (this.querySelection || this.selectionRevision !== detail.revision) this.setSelection([]);
+}
+this.selectionScopeKey = key; this.selectionRevision = detail.revision;
+}
+if (name === "select") detail = { ...detail, selection: this.getSelectionDescriptor() };
+if (name === "select" || name === "query" || name === "error") this.syncSelectionControls?.();
+}
+return SELECTION_BASE.emit.call(this, name, detail);
+},
+copyFocused(row, cell) { return this.querySelection ? this.copy({ scope: "selected" }) : SELECTION_BASE.copyFocused.call(this, row, cell); }
+});
+Object.assign(DataGrid.prototype, {
+selectPage(selected = true, options = {}) {
+this.requireReportingSelection(true);
+if (typeof selected !== "boolean" || options.signal !== undefined && !(options.signal instanceof AbortSignal))
+throw new Error("CanopyX: page selection needs a boolean and optional AbortSignal.");
+if (!this.paged) throw new Error("CanopyX: page selection requires paged presentation.");
+const bounds = this.rowBounds();
+return bounds.last < bounds.first ? Promise.resolve(this.getSelectionDescriptor()) :
+this.selectRange(bounds.first, bounds.last, { ...options, selected, additive: true });
+},
+async selectRange(start, end, options = {}) {
+this.requireReportingSelection(true);
+const first = Math.min(start, end), last = Math.max(start, end), selected = options.selected ?? true, additive = options.additive ?? false;
+if (!Number.isInteger(start) || !Number.isInteger(end) || first < 0 || last >= this.rowCount() || last - first + 1 > REPORTING_SELECTION_LIMIT ||
+typeof selected !== "boolean" || typeof additive !== "boolean" || options.signal !== undefined && !(options.signal instanceof AbortSignal))
+throw new Error("CanopyX: selection ranges need accepted positions and at most 10,000 records.");
+if (this.cursor && (first < this.pageOffset || last >= this.cursorWindow.end))
+throw new Error("CanopyX: sequential-source selection ranges stay on the accepted page.");
+this.selectionController?.abort();
+const controller = this.selectionController = new AbortController(), dataSignal = this.dataLifetime.signal, epoch = this.queryEpoch;
+const abort = () => controller.abort();
+dataSignal.addEventListener("abort", abort, { once: true }); options.signal?.addEventListener("abort", abort, { once: true });
+if (options.signal?.aborted) abort();
+const query = this.acceptedQuery, snapshot = { ...this.snapshot }, ids = [], seen = new Set(), scope = this.querySelection;
+try {
+gridOperationActive(this, controller.signal);
+if (this.cursor) {
+for (let index = first; index <= last; index++) {
+const row = this.rowCache.get(index);
+if (!row || row.status) throw new Error("CanopyX: the complete accepted cursor page is required for page/range selection.");
+ids.push(row.key);
+}
+} else for (let offset = Math.floor(first / this.pageSize) * this.pageSize; offset <= last; offset += this.pageSize) {
+const request = gridQuery(this.view, { ...query, offset, limit: this.pageSize });
+const page = validateGridPage(await this.requestPage(request, controller.signal), this.view, request, snapshot);
+gridOperationActive(this, controller.signal);
+for (const [index, row] of page.items.entries()) {
+if (seen.has(row.id)) throw new Error("CanopyX: a selection range repeated a record identity.");
+seen.add(row.id);
+if (page.offset + index >= first && page.offset + index <= last) ids.push(row.id);
+}
+}
+gridOperationActive(this, controller.signal);
+if (epoch !== this.queryEpoch || ids.length !== last - first + 1)
+throw new DOMException("Selection range was superseded or incomplete.", "AbortError");
+if (scope) {
+const excluded = new Set(this.selectionExcluded);
+for (const id of ids) if (selected) excluded.delete(id); else excluded.add(id);
+if (excluded.size > REPORTING_SELECTION_LIMIT) throw new Error("CanopyX: query selection supports at most 10,000 exclusions.");
+this.selectionExcluded = excluded; this.publishQuerySelection();
+} else {
+const next = additive || !selected ? new Set(this.selected) : new Set();
+for (const id of ids) if (selected) next.add(id); else next.delete(id);
+this.setSelection([...next]);
+}
+if (this.selectionAnchor == null) this.selectionAnchor = start;
+return this.getSelectionDescriptor();
+} finally {
+dataSignal.removeEventListener("abort", abort); options.signal?.removeEventListener("abort", abort); controller.abort();
+if (this.selectionController === controller) this.selectionController = null;
+}
+}
+});
+const SELECTION_EXPORT_PREPARE = DataGrid.prototype.prepareExport, SELECTION_EXPORT_ROWS = DataGrid.prototype.exportRows,
+SELECTION_EXPORT_TEXT = DataGrid.prototype.exportText;
+DataGrid.prototype.prepareExport = function (options) {
+if (options?.scope !== "selected" || !this.querySelection) return SELECTION_EXPORT_PREPARE.call(this, options);
+const selection = this.getSelectionDescriptor(), exported = SELECTION_EXPORT_PREPARE.call(this, { ...options, scope: "filtered" });
+const request = gridFreeze({ ...exported.request, scope: "selected", query: selection.query,
+revision: selection.revision, matched: selection.matched, selection: [], querySelection: selection });
+const signal = options.signal;
+return Object.freeze({ request, rows: () => this.exportRows(request, signal) });
+};
+DataGrid.prototype.exportRows = async function* (request, signal) {
+if (!request.querySelection) { yield* SELECTION_EXPORT_ROWS.call(this, request, signal); return; }
+const excluded = new Set(request.querySelection.excludedIds);
+for await (const row of SELECTION_EXPORT_ROWS.call(this, { ...request, scope: "filtered" }, signal))
+if (!excluded.delete(row.id)) yield row;
+if (excluded.size) throw new Error("CanopyX: excluded records are absent from the accepted query revision.");
+};
+DataGrid.prototype.exportText = async function (exported, maxRows = 50000, delimiter, signal) {
+const selection = exported.request.querySelection;
+if (selection && selection.matched !== null && Number.isInteger(maxRows) && maxRows >= 1 && maxRows <= 1000000 &&
+selection.matched - selection.excludedIds.length > maxRows)
+throw new Error("CanopyX: export exceeds the client row limit; use a host export hook.");
+return SELECTION_EXPORT_TEXT.call(this, exported, maxRows, delimiter, signal);
+};
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridSelection: "Selection", gridSelectPage: "Select page", gridSelectMatching: "Select all matching",
+gridClearSelection: "Clear selection", gridSelectionCount: "{count} selected records",
+gridSelectionQueryCount: "{count} matching records selected; {excluded} excluded",
+gridSelectionQueryUnknown: "All matching records selected; {excluded} excluded", gridSelectRecord: "Select record {id}"
+}));
+const SELECTION_CONTROLS_BASE = {};
+for (const name of ["buildGridControls", "fillRow", "refreshRowState", "onClick", "onKey", "setQuery"])
+SELECTION_CONTROLS_BASE[name] = DataGrid.prototype[name];
+Object.assign(DataGrid.prototype, {
+buildGridControls() {
+SELECTION_CONTROLS_BASE.buildGridControls.call(this);
+if (!this.view.reporting?.selectionControls) return;
+const controls = h("div", "cx-grid-selection-controls"), status = this.selectionStatus = h("span", "cx-grid-selection-status");
+controls.setAttribute("role", "group"); controls.setAttribute("aria-label", this.labels.gridSelection); status.setAttribute("role", "status");
+const page = this.multi && this.paged ? gridButton(this.labels.gridSelectPage, () => this.runReportingSelection(() => this.selectPage())) : null;
+const all = this.multi ? gridButton(this.labels.gridSelectMatching, () => this.runReportingSelection(() => this.selectAllMatching())) : null;
+const clear = gridButton(this.labels.gridClearSelection, () => this.setSelection([]));
+this.selectionButtons = [page, all, clear].filter(Boolean);
+controls.append(...this.selectionButtons, status); this.toolbar.appendChild(controls); this.syncSelectionControls();
+},
+syncSelectionControls() {
+if (!this.selectionStatus) return;
+for (const button of this.selectionButtons) button.disabled = !!this.selectionControlBusy || !this.acceptedQuery || !!this.pendingQuery;
+for (const [row, element] of this.rendered) if (!row.status) {
+const check = element.querySelector(".cx-grid-row-select");
+if (check) { check.checked = this.reportingRowSelected(row); check.disabled = !!this.pendingQuery; }
+}
+const query = this.querySelection, format = numberFormat(this.lang);
+setText(this.selectionStatus, query ? fill(query.matched === null ? this.labels.gridSelectionQueryUnknown : this.labels.gridSelectionQueryCount,
+{ count: query.matched === null ? "" : format.format(Math.max(0, query.matched - this.selectionExcluded.size)), excluded: format.format(this.selectionExcluded.size) }) :
+fill(this.labels.gridSelectionCount, { count: format.format(this.selected.size) }));
+},
+runReportingSelection(action) {
+this.selectionControlBusy = true; this.syncSelectionControls();
+Promise.resolve().then(action).catch(error => {
+if (!this.destroyed && error.name !== "AbortError") { this.selectionControlError = error.message; this.emit("error", { error }); }
+}).finally(() => {
+this.selectionControlBusy = false;
+if (!this.destroyed) {
+this.syncSelectionControls();
+if (this.selectionControlError) { setText(this.selectionStatus, this.selectionControlError); this.selectionControlError = null; }
+}
+});
+},
+setQuery(input, paging) {
+const pending = SELECTION_CONTROLS_BASE.setQuery.call(this, input, paging);
+this.syncSelectionControls(); return pending;
+},
+refreshRowState(element, row) {
+SELECTION_CONTROLS_BASE.refreshRowState.call(this, element, row);
+if (this.view.reporting?.selectionControls && !row.status) element.setAttribute("aria-selected", String(this.reportingRowSelected(row)));
+},
+fillRow(element, row) {
+SELECTION_CONTROLS_BASE.fillRow.call(this, element, row);
+if (!this.view.reporting?.selectionControls || row.status) return;
+const cell = element._cells[0].cell;
+let check = cell.querySelector(".cx-grid-row-select");
+if (!check) {
+check = h("input", "cx-grid-row-select"); check.type = "checkbox"; check.tabIndex = -1; cell.insertBefore(check, cell.firstChild);
+check.addEventListener("click", event => {
+event.preventDefault(); const current = element._w;
+this.reportingSelectionIntent(current, !this.reportingRowSelected(current), event.shiftKey, event.ctrlKey || event.metaKey);
+});
+check.addEventListener("keydown", event => {
+if (event.key === " " && event.shiftKey) {
+event.preventDefault(); event.stopPropagation(); const current = element._w;
+this.reportingSelectionIntent(current, !this.reportingRowSelected(current), true, event.ctrlKey || event.metaKey);
+}
+});
+}
+check.checked = this.reportingRowSelected(row); check.disabled = !!this.pendingQuery;
+check.setAttribute("aria-label", fill(this.labels.gridSelectRecord, { id: row.key }));
+},
+reportingSelectionIntent(row, selected, range, additive) {
+this.runReportingSelection(() => range && this.multi && this.selectionAnchor != null ?
+this.selectRange(this.selectionAnchor, row._ri, { selected, additive }) : this.setReportingRowSelected(row, selected));
+},
+onClick(event) {
+const element = event.target.closest(".cx-row"), row = element?._w;
+if (this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
+!event.target.closest("a,button,input,select,textarea,[contenteditable]") && (event.shiftKey || this.querySelection && (event.ctrlKey || event.metaKey))) {
+this.setFocus(row, true); this.reportingSelectionIntent(row, event.shiftKey || !this.reportingRowSelected(row), event.shiftKey, event.ctrlKey || event.metaKey); return;
+}
+SELECTION_CONTROLS_BASE.onClick.call(this, event);
+if (this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
+!event.target.closest("a,button,input,select,textarea,[contenteditable]")) this.selectionAnchor = row._ri;
+},
+onKey(event) {
+const element = event.target.closest(".cx-row"), row = element?._w;
+if (this.view.reporting?.selectionControls && row && !row.status && event.key === " " && !event.defaultPrevented &&
+!event.isComposing && !event.altKey && !event.target.closest("a,button,input,select,textarea,[contenteditable]")) {
+event.preventDefault(); this.reportingSelectionIntent(row, !this.reportingRowSelected(row), event.shiftKey, event.ctrlKey || event.metaKey); return;
+}
+return SELECTION_CONTROLS_BASE.onKey.call(this, event);
+}
+});
 function createTreeGrid(host, options) {
 if (!host || !options || !options.view) {
 throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");

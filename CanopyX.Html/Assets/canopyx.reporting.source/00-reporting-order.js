@@ -47,9 +47,11 @@
 
   GRID_REPORTING.validate = view => {
     const options = view.reporting;
-    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage"].includes(key)) ||
+    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage", "selectionControls"].includes(key)) ||
         ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
       throw new Error("CanopyX: invalid reporting options.");
+    if (options.selectionControls !== undefined && typeof options.selectionControls !== "boolean" || options.selectionControls && view.selection === "none")
+      throw new Error("CanopyX: reporting selection controls need an enabled selection mode.");
     if (options.viewStorage !== undefined && !["session", "local"].includes(options.viewStorage) || options.viewStorage === "local" &&
         (typeof view.stateKey !== "string" || !view.stateKey.trim() || view.stateKey.length > 512))
       throw new Error("CanopyX: durable reporting preferences need session/local storage and an explicit bounded state key.");

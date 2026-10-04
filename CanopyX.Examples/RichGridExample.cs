@@ -53,6 +53,7 @@ internal static class RichGridExample {
             }
         }
         view.Reporting.Responsive = true;
+        view.Reporting.SelectionControls = true;
         view.StateKey = "responsive-inventory";
         view.Reporting.ViewStorage = CanopyGridViewStorage.Local;
         view.Reporting.FilterGroups = true;

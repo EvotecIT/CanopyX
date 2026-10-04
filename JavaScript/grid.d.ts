@@ -26,6 +26,8 @@ export type GridPresenter =
   | { readonly kind: "longText" };
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
+  /** Adds row checkboxes and explicit page/all-matching selection controls. Requires an enabled selection mode. */
+  readonly selectionControls?: boolean;
   /** Session preferences by default; local storage requires an explicit stateKey and retains sensitive query settings. */
   readonly viewStorage?: "session" | "local";
   readonly columnReorder?: boolean;
@@ -183,6 +185,17 @@ export interface GridPaging<Q extends AcceptedGridQuery = GridQuery> {
   readonly hasPrevious?: boolean;
 }
 export interface GridQueryEvent<Q extends AcceptedGridQuery = GridQuery> { query: Q; revision: string; total: GridCount<Q>; matched: GridCount<Q>; }
+/** A bounded selection of stable IDs, or an ephemeral complete accepted query with explicit exclusions. */
+export type GridSelection<Q extends AcceptedGridQuery = GridQuery> =
+  | { readonly kind: "ids"; readonly revision: string | null; readonly ids: readonly string[] }
+  | GridQuerySelection<Q>;
+export interface GridQuerySelection<Q extends AcceptedGridQuery = GridQuery> {
+  readonly kind: "query";
+  readonly query: Q;
+  readonly revision: string;
+  readonly matched: GridCount<Q>;
+  readonly excludedIds: readonly string[];
+}
 /** Exports retain the accepted revision, query ordering, columns and selected IDs at invocation. */
 export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
   readonly scope: "filtered" | "selected" | "all";
@@ -191,6 +204,8 @@ export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
   readonly total: GridCount<Q>;
   readonly matched: GridCount<Q>;
   readonly selection: readonly string[];
+  /** All-matching selected exports keep these accepted criteria. Hosts validate them rather than treating an empty ID list as empty selection. */
+  readonly querySelection?: GridQuerySelection<Q>;
   readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];
   readonly values: "raw" | "display";
   readonly timeZone: TimeZone;
@@ -253,7 +268,7 @@ export interface GridHostOptions<Q extends AcceptedGridQuery = GridQuery> {
   cachePageLimit?: number;
   requestTimeoutMs?: number;
   onQuery?: (event: GridQueryEvent<Q>) => void;
-  onSelect?: (event: { ids: string[] }) => void;
+  onSelect?: (event: { ids: string[]; selection?: GridSelection<Q> }) => void;
   onError?: (event: { error: Error }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
@@ -304,8 +319,19 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   getShareState?(): GridPreferenceState<Q>;
   /** Waits for serial/coalesced host saves; persistence failures leave the current grid usable and reject this call. */
   flushViewSettings?(): Promise<void>;
+  /** Reporting runtime: immutable IDs or accepted-query selection. Query selection is never persisted in a saved view. */
+  getSelectionDescriptor?(): GridSelection<Q>;
+  /** Requires selection controls and multiple selection. Query/revision changes retire this scope; paging preserves it. */
+  selectAllMatching?(): void;
+  /** Selects/deselects the full accepted page, including records outside the mounted viewport. */
+  selectPage?(selected?: boolean, options?: { signal?: AbortSignal }): Promise<GridSelection<Q>>;
+  /** Selects/deselects a currently loaded accepted record. */
+  setRowSelected?(id: string, selected: boolean): void;
+  /** Offset positions span accepted pages; cursor positions stay on the accepted page. At most 10000 records/IDs/exclusions. */
+  selectRange?(start: number, end: number, options?: { selected?: boolean; additive?: boolean; signal?: AbortSignal }): Promise<GridSelection<Q>>;
   setTimeZone(zone: TimeZone): void;
   getTimeZone(): TimeZone;
+  /** Explicit identities only. Throws in query-selection mode; use getSelectionDescriptor instead. */
   getSelection(): string[];
   setSelection(ids: string[]): void;
   clearSelection(): void;

@@ -13,6 +13,25 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
+const recordSelection = reportingApi.getSelectionDescriptor?.();
+if (recordSelection?.kind === "query") {
+  const matched: number | null = recordSelection.matched;
+  // @ts-expect-error Query selection exclusions are immutable.
+  recordSelection.excludedIds.push("injected");
+} else if (recordSelection) {
+  const revision: string | null = recordSelection.revision;
+  // @ts-expect-error Explicit selection snapshots are immutable.
+  recordSelection.ids.push("injected");
+}
+await reportingApi.selectPage?.(true, { signal: new AbortController().signal });
+await reportingApi.selectRange?.(0, 50, { additive: true });
+reportingApi.selectAllMatching?.();
+const selectedExport = reportingApi.prepareExport({ scope: "selected" }).request;
+if (selectedExport.querySelection) {
+  const capturedSearch: string = selectedExport.querySelection.query.search;
+  // @ts-expect-error Export selection descriptors remain immutable.
+  selectedExport.querySelection.matched = 10;
+}
 const storedPreferences = reportingApi.getViewSettings?.();
 if (storedPreferences?.current) {
   // @ts-expect-error A retained preference snapshot is immutable.
