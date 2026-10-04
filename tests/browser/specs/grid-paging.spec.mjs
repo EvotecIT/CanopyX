@@ -66,7 +66,8 @@ test("paging follows full filtering and sorting while exports retain the whole a
 
 test("controls handle page length, direct jumps, queued search, reset and empty results", async ({ page }) => {
   await open(page, definition({ searchDelayMs: 5000 }));
-  await page.getByRole("button", { name: "Last page", exact: true }).click();
+  // Safari pointer activation does not focus buttons. Exercise disabled-button focus return by keyboard.
+  await page.getByRole("button", { name: "Last page", exact: true }).press("Enter");
   await expect(page.locator(".cx-grid-page-range")).toHaveText("126–137 of 137 rows");
   await expect(page.getByRole("spinbutton", { name: "Page", exact: true })).toBeFocused();
   await page.getByRole("combobox", { name: "Rows per page", exact: true }).selectOption("50");
