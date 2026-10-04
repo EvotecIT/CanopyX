@@ -1,6 +1,16 @@
   // ---------- viewport remainder allocation and bounded loaded-row auto-fit ----------
   const LAYOUT_WIDTHS = DataGrid.prototype.applyWidths, LAYOUT_SET_WIDTH = DataGrid.prototype.setColumnWidth,
-    LAYOUT_START_RESIZE = DataGrid.prototype.startResize;
+    LAYOUT_START_RESIZE = DataGrid.prototype.startResize, LAYOUT_CELL = DataGrid.prototype.newCell, LAYOUT_BUILD = DataGrid.prototype.build;
+
+  // Reuse the neutral sizing and cell painters; flexible geometry belongs only to the optional reporting view.
+  DataGrid.prototype.newCell = function (index, width, kind) {
+    return LAYOUT_CELL.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind);
+  };
+  DataGrid.prototype.build = function () {
+    LAYOUT_BUILD.call(this);
+    this.resizeObserver.disconnect();
+    this.resizeObserver = new ResizeObserver(() => { this.applyWidths(); this.scheduleRender(); }); this.resizeObserver.observe(this.grid);
+  };
 
   DataGrid.prototype.applyWidths = function () {
     let total = 0;
@@ -20,14 +30,14 @@
       remaining -= used; flexible = flexible.filter(column => reportingLayout(this, column).maximum - column.renderWidth > 0.5);
       if (used < 0.5) break;
     }
-    LAYOUT_WIDTHS.call(this);
+    LAYOUT_WIDTHS.call(this, this.cols.map(column => column.renderWidth));
     this.cols.forEach((column, index) => {
       const grip = this.headCells[index].querySelector(".cx-resize"), policy = reportingLayout(this, column);
       grip.setAttribute("aria-valuemin", String(policy.minimum)); grip.setAttribute("aria-valuemax", String(policy.maximum));
     });
   };
   function reportingManualWidth(grid, column) {
-    column.width = renderedColumnWidth(column); if (column.flex !== undefined) column.flex = false;
+    column.width = column.renderWidth ?? column.width; if (column.flex !== undefined) column.flex = false;
   }
   DataGrid.prototype.setColumnWidth = function (id, width) {
     const column = this.columns.find(item => item.id === id);

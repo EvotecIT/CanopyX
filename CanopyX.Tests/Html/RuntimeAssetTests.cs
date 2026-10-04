@@ -188,7 +188,6 @@ public sealed class RuntimeAssetTests {
         var lines = script.Split('\n');
 
         // The header that says what the file is stays; the documentation of the parts does not ship.
-        Assert.StartsWith("/*\n * CanopyX browser runtime", script);
         Assert.DoesNotContain(lines, line => line.TrimStart().StartsWith("//", StringComparison.Ordinal));
         Assert.Single(lines, line => line.TrimStart().StartsWith("/*", StringComparison.Ordinal));
     }

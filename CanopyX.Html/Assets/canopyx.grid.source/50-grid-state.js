@@ -1,14 +1,9 @@
   // ---------- flat-grid state: accepted queries and bounded session views ----------
-  function gridStateColumn(column) { return Object.assign({ id: column.id, width: column.width, hidden: !!column.hidden },
-    column.flex === undefined ? {} : { flex: column.flex }); }
+  function gridStateColumn(column) { return { id: column.id, width: column.width, hidden: !!column.hidden }; }
   function gridStateColumns(grid, input) {
     if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
     const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
-    const columns = input.map(column => {
-      const saved = readStateColumn(column, seen);
-      if (declared.has(saved.id) && GRID_REPORTING.stateColumn) GRID_REPORTING.stateColumn(grid, column, saved);
-      return saved;
-    }).filter(column => declared.has(column.id));
+    const columns = input.map(column => readStateColumn(column, seen)).filter(column => declared.has(column.id));
     for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
     if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
     return columns;
@@ -80,8 +75,7 @@
         if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
         if (this.cancelResize) this.cancelResize();
         const current = new Map(this.columns.map(column => [column.id, column]));
-        this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { width: saved.width, hidden: saved.hidden },
-          saved.flex === undefined ? {} : { flex: saved.flex }));
+        this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
         this.setTimeZone(state.timeZone); this.setSelection(state.selection);
         this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
         return this.getQuery();

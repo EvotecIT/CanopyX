@@ -2,9 +2,7 @@ const runtimeHost = typeof window === "undefined" ? {} : window;
 if (runtimeHost.CanopyX && (runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)) {
 throw new Error("CanopyX: load the interactive runtime or module before the core script.");
 }
-/*
- * CanopyX browser runtime: canopyx/2.
- */
+/* CanopyX: canopyx/2. */
 (function (global) {
 "use strict";
 if (global.CanopyX) {
@@ -24,7 +22,6 @@ const DATE_CACHE = 4096;
 const SEARCH_CANDIDATES = 5;
 const MAX_PROTOCOL_INTEGER = 2147483647;
 const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
-function renderedColumnWidth(column) { return column.renderWidth === undefined ? column.width : column.renderWidth; }
 const activeGrids = new WeakMap();
 let instanceSeq = 0;
 function h(tag, className) {
@@ -1662,6 +1659,7 @@ setText(title, column.title);
 cell.appendChild(title);
 }
 const grip = h("span", "cx-resize");
+grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
 grip.tabIndex = 0;
 grip.setAttribute("role", "separator");
 grip.setAttribute("aria-orientation", "vertical");
@@ -1725,25 +1723,23 @@ return measured;
 }
 });
 Object.assign(TreeGrid.prototype, {
-applyWidths() {
+applyWidths(widths = this.cols.map(column => column.width)) {
 let sum = 0;
 this.cols.forEach((column, i) => {
-const width = renderedColumnWidth(column);
+const width = widths[i];
 this.headCells[i].style.width = width + "px";
 const grip = this.headCells[i].querySelector(".cx-resize");
-grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
 grip.setAttribute("aria-valuenow", String(width));
 grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
 sum += width;
 });
 this.rowWidth = sum;
-this.headRow.style.width = sum + "px";
-this.canvas.style.width = sum + "px";
+this.headRow.style.width = this.canvas.style.width = sum + "px";
 const resizeRow = (row) => {
 row.style.width = sum + "px";
 if (!row._kind || !row.firstElementChild) return;
 if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = renderedColumnWidth(column) + "px"; });
+else widths.forEach((width, i) => { if (row.children[i]) row.children[i].style.width = width + "px"; });
 };
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
@@ -2112,7 +2108,7 @@ rowEl._cells[0].text = label.appendChild(document.createTextNode(""));
 return;
 }
 rowEl._cells = this.cols.map((column, i) => {
-const cell = this.cell(rowEl, i, renderedColumnWidth(column), column.kind);
+const cell = this.cell(rowEl, i, column.width, column.kind);
 const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
 cell.className = slot.base;
 if (i === 0) {
@@ -2330,7 +2326,7 @@ Object.assign(TreeGrid.prototype, {
 paintHostSlot(slot, node, column, index, w) {
 const tree = slot.content !== slot.cell;
 const previous = slot.content;
-const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), renderedColumnWidth(column), column.kind);
+const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
 const shape = attributeShape(fresh);
 previous.replaceWith(fresh);
 this.setSlotContent(slot, fresh, tree);

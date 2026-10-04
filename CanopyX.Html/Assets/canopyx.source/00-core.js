@@ -1,6 +1,4 @@
-/*
- * CanopyX browser runtime: canopyx/2.
- */
+/* CanopyX: canopyx/2. */
 /*
  * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.
@@ -27,7 +25,6 @@
   const SEARCH_CANDIDATES = 5;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
-  function renderedColumnWidth(column) { return column.renderWidth === undefined ? column.width : column.renderWidth; }
   const activeGrids = new WeakMap();
   let instanceSeq = 0;
 

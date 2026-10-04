@@ -1,27 +1,25 @@
 
   // ---------- tree grid: column sizing ----------
   Object.assign(TreeGrid.prototype, {
-    applyWidths() {
+    applyWidths(widths = this.cols.map(column => column.width)) {
       let sum = 0;
       this.cols.forEach((column, i) => {
-        const width = renderedColumnWidth(column);
+        const width = widths[i];
         this.headCells[i].style.width = width + "px";
         const grip = this.headCells[i].querySelector(".cx-resize");
-        grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
         grip.setAttribute("aria-valuenow", String(width));
         grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
         sum += width;
       });
       this.rowWidth = sum;
-      this.headRow.style.width = sum + "px";
-      this.canvas.style.width = sum + "px";
+      this.headRow.style.width = this.canvas.style.width = sum + "px";
       // Both the original and pooled painters place grid cells directly under the row.
       // Keep recycled rows in sync without replacing host-owned cell content.
       const resizeRow = (row) => {
         row.style.width = sum + "px";
         if (!row._kind || !row.firstElementChild) return;
         if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = renderedColumnWidth(column) + "px"; });
+        else widths.forEach((width, i) => { if (row.children[i]) row.children[i].style.width = width + "px"; });
       };
       this.rendered.forEach(resizeRow);
       this.pool.forEach(resizeRow);
