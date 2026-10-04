@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import fs from "node:fs";
 import { viewPage, nextFrames } from "./support.mjs";
 const api="document.querySelector('[data-canopyx-host]').canopyx";
 const definition=(extra={})=>({protocol:'canopyx/2',type:'grid',id:'delivery',label:'Inventory',source:{kind:'inline'},rowHeight:28,
@@ -54,18 +55,23 @@ test('snapshot bounds reject full scopes without truncation and ordinary grids r
 });
 
 test('invalid file metadata is rejected before host generation and date/number raw values stay typed',async({page})=>{
-  await open(page,definition(),'window.exports=[];CanopyX.configure("delivery",{onExport(e){exports.push(e.request);}});');
+  const view=definition();view.rows[0].cells.name='=HYPERLINK("https://example.org","Literal formula text")';
+  view.rows[1].cells.name='https://example.org/record';
+  await open(page,view,'window.exports=[];CanopyX.configure("delivery",{onExport(e){exports.push(e.request);}});');
   const result=await page.evaluate(async()=>{
     const grid=document.querySelector('[data-canopyx-host]').canopyx,errors=[];
     for(const fileName of ['../secret','CON','nul.txt','report.','a\u202eb','a/b','x'.repeat(101)])
       try{await grid.exportToHost('xlsx',{scope:'all',fileName});}catch(e){errors.push(e.message);}
     await grid.exportToHost('xlsx',{scope:'all',fileName:'Inventory 2026',locale:'pl-PL',values:'raw'});
-    const snapshot=await grid.materializeExport({scope:'all',columns:['amount','when'],values:'raw'});
-    return {errors,exports,first:snapshot.rows[0]};
+    const snapshot=await grid.materializeExport({scope:'all',columns:['name','amount','when'],values:'raw'});
+    return {errors,exports,first:snapshot.rows[0],snapshot};
   });
   expect(result.errors).toHaveLength(7);expect(result.errors.every(e=>e.includes('safe basename'))).toBe(true);
   expect(result.exports).toHaveLength(1);expect(result.exports[0]).toMatchObject({fileName:'Inventory 2026',locale:'pl-PL',values:'raw'});
   expect(result.first.cells.amount).toBe(0.5);expect(result.first.cells.when).toBe('2026-10-04T12:30:00Z');
+  expect(result.snapshot.rows).toHaveLength(137);expect(result.first.cells.name).toBe(view.rows[0].cells.name);
+  expect(result.snapshot.rows[1].cells.name).toBe('https://example.org/record');
+  fs.writeFileSync(test.info().outputPath('accepted-export-snapshot.json'),JSON.stringify(result.snapshot,null,2));
 });
 
 const hostedSetup=`window.calls=[];window.held=false;CanopyX.configure('delivery',{source:{query(q,{signal}){
