@@ -5295,7 +5295,7 @@ return state;
 readGridState(state) {
 if (!state || state.version !== 1 || state.view !== this.view.id || !["utc", "local"].includes(state.timeZone) ||
 !Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER * this.rowH || !Array.isArray(state.selection))
-throw new Error("CanopyX: invalid or incompatible grid state.");
+throw new Error("CanopyX: invalid grid state.");
 const columns = gridStateColumns(this, state.columns);
 const selection = [...new Set(state.selection.map(id => { requireIdentifier(id, "state selection ID"); return id; }))];
 if (this.view.selection === "none" && selection.length || !this.multi && selection.length > 1) throw new Error("CanopyX: invalid state selection.");
@@ -5326,32 +5326,35 @@ this.restoringEpoch = epoch;
 try {
 await pending;
 if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
-if (this.cancelResize) this.cancelResize();
-const current = new Map(this.columns.map(column => [column.id, column]));
-this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
-this.setTimeZone(state.timeZone); this.setSelection(state.selection);
-this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
+this.applyStatePresentation(state);
 return this.getQuery();
 } finally {
 if (this.restoringEpoch === epoch) { this.restoringEpoch = null; this.stateChanged(); }
 }
 },
+applyStatePresentation(state) {
+if (this.cancelResize) this.cancelResize();
+const current = new Map(this.columns.map(column => [column.id, column]));
+this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
+this.setTimeZone(state.timeZone); this.setSelection(state.selection);
+this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
+},
 setColumnOrder(ids) {
 if (!Array.isArray(ids) || ids.length !== this.columns.length || new Set(ids).size !== ids.length ||
-ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: column order must name every declared column exactly once.");
+ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: name each column once.");
 if (this.cancelResize) this.cancelResize();
 const columns = new Map(this.columns.map(column => [column.id, column]));
 this.columns = ids.map(id => columns.get(id)); this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
 },
 viewName(name) {
-if (typeof name !== "string" || !name.trim() || name.trim().length > 100) throw new Error("CanopyX: a saved view needs a name of 1 to 100 characters.");
+if (typeof name !== "string" || !name.trim() || name.trim().length > 100) throw new Error("CanopyX: view names need 1 to 100 nonblank characters.");
 return name.trim();
 },
 getSavedViews() { return [...this.savedViews.keys()]; },
 saveView(name) {
 name = this.viewName(name);
-if (!this.getQuery()) throw new Error("CanopyX: wait for an accepted query before saving a view.");
-if (!this.savedViews.has(name) && this.savedViews.size >= 20) throw new Error("CanopyX: at most 20 saved views are supported.");
+if (!this.getQuery()) throw new Error("CanopyX: saving needs an accepted query.");
+if (!this.savedViews.has(name) && this.savedViews.size >= 20) throw new Error("CanopyX: maximum 20 saved views.");
 this.savedViews.set(name, this.getState()); this.writeStoredState(this.getState()); this.syncSavedViews();
 if (this.savedChoice) this.savedChoice.value = name;
 },
@@ -5387,6 +5390,7 @@ if (this.destroyed || this.searchComposing) return;
 if (this.queryForChange().search === input.value) return;
 this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
 };
+GRID_REPORTING.search?.(this, update);
 const schedule = () => {
 clearTimeout(this.searchTimer); this.searchTimer = null;
 if (this.searchComposing) return;
@@ -7247,6 +7251,7 @@ const active = document.activeElement;
 if (active && this.headRow.contains(active) && active.matches(".cx-column-move,.cx-resize")) this.focusReportingHeader(active);
 };
 function reportingManualWidth(grid, column) {
+grid.noteViewPreferenceIntent?.();
 column.width = column.renderWidth ?? column.width; if (column.flex !== undefined) column.flex = false;
 }
 DataGrid.prototype.setColumnWidth = function (id, width) {
@@ -7863,7 +7868,7 @@ return { current, views, defaultView: views.some(entry => entry.name === default
 }
 Object.assign(DataGrid.prototype, {
 prepareState() {
-this.viewSettingsIntent = 0; this.defaultSavedView = null;
+this.viewSettingsIntent = 0; this.viewPreferenceIntent = 0; this.defaultSavedView = null;
 if (this.opts.viewStore && (!this.view.reporting || typeof this.view.stateKey !== "string" || !this.view.stateKey.trim() ||
 this.view.stateKey.length > 512 || typeof this.opts.viewStore.load !== "function" || typeof this.opts.viewStore.save !== "function"))
 throw new Error("CanopyX: a host view store needs a reporting grid, bounded state key, load and save hooks.");
@@ -7895,7 +7900,10 @@ if (!this.view.reporting) return VIEW_STATE_BASE.writeStoredState.call(this, sta
 if (!this.storageKey || this.destroyed || this.loadingViewSettings || this.viewStorageRejected) return;
 try {
 const settings = this.getViewSettings();
-if (this.opts.viewStore) return this.queueViewSettings(settings);
+if (this.opts.viewStore) {
+this.viewPersistenceError = null;
+return this.queueViewSettings(settings);
+}
 global[this.view.reporting.viewStorage === "local" ? "localStorage" : "sessionStorage"].setItem(this.storageKey, JSON.stringify(settings));
 this.viewPersistenceError = null; this.setViewPreferenceError("");
 } catch (error) { this.viewPersistenceError = error; this.setViewPreferenceError(error.message); }
@@ -7938,13 +7946,37 @@ return gridFreeze(state);
 }
 });
 const VIEW_STORE_INITIALIZE = DataGrid.prototype.initializeState, VIEW_STORE_QUERY = DataGrid.prototype.setQuery,
-VIEW_STORE_API = GRID_REPORTING.api;
+VIEW_STORE_SEARCH = DataGrid.prototype.buildGridSearch, VIEW_STORE_STATE = DataGrid.prototype.setState,
+VIEW_STORE_PRESENTATION = DataGrid.prototype.applyStatePresentation, VIEW_STORE_API = GRID_REPORTING.api;
 GRID_REPORTING.api = (api, grid) => {
 VIEW_STORE_API?.(api, grid);
 for (const name of ["getViewSettings", "getDefaultView", "setDefaultView", "renameSavedView", "getShareState", "flushViewSettings"])
 api[name] = grid[name].bind(grid);
 };
+GRID_REPORTING.search = (grid, update) => {
+grid.scheduleGridSearch = delay => {
+clearTimeout(grid.searchTimer); grid.searchTimer = setTimeout(update, delay);
+};
+};
+for (const name of ["setColumnWidth", "setColumnVisible", "setColumnOrder", "setColumnPinned", "setTimeZone", "setSelection"]) {
+const original = DataGrid.prototype[name];
+DataGrid.prototype[name] = function (...args) {
+const result = original.apply(this, args); this.noteViewPreferenceIntent(); return result;
+};
+}
 Object.assign(DataGrid.prototype, {
+noteViewPreferenceIntent() { this.viewPreferenceIntent++; },
+buildGridSearch() {
+VIEW_STORE_SEARCH.call(this);
+for (const event of ["input", "compositionstart", "compositionend"])
+this.searchInput.addEventListener(event, () => {
+this.noteViewPreferenceIntent(); this.searchDeadline = performance.now() + this.searchDelayMs;
+}, { signal: this.lifetime.signal });
+},
+setState(input) { this.restorePreferenceIntent = this.viewPreferenceIntent; return VIEW_STORE_STATE.call(this, input); },
+applyStatePresentation(state) {
+if (this.restorePreferenceIntent === this.viewPreferenceIntent) VIEW_STORE_PRESENTATION.call(this, state);
+},
 setQuery(input, paging) {
 const pending = VIEW_STORE_QUERY.call(this, input, paging);
 this.viewQueryPromise = pending; return pending;
@@ -7952,7 +7984,7 @@ this.viewQueryPromise = pending; return pending;
 async initializeState() {
 if (!this.opts.viewStore) return VIEW_STORE_INITIALIZE.call(this);
 this.loadingViewSettings = true; this.setViewPreferenceError(this.labels.loading);
-const epoch = this.queryEpoch, intent = this.viewSettingsIntent;
+const epoch = this.queryEpoch, intent = this.viewSettingsIntent, preference = this.viewPreferenceIntent;
 try {
 const input = await this.runGridHook(signal => this.opts.viewStore.load({ key: this.storageKey, view: this.view.id, signal }));
 gridOperationActive(this);
@@ -7961,14 +7993,27 @@ if (input !== null && input !== undefined && intent === this.viewSettingsIntent)
 const settings = reportingStoredSettings(this, input);
 this.savedViews = new Map(settings.views.map(entry => [entry.name, entry.state]));
 this.defaultSavedView = settings.defaultView;
-if (epoch === this.queryEpoch) this.initialState = this.defaultSavedView ? this.savedViews.get(this.defaultSavedView) : settings.current;
+if (epoch === this.queryEpoch && preference === this.viewPreferenceIntent)
+this.initialState = this.defaultSavedView ? this.savedViews.get(this.defaultSavedView) : settings.current;
 this.syncSavedViews(); this.setViewPreferenceError(this.viewPreferenceError || "");
 }
 } catch (error) {
 if (this.destroyed) throw error;
 this.viewStoreFaulted = true; this.setViewPreferenceError(error.message);
 } finally { this.loadingViewSettings = false; }
-return epoch === this.queryEpoch ? VIEW_STORE_INITIALIZE.call(this) : this.viewQueryPromise;
+let pending = this.viewQueryPromise;
+if (epoch === this.queryEpoch) {
+const deadline = this.searchTimer == null ? null : this.searchDeadline, text = this.searchInput?.value;
+pending = VIEW_STORE_INITIALIZE.call(this);
+if (deadline !== null) {
+this.searchInput.value = text; this.scheduleGridSearch(Math.max(0, deadline - performance.now()));
+}
+}
+while (pending) {
+try { await pending; if (pending === this.viewQueryPromise) return this.getQuery(); }
+catch (error) { if (this.destroyed || error.name !== "AbortError" || pending === this.viewQueryPromise) throw error; }
+pending = this.viewQueryPromise;
+}
 },
 queueViewSettings(settings) {
 if (this.viewStoreFaulted) return;

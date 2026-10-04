@@ -15,6 +15,7 @@
         if (this.queryForChange().search === input.value) return;
         this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
       };
+      GRID_REPORTING.search?.(this, update);
       const schedule = () => {
         clearTimeout(this.searchTimer); this.searchTimer = null;
         if (this.searchComposing) return;

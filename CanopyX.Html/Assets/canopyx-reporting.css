@@ -320,3 +320,5 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;paddin
 .cx-grid-selection-controls { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
 .cx-grid-selection-status { font-size:.875em;overflow-wrap:anywhere; }
 .cx-data-grid .cx-grid-row-select { flex:0 0 auto;margin:0 6px 0 0;width:14px;height:14px;accent-color:var(--cx-accent); }
+.cx-grid-view-default,.cx-grid-view-storage { flex-basis:100%;margin:0;overflow-wrap:anywhere; }
+.cx-grid-view-storage:empty { display:none; }

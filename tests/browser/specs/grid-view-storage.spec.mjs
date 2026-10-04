@@ -102,6 +102,86 @@ test("host preference saves are serial, immutable and coalesce waiting changes t
   await page.evaluate("saveResolvers[1]()"); await page.evaluate("flushed");
 });
 
+test("delayed preferences retain newer column, time-zone and selection intent while importing named views", async ({ page }) => {
+  await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
+  await page.evaluate(() => {
+    const grid=document.querySelector('[data-canopyx-host]').canopyx;
+    grid.setColumnWidth('name',275); grid.setColumnOrder(['amount','name']); grid.setColumnVisible('amount',false);
+    grid.setColumnPinned('name','left'); grid.setTimeZone('local'); grid.setSelection(['r1']);
+  });
+  const desired=await page.evaluate(api+'.getState()');
+  await page.evaluate(input => loadResolve(input), settings()); await page.evaluate(api + ".ready");
+  const current=await page.evaluate(api + ".getState()");
+  expect(current.columns).toEqual(desired.columns);
+  expect(current.columns.find(c=>c.id==='amount').hidden).toBe(true);
+  expect(current.columns.find(c=>c.id==='name')).toMatchObject({width:275,pin:'left'});
+  expect(current.timeZone).toBe('local'); expect(current.selection).toEqual(['r1']); expect(current.query.search).toBe('');
+  expect(await page.evaluate(api + ".getSavedViews()")).toEqual(['Archives']);
+  expect(await page.evaluate(api + ".getDefaultView()")).toBe('Archives');
+});
+
+test("delayed preferences preserve a queued search deadline and composition text", async ({ page }) => {
+  const view=definition(); view.searchDelayMs=500;
+  const setup="CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});";
+  await open(page,view,setup,false);
+  await page.evaluate(input=>{const search=document.querySelector('.cx-search-input');search.value='Source';
+    search.dispatchEvent(new InputEvent('input',{bubbles:true}));loadResolve(input);},settings());
+  await page.evaluate(api+'.ready'); await expect(page.locator('.cx-search-input')).toHaveValue('Source');
+  await expect.poll(()=>page.evaluate(api+'.getQuery().search')).toBe('Source');
+  await open(page,view,setup,false);
+  await page.evaluate(input=>{const search=document.querySelector('.cx-search-input');
+    search.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true}));search.value='Source';
+    search.dispatchEvent(new InputEvent('input',{bubbles:true,isComposing:true}));loadResolve(input);},settings());
+  await page.evaluate(api+'.ready'); await expect(page.locator('.cx-search-input')).toHaveValue('Source');
+  expect(await page.evaluate(api+'.getQuery().search')).toBe('');
+  await page.locator('.cx-search-input').dispatchEvent('compositionend');
+  await expect.poll(()=>page.evaluate(api+'.getQuery().search')).toBe('Source');
+});
+
+test("a corrected bounded envelope flushes only after a fresh host acknowledgement", async ({ page }) => {
+  await open(page,definition(),"window.saved=[];CanopyX.configure('prefs',{viewStore:{load(){return null;},save({settings}){saved.push(settings);return new Promise(r=>window.saveResolve=r);}}});");
+  await page.evaluate(()=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;
+    grid.setSelection(Array.from({length:5000},(_,i)=>'record-'+i+'x'.repeat(220)));});
+  expect(await page.evaluate(api+'.flushViewSettings().catch(e=>e.message)')).toContain('limit');
+  expect(await page.evaluate('saved.length')).toBe(0);
+  await page.evaluate(()=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;grid.setSelection(['r1']);
+    window.flushResult='pending';window.flushed=grid.flushViewSettings().then(()=>flushResult='acknowledged',e=>flushResult=e.message);});
+  expect(await page.evaluate('saved.length')).toBe(1); expect(await page.evaluate('flushResult')).toBe('pending');
+  await page.evaluate('saveResolve()'); await page.evaluate('flushed');
+  expect(await page.evaluate('flushResult')).toBe('acknowledged'); await expect(page.locator('.cx-grid-view-storage')).toHaveText('');
+});
+
+test("keyboard resizing during preference loading and presentation edits during query restoration win", async ({ page }) => {
+  await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
+  await page.locator('[data-cx-column="name"] .cx-resize').press('ArrowRight');
+  await page.evaluate(input => loadResolve(input),settings()); await page.evaluate(api+'.ready');
+  expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(190);
+  const input=settings(), rows=definition().rows.filter(row=>row.cells.name==='Archive').slice(0,10);
+  await open(page, definition(), `CanopyX.configure('prefs',{viewStore:{load(){return ${JSON.stringify(input)};},save(){}},
+    source:{query(query){window.requested=query;return new Promise(r=>window.queryResolve=r);}}});`, false);
+  await expect.poll(()=>page.evaluate('!!window.queryResolve')).toBe(true);
+  await page.evaluate(api+".setColumnWidth('name',290)");
+  await page.evaluate(items=>queryResolve({protocol:'canopyx/2',type:'gridPage',view:'prefs',revision:'v1',offset:0,total:40,matched:20,items}),rows);
+  await page.evaluate(api+'.ready'); expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(290);
+  expect(await page.evaluate(api+'.getQuery().search')).toBe('Archive');
+});
+
+test("readiness follows a queued search that supersedes slow initialization but exposes real query failures",async({page})=>{
+  const view=definition();view.searchDelayMs=100;
+  for (const failing of [false,true]) {
+    await open(page,view,`window.failSearch=${failing};CanopyX.configure('prefs',{viewStore:{
+      load(){return new Promise(r=>window.loadResolve=r);},save(){}},source:{query(q){
+      if(q.search){if(failSearch)throw new Error('Search source failed');return {protocol:'canopyx/2',type:'gridPage',view:'prefs',
+        revision:'v1',offset:0,total:40,matched:20,items:${JSON.stringify(definition().rows.filter(r=>r.cells.name==='Source').slice(0,10))}};}
+      return new Promise(r=>window.definitionResolve=r);}}});`,false);
+    await page.evaluate(input=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;
+      window.readiness=grid.ready.then(()=>grid.getQuery().search,e=>e.name+': '+e.message);
+      const search=document.querySelector('.cx-search-input');search.value='Source';
+      search.dispatchEvent(new InputEvent('input',{bubbles:true}));loadResolve(input);},settings());
+    expect(await page.evaluate('readiness')).toBe(failing?'Error: Search source failed':'Source');
+  }
+});
+
 test("a timed-out uncooperative save is cancelled and never followed by a concurrent overwrite", async ({ page }) => {
   await open(page, definition(), `window.saved=[];CanopyX.configure('prefs',{requestTimeoutMs:100,viewStore:{load(){return null;},
     save(event){saved.push(event);return new Promise(resolve=>window.lateSave=resolve);}}});`);
