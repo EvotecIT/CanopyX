@@ -85,10 +85,10 @@ Define typed columns and complete inline records with `CanopyGridView`, then wri
 var inventory = new CanopyGridView("inventory", "Inventory");
 inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
 inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
-var record = new CanopyGridRow("record-17");
-record.Cells["name"] = "Archive";
-record.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
-inventory.Rows.Add(record);
+var row = new CanopyGridRow("record-17");
+row.Cells["name"] = "Archive";
+row.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
+inventory.Rows.Add(row);
 inventory.SaveHtmlPage("inventory.html");
 ```
 
@@ -106,7 +106,14 @@ JavaScript hosts import `createDataGrid` from `@evotecit/canopyx/grid` and the m
 
 The grid toolbar provides typed filters, column visibility and ordering, and named saved views. Text/category membership accepts one raw value per line; date operands use ISO timestamps in UTC or with an explicit offset. Columns resize by dragging their separators or using Left/Right when a separator has focus. Headers stay visible while rows scroll.
 
-Set `inventory.Reporting.SelectionControls = true` for row checkboxes, whole-page selection, Shift ranges and a selected-record summary. “Select all matching” captures the accepted query and revision with bounded exclusions, so a large selection does not allocate every record ID. `api.getSelectionDescriptor()` distinguishes explicit identities from that query scope; `getSelection()` is available for explicit identities. Selected CSV/copy exports use the captured scope, and host export hooks receive `request.querySelection` when active. Hosts validate that descriptor and its authorization. Paging preserves selection; changed criteria clear query selection and a new revision clears both modes. Query selection is not retained in saved preferences. See [record selection scopes](docs/data-protocol.md#record-selection-scopes) for range, cancellation and cursor behavior.
+Enable reporting selection after defining the inventory above, before writing the page:
+
+```csharp
+inventory.Reporting = new CanopyGridReporting { SelectionControls = true };
+inventory.Selection = CanopySelectionMode.Multiple;
+```
+
+This adds row checkboxes, whole-page selection, Shift ranges and a selected-record summary. “Select all matching” captures the accepted query and revision with bounded exclusions, so a large selection does not allocate every record ID. `api.getSelectionDescriptor()` distinguishes explicit identities from that query scope; `getSelection()` is available for explicit identities. Selected CSV/copy exports use the captured scope, and host export hooks receive `request.querySelection` when active. Hosts validate that descriptor and its authorization. Paging preserves selection; changed criteria clear query selection and a new revision clears both modes. Query selection is not retained in saved preferences. See [record selection scopes](docs/data-protocol.md#record-selection-scopes) for range, cancellation and cursor behavior.
 
 Reporting grids also offer direct header moves with `inventory.Reporting.ColumnReorder = true`. Drag a header's move handle or use Left/Right while that handle has focus. Hidden columns, sorting, saved state and export order follow stable column IDs. `inventory.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 600, flex: 1)` constrains its width and allocates spare viewport space. A manual resize disables that column's flex sizing; resetting or restoring a saved view restores its sizing intent.
 
