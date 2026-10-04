@@ -6,10 +6,10 @@
       const rows = page.items.map((item, i) => ({ key: item.id, h: item, _ri: page.offset + i, hpx: this.rowH }));
       const incoming = new Map(rows.map(row => [row.key, row._ri]));
       for (const cached of this.rowCache.values()) if (incoming.has(cached.key) && incoming.get(cached.key) !== cached._ri)
-        throw new Error("CanopyX: a grid row ID occurs at different positions in one snapshot.");
+        throw new Error("CanopyX: inconsistent grid row identity.");
       for (const row of rows) {
         const existing = this.rowCache.get(row._ri);
-        if (existing && existing.key !== row.key) throw new Error("CanopyX: a grid position changed identity in one snapshot.");
+        if (existing && existing.key !== row.key) throw new Error("CanopyX: inconsistent grid row identity.");
       }
       const retained = rows.map(row => this.rowCache.get(row._ri) || row);
       let restoreFocus = false;
@@ -28,29 +28,30 @@
 
     trimPages() {
       if (!this.window || this.pages.size <= this.cachePageLimit) return;
+      const ranges = this.window.ranges || [this.window];
+      const retained = page => page.rows?.includes(this.focused) || ranges.some(range => page.offset <= range.last &&
+        page.offset + (page.rows?.length ?? this.pageSize) > range.first);
       const center = (this.window.first + this.window.last) / 2;
-      const removable = [...this.pages.values()].filter(page => page.rows && !page.rows.some(row =>
-        row === this.focused || row._ri >= this.window.first && row._ri <= this.window.last));
+      // Loaded and failed pages share the same bounded window and focus retention rules.
+      const removable = [...this.pages.values()].filter(page => !retained(page));
       removable.sort((a, b) => Math.abs(b.offset - center) - Math.abs(a.offset - center));
       while (this.pages.size > this.cachePageLimit && removable.length) {
         const page = removable.shift(); this.pages.delete(page.offset);
-        for (const row of page.rows) if (this.rowCache.get(row._ri) === row) this.rowCache.delete(row._ri);
+        for (const row of page.rows || []) if (this.rowCache.get(row._ri) === row) this.rowCache.delete(row._ri);
       }
-      // Failed pages are bounded too. A later explicit retry may request them again.
-      for (const [offset, page] of this.pages) if (this.pages.size > this.cachePageLimit && page.error &&
-          (offset + this.pageSize <= this.window.first || offset > this.window.last)) this.pages.delete(offset);
     },
 
     loadWindow() {
       if (this.cursor || !this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
       const offsets = new Set();
       const bounds = this.rowBounds();
-      for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
-        if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
+      for (const range of this.window.ranges || [this.window])
+        for (let index = Math.max(bounds.first, range.first); index <= Math.min(bounds.last, range.last); index++)
+          if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
       if (this.focused?.status && this.focused._ri >= 0) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
       for (const offset of offsets) {
         if (this.pendingPages.size >= 4) break;
-        if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) this.loadPage(offset);
+        if (!this.pendingPages.has(offset) && !this.pages.get(offset)?.error) this.loadPage(offset);
       }
     },
 

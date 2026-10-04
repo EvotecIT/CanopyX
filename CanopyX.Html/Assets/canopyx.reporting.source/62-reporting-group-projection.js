@@ -40,9 +40,14 @@
           return !segment || row._ri > segment.last || segment.length === 1 || this.indexOf(row) < 0 ? -1 : segment.start + 1 + row._ri - segment.first;
         },
         recordWindow: (first, last) => {
-          let start = Infinity, end = -1;
-          for (let i = first; i <= last; i++) { const row = projection.rowItem(i); if (row && !row.group) { start = Math.min(start, row._ri); end = Math.max(end, row._ri); } }
-          return { first: start === Infinity ? bounds.first : start, last: end };
+          const ranges = [];
+          // Hidden groups can separate adjacent presentation rows by millions of record positions.
+          // Preserve each visible record interval for both paging and cache retention.
+          for (const segment of segments) {
+            const start = Math.max(first, segment.start + 1), end = Math.min(last, segment.start + segment.length - 1);
+            if (start <= end) ranges.push({ first: segment.first + start - segment.start - 1, last: segment.first + end - segment.start - 1 });
+          }
+          return { first: ranges[0]?.first ?? bounds.first, last: ranges.at(-1)?.last ?? -1, ranges };
         }
       };
       const focus = this.focused;

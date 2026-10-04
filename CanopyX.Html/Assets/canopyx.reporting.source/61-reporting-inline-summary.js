@@ -1,6 +1,6 @@
   // ---------- generic aggregates over the same full-query projection used by inline pages ----------
   function reportingAggregateValues(view, rows, first = 0, last = rows.length) {
-    const values = {};
+    const values = Object.create(null);
     for (const aggregate of view.reporting.aggregates || []) {
       const column = view.columns.find(item => item.id === aggregate.column);
       let count = 0, sum = 0, correction = 0, minimum = Infinity, maximum = -Infinity;

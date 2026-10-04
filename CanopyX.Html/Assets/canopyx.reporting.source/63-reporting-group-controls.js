@@ -94,9 +94,20 @@
       }
       if (!["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(event.key)) return GROUP_BASE.onKey.call(this, event);
       const step = event.key.startsWith("Page") ? Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)) : 1;
-      const index = Math.max(0, Math.min(this.rowProjection.rowCount() - 1, this.rowProjection.indexOf(row) + (/Up$/.test(event.key) ? -step : step)));
-      const target = this.rowProjection.rowItem(index), cells = this.rowCells(this.rendered.get(row)), column = cells.findIndex(cell => cell.contains(event.target));
+      const direction = /Up$/.test(event.key) ? -1 : 1, proposed = this.rowProjection.indexOf(row) + direction * step;
+      const cells = this.rowCells(this.rendered.get(row)), column = cells.findIndex(cell => cell.contains(event.target));
       event.preventDefault(); event.stopPropagation();
+      if (this.paged && (proposed < 0 || proposed >= this.rowProjection.rowCount())) {
+        const bounds = this.rowBounds();
+        if (row.group && (direction < 0 && bounds.first === 0 || direction > 0 && bounds.last === this.rowCount() - 1)) {
+          this.setFocus(this.rowProjection.rowItem(Math.max(0, Math.min(this.rowProjection.rowCount() - 1, proposed))), true); return;
+        }
+        const ordinal = row.group ? (direction < 0 ? bounds.first - step : bounds.last + step) : row._ri + direction * step;
+        this.focusResult(Math.max(0, Math.min(this.rowCount() - 1, ordinal)), true, column, null)
+          .catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
+        return;
+      }
+      const index = Math.max(0, Math.min(this.rowProjection.rowCount() - 1, proposed)), target = this.rowProjection.rowItem(index);
       if (target?.group) this.setFocus(target, true);
       else if (target) this.focusResult(target._ri, true, column, null).catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
     }
