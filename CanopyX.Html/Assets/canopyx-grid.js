@@ -5679,14 +5679,15 @@ const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: u
 search: options.scope === "filtered" ? this.acceptedQuery.search : "",
 filterGroup: options.scope === "filtered" ? this.acceptedQuery.filterGroup : undefined,
 filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] });
-const request = gridFreeze({ scope: options.scope, query: query, revision: this.snapshot.revision,
+const request = gridFreeze({ scope: options.scope, query, revision: this.snapshot.revision,
 total: this.snapshot.total, matched: this.snapshot.matched, selection: selected,
-columns: columnIds.map(id => { const column = this.columns.find(item => item.id === id); return { id: id, title: column.title, kind: column.kind }; }),
+columns: columnIds.map(id => { const column = this.columns.find(item => item.id === id); return { id, title: column.title, kind: column.kind }; }),
 values: options.values || "display", timeZone: this.local ? "local" : "utc" });
 const signal = options.signal, grid = this;
-return Object.freeze({ request: request, rows: () => grid.exportRows(request, signal) });
+return Object.freeze({ request, rows: () => grid.exportRows(request, signal) });
 },
 async *exportRows(request, signal) {
+const { scope } = request;
 const controller = new AbortController(), abort = () => controller.abort();
 this.lifetime.signal.addEventListener("abort", abort, { once: true });
 if (signal) signal.addEventListener("abort", abort, { once: true });
@@ -5694,25 +5695,26 @@ try {
 if (this.destroyed || signal && signal.aborted) controller.abort();
 gridOperationActive(this, controller.signal);
 const remaining = new Set(request.selection), seen = new Set();
-if (request.scope === "selected" && !remaining.size) return;
-let expected = { revision: request.revision, total: request.total,
-matched: request.scope === "filtered" ? request.matched : this.cursor ? undefined : request.total };
+if (scope === "selected" && !remaining.size) return;
+const expected = { revision: request.revision, total: request.total,
+matched: scope === "filtered" ? request.matched : this.cursor ? undefined : request.total };
 const tokens = new Set(); let cursor, offset = 0;
 while (this.cursor || offset < expected.matched) {
 gridOperationActive(this, controller.signal);
 const query = gridQuery(this.view, { ...request.query, offset: this.cursor ? undefined : offset, cursor });
 const page = (this.cursor ? validateGridCursorPage : validateGridPage)(await this.requestPage(query, controller.signal), this.view, query, expected);
-if (this.cursor && (page.offset !== offset || request.scope !== "filtered" && page.total !== null && page.matched !== page.total))
+if (this.cursor && (page.offset !== offset || scope !== "filtered" && page.total !== null &&
+(page.matched !== null && page.matched !== page.total || page.nextCursor === undefined && page.offset + page.items.length !== page.total)))
 throw new Error("CanopyX: incomplete or noncontiguous cursor export.");
-expected = { revision: page.revision, total: page.total, matched: page.matched };
+expected.matched = page.matched;
 for (const row of page.items) {
 gridOperationActive(this, controller.signal);
 if (seen.has(row.id)) throw new Error("CanopyX: export encountered a repeated row identity.");
 seen.add(row.id);
-if (request.scope !== "selected" || remaining.delete(row.id)) {
+if (scope !== "selected" || remaining.delete(row.id)) {
 const cells = Object.create(null);
 for (const column of request.columns) if (Object.prototype.hasOwnProperty.call(row.cells, column.id)) cells[column.id] = row.cells[column.id];
-yield gridFreeze({ id: row.id, cells: cells });
+yield gridFreeze({ id: row.id, cells });
 gridOperationActive(this, controller.signal);
 }
 }
@@ -5748,9 +5750,9 @@ return lines.join("\r\n") + "\r\n";
 },
 toCsv(options) { return this.exportText(this.prepareExport(options), options.maxRows, ",", options.signal); },
 exportToHost(format, options) {
-const exported = this.prepareExport(options);
+const { request } = this.prepareExport(options);
 if (typeof format !== "string" || !format.trim() || typeof this.opts.onExport !== "function") throw new Error("CanopyX: host export needs a format and an onExport hook.");
-return this.runGridHook(signal => this.opts.onExport({ format: format, request: exported.request, signal: signal }), options.signal);
+return this.runGridHook(signal => this.opts.onExport({ format, request, signal }), options.signal);
 }
 });
 Object.assign(DataGrid.prototype, {

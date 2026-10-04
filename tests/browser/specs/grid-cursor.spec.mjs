@@ -21,7 +21,7 @@ CanopyX.configure('cursor',{source:{navigation:'cursor',query(query,{signal}) {
   if(query.cursor&&(position.shape!==shape||position.revision!==query.revision)) throw new Error('Invalid host cursor');
   const offset=position.offset,items=rows.slice(offset,offset+query.limit);
   const result={protocol:'canopyx/2',type:'gridCursorPage',view:'cursor',revision:'r1',offset,
-    total:window.known?13:null,matched:window.known?rows.length:null,items};
+    total:(window.totalKnown??window.known)?13:null,matched:(window.matchedKnown??window.known)?rows.length:null,items};
   if(offset+items.length<rows.length) result.nextCursor=token(offset+items.length);
   if(offset) result.previousCursor=token(Math.max(0,offset-query.limit));
   if(window.failure==='revision') result.revision='r2';
@@ -30,6 +30,7 @@ CanopyX.configure('cursor',{source:{navigation:'cursor',query(query,{signal}) {
   if(window.failure==='count') result.matched=99;
   if(window.failure==='token') result.nextCursor=query.cursor;
   if(window.failure==='transport') throw new Error('Host unavailable');
+  if(window.failure==='truncated'&&offset+query.limit>=rows.length) {result.items=items.slice(0,-1);delete result.nextCursor;}
   return hold&&offset?new Promise(resolve=>pending.push({signal,accept:()=>resolve(result)})):result;
 }}});`;
 
@@ -121,6 +122,47 @@ test("unknown-count exports replay the captured revision and scope independently
     catch (error) { return error.message; }
   });
   expect(error).toContain("exceeds the client row limit");
+});
+
+for (const totalKnown of [false, true]) for (const matchedKnown of [false, true])
+test(`cursor export scopes support independently nullable counts: total ${totalKnown}, matched ${matchedKnown}`, async ({ page }) => {
+  await open(page, false, `window.totalKnown=${totalKnown};window.matchedKnown=${matchedKnown};`);
+  const result = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    await grid.setQuery({ filters: [{ column: "amount", operator: "ge", values: [10] }] });
+    grid.setSelection(["row-11"]);
+    const scopes = {};
+    for (const scope of ["filtered", "all", "selected"]) {
+      const exported = grid.prepareExport({ scope }), ids = [];
+      for await (const row of exported.rows()) ids.push(row.id);
+      scopes[scope] = { ids, request: exported.request, csv: await grid.toCsv({ scope, values: "raw" }) };
+    }
+    return { scopes, paging: grid.getPaging() };
+  });
+  expect(result.scopes.filtered.ids).toEqual(["row-10", "row-11", "row-12"]);
+  expect(result.scopes.all.ids).toEqual(Array.from({ length: 13 }, (_, i) => "row-" + i));
+  expect(result.scopes.selected.ids).toEqual(["row-11"]);
+  for (const [scope, value] of Object.entries(result.scopes)) {
+    expect(value.request.total).toBe(totalKnown ? 13 : null);
+    expect(value.request.matched).toBe(matchedKnown ? 3 : null);
+    expect(value.csv.trim().split("\r\n")).toHaveLength(value.ids.length + 1);
+    if (scope === "selected") expect(value.csv).toContain("Row 11,11");
+  }
+  expect(result.paging.matched).toBe(matchedKnown ? 3 : null);
+});
+
+test("a known-total cursor export rejects premature traversal completion with an unknown matched count", async ({ page }) => {
+  await open(page, false, "window.totalKnown=true;window.matchedKnown=false;");
+  const errors = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    grid.setSelection(["row-11"]); window.failure = "truncated";
+    const errors = [];
+    for (const scope of ["all", "selected"]) {
+      try { await grid.toCsv({ scope }); errors.push(null); } catch (error) { errors.push(error.message); }
+    }
+    return errors;
+  });
+  expect(errors).toEqual(Array(2).fill("CanopyX: incomplete or noncontiguous cursor export."));
 });
 
 test("repeated cursor commands coalesce; changed query and destruction settle uncooperative sources", async ({ page }) => {
