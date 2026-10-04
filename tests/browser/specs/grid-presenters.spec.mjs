@@ -113,6 +113,10 @@ test("compact dark complete-text dialogs retain visible gutters and keyboard clo
   expect(bounds.x).toBeGreaterThanOrEqual(12); expect(bounds.x + bounds.width).toBeLessThanOrEqual(378);
   await dialog.locator("pre").press("Tab");
   const close = page.getByRole("button", { name: "Close complete text" }); await expect(close).toBeFocused();
+  await close.press("Shift+Tab"); await expect(dialog.locator("pre")).toBeFocused();
+  await dialog.locator("pre").press("Shift+Tab"); await expect(close).toBeFocused();
+  await close.press("Tab"); await expect(dialog.locator("pre")).toBeFocused();
+  await dialog.locator("pre").press("Tab"); await expect(close).toBeFocused();
   await close.press("Enter"); await expect(dialog).toHaveCount(0);
 });
 

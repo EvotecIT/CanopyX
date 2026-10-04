@@ -8,6 +8,9 @@
   const REPORT_FILTER_BASE = {};
   for (const method of ["buildGridFilters", "renderGridFilters", "addGridFilter", "readGridFilter", "buildHeader"])
     REPORT_FILTER_BASE[method] = DataGrid.prototype[method];
+  REPORT_FILTER_BASE.syncQuerySummary = DataGrid.prototype.syncQuerySummary;
+
+  function reportingFilterShape(query) { return JSON.stringify([query?.filters || [], query?.filterGroup || null]); }
 
   function reportingRangeRows(filters) {
     const rows = [];
@@ -35,6 +38,27 @@
   }
 
   Object.assign(DataGrid.prototype, {
+    syncQuerySummary() {
+      REPORT_FILTER_BASE.syncQuerySummary.call(this);
+      const controls = this.reportingFilters, shape = reportingFilterShape(this.getQuery());
+      if (!controls?.details.open || shape === this.reportingFilterDraftBase) return;
+      if (this.reportingFilterSubmitEpoch === this.queryEpoch) this.reportingFilterDraftBase = shape;
+      else {
+        // An accepted chip/API/restore change retires the old draft, rather than silently reinstalling it on Apply.
+        const hadFocus = controls.panel.contains(document.activeElement);
+        controls.details.open = false;
+        if (hadFocus) controls.details.querySelector("summary").focus({ preventScroll: true });
+      }
+    },
+
+    applyReportingFilterQuery(query, error) {
+      const pending = this.setQuery(query), epoch = this.queryEpoch;
+      this.reportingFilterSubmitEpoch = epoch;
+      pending.then(() => setText(error, ""), failure => reportingFilterError(error, failure.message)).finally(() => {
+        if (this.reportingFilterSubmitEpoch === epoch) this.reportingFilterSubmitEpoch = null;
+      });
+    },
+
     buildGridFilters() {
       if (!this.view.reporting) return REPORT_FILTER_BASE.buildGridFilters.call(this);
       this.reportingFilters = this.controlPanel(this.labels.gridFilters, "cx-grid-filters", panel => this.renderGridFilters(panel));
@@ -50,6 +74,7 @@
     renderGridFilters(panel) {
       if (!this.view.reporting) return REPORT_FILTER_BASE.renderGridFilters.call(this, panel);
       panel.textContent = "";
+      this.reportingFilterDraftBase = reportingFilterShape(this.queryForChange());
       const form = h("form", "cx-grid-filter-form"), rows = h("div"), error = h("p", "cx-grid-control-error");
       panel.classList.toggle("cx-grid-group-editor", !!this.view.reporting.filterGroups);
       error.setAttribute("role", "status");
@@ -59,8 +84,8 @@
       const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
       form.appendChild(gridButton(this.labels.gridClearFilters, () => {
         rows.textContent = "";
-        if (groups) groups.textContent = "";
-        this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => reportingFilterError(error, failure.message));
+        if (groups) { groups.textContent = ""; groups._sync(); }
+        this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined }), error);
       }));
       form.appendChild(error); panel.appendChild(form);
       form.addEventListener("submit", event => {
@@ -68,8 +93,7 @@
         try {
           const filters = [...rows.children].flatMap(row => this.readGridFilter(row));
           const filterGroup = groups ? this.readReportingFilterGroups(groups) : this.queryForChange().filterGroup;
-          this.setQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }))
-            .then(() => setText(error, ""), failure => reportingFilterError(error, failure.message));
+          this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }), error);
         } catch (failure) { reportingFilterError(error, failure.message); }
       });
       const requested = this.reportingFilterColumn;

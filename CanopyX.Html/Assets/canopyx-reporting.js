@@ -6817,6 +6817,8 @@ gridTrue: "True", gridFalse: "False", gridHeaderFilter: "Filter {column}"
 const REPORT_FILTER_BASE = {};
 for (const method of ["buildGridFilters", "renderGridFilters", "addGridFilter", "readGridFilter", "buildHeader"])
 REPORT_FILTER_BASE[method] = DataGrid.prototype[method];
+REPORT_FILTER_BASE.syncQuerySummary = DataGrid.prototype.syncQuerySummary;
+function reportingFilterShape(query) { return JSON.stringify([query?.filters || [], query?.filterGroup || null]); }
 function reportingRangeRows(filters) {
 const rows = [];
 for (let index = 0; index < filters.length; index++) {
@@ -6840,6 +6842,24 @@ setText(element, message);
 if (message && element.getClientRects().length) element.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 Object.assign(DataGrid.prototype, {
+syncQuerySummary() {
+REPORT_FILTER_BASE.syncQuerySummary.call(this);
+const controls = this.reportingFilters, shape = reportingFilterShape(this.getQuery());
+if (!controls?.details.open || shape === this.reportingFilterDraftBase) return;
+if (this.reportingFilterSubmitEpoch === this.queryEpoch) this.reportingFilterDraftBase = shape;
+else {
+const hadFocus = controls.panel.contains(document.activeElement);
+controls.details.open = false;
+if (hadFocus) controls.details.querySelector("summary").focus({ preventScroll: true });
+}
+},
+applyReportingFilterQuery(query, error) {
+const pending = this.setQuery(query), epoch = this.queryEpoch;
+this.reportingFilterSubmitEpoch = epoch;
+pending.then(() => setText(error, ""), failure => reportingFilterError(error, failure.message)).finally(() => {
+if (this.reportingFilterSubmitEpoch === epoch) this.reportingFilterSubmitEpoch = null;
+});
+},
 buildGridFilters() {
 if (!this.view.reporting) return REPORT_FILTER_BASE.buildGridFilters.call(this);
 this.reportingFilters = this.controlPanel(this.labels.gridFilters, "cx-grid-filters", panel => this.renderGridFilters(panel));
@@ -6854,6 +6874,7 @@ this.reportingFilters.details.addEventListener("toggle", () => this.syncReportin
 renderGridFilters(panel) {
 if (!this.view.reporting) return REPORT_FILTER_BASE.renderGridFilters.call(this, panel);
 panel.textContent = "";
+this.reportingFilterDraftBase = reportingFilterShape(this.queryForChange());
 const form = h("form", "cx-grid-filter-form"), rows = h("div"), error = h("p", "cx-grid-control-error");
 panel.classList.toggle("cx-grid-group-editor", !!this.view.reporting.filterGroups);
 error.setAttribute("role", "status");
@@ -6863,8 +6884,8 @@ const groups = this.view.reporting.filterGroups ? this.buildReportingFilterGroup
 const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
 form.appendChild(gridButton(this.labels.gridClearFilters, () => {
 rows.textContent = "";
-if (groups) groups.textContent = "";
-this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => reportingFilterError(error, failure.message));
+if (groups) { groups.textContent = ""; groups._sync(); }
+this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined }), error);
 }));
 form.appendChild(error); panel.appendChild(form);
 form.addEventListener("submit", event => {
@@ -6872,8 +6893,7 @@ event.preventDefault();
 try {
 const filters = [...rows.children].flatMap(row => this.readGridFilter(row));
 const filterGroup = groups ? this.readReportingFilterGroups(groups) : this.queryForChange().filterGroup;
-this.setQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }))
-.then(() => setText(error, ""), failure => reportingFilterError(error, failure.message));
+this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }), error);
 } catch (failure) { reportingFilterError(error, failure.message); }
 });
 const requested = this.reportingFilterColumn;
@@ -7006,7 +7026,7 @@ roots._sync = sync; sync(); return roots;
 },
 addReportingFilterGroup(parent, definition, depth, form, error) {
 if (depth > 8 || form.querySelectorAll(".cx-grid-filter-group").length >= 64) {
-setText(error, this.labels.gridInvalidFilter); return null;
+reportingFilterError(error, this.labels.gridInvalidFilter); return null;
 }
 const group = h("fieldset", "cx-grid-filter-group"), legend = h("legend"), operator = h("select"),
 rows = h("div"), children = h("div", "cx-grid-filter-group-children"), actions = h("div", "cx-grid-filter-group-actions");
@@ -7019,14 +7039,17 @@ const focusAfterRemove = (container, removed, fallback) => {
 const next = removed.nextElementSibling || removed.previousElementSibling;
 const hadFocus = removed.contains(document.activeElement); removed.remove();
 container._sync?.();
-if (hadFocus) (next?.querySelector("select,input,textarea,button") || fallback)?.focus({ preventScroll: true });
+if (hadFocus) {
+const target = next?.querySelector("select,input,textarea,button") || fallback;
+target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
 };
 const addFilter = gridButton(this.labels.gridAddFilter, () => {
 const row = addPredicate(null); if (row) row._filter.column.focus();
 });
 const addPredicate = predicate => {
 if (form.querySelectorAll(".cx-grid-filter").length >= 64) {
-setText(error, this.labels.gridInvalidFilter); return null;
+reportingFilterError(error, this.labels.gridInvalidFilter); return null;
 }
 this.addGridFilter(rows, predicate); const row = rows.lastElementChild;
 row.lastElementChild.addEventListener("click", event => {
@@ -7647,6 +7670,11 @@ dialog.append(heading, content, close); document.body.appendChild(dialog); this.
 const signal = this.dataLifetime.signal, abort = () => dialog.close();
 signal.addEventListener("abort", abort, { once: true });
 close.addEventListener("click", () => dialog.close());
+dialog.addEventListener("keydown", event => {
+if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+event.preventDefault();
+(document.activeElement === content ? close : content).focus({ preventScroll: true });
+});
 dialog.addEventListener("close", () => {
 signal.removeEventListener("abort", abort); dialog.remove();
 if (this.reportingText === dialog) this.reportingText = null;

@@ -79,6 +79,10 @@ test("nested controls compose typed conditions and survive saved-state restorati
   await apply(page); expect(await exported(page)).toEqual(["r13"]);
   await page.locator(".cx-grid-filters").getByRole("button", { name: "Clear filters", exact: true }).click();
   expect(await exported(page)).toHaveLength(20);
+  const add = page.locator(".cx-grid-filter-groups > button"); await expect(add).toBeEnabled(); await add.click();
+  await actions(first(page)).getByRole("button", { name: "Add filter", exact: true }).click();
+  await directRows(first(page)).getByRole("textbox", { name: "Value (UTC for dates)", exact: true }).fill("Record 1");
+  await apply(page); expect(await exported(page)).toEqual(["r01"]);
 });
 
 test("empty nested groups fail atomically and removal returns focus to an available group action", async ({ page }) => {
@@ -110,11 +114,37 @@ test("nested depth is bounded and a range expansion cannot exceed the query pred
   await apply(page); expect(await exported(page)).toEqual(["r01"]);
   const handle = await api(page);
   await handle.evaluate(grid => grid.setQuery({ filters: Array.from({ length: 64 }, () => ({ column: "amount", operator: "ge", values: [0] })) }));
-  await page.locator(".cx-grid-filters > summary").click(); await page.locator(".cx-grid-filters > summary").click();
+  await page.locator(".cx-grid-filters > summary").click();
   await page.locator(".cx-grid-filter-groups > button").click();
   await actions(first(page)).getByRole("button", { name: "Add filter", exact: true }).click();
   await expect(page.locator(".cx-grid-filters .cx-grid-control-error")).toHaveText("Enter a valid filter value.");
+  const bounds = await page.locator(".cx-grid-filters .cx-grid-control-error").boundingBox();
+  const panel = await page.locator(".cx-grid-group-editor").boundingBox();
+  expect(bounds.y).toBeGreaterThanOrEqual(panel.y); expect(bounds.y + bounds.height).toBeLessThanOrEqual(panel.y + panel.height);
   expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().filters.length)).toBe(64);
+});
+
+test("external accepted chip and state changes retire stale grouped drafts without stealing outside focus", async ({ page }) => {
+  const expression = group("and", [predicate("amount", "ge", 10)]);
+  await open(page, { filterGroup: expression });
+  const chip = page.getByRole("button", { name: "Clear grouped filters", exact: true });
+  await chip.focus(); await chip.press("Enter");
+  await expect(page.locator(".cx-grid-filters")).not.toHaveAttribute("open", "");
+  expect(await exported(page)).toHaveLength(20);
+  await page.locator(".cx-grid-filters > summary").click(); await expect(first(page)).toHaveCount(0); await apply(page);
+  expect(await exported(page)).toHaveLength(20);
+  await page.evaluate(async () => {
+    const grid = document.querySelector("[data-canopyx-host]").canopyx;
+    const state = grid.getState(); await grid.setQuery({ filterGroup: { operator: "and", filters: [{ column: "amount", operator: "eq", values: [3] }], groups: [] } });
+    await grid.setState(state);
+  });
+  await expect(page.locator(".cx-grid-filters")).not.toHaveAttribute("open", "");
+  await page.locator(".cx-grid-filters > summary").click(); await expect(first(page)).toHaveCount(0);
+  await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setQuery({ filterGroup: { operator: "and", filters: [{ column: "amount", operator: "eq", values: [5] }], groups: [] } }));
+  await page.locator(".cx-grid-filters > summary").click(); await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.resetView());
+  await expect(page.locator(".cx-grid-filters")).not.toHaveAttribute("open", "");
+  expect(await exported(page)).toHaveLength(10);
+  expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().filterGroup)).toEqual(expression);
 });
 
 test("compact dark nested controls retain typed content, keyboard focus and accessible names", async ({ page }) => {
