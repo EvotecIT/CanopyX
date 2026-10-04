@@ -123,3 +123,49 @@ test("host record navigation reveals uncached rows without taking focus from a d
   await expect(page.locator('.cx-row[data-cx-id="079"]')).toBeFocused();
   expect(await page.evaluate(() => { try { document.querySelector('[data-canopyx-host]').canopyx.scrollToRow(80); return false; } catch { return true; } })).toBe(true);
 });
+
+test("export cancellation applies between fetched records and before an empty selection completes", async ({page}) => {
+  await open(page);
+  const result = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    const cancelled = new AbortController(), iterator = grid.prepareExport({scope:'all',signal:cancelled.signal}).rows()[Symbol.asyncIterator]();
+    await iterator.next(); cancelled.abort();
+    const afterRow = await iterator.next().then(() => null, error => error.name);
+    const already = new AbortController(); already.abort();
+    const empty = await grid.toCsv({scope:'selected',signal:already.signal}).then(() => null, error => error.name);
+    const second = grid.prepareExport({scope:'all'}).rows()[Symbol.asyncIterator](); await second.next(); grid.destroy();
+    const destroyed = await second.next().then(() => null, error => error.name);
+    return {afterRow,empty,destroyed};
+  });
+  expect(result).toEqual({afterRow:'AbortError',empty:'AbortError',destroyed:'AbortError'});
+});
+
+test("focused cell clipboard fields retain formula protection and tab escaping", async ({page}) => {
+  const view = definition(); view.rows[0].cells.name = '=SUM(1,2)\tvalue\nnext';
+  await open(page,view,"window.copies=[];Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>window.copies.push(text)}});");
+  const row = page.locator('.cx-row[data-cx-id="000"]'); await row.focus(); await page.keyboard.press('Enter'); await page.keyboard.press('Control+c');
+  await expect.poll(() => page.evaluate(() => window.copies)).toEqual(['"\'=SUM(1,2)\tvalue\nnext"']);
+});
+
+test("export projection preserves declared column identifiers that name object prototype properties", async ({page}) => {
+  const view = definition(); view.columns = ['__proto__','constructor','toString'].map(id => ({id,title:id,kind:'text',width:180,sortable:true}));
+  view.rows = [{id:'one',cells:JSON.parse('{"__proto__":{"value":"Kept value"},"constructor":"Constructor","toString":"String"}')}];
+  await open(page,view);
+  const result = await page.evaluate(async () => {
+    const grid=document.querySelector('[data-canopyx-host]').canopyx, rows=[];
+    for await (const row of grid.prepareExport({scope:'all'}).rows()) rows.push(row);
+    return {keys:Object.keys(rows[0].cells),value:rows[0].cells.__proto__.value,frozen:Object.isFrozen(rows[0].cells.__proto__),csv:await grid.toCsv({scope:'all'})};
+  });
+  expect(result.keys).toEqual(['__proto__','constructor','toString']); expect(result.value).toBe('Kept value'); expect(result.frozen).toBe(true);
+  expect(result.csv).toBe('__proto__,constructor,toString\r\nKept value,Constructor,String\r\n');
+});
+
+test("pending query details gestures report errors without uncaught browser exceptions", async ({page}) => {
+  const errors=[]; page.on('pageerror', error=>errors.push(error.message));
+  await open(page,hostView(),hostSetup.replace("CanopyX.configure('records',{source", "window.detailErrors=[];CanopyX.configure('records',{onDetails:()=>{},onError:event=>window.detailErrors.push(event.error.message),source"));
+  const row=page.locator('.cx-row[data-cx-id="000"]'); await row.focus();
+  await page.evaluate(() => {window.hold=true;document.querySelector('[data-canopyx-host]').canopyx.setQuery({search:'accepted'}).catch(()=>{});});
+  await page.keyboard.press('Control+Enter'); await row.dblclick();
+  await expect.poll(() => page.evaluate(() => window.detailErrors.length)).toBe(2);
+  expect(errors).toEqual([]);
+});

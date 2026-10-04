@@ -14,6 +14,10 @@
     return text.includes(delimiter) || /["\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
   }
 
+  function gridOperationActive(grid, signal) {
+    if (grid.destroyed || signal && signal.aborted) throw new DOMException("Grid operation was cancelled.", "AbortError");
+  }
+
   Object.assign(DataGrid.prototype, {
     prepareExport(options) {
       if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted grid query.");
@@ -42,6 +46,7 @@
       if (signal) signal.addEventListener("abort", abort, { once: true });
       try {
         if (this.destroyed || signal && signal.aborted) controller.abort();
+        gridOperationActive(this, controller.signal);
         const remaining = new Set(request.selection), seen = new Set();
         if (request.scope === "selected" && !remaining.size) return;
         const expected = { revision: request.revision, total: request.total,
@@ -50,15 +55,18 @@
           const query = gridQuery(this.view, Object.assign({}, request.query, { offset: offset }));
           const page = validateGridPage(await this.requestPage(query, controller.signal), this.view, query, expected);
           for (const row of page.items) {
+            gridOperationActive(this, controller.signal);
             if (seen.has(row.id)) throw new Error("CanopyX: export encountered a repeated row identity.");
             seen.add(row.id);
             if (request.scope !== "selected" || remaining.delete(row.id)) {
-              const cells = {};
+              const cells = Object.create(null);
               for (const column of request.columns) if (Object.prototype.hasOwnProperty.call(row.cells, column.id)) cells[column.id] = row.cells[column.id];
               yield gridFreeze({ id: row.id, cells: cells });
+              gridOperationActive(this, controller.signal);
             }
           }
         }
+        gridOperationActive(this, controller.signal);
         if (remaining.size) throw new Error("CanopyX: selected records are absent from the accepted dataset revision.");
       } finally {
         controller.abort(); this.lifetime.signal.removeEventListener("abort", abort);

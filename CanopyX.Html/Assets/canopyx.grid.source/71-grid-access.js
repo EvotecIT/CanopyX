@@ -27,9 +27,10 @@
     async copy(options) {
       const exported = this.prepareExport(options);
       const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t");
-      await this.writeClipboard(text); return text;
+      await this.writeClipboard(text, options.signal); return text;
     },
-    writeClipboard(text) {
+    writeClipboard(text, signal) {
+      gridOperationActive(this, signal);
       if (!global.navigator.clipboard || typeof global.navigator.clipboard.writeText !== "function")
         return Promise.reject(new Error("CanopyX: clipboard access is unavailable in this browser context."));
       return global.navigator.clipboard.writeText(text);
@@ -37,7 +38,7 @@
     copyFocused(row, cell) {
       if (this.selected.size) return this.copy({ scope: "selected" });
       const columns = this.visibleColumns(), index = cell ? this.rowCells(this.rendered.get(row)).indexOf(cell) : -1;
-      const text = index >= 0 ? cellText(row.h.cells[columns[index].id], columns[index], this.fmt) :
+      const text = index >= 0 ? gridExportField(cellText(row.h.cells[columns[index].id], columns[index], this.fmt), "\t") :
         columns.map(column => gridExportField(cellText(row.h.cells[column.id], column, this.fmt), "\t")).join("\t");
       return this.writeClipboard(text);
     },

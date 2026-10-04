@@ -4833,7 +4833,7 @@ grid.addEventListener("click", event => this.onClick(event), { signal: signal })
 grid.addEventListener("dblclick", event => {
 const element = event.target.closest(".cx-row"), row = element && element._w;
 if (row && !row.status && typeof this.opts.onDetails === "function" && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
-this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
+Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error }));
 }, { signal: signal });
 grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
 this.canvas.addEventListener("focusin", event => {
@@ -4916,10 +4916,10 @@ const cells = this.rowCells(element), column = cells.findIndex(cell => cell.cont
 const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
 if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
 if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
-event.preventDefault(); this.copyFocused(row, cell).catch(error => this.emit("error", { error: error })); return;
+event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error: error })); return;
 }
 if (event.key === "Enter" && typeof this.opts.onDetails === "function") {
-event.preventDefault(); this.openDetails(row.key).catch(error => this.emit("error", { error: error })); return;
+event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error })); return;
 }
 }
 const controls = cell ? cellControls(cell) : [];
@@ -5292,6 +5292,9 @@ let text = String(value);
 if (typeof value !== "number" && /^[\s\uFEFF]*[=+\-@]/.test(text)) text = "'" + text;
 return text.includes(delimiter) || /["\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 }
+function gridOperationActive(grid, signal) {
+if (grid.destroyed || signal && signal.aborted) throw new DOMException("Grid operation was cancelled.", "AbortError");
+}
 Object.assign(DataGrid.prototype, {
 prepareExport(options) {
 if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted grid query.");
@@ -5318,6 +5321,7 @@ this.lifetime.signal.addEventListener("abort", abort, { once: true });
 if (signal) signal.addEventListener("abort", abort, { once: true });
 try {
 if (this.destroyed || signal && signal.aborted) controller.abort();
+gridOperationActive(this, controller.signal);
 const remaining = new Set(request.selection), seen = new Set();
 if (request.scope === "selected" && !remaining.size) return;
 const expected = { revision: request.revision, total: request.total,
@@ -5326,15 +5330,18 @@ for (let offset = 0; offset < expected.matched; offset += request.query.limit) {
 const query = gridQuery(this.view, Object.assign({}, request.query, { offset: offset }));
 const page = validateGridPage(await this.requestPage(query, controller.signal), this.view, query, expected);
 for (const row of page.items) {
+gridOperationActive(this, controller.signal);
 if (seen.has(row.id)) throw new Error("CanopyX: export encountered a repeated row identity.");
 seen.add(row.id);
 if (request.scope !== "selected" || remaining.delete(row.id)) {
-const cells = {};
+const cells = Object.create(null);
 for (const column of request.columns) if (Object.prototype.hasOwnProperty.call(row.cells, column.id)) cells[column.id] = row.cells[column.id];
 yield gridFreeze({ id: row.id, cells: cells });
+gridOperationActive(this, controller.signal);
 }
 }
 }
+gridOperationActive(this, controller.signal);
 if (remaining.size) throw new Error("CanopyX: selected records are absent from the accepted dataset revision.");
 } finally {
 controller.abort(); this.lifetime.signal.removeEventListener("abort", abort);
@@ -5390,9 +5397,10 @@ if (signal) signal.removeEventListener("abort", abort);
 async copy(options) {
 const exported = this.prepareExport(options);
 const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t");
-await this.writeClipboard(text); return text;
+await this.writeClipboard(text, options.signal); return text;
 },
-writeClipboard(text) {
+writeClipboard(text, signal) {
+gridOperationActive(this, signal);
 if (!global.navigator.clipboard || typeof global.navigator.clipboard.writeText !== "function")
 return Promise.reject(new Error("CanopyX: clipboard access is unavailable in this browser context."));
 return global.navigator.clipboard.writeText(text);
@@ -5400,7 +5408,7 @@ return global.navigator.clipboard.writeText(text);
 copyFocused(row, cell) {
 if (this.selected.size) return this.copy({ scope: "selected" });
 const columns = this.visibleColumns(), index = cell ? this.rowCells(this.rendered.get(row)).indexOf(cell) : -1;
-const text = index >= 0 ? cellText(row.h.cells[columns[index].id], columns[index], this.fmt) :
+const text = index >= 0 ? gridExportField(cellText(row.h.cells[columns[index].id], columns[index], this.fmt), "\t") :
 columns.map(column => gridExportField(cellText(row.h.cells[column.id], column, this.fmt), "\t")).join("\t");
 return this.writeClipboard(text);
 },
