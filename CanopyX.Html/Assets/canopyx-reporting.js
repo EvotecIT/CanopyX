@@ -8015,6 +8015,11 @@ pending = this.viewQueryPromise;
 },
 queueViewSettings(settings) {
 if (this.viewStoreFaulted) return;
+const key = JSON.stringify(settings);
+if (this.viewStoreWriting && key === this.activeViewSettingsKey) { this.pendingViewSettings = null; return; }
+if (!this.viewStoreWriting && key === this.acknowledgedViewSettingsKey) {
+this.setViewPreferenceError(""); return;
+}
 this.pendingViewSettings = settings;
 if (this.viewStoreWriting) return;
 this.viewStoreWriting = true;
@@ -8022,14 +8027,16 @@ this.viewStoreWrite = (async () => {
 try {
 while (this.pendingViewSettings && !this.destroyed) {
 const current = this.pendingViewSettings; this.pendingViewSettings = null;
+this.activeViewSettingsKey = JSON.stringify(current);
 await this.runGridHook(signal => this.opts.viewStore.save({ key: this.storageKey, view: this.view.id, settings: current, signal }));
+this.acknowledgedViewSettingsKey = this.activeViewSettingsKey;
 gridOperationActive(this); this.setViewPreferenceError("");
 }
 } catch (error) {
 this.pendingViewSettings = null; this.viewStoreFaulted = true;
 if (!this.destroyed) this.setViewPreferenceError(error.message);
 throw error;
-} finally { this.viewStoreWriting = false; }
+} finally { this.viewStoreWriting = false; this.activeViewSettingsKey = null; }
 })();
 this.viewStoreWrite.catch(() => {});
 },
