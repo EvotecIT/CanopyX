@@ -44,13 +44,16 @@
       matched: input.matched, totalValues: input.totalValues, truncated: input.truncated, items });
   }
 
-  GRID_REPORTING.inlineSource = (source, view, matching) => {
-    if (!view.reporting?.facetColumns?.length) return;
+  const FACET_INLINE_SOURCE = inlineGridSource;
+  inlineGridSource = view => {
+    const source = FACET_INLINE_SOURCE(view);
+    if (!view.reporting?.facetColumns?.length) return source;
+    const columns = new Map(view.columns.map(column => [column.id, column]));
     source.facet = (request, options) => {
-      if (options.signal.aborted) throw new DOMException("Facet request was cancelled.", "AbortError");
+      if (options.signal.aborted) throw new DOMException("Facet request cancelled.", "AbortError");
       const column = view.columns.find(item => item.id === request.column), query = request.includeCurrentFilter ? request.query :
         reportingFacetProjection(request.query, column.id);
-      const rows = matching(query), buckets = new Map(), needle = foldText(request.search);
+      const rows = gridQueryRows(view, query, columns), buckets = new Map(), needle = foldText(request.search);
       for (const row of rows) {
         const scalar = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && scalar !== null ? new Date(scalar).toISOString() : scalar;
         const key = reportingFacetKey(value, column), existing = buckets.get(key);
@@ -70,4 +73,5 @@
         search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: rows.length,
         totalValues: items.length, truncated: items.length > request.limit, items: items.slice(0, request.limit) };
     };
+    return source;
   };

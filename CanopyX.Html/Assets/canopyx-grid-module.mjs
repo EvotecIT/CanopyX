@@ -4594,22 +4594,22 @@ case "le": return value <= operand;
 }
 return false;
 }
-function inlineGridSource(view) {
-const rows = view.rows, columns = new Map(view.columns.map(column => [column.id, column]));
-const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
-const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
-let lastShape = null, ordered = null;
-const matching = query => {
-const terms = gridSearchTerms(query.search, query.searchMode);
-return rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+function gridQueryRows(view, query, columns) {
+const terms = gridSearchTerms(query.search, query.searchMode),
+searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
+return view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
 query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
-};
-const source = {
+}
+function inlineGridSource(view) {
+const columns = new Map(view.columns.map(column => [column.id, column]));
+const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
+let lastShape = null, ordered = null;
+return {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
 const shape = gridResultShape(query);
 if (shape !== lastShape) {
-ordered = matching(query);
+ordered = gridQueryRows(view, query, columns);
 ordered.sort((a, b) => {
 for (const sort of query.sort) {
 const compared = compare(a, b, columns.get(sort.column), sort.direction);
@@ -4620,11 +4620,9 @@ return gridOrder(a.id, b.id);
 lastShape = shape;
 }
 return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
-total: rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
+total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
 }
 };
-GRID_REPORTING.inlineSource?.(source, view, matching);
-return source;
 }
 function gridCursor(cursor) {
 requireIdentifier(cursor, "grid cursor");
@@ -5485,7 +5483,7 @@ this.buildExportControls();
 this.toolbar.appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
 this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
 document.addEventListener("pointerdown", event => {
-this.toolbar.querySelectorAll("details[open]").forEach(details => { if (!details.contains(event.target)) details.open = false; });
+for (const details of this.toolbar.children) if (details.open && !details.contains(event.target)) details.open = false;
 }, { signal: this.lifetime.signal });
 },
 controlPanel(title, className, onOpen) {

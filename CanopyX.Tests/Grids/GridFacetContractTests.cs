@@ -70,4 +70,23 @@ public sealed class GridFacetContractTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyGridFacetPage(view.Id, "snapshot", "value", 1, 2));
         Assert.False(ProtocolSchema.Evaluate("{\"protocol\":\"canopyx/2\",\"type\":\"gridFacetQuery\",\"column\":\"value\",\"search\":\"\",\"limit\":201,\"includeCurrentFilter\":true,\"query\":{}}").IsValid);
     }
+
+    [Fact]
+    public void Facets_CarryCursorRevisionsAndRejectDuplicateUtcMillisecondBuckets() {
+        var view = View(); view.Source = CanopyGridSourceKind.Host; view.Navigation = CanopyGridNavigation.Cursor;
+        view.Presentation = CanopyGridPresentation.Paged;
+        view.Columns[0].Kind = CanopyColumnKind.DateTime;
+        var query = new CanopyGridQuery(view.Id) { Revision = "snapshot", Cursor = "next" };
+        var request = new CanopyGridFacetQuery(query, "value");
+        ProtocolSchema.AssertValid(request.ToJson(view), "cursor facet request");
+        using var document = JsonDocument.Parse(request.ToJson(view));
+        Assert.Equal("gridCursorQuery", document.RootElement.GetProperty("query").GetProperty("type").GetString());
+        var instant = new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
+        var response = new CanopyGridFacetPage(view.Id, "snapshot", "value", 2, 2);
+        response.Items.Add(new CanopyGridFacetValue(instant, 1));
+        response.Items.Add(new CanopyGridFacetValue(new DateTimeOffset(instant).ToOffset(TimeSpan.FromHours(2)).AddTicks(9999), 1));
+        Assert.Throws<InvalidOperationException>(() => response.ToJson(view));
+        response.Items[1] = new CanopyGridFacetValue(instant.AddMilliseconds(1), 1);
+        ProtocolSchema.AssertValid(response.ToJson(view), "distinct UTC millisecond facets");
+    }
 }

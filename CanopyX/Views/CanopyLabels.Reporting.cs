@@ -56,6 +56,21 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the remove-condition-group control label.</summary>
     public string GridDeleteFilterGroup { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the facet section label, describing counts from applied filters.</summary>
+    public string GridFacetValues { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the bounded facet-value search label.</summary>
+    public string GridFacetSearch { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the current-column projection checkbox label.</summary>
+    public string GridFacetIncludeCurrent { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the facet reload button label.</summary>
+    public string GridFacetLoad { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the raw facet choice placeholder and accessible name.</summary>
+    public string GridFacetChoose { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the count summary including <c>{count}</c>, <c>{shown}</c> and <c>{total}</c>.</summary>
+    public string GridFacetCounts { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the stale or cancelled facet request message.</summary>
+    public string GridFacetReload { get => Get(); set => Set(value); }
+
     /// <summary>Gets whether translated reporting controls require the optional reporting entry point.</summary>
     public bool RequiresReportingRuntime => _values.ContainsKey(nameof(GridBetween)) || _values.ContainsKey(nameof(GridRangeEnd)) ||
         _values.ContainsKey(nameof(GridInvalidRange)) || _values.ContainsKey(nameof(GridSuggestedCategory)) || _values.ContainsKey(nameof(GridChooseCategory)) ||
@@ -66,5 +81,7 @@ public sealed partial class CanopyLabels {
         _values.ContainsKey(nameof(GridPinRight)) || _values.ContainsKey(nameof(GridResponsiveHidden)) ||
         _values.ContainsKey(nameof(GridFilterGroupTitle)) || _values.ContainsKey(nameof(GridFilterMatch)) ||
         _values.ContainsKey(nameof(GridFilterAll)) || _values.ContainsKey(nameof(GridFilterAny)) ||
-        _values.ContainsKey(nameof(GridAddFilterGroup)) || _values.ContainsKey(nameof(GridDeleteFilterGroup));
+        _values.ContainsKey(nameof(GridAddFilterGroup)) || _values.ContainsKey(nameof(GridDeleteFilterGroup)) ||
+        _values.ContainsKey(nameof(GridFacetValues)) || _values.ContainsKey(nameof(GridFacetSearch)) || _values.ContainsKey(nameof(GridFacetIncludeCurrent)) ||
+        _values.ContainsKey(nameof(GridFacetLoad)) || _values.ContainsKey(nameof(GridFacetChoose)) || _values.ContainsKey(nameof(GridFacetCounts)) || _values.ContainsKey(nameof(GridFacetReload));
 }

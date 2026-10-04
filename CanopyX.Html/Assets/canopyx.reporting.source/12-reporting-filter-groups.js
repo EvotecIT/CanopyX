@@ -35,7 +35,8 @@
       group._group = { operator, rows, children }; parent.appendChild(group);
       const focusAfterRemove = (container, removed, fallback) => {
         const next = removed.nextElementSibling || removed.previousElementSibling;
-        const hadFocus = removed.contains(document.activeElement); removed.remove();
+        const hadFocus = removed.contains(document.activeElement);
+        removed.querySelectorAll(".cx-grid-filter").forEach(row => row._facetDispose?.()); removed._facetDispose?.(); removed.remove();
         container._sync?.();
         if (hadFocus) {
           const target = next?.querySelector("select,input,textarea,button") || fallback;

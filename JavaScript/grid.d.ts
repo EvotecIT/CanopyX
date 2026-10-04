@@ -141,7 +141,7 @@ export interface GridPage {
 export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; }
 /** Facet values/counts ignore the query window and sort; excluding the current column replaces its predicates by true. */
 export interface GridFacetQuery<Q extends AcceptedGridQuery = AcceptedGridQuery> {
-  readonly protocol: "canopyx/2"; readonly type: "gridFacetQuery"; readonly query: Q;
+  readonly protocol: "canopyx/2"; readonly type: "gridFacetQuery"; readonly query: Q & { readonly revision: string };
   readonly column: string; readonly search: string; readonly limit: number; readonly includeCurrentFilter: boolean;
 }
 export interface GridFacetPage {

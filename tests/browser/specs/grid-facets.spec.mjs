@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { viewPage } from "./support.mjs";
+import AxeBuilder from "@axe-core/playwright";
 
 const filter = (column, operator, ...values) => ({ column, operator, values });
 const group = (operator, filters = [], groups = []) => ({ operator, filters, groups });
@@ -89,4 +90,79 @@ test("invalid requests and missing host capabilities reject without deriving fac
   await open(page, {}, hostSetup.replace("facet(request,{signal})", "unsupported(request,{signal})"), true);
   expect(await page.evaluate(async () => { try { await document.querySelector("[data-canopyx-host]").canopyx.getFacets("category"); }
     catch (error) { return error.message; } })).toContain("explicit source capability");
+});
+
+async function editor(page) {
+  await page.locator(".cx-grid-filters > summary").click();
+  if (!(await page.locator(".cx-grid-filter").count())) await page.getByRole("button", { name: "Add filter", exact: true }).click();
+  const row = page.locator(".cx-grid-filter").first();
+  await row.locator(".cx-grid-facet > summary").click(); return row;
+}
+
+test("facet choices show whole-query counts and edit raw typed drafts until Apply", async ({ page }) => {
+  await open(page); const row = await editor(page), choice = row.getByRole("combobox", { name: "Choose a value" });
+  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
+  await expect(choice.locator("option")).toHaveText(["Choose a value", "Boolean: False (1)", "Boolean: True (1)",
+    "Text: ALPHA (3)", "Text: Beta (2)", "Text: true (1)", "is missing (2)"]);
+  await choice.selectOption({ label: "Boolean: True (1)" });
+  expect((await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).filters).toEqual([]);
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 10 rows");
+  expect((await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).filters).toEqual([filter("category", "eq", true)]);
+  await row.locator(".cx-grid-facet > summary").click(); await row.locator(".cx-grid-facet > summary").click();
+  await expect(row.getByRole("status")).toHaveText("1 matching rows; 1 of 1 values.");
+  await row.getByRole("checkbox", { name: "Include this column's applied filters" }).uncheck();
+  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
+  await choice.selectOption({ label: "Text: true (1)" }); await page.getByRole("button", { name: "Apply", exact: true }).click();
+  expect((await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).filters).toEqual([filter("category", "eq", "true")]);
+});
+
+test("facet value search and missing choices preserve applied query counts and compact keyboard accessibility", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 }); await open(page);
+  await page.evaluate(() => document.documentElement.setAttribute("data-cx-theme", "dark"));
+  const row = await editor(page), choice = row.getByRole("combobox", { name: "Choose a value" });
+  await row.getByRole("searchbox", { name: "Search values" }).fill("alp");
+  await row.getByRole("searchbox", { name: "Search values" }).press("Enter");
+  await expect(row.getByRole("status")).toHaveText("10 matching rows; 1 of 1 values.");
+  await expect(choice.locator("option")).toHaveText(["Choose a value", "Text: ALPHA (3)"]);
+  await row.getByRole("searchbox", { name: "Search values" }).fill("");
+  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
+  await choice.selectOption({ label: "is missing (2)" }); await choice.focus(); await choice.press("Tab");
+  expect(await page.evaluate(() => document.body.scrollWidth <= innerWidth)).toBe(true);
+  const a11y = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).disableRules(["region"]).analyze();
+  expect(a11y.violations).toEqual([]);
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 10 rows");
+});
+
+test("facet controls abort superseded value search and removal without accepting stale host choices", async ({ page }) => {
+  await open(page, {}, hostSetup, true); const row = await editor(page);
+  await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(1);
+  await row.getByRole("searchbox", { name: "Search values" }).fill("fresh");
+  await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(2);
+  expect(await page.evaluate(() => facetRequests[0].signal.aborted)).toBe(true);
+  const fresh = await page.evaluate(() => facetRequests[1].request);
+  await page.evaluate(value => facetResolvers[1](value), response(fresh, { items: [{ value: "Fresh", count: 100 }] }));
+  await expect(row.getByRole("combobox", { name: "Choose a value" }).locator("option")).toHaveText(["Choose a value", "Text: Fresh (100)"]);
+  const old = await page.evaluate(() => facetRequests[0].request);
+  await page.evaluate(value => facetResolvers[0](value), response(old));
+  await expect(row.getByRole("combobox", { name: "Choose a value" }).locator("option")).toHaveText(["Choose a value", "Text: Fresh (100)"]);
+  await row.getByRole("button", { name: "Load values" }).click();
+  await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(3);
+  await row.getByRole("button", { name: "Remove Category filter" }).click();
+  expect(await page.evaluate(() => facetRequests[2].signal.aborted)).toBe(true);
+});
+
+test("accepted search retires previously completed facet choices and missing host facets show a recoverable error", async ({ page }) => {
+  await open(page); const row = await editor(page);
+  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
+  await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setQuery({ search: "Beta" }));
+  await expect(row.getByRole("combobox", { name: "Choose a value" })).toBeDisabled();
+  await expect(row.getByRole("status")).toContainText("Load values again");
+  await row.getByRole("button", { name: "Load values" }).click();
+  await expect(row.getByRole("status")).toHaveText("2 matching rows; 1 of 1 values.");
+  await open(page, {}, hostSetup.replace("facet(request,{signal})", "unsupported(request,{signal})"), true);
+  const unsupported = await editor(page);
+  await expect(unsupported.getByRole("status")).toContainText("explicit source capability");
+  await expect(unsupported.getByRole("button", { name: "Load values" })).toBeEnabled();
 });

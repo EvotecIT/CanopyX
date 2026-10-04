@@ -145,6 +145,8 @@ The generated `inventory-grid.html` example contains 5,000 records and starts wi
 
 Set `Reporting.FilterGroups = true` (JavaScript `reporting: { filterGroups: true }`) to compose nested “all” and “any” condition groups in the filter editor. The existing flat conditions remain an outer conjunction. Groups use the same typed predicates, saved query state and whole-result export semantics as API-authored queries. Inclusive ranges inside an “any” group stay one condition, represented by an inner AND group. Apply validates the complete expression before requesting data; empty groups and queries beyond eight levels, 64 groups or 64 total predicates retain the previously accepted results. The add/remove controls keep focus within the editor. This option does not enable whole-dataset facet counts.
 
+Declare `Reporting.FacetColumns.Add("status")` to add values and counts to that column's filter editor. Inline grids count the entire accepted query; hosted grids supply `source.facet(request, { signal })`. The control searches available values, preserves raw types and lets users include or exclude that column's applied conditions from the counts. Choosing a value edits the draft until Apply. Counts never come from just the visible page, and changing the accepted query retires stale choices. `api.getFacets("status", { search: "review", limit: 100, includeCurrentFilter: false })` exposes the same bounded source contract; see the [facet protocol](docs/data-protocol.md#flat-grid-documents) for projection and snapshot rules.
+
 Safe cell presenters are optional reporting configuration:
 
 ```csharp

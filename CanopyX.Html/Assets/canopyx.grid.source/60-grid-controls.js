@@ -30,7 +30,7 @@
       this.toolbar.appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
       document.addEventListener("pointerdown", event => {
-        this.toolbar.querySelectorAll("details[open]").forEach(details => { if (!details.contains(event.target)) details.open = false; });
+        for (const details of this.toolbar.children) if (details.open && !details.contains(event.target)) details.open = false;
       }, { signal: this.lifetime.signal });
     },
 
