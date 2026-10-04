@@ -47,7 +47,7 @@
         this.setQuery(Object.assign({}, this.queryForChange(true), patch, { offset: 0, revision: undefined })).catch(() => {});
       };
       const chip = (text, label, id, run) => {
-        const button = gridButton(text + " ×", run); button.classList.add("cx-grid-chip");
+        const button = gridButton(text + " ×", () => { button.focus({ preventScroll: true }); run(); }); button.classList.add("cx-grid-chip");
         button.title = text;
         button.setAttribute("aria-label", label); button.setAttribute("data-cx-condition", id); this.queryChips.appendChild(button);
       };
@@ -70,6 +70,7 @@
       }
       if (query.search || query.filters.length || query.filterGroup) {
         const clear = gridButton(this.labels.gridClearQuery, () => {
+          clear.focus({ preventScroll: true });
           if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined });
         });
         clear.setAttribute("data-cx-condition", "clear"); this.queryChips.appendChild(clear);

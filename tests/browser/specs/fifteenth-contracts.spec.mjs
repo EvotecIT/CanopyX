@@ -12,6 +12,13 @@ async function open(page, data = view) {
   await nextFrames(page);
 }
 
+async function waitForLoad(page, id, completion) {
+  await page.waitForFunction(name => typeof window[name] === "function", completion);
+  await expect(page.locator(`[data-cx-id="${id}"]`)).toHaveAttribute("aria-busy", "true");
+  // Restoration inserts a loading row on its next paint; click the requested row after that movement.
+  await nextFrames(page);
+}
+
 for (const kind of ["remote", "sidecar"]) for (const shape of ["missing", "null"]) {
   test(`${kind} rejects a terminal page with ${shape} items`, async ({ page }) => {
     await open(page);
@@ -82,12 +89,12 @@ test("newer user choice supersedes a queued toggle while another replay loads", 
       return { items: [{ id: "b-leaf", label: "Leaf" }] };
     } } });
   });
-  await page.waitForFunction(() => !!window.finishA);
+  await waitForLoad(page, "a", "finishA");
   await page.locator('[data-cx-id="x"] .cx-exp').click();
   await page.locator('[data-cx-id="b"] .cx-exp').click();
   await page.locator('[data-cx-id="b"] .cx-exp').click();
   await page.evaluate(() => finishA({ items: [{ id: "a-leaf", label: "Leaf" }] }));
-  await page.waitForFunction(() => !!window.finishX);
+  await waitForLoad(page, "x", "finishX");
   await page.locator('[data-cx-id="b"] .cx-exp').click();
   await page.evaluate(() => finishX({ items: [{ id: "x-leaf", label: "Leaf" }] }));
   await page.evaluate(() => api.ready);
@@ -108,11 +115,11 @@ test("queued expansions persist together after their final lazy page settles", a
       return { items: [{ id: "x-leaf", label: "Leaf" }] };
     } } });
   });
-  await page.waitForFunction(() => !!window.finishA);
+  await waitForLoad(page, "a", "finishA");
   await page.locator('[data-cx-id="x"] .cx-exp').click();
   await page.locator('[data-cx-id="b"] .cx-exp').click();
   await page.evaluate(() => finishA({ items: [{ id: "a-leaf", label: "Leaf" }] }));
-  await page.waitForFunction(() => !!window.finishB);
+  await waitForLoad(page, "b", "finishB");
   await page.waitForTimeout(350);
   expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem("canopyx:fifteenth-batch")))).toEqual({ expanded: [["a"]] });
   await page.evaluate(() => finishB({ items: [{ id: "b-leaf", label: "Leaf" }] }));
@@ -134,11 +141,11 @@ test("newer setState discards queued choices from an older restoration", async (
       return { items: [{ id: "c-leaf", label: "Leaf" }] };
     } } });
   });
-  await page.waitForFunction(() => !!window.finishA);
+  await waitForLoad(page, "a", "finishA");
   await page.locator('[data-cx-id="b"] .cx-exp').click();
   await page.locator('[data-cx-id="c"] .cx-exp').click();
   await page.evaluate(() => finishA({ items: [{ id: "a-leaf", label: "Leaf" }] }));
-  await page.waitForFunction(() => !!window.finishB);
+  await waitForLoad(page, "b", "finishB");
   await page.evaluate(() => { window.newState = api.setState({ expanded: [] }); });
   await page.evaluate(() => finishB({ items: [{ id: "b-leaf", label: "Leaf" }] }));
   await page.evaluate(() => Promise.all([api.ready, newState]));
@@ -160,10 +167,10 @@ test("a click after newer setState still replays after the older load", async ({
   });
   await page.evaluate(() => api.ready);
   await page.evaluate(() => { window.oldState = api.setState({ expanded: [["a"]] }); });
-  await page.waitForFunction(() => !!window.finishA);
+  await waitForLoad(page, "a", "finishA");
   await page.locator('[data-cx-id="b"] .cx-exp').click();
   await page.evaluate(() => finishA({ items: [{ id: "a-leaf", label: "Leaf" }] }));
-  await page.waitForFunction(() => !!window.finishB);
+  await waitForLoad(page, "b", "finishB");
   await page.evaluate(() => { window.newState = api.setState({ expanded: [] }); });
   await page.locator('[data-cx-id="c"] .cx-exp').click();
   await page.evaluate(() => finishB({ items: [{ id: "b-leaf", label: "Leaf" }] }));

@@ -72,7 +72,7 @@ test("accepted chips and counts survive pending or failed host queries and clear
   expect(await page.evaluate(() => requests.length)).toBe(3);
 });
 
-test("removing a chip preserves other accepted conditions and restores usable focus", async ({ page }) => {
+for (const activation of ["pointer", "unfocused"]) test(`removing a chip by ${activation} preserves other accepted conditions and restores usable focus`, async ({ page }) => {
   const definition = view();
   definition.query = { search: "Alpha", filters: [{ column: "amount", operator: "ge", values: [10] }],
     filterGroup: { operator: "or", filters: [{ column: "name", operator: "isNotNull", values: [] }], groups: [] } };
@@ -83,9 +83,13 @@ test("removing a chip preserves other accepted conditions and restores usable fo
   expect(await page.evaluate(controller + ".getQuery().search")).toBe("Alpha");
   expect(await page.evaluate(controller + ".getQuery().filterGroup.operator")).toBe("or");
   await expect(page.getByRole("button", { name: "Clear search and filters", exact: true })).toBeFocused();
-  await page.getByRole("button", { name: "Clear grouped filters", exact: true }).click();
+  const activate = async button => {
+    if (activation === "pointer") await button.click();
+    else await button.evaluate(element => { document.activeElement.blur(); element.click(); });
+  };
+  await activate(page.getByRole("button", { name: "Clear grouped filters", exact: true }));
   expect(await page.evaluate(controller + ".getQuery().filterGroup || null")).toBeNull();
-  await page.getByRole("button", { name: "Clear search: Alpha", exact: true }).click();
+  await activate(page.getByRole("button", { name: "Clear search: Alpha", exact: true }));
   await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 2 rows");
   await expect(page.getByRole("searchbox")).toBeFocused();
 });
@@ -102,6 +106,22 @@ test("invalid input timing rejects browser overrides before creating controls", 
     });
   });
   expect(rejected).toEqual(Array(6).fill(true));
+});
+
+test("a delayed chip removal respects focus moved outside the conditions", async ({ page }) => {
+  const definition = view({ source: { kind: "host" }, query: { search: "Alpha" } }); delete definition.rows;
+  await open(page, definition, `window.calls=0;CanopyX.configure('inventory',{source:{query(query){
+    const result={protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:query.offset,total:2,
+      matched:query.search?1:2,items:query.search?[{id:'a',cells:{name:'Alpha',amount:20}}]:[{id:'a',cells:{name:'Alpha',amount:20}},{id:'b',cells:{name:'Beta',amount:10}}]};
+    if(++calls===1)return result;return new Promise(resolve=>window.finishRemoval=()=>resolve(result));
+  }}});`);
+  await page.getByRole("button", { name: "Clear search: Alpha", exact: true }).click();
+  await page.waitForFunction(() => !!window.finishRemoval);
+  await page.evaluate(() => { const button = document.createElement("button"); button.textContent = "Continue report"; document.body.appendChild(button); });
+  const outside = page.getByRole("button", { name: "Continue report", exact: true }); await outside.focus();
+  await page.evaluate(() => finishRemoval());
+  await expect(page.locator(".cx-grid-query-chips button")).toHaveCount(0);
+  await expect(outside).toBeFocused();
 });
 
 test("incremental controls include queued search text while explicit reset replaces it", async ({ page }) => {
