@@ -1,14 +1,15 @@
   // ---------- flat-grid state: accepted queries and bounded session views ----------
+  function gridStateColumn(column) { return { id: column.id, width: column.width, hidden: !!column.hidden }; }
   function gridStateColumns(grid, input) {
     if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
-    const seen = new Set(), declared = new Map(grid.columns.map(column => [column.id, column]));
+    const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
     const columns = input.map(column => {
       requireIdentifier(column && column.id, "state column ID");
       if (seen.has(column.id) || !Number.isFinite(column.width) || column.width < 40 || column.width > MAX_COLUMN_WIDTH || typeof column.hidden !== "boolean")
         throw new Error("CanopyX: invalid state column.");
-      seen.add(column.id); return { id: column.id, width: column.width, hidden: column.hidden };
+      seen.add(column.id); return gridStateColumn(column);
     }).filter(column => declared.has(column.id));
-    for (const column of grid.columns) if (!seen.has(column.id)) columns.push({ id: column.id, width: column.width, hidden: !!column.hidden });
+    for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
     if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
     return columns;
   }
@@ -18,7 +19,7 @@
       this.storageKey = this.view.stateKey ? "cx:grid:" + this.view.stateKey + ":" + this.view.id : null;
       this.savedViews = new Map();
       this.defaultState = { version: 1, view: this.view.id,
-        columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
+        columns: this.columns.map(gridStateColumn),
         query: gridQuery(this.view, gridQueryStart(this.view.query)),
         timeZone: this.local ? "local" : "utc", selection: [], scrollTop: 0 };
       if (this.paged) this.defaultState.paging = { pageLength: this.pageLength, offset: 0 };
@@ -35,7 +36,7 @@
     getState() {
       const query = this.getQuery() || this.defaultState.query;
       const state = { version: 1, view: this.view.id,
-        columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
+        columns: this.columns.map(gridStateColumn),
         query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
       if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset };

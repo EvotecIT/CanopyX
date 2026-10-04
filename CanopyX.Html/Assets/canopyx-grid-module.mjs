@@ -4937,16 +4937,15 @@ function gridResultShape(query) { return JSON.stringify([query.search, query.sea
 Object.assign(DataGrid.prototype, {
 getPaging() {
 const window = this.cursorWindow, count = this.cursor ? window ? window.end - this.pageOffset : 0 : this.rowCount();
-const paging = { presentation: this.paged ? "paged" : "continuous", pageLength: this.pageLength,
+return Object.freeze({ presentation: this.paged ? "paged" : "continuous", pageLength: this.pageLength,
 first: count ? this.pageOffset + 1 : 0, last: this.cursor ? count ? window.end : 0 :
 this.paged ? Math.min(count, this.pageOffset + this.pageLength) : count,
 matched: this.snapshot ? this.snapshot.matched : this.cursor ? null : 0,
-total: this.snapshot ? this.snapshot.total : this.cursor ? null : 0 };
-Object.assign(paging, this.cursor ? { navigation: "cursor", pageIndex: null, pageCount: null,
+total: this.snapshot ? this.snapshot.total : this.cursor ? null : 0,
+...this.cursor ? { navigation: "cursor", pageIndex: null, pageCount: null,
 hasNext: !!(window && window.next !== undefined), hasPrevious: !!(window && window.previous !== undefined) } : {
 pageIndex: this.paged ? Math.floor(this.pageOffset / this.pageLength) : 0,
-pageCount: this.paged ? Math.ceil(count / this.pageLength) : count ? 1 : 0 });
-return Object.freeze(paging);
+pageCount: this.paged ? Math.ceil(count / this.pageLength) : count ? 1 : 0 } });
 },
 goToPage(index) {
 if (this.cursor || !this.paged || !this.acceptedQuery || !Number.isInteger(index) || index < 0)
@@ -5260,16 +5259,17 @@ this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (erro
 event.preventDefault(); event.stopPropagation();
 }
 });
+function gridStateColumn(column) { return { id: column.id, width: column.width, hidden: !!column.hidden }; }
 function gridStateColumns(grid, input) {
 if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
-const seen = new Set(), declared = new Map(grid.columns.map(column => [column.id, column]));
+const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
 const columns = input.map(column => {
 requireIdentifier(column && column.id, "state column ID");
 if (seen.has(column.id) || !Number.isFinite(column.width) || column.width < 40 || column.width > MAX_COLUMN_WIDTH || typeof column.hidden !== "boolean")
 throw new Error("CanopyX: invalid state column.");
-seen.add(column.id); return { id: column.id, width: column.width, hidden: column.hidden };
+seen.add(column.id); return gridStateColumn(column);
 }).filter(column => declared.has(column.id));
-for (const column of grid.columns) if (!seen.has(column.id)) columns.push({ id: column.id, width: column.width, hidden: !!column.hidden });
+for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
 if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
 return columns;
 }
@@ -5278,7 +5278,7 @@ prepareState() {
 this.storageKey = this.view.stateKey ? "cx:grid:" + this.view.stateKey + ":" + this.view.id : null;
 this.savedViews = new Map();
 this.defaultState = { version: 1, view: this.view.id,
-columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
+columns: this.columns.map(gridStateColumn),
 query: gridQuery(this.view, gridQueryStart(this.view.query)),
 timeZone: this.local ? "local" : "utc", selection: [], scrollTop: 0 };
 if (this.paged) this.defaultState.paging = { pageLength: this.pageLength, offset: 0 };
@@ -5294,7 +5294,7 @@ initializeState() { return this.initialState ? this.setState(this.initialState) 
 getState() {
 const query = this.getQuery() || this.defaultState.query;
 const state = { version: 1, view: this.view.id,
-columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
+columns: this.columns.map(gridStateColumn),
 query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
 timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
 if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset };
