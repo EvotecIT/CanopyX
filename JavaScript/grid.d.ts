@@ -34,6 +34,8 @@ export interface GridReporting {
   readonly ordering?: Readonly<Record<string, GridOrdering>>;
   /** Header buttons open the complete-query filter editor. */
   readonly headerFilters?: boolean;
+  /** Offer a bounded nested AND/OR editor over the accepted query's filterGroup. */
+  readonly filterGroups?: boolean;
   /** Declared column identities; an explicit custom renderer takes precedence. */
   readonly presenters?: Readonly<Record<string, GridPresenter>>;
 }

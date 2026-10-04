@@ -143,6 +143,8 @@ Configure `onDetails` to open a host-owned drawer for a record. The hook receive
 
 The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](TODO.md).
 
+Set `Reporting.FilterGroups = true` (JavaScript `reporting: { filterGroups: true }`) to compose nested “all” and “any” condition groups in the filter editor. The existing flat conditions remain an outer conjunction. Groups use the same typed predicates, saved query state and whole-result export semantics as API-authored queries. Inclusive ranges inside an “any” group stay one condition, represented by an inner AND group. Apply validates the complete expression before requesting data; empty groups and queries beyond eight levels, 64 groups or 64 total predicates retain the previously accepted results. The add/remove controls keep focus within the editor. This option does not enable whole-dataset facet counts.
+
 Safe cell presenters are optional reporting configuration:
 
 ```csharp

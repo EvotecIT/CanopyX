@@ -108,7 +108,8 @@ export type LabelName =
   | "gridFilters" | "gridColumn" | "gridOperator" | "gridValue" | "gridValueType" | "gridText" | "gridBoolean" | "gridAddFilter" | "gridRemoveFilter" | "gridApply" | "gridClearFilters" | "gridMoveEarlier" | "gridMoveLater" | "gridViews" | "gridViewName" | "gridSaveView" | "gridRemoveView" | "gridResetView" | "gridChooseView" | "gridInvalidFilter" | "gridContains" | "gridStartsWith" | "gridIn" | "gridIsNull" | "gridIsNotNull"
   | "gridBetween" | "gridRangeEnd" | "gridInvalidRange" | "gridSuggestedCategory" | "gridChooseCategory" | "gridBooleanValue" | "gridTrue" | "gridFalse" | "gridHeaderFilter"
   | "gridExpandCell" | "gridCloseCell" | "gridMoveColumn" | "gridResizeHelp" | "gridColumnMoved"
-  | "gridPinColumn" | "gridPinNone" | "gridPinLeft" | "gridPinRight" | "gridResponsiveHidden";
+  | "gridPinColumn" | "gridPinNone" | "gridPinLeft" | "gridPinRight" | "gridResponsiveHidden"
+  | "gridFilterGroupTitle" | "gridFilterMatch" | "gridFilterAll" | "gridFilterAny" | "gridAddFilterGroup" | "gridDeleteFilterGroup";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

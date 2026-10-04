@@ -43,6 +43,19 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the note for a user-visible column temporarily hidden by responsive layout.</summary>
     public string GridResponsiveHidden { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the heading for the optional grouped-condition editor.</summary>
+    public string GridFilterGroupTitle { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the conjunction selector label.</summary>
+    public string GridFilterMatch { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the all-conditions choice text.</summary>
+    public string GridFilterAll { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the any-condition choice text.</summary>
+    public string GridFilterAny { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the add-condition-group control label.</summary>
+    public string GridAddFilterGroup { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the remove-condition-group control label.</summary>
+    public string GridDeleteFilterGroup { get => Get(); set => Set(value); }
+
     /// <summary>Gets whether translated reporting controls require the optional reporting entry point.</summary>
     public bool RequiresReportingRuntime => _values.ContainsKey(nameof(GridBetween)) || _values.ContainsKey(nameof(GridRangeEnd)) ||
         _values.ContainsKey(nameof(GridInvalidRange)) || _values.ContainsKey(nameof(GridSuggestedCategory)) || _values.ContainsKey(nameof(GridChooseCategory)) ||
@@ -50,5 +63,8 @@ public sealed partial class CanopyLabels {
         _values.ContainsKey(nameof(GridExpandCell)) || _values.ContainsKey(nameof(GridCloseCell)) ||
         _values.ContainsKey(nameof(GridMoveColumn)) || _values.ContainsKey(nameof(GridResizeHelp)) || _values.ContainsKey(nameof(GridColumnMoved)) ||
         _values.ContainsKey(nameof(GridPinColumn)) || _values.ContainsKey(nameof(GridPinNone)) || _values.ContainsKey(nameof(GridPinLeft)) ||
-        _values.ContainsKey(nameof(GridPinRight)) || _values.ContainsKey(nameof(GridResponsiveHidden));
+        _values.ContainsKey(nameof(GridPinRight)) || _values.ContainsKey(nameof(GridResponsiveHidden)) ||
+        _values.ContainsKey(nameof(GridFilterGroupTitle)) || _values.ContainsKey(nameof(GridFilterMatch)) ||
+        _values.ContainsKey(nameof(GridFilterAll)) || _values.ContainsKey(nameof(GridFilterAny)) ||
+        _values.ContainsKey(nameof(GridAddFilterGroup)) || _values.ContainsKey(nameof(GridDeleteFilterGroup));
 }

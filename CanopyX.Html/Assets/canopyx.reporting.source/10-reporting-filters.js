@@ -49,9 +49,11 @@
       error.setAttribute("role", "status");
       reportingRangeRows(this.queryForChange().filters || []).forEach(filter => this.addGridFilter(rows, filter));
       form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => this.addGridFilter(rows, null)));
+      const groups = this.view.reporting.filterGroups ? this.buildReportingFilterGroups(form, error) : null;
       const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
       form.appendChild(gridButton(this.labels.gridClearFilters, () => {
         rows.textContent = "";
+        if (groups) groups.textContent = "";
         this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => setText(error, failure.message));
       }));
       form.appendChild(error); panel.appendChild(form);
@@ -59,7 +61,8 @@
         event.preventDefault();
         try {
           const filters = [...rows.children].flatMap(row => this.readGridFilter(row));
-          this.setQuery(gridQueryStart(this.queryForChange(true), { filters }))
+          const filterGroup = groups ? this.readReportingFilterGroups(groups) : this.queryForChange().filterGroup;
+          this.setQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }))
             .then(() => setText(error, ""), failure => setText(error, failure.message));
         } catch (failure) { setText(error, failure.message); }
       });

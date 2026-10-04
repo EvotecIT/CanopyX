@@ -11,6 +11,10 @@ public sealed class CanopyGridReporting {
     /// <remarks>The editor queries all records; the button does not filter only the mounted rows.</remarks>
     public bool HeaderFilters { get; set; }
 
+    /// <summary>Gets or sets whether the filter editor offers bounded nested all/any condition groups.</summary>
+    /// <remarks>Groups reuse the existing query contract; ordinary predicates remain an outer conjunction.</remarks>
+    public bool FilterGroups { get; set; }
+
     /// <summary>Gets or sets whether headers offer pointer dragging and keyboard column move controls.</summary>
     public bool ColumnReorder { get; set; }
 
@@ -64,6 +68,7 @@ public sealed class CanopyGridReporting {
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
         if (HeaderFilters) writer.Property("headerFilters", true);
+        if (FilterGroups) writer.Property("filterGroups", true);
         if (ColumnReorder) writer.Property("columnReorder", true);
         if (Responsive) writer.Property("responsive", true);
         if (MinimumCenterWidth != 128) writer.Property("minimumCenterWidth", MinimumCenterWidth);
