@@ -26,6 +26,10 @@ export type GridPresenter =
   | { readonly kind: "longText" };
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
+  /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
+  readonly grouping?: GridSort;
+  /** At most 32 generic aggregates over raw full-query and full-group values. */
+  readonly aggregates?: readonly GridAggregate[];
   /** Adds row checkboxes and explicit page/all-matching selection controls. Requires an enabled selection mode. */
   readonly selectionControls?: boolean;
   /** Session preferences by default; local storage requires an explicit stateKey and retains sensitive query settings. */
@@ -157,7 +161,25 @@ export interface GridFacetPage {
 export interface GridFacetSource<Q extends AcceptedGridQuery = AcceptedGridQuery> {
   facet?(request: GridFacetQuery<Q>, options: { signal: AbortSignal }): GridFacetPage | PromiseLike<GridFacetPage>;
 }
-export interface GridSource extends GridFacetSource<GridQuery> { readonly navigation?: "offset"; query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
+export interface GridSource extends GridFacetSource<GridQuery> {
+  readonly navigation?: "offset";
+  query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>;
+  /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
+  summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
+}
+export interface GridAggregate {
+  readonly id: string; readonly column: string; readonly label: string;
+  readonly operation: "count" | "sum" | "average" | "minimum" | "maximum";
+}
+export interface GridGroup {
+  readonly key: string; readonly value: CellValue; readonly offset: number; readonly count: number;
+  readonly aggregates: Readonly<Record<string, number | null>>;
+}
+export interface GridSummary {
+  readonly protocol: "canopyx/2"; readonly type: "gridSummary"; readonly view: string; readonly revision: string;
+  readonly query: GridQuery & { readonly revision: string }; readonly matched: number;
+  readonly groups: readonly GridGroup[]; readonly aggregates: Readonly<Record<string, number | null>>;
+}
 /** One complete visible page. Null counts remain unknown; ordinal positions do not grant random access. */
 export interface GridCursorPage extends Omit<GridPage, "type" | "total" | "matched"> {
   type: "gridCursorPage";
@@ -234,6 +256,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   timeZone: TimeZone;
   selection: string[];
   scrollTop: number;
+  /** Reporting grouping only. At most 10000 bounded stable keys; omitted from shareable state. */
+  collapsedGroups?: string[];
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
   paging?: { pageLength: number; offset: number };
 }
@@ -321,6 +345,11 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   flushViewSettings?(): Promise<void>;
   /** Requires reporting selection controls: immutable IDs or accepted-query selection, never persisted in a saved view. */
   getSelectionDescriptor?(): GridSelection<Q>;
+  /** Reporting summary capability only; null before acceptance. */
+  getSummary?(): GridSummary | null;
+  /** Flat grouping only. Collapse affects display; record query/selection/export scope remain intact. */
+  setGroupCollapsed?(key: string, collapsed: boolean): void;
+  getCollapsedGroups?(): string[];
   /** Requires selection controls and multiple selection. Query/revision changes retire this scope; paging preserves it. */
   selectAllMatching?(): void;
   /** Selects/deselects the full accepted page, including records outside the mounted viewport. */

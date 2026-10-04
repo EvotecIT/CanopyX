@@ -107,7 +107,9 @@ public sealed class CanopyGridQuery {
         writer.BeginObject().Envelope(cursor ? "gridCursorQuery" : "gridQuery").Property("view", View);
         if (cursor) writer.OptionalProperty("cursor", Cursor); else writer.Property("offset", Offset);
         writer.Property("limit", Limit).Property("search", Search ?? string.Empty).OptionalProperty("revision", Revision).Name("sort").BeginArray();
-        foreach (var sort in Sort) sort.WriteJson(writer);
+        var grouping = view.Reporting?.Grouping;
+        if (grouping != null) new CanopyGridSort(grouping.Column, grouping.Descending).WriteJson(writer);
+        foreach (var sort in Sort) if (sort.Column != grouping?.Column) sort.WriteJson(writer);
         writer.EndArray().Name("filters").BeginArray();
         foreach (var filter in Filters) filter.WriteJson(writer);
         writer.EndArray();

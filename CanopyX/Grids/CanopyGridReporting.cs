@@ -7,6 +7,12 @@ namespace CanopyX;
 /// <summary>Optional reporting capabilities carried by the reporting-grid runtime.</summary>
 /// <remarks>Ordinary flat grids and trees do not include these optional presentation and query policies.</remarks>
 public sealed class CanopyGridReporting {
+    /// <summary>Gets or sets optional single-column flat grouping over the complete accepted query.</summary>
+    public CanopyGridGrouping? Grouping { get; set; }
+
+    /// <summary>Gets up to 32 generic full-query and full-group aggregate descriptors.</summary>
+    public IList<CanopyGridAggregate> Aggregates { get; } = new List<CanopyGridAggregate>();
+
     /// <summary>Gets or sets whether rows expose selection checkboxes and explicit selection-scope controls.</summary>
     /// <remarks>Page, range and all-matching selection require multiple-row selection. All matching captures an accepted query and revision.</remarks>
     public bool SelectionControls { get; set; }
@@ -47,6 +53,19 @@ public sealed class CanopyGridReporting {
     public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
 
     internal void Validate(IList<CanopyColumn> columns) {
+        CanopyColumn? groupColumn = null;
+        foreach (var column in columns) if (column.Id == Grouping?.Column) groupColumn = column;
+        if (Grouping != null && (groupColumn == null || !groupColumn.Sortable))
+            throw new InvalidOperationException("Grouping requires a declared sortable raw column.");
+        if (Aggregates.Count > 32) throw new InvalidOperationException("At most 32 aggregates are supported.");
+        var aggregateIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var aggregate in Aggregates) {
+            CanopyColumn? declared = null;
+            if (aggregate != null) foreach (var column in columns) if (column.Id == aggregate.Column) declared = column;
+            if (aggregate == null || declared == null || !aggregateIds.Add(aggregate.Id) ||
+                aggregate.Operation != CanopyGridAggregateOperation.Count && declared.Kind != CanopyColumnKind.Number)
+                throw new InvalidOperationException("Aggregates need unique identities and declared raw columns; numeric operations require number columns.");
+        }
         if (ViewStorage != CanopyGridViewStorage.Session && ViewStorage != CanopyGridViewStorage.Local)
             throw new ArgumentOutOfRangeException(nameof(ViewStorage));
         var facets = new HashSet<string>(StringComparer.Ordinal);
@@ -87,6 +106,10 @@ public sealed class CanopyGridReporting {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
+        if (Grouping != null) { writer.Name("grouping"); Grouping.WriteJson(writer); }
+        if (Aggregates.Count != 0) {
+            writer.Name("aggregates").BeginArray(); foreach (var aggregate in Aggregates) aggregate.WriteJson(writer); writer.EndArray();
+        }
         if (SelectionControls) writer.Property("selectionControls", true);
         if (ViewStorage == CanopyGridViewStorage.Local) writer.Property("viewStorage", "local");
         if (HeaderFilters) writer.Property("headerFilters", true);

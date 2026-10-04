@@ -1783,15 +1783,15 @@ global.addEventListener("blur", stop);
 }
 });
 const ROW_DOM_ORDER = {
-keepDomOrder(first, last) {
+keepDomOrder(first, last, rows) {
 const ordered = [];
-const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
+const focusedIndex = rows.indexOf(this.focused);
 const focusedEl = focusedIndex >= 0 ? this.rendered.get(this.focused) : null;
 if (focusedEl && focusedIndex < first) {
 ordered.push(focusedEl);
 }
 for (let i = first; i <= last; i++) {
-const rowEl = this.rendered.get(this.rowItem(i));
+const rowEl = this.rendered.get(rows.rowItem(i));
 if (rowEl) {
 ordered.push(rowEl);
 }
@@ -1799,7 +1799,7 @@ ordered.push(rowEl);
 if (focusedEl && focusedIndex > last) {
 ordered.push(focusedEl);
 }
-const kids = Array.prototype.slice.call(this.canvas.children);
+const kids = [...this.canvas.children];
 const n = ordered.length;
 let inOrder = kids.length === n;
 for (let k = 0; inOrder && k < n; k++) {
@@ -1944,70 +1944,59 @@ this.render();
 });
 }
 },
-renderPass() {
-if (this.destroyed) {
-return;
-}
+renderPass(rows = this) {
+if (this.destroyed) return;
 const grid = this.grid;
 const held = this.heldCell();
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
 const top = this.logicalTop();
 const shift = this.scaledScroll ? top - grid.scrollTop : 0;
-const n = this.rowCount();
+const n = rows.rowCount();
 const over = this.lean ? 0 : OVERSCAN;
-const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
-const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
+const firstVisible = n ? rows.rowAt(top) : 0;
+const first = Math.max(0, firstVisible - over);
+const last = n ? Math.min(n - 1, rows.rowAt(top + viewHeight) + over) : -1;
 const want = new Set();
-for (let i = first; i <= last; i++) {
-want.add(this.rowItem(i));
-}
-const visibleFocus = this.indexOf(this.focused) >= 0 ? this.focused : null;
-if (visibleFocus) {
-want.add(visibleFocus);
-}
+for (let i = first; i <= last; i++) want.add(rows.rowItem(i));
+const visibleFocus = rows.indexOf(this.focused) >= 0 ? this.focused : null;
+if (visibleFocus) want.add(visibleFocus);
 const free = [];
 const active = document.activeElement;
 for (const [w, rowEl] of this.rendered) {
 if (!want.has(w)) {
 this.rendered.delete(w);
-if (rowEl.contains(active)) {
 rowEl.remove();
+if (rowEl.contains(active)) {
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 } else {
-rowEl.remove();
 free.push(rowEl);
 }
 }
 }
-const tabRow = visibleFocus || this.rowItem(n ? this.rowAt(top) : 0) || null;
+const tabRow = visibleFocus || rows.rowItem(firstVisible) || null;
 const fragment = document.createDocumentFragment();
 for (const w of want) {
-const index = this.indexOf(w);
-if (index < 0) {
-continue;
-}
+const index = rows.indexOf(w);
+if (index < 0) continue;
 let rowEl = this.rendered.get(w);
 if (!rowEl) {
 rowEl = free.pop() || this.pool.pop() || h("div");
-if (!rowEl.parentNode) {
 fragment.appendChild(rowEl);
-}
 this.rendered.set(w, rowEl);
-w._v = 0;
 }
 if (w._v !== this.version || rowEl._w !== w) {
 this.fillRow(rowEl, w);
 w._v = this.version;
 } else if (!w.status) this.refreshRowState(rowEl, w);
 const y = this.scaledScroll && (index < first || index > last) ?
-(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.rowTop(index) - shift;
+(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : rows.rowTop(index) - shift;
 if (rowEl._top !== y) {
 rowEl.style.transform = "translateY(" + y + "px)";
 rowEl._top = y;
 }
 if (rowEl._index !== index) {
-rowEl.setAttribute("aria-rowindex", String(index + 2));
+rowEl.setAttribute("aria-rowindex", index + 2);
 rowEl._index = index;
 }
 const alt = index % 2 === 1 && !w.status && !w.h.detail;
@@ -2024,15 +2013,11 @@ rowEl._tab = tab;
 for (const rowEl of free) {
 rowEl._w = null;
 this.observeDetail(rowEl, false);
-if (this.pool.length < 200) {
-this.pool.push(rowEl);
+if (this.pool.length < 200) this.pool.push(rowEl);
 }
-}
-if (fragment.childNodes.length) {
-this.canvas.appendChild(fragment);
-}
-this.window = { first: first, last: last };
-this.keepDomOrder(first, last);
+if (fragment.firstChild) this.canvas.appendChild(fragment);
+this.window = { first, last };
+this.keepDomOrder(first, last, rows);
 if (held) this.restoreCell(held);
 this.trimInactiveCache();
 }
@@ -4443,9 +4428,10 @@ throw new Error("CanopyX: numeric grid cells need finite values within the safe 
 return value;
 }
 if (column.kind === "datetime") {
-if (typeof value !== "string" || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) || !Number.isFinite(Date.parse(value)))
+const date = typeof value === "string" && /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) ? Date.parse(value) : NaN;
+if (!Number.isFinite(date))
 throw new Error("CanopyX: date grid cells need ISO dates with an explicit time zone.");
-return Date.parse(value);
+return date;
 }
 if (typeof value !== "string" && typeof value !== "boolean") throw new Error("CanopyX: text grid cells need strings or booleans.");
 return value;
@@ -4581,8 +4567,8 @@ switch (op) {
 case "eq": return value === operand;
 case "ne": return value !== operand;
 case "in": return values.includes(value);
-case "contains": return foldText(value).includes(foldText(operand));
-case "startsWith": return foldText(value).startsWith(foldText(operand));
+case "contains": return String(value).includes(String(operand));
+case "startsWith": return String(value).startsWith(String(operand));
 case "gt": return value > operand;
 case "ge": return value >= operand;
 case "lt": return value < operand;
@@ -4590,29 +4576,29 @@ case "le": return value <= operand;
 }
 return false;
 }
-function gridQueryRows(view, query, columns) {
+function gridQueryRows(view, query, columns, compare) {
 const terms = gridSearchTerms(query.search, query.searchMode),
 searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
-return view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
 query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+return compare ? rows.sort((a, b) => {
+for (const sort of query.sort) {
+const compared = compare(a, b, columns.get(sort.column), sort.direction);
+if (compared) return compared;
+}
+return gridOrder(a.id, b.id);
+}) : rows;
 }
 function inlineGridSource(view) {
 const columns = new Map(view.columns.map(column => [column.id, column]));
-const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
+const compare = GRID_REPORTING.compare?.(view) || gridCompare;
 let lastShape = null, ordered = null;
 return {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
 const shape = gridResultShape(query);
 if (shape !== lastShape) {
-ordered = gridQueryRows(view, query, columns);
-ordered.sort((a, b) => {
-for (const sort of query.sort) {
-const compared = compare(a, b, columns.get(sort.column), sort.direction);
-if (compared) return compared;
-}
-return gridOrder(a.id, b.id);
-});
+ordered = gridQueryRows(view, query, columns, compare);
 lastShape = shape;
 }
 return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
@@ -4836,7 +4822,7 @@ for (const name of ["visibleColumns", "applyWidths", "setColumnWidth", "startRes
 "paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
 DataGrid.prototype[name] = ROW_HELPERS[name];
 Object.assign(DataGrid.prototype, {
-requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal: signal }), signal); },
+requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal }), signal); },
 storePage(page) {
 const rows = page.items.map((item, i) => ({ key: item.id, h: item, _ri: page.offset + i, hpx: this.rowH }));
 const incoming = new Map(rows.map(row => [row.key, row._ri]));
@@ -4879,7 +4865,7 @@ const offsets = new Set();
 const bounds = this.rowBounds();
 for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
 if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
-if (this.focused && this.focused.status) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
+if (this.focused?.status && this.focused._ri >= 0) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
 for (const offset of offsets) {
 if (this.pendingPages.size >= 4) break;
 if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) this.loadPage(offset);
@@ -4888,7 +4874,7 @@ if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) thi
 loadPage(offset) {
 if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
 const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
-const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: offset, limit: this.pageSize, revision: snapshot.revision }));
+const query = gridQuery(this.view, { ...this.acceptedQuery, offset, limit: this.pageSize, revision: snapshot.revision });
 const token = {}; this.pendingPages.set(offset, token);
 token.promise = this.requestPage(query, lifetime.signal).then(page => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
@@ -4900,8 +4886,8 @@ if (element && (!active || active === document.body)) element.focus({ preventScr
 } else this.scheduleRender();
 }).catch(error => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
-this.pages.set(offset, { error: error, offset: offset }); this.version++;
-this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error: error }); this.scheduleRender();
+this.pages.set(offset, { error, offset }); this.version++;
+this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error }); this.scheduleRender();
 }).finally(() => {
 if (this.pendingPages.get(offset) === token) { this.pendingPages.delete(offset); this.loadWindow(); }
 });

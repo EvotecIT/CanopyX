@@ -10,9 +10,10 @@
       return value;
     }
     if (column.kind === "datetime") {
-      if (typeof value !== "string" || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) || !Number.isFinite(Date.parse(value)))
+      const date = typeof value === "string" && /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) ? Date.parse(value) : NaN;
+      if (!Number.isFinite(date))
         throw new Error("CanopyX: date grid cells need ISO dates with an explicit time zone.");
-      return Date.parse(value);
+      return date;
     }
     if (typeof value !== "string" && typeof value !== "boolean") throw new Error("CanopyX: text grid cells need strings or booleans.");
     return value;

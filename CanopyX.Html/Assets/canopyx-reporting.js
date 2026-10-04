@@ -1783,15 +1783,15 @@ global.addEventListener("blur", stop);
 }
 });
 const ROW_DOM_ORDER = {
-keepDomOrder(first, last) {
+keepDomOrder(first, last, rows) {
 const ordered = [];
-const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
+const focusedIndex = rows.indexOf(this.focused);
 const focusedEl = focusedIndex >= 0 ? this.rendered.get(this.focused) : null;
 if (focusedEl && focusedIndex < first) {
 ordered.push(focusedEl);
 }
 for (let i = first; i <= last; i++) {
-const rowEl = this.rendered.get(this.rowItem(i));
+const rowEl = this.rendered.get(rows.rowItem(i));
 if (rowEl) {
 ordered.push(rowEl);
 }
@@ -1799,7 +1799,7 @@ ordered.push(rowEl);
 if (focusedEl && focusedIndex > last) {
 ordered.push(focusedEl);
 }
-const kids = Array.prototype.slice.call(this.canvas.children);
+const kids = [...this.canvas.children];
 const n = ordered.length;
 let inOrder = kids.length === n;
 for (let k = 0; inOrder && k < n; k++) {
@@ -1944,70 +1944,59 @@ this.render();
 });
 }
 },
-renderPass() {
-if (this.destroyed) {
-return;
-}
+renderPass(rows = this) {
+if (this.destroyed) return;
 const grid = this.grid;
 const held = this.heldCell();
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
 const top = this.logicalTop();
 const shift = this.scaledScroll ? top - grid.scrollTop : 0;
-const n = this.rowCount();
+const n = rows.rowCount();
 const over = this.lean ? 0 : OVERSCAN;
-const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
-const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
+const firstVisible = n ? rows.rowAt(top) : 0;
+const first = Math.max(0, firstVisible - over);
+const last = n ? Math.min(n - 1, rows.rowAt(top + viewHeight) + over) : -1;
 const want = new Set();
-for (let i = first; i <= last; i++) {
-want.add(this.rowItem(i));
-}
-const visibleFocus = this.indexOf(this.focused) >= 0 ? this.focused : null;
-if (visibleFocus) {
-want.add(visibleFocus);
-}
+for (let i = first; i <= last; i++) want.add(rows.rowItem(i));
+const visibleFocus = rows.indexOf(this.focused) >= 0 ? this.focused : null;
+if (visibleFocus) want.add(visibleFocus);
 const free = [];
 const active = document.activeElement;
 for (const [w, rowEl] of this.rendered) {
 if (!want.has(w)) {
 this.rendered.delete(w);
-if (rowEl.contains(active)) {
 rowEl.remove();
+if (rowEl.contains(active)) {
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 } else {
-rowEl.remove();
 free.push(rowEl);
 }
 }
 }
-const tabRow = visibleFocus || this.rowItem(n ? this.rowAt(top) : 0) || null;
+const tabRow = visibleFocus || rows.rowItem(firstVisible) || null;
 const fragment = document.createDocumentFragment();
 for (const w of want) {
-const index = this.indexOf(w);
-if (index < 0) {
-continue;
-}
+const index = rows.indexOf(w);
+if (index < 0) continue;
 let rowEl = this.rendered.get(w);
 if (!rowEl) {
 rowEl = free.pop() || this.pool.pop() || h("div");
-if (!rowEl.parentNode) {
 fragment.appendChild(rowEl);
-}
 this.rendered.set(w, rowEl);
-w._v = 0;
 }
 if (w._v !== this.version || rowEl._w !== w) {
 this.fillRow(rowEl, w);
 w._v = this.version;
 } else if (!w.status) this.refreshRowState(rowEl, w);
 const y = this.scaledScroll && (index < first || index > last) ?
-(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.rowTop(index) - shift;
+(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : rows.rowTop(index) - shift;
 if (rowEl._top !== y) {
 rowEl.style.transform = "translateY(" + y + "px)";
 rowEl._top = y;
 }
 if (rowEl._index !== index) {
-rowEl.setAttribute("aria-rowindex", String(index + 2));
+rowEl.setAttribute("aria-rowindex", index + 2);
 rowEl._index = index;
 }
 const alt = index % 2 === 1 && !w.status && !w.h.detail;
@@ -2024,15 +2013,11 @@ rowEl._tab = tab;
 for (const rowEl of free) {
 rowEl._w = null;
 this.observeDetail(rowEl, false);
-if (this.pool.length < 200) {
-this.pool.push(rowEl);
+if (this.pool.length < 200) this.pool.push(rowEl);
 }
-}
-if (fragment.childNodes.length) {
-this.canvas.appendChild(fragment);
-}
-this.window = { first: first, last: last };
-this.keepDomOrder(first, last);
+if (fragment.firstChild) this.canvas.appendChild(fragment);
+this.window = { first, last };
+this.keepDomOrder(first, last, rows);
 if (held) this.restoreCell(held);
 this.trimInactiveCache();
 }
@@ -4443,9 +4428,10 @@ throw new Error("CanopyX: numeric grid cells need finite values within the safe 
 return value;
 }
 if (column.kind === "datetime") {
-if (typeof value !== "string" || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) || !Number.isFinite(Date.parse(value)))
+const date = typeof value === "string" && /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) ? Date.parse(value) : NaN;
+if (!Number.isFinite(date))
 throw new Error("CanopyX: date grid cells need ISO dates with an explicit time zone.");
-return Date.parse(value);
+return date;
 }
 if (typeof value !== "string" && typeof value !== "boolean") throw new Error("CanopyX: text grid cells need strings or booleans.");
 return value;
@@ -4581,8 +4567,8 @@ switch (op) {
 case "eq": return value === operand;
 case "ne": return value !== operand;
 case "in": return values.includes(value);
-case "contains": return foldText(value).includes(foldText(operand));
-case "startsWith": return foldText(value).startsWith(foldText(operand));
+case "contains": return String(value).includes(String(operand));
+case "startsWith": return String(value).startsWith(String(operand));
 case "gt": return value > operand;
 case "ge": return value >= operand;
 case "lt": return value < operand;
@@ -4590,29 +4576,29 @@ case "le": return value <= operand;
 }
 return false;
 }
-function gridQueryRows(view, query, columns) {
+function gridQueryRows(view, query, columns, compare) {
 const terms = gridSearchTerms(query.search, query.searchMode),
 searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
-return view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
 query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+return compare ? rows.sort((a, b) => {
+for (const sort of query.sort) {
+const compared = compare(a, b, columns.get(sort.column), sort.direction);
+if (compared) return compared;
+}
+return gridOrder(a.id, b.id);
+}) : rows;
 }
 function inlineGridSource(view) {
 const columns = new Map(view.columns.map(column => [column.id, column]));
-const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
+const compare = GRID_REPORTING.compare?.(view) || gridCompare;
 let lastShape = null, ordered = null;
 return {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
 const shape = gridResultShape(query);
 if (shape !== lastShape) {
-ordered = gridQueryRows(view, query, columns);
-ordered.sort((a, b) => {
-for (const sort of query.sort) {
-const compared = compare(a, b, columns.get(sort.column), sort.direction);
-if (compared) return compared;
-}
-return gridOrder(a.id, b.id);
-});
+ordered = gridQueryRows(view, query, columns, compare);
 lastShape = shape;
 }
 return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
@@ -4836,7 +4822,7 @@ for (const name of ["visibleColumns", "applyWidths", "setColumnWidth", "startRes
 "paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
 DataGrid.prototype[name] = ROW_HELPERS[name];
 Object.assign(DataGrid.prototype, {
-requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal: signal }), signal); },
+requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal }), signal); },
 storePage(page) {
 const rows = page.items.map((item, i) => ({ key: item.id, h: item, _ri: page.offset + i, hpx: this.rowH }));
 const incoming = new Map(rows.map(row => [row.key, row._ri]));
@@ -4879,7 +4865,7 @@ const offsets = new Set();
 const bounds = this.rowBounds();
 for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
 if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
-if (this.focused && this.focused.status) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
+if (this.focused?.status && this.focused._ri >= 0) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
 for (const offset of offsets) {
 if (this.pendingPages.size >= 4) break;
 if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) this.loadPage(offset);
@@ -4888,7 +4874,7 @@ if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) thi
 loadPage(offset) {
 if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
 const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
-const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: offset, limit: this.pageSize, revision: snapshot.revision }));
+const query = gridQuery(this.view, { ...this.acceptedQuery, offset, limit: this.pageSize, revision: snapshot.revision });
 const token = {}; this.pendingPages.set(offset, token);
 token.promise = this.requestPage(query, lifetime.signal).then(page => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
@@ -4900,8 +4886,8 @@ if (element && (!active || active === document.body)) element.focus({ preventScr
 } else this.scheduleRender();
 }).catch(error => {
 if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
-this.pages.set(offset, { error: error, offset: offset }); this.version++;
-this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error: error }); this.scheduleRender();
+this.pages.set(offset, { error, offset }); this.version++;
+this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error }); this.scheduleRender();
 }).finally(() => {
 if (this.pendingPages.get(offset) === token) { this.pendingPages.delete(offset); this.loadWindow(); }
 });
@@ -6783,7 +6769,7 @@ return gridOrder(a.length - i, b.length - j);
 }
 GRID_REPORTING.validate = view => {
 const options = view.reporting;
-if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage", "selectionControls"].includes(key)) ||
+if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage", "selectionControls", "grouping", "aggregates"].includes(key)) ||
 ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
 throw new Error("CanopyX: invalid reporting options.");
 if (options.selectionControls !== undefined && typeof options.selectionControls !== "boolean" || options.selectionControls && view.selection === "none")
@@ -8357,6 +8343,336 @@ event.preventDefault(); this.reportingSelectionIntent(row, !this.reportingRowSel
 }
 return SELECTION_CONTROLS_BASE.onKey.call(this, event);
 }
+});
+const SUMMARY_VALIDATE = GRID_REPORTING.validate, SUMMARY_COMPARE = GRID_REPORTING.compare, SUMMARY_QUERY = gridQuery;
+const SUMMARY_BASE = { requestPage: DataGrid.prototype.requestPage, render: DataGrid.prototype.render };
+function reportingSummaryEnabled(view) { return !!view.reporting?.grouping || !!view.reporting?.aggregates?.length; }
+function reportingGroupKey(value) { return JSON.stringify([typeof value, value]); }
+function reportingGroupAt(summary, index) {
+let low = 0, high = summary.groups.length;
+while (low < high) { const middle = (low + high) >>> 1; if (summary.groups[middle].offset <= index) low = middle + 1; else high = middle; }
+return low ? summary.groups[low - 1] : null;
+}
+GRID_REPORTING.validate = view => {
+SUMMARY_VALIDATE(view);
+const grouping = view.reporting.grouping, aggregates = view.reporting.aggregates || [], ids = new Set();
+if (reportingSummaryEnabled(view) && view.source.navigation === "cursor") throw new Error("CanopyX: summaries require offset navigation.");
+if (grouping !== undefined && (!grouping || typeof grouping !== "object" || Array.isArray(grouping) ||
+Object.keys(grouping).some(key => !["column", "direction"].includes(key)) || !["asc", "desc"].includes(grouping.direction) ||
+!view.columns.some(column => column.id === grouping.column && column.sortable))) throw new Error("CanopyX: invalid grouping column or order.");
+if (!Array.isArray(aggregates) || aggregates.length > 32) throw new Error("CanopyX: at most 32 aggregates are supported.");
+for (const aggregate of aggregates) {
+if (!aggregate || typeof aggregate !== "object" || Array.isArray(aggregate) ||
+Object.keys(aggregate).some(key => !["id", "column", "operation", "label"].includes(key))) throw new Error("CanopyX: invalid aggregate.");
+requireIdentifier(aggregate.id, "aggregate ID"); const column = view.columns.find(item => item.id === aggregate.column);
+if (!column || ids.has(aggregate.id) || !["count", "sum", "average", "minimum", "maximum"].includes(aggregate.operation) ||
+aggregate.operation !== "count" && column.kind !== "number" || typeof aggregate.label !== "string" ||
+!aggregate.label.trim() || aggregate.label.length > 512) throw new Error("CanopyX: invalid aggregate binding.");
+ids.add(aggregate.id);
+}
+};
+gridQuery = (view, input) => {
+const query = SUMMARY_QUERY(view, input), grouping = view.reporting?.grouping;
+return !grouping ? query : gridFreeze({ ...query, sort: [grouping, ...query.sort.filter(sort => sort.column !== grouping.column)] });
+};
+GRID_REPORTING.compare = view => {
+const compare = SUMMARY_COMPARE(view), grouping = view.reporting?.grouping;
+return !grouping ? compare : (a, b, column, direction) => {
+const compared = compare(a, b, column, direction);
+if (compared || column.id !== grouping.column) return compared;
+const left = gridScalar(a.cells[column.id], column), right = gridScalar(b.cells[column.id], column);
+const result = gridOrder(typeof left, typeof right) || gridOrder(String(left), String(right));
+return direction === "desc" ? -result : result;
+};
+};
+function reportingSummaryQuery(view, query, revision) { return gridQuery(view, { ...query, offset: 0, limit: view.pageSize, revision }); }
+function reportingSummaryValues(view, values, count) {
+const declarations = view.reporting.aggregates || [];
+if (!values || typeof values !== "object" || Array.isArray(values) || Object.keys(values).length !== declarations.length)
+throw new Error("CanopyX: summary aggregate bindings differ.");
+for (const aggregate of declarations) {
+const value = values[aggregate.id];
+if (!Object.hasOwn(values, aggregate.id) || value !== null && (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) ||
+aggregate.operation === "count" && (!validStructuralCount(value) || value > count)) throw new Error("CanopyX: invalid aggregate value.");
+}
+}
+function reportingSummaryResult(view, query, page, summary) {
+checkDocument(summary, "gridSummary");
+if (Object.keys(summary).some(key => !["protocol", "type", "view", "revision", "query", "matched", "groups", "aggregates"].includes(key)) ||
+JSON.stringify(summary).length > 4194304 || summary.view !== view.id || summary.revision !== page.revision || summary.matched !== page.matched ||
+!Array.isArray(summary.groups) || summary.groups.length > 10000 || !view.reporting.grouping && summary.groups.length ||
+!summary.query || summary.query.revision !== page.revision || summary.query.offset !== 0 ||
+JSON.stringify(gridQuery(view, summary.query)) !== JSON.stringify(query)) throw new Error("CanopyX: summary ownership or counts differ.");
+reportingSummaryValues(view, summary.aggregates, summary.matched);
+let offset = 0; const keys = new Set(), column = view.columns.find(item => item.id === view.reporting.grouping?.column), values = new Set();
+const compare = column ? GRID_REPORTING.compare(view) : null; let previous = null;
+for (const group of summary.groups) {
+if (!group || !Object.hasOwn(group, "value") || Object.keys(group).some(key => !["key", "value", "offset", "count", "aggregates"].includes(key)) ||
+group.value !== null && typeof group.value === "object") throw new Error("CanopyX: groups carry raw values.");
+requireIdentifier(group.key, "group key"); const value = gridScalar(group.value, column), key = reportingGroupKey(value);
+if (group.key.length > 4096 || keys.has(group.key) || values.has(key) || group.offset !== offset ||
+!validStructuralCount(group.count) || !group.count || previous && compare(previous, {cells:{[column.id]:group.value}}, column, view.reporting.grouping.direction) >= 0)
+throw new Error("CanopyX: invalid complete group range.");
+previous = {cells:{[column.id]:group.value}};
+keys.add(group.key); values.add(key); offset += group.count; reportingSummaryValues(view, group.aggregates, group.count);
+}
+if (view.reporting.grouping && offset !== page.matched) throw new Error("CanopyX: groups omit matching records.");
+return gridFreeze(JSON.parse(JSON.stringify(summary)));
+}
+Object.assign(DataGrid.prototype, {
+async requestPage(query, signal) {
+const page = await SUMMARY_BASE.requestPage.call(this, query, signal);
+if (!reportingSummaryEnabled(this.view)) return page;
+validateGridPage(page, this.view, query);
+const request = reportingSummaryQuery(this.view, query, page.revision), key = JSON.stringify(request);
+if (this.summaryCandidate?.key !== key) {
+const hook = this.source.summary || (this.view.source.kind === "inline" ? request => reportingInlineSummary(this.view, request) : null);
+if (!hook) throw new Error("CanopyX: hosted summaries need an explicit source summary hook.");
+const summary = await this.runGridHook(signal => hook.call(this.source, request, { signal }), signal);
+gridOperationActive(this, signal);
+this.summaryCandidate = { key, result: reportingSummaryResult(this.view, request, page, summary) };
+}
+if (this.view.reporting.grouping) {
+const column = this.view.columns.find(column => column.id === this.view.reporting.grouping.column);
+for (let i = 0; i < page.items.length; i++) {
+const group = reportingGroupAt(this.summaryCandidate.result, page.offset + i);
+if (!group || reportingGroupKey(gridScalar(page.items[i].cells[column.id], column)) !== reportingGroupKey(gridScalar(group.value, column)))
+throw new Error("CanopyX: a page record differs from its complete-query group.");
+}
+}
+return page;
+},
+render() {
+if (this.acceptedQuery && reportingSummaryEnabled(this.view)) {
+const key = JSON.stringify(reportingSummaryQuery(this.view, this.acceptedQuery, this.snapshot.revision));
+if (this.summaryCandidate?.key === key && this.summary !== this.summaryCandidate.result) {
+this.summary = this.summaryCandidate.result; this.groupProjectionKey = null;
+}
+this.prepareGroupProjection?.(); this.syncSummaryControls?.();
+}
+return SUMMARY_BASE.render.call(this);
+}
+});
+function reportingAggregateValues(view, rows, first = 0, last = rows.length) {
+const values = {};
+for (const aggregate of view.reporting.aggregates || []) {
+const column = view.columns.find(item => item.id === aggregate.column);
+let count = 0, sum = 0, correction = 0, minimum = Infinity, maximum = -Infinity;
+for (let i = first; i < last; i++) {
+const value = gridScalar(rows[i].cells[column.id], column);
+if (value === null) continue;
+count++;
+if (aggregate.operation !== "count") {
+const next = value - correction, total = sum + next;
+correction = total - sum - next; sum = total;
+minimum = Math.min(minimum, value); maximum = Math.max(maximum, value);
+}
+}
+values[aggregate.id] = aggregate.operation === "count" ? count : !count ? null :
+aggregate.operation === "sum" ? sum : aggregate.operation === "average" ? sum / count : aggregate.operation === "minimum" ? minimum : maximum;
+}
+return values;
+}
+function reportingInlineSummary(view, query) {
+const columns = new Map(view.columns.map(column => [column.id, column]));
+const rows = gridQueryRows(view, query, columns, GRID_REPORTING.compare(view)), groups = [], grouping = view.reporting.grouping;
+if (grouping) {
+const column = columns.get(grouping.column);
+for (let offset = 0; offset < rows.length;) {
+const value = cellValue(rows[offset].cells[column.id]) ?? null, scalar = gridScalar(value, column), key = reportingGroupKey(scalar);
+let end = offset + 1;
+while (end < rows.length && reportingGroupKey(gridScalar(rows[end].cells[column.id], column)) === key) end++;
+groups.push({ key, value, offset, count: end - offset, aggregates: reportingAggregateValues(view, rows, offset, end) });
+if (groups.length > 10000 || key.length > 4096) throw new Error("CanopyX: inline grouping exceeds its metadata bounds.");
+offset = end;
+}
+}
+return { protocol: PROTOCOL, type: "gridSummary", view: view.id, revision: query.revision, query,
+matched: rows.length, groups, aggregates: reportingAggregateValues(view, rows) };
+}
+const GROUP_TRIM = DataGrid.prototype.trimInactiveCache;
+Object.assign(DataGrid.prototype, {
+renderPass() { return ROW_VIEWPORT.renderPass.call(this, this.rowProjection || this); },
+trimInactiveCache() {
+if (this.rowProjection) this.window = this.rowProjection.recordWindow(this.window.first, this.window.last);
+return GROUP_TRIM.call(this);
+},
+prepareGroupProjection() {
+if (!this.view.reporting.grouping || !this.summary) return;
+this.collapsedGroups ||= new Set();
+const bounds = this.rowBounds(), key = [this.summary, bounds.first, bounds.last, this.groupCollapseVersion || 0];
+if (this.groupProjectionKey?.every((value, i) => value === key[i])) return;
+const segments = [], recordSegments = []; let count = 0;
+for (let i = 0; i < this.summary.groups.length; i++) {
+const group = this.summary.groups[i], first = Math.max(bounds.first, group.offset), last = Math.min(bounds.last, group.offset + group.count - 1);
+if (first > last) continue;
+const header = { _ri: -i - 1, hpx: this.rowH, h: { cells: {} }, status: "group", group };
+const length = 1 + (this.collapsedGroups.has(group.key) ? 0 : last - first + 1);
+const segment = { start: count, length, header, first, last };
+segments.push(segment); recordSegments.push(segment); count += length;
+}
+const find = (list, index, field) => {
+let low = 0, high = list.length;
+while (low < high) { const middle = (low + high) >>> 1; if (list[middle][field] <= index) low = middle + 1; else high = middle; }
+return low ? list[low - 1] : null;
+};
+const projection = {
+rowCount: () => count,
+rowAt: top => Math.max(0, Math.min(count - 1, Math.floor(top / this.rowH))),
+rowTop: index => index * this.rowH,
+rowItem: index => {
+const segment = find(segments, index, "start");
+return !segment || index >= segment.start + segment.length ? null : index === segment.start ? segment.header : this.rowItem(segment.first + index - segment.start - 1);
+},
+indexOf: row => {
+if (!row) return -1;
+if (row.group) { const segment = segments.find(item => item.header.group.key === row.group.key); return segment?.start ?? -1; }
+const segment = find(recordSegments, row._ri, "first");
+return !segment || row._ri > segment.last || segment.length === 1 || this.indexOf(row) < 0 ? -1 : segment.start + 1 + row._ri - segment.first;
+},
+recordWindow: (first, last) => {
+let start = Infinity, end = -1;
+for (let i = first; i <= last; i++) { const row = projection.rowItem(i); if (row && !row.group) { start = Math.min(start, row._ri); end = Math.max(end, row._ri); } }
+return { first: start === Infinity ? bounds.first : start, last: end };
+}
+};
+const focus = this.focused;
+if (focus) {
+const segment = focus.group ? segments.find(item => item.header.group.key === focus.group.key) : find(recordSegments, focus._ri, "first");
+if (segment && (focus.group || segment.length === 1)) this.focused = segment.header;
+}
+this.rowProjection = projection; this.groupProjectionKey = key;
+this.total = count * this.rowH; this.syncScrollRange(this.logicalTop()); this.grid.setAttribute("aria-rowcount", String(count + 1));
+},
+setGroupCollapsed(key, collapsed) {
+if (this.destroyed || this.pendingQuery || !this.summary || !this.view.reporting.grouping || typeof collapsed !== "boolean" ||
+!this.summary.groups.some(group => group.key === key)) throw new Error("CanopyX: choose an accepted group and a boolean collapse intent.");
+this.collapsedGroups ||= new Set();
+const ownedFocus = this.canvas.contains(document.activeElement);
+if (collapsed && !this.collapsedGroups.has(key) && this.collapsedGroups.size >= 10000) throw new Error("CanopyX: at most 10,000 collapsed group keys are supported.");
+if (collapsed) this.collapsedGroups.add(key); else this.collapsedGroups.delete(key);
+this.groupCollapseVersion = (this.groupCollapseVersion || 0) + 1; this.version++; this.render();
+if (ownedFocus && this.focused?.group) this.rendered.get(this.focused)?.focus({ preventScroll: true });
+this.emit("group", { key, collapsed });
+this.noteViewPreferenceIntent?.();
+this.stateChanged();
+}
+});
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridGroupHeading: "{column}: {value} ({count} records)", gridGroupMissing: "Missing value",
+gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals"
+}));
+const GROUP_BASE = {}, GROUP_API = GRID_REPORTING.api;
+for (const name of ["buildGridControls", "fillRow", "setFocus", "focusResult", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
+GRID_REPORTING.api = (api, grid) => {
+GROUP_API?.(api, grid);
+if (reportingSummaryEnabled(grid.view)) api.getSummary = () => grid.summary || null;
+if (grid.view.reporting?.grouping) {
+api.setGroupCollapsed = grid.setGroupCollapsed.bind(grid);
+api.getCollapsedGroups = () => [...(grid.collapsedGroups || [])];
+}
+};
+Object.assign(DataGrid.prototype, {
+buildGridControls() {
+GROUP_BASE.buildGridControls.call(this);
+if (!reportingSummaryEnabled(this.view)) return;
+this.summaryControls = h("div", "cx-grid-summary"); this.summaryControls.setAttribute("role", "status");
+this.summaryControls.setAttribute("aria-label", this.labels.gridSummary); this.toolbar.appendChild(this.summaryControls);
+},
+syncSummaryControls() {
+if (!this.summaryControls || !this.summary) return;
+setText(this.summaryControls, (this.view.reporting.aggregates || []).map(aggregate =>
+aggregate.label + ": " + formatValue(this.summary.aggregates[aggregate.id], "number", this.fmt)).join(" · "));
+},
+fillRow(element, row) {
+if (!row.group) { element.removeAttribute("data-cx-group"); return GROUP_BASE.fillRow.call(this, element, row); }
+element.textContent = ""; element._w = row; element._kind = "group"; element._layout = this.layout;
+element._attrs = {}; element._cls = null; element.className = "cx-row cx-grid-group";
+element.setAttribute("role", "row"); element.removeAttribute("data-cx-id"); element.removeAttribute("data-cx-status");
+element.removeAttribute("aria-selected"); element.removeAttribute("aria-busy"); element.dataset.cxGroup = row.group.key;
+element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
+const cell = this.cell(element, 0, this.rowWidth, "text"), button = h("button", "cx-grid-group-toggle");
+cell.setAttribute("aria-colspan", String(this.cols.length));
+button.type = "button"; button.tabIndex = -1; const collapsed = this.collapsedGroups.has(row.group.key);
+button.disabled = !!this.pendingQuery;
+button.setAttribute("aria-expanded", String(!collapsed));
+button.setAttribute("aria-label", collapsed ? this.labels.gridGroupExpand : this.labels.gridGroupCollapse); setText(button, collapsed ? "▸" : "▾");
+button.addEventListener("click", () => { if (!this.pendingQuery) { this.setFocus(row, false); this.setGroupCollapsed(row.group.key, !this.collapsedGroups.has(row.group.key)); this.setFocus(this.focused, true); } });
+const column = this.columns.find(item => item.id === this.view.reporting.grouping.column);
+const label = fill(this.labels.gridGroupHeading, { column: column.title, value: row.group.value === null ? this.labels.gridGroupMissing : formatValue(row.group.value, column.kind, this.fmt), count: numberFormat(this.lang).format(row.group.count) });
+const text = h("span", "cx-grid-group-text"); setText(text, label); cell.append(button, text);
+const aggregates = (this.view.reporting.aggregates || []).map(item => item.label + ": " + formatValue(row.group.aggregates[item.id], "number", this.fmt)).join(" · ");
+cell.title = label + (aggregates ? " — " + aggregates : "");
+if (aggregates) { const summary = h("span", "cx-grid-group-aggregates"); setText(summary, aggregates); cell.appendChild(summary); }
+element._cells = [{ cell, content: cell }];
+},
+setQuery(input, paging) {
+const pending = GROUP_BASE.setQuery.call(this, input, paging);
+const sync = () => { if (!this.destroyed) for (const button of this.canvas.querySelectorAll(".cx-grid-group-toggle")) button.disabled = !!this.pendingQuery; };
+sync(); pending.then(sync, sync); return pending;
+},
+setFocus(row, focus) {
+if (!this.rowProjection) return GROUP_BASE.setFocus.call(this, row, focus);
+const index = this.rowProjection.indexOf(row); if (index < 0 || this.destroyed) return;
+this.pendingNavigation = null; this.focused = row;
+const top = index * this.rowH, height = this.grid.clientHeight - this.head.offsetHeight;
+if (top < this.logicalTop()) this.setLogicalTop(top);
+else if (top + this.rowH > this.logicalTop() + height) this.setLogicalTop(top + this.rowH - height);
+this.render(); if (focus) this.rendered.get(this.focused)?.focus({ preventScroll: true });
+},
+focusResult(index, focus, column, control) {
+const group = this.summary?.groups.find(group => index >= group.offset && index < group.offset + group.count);
+if (group && this.collapsedGroups?.has(group.key)) this.setGroupCollapsed(group.key, false);
+return GROUP_BASE.focusResult.call(this, index, focus, column, control);
+},
+onKey(event) {
+const row = event.target.closest(".cx-row")?._w;
+if (!row || !this.rowProjection || event.defaultPrevented || event.isComposing || event.altKey || event.target.matches(OWN_ARROWS))
+return GROUP_BASE.onKey.call(this, event);
+if (row.group && ["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) {
+if (event.target.closest("button") && ["Enter", " "].includes(event.key)) return;
+event.preventDefault(); this.setGroupCollapsed(row.group.key, event.key === "ArrowLeft" ? true : event.key === "ArrowRight" ? false : !this.collapsedGroups.has(row.group.key));
+this.setFocus(this.focused, true); return;
+}
+if (row.group && ["Home", "End"].includes(event.key)) {
+event.preventDefault(); event.stopPropagation();
+if (event.ctrlKey || event.metaKey) this.focusResult(event.key === "Home" ? 0 : this.rowCount() - 1, true)
+.catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
+else this.setFocus(row, true);
+return;
+}
+if (!["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(event.key)) return GROUP_BASE.onKey.call(this, event);
+const step = event.key.startsWith("Page") ? Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)) : 1;
+const index = Math.max(0, Math.min(this.rowProjection.rowCount() - 1, this.rowProjection.indexOf(row) + (/Up$/.test(event.key) ? -step : step)));
+const target = this.rowProjection.rowItem(index), cells = this.rowCells(this.rendered.get(row)), column = cells.findIndex(cell => cell.contains(event.target));
+event.preventDefault(); event.stopPropagation();
+if (target?.group) this.setFocus(target, true);
+else if (target) this.focusResult(target._ri, true, column, null).catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
+}
+});
+const GROUP_STATE_BASE = {};
+for (const name of ["getState", "readGridState", "applyStatePresentation", "getShareState"]) GROUP_STATE_BASE[name] = DataGrid.prototype[name];
+Object.assign(DataGrid.prototype, {
+getState() {
+const state = GROUP_STATE_BASE.getState.call(this);
+if (this.view.reporting?.grouping) state.collapsedGroups = [...(this.collapsedGroups || [])];
+return state;
+},
+readGridState(input) {
+const state = GROUP_STATE_BASE.readGridState.call(this, input), groups = input.collapsedGroups || [];
+if (!Array.isArray(groups) || groups.length > 10000 || groups.some(key => typeof key !== "string" || !key.length || key.length > 4096))
+throw new Error("CanopyX: invalid bounded group collapse state.");
+groups.forEach(key => requireIdentifier(key, "group key"));
+if (this.view.reporting?.grouping) state.collapsedGroups = [...new Set(groups)];
+return state;
+},
+applyStatePresentation(state) {
+if (this.view.reporting?.grouping) {
+this.collapsedGroups = new Set(state.collapsedGroups || []); this.groupCollapseVersion = (this.groupCollapseVersion || 0) + 1;
+}
+return GROUP_STATE_BASE.applyStatePresentation.call(this, state);
+},
+getShareState() { const { collapsedGroups, ...state } = GROUP_STATE_BASE.getShareState.call(this); return gridFreeze(state); }
 });
 function createTreeGrid(host, options) {
 if (!host || !options || !options.view) {

@@ -174,6 +174,8 @@ public sealed class CanopyGridView {
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
         Reporting?.Validate(Columns);
+        if ((Reporting?.Grouping != null || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
+            throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");
         if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))
             throw new InvalidOperationException("Durable reporting preferences require a state key of 1 to 512 characters.");
         var searchable = new HashSet<string>(StringComparer.Ordinal);

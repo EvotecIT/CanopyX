@@ -322,3 +322,10 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;paddin
 .cx-data-grid .cx-grid-row-select { flex:0 0 auto;margin:0 6px 0 0;width:14px;height:14px;accent-color:var(--cx-accent); }
 .cx-grid-view-default,.cx-grid-view-storage { flex-basis:100%;margin:0;overflow-wrap:anywhere; }
 .cx-grid-view-storage:empty { display:none; }
+.cx-grid-summary { flex-basis:100%;font-size:.875em;overflow-wrap:anywhere; }
+.cx-grid-summary:empty { display:none; }
+.cx-data-grid .cx-grid-group { background:var(--cx-hover);font-weight:600; }
+.cx-grid-group-toggle { flex:0 0 auto;padding:0 6px;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer; }
+.cx-grid-group-toggle:focus-visible { outline:2px solid var(--cx-accent);outline-offset:-2px; }
+.cx-grid-group-text { overflow:hidden;text-overflow:ellipsis;min-width:0; }
+.cx-grid-group-aggregates { flex:0 1 auto;color:var(--cx-muted);font-weight:400;margin-inline-start:12px;overflow:hidden;text-overflow:ellipsis; }

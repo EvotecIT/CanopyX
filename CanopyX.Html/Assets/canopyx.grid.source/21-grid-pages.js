@@ -1,6 +1,6 @@
   // ---------- bounded host windows; selection identities are independent of cached pages ----------
   Object.assign(DataGrid.prototype, {
-    requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal: signal }), signal); },
+    requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal }), signal); },
 
     storePage(page) {
       const rows = page.items.map((item, i) => ({ key: item.id, h: item, _ri: page.offset + i, hpx: this.rowH }));
@@ -47,7 +47,7 @@
       const bounds = this.rowBounds();
       for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
         if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
-      if (this.focused && this.focused.status) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
+      if (this.focused?.status && this.focused._ri >= 0) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
       for (const offset of offsets) {
         if (this.pendingPages.size >= 4) break;
         if (!this.pendingPages.has(offset) && !(this.pages.get(offset) || {}).error) this.loadPage(offset);
@@ -57,7 +57,7 @@
     loadPage(offset) {
       if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
       const epoch = this.queryEpoch, lifetime = this.dataLifetime, snapshot = this.snapshot;
-      const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: offset, limit: this.pageSize, revision: snapshot.revision }));
+      const query = gridQuery(this.view, { ...this.acceptedQuery, offset, limit: this.pageSize, revision: snapshot.revision });
       const token = {}; this.pendingPages.set(offset, token);
       token.promise = this.requestPage(query, lifetime.signal).then(page => {
         if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime) return;
@@ -69,8 +69,8 @@
         } else this.scheduleRender();
       }).catch(error => {
         if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
-        this.pages.set(offset, { error: error, offset: offset }); this.version++;
-        this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error: error }); this.scheduleRender();
+        this.pages.set(offset, { error, offset }); this.version++;
+        this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error }); this.scheduleRender();
       }).finally(() => {
         if (this.pendingPages.get(offset) === token) { this.pendingPages.delete(offset); this.loadWindow(); }
       });

@@ -12,6 +12,7 @@
     { "$ref": "#/$defs/gridCursorQuery" },
     { "$ref": "#/$defs/gridFacetQuery" },
     { "$ref": "#/$defs/gridFacetPage" },
+    { "$ref": "#/$defs/gridSummary" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -132,6 +133,7 @@
         "timeZone": { "enum": ["utc", "local"] },
         "selection": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "scrollTop": { "type": "number", "minimum": 0, "maximum": 137438953408 },
+        "collapsedGroups": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
         "paging": { "type": "object", "required": ["pageLength", "offset"], "additionalProperties": false,
           "properties": { "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
             "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 } } }
@@ -154,6 +156,8 @@
       "type": "object", "additionalProperties": false,
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
+        "grouping": { "$ref": "#/$defs/gridGrouping" },
+        "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "viewStorage": { "enum": ["session", "local"] },
         "selectionControls": { "type": "boolean" },
@@ -166,6 +170,36 @@
         "layout": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridColumnLayout" } },
         "presenters": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridPresenter" } }
       }
+    },
+    "gridGrouping": {
+      "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+      "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } }
+    },
+    "gridAggregate": {
+      "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
+        "operation": { "enum": ["count", "sum", "average", "minimum", "maximum"] },
+        "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
+    },
+    "gridAggregateValues": {
+      "type": "object", "maxProperties": 32, "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "type": ["number", "null"], "minimum": -9007199254740991, "maximum": 9007199254740991 }
+    },
+    "gridSummary": {
+      "type": "object", "required": ["protocol", "type", "view", "revision", "query", "matched", "aggregates", "groups"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridSummary" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "query": { "allOf": [{ "$ref": "#/$defs/gridQuery" }, { "required": ["revision"], "properties": { "offset": { "const": 0 } } }] },
+        "matched": { "$ref": "#/$defs/count" }, "aggregates": { "$ref": "#/$defs/gridAggregateValues" },
+        "groups": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/gridGroup" } } },
+      "$comment": "Readers validate exact view/revision/query ownership, aggregate bindings, contiguous groups accounting for matched records and a 4194304-code-unit envelope bound. Grouping requires known-count offset navigation."
+    },
+    "gridGroup": {
+      "type": "object", "required": ["key", "value", "offset", "count", "aggregates"], "additionalProperties": false,
+      "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
+        "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" } }
     },
     "gridColumnLayout": {
       "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
@@ -673,6 +707,11 @@
             "gridSelectionQueryCount": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectionQueryUnknown": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectRecord": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupHeading": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupMissing": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupExpand": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupCollapse": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSummary": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterMatch": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAll": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAny": { "$ref": "#/$defs/accessibleLabel" },
