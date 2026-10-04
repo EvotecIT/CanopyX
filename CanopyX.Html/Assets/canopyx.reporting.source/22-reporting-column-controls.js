@@ -4,6 +4,22 @@
     gridColumnMoved: "{column} moved to position {position}"
   }));
   const LAYOUT_HEADER = DataGrid.prototype.buildHeader, LAYOUT_ORDER = DataGrid.prototype.setColumnOrder;
+  DataGrid.prototype.focusReportingHeader = function (control) {
+    if (!control || !control.isConnected) return;
+    control.focus({ preventScroll: true });
+    const frame = this.grid.getBoundingClientRect(), left = frame.left + this.grid.clientLeft, box = control.getBoundingClientRect();
+    if (box.left < left) this.grid.scrollLeft -= left - box.left;
+    else if (box.right > left + this.grid.clientWidth) this.grid.scrollLeft += box.right - left - this.grid.clientWidth;
+  };
+  DataGrid.prototype.restoreReportingFocus = function (held, columnId) {
+    if (!held || !columnId) return;
+    const index = this.cols.findIndex(column => column.id === columnId);
+    if (index < 0) { this.setFocus(held.w, true); return; }
+    const cell = this.rowCells(this.rendered.get(held.w))[index];
+    const candidate = cell && held.control >= 0 ? cell.querySelectorAll(CELL_CONTROLS)[held.control] : null;
+    const control = candidate && reachable(candidate) ? cellControls(cell).indexOf(candidate) : -1;
+    this.focusCell(held.w, index, control < 0 ? null : control, true);
+  };
   DataGrid.prototype.buildHeader = function () {
     if (this.cancelColumnDrag) this.cancelColumnDrag();
     const active = document.activeElement, held = active && active.classList.contains("cx-column-move") && this.headRow.contains(active) ?
@@ -28,15 +44,14 @@
         if (target) this.moveReportingColumn(column, target, event.key === "ArrowRight");
       });
       move.addEventListener("pointerdown", event => this.startColumnDrag(event, column));
-      if (held === column.id) move.focus({ preventScroll: true });
+      if (held === column.id) this.focusReportingHeader(move);
     });
   };
   DataGrid.prototype.setColumnOrder = function (ids) {
     const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
     LAYOUT_ORDER.call(this, ids);
     if (held && columnId) {
-      this.render(); const index = this.cols.findIndex(column => column.id === columnId);
-      if (index >= 0) this.focusCell(held.w, index, held.control < 0 ? null : held.control);
+      this.render(); this.restoreReportingFocus(held, columnId);
     }
   };
   DataGrid.prototype.moveReportingColumn = function (column, target, after) {
@@ -44,6 +59,6 @@
     const ids = this.columns.map(item => item.id).filter(id => id !== column.id), at = ids.indexOf(target.id) + (after ? 1 : 0);
     ids.splice(at, 0, column.id); this.setColumnOrder(ids);
     const position = this.cols.findIndex(item => item.id === column.id);
-    this.headCells[position].querySelector(".cx-column-move").focus({ preventScroll: true });
+    this.focusReportingHeader(this.headCells[position].querySelector(".cx-column-move"));
     setText(this.live, fill(this.labels.gridColumnMoved, { column: column.title, position: position + 1 }));
   };
