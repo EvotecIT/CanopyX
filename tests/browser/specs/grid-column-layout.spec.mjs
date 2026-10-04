@@ -91,3 +91,54 @@ test("invalid policies and saved flex intent reject before accepted state is cha
   expect(await page.evaluate(() => { const definition = document.querySelector('[data-canopyx-host]').canopyx.view; definition.reporting.layout.name.minimum = 200;
     try { CanopyX.createDataGrid(document.createElement("div"), { view: definition }); return false; } catch { return true; } })).toBe(true);
 });
+
+async function expectHeaderFocusVisible(page) {
+  await expect.poll(() => page.evaluate(() => {
+    const focused = document.activeElement, frame = document.querySelector(".cx-grid"), box = focused.getBoundingClientRect(), outer = frame.getBoundingClientRect();
+    return box.left >= outer.left + frame.clientLeft - 1 && box.right <= outer.left + frame.clientLeft + frame.clientWidth + 1;
+  })).toBe(true);
+}
+
+test("moving a non-sortable header reveals its focused move control without moving the page", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await open(page, { columns: ["a", "b", "c"].map(id => ({ id, title: id, kind: "text", width: 160 })),
+    reporting: { columnReorder: true }, rows: [{ id: "r0", cells: { a: "A", b: "B", c: "C" } }] });
+  await header(page, "a").locator(".cx-column-move").press("ArrowRight");
+  await page.keyboard.press("ArrowRight"); await nextFrames(page);
+  await expect(header(page, "a").locator(".cx-column-move")).toBeFocused(); await expectHeaderFocusVisible(page);
+  expect(await page.evaluate(() => ({ grid: document.querySelector(".cx-grid").scrollLeft, page: scrollX }))).toMatchObject({ page: 0 });
+  expect(await page.locator(".cx-grid").evaluate(grid => grid.scrollLeft)).toBeGreaterThan(0);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["a", "b", "c"]));
+  await nextFrames(page); await expectHeaderFocusVisible(page);
+});
+
+test("auto-fit keeps a widened column's focused resize control visible", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await open(page, { rows: [{ id: "r0", cells: { name: "Name", notes: "Long report notes ".repeat(60) } }] });
+  const grip = header(page, "notes").getByRole("separator"); await grip.press("Enter"); await nextFrames(page);
+  await expect(grip).toBeFocused(); await expectHeaderFocusVisible(page);
+  expect(await grip.getAttribute("aria-valuenow")).toBe("800");
+});
+
+for (const control of ["button", "input"]) test("API reordering retains the entered host " + control + " despite unreachable siblings", async ({ page }) => {
+  await open(page);
+  await page.evaluate(control => {
+    const host = document.querySelector('[data-canopyx-host]'), definition = host.canopyx.view; host.canopyx.destroy(); host.replaceChildren();
+    host.canopyx = CanopyX.createDataGrid(host, { view: definition, renderers: { name: (_, cell) => {
+      const hidden = document.createElement("button"); hidden.hidden = true; hidden.textContent = "Hidden"; cell.append(hidden);
+      const disabled = document.createElement("button"); disabled.disabled = true; disabled.textContent = "Disabled"; cell.append(disabled);
+      for (const name of ["A", "B"]) {
+        const item = document.createElement(control); item.setAttribute("aria-label", name); item.textContent = name;
+        if (control === "button") { item.type = "button"; item.onclick = () => { window.activated = name; }; }
+        else item.value = name;
+        cell.append(item);
+      }
+      return true;
+    } } }); return host.canopyx.ready;
+  }, control);
+  const entered = page.locator('.cx-row[data-cx-id="r0"]').getByLabel("A", { exact: true }); await entered.focus();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["notes", "amount", "name", "hidden"])); await nextFrames(page);
+  await expect(entered).toBeFocused();
+  if (control === "button") { await page.keyboard.press("Enter"); expect(await page.evaluate(() => window.activated)).toBe("A"); }
+  else { await page.keyboard.press("End"); await page.keyboard.type("x"); await expect(entered).toHaveValue("Ax"); }
+});

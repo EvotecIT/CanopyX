@@ -35,6 +35,8 @@
       const grip = this.headCells[index].querySelector(".cx-resize"), policy = reportingLayout(this, column);
       grip.setAttribute("aria-valuemin", String(policy.minimum)); grip.setAttribute("aria-valuemax", String(policy.maximum));
     });
+    const active = document.activeElement;
+    if (active && this.headRow.contains(active) && active.matches(".cx-column-move,.cx-resize")) this.focusReportingHeader(active);
   };
   function reportingManualWidth(grid, column) {
     column.width = column.renderWidth ?? column.width; if (column.flex !== undefined) column.flex = false;

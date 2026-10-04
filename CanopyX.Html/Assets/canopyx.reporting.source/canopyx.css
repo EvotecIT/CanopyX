@@ -15,8 +15,9 @@
 .cx-reporting-text .cx-button:hover { background:color-mix(in srgb,var(--cx-accent) 10%,var(--cx-surface)); }
 .cx-reporting-text .cx-button:focus-visible { outline:2px solid var(--cx-accent);outline-offset:2px; }
 .cx-column-move { flex:none;border:0;background:transparent;color:var(--cx-muted);padding:0 4px;cursor:grab;font:inherit;touch-action:none; }
-.cx-column-move:hover { color:var(--cx-text);background:var(--cx-hover); }
+.cx-column-move:hover { color:var(--cx-text);background:var(--cx-hover-bg); }
 .cx-column-move:focus-visible { outline:2px solid var(--cx-accent);outline-offset:-2px; }
+.cx-data-grid .cx-hcell:last-child .cx-resize { right:0; }
 .cx-hcell.cx-drop-before { box-shadow:inset 3px 0 var(--cx-accent); }
 .cx-hcell.cx-drop-after { box-shadow:inset -3px 0 var(--cx-accent); }
 .cx-column-drag { position:fixed;z-index:10000;pointer-events:none;padding:7px 12px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--cx-accent);border-radius:6px;background:var(--cx-surface);color:var(--cx-text);font:14px system-ui;box-shadow:0 4px 12px #0003; }
