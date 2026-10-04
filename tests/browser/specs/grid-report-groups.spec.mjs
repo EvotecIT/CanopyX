@@ -161,6 +161,7 @@ test('grouped page keys cross record pages and skip collapsed presentation range
   await page.evaluate(api+`.setGroupCollapsed(${JSON.stringify(key)},true)`);
   await page.locator('.cx-grid-group').first().focus();await page.keyboard.press('ArrowDown');
   await expect(page.locator('[data-cx-id="r05"]')).toBeFocused();
+  expect(await page.locator('.cx-grid-group-text').first().evaluate(text=>text.scrollWidth<=text.clientWidth)).toBe(true);
   await page.screenshot({path:test.info().outputPath('group-keyboard-page-boundary.png')});
 });
 
