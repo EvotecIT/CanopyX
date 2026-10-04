@@ -44,7 +44,7 @@
 
     readGridState(state) {
       if (!state || state.version !== 1 || state.view !== this.view.id || !["utc", "local"].includes(state.timeZone) ||
-          !Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER || !Array.isArray(state.selection))
+          !Number.isFinite(state.scrollTop) || state.scrollTop < 0 || state.scrollTop > MAX_PROTOCOL_INTEGER * this.rowH || !Array.isArray(state.selection))
         throw new Error("CanopyX: invalid or incompatible grid state.");
       const columns = gridStateColumns(this, state.columns);
       const selection = [...new Set(state.selection.map(id => { requireIdentifier(id, "state selection ID"); return id; }))];
@@ -56,13 +56,15 @@
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
       const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
         timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
-      if (this.paged) {
+      if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
         if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
             !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER || this.cursor && paging.offset !== 0)
           throw new Error("CanopyX: invalid paged view state.");
-        parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
-        if (!state.paging) parsed.scrollTop = 0;
+        if (this.paged) {
+          parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
+          if (!state.paging) parsed.scrollTop = 0;
+        } else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER * this.rowH, paging.offset * this.rowH + state.scrollTop);
       }
       return parsed;
     },
