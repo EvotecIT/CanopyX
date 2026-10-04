@@ -7113,8 +7113,10 @@ input.search !== request.search || input.includeCurrentFilter !== request.includ
 !Array.isArray(input.items) || input.items.length > request.limit || input.items.length > input.totalValues ||
 !input.items.length && input.totalValues > 0 || input.truncated !== (input.items.length < input.totalValues))
 throw new Error("CanopyX: facet response must match its accepted revision, projection and bounded counts.");
+const widened = !request.includeCurrentFilter &&
+gridResultShape(reportingFacetProjection(request.query, request.column)) !== gridResultShape(request.query);
 if (Number.isInteger(grid.snapshot.total) && input.matched > grid.snapshot.total || Number.isInteger(grid.snapshot.matched) &&
-(request.includeCurrentFilter ? input.matched !== grid.snapshot.matched : input.matched < grid.snapshot.matched))
+(widened ? input.matched < grid.snapshot.matched : input.matched !== grid.snapshot.matched))
 throw new Error("CanopyX: facet counts contradict the known accepted dataset counts.");
 const keys = new Set(); let occurrences = 0;
 const items = input.items.map(item => {

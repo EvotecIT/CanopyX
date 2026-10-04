@@ -93,21 +93,30 @@ test("invalid requests and missing host capabilities reject without deriving fac
 });
 
 test("host facet counts must respect known accepted matched/total counts while unknown cursor counts stay supported", async ({ page }) => {
-  await open(page, {}, hostSetup.replace("total:100,matched:100", "total:200,matched:100"), true);
+  const setup = hostSetup.replace("total:100,matched:100", "total:200,matched:100").replace("amount:i", "amount:i+2");
+  await open(page, {filters:[filter('category','eq','Host'),filter('amount','ge',2)]}, setup, true);
   const attempts = [[true, 5, true], [true, 101, true], [false, 99, true], [false, 201, true], [false, 150, false]];
   for (const [index, [includeCurrentFilter, matched, rejected]] of attempts.entries()) {
     await page.evaluate(includeCurrentFilter => { window.facetResult = document.querySelector('[data-canopyx-host]').canopyx
       .getFacets('category', {includeCurrentFilter}).catch(error => ({error:error.message})); }, includeCurrentFilter);
     await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(index + 1);
     const request = await page.evaluate(index => facetRequests[index].request, index);
-    await page.evaluate(({index,value}) => facetResolvers[index](value), {index, value:response(request,{matched,items:[{value:'Host',count:matched}]})});
+    const items = rejected ? [{value:'Host',count:matched}] : [{value:'Host',count:100},{value:'Other',count:50}];
+    await page.evaluate(({index,value}) => facetResolvers[index](value), {index, value:response(request,{matched,totalValues:items.length,items})});
     const result = await page.evaluate(() => facetResult);
     if (rejected) expect(result.error).toContain('CanopyX:'); else expect(result.matched).toBe(150);
   }
+  await open(page, {filters:[filter('amount','ge',2)],filterGroup:group('and',[filter('amount','lt',1000)])}, setup, true);
+  await page.evaluate(() => {window.facetResult=document.querySelector('[data-canopyx-host]').canopyx.getFacets('category',{includeCurrentFilter:false})
+    .catch(error=>({error:error.message}));});
+  await expect.poll(()=>page.evaluate(()=>facetRequests.length)).toBe(1);
+  const unchanged = await page.evaluate(()=>facetRequests[0].request);
+  await page.evaluate(value=>facetResolvers[0](value),response(unchanged,{matched:150,items:[{value:'Host',count:150}]}));
+  expect((await page.evaluate(()=>facetResult)).error).toContain('CanopyX:');
   const cursorView = {...definition,source:{kind:'host',navigation:'cursor'},rows:undefined};
   await page.evaluate(async view => { const host=document.querySelector('[data-canopyx-host]');host.canopyx.destroy();
     const grid=CanopyX.createDataGrid(host,{view,source:{query(q){return {protocol:'canopyx/2',type:'gridCursorPage',view:q.view,
-      revision:'unknown',offset:0,total:null,matched:null,items:[]};},facet(request){return {protocol:'canopyx/2',type:'gridFacetPage',
+      revision:'unknown',offset:0,total:null,matched:null,nextCursor:'next',items:[{id:'u1',cells:{category:'Host'}},{id:'u2',cells:{category:'Host'}}]};},facet(request){return {protocol:'canopyx/2',type:'gridFacetPage',
       view:request.query.view,revision:'unknown',column:request.column,search:request.search,includeCurrentFilter:request.includeCurrentFilter,
       matched:7,totalValues:1,truncated:false,items:[{value:'Host',count:7}]};}}});await grid.ready; }, cursorView);
   expect((await facets(page)).matched).toBe(7);
