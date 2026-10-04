@@ -59,6 +59,8 @@
     const ids = this.columns.map(item => item.id).filter(id => id !== column.id), at = ids.indexOf(target.id) + (after ? 1 : 0);
     ids.splice(at, 0, column.id); this.setColumnOrder(ids);
     const position = this.cols.findIndex(item => item.id === column.id);
-    this.focusReportingHeader(this.headCells[position].querySelector(".cx-column-move"));
-    setText(this.live, fill(this.labels.gridColumnMoved, { column: column.title, position: position + 1 }));
+    const destination = position < 0 ? this.cols.findIndex(item => item.id === target.id) : position;
+    this.focusReportingHeader(this.headCells[Math.max(0, destination)]?.querySelector(".cx-column-move"));
+    const order = position < 0 ? this.columns.filter(item => !item.hidden).indexOf(column) : position;
+    setText(this.live, fill(this.labels.gridColumnMoved, { column: column.title, position: order + 1 }));
   };

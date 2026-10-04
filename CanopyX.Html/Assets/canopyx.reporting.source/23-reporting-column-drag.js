@@ -9,13 +9,13 @@
     const clear = () => this.headCells.forEach(cell => cell.classList.remove("cx-drop-before", "cx-drop-after"));
     const locate = () => {
       clear(); target = null;
-      for (let index = 0; index < this.headCells.length; index++) {
-        const box = this.headCells[index].getBoundingClientRect();
-        if (latest < box.right || index === this.headCells.length - 1) {
-          target = this.cols[index]; after = latest > box.left + box.width / 2;
-          this.headCells[index].classList.add(after ? "cx-drop-after" : "cx-drop-before"); break;
-        }
-      }
+      const frame = this.grid.getBoundingClientRect(), row = this.headRow.getBoundingClientRect();
+      const x = Math.max(frame.left + this.grid.clientLeft + 1, Math.min(latest, frame.left + this.grid.clientLeft + this.grid.clientWidth - 1));
+      const cell = document.elementFromPoint(x, row.top + row.height / 2)?.closest(".cx-hcell");
+      const index = this.headCells.indexOf(cell);
+      if (index < 0) return;
+      const box = cell.getBoundingClientRect(); target = this.cols[index]; after = latest > box.left + box.width / 2;
+      cell.classList.add(after ? "cx-drop-after" : "cx-drop-before");
     };
     const scroll = () => {
       const box = this.grid.getBoundingClientRect(), delta = latest < box.left + 36 ? -12 : latest > box.right - 36 ? 12 : 0;

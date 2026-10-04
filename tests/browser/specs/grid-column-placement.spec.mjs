@@ -19,6 +19,49 @@ const header = (page, id) => page.locator('.cx-hcell[data-cx-column="' + id + '"
 const layout = page => api(page, () => document.querySelector('[data-canopyx-host]').canopyx.getColumnLayout());
 const headerOrder = page => page.locator(".cx-hcell").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn));
 
+test("native Tab reveals every scrolling-center header control between pinned edges", async ({ page }) => {
+  await page.setViewportSize({ width: 650, height: 700 }); await open(page, { reporting: { ...view.reporting, headerFilters: true } });
+  await header(page, "name").locator(".cx-column-move").focus();
+  for (let step = 0; step < 22; step++) {
+    await page.keyboard.press("Tab");
+    const box = await page.evaluate(() => {
+      const active = document.activeElement, cell = active.closest(".cx-hcell");
+      if (!cell || cell.hasAttribute("data-cx-pin")) return null;
+      return { active: active.getBoundingClientRect().toJSON(),
+        left: document.querySelector('.cx-hcell[data-cx-column=name]').getBoundingClientRect().right,
+        right: document.querySelector('.cx-hcell[data-cx-column=action]').getBoundingClientRect().left };
+    });
+    if (box) { expect(box.active.left).toBeGreaterThanOrEqual(box.left - 1); expect(box.active.right).toBeLessThanOrEqual(box.right + 1); }
+  }
+});
+
+for (const [destination, pin] of [["action", "right"], ["name", "left"]]) test(`pointer drops choose the exposed ${pin} pinned header`, async ({ page }) => {
+  await page.setViewportSize({ width: 650, height: 700 }); await open(page);
+  const control = await header(page, "region").locator(".cx-column-move").boundingBox();
+  const target = await header(page, destination).boundingBox();
+  await page.mouse.move(control.x + control.width / 2, control.y + control.height / 2); await page.mouse.down();
+  await page.mouse.move(target.x + 8, target.y + target.height / 2, { steps: 8 }); await page.mouse.up(); await nextFrames(page);
+  expect((await layout(page)).find(column => column.id === "region").requestedPin).toBe(pin);
+  const order = await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.getState().columns.map(column => column.id));
+  expect(order.indexOf("region")).toBe(order.indexOf(destination) - 1);
+});
+
+test("a cross-pin move that responsively hides its own column retains a surviving header focus", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.setViewportSize({ width: 532, height: 700 });
+  await open(page, { columns: columns.filter(column => column.id !== "notes"),
+    rows: view.rows.map(row => ({ id: row.id, cells: { name: row.cells.name, region: row.cells.region, owner: row.cells.owner, action: row.cells.action } })),
+    reporting: { responsive: true, columnReorder: true, layout: {
+      name: { minimum: 40, maximum: 300, pin: "left", priority: 0, alwaysVisible: true },
+      region: { minimum: 40, maximum: 300, pin: "left", priority: 1 },
+      owner: { minimum: 40, maximum: 300, priority: 1 }, action: { minimum: 40, maximum: 300, pin: "right", priority: 0 }
+    } } });
+  expect(await headerOrder(page)).toEqual(["name", "region", "action"]);
+  await header(page, "region").locator(".cx-column-move").focus(); await page.keyboard.press("ArrowRight");
+  expect(await headerOrder(page)).toEqual(["name", "owner", "action"]); expect(errors).toEqual([]);
+  await expect(header(page, "action").locator(".cx-column-move")).toBeFocused();
+});
+
 test("left and right cells stay aligned with headers while the center scrolls and receives keyboard focus", async ({ page }) => {
   await page.setViewportSize({ width: 650, height: 700 }); await open(page);
   const start = await header(page, "name").boundingBox(), end = await header(page, "action").boundingBox();

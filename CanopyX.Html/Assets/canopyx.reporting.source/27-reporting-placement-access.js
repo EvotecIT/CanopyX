@@ -1,6 +1,6 @@
   // ---------- pinned regions keep the scrolling center reachable ----------
   const PLACEMENT_REVEAL = DataGrid.prototype.revealInRow, PLACEMENT_FOCUS_HEADER = DataGrid.prototype.focusReportingHeader,
-    PLACEMENT_EXPORT = DataGrid.prototype.prepareExport;
+    PLACEMENT_EXPORT = DataGrid.prototype.prepareExport, PLACEMENT_ACCESS_HEADER = DataGrid.prototype.buildHeader;
   function revealReportingCenter(grid, target, pin) {
     if (pin && pin !== "none") return;
     const frame = grid.grid.getBoundingClientRect(), left = frame.left + grid.grid.clientLeft + (grid.pinnedLeftWidth || 0),
@@ -15,6 +15,16 @@
   DataGrid.prototype.focusReportingHeader = function (control) {
     PLACEMENT_FOCUS_HEADER.call(this, control);
     if (control) revealReportingCenter(this, control, control.closest(".cx-hcell").getAttribute("data-cx-pin"));
+  };
+  DataGrid.prototype.buildHeader = function () {
+    if (!this.pinnedHeaderFocus) {
+      this.pinnedHeaderFocus = true;
+      this.headRow.addEventListener("focusin", event => {
+        const cell = event.target.closest(".cx-hcell");
+        if (cell && this.headRow.contains(cell)) revealReportingCenter(this, event.target, cell.getAttribute("data-cx-pin"));
+      }, { signal: this.lifetime.signal });
+    }
+    return PLACEMENT_ACCESS_HEADER.call(this);
   };
   DataGrid.prototype.prepareExport = function (options) {
     const columns = options && options.columns === undefined ? reportingColumnOrder(this.columns.filter(column => !column.hidden)).map(column => column.id) : undefined;
