@@ -17,6 +17,30 @@ async function open(page, view, setup = "") {
 }
 const positions = page => page.locator(".cx-row[data-cx-id]").evaluateAll(rows => rows.map(row => Number(row.getAttribute("aria-rowindex"))));
 
+test("paged controls reuse the locale fallback for an invalid document language", async ({ page }) => {
+  await open(page, definition(), "document.documentElement.lang='en_US';");
+  await page.evaluate(controller + ".goToPage(1)");
+  expect(await page.evaluate(controller + ".getPaging().pageIndex")).toBe(1);
+  await expect(page.locator('.cx-grid-page-range')).toHaveText("26–50 of 137 rows");
+  await page.screenshot({ path: test.info().outputPath("locale-fallback.png") });
+});
+
+test("legacy global scroll starts the first page while explicit page-relative scroll is restored", async ({ page }) => {
+  await open(page, definition({ pageLength: 100 }));
+  const migrated = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    const legacy = grid.getState(); delete legacy.paging; legacy.scrollTop = 4096;
+    await grid.setState(legacy); return grid.getState();
+  });
+  expect(migrated.scrollTop).toBe(0); expect(migrated.paging).toEqual({ pageLength: 100, offset: 0 });
+  await page.screenshot({ path: test.info().outputPath("legacy-first-page.png") });
+  const explicit = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx, state = grid.getState();
+    state.scrollTop = 140; await grid.setState(state); return grid.getState().scrollTop;
+  });
+  expect(explicit).toBe(140);
+});
+
 test("paging follows full filtering and sorting while exports retain the whole accepted result", async ({ page }) => {
   await open(page, definition());
   await page.evaluate(async () => {

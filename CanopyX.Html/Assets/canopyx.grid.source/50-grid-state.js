@@ -62,6 +62,7 @@
             !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER || this.cursor && paging.offset !== 0)
           throw new Error("CanopyX: invalid paged view state.");
         parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
+        if (!state.paging) parsed.scrollTop = 0;
       }
       return parsed;
     },

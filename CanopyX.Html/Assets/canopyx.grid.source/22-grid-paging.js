@@ -104,7 +104,7 @@
     syncPager() {
       if (!this.pager) return;
       const paging = this.getPaging(), busy = !this.acceptedQuery || !!this.pendingQuery;
-      const numbers = new Intl.NumberFormat(this.lang);
+      const numbers = numberFormat(this.lang);
       setText(this.pageRange, fill(paging.matched === null ? this.labels.gridCursorRange : this.labels.gridPageRange,
         { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }));
       if (this.pageNumber) {
