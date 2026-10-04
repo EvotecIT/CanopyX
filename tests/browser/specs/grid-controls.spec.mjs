@@ -17,6 +17,53 @@ async function openGrid(page, view = definition(), setup = "") {
 }
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 
+test("opening and applying filters preserves mixed raw membership and newline text", async ({ page }) => {
+  const view = definition(); view.rows = [{ id: "bool", cells: { name: true } }, { id: "text", cells: { name: "true" } }, { id: "line", cells: { name: "line1\nline2" } }];
+  view.query = { filters: [{ column: "name", operator: "in", values: [true, "true"] }] };
+  await openGrid(page, view); await page.locator(".cx-grid-filters > summary").click();
+  await page.locator(".cx-grid-filters").getByRole("button", { name: "Apply", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values)).toEqual([true, "true"]);
+  await page.evaluate(async () => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ filters: [{ column: "name", operator: "eq", values: ["line1\nline2"] }] }));
+  await page.locator(".cx-grid-filters > summary").click(); await page.locator(".cx-grid-filters > summary").click();
+  await page.locator(".cx-grid-filters").getByRole("button", { name: "Apply", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values)).toEqual(["line1\nline2"]);
+});
+for (const [column, values, extra] of [["size", [111, 112], "113"], ["date", ["2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z"], "2026-01-03T00:00:00Z"]])
+test(`membership editing displays and retains every original ${column} operand`, async ({page}) => {
+  const view = definition(); view.query = {filters:[{column, operator:"in", values}]};
+  await openGrid(page, view); await page.locator(".cx-grid-filters > summary").click();
+  const membership = page.locator(".cx-grid-filter textarea:enabled");
+  await expect(membership).toHaveValue(values.join("\n"));
+  await membership.fill(values.join("\n") + "\n" + extra);
+  await page.locator(".cx-grid-filters").getByRole("button", {name:"Apply",exact:true}).click();
+  const actual = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values);
+  expect(actual).toEqual([...values, column === "size" ? Number(extra) : extra]);
+});
+
+test("reset supersedes queued search input before a slow host restoration", async ({ page }) => {
+  const view = definition(); view.source = { kind: "host" }; delete view.rows;
+  await openGrid(page, view, `window.queries=[];CanopyX.configure('inventory',{source:{async query(query){window.queries.push(query.search);await new Promise(resolve=>setTimeout(resolve,300));return {protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:0,total:0,matched:0,items:[]};}}});`);
+  await page.getByRole("searchbox").fill("queued"); await page.getByRole("button", { name: "Reset view", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().search)).toBe("");
+  await expect(page.getByRole("grid")).toHaveAttribute("aria-busy", "false");
+  expect(await page.evaluate(() => window.queries)).toEqual(["", ""]);
+});
+test("inactive numeric inputs do not prevent a valid membership filter from submitting", async ({ page }) => {
+  await openGrid(page); await page.locator(".cx-grid-filters > summary").click();
+  const panel = page.locator(".cx-grid-filters"); await panel.getByRole("button", { name: "Add filter", exact: true }).click();
+  const row = panel.locator("fieldset"); await row.getByRole("combobox", { name: "Column", exact: true }).selectOption("size");
+  await row.locator("input.cx-grid-filter-value").press("-");
+  expect(await row.locator("input.cx-grid-filter-value").evaluate(input => input.validity.badInput)).toBe(true);
+  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("in"); await row.locator("textarea.cx-grid-filter-value:visible").fill("111");
+  await panel.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "2");
+});
+test("a keyboard reorder reaching a boundary keeps focus in that column's controls", async ({ page }) => {
+  await openGrid(page); await page.locator(".cx-grid-columns > summary").click();
+  const move = page.getByRole("button", { name: "Move Size earlier", exact: true }); await move.focus(); await move.press("Enter");
+  await expect(page.getByRole("button", { name: "Move Size later", exact: true })).toBeFocused();
+});
+
 test("typed filter controls combine category, raw numbers and UTC dates across the complete source", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-filters > summary").click();
   const panel = page.locator(".cx-grid-filters");

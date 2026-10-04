@@ -276,7 +276,8 @@ for (const [scenario, outcome] of [
   if (leave) await page.evaluate(() => {
     const after = document.body.appendChild(document.createElement("button")); after.id = "after-grid"; after.textContent = "Next action";
   });
-  if (leave) { await page.keyboard.press("Tab"); await expect(page.locator("#after-grid")).toBeFocused(); }
+  // Native macOS button tabbing follows the system keyboard-access preference. The arrival contract starts after focus left.
+  if (leave) { await page.locator("#after-grid").focus(); await expect(page.locator("#after-grid")).toBeFocused(); }
   await page.evaluate(() => window.pending.filter(item => item.query.offset >= 170).forEach(item => item.resolve()));
   await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeAttached();
   if (leave) await expect(page.locator("#after-grid")).toBeFocused();
@@ -300,7 +301,8 @@ test("keyboard cell navigation reaches every host control and respects controls 
   await page.keyboard.press("ArrowLeft"); await expect(row.getByRole("button", { name: "First" })).toBeFocused();
   await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight"); await expect(firstCell).toBeFocused();
   await page.keyboard.press("Enter"); await expect(row.getByRole("textbox", { name: "Record note" })).toBeFocused();
-  await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight");
+  // Home has platform-specific native behavior. Put the caret at a known position before testing ArrowRight ownership.
+  await row.getByRole("textbox").evaluate(input => input.setSelectionRange(0, 0)); await page.keyboard.press("ArrowRight");
   await expect(row.getByRole("textbox", { name: "Record note" })).toBeFocused();
   expect(await row.getByRole("textbox").evaluate(input => input.selectionStart)).toBe(1);
   await page.keyboard.press("Escape"); await expect(firstCell).toBeFocused();
