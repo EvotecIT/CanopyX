@@ -48,6 +48,7 @@
         "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "searchDelayMs": { "type": "integer", "minimum": 0, "maximum": 5000, "description": "Search-input debounce; absent uses zero for inline sources and 300 for hosted sources. Enter applies immediately." },
         "searchColumns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" }, "$comment": "Every identity must bind to a declared grid column; absent searches every declared column." },
+        "reporting": { "$ref": "#/$defs/gridReporting" },
         "columns": {
           "type": "array", "minItems": 1,
           "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
@@ -68,6 +69,21 @@
         "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
         "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
       }]
+    },
+    "gridReporting": {
+      "type": "object", "additionalProperties": false,
+      "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
+      "properties": {
+        "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } }
+      }
+    },
+    "gridOrdering": {
+      "type": "object", "required": ["text"], "additionalProperties": false,
+      "properties": {
+        "text": { "enum": ["ordinal", "foldedOrdinal", "natural", "foldedNatural"] },
+        "categories": { "type": "array", "maxItems": 512, "uniqueItems": true, "items": { "type": "string", "maxLength": 4096 },
+          "$comment": "Writers and readers also reject category collisions after the selected frozen case folding." }
+      }
     },
     "gridPage": {
       "description": "A page after full-dataset filtering and sorting. Writers and readers check offset <= matched <= total, page bounds, and unique row identities.",

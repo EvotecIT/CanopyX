@@ -9,5 +9,8 @@ public enum CanopyRuntime {
     InteractiveTreeGrid,
 
     /// <summary>The flat data grid and both tree runtimes, for pages that combine their views.</summary>
-    DataGrid
+    DataGrid,
+
+    /// <summary>The optional reporting grid, ordinary flat grid, and both tree runtimes.</summary>
+    ReportingGrid
 }

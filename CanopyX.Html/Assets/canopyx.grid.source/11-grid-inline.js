@@ -32,6 +32,7 @@
 
   function inlineGridSource(view) {
     const rows = view.rows, columns = new Map(view.columns.map(column => [column.id, column]));
+    const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
     const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     let lastShape = null, ordered = null;
     return {
@@ -44,7 +45,7 @@
             query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
           ordered.sort((a, b) => {
             for (const sort of query.sort) {
-              const compared = gridCompare(a, b, columns.get(sort.column), sort.direction);
+              const compared = compare(a, b, columns.get(sort.column), sort.direction);
               if (compared) return compared;
             }
             return gridOrder(a.id, b.id);

@@ -108,7 +108,18 @@ The grid toolbar provides typed filters, column visibility and ordering, and nam
 
 Use `api.getState()` and `await api.setState(state)` to save and restore the accepted query, column layout, time zone, selection IDs and scroll position. `api.saveView("Archives")` saves a named snapshot; `await api.applySavedView("Archives")` restores it, and `api.removeSavedView("Archives")` removes it. A grid's `StateKey` remembers the current settings and up to 20 named views in session storage. `await api.resetView()` restores the original definition and clears selection while retaining named views. A host that supplies its own toolbar passes `toolbar: false` and uses these same controller methods.
 
-Grid pages choose `CanopyRuntime.DataGrid`, which also hosts interactive trees. For mixed fragments, request that runtime from `CanopyHtmlAssets.WriteTo` and include it once. Load the grid entry point first on a mixed page; a smaller tree entry point cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
+Grid pages choose the entry point required by their definition, which also hosts interactive trees. For mixed fragments, use `CanopyHtmlAssets.GetRuntime(view)` with `CanopyHtmlAssets.WriteTo` and include the largest required entry point once. Load that entry point first; a smaller tree or ordinary-grid runtime cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
+
+Reporting grids add explicit natural or case-folded text ordering and category order without enlarging the ordinary grid entry point:
+
+```csharp
+view.Reporting = new CanopyGridReporting();
+view.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
+view.Reporting.Ordering.Add("status", new CanopyGridOrdering(CanopyGridTextOrder.FoldedOrdinal,
+    new[] { "Critical", "Warning", "Healthy" }));
+```
+
+The columns identify declared sortable text fields. Complete-page writers select `CanopyRuntime.ReportingGrid` automatically. JavaScript hosts import from `@evotecit/canopyx/reporting` with its matching `reporting.css`, and supply `reporting: { ordering: { name: { text: "foldedNatural" } } }` in the grid definition. Host query engines can reuse `CanopyGridOrdering`; sorting precedes result windows and export order remains the accepted query order. See the [protocol's ordering and precision rules](docs/data-protocol.md#flat-grid-documents) for categories, missing values, exact text representations and UTC millisecond dates.
 
 The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
 

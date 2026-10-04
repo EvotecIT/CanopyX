@@ -4390,6 +4390,7 @@ this.canvas.replaceChildren(); this.outline.replaceChildren();
 }
 });
 const ROW_HELPERS = {};
+const GRID_REPORTING = {};
 for (const name of ["buildHeader", "visibleColumns", "applyWidths", "setColumnWidth", "startResize", "cell", "newCell", "paintSlot", "paintBadges",
 "paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
 ROW_HELPERS[name] = TreeGrid.prototype[name];
@@ -4439,7 +4440,8 @@ function gridScalar(cell, column) {
 const value = cellValue(cell);
 if (value == null) return null;
 if (column.kind === "number") {
-if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("CanopyX: numeric grid cells need finite numbers.");
+if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)
+throw new Error("CanopyX: numeric grid cells need finite values within the safe integer magnitude.");
 return value;
 }
 if (column.kind === "datetime") {
@@ -4478,6 +4480,10 @@ function validateGridView(view) {
 checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
 if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
 throw new Error("CanopyX: a grid needs a label and columns.");
+if (view.reporting !== undefined) {
+if (!GRID_REPORTING.validate) throw new Error("CanopyX: this view needs the reporting runtime.");
+GRID_REPORTING.validate(view);
+}
 const ids = new Set();
 for (const column of view.columns) {
 requireIdentifier(column && column.id, "grid column ID");
@@ -4588,6 +4594,7 @@ return false;
 }
 function inlineGridSource(view) {
 const rows = view.rows, columns = new Map(view.columns.map(column => [column.id, column]));
+const compare = GRID_REPORTING.compare ? GRID_REPORTING.compare(view) : gridCompare;
 const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
 let lastShape = null, ordered = null;
 return {
@@ -4600,7 +4607,7 @@ ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
 query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
 ordered.sort((a, b) => {
 for (const sort of query.sort) {
-const compared = gridCompare(a, b, columns.get(sort.column), sort.direction);
+const compared = compare(a, b, columns.get(sort.column), sort.direction);
 if (compared) return compared;
 }
 return gridOrder(a.id, b.id);

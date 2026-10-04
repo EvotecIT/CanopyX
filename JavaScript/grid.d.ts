@@ -10,6 +10,14 @@ export interface GridRow { id: string; cells: Record<string, Cell>; }
 export interface GridExportRow { readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>; }
 export type GridColumn = Omit<CanopyColumn, "editable"> & { editable?: false };
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
+/** Code-unit collation; natural digit runs never convert to floating-point numbers. */
+export interface GridOrdering {
+  readonly text: "ordinal" | "foldedOrdinal" | "natural" | "foldedNatural";
+  /** At most 512 distinct values after selected folding; remaining values follow declared categories. */
+  readonly categories?: readonly string[];
+}
+/** Include the reporting entry point when this optional capability set is present. */
+export interface GridReporting { readonly ordering?: Readonly<Record<string, GridOrdering>>; }
 export type GridFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
@@ -65,6 +73,7 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   searchDelayMs?: number;
   /** Unique declared IDs; absent searches every column, including hidden columns. */
   searchColumns?: string[];
+  reporting?: GridReporting;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;

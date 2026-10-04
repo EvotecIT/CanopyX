@@ -5,7 +5,8 @@
     const value = cellValue(cell);
     if (value == null) return null;
     if (column.kind === "number") {
-      if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("CanopyX: numeric grid cells need finite numbers.");
+      if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)
+        throw new Error("CanopyX: numeric grid cells need finite values within the safe integer magnitude.");
       return value;
     }
     if (column.kind === "datetime") {
@@ -46,6 +47,10 @@
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
     if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
       throw new Error("CanopyX: a grid needs a label and columns.");
+    if (view.reporting !== undefined) {
+      if (!GRID_REPORTING.validate) throw new Error("CanopyX: this view needs the reporting runtime.");
+      GRID_REPORTING.validate(view);
+    }
     const ids = new Set();
     for (const column of view.columns) {
       requireIdentifier(column && column.id, "grid column ID");

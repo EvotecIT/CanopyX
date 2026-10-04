@@ -35,6 +35,9 @@ public sealed class CanopyGridView {
     /// <summary>Gets the column definitions. No column has tree semantics.</summary>
     public IList<CanopyColumn> Columns { get; } = new List<CanopyColumn>();
 
+    /// <summary>Gets or sets optional reporting capabilities. Null keeps the ordinary data-grid entry point.</summary>
+    public CanopyGridReporting? Reporting { get; set; }
+
     /// <summary>Gets all rows of an inline source. Host sources must leave this collection empty.</summary>
     public IList<CanopyGridRow> Rows { get; } = new List<CanopyGridRow>();
 
@@ -122,6 +125,7 @@ public sealed class CanopyGridView {
             .Name("columns").BeginArray();
         foreach (var column in Columns) column.WriteJson(writer);
         writer.EndArray();
+        if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
         if (SearchColumns.Count > 0) {
@@ -169,6 +173,7 @@ public sealed class CanopyGridView {
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        Reporting?.Validate(Columns);
         var searchable = new HashSet<string>(StringComparer.Ordinal);
         foreach (var id in SearchColumns) {
             if (id == null || !columnIds.Contains(id) || !searchable.Add(id)) throw new InvalidOperationException("Search columns must identify unique declared columns.");
