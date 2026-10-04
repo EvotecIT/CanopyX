@@ -24,7 +24,7 @@
 
     addReportingFilterGroup(parent, definition, depth, form, error) {
       if (depth > 8 || form.querySelectorAll(".cx-grid-filter-group").length >= 64) {
-        setText(error, this.labels.gridInvalidFilter); return null;
+        reportingFilterError(error, this.labels.gridInvalidFilter); return null;
       }
       const group = h("fieldset", "cx-grid-filter-group"), legend = h("legend"), operator = h("select"),
         rows = h("div"), children = h("div", "cx-grid-filter-group-children"), actions = h("div", "cx-grid-filter-group-actions");
@@ -37,14 +37,17 @@
         const next = removed.nextElementSibling || removed.previousElementSibling;
         const hadFocus = removed.contains(document.activeElement); removed.remove();
         container._sync?.();
-        if (hadFocus) (next?.querySelector("select,input,textarea,button") || fallback)?.focus({ preventScroll: true });
+        if (hadFocus) {
+          const target = next?.querySelector("select,input,textarea,button") || fallback;
+          target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
       };
       const addFilter = gridButton(this.labels.gridAddFilter, () => {
         const row = addPredicate(null); if (row) row._filter.column.focus();
       });
       const addPredicate = predicate => {
         if (form.querySelectorAll(".cx-grid-filter").length >= 64) {
-          setText(error, this.labels.gridInvalidFilter); return null;
+          reportingFilterError(error, this.labels.gridInvalidFilter); return null;
         }
         this.addGridFilter(rows, predicate); const row = rows.lastElementChild;
         row.lastElementChild.addEventListener("click", event => {
