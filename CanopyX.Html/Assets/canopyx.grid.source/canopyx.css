@@ -1,5 +1,5 @@
 /* Flat grids share the tree viewport, theme and reusable cell styles. */
-.cx-data-grid { min-height:var(--cx-grid-min,0px); }
+.cx-data-grid { min-height:var(--cx-min-h,0); }
 .cx-data-grid > .cx-toolbar { flex:none; }
 .cx-data-grid .cx-grid-notice { flex:none;padding:6px 8px;color:var(--cx-muted); }
 .cx-data-grid .cx-grid-notice[role="alert"] { color:var(--cx-tone-danger); }

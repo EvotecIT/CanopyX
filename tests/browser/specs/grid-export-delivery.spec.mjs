@@ -53,7 +53,7 @@ test('snapshot bounds reject full scopes without truncation and ordinary grids r
   });
   expect(errors[0]).toContain('row bound');expect(errors[1]).toContain('onPrint');
   await page.unroute('http://canopyx.test/delivery');const plain=definition();delete plain.reporting;await open(page,plain);
-  expect(await page.evaluate(`Promise.resolve().then(()=>${api}.toCsv({scope:'all',locale:'pl-PL'})).catch(e=>e.message)`)).toContain('reporting runtime');
+  expect(await page.evaluate(`Promise.resolve().then(()=>${api}.toCsv({scope:'all',locale:'pl-PL'})).catch(e=>e.message)`)).toContain('export metadata requires reporting');
 });
 
 test('invalid file metadata is rejected before host generation and date/number raw values stay typed',async({page})=>{
@@ -181,4 +181,11 @@ for(const reporting of [false,true])test(`short ${reporting?'reporting':'ordinar
   expect((await geometry()).height).toBeLessThan(compact);expect((await geometry()).pagerFits).toBe(true);
   await page.setViewportSize({width:390,height:820});await nextFrames(page);
   await expect.poll(async()=>(await geometry()).viewport).toBeGreaterThanOrEqual(112);
+});
+
+test('a host that owns its toolbar retains explicit short and empty viewport heights',async({page})=>{
+  await open(page,definition(),"CanopyX.configure('delivery',{toolbar:false});addEventListener('DOMContentLoaded',()=>{const h=document.querySelector('[data-canopyx-host]');h.style.height='58px';h.style.padding='0';});");
+  await expect.poll(()=>page.evaluate("document.querySelector('[data-canopyx-host]').offsetHeight")).toBe(58);
+  await page.evaluate(api+".setQuery({search:'missing'})");await nextFrames(page);
+  expect(await page.evaluate("document.querySelector('[data-canopyx-host]').offsetHeight")).toBe(58);
 });

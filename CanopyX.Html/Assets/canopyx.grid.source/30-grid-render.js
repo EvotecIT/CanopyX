@@ -42,8 +42,8 @@
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
       this.resizeObserver = new ResizeObserver(() => {
-        host.style.setProperty("--cx-grid-min", [...host.children].reduce((height, child) =>
-          height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2) + "px");
+        host.style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+          height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
         this.applyWidths(); this.scheduleRender();
       });
       this.resizeObserver.observe(grid);

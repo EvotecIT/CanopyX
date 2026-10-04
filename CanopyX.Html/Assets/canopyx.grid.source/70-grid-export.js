@@ -21,7 +21,7 @@
   Object.assign(DataGrid.prototype, {
     prepareExport(options) {
       if (!this.view.reporting && ["fileName", "locale", "timeZone", "onProgress"].some(key => options?.[key] !== undefined))
-        throw new Error("CanopyX: this view needs the reporting runtime.");
+        throw new Error("CanopyX: export metadata requires reporting.");
       if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted query.");
       if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: choose an explicit export scope.");
       const { scope, values, signal } = options, filtered = scope === "filtered";

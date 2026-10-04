@@ -5105,8 +5105,8 @@ if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.conta
 }, { signal: signal });
 this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
 this.resizeObserver = new ResizeObserver(() => {
-host.style.setProperty("--cx-grid-min", [...host.children].reduce((height, child) =>
-height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2) + "px");
+host.style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
 this.applyWidths(); this.scheduleRender();
 });
 this.resizeObserver.observe(grid);
@@ -5667,7 +5667,7 @@ if (grid.destroyed || signal?.aborted) throw new DOMException("Grid operation ca
 Object.assign(DataGrid.prototype, {
 prepareExport(options) {
 if (!this.view.reporting && ["fileName", "locale", "timeZone", "onProgress"].some(key => options?.[key] !== undefined))
-throw new Error("CanopyX: this view needs the reporting runtime.");
+throw new Error("CanopyX: export metadata requires reporting.");
 if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted query.");
 if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: choose an explicit export scope.");
 const { scope, values, signal } = options, filtered = scope === "filtered";
