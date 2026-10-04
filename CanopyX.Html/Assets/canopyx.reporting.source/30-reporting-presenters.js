@@ -74,7 +74,7 @@
         const items = options.kind === "list" ? text.split(options.separator, options.limit + 1) : null;
         const value = items ? items.slice(0, options.limit).join(options.separator) + (items.length > options.limit ? " …" : "") : text;
         const preview = value.length > 256 ? value.slice(0, 256).replace(/[\uD800-\uDBFF]$/, "") + " …" : value;
-        if (text && (!items || items.length > options.limit || value.length > 256)) {
+        if (text) {
           const button = appendText(preview, "button", "cx-presenter-expand"); button.type = "button";
           button.setAttribute("aria-haspopup", "dialog"); button.setAttribute("aria-label", fill(grid.labels.gridExpandCell, { column: column.title }));
           button.addEventListener("click", () => grid.showReportingText(column, text, button, row.id));

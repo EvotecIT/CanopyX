@@ -128,3 +128,13 @@ test("complete text returns to the same record cell after a host refresh replace
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnVisible("notes", false)); await nextFrames(page);
   await page.getByRole("button", { name: "Close complete text" }).click(); await expect(row(page, "a")).toBeFocused();
 });
+
+test("lists below the item and preview limits remain readable when the column clips their text", async ({ page }) => {
+  const owners = "Alexandra Montgomery, Samantha Williamson";
+  await open(page, { rows: [{ id: "clipped", cells: { name: "Clipped list", list: owners } }] });
+  const button = row(page, "clipped").getByRole("button", { name: "Owners: show complete text" });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnWidth("list", 80)); await nextFrames(page);
+  await expect(button).toBeVisible(); await button.click();
+  await expect(page.getByRole("dialog").locator("pre")).toHaveText(owners);
+  await page.getByRole("button", { name: "Close complete text" }).click(); await expect(button).toBeFocused();
+});
