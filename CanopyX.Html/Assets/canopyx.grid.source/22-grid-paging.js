@@ -61,7 +61,7 @@
     syncPager() {
       if (!this.pager) return;
       const paging = this.getPaging(), busy = !this.acceptedQuery || !!this.pendingQuery;
-      const numbers = new Intl.NumberFormat(this.lang);
+      const numbers = numberFormat(this.lang);
       setText(this.pageRange, fill(this.labels.gridPageRange, { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }));
       this.pageNumber.value = String(paging.pageCount ? paging.pageIndex + 1 : 1);
       this.pageNumber.max = String(Math.max(1, paging.pageCount)); this.pageNumber.disabled = busy || !paging.pageCount;
