@@ -21,6 +21,24 @@ const state = (view = definition()) => ({ version: 1, view: view.id, columns: vi
   timeZone: "utc", selection: [], scrollTop: 0, paging: { pageLength: 5, offset: 0 } });
 const settings = () => ({ version: 1, view: "prefs", current: state(), views: [{ name: "Archives", state: state() }], defaultView: "Archives" });
 
+for (const host of [false, true]) test(`partially incompatible ${host ? 'host' : 'browser'} preferences stay recoverable until explicit reset`, async ({page}) => {
+  const envelope = settings(); delete envelope.defaultView;
+  envelope.views.push({name:'Recoverable',state:{...state(),timeZone:'unsupported'}});
+  const original=JSON.stringify(envelope), setup=host ? `window.writes=[];CanopyX.configure('prefs',{viewStore:{load(){return ${original};},save(e){writes.push(e.settings);}}});` :
+    `localStorage.setItem('cx:grid:report-reader:prefs',${JSON.stringify(original)});`;
+  await open(page,definition(),setup); await page.evaluate(()=>new Promise(resolve=>setTimeout(resolve,400)));
+  await page.locator('.cx-grid-views > summary').click();
+  await expect(page.locator('.cx-grid-view-storage')).toContainText('incompatible');
+  expect(await page.evaluate(api+'.getSavedViews()')).toEqual(['Archives']);
+  if(host) expect(await page.evaluate('writes.length')).toBe(0);
+  else expect(await page.evaluate("localStorage.getItem('cx:grid:report-reader:prefs')")).toBe(original);
+  expect(await page.evaluate(`(async()=>{try{await ${api}.flushViewSettings();return 'saved';}catch(e){return e.message;}})()`)).toContain('incompatible');
+  await page.evaluate(`(async()=>{await ${api}.resetView();await ${api}.flushViewSettings();})()`);
+  await expect(page.locator('.cx-grid-view-storage')).toHaveText('');
+  if(host) expect(await page.evaluate('writes.length')).toBeGreaterThan(0);
+  else expect(await page.evaluate("JSON.parse(localStorage.getItem('cx:grid:report-reader:prefs')).views.map(v=>v.name)")).toEqual(['Archives']);
+});
+
 test("durable named views retain defaults across tabs, rename safely and reset without deleting preferences", async ({ page, context }) => {
   await open(page);
   await page.evaluate(async () => {
@@ -44,6 +62,21 @@ test("durable named views retain defaults across tabs, rename safely and reset w
     expect(await other.evaluate(api + ".getDefaultView()")).toBe(null);
     expect(await other.evaluate(api + ".getSavedViews()")).toEqual(["Everything"]);
   } finally { await other.close(); }
+});
+
+test("an older tab's presentation autosave preserves newer named metadata without importing its query", async ({page,context}) => {
+  await open(page);await page.evaluate(api+".saveView('Original')");
+  const other=await context.newPage();
+  try {
+    await open(other);await other.evaluate(api+".saveView('Newer')");await other.evaluate(api+".setDefaultView('Newer')");
+    await page.evaluate(`(async()=>{await ${api}.setQuery({search:'Archive'});${api}.setColumnWidth('name',220);})()`);
+    await page.evaluate(()=>new Promise(resolve=>setTimeout(resolve,400)));
+    expect(await page.evaluate(api+'.getSavedViews()')).toEqual(['Original','Newer']);
+    expect(await page.evaluate(api+'.getQuery().search')).toBe('Archive');
+    await other.reload();await other.waitForSelector('[data-cx-ready]');
+    expect(await other.evaluate(api+'.getSavedViews()')).toEqual(['Original','Newer']);
+    expect(await other.evaluate(api+'.getDefaultView()')).toBe('Newer');
+  } finally {await other.close();}
 });
 
 test("versioned and legacy settings adapt added/removed columns while incompatible nested conditions stay rejected", async ({ page }) => {

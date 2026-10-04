@@ -223,7 +223,12 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   paging?: { pageLength: number; offset: number };
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
-export type GridPreferenceState<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<GridState<Q>, "columns" | "selection" | "paging">> & {
+export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
+  readonly revision?: never;
+  readonly cursor?: never;
+};
+export type GridPreferenceState<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<GridState<Q>, "columns" | "selection" | "paging" | "query">> & {
+  readonly query: GridPreferenceQuery<Q>;
   readonly columns: readonly Readonly<GridState<Q>["columns"][number]>[];
   readonly selection: readonly string[];
   readonly paging?: Readonly<{ pageLength: number; offset: number }>;
@@ -240,9 +245,7 @@ export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
   load(event: { key: string; view: string; signal: AbortSignal }): GridViewSettings<Q> | null | PromiseLike<GridViewSettings<Q> | null>;
   save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
 }
-export interface GridHostOptions<Q extends AcceptedGridQuery = GridQuery> {
-  /** Reporting runtime only. Hosts govern preference storage/authentication; an explicit stateKey is required. */
-  viewStore?: GridViewStore<Q>;
+interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   /** False lets a host compose controls around the same grid controller. */
   toolbar?: boolean;
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
@@ -261,6 +264,13 @@ export interface GridHostOptions<Q extends AcceptedGridQuery = GridQuery> {
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
 }
+/** A host store binds to an explicit keyed reporting definition; ordinary grids have no store option. */
+export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (
+  { viewStore?: never } | {
+    viewStore: GridViewStore<Q>;
+    view: (Q extends GridCursorQuery ? CursorGridView : InlineGridView | HostGridView) & { stateKey: string; reporting: GridReporting };
+  }
+);
 export type GridOptions = GridHostOptions & ({ view: InlineGridView } | { view: HostGridView; source: GridSource });
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 

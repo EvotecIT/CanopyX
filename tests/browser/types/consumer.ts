@@ -52,12 +52,26 @@ const gridSource: GridSource = { async query(query, { signal }) {
   return { protocol: "canopyx/2", type: "gridFacetPage", view: request.query.view, revision, column: request.column,
     search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: 0, totalValues: 0, truncated: false, items: [] };
 } };
-const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: 300,
+const dataGrid = createDataGrid(document.createElement("div"), { view: { ...gridView, reporting: {}, stateKey: "host-inventory" }, source: gridSource, searchDelayMs: 300,
   viewStore: { load({ key, signal }) { return null; }, save({ settings, signal }) {
     // @ts-expect-error Host preference callbacks receive immutable snapshots.
     settings.views.push({ name: "Injected", state: dataGrid.getState() });
   } },
   labels: { gridResultCount: "{count} / {total}", gridRemoveCondition: "Remove: {condition}" } });
+const preferenceStore: import("@evotecit/canopyx/grid").GridViewStore = {load(){return null;},save(){}};
+// @ts-expect-error Host preference storage requires a typed keyed reporting definition.
+const unboundStore: import("@evotecit/canopyx/grid").GridHostOptions = {viewStore:preferenceStore};
+// @ts-expect-error Reporting storage also requires a state key.
+createDataGrid(document.createElement("div"), {view:{...gridView,reporting:{}},source:gridSource,viewStore:preferenceStore});
+// @ts-expect-error Fragment configuration binds storage to its keyed reporting definition.
+GridRuntime.configure('inventory',{viewStore:preferenceStore});
+GridRuntime.configure('inventory',{view:{...gridView,stateKey:'inventory-reader',reporting:{}},viewStore:preferenceStore});
+// @ts-expect-error Ordinary grids do not opt into reporting preference storage.
+createDataGrid(document.createElement("div"), {view:gridView,source:gridSource,viewStore:preferenceStore});
+// @ts-expect-error Durable preference queries cannot contain dataset snapshot credentials.
+const revisionPreference: import("@evotecit/canopyx/grid").GridPreferenceState["query"] = {protocol:"canopyx/2",type:"gridQuery",view:"inventory",offset:0,limit:10,search:"",sort:[],filters:[],revision:"secret"};
+// @ts-expect-error Cursor preferences cannot retain continuation credentials.
+const cursorPreference: import("@evotecit/canopyx/grid").GridPreferenceState<GridCursorQuery>["query"] = {protocol:"canopyx/2",type:"gridCursorQuery",view:"inventory",limit:10,search:"",sort:[],filters:[],cursor:"secret"};
 const offsetCount: number = dataGrid.getPaging().matched;
 const cursorView: CursorGridView = { ...gridView, source: { kind: "host", navigation: "cursor" }, presentation: "paged", query: undefined };
 const cursorSource: GridCursorSource = { navigation: "cursor", query(query, { signal }) {

@@ -7857,12 +7857,12 @@ const name = grid.viewName(entry.name);
 if (names.has(name)) throw new Error("CanopyX: repeated saved view name.");
 names.add(name);
 try { views.push({ name, state: grid.readGridState(entry.state) }); }
-catch (_) { grid.viewPreferenceError = "CanopyX: incompatible saved views were skipped."; }
+catch (_) { grid.viewStorageRejected = true; grid.viewPreferenceError = "CanopyX: incompatible saved views were skipped; persistence is paused until reset."; }
 }
 let current;
 if (value.current !== undefined) {
 try { current = grid.readGridState(value.current); }
-catch (_) { grid.viewPreferenceError = "CanopyX: incompatible current view settings were skipped."; }
+catch (_) { grid.viewStorageRejected = true; grid.viewPreferenceError = "CanopyX: incompatible current view settings were skipped; persistence is paused until reset."; }
 }
 const defaultView = value.defaultView === undefined ? null : grid.viewName(value.defaultView);
 if (defaultView && !names.has(defaultView)) throw new Error("CanopyX: the default saved view does not exist.");
@@ -7901,25 +7901,39 @@ writeStoredState(state) {
 if (!this.view.reporting) return VIEW_STATE_BASE.writeStoredState.call(this, state);
 if (!this.storageKey || this.destroyed || this.loadingViewSettings || this.viewStorageRejected) return;
 try {
+if (this.viewSettingsIntent === (this.viewBrowserSyncedIntent || 0)) this.pullBrowserViewMetadata();
+if (this.viewStorageRejected) return;
 const settings = this.getViewSettings();
 if (this.opts.viewStore) {
 this.viewPersistenceError = null;
 return this.queueViewSettings(settings);
 }
 global[this.view.reporting.viewStorage === "local" ? "localStorage" : "sessionStorage"].setItem(this.storageKey, JSON.stringify(settings));
+this.viewBrowserSyncedIntent = this.viewSettingsIntent;
 this.viewPersistenceError = null; this.setViewPreferenceError("");
 } catch (error) { this.viewPersistenceError = error; this.setViewPreferenceError(error.message); }
+},
+pullBrowserViewMetadata() {
+if (this.opts.viewStore || this.view.reporting?.viewStorage !== "local" || !this.storageKey || this.viewStorageRejected) return;
+try {
+const text = global.localStorage.getItem(this.storageKey); if (!text) return;
+const settings = reportingStoredSettings(this, JSON.parse(text));
+this.savedViews = new Map(settings.views.map(entry => [entry.name, entry.state])); this.defaultSavedView = settings.defaultView;
+this.syncSavedViews();
+} catch (error) { this.viewStorageRejected = true; this.setViewPreferenceError(error.message); }
 },
 setViewPreferenceError(message) { this.viewPreferenceError = message; if (this.viewPreferenceStatus) setText(this.viewPreferenceStatus, message); },
 requireViewSettingsReady() { if (this.loadingViewSettings) throw new Error("CanopyX: wait for saved views to finish loading."); },
 getDefaultView() { return this.defaultSavedView; },
 setDefaultView(name) {
 this.requireViewSettingsReady();
+this.pullBrowserViewMetadata();
 if (name !== null) { name = this.viewName(name); if (!this.savedViews.has(name)) throw new Error("CanopyX: the saved view does not exist."); }
 this.viewSettingsIntent++; this.defaultSavedView = name; this.writeStoredState(this.getState()); this.syncSavedViews();
 },
 renameSavedView(oldName, newName) {
 this.requireViewSettingsReady();
+this.pullBrowserViewMetadata();
 oldName = this.viewName(oldName); newName = this.viewName(newName);
 if (!this.savedViews.has(oldName)) throw new Error("CanopyX: the saved view does not exist.");
 if (oldName !== newName && this.savedViews.has(newName)) throw new Error("CanopyX: that saved view name already exists.");
@@ -7928,16 +7942,17 @@ this.savedViews = new Map([...this.savedViews].map(([name, state]) => [name === 
 if (this.defaultSavedView === oldName) this.defaultSavedView = newName;
 this.writeStoredState(this.getState()); this.syncSavedViews(); if (this.savedChoice) this.savedChoice.value = newName;
 },
-saveView(name) { this.requireViewSettingsReady(); this.viewSettingsIntent++; return VIEW_STATE_BASE.saveView.call(this, name); },
+saveView(name) { this.requireViewSettingsReady(); this.pullBrowserViewMetadata(); this.viewSettingsIntent++; return VIEW_STATE_BASE.saveView.call(this, name); },
 removeSavedView(name) {
 this.requireViewSettingsReady();
+this.pullBrowserViewMetadata();
 name = this.viewName(name); this.viewSettingsIntent++;
 if (this.defaultSavedView === name) this.defaultSavedView = null;
 return VIEW_STATE_BASE.removeSavedView.call(this, name);
 },
 async resetView() {
 await VIEW_STATE_BASE.resetView.call(this);
-if (this.viewStorageRejected && !this.opts.viewStore) { this.viewStorageRejected = false; this.writeStoredState(this.getState()); }
+if (this.viewStorageRejected) { this.viewStorageRejected = false; this.viewSettingsIntent++; this.writeStoredState(this.getState()); }
 return this.getQuery();
 },
 getShareState() {
