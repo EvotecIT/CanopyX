@@ -7073,6 +7073,11 @@ dialog.append(heading, content, close); document.body.appendChild(dialog); this.
 const signal = this.dataLifetime.signal, abort = () => dialog.close();
 signal.addEventListener("abort", abort, { once: true });
 close.addEventListener("click", () => dialog.close());
+dialog.addEventListener("keydown", event => {
+if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+event.preventDefault();
+(document.activeElement === content ? close : content).focus({ preventScroll: true });
+});
 dialog.addEventListener("close", () => {
 signal.removeEventListener("abort", abort); dialog.remove();
 if (this.reportingText === dialog) this.reportingText = null;
