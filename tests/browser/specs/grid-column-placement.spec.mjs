@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, openExample } from "./support.mjs";
 
 const columns = ["name", "region", "owner", "notes", "action"].map(id => ({ id, title: id, kind: "text", width: 160, sortable: true }));
 const view = { protocol: "canopyx/2", type: "grid", id: "placement", label: "Responsive inventory", rowHeight: 28,
@@ -153,4 +153,29 @@ test("responsive record details receive complete immutable cells, including fiel
   await page.locator('.cx-row[data-cx-id="r0"]').press("Control+Enter");
   await expect.poll(() => page.evaluate(() => window.detailProof)).toMatchObject({ row: { id: "r0", cells: {
     owner: "Alex", notes: "Find this hidden field 0" } }, frozen: true, connected: true });
+});
+
+test("row keyboard focus stays visible on pinned cells in forced colors", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" }); await open(page);
+  await page.locator('.cx-row[data-cx-id="r0"]').press("ArrowDown");
+  const row = page.locator('.cx-row[data-cx-id="r1"]'); await expect(row).toBeFocused();
+  const focus = await row.evaluate(element => ({ visible: element.matches(":focus-visible"),
+    outlines: [...element.querySelectorAll("[data-cx-pin]")].map(cell => getComputedStyle(cell).outlineStyle) }));
+  expect(focus.visible).toBe(true); expect(focus.outlines).toEqual(["solid", "solid"]);
+});
+
+for (const mode of ["", "-continuous"]) for (const theme of ["", "-dark"]) test("responsive example retains identity/status and exposes complete details " + mode + theme, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 }); await openExample(page, "responsive-grid" + mode + theme + ".html");
+  expect(await headerOrder(page)).toEqual(["name", "status"]);
+  const row = page.locator('.cx-row[data-cx-id="record-000"]'); await row.press("Control+Enter");
+  await expect(page.locator("#record-details")).toBeVisible();
+  await expect(page.locator("#record-fields")).toContainText("Alex, Sam, Kim, Pat");
+  await expect(page.locator("#record-fields")).toContainText("without interpreting markup");
+  const colors = await page.locator("#record-details").evaluate(dialog => ({ background: getComputedStyle(dialog).backgroundColor,
+    foreground: getComputedStyle(dialog).color }));
+  expect(colors).toEqual(theme ? { background: "rgb(13, 17, 23)", foreground: "rgb(230, 237, 243)" } :
+    { background: "rgb(255, 255, 255)", foreground: "rgb(31, 35, 40)" });
+  await page.keyboard.press("Escape"); await expect(row).toBeFocused();
+  await page.locator(".cx-grid-columns > summary").click();
+  await expect(page.getByText("Hidden at this width", { exact: true })).toHaveCount(4);
 });

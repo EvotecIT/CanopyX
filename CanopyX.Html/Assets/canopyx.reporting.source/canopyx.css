@@ -27,7 +27,7 @@
   .cx-data-grid .cx-hcell[data-cx-pin] .cx-resize,.cx-data-grid .cx-hcell:has(+ [data-cx-pin="right"]) .cx-resize { right:0; }
   .cx-data-grid [data-cx-pin="left"] { box-shadow:1px 0 var(--cx-line-strong); }
   .cx-data-grid [data-cx-pin="right"] { box-shadow:-1px 0 var(--cx-line-strong); }
-  .cx-data-grid .cx-row:focus-visible .cx-cell[data-cx-pin] { box-shadow:inset 0 2px var(--cx-accent); }
+  .cx-data-grid .cx-row:focus-visible .cx-cell[data-cx-pin] { outline:2px solid var(--cx-accent);outline-offset:-2px; }
 }
 .cx-grid-column-choice { flex-wrap:wrap; }
 .cx-grid-column-choice select { max-width:92px;min-width:0;min-height:28px;padding:2px 4px;border:1px solid var(--cx-line);border-radius:3px;background:var(--cx-surface);color:var(--cx-text);font:inherit; }

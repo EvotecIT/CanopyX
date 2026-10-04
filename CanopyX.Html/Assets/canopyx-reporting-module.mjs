@@ -7323,11 +7323,11 @@ PLACEMENT_CONTROLS.call(this); if (!this.columnPanel) return;
 this.columns.forEach((column, index) => {
 const row = this.columnPanel.children[index], input = row.querySelector("input[type=checkbox]"), pin = h("select");
 input.disabled = !column.hidden && this.columns.filter(item => !item.hidden).length === 1;
-if (column.responsiveHidden) { const note = h("span", "cx-grid-responsive-note"); setText(note, this.labels.gridResponsiveHidden); row.append(note); }
 pin.setAttribute("aria-label", fill(this.labels.gridPinColumn, { column: column.title }));
 pin.setAttribute("data-cx-layout-column", column.id); pin.setAttribute("data-cx-layout-action", "pin");
 [["none", "gridPinNone"], ["left", "gridPinLeft"], ["right", "gridPinRight"]].forEach(([value, label]) => pin.append(gridOption(value, this.labels[label])));
 pin.value = column.pin; pin.addEventListener("change", () => this.setColumnPinned(column.id, pin.value)); row.append(pin);
+if (column.responsiveHidden) { const note = h("span", "cx-grid-responsive-note"); setText(note, this.labels.gridResponsiveHidden); row.append(note); }
 for (const [delta, action] of [[-1, "earlier"], [1, "later"]]) {
 const previous = row.querySelector('[data-cx-layout-action="' + action + '"]'), button = previous.cloneNode(true);
 previous.replaceWith(button); button.addEventListener("click", () => {

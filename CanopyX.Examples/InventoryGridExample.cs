@@ -67,7 +67,8 @@ internal static class InventoryGridExample {
     for (const [name, cell] of Object.entries(row.cells)) {
       const value = cell && typeof cell === 'object' ? (cell.text ?? cell.value) : cell;
       const term = fields.appendChild(document.createElement('dt')); term.textContent = name;
-      const description = fields.appendChild(document.createElement('dd')); description.textContent = value == null ? '—' : String(value);
+      const description = fields.appendChild(document.createElement('dd')); description.style.overflowWrap = 'anywhere';
+      description.textContent = value == null ? '—' : String(value);
     }
     if (!dialog.open) dialog.showModal();
   }});

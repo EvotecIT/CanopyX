@@ -53,6 +53,7 @@ internal static class RichGridExample {
             }
         }
         view.Reporting.Responsive = true;
+        view.Columns[0].Width = 180;
         view.Reporting.Layout["name"] = new CanopyGridColumnLayout(160, 320, pin: CanopyGridColumnPin.Left, priority: 0, alwaysVisible: true);
         view.Reporting.Layout["status"] = new CanopyGridColumnLayout(100, 240, pin: CanopyGridColumnPin.Right, priority: 1);
         view.Reporting.Layout["progress"] = new CanopyGridColumnLayout(100, 300, priority: 2);
