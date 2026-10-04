@@ -118,6 +118,8 @@ test("auto-fit keeps a widened column's focused resize control visible", async (
   const grip = header(page, "notes").getByRole("separator"); await grip.press("Enter"); await nextFrames(page);
   await expect(grip).toBeFocused(); await expectHeaderFocusVisible(page);
   expect(await grip.getAttribute("aria-valuenow")).toBe("800");
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["notes", "name", "hidden", "amount"]));
+  await nextFrames(page); await expect(grip).toBeFocused(); await expectHeaderFocusVisible(page);
 });
 
 for (const control of ["button", "input"]) test("API reordering retains the entered host " + control + " despite unreachable siblings", async ({ page }) => {
