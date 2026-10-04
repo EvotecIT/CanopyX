@@ -119,6 +119,9 @@ test("user toggle during a later setState is replayed when restoration settles",
     window.restoration = api.setState({ expanded: [["slow"]] });
   });
   await page.waitForFunction(() => !!window.finishSlow);
+  await expect(page.locator('[data-cx-id="slow"]')).toHaveAttribute("aria-expanded", "true");
+  // The loading row changes the following row's position. Wait for that layout before clicking its expander.
+  await expect(page.locator('[data-cx-id="slow"]')).toHaveAttribute("aria-expanded", "true");
   await page.locator('[data-cx-id="other"] .cx-exp').click();
   await page.evaluate(() => window.finishSlow({ items: [{ id: "leaf", label: "Leaf" }] }));
   await page.evaluate(() => restoration);
