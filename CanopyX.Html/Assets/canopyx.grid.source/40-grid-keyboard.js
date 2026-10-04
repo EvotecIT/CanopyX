@@ -54,7 +54,7 @@
         case "ArrowDown": index++; break;
         case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
         case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
-        case "Home": if (event.ctrlKey || event.metaKey) index = 0; else nextColumn = 0; break;
+        case "Home": if (event.ctrlKey || event.metaKey) index = this.cursor ? this.rowBounds().first : 0; else nextColumn = 0; break;
         case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = columnCount - 1; break;
         case "ArrowLeft":
           if (at > 0) nextControl = at - 1;
@@ -81,7 +81,7 @@
           event.preventDefault(); return;
         default: return;
       }
-      index = Math.max(0, Math.min(this.rowCount() - 1, index));
+      index = Math.max(this.cursor ? this.rowBounds().first : 0, Math.min(this.rowCount() - 1, index));
       this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error: error }); });
       event.preventDefault(); event.stopPropagation();
     }

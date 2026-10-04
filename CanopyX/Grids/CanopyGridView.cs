@@ -41,7 +41,11 @@ public sealed class CanopyGridView {
     /// <summary>Gets or sets whether rows come from the complete inline dataset or a host query hook.</summary>
     public CanopyGridSourceKind Source { get; set; }
 
-    /// <summary>Gets or sets continuous scrolling or paged presentation. Source requests remain offset based with known result counts.</summary>
+    /// <summary>Gets or sets known-count offset access or host-governed cursor traversal.</summary>
+    /// <remarks>Cursor traversal requires a hosted, paged view and does not expose random page jumps.</remarks>
+    public CanopyGridNavigation Navigation { get; set; }
+
+    /// <summary>Gets or sets continuous scrolling or paged presentation.</summary>
     public CanopyGridPresentation Presentation { get; set; }
 
     /// <summary>Gets or sets the visible page length, from 1 to 10,000. Defaults to 50 and is independent of <see cref="PageSize"/>.</summary>
@@ -94,7 +98,7 @@ public sealed class CanopyGridView {
     /// <summary>Gets or sets the session-storage key for this grid's saved view. Null disables persistence.</summary>
     public string? StateKey { get; set; }
 
-    /// <summary>Gets or sets an initial query. Null uses an unfiltered query with the view's page size.</summary>
+    /// <summary>Gets or sets an initial query. Null uses an unfiltered query; cursor navigation requests the visible page length.</summary>
     public CanopyGridQuery? Query { get; set; }
 
     /// <summary>Gets or sets the display time zone. Date values remain UTC independently of their display.</summary>
@@ -125,7 +129,8 @@ public sealed class CanopyGridView {
             foreach (var column in SearchColumns) writer.String(column);
             writer.EndArray();
         }
-        writer.Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host").Property("navigation", "offset").EndObject();
+        writer.Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host")
+            .Property("navigation", Navigation == CanopyGridNavigation.Cursor ? "cursor" : "offset").EndObject();
         writer.OptionalProperty("stateKey", StateKey).OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         if (Query != null) {
             writer.Name("query");
@@ -150,6 +155,10 @@ public sealed class CanopyGridView {
         CanopyJsonNames.Selection(Selection);
         if (Presentation != CanopyGridPresentation.Continuous && Presentation != CanopyGridPresentation.Paged)
             throw new ArgumentOutOfRangeException(nameof(Presentation), Presentation, "Unknown grid presentation.");
+        if (Navigation != CanopyGridNavigation.Offset && Navigation != CanopyGridNavigation.Cursor)
+            throw new ArgumentOutOfRangeException(nameof(Navigation), Navigation, "Unknown grid navigation.");
+        if (Navigation == CanopyGridNavigation.Cursor && (Source != CanopyGridSourceKind.Host || Presentation != CanopyGridPresentation.Paged))
+            throw new InvalidOperationException("Cursor navigation requires a hosted, paged grid.");
         CanopyJsonNames.TimeZone(TimeZone);
         var columnIds = new HashSet<string>(StringComparer.Ordinal);
         var visible = 0;

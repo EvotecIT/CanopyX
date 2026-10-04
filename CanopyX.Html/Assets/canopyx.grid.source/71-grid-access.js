@@ -1,7 +1,8 @@
   // ---------- read-only host hooks, clipboard and record details ----------
   Object.assign(DataGrid.prototype, {
     scrollToRow(index) {
-      if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) || index < 0 || index >= this.snapshot.matched)
+      if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) ||
+          index < (this.cursor ? this.pageOffset : 0) || index >= this.rowCount())
         throw new Error("CanopyX: scroll to a row position in the accepted result.");
       return this.focusResult(index, false);
     },
@@ -15,7 +16,7 @@
       try {
         if (this.destroyed || signal && signal.aborted) abort();
         return await Promise.race([Promise.resolve().then(() => {
-          if (controller.signal.aborted) throw new DOMException("Grid operation was cancelled.", "AbortError");
+          gridOperationActive(this, controller.signal);
           return run(controller.signal);
         }), cancelled]);
       } finally {

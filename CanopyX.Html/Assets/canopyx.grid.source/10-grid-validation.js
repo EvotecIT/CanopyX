@@ -1,4 +1,6 @@
   // ---------- flat-grid wire boundaries ----------
+  function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
+
   function gridScalar(cell, column) {
     const value = cellValue(cell);
     if (value == null) return null;
@@ -62,8 +64,10 @@
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
     if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
-    if (view.source.navigation !== undefined && view.source.navigation !== "offset")
-      throw new Error("CanopyX: this grid source requires offset navigation with known counts.");
+    if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))
+      throw new Error("CanopyX: invalid grid source navigation.");
+    if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))
+      throw new Error("CanopyX: cursors need a hosted paged grid.");
     if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||
         view.pageLength !== undefined && (!Number.isInteger(view.pageLength) || view.pageLength < 1 || view.pageLength > 10000))
       throw new Error("CanopyX: invalid grid presentation or page length.");
@@ -75,15 +79,23 @@
 
   function gridQuery(view, input) {
     input = input || {};
+    const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
     if (typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(name =>
-        !["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit"].includes(name)) ||
-        input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== "gridQuery" ||
+        !["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit", "cursor"].includes(name)) ||
+        input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
         input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
-    const query = { protocol: PROTOCOL, type: "gridQuery", view: view.id, offset: input.offset === undefined ? 0 : input.offset,
-      limit: input.limit === undefined ? view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
-    if (!validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
+    const query = { protocol: PROTOCOL, type: type, view: view.id,
+      limit: input.limit === undefined ? cursor ? view.pageLength || 50 : view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
+    if (cursor ? input.offset !== undefined && input.offset !== 0 : input.cursor !== undefined)
+      throw new Error("CanopyX: cursor and offset navigation cannot be mixed.");
+    if (!cursor) query.offset = input.offset === undefined ? 0 : input.offset;
+    if (!cursor && !validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
       throw new Error("CanopyX: invalid grid query window or search.");
     if (input.revision !== undefined) { requireIdentifier(input.revision, "grid revision"); query.revision = input.revision; }
+    if (input.cursor !== undefined) {
+      gridCursor(input.cursor); if (!query.revision) throw new Error("CanopyX: a cursor requires its dataset revision.");
+      query.cursor = input.cursor;
+    }
     if (input.searchMode !== undefined) {
       if (!["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
       query.searchMode = input.searchMode;
@@ -108,9 +120,13 @@
     if (page.view !== view.id || page.offset !== query.offset || !validStructuralCount(page.total) || !validStructuralCount(page.matched) ||
         page.matched > page.total || page.offset > page.matched || !Array.isArray(page.items) ||
         page.items.length !== Math.min(query.limit, page.matched - page.offset)) throw new Error("CanopyX: grid page does not cover its requested window.");
+    return checkedGridPage(page, view, query, accepted);
+  }
+
+  function checkedGridPage(page, view, query, accepted) {
     if (query.revision !== undefined && page.revision !== query.revision || accepted &&
-        (page.revision !== accepted.revision || page.total !== accepted.total || page.matched !== accepted.matched))
-      throw new Error("CanopyX: grid page snapshot changed.");
+        (page.revision !== accepted.revision || accepted.total !== undefined && page.total !== accepted.total ||
+          accepted.matched !== undefined && page.matched !== accepted.matched)) throw new Error("CanopyX: grid page snapshot changed.");
     validateGridRows(page.items, view.columns);
-    return Object.assign({}, page, { items: JSON.parse(JSON.stringify(page.items)) });
+    return { ...page, items: JSON.parse(JSON.stringify(page.items)) };
   }

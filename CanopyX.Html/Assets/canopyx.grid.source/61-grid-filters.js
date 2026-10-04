@@ -15,14 +15,14 @@
       form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
       const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
       form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-        rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(true), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+        rows.textContent = ""; this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => setText(error, failure.message));
       }));
       form.appendChild(error); panel.appendChild(form);
       form.addEventListener("submit", event => {
         event.preventDefault();
         try {
           const filters = [...rows.children].map(row => this.readGridFilter(row));
-          this.setQuery(Object.assign({}, this.queryForChange(true), { filters: filters, offset: 0, revision: undefined }))
+          this.setQuery(gridQueryStart(this.queryForChange(true), { filters: filters }))
             .then(() => setText(error, ""), failure => setText(error, failure.message));
         } catch (failure) { setText(error, failure.message); }
       });
@@ -35,16 +35,15 @@
       let remove, input = h("textarea", "cx-grid-filter-value");
       const legend = h("legend", "cx-sr-only"); setText(legend, this.labels.gridFilters); row.appendChild(legend);
       multiple.rows = 2; input.rows = 2;
-      for (const item of this.columns) { const option = h("option"); option.value = item.id; setText(option, item.title); column.appendChild(option); }
+      for (const item of this.columns) column.appendChild(gridOption(item.id, item.title));
       if (predicate) column.value = predicate.column;
       for (const [value, name] of [["string", "gridText"], ["boolean", "gridBoolean"]]) {
-        const option = h("option"); option.value = value; setText(option, this.labels[name]); type.appendChild(option);
+        type.appendChild(gridOption(value, this.labels[name]));
       }
       if (predicate && predicate.values.length && predicate.values.some(value => typeof value === "boolean")) {
         if (predicate.values.every(value => typeof value === "boolean")) type.value = "boolean";
         else {
-          const option = h("option"); option.value = "mixed"; setText(option, this.labels.gridText + " / " + this.labels.gridBoolean);
-          type.appendChild(option); type.value = "mixed";
+          type.appendChild(gridOption("mixed", this.labels.gridText + " / " + this.labels.gridBoolean)); type.value = "mixed";
         }
       }
       const columnField = gridInputLabel(this.labels.gridColumn, column), conditionField = gridInputLabel(this.labels.gridOperator, operator);
@@ -56,7 +55,7 @@
         const operators = definition.kind === "text" ? ["eq", "ne", "contains", "startsWith", "in", "isNull", "isNotNull"] :
           ["eq", "ne", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"];
         operator.textContent = "";
-        operators.forEach(name => { const option = h("option"); option.value = name; setText(option, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name]); operator.appendChild(option); });
+        operators.forEach(name => operator.appendChild(gridOption(name, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name])));
         if (operators.includes(previous)) operator.value = previous;
         const raw = input.value, next = h(definition.kind === "text" ? "textarea" : "input", "cx-grid-filter-value");
         if (definition.kind === "text") next.rows = 2;

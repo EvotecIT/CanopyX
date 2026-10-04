@@ -4434,6 +4434,7 @@ const cell = row.cells[column.id], text = isCellObject(cell) && cell.searchText 
 return foldText(text).includes(term);
 }));
 }
+function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
 function gridScalar(cell, column) {
 const value = cellValue(cell);
 if (value == null) return null;
@@ -4495,8 +4496,10 @@ if (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight >
 !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
 !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
 if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
-if (view.source.navigation !== undefined && view.source.navigation !== "offset")
-throw new Error("CanopyX: this grid source requires offset navigation with known counts.");
+if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))
+throw new Error("CanopyX: invalid grid source navigation.");
+if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))
+throw new Error("CanopyX: cursors need a hosted paged grid.");
 if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||
 view.pageLength !== undefined && (!Number.isInteger(view.pageLength) || view.pageLength < 1 || view.pageLength > 10000))
 throw new Error("CanopyX: invalid grid presentation or page length.");
@@ -4507,15 +4510,23 @@ return view;
 }
 function gridQuery(view, input) {
 input = input || {};
+const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
 if (typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(name =>
-!["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit"].includes(name)) ||
-input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== "gridQuery" ||
+!["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit", "cursor"].includes(name)) ||
+input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
 input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
-const query = { protocol: PROTOCOL, type: "gridQuery", view: view.id, offset: input.offset === undefined ? 0 : input.offset,
-limit: input.limit === undefined ? view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
-if (!validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
+const query = { protocol: PROTOCOL, type: type, view: view.id,
+limit: input.limit === undefined ? cursor ? view.pageLength || 50 : view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
+if (cursor ? input.offset !== undefined && input.offset !== 0 : input.cursor !== undefined)
+throw new Error("CanopyX: cursor and offset navigation cannot be mixed.");
+if (!cursor) query.offset = input.offset === undefined ? 0 : input.offset;
+if (!cursor && !validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
 throw new Error("CanopyX: invalid grid query window or search.");
 if (input.revision !== undefined) { requireIdentifier(input.revision, "grid revision"); query.revision = input.revision; }
+if (input.cursor !== undefined) {
+gridCursor(input.cursor); if (!query.revision) throw new Error("CanopyX: a cursor requires its dataset revision.");
+query.cursor = input.cursor;
+}
 if (input.searchMode !== undefined) {
 if (!["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
 query.searchMode = input.searchMode;
@@ -4539,11 +4550,14 @@ checkDocument(page, "gridPage"); requireIdentifier(page.revision, "grid revision
 if (page.view !== view.id || page.offset !== query.offset || !validStructuralCount(page.total) || !validStructuralCount(page.matched) ||
 page.matched > page.total || page.offset > page.matched || !Array.isArray(page.items) ||
 page.items.length !== Math.min(query.limit, page.matched - page.offset)) throw new Error("CanopyX: grid page does not cover its requested window.");
+return checkedGridPage(page, view, query, accepted);
+}
+function checkedGridPage(page, view, query, accepted) {
 if (query.revision !== undefined && page.revision !== query.revision || accepted &&
-(page.revision !== accepted.revision || page.total !== accepted.total || page.matched !== accepted.matched))
-throw new Error("CanopyX: grid page snapshot changed.");
+(page.revision !== accepted.revision || accepted.total !== undefined && page.total !== accepted.total ||
+accepted.matched !== undefined && page.matched !== accepted.matched)) throw new Error("CanopyX: grid page snapshot changed.");
 validateGridRows(page.items, view.columns);
-return Object.assign({}, page, { items: JSON.parse(JSON.stringify(page.items)) });
+return { ...page, items: JSON.parse(JSON.stringify(page.items)) };
 }
 function gridOrder(left, right) { return left === right ? 0 : left < right ? -1 : 1; }
 function gridCompare(left, right, column, direction) {
@@ -4579,7 +4593,7 @@ let lastShape = null, ordered = null;
 return {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
-const shape = JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]);
+const shape = gridResultShape(query);
 if (shape !== lastShape) {
 const terms = gridSearchTerms(query.search, query.searchMode);
 ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
@@ -4598,6 +4612,26 @@ total: rows.length, matched: ordered.length, items: ordered.slice(query.offset, 
 }
 };
 }
+function gridCursor(cursor) {
+requireIdentifier(cursor, "grid cursor");
+if (cursor.length > 4096) throw new Error("CanopyX: cursor exceeds 4096 code units.");
+}
+function validateGridCursorPage(page, view, query, accepted) {
+checkDocument(page, "gridCursorPage"); requireIdentifier(page.revision, "grid revision");
+if (page.view !== view.id || !validStructuralCount(page.offset) ||
+page.total !== null && !validStructuralCount(page.total) || page.matched !== null && !validStructuralCount(page.matched) ||
+!Array.isArray(page.items) || page.items.length > query.limit) throw new Error("CanopyX: invalid cursor page.");
+const end = page.offset + page.items.length, next = page.nextCursor !== undefined, previous = page.previousCursor !== undefined;
+if (!validStructuralCount(end) || page.total !== null && end > page.total || page.matched !== null && end > page.matched ||
+page.total !== null && page.matched !== null && page.matched > page.total ||
+!page.items.length && (page.offset !== 0 || next) || !page.offset && previous ||
+page.matched !== null && next !== (end < page.matched) || page.total !== null && next && end >= page.total ||
+query.cursor === undefined && page.offset !== 0) throw new Error("CanopyX: inconsistent cursor page.");
+const tokens = [page.nextCursor, page.previousCursor].filter(token => token !== undefined);
+tokens.forEach(gridCursor);
+if (new Set(tokens).size !== tokens.length || tokens.includes(query.cursor)) throw new Error("CanopyX: repeated cursor.");
+return checkedGridPage(page, view, query, accepted);
+}
 class DataGrid {
 constructor(host, options) {
 const definition = validateGridView(options.view);
@@ -4606,8 +4640,9 @@ this.host = host; this.opts = options; this.id = "cx" + ++instanceSeq;
 this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
 this.source = options.source || (this.view.source.kind === "inline" ? inlineGridSource(this.view) : null);
 if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
-if (this.source.navigation !== undefined && this.source.navigation !== "offset")
-throw new Error("CanopyX: this grid source requires offset navigation with known counts.");
+this.cursor = this.view.source.navigation === "cursor";
+if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
+throw new Error("CanopyX: source navigation must match the grid definition.");
 this.pageSize = this.view.pageSize; this.rowH = this.view.rowHeight;
 this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
 this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
@@ -4655,15 +4690,15 @@ getQuery() { return this.acceptedQuery || null; }
 queryForChange(includeQueuedInput) {
 const query = this.pendingQuery || this.acceptedQuery || {};
 return includeQueuedInput && this.searchTimer != null && !this.searchComposing ?
-Object.assign({}, query, { search: this.searchInput.value, offset: 0, revision: undefined }) : query;
+gridQueryStart(query, { search: this.searchInput.value }) : query;
 }
 async setQuery(input, paging) {
 if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
 const length = paging ? paging.pageLength : this.pageLength;
-const initial = gridQuery(this.view, input);
-const desired = Math.floor(initial.offset / length) * length;
+const initial = gridQuery(this.view, this.cursor ? { ...input, limit: length } : input);
+const desired = this.cursor ? 0 : Math.floor(initial.offset / length) * length;
 const same = this.acceptedQuery && gridResultShape(initial) === gridResultShape(this.acceptedQuery) && initial.revision === this.acceptedQuery.revision;
-let query = this.paged ? gridQuery(this.view, Object.assign({}, initial, { offset: same ? Math.min(desired, Math.max(0, Math.ceil(this.rowCount() / length) - 1) * length) : 0 })) : initial;
+let query = this.paged && !this.cursor ? gridQuery(this.view, { ...initial, offset: same ? Math.min(desired, Math.max(0, Math.ceil(this.rowCount() / length) - 1) * length) : 0 }) : initial;
 const epoch = ++this.queryEpoch;
 clearTimeout(this.searchTimer); this.searchTimer = null;
 this.dataLifetime.abort(); this.dataLifetime = new AbortController();
@@ -4672,30 +4707,33 @@ this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels
 this.grid.setAttribute("aria-busy", "true");
 this.syncPager();
 try {
-let page = validateGridPage(await this.requestPage(query, lifetime.signal), this.view, query, same ? this.snapshot : null);
-if (this.paged && !same && desired) {
-if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid query was superseded.", "AbortError");
+let page = (this.cursor ? validateGridCursorPage : validateGridPage)(await this.requestPage(query, lifetime.signal), this.view, query, same ? this.snapshot : null);
+if (this.cursor && paging && paging.direction) this.validateCursorTransition(page, paging);
+if (this.paged && !this.cursor && !same && desired) {
+gridOperationActive(this, lifetime.signal);
 const offset = Math.min(desired, Math.max(0, Math.ceil(page.matched / length) - 1) * length);
 if (offset) {
 const snapshot = { revision: page.revision, total: page.total, matched: page.matched };
-query = gridQuery(this.view, Object.assign({}, query, { offset: offset, revision: page.revision }));
+query = gridQuery(this.view, { ...query, offset, revision: page.revision });
 page = validateGridPage(await this.requestPage(query, lifetime.signal), this.view, query, snapshot);
 }
 }
-if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid query was superseded.", "AbortError");
+gridOperationActive(this, lifetime.signal);
 const hadFocus = this.canvas.contains(document.activeElement), previousId = this.focused && this.focused.key;
 this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.focused = null;
-this.acceptedQuery = gridQuery(this.view, Object.assign({}, query, { revision: page.revision }));
+this.acceptedQuery = gridQuery(this.view, { ...query, revision: page.revision });
 this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
-this.pageLength = length; this.pageOffset = this.paged ? query.offset : 0;
+this.pageLength = length; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
+if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
 this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
-this.total = (this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
-this.grid.setAttribute("aria-rowcount", String(page.matched + 1));
-this.grid.tabIndex = page.matched ? -1 : 0;
+const hasRows = this.cursor ? page.items.length : page.matched;
+this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
+this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1));
+this.grid.tabIndex = hasRows ? -1 : 0;
 this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader();
-this.setNotice(page.matched ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
+this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
 if (hadFocus) {
-this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(query.offset) || null;
+this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(this.cursor ? page.offset : query.offset) || null;
 }
 this.render();
 if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
@@ -4707,7 +4745,7 @@ this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: 
 this.stateChanged(); return this.getQuery();
 } catch (error) {
 if (epoch === this.queryEpoch && !this.destroyed) {
-this.pendingQuery = null; this.lastFailedQuery = initial; this.lastFailedPaging = { pageLength: length };
+this.pendingQuery = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
 this.dataLifetime.abort(); this.dataLifetime = new AbortController();
 this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
 this.syncPager();
@@ -4722,12 +4760,12 @@ const found = sorts.findIndex(sort => sort.column === id), old = found >= 0 ? so
 const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
 const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
 if (next) changed.splice(event && event.shiftKey && found >= 0 ? Math.min(found, changed.length) : changed.length, 0, { column: id, direction: next });
-this.setQuery(Object.assign({}, previous, { offset: 0, sort: changed, revision: undefined })).catch(() => {});
+this.setQuery(gridQueryStart(previous, { sort: changed })).catch(() => {});
 }
 sort(sorts) {
-return this.setQuery(Object.assign({}, this.queryForChange(true), { offset: 0, sort: sorts, revision: undefined }));
+return this.setQuery(gridQueryStart(this.queryForChange(true), { sort: sorts }));
 }
-rowCount() { return this.snapshot ? this.snapshot.matched : 0; }
+rowCount() { return this.cursor ? this.cursorWindow ? this.cursorWindow.end : 0 : this.snapshot ? this.snapshot.matched : 0; }
 rowBounds() { return { first: this.pageOffset, last: this.paged ? Math.min(this.rowCount(), this.pageOffset + this.pageLength) - 1 : this.rowCount() - 1 }; }
 rowTop(index) { return (index - this.pageOffset) * this.rowH; }
 rowAt(top) { const bounds = this.rowBounds(); return Math.max(bounds.first, Math.min(bounds.last, bounds.first + Math.floor(top / this.rowH))); }
@@ -4790,22 +4828,7 @@ for (const name of ["visibleColumns", "applyWidths", "setColumnWidth", "startRes
 "paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
 DataGrid.prototype[name] = ROW_HELPERS[name];
 Object.assign(DataGrid.prototype, {
-async requestPage(query, signal) {
-const controller = new AbortController();
-let rejectRequest;
-const cancelled = new Promise((resolve, reject) => { rejectRequest = reject; });
-const abort = () => { controller.abort(); rejectRequest(new DOMException("Grid request was cancelled.", "AbortError")); };
-signal.addEventListener("abort", abort, { once: true });
-const timer = setTimeout(() => { controller.abort(); rejectRequest(new Error("CanopyX: grid request timed out.")); }, this.requestTimeoutMs);
-try {
-if (signal.aborted) abort();
-const response = Promise.resolve().then(() => {
-if (controller.signal.aborted) throw new DOMException("Grid request was cancelled.", "AbortError");
-return this.source.query(query, { signal: controller.signal });
-});
-return await Promise.race([response, cancelled]);
-} finally { clearTimeout(timer); signal.removeEventListener("abort", abort); controller.abort(); }
-},
+requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal: signal }), signal); },
 storePage(page) {
 const rows = page.items.map((item, i) => ({ key: item.id, h: item, _ri: page.offset + i, hpx: this.rowH }));
 const incoming = new Map(rows.map(row => [row.key, row._ri]));
@@ -4843,7 +4866,7 @@ for (const [offset, page] of this.pages) if (this.pages.size > this.cachePageLim
 (offset + this.pageSize <= this.window.first || offset > this.window.last)) this.pages.delete(offset);
 },
 loadWindow() {
-if (!this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
+if (this.cursor || !this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
 const offsets = new Set();
 const bounds = this.rowBounds();
 for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
@@ -4896,28 +4919,38 @@ this.version++; this.setNotice("", false); this.scheduleRender(); return Promise
 DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
 gridPaging: "Result pages", gridPageRange: "{first}–{last} of {count} rows",
 gridPageNumber: "Page", gridPageLength: "Rows per page", gridFirstPage: "First page",
-gridPreviousPage: "Previous page", gridNextPage: "Next page", gridLastPage: "Last page"
+gridPreviousPage: "Previous page", gridNextPage: "Next page", gridLastPage: "Last page",
+gridUnknownCount: "Result count unavailable", gridMatchedCount: "{count} matching rows", gridCursorRange: "Rows {first}–{last}"
 }));
 function gridResultShape(query) { return JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]); }
 Object.assign(DataGrid.prototype, {
 getPaging() {
-const matched = this.rowCount(), total = this.snapshot ? this.snapshot.total : 0;
-return Object.freeze({ presentation: this.paged ? "paged" : "continuous", pageLength: this.pageLength,
+const window = this.cursorWindow, count = this.cursor ? window ? window.end - this.pageOffset : 0 : this.rowCount();
+const paging = { presentation: this.paged ? "paged" : "continuous", pageLength: this.pageLength,
+first: count ? this.pageOffset + 1 : 0, last: this.cursor ? count ? window.end : 0 :
+this.paged ? Math.min(count, this.pageOffset + this.pageLength) : count,
+matched: this.snapshot ? this.snapshot.matched : this.cursor ? null : 0,
+total: this.snapshot ? this.snapshot.total : this.cursor ? null : 0 };
+Object.assign(paging, this.cursor ? { navigation: "cursor", pageIndex: null, pageCount: null,
+hasNext: !!(window && window.next !== undefined), hasPrevious: !!(window && window.previous !== undefined) } : {
 pageIndex: this.paged ? Math.floor(this.pageOffset / this.pageLength) : 0,
-pageCount: this.paged ? Math.ceil(matched / this.pageLength) : matched ? 1 : 0,
-first: matched ? this.pageOffset + 1 : 0, last: this.paged ? Math.min(matched, this.pageOffset + this.pageLength) : matched,
-matched: matched, total: total });
+pageCount: this.paged ? Math.ceil(count / this.pageLength) : count ? 1 : 0 });
+return Object.freeze(paging);
 },
 goToPage(index) {
-if (!this.paged || !this.acceptedQuery || !Number.isInteger(index) || index < 0)
+if (this.cursor || !this.paged || !this.acceptedQuery || !Number.isInteger(index) || index < 0)
 throw new Error("CanopyX: choose a nonnegative page in an accepted paged result.");
 const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
 const page = queuedSearch ? 0 : Math.min(index, Math.max(0, this.getPaging().pageCount - 1));
 const request = gridQuery(this.view, Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
-revision: queuedSearch ? undefined : query.revision })), key = JSON.stringify(request);
+revision: queuedSearch ? undefined : query.revision }));
+return this.navigatePageQuery(request);
+},
+navigatePageQuery(request, paging) {
+const key = JSON.stringify(request);
 const pending = this.pendingPageNavigation;
 if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
-const operation = this.setQuery(request), navigation = { epoch: this.queryEpoch, key: key };
+const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key: key };
 navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
 this.pendingPageNavigation = navigation; return navigation.promise;
 },
@@ -4925,9 +4958,39 @@ setPageLength(length) {
 if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > 10000)
 throw new Error("CanopyX: visible page length is an integer from 1 to 10000 for an accepted paged result.");
 const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
+if (this.cursor) return this.setQuery(gridQueryStart(query), { pageLength: length });
 return this.setQuery(Object.assign({}, query, { offset: queuedSearch ? 0 : Math.floor(this.pageOffset / length) * length,
 limit: this.pageSize, revision: queuedSearch ? undefined : query.revision }), { pageLength: length });
 },
+validateCursorTransition(page, paging) {
+const end = page.offset + page.items.length;
+if (paging.direction === "first" && page.offset !== 0 || paging.direction === "next" && page.offset !== paging.edge ||
+paging.direction === "previous" && end !== paging.edge)
+throw new Error("CanopyX: cursor pages must be contiguous.");
+if (paging.direction !== "first") {
+const identities = new Set([...this.rowCache.values()].map(row => row.key));
+if (page.items.some(row => identities.has(row.id))) throw new Error("CanopyX: cursor pages repeat a row ID.");
+}
+},
+navigateCursor(direction) {
+if (!this.acceptedQuery || !this.cursorWindow || !this.cursor)
+throw new Error("CanopyX: no accepted cursor page.");
+const query = this.queryForChange(true), changed = gridResultShape(query) !== gridResultShape(this.acceptedQuery);
+let cursor = direction === "next" ? this.cursorWindow.next : direction === "previous" ? this.cursorWindow.previous : undefined;
+if (changed) { direction = "first"; cursor = undefined; }
+if (direction !== "first" && cursor === undefined) {
+if (!this.pendingQuery) return Promise.resolve(this.acceptedQuery);
+direction = "first";
+}
+const request = gridQuery(this.view, { ...query, cursor, limit: this.pageLength,
+revision: changed ? undefined : this.snapshot.revision });
+const paging = { pageLength: this.pageLength, direction: direction,
+edge: direction === "next" ? this.cursorWindow.end : this.pageOffset };
+return this.navigatePageQuery(request, paging);
+},
+firstPage() { return this.cursor ? this.navigateCursor("first") : this.goToPage(0); },
+previousPage() { return this.cursor ? this.navigateCursor("previous") : this.goToPage(Math.max(0, this.getPaging().pageIndex - 1)); },
+nextPage() { return this.cursor ? this.navigateCursor("next") : this.goToPage(this.getPaging().pageIndex + 1); },
 buildPager() {
 if (!this.paged) return;
 const pager = this.pager = h("form", "cx-grid-pager"), signal = this.lifetime.signal;
@@ -4936,36 +4999,43 @@ pager.setAttribute("aria-label", this.labels.gridPaging);
 this.pageRange = h("span", "cx-grid-page-range"); this.pageRange.setAttribute("role", "status"); pager.appendChild(this.pageRange);
 const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error: error }); } };
 this.pageButtons = [
-gridButton(this.labels.gridFirstPage, () => run(() => this.goToPage(0))),
-gridButton(this.labels.gridPreviousPage, () => run(() => this.goToPage(Math.max(0, this.getPaging().pageIndex - 1)))),
-gridButton(this.labels.gridNextPage, () => run(() => this.goToPage(this.getPaging().pageIndex + 1))),
-gridButton(this.labels.gridLastPage, () => run(() => this.goToPage(Math.max(0, this.getPaging().pageCount - 1))))
+gridButton(this.labels.gridFirstPage, () => run(() => this.firstPage())),
+gridButton(this.labels.gridPreviousPage, () => run(() => this.previousPage())),
+gridButton(this.labels.gridNextPage, () => run(() => this.nextPage()))
 ];
+if (!this.cursor) this.pageButtons.push(gridButton(this.labels.gridLastPage, () => run(() => this.goToPage(Math.max(0, this.getPaging().pageCount - 1)))));
 pager.append(this.pageButtons[0], this.pageButtons[1]);
+if (!this.cursor) {
 const number = this.pageNumber = h("input"); number.type = "number"; number.min = "1"; number.step = "1"; number.required = true;
 pager.appendChild(gridInputLabel(this.labels.gridPageNumber, number));
-pager.append(this.pageButtons[2], this.pageButtons[3]);
+}
+pager.append(...this.pageButtons.slice(2));
 const length = this.pageLengthChoice = h("select");
 pager.appendChild(gridInputLabel(this.labels.gridPageLength, length));
 length.addEventListener("change", () => run(() => this.setPageLength(Number(length.value))), { signal: signal });
-pager.addEventListener("submit", event => { event.preventDefault(); if (number.checkValidity()) run(() => this.goToPage(Number(number.value) - 1)); }, { signal: signal });
+pager.addEventListener("submit", event => { event.preventDefault();
+if (this.pageNumber && this.pageNumber.checkValidity()) run(() => this.goToPage(Number(this.pageNumber.value) - 1)); }, { signal: signal });
 this.host.appendChild(pager); this.syncPager();
 },
 syncPager() {
 if (!this.pager) return;
 const paging = this.getPaging(), busy = !this.acceptedQuery || !!this.pendingQuery;
 const numbers = new Intl.NumberFormat(this.lang);
-setText(this.pageRange, fill(this.labels.gridPageRange, { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }));
+setText(this.pageRange, fill(paging.matched === null ? this.labels.gridCursorRange : this.labels.gridPageRange,
+{ first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }));
+if (this.pageNumber) {
 this.pageNumber.value = String(paging.pageCount ? paging.pageIndex + 1 : 1);
 this.pageNumber.max = String(Math.max(1, paging.pageCount)); this.pageNumber.disabled = busy || !paging.pageCount;
-this.pageButtons.forEach((button, index) => { button.disabled = busy || !paging.pageCount || (index < 2 ? paging.pageIndex === 0 : paging.pageIndex >= paging.pageCount - 1); });
+}
+this.pageButtons.forEach((button, index) => { button.disabled = busy || (this.cursor ? index === 0 ? this.pageOffset === 0 :
+index === 1 ? !paging.hasPrevious : !paging.hasNext : !paging.pageCount || (index < 2 ? paging.pageIndex === 0 : paging.pageIndex >= paging.pageCount - 1)); });
 this.pageLengthChoice.replaceChildren();
-[...new Set([25, 50, 100, 250, this.pageLength])].sort((a, b) => a - b).forEach(value => {
-const option = h("option"); option.value = String(value); setText(option, numbers.format(value)); this.pageLengthChoice.appendChild(option);
-});
+[...new Set([25, 50, 100, 250, this.pageLength])].sort((a, b) => a - b)
+.forEach(value => this.pageLengthChoice.appendChild(gridOption(value, numbers.format(value))));
 this.pageLengthChoice.value = String(this.pageLength); this.pageLengthChoice.disabled = busy;
 const active = document.activeElement;
-if (!busy && this.pageButtons.includes(active) && active.disabled && !this.pageNumber.disabled) this.pageNumber.focus({ preventScroll: true });
+const fallback = this.pageNumber || this.pageLengthChoice;
+if (!busy && this.pageButtons.includes(active) && active.disabled && !fallback.disabled) fallback.focus({ preventScroll: true });
 },
 async focusResult(index, focus, column, control) {
 const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
@@ -4973,7 +5043,9 @@ const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, f
 this.pendingNavigation = navigation;
 try {
 const pendingPage = this.pendingPageNavigation;
-if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last ||
+if (this.cursor && (index < this.rowBounds().first || index > this.rowBounds().last))
+throw new Error("CanopyX: cursor keys stay inside the accepted page.");
+if (this.paged && !this.cursor && (index < this.rowBounds().first || index > this.rowBounds().last ||
 this.pendingQuery && pendingPage && pendingPage.epoch === this.queryEpoch)) {
 const operation = this.goToPage(Math.floor(index / this.pageLength));
 navigation.epoch = this.queryEpoch; await operation;
@@ -5142,7 +5214,7 @@ case "ArrowUp": index--; break;
 case "ArrowDown": index++; break;
 case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
 case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
-case "Home": if (event.ctrlKey || event.metaKey) index = 0; else nextColumn = 0; break;
+case "Home": if (event.ctrlKey || event.metaKey) index = this.cursor ? this.rowBounds().first : 0; else nextColumn = 0; break;
 case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = columnCount - 1; break;
 case "ArrowLeft":
 if (at > 0) nextControl = at - 1;
@@ -5168,7 +5240,7 @@ if (next.has(row.key)) next.delete(row.key); else next.add(row.key); this.setSel
 event.preventDefault(); return;
 default: return;
 }
-index = Math.max(0, Math.min(this.rowCount() - 1, index));
+index = Math.max(this.cursor ? this.rowBounds().first : 0, Math.min(this.rowCount() - 1, index));
 this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error: error }); });
 event.preventDefault(); event.stopPropagation();
 }
@@ -5192,7 +5264,7 @@ this.storageKey = this.view.stateKey ? "cx:grid:" + this.view.stateKey + ":" + t
 this.savedViews = new Map();
 this.defaultState = { version: 1, view: this.view.id,
 columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
-query: gridQuery(this.view, Object.assign({}, this.view.query || {}, { offset: 0, revision: undefined })),
+query: gridQuery(this.view, gridQueryStart(this.view.query)),
 timeZone: this.local ? "local" : "utc", selection: [], scrollTop: 0 };
 if (this.paged) this.defaultState.paging = { pageLength: this.pageLength, offset: 0 };
 const stored = this.readStoredState();
@@ -5208,9 +5280,9 @@ getState() {
 const query = this.getQuery() || this.defaultState.query;
 const state = { version: 1, view: this.view.id,
 columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
-query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: 0, revision: undefined }))),
+query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
 timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
-if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.pageOffset };
+if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset };
 return state;
 },
 readGridState(state) {
@@ -5223,14 +5295,14 @@ if (this.view.selection === "none" && selection.length || !this.multi && selecti
 const input = state.query;
 if (!input || typeof input !== "object" || !Array.isArray(input.sort) || !Array.isArray(input.filters)) throw new Error("CanopyX: invalid state query.");
 const known = id => this.columns.some(column => column.id === id);
-const query = gridQuery(this.view, Object.assign({}, input, { offset: 0, revision: undefined,
+const query = gridQuery(this.view, gridQueryStart(input, {
 sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
 const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
 timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
 if (this.paged) {
 const paging = state.paging || this.defaultState.paging;
 if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
-!Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER)
+!Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER || this.cursor && paging.offset !== 0)
 throw new Error("CanopyX: invalid paged view state.");
 parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
 }
@@ -5303,7 +5375,7 @@ const update = () => {
 clearTimeout(this.searchTimer); this.searchTimer = null;
 if (this.destroyed || this.searchComposing) return;
 if (this.queryForChange().search === input.value) return;
-this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
+this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
 };
 const schedule = () => {
 clearTimeout(this.searchTimer); this.searchTimer = null;
@@ -5329,10 +5401,11 @@ if (!this.acceptedQuery || !this.querySummary) return;
 const query = this.acceptedQuery, active = document.activeElement, focused = this.queryChips.contains(active);
 const key = focused && active.getAttribute("data-cx-condition");
 const numbers = numberFormat(this.lang);
-setText(this.resultCount, fill(this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
+setText(this.resultCount, this.snapshot.matched === null ? this.labels.gridUnknownCount : fill(this.snapshot.total === null ?
+this.labels.gridMatchedCount : this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
 this.queryChips.textContent = "";
 const apply = patch => {
-this.setQuery(Object.assign({}, this.queryForChange(true), patch, { offset: 0, revision: undefined })).catch(() => {});
+this.setQuery(gridQueryStart(this.queryForChange(true), patch)).catch(() => {});
 };
 const chip = (text, label, id, run) => {
 const button = gridButton(text + " ×", () => { button.focus({ preventScroll: true }); run(); }); button.classList.add("cx-grid-chip");
@@ -5384,6 +5457,9 @@ button.addEventListener("click", run); return button;
 }
 function gridInputLabel(text, input) {
 const label = h("label", "cx-grid-field"); label.appendChild(document.createTextNode(text)); label.appendChild(input); return label;
+}
+function gridOption(value, text) {
+const option = h("option"); option.value = value; setText(option, text); return option;
 }
 Object.assign(DataGrid.prototype, {
 buildGridControls() {
@@ -5458,8 +5534,8 @@ this.syncSavedViews();
 syncSavedViews() {
 if (!this.savedChoice) return;
 const selected = this.savedChoice.value; this.savedChoice.textContent = "";
-const empty = h("option"); empty.value = ""; setText(empty, this.labels.gridChooseView); this.savedChoice.appendChild(empty);
-this.getSavedViews().forEach(name => { const option = h("option"); option.value = name; setText(option, name); this.savedChoice.appendChild(option); });
+this.savedChoice.appendChild(gridOption("", this.labels.gridChooseView));
+this.getSavedViews().forEach(name => this.savedChoice.appendChild(gridOption(name, name)));
 if (this.savedViews.has(selected)) this.savedChoice.value = selected;
 }
 });
@@ -5478,14 +5554,14 @@ const add = predicate => this.addGridFilter(rows, predicate);
 form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
 const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
 form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(true), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+rows.textContent = ""; this.setQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined })).catch(failure => setText(error, failure.message));
 }));
 form.appendChild(error); panel.appendChild(form);
 form.addEventListener("submit", event => {
 event.preventDefault();
 try {
 const filters = [...rows.children].map(row => this.readGridFilter(row));
-this.setQuery(Object.assign({}, this.queryForChange(true), { filters: filters, offset: 0, revision: undefined }))
+this.setQuery(gridQueryStart(this.queryForChange(true), { filters: filters }))
 .then(() => setText(error, ""), failure => setText(error, failure.message));
 } catch (failure) { setText(error, failure.message); }
 });
@@ -5497,16 +5573,15 @@ multiple = h("textarea", "cx-grid-filter-value"), type = h("select");
 let remove, input = h("textarea", "cx-grid-filter-value");
 const legend = h("legend", "cx-sr-only"); setText(legend, this.labels.gridFilters); row.appendChild(legend);
 multiple.rows = 2; input.rows = 2;
-for (const item of this.columns) { const option = h("option"); option.value = item.id; setText(option, item.title); column.appendChild(option); }
+for (const item of this.columns) column.appendChild(gridOption(item.id, item.title));
 if (predicate) column.value = predicate.column;
 for (const [value, name] of [["string", "gridText"], ["boolean", "gridBoolean"]]) {
-const option = h("option"); option.value = value; setText(option, this.labels[name]); type.appendChild(option);
+type.appendChild(gridOption(value, this.labels[name]));
 }
 if (predicate && predicate.values.length && predicate.values.some(value => typeof value === "boolean")) {
 if (predicate.values.every(value => typeof value === "boolean")) type.value = "boolean";
 else {
-const option = h("option"); option.value = "mixed"; setText(option, this.labels.gridText + " / " + this.labels.gridBoolean);
-type.appendChild(option); type.value = "mixed";
+type.appendChild(gridOption("mixed", this.labels.gridText + " / " + this.labels.gridBoolean)); type.value = "mixed";
 }
 }
 const columnField = gridInputLabel(this.labels.gridColumn, column), conditionField = gridInputLabel(this.labels.gridOperator, operator);
@@ -5518,7 +5593,7 @@ const definition = this.columns.find(item => item.id === column.value), previous
 const operators = definition.kind === "text" ? ["eq", "ne", "contains", "startsWith", "in", "isNull", "isNotNull"] :
 ["eq", "ne", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"];
 operator.textContent = "";
-operators.forEach(name => { const option = h("option"); option.value = name; setText(option, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name]); operator.appendChild(option); });
+operators.forEach(name => operator.appendChild(gridOption(name, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name])));
 if (operators.includes(previous)) operator.value = previous;
 const raw = input.value, next = h(definition.kind === "text" ? "textarea" : "input", "cx-grid-filter-value");
 if (definition.kind === "text") next.rows = 2;
@@ -5600,10 +5675,10 @@ columnIds.some(id => !this.columns.some(column => column.id === id))) throw new 
 if (options.values !== undefined && !["raw", "display"].includes(options.values)) throw new Error("CanopyX: export values are raw or display.");
 if (options.signal !== undefined && !(options.signal instanceof AbortSignal)) throw new Error("CanopyX: export cancellation needs an AbortSignal.");
 const selected = options.scope === "selected" ? [...this.selected] : [];
-const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: 0, limit: this.pageSize,
+const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: undefined, limit: this.pageSize,
 search: options.scope === "filtered" ? this.acceptedQuery.search : "",
 filterGroup: options.scope === "filtered" ? this.acceptedQuery.filterGroup : undefined,
-filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] }));
+filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] });
 const request = gridFreeze({ scope: options.scope, query: query, revision: this.snapshot.revision,
 total: this.snapshot.total, matched: this.snapshot.matched, selection: selected,
 columns: columnIds.map(id => { const column = this.columns.find(item => item.id === id); return { id: id, title: column.title, kind: column.kind }; }),
@@ -5620,11 +5695,16 @@ if (this.destroyed || signal && signal.aborted) controller.abort();
 gridOperationActive(this, controller.signal);
 const remaining = new Set(request.selection), seen = new Set();
 if (request.scope === "selected" && !remaining.size) return;
-const expected = { revision: request.revision, total: request.total,
-matched: request.scope === "filtered" ? request.matched : request.total };
-for (let offset = 0; offset < expected.matched; offset += request.query.limit) {
-const query = gridQuery(this.view, Object.assign({}, request.query, { offset: offset }));
-const page = validateGridPage(await this.requestPage(query, controller.signal), this.view, query, expected);
+let expected = { revision: request.revision, total: request.total,
+matched: request.scope === "filtered" ? request.matched : this.cursor ? undefined : request.total };
+const tokens = new Set(); let cursor, offset = 0;
+while (this.cursor || offset < expected.matched) {
+gridOperationActive(this, controller.signal);
+const query = gridQuery(this.view, { ...request.query, offset: this.cursor ? undefined : offset, cursor });
+const page = (this.cursor ? validateGridCursorPage : validateGridPage)(await this.requestPage(query, controller.signal), this.view, query, expected);
+if (this.cursor && (page.offset !== offset || request.scope !== "filtered" && page.total !== null && page.matched !== page.total))
+throw new Error("CanopyX: incomplete or noncontiguous cursor export.");
+expected = { revision: page.revision, total: page.total, matched: page.matched };
 for (const row of page.items) {
 gridOperationActive(this, controller.signal);
 if (seen.has(row.id)) throw new Error("CanopyX: export encountered a repeated row identity.");
@@ -5635,6 +5715,12 @@ for (const column of request.columns) if (Object.prototype.hasOwnProperty.call(r
 yield gridFreeze({ id: row.id, cells: cells });
 gridOperationActive(this, controller.signal);
 }
+}
+offset += this.cursor ? page.items.length : request.query.limit;
+if (this.cursor) {
+cursor = page.nextCursor; if (cursor === undefined) break;
+if (tokens.has(cursor)) throw new Error("CanopyX: cursor export repeated a traversal token.");
+tokens.add(cursor);
 }
 }
 gridOperationActive(this, controller.signal);
@@ -5669,7 +5755,8 @@ return this.runGridHook(signal => this.opts.onExport({ format: format, request: 
 });
 Object.assign(DataGrid.prototype, {
 scrollToRow(index) {
-if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) || index < 0 || index >= this.snapshot.matched)
+if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) ||
+index < (this.cursor ? this.pageOffset : 0) || index >= this.rowCount())
 throw new Error("CanopyX: scroll to a row position in the accepted result.");
 return this.focusResult(index, false);
 },
@@ -5683,7 +5770,7 @@ const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("Canop
 try {
 if (this.destroyed || signal && signal.aborted) abort();
 return await Promise.race([Promise.resolve().then(() => {
-if (controller.signal.aborted) throw new DOMException("Grid operation was cancelled.", "AbortError");
+gridOperationActive(this, controller.signal);
 return run(controller.signal);
 }), cancelled]);
 } finally {
@@ -5732,7 +5819,7 @@ buildExportControls() {
 const panel = this.controlPanel(this.labels.gridExport, "cx-grid-export").panel, scope = h("select");
 scope.setAttribute("aria-label", this.labels.gridExport);
 for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]]) {
-const option = h("option"); option.value = value; setText(option, this.labels[label]); scope.appendChild(option);
+scope.appendChild(gridOption(value, this.labels[label]));
 }
 panel.appendChild(scope);
 const status = h("p", "cx-grid-control-error"); status.setAttribute("role", "status");
@@ -5766,24 +5853,19 @@ if (!host || !options || !options.view) throw new Error("CanopyX: createDataGrid
 const existing = activeGrids.get(host);
 if (existing) return existing;
 const grid = new DataGrid(host, options);
-const api = Object.freeze({
+const api = {
 element: host, view: grid.view, ready: grid.ready,
-getQuery: () => grid.getQuery(), setQuery: query => grid.setQuery(query), sort: sorts => grid.sort(sorts),
-getPaging: () => grid.getPaging(), goToPage: index => grid.goToPage(index), setPageLength: length => grid.setPageLength(length),
-setColumnWidth: (id, width) => grid.setColumnWidth(id, width), setColumnVisible: (id, visible) => grid.setColumnVisible(id, visible),
-setColumnOrder: ids => grid.setColumnOrder(ids),
-getState: () => grid.getState(), setState: state => grid.setState(state), resetView: () => grid.resetView(),
-getSavedViews: () => grid.getSavedViews(), saveView: name => grid.saveView(name),
-applySavedView: name => grid.applySavedView(name), removeSavedView: name => grid.removeSavedView(name),
-setTimeZone: zone => grid.setTimeZone(zone), getTimeZone: () => grid.local ? "local" : "utc",
-getSelection: () => [...grid.selected], setSelection: ids => grid.setSelection(ids), clearSelection: () => grid.setSelection([]),
-prepareExport: options => grid.prepareExport(options), toCsv: options => grid.toCsv(options), copy: options => grid.copy(options),
-exportToHost: (format, options) => grid.exportToHost(format, options), openDetails: id => grid.openDetails(id),
+getTimeZone: () => grid.local ? "local" : "utc",
+getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
 focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
-scrollToRow: index => grid.scrollToRow(index),
-retry: () => grid.retry(), refresh: () => { grid.version++; grid.scheduleRender(); },
+refresh: () => { grid.version++; grid.scheduleRender(); },
 destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
-});
+};
+for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
+"setColumnWidth", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
+"applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
+api[name] = grid[name].bind(grid);
+Object.freeze(api);
 activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
 }
 function checkIntentPath(path) {

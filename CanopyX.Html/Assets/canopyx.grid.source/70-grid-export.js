@@ -28,10 +28,10 @@
       if (options.values !== undefined && !["raw", "display"].includes(options.values)) throw new Error("CanopyX: export values are raw or display.");
       if (options.signal !== undefined && !(options.signal instanceof AbortSignal)) throw new Error("CanopyX: export cancellation needs an AbortSignal.");
       const selected = options.scope === "selected" ? [...this.selected] : [];
-      const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: 0, limit: this.pageSize,
+      const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: undefined, limit: this.pageSize,
         search: options.scope === "filtered" ? this.acceptedQuery.search : "",
         filterGroup: options.scope === "filtered" ? this.acceptedQuery.filterGroup : undefined,
-        filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] }));
+        filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] });
       const request = gridFreeze({ scope: options.scope, query: query, revision: this.snapshot.revision,
         total: this.snapshot.total, matched: this.snapshot.matched, selection: selected,
         columns: columnIds.map(id => { const column = this.columns.find(item => item.id === id); return { id: id, title: column.title, kind: column.kind }; }),
@@ -50,11 +50,16 @@
         gridOperationActive(this, controller.signal);
         const remaining = new Set(request.selection), seen = new Set();
         if (request.scope === "selected" && !remaining.size) return;
-        const expected = { revision: request.revision, total: request.total,
-          matched: request.scope === "filtered" ? request.matched : request.total };
-        for (let offset = 0; offset < expected.matched; offset += request.query.limit) {
-          const query = gridQuery(this.view, Object.assign({}, request.query, { offset: offset }));
-          const page = validateGridPage(await this.requestPage(query, controller.signal), this.view, query, expected);
+        let expected = { revision: request.revision, total: request.total,
+          matched: request.scope === "filtered" ? request.matched : this.cursor ? undefined : request.total };
+        const tokens = new Set(); let cursor, offset = 0;
+        while (this.cursor || offset < expected.matched) {
+          gridOperationActive(this, controller.signal);
+          const query = gridQuery(this.view, { ...request.query, offset: this.cursor ? undefined : offset, cursor });
+          const page = (this.cursor ? validateGridCursorPage : validateGridPage)(await this.requestPage(query, controller.signal), this.view, query, expected);
+          if (this.cursor && (page.offset !== offset || request.scope !== "filtered" && page.total !== null && page.matched !== page.total))
+            throw new Error("CanopyX: incomplete or noncontiguous cursor export.");
+          expected = { revision: page.revision, total: page.total, matched: page.matched };
           for (const row of page.items) {
             gridOperationActive(this, controller.signal);
             if (seen.has(row.id)) throw new Error("CanopyX: export encountered a repeated row identity.");
@@ -65,6 +70,12 @@
               yield gridFreeze({ id: row.id, cells: cells });
               gridOperationActive(this, controller.signal);
             }
+          }
+          offset += this.cursor ? page.items.length : request.query.limit;
+          if (this.cursor) {
+            cursor = page.nextCursor; if (cursor === undefined) break;
+            if (tokens.has(cursor)) throw new Error("CanopyX: cursor export repeated a traversal token.");
+            tokens.add(cursor);
           }
         }
         gridOperationActive(this, controller.signal);

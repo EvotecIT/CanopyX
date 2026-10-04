@@ -13,7 +13,7 @@
         clearTimeout(this.searchTimer); this.searchTimer = null;
         if (this.destroyed || this.searchComposing) return;
         if (this.queryForChange().search === input.value) return;
-        this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
+        this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
       };
       const schedule = () => {
         clearTimeout(this.searchTimer); this.searchTimer = null;
@@ -41,10 +41,11 @@
       const query = this.acceptedQuery, active = document.activeElement, focused = this.queryChips.contains(active);
       const key = focused && active.getAttribute("data-cx-condition");
       const numbers = numberFormat(this.lang);
-      setText(this.resultCount, fill(this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
+      setText(this.resultCount, this.snapshot.matched === null ? this.labels.gridUnknownCount : fill(this.snapshot.total === null ?
+        this.labels.gridMatchedCount : this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
       this.queryChips.textContent = "";
       const apply = patch => {
-        this.setQuery(Object.assign({}, this.queryForChange(true), patch, { offset: 0, revision: undefined })).catch(() => {});
+        this.setQuery(gridQueryStart(this.queryForChange(true), patch)).catch(() => {});
       };
       const chip = (text, label, id, run) => {
         const button = gridButton(text + " ×", () => { button.focus({ preventScroll: true }); run(); }); button.classList.add("cx-grid-chip");

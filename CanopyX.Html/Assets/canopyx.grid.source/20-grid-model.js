@@ -7,8 +7,9 @@
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
       this.source = options.source || (this.view.source.kind === "inline" ? inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
-      if (this.source.navigation !== undefined && this.source.navigation !== "offset")
-        throw new Error("CanopyX: this grid source requires offset navigation with known counts.");
+      this.cursor = this.view.source.navigation === "cursor";
+      if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
+        throw new Error("CanopyX: source navigation must match the grid definition.");
       this.pageSize = this.view.pageSize; this.rowH = this.view.rowHeight;
       this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
       this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
@@ -58,16 +59,16 @@
     queryForChange(includeQueuedInput) {
       const query = this.pendingQuery || this.acceptedQuery || {};
       return includeQueuedInput && this.searchTimer != null && !this.searchComposing ?
-        Object.assign({}, query, { search: this.searchInput.value, offset: 0, revision: undefined }) : query;
+        gridQueryStart(query, { search: this.searchInput.value }) : query;
     }
 
     async setQuery(input, paging) {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       const length = paging ? paging.pageLength : this.pageLength;
-      const initial = gridQuery(this.view, input);
-      const desired = Math.floor(initial.offset / length) * length;
+      const initial = gridQuery(this.view, this.cursor ? { ...input, limit: length } : input);
+      const desired = this.cursor ? 0 : Math.floor(initial.offset / length) * length;
       const same = this.acceptedQuery && gridResultShape(initial) === gridResultShape(this.acceptedQuery) && initial.revision === this.acceptedQuery.revision;
-      let query = this.paged ? gridQuery(this.view, Object.assign({}, initial, { offset: same ? Math.min(desired, Math.max(0, Math.ceil(this.rowCount() / length) - 1) * length) : 0 })) : initial;
+      let query = this.paged && !this.cursor ? gridQuery(this.view, { ...initial, offset: same ? Math.min(desired, Math.max(0, Math.ceil(this.rowCount() / length) - 1) * length) : 0 }) : initial;
       const epoch = ++this.queryEpoch;
       clearTimeout(this.searchTimer); this.searchTimer = null;
       this.dataLifetime.abort(); this.dataLifetime = new AbortController();
@@ -76,30 +77,33 @@
       this.grid.setAttribute("aria-busy", "true");
       this.syncPager();
       try {
-        let page = validateGridPage(await this.requestPage(query, lifetime.signal), this.view, query, same ? this.snapshot : null);
-        if (this.paged && !same && desired) {
-          if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid query was superseded.", "AbortError");
+        let page = (this.cursor ? validateGridCursorPage : validateGridPage)(await this.requestPage(query, lifetime.signal), this.view, query, same ? this.snapshot : null);
+        if (this.cursor && paging && paging.direction) this.validateCursorTransition(page, paging);
+        if (this.paged && !this.cursor && !same && desired) {
+          gridOperationActive(this, lifetime.signal);
           const offset = Math.min(desired, Math.max(0, Math.ceil(page.matched / length) - 1) * length);
           if (offset) {
             const snapshot = { revision: page.revision, total: page.total, matched: page.matched };
-            query = gridQuery(this.view, Object.assign({}, query, { offset: offset, revision: page.revision }));
+            query = gridQuery(this.view, { ...query, offset, revision: page.revision });
             page = validateGridPage(await this.requestPage(query, lifetime.signal), this.view, query, snapshot);
           }
         }
-        if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid query was superseded.", "AbortError");
+        gridOperationActive(this, lifetime.signal);
         const hadFocus = this.canvas.contains(document.activeElement), previousId = this.focused && this.focused.key;
         this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.focused = null;
-        this.acceptedQuery = gridQuery(this.view, Object.assign({}, query, { revision: page.revision }));
+        this.acceptedQuery = gridQuery(this.view, { ...query, revision: page.revision });
         this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
-        this.pageLength = length; this.pageOffset = this.paged ? query.offset : 0;
+        this.pageLength = length; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
+        if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
         this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
-        this.total = (this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
-        this.grid.setAttribute("aria-rowcount", String(page.matched + 1));
-        this.grid.tabIndex = page.matched ? -1 : 0;
+        const hasRows = this.cursor ? page.items.length : page.matched;
+        this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
+        this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1));
+        this.grid.tabIndex = hasRows ? -1 : 0;
         this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader();
-        this.setNotice(page.matched ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
+        this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
         if (hadFocus) {
-          this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(query.offset) || null;
+          this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(this.cursor ? page.offset : query.offset) || null;
         }
         this.render();
         if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
@@ -111,7 +115,7 @@
         this.stateChanged(); return this.getQuery();
       } catch (error) {
         if (epoch === this.queryEpoch && !this.destroyed) {
-          this.pendingQuery = null; this.lastFailedQuery = initial; this.lastFailedPaging = { pageLength: length };
+          this.pendingQuery = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
           this.syncPager();
@@ -127,14 +131,14 @@
       const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
       const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
       if (next) changed.splice(event && event.shiftKey && found >= 0 ? Math.min(found, changed.length) : changed.length, 0, { column: id, direction: next });
-      this.setQuery(Object.assign({}, previous, { offset: 0, sort: changed, revision: undefined })).catch(() => {});
+      this.setQuery(gridQueryStart(previous, { sort: changed })).catch(() => {});
     }
 
     sort(sorts) {
-      return this.setQuery(Object.assign({}, this.queryForChange(true), { offset: 0, sort: sorts, revision: undefined }));
+      return this.setQuery(gridQueryStart(this.queryForChange(true), { sort: sorts }));
     }
 
-    rowCount() { return this.snapshot ? this.snapshot.matched : 0; }
+    rowCount() { return this.cursor ? this.cursorWindow ? this.cursorWindow.end : 0 : this.snapshot ? this.snapshot.matched : 0; }
     rowBounds() { return { first: this.pageOffset, last: this.paged ? Math.min(this.rowCount(), this.pageOffset + this.pageLength) - 1 : this.rowCount() - 1 }; }
     rowTop(index) { return (index - this.pageOffset) * this.rowH; }
     rowAt(top) { const bounds = this.rowBounds(); return Math.max(bounds.first, Math.min(bounds.last, bounds.first + Math.floor(top / this.rowH))); }

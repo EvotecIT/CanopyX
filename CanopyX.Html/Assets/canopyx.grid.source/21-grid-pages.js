@@ -1,21 +1,6 @@
   // ---------- bounded host windows; selection identities are independent of cached pages ----------
   Object.assign(DataGrid.prototype, {
-    async requestPage(query, signal) {
-      const controller = new AbortController();
-      let rejectRequest;
-      const cancelled = new Promise((resolve, reject) => { rejectRequest = reject; });
-      const abort = () => { controller.abort(); rejectRequest(new DOMException("Grid request was cancelled.", "AbortError")); };
-      signal.addEventListener("abort", abort, { once: true });
-      const timer = setTimeout(() => { controller.abort(); rejectRequest(new Error("CanopyX: grid request timed out.")); }, this.requestTimeoutMs);
-      try {
-        if (signal.aborted) abort();
-        const response = Promise.resolve().then(() => {
-          if (controller.signal.aborted) throw new DOMException("Grid request was cancelled.", "AbortError");
-          return this.source.query(query, { signal: controller.signal });
-        });
-        return await Promise.race([response, cancelled]);
-      } finally { clearTimeout(timer); signal.removeEventListener("abort", abort); controller.abort(); }
-    },
+    requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal: signal }), signal); },
 
     storePage(page) {
       const rows = page.items.map((item, i) => ({ key: item.id, h: item, _ri: page.offset + i, hpx: this.rowH }));
@@ -57,7 +42,7 @@
     },
 
     loadWindow() {
-      if (!this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
+      if (this.cursor || !this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
       const offsets = new Set();
       const bounds = this.rowBounds();
       for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)

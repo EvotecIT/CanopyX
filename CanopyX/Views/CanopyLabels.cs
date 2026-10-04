@@ -38,6 +38,9 @@ public sealed class CanopyLabels {
         [nameof(Columns)] = "Columns",
         [nameof(GridFilters)] = "Filters",
         [nameof(GridResultCount)] = "{count} of {total} rows",
+        [nameof(GridUnknownCount)] = "Result count unavailable",
+        [nameof(GridMatchedCount)] = "{count} matching rows",
+        [nameof(GridCursorRange)] = "Rows {first}–{last}",
         [nameof(GridPaging)] = "Result pages",
         [nameof(GridPageRange)] = "{first}–{last} of {count} rows",
         [nameof(GridPageNumber)] = "Page",
@@ -119,6 +122,7 @@ public sealed class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
+        nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
         nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
         nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
@@ -139,6 +143,13 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the placeholder and accessible name of the search box when the view's search options set none (<see cref="CanopySearchOptions.Placeholder"/>). Default "Search".</summary>
     public string SearchPlaceholder { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the result summary when a source cannot provide a matching count. Default "Result count unavailable".</summary>
+    public string GridUnknownCount { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the known matching count when the unfiltered total is unknown, including <c>{count}</c>. Default "{count} matching rows".</summary>
+    public string GridMatchedCount { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the returned range when its matching total is unknown, including <c>{first}</c> and <c>{last}</c>. Default "Rows {first}–{last}".</summary>
+    public string GridCursorRange { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the grid export panel label. Default "Export".</summary>
     public string GridExport { get => Get(); set => Set(value); }

@@ -8,6 +8,8 @@
     { "$ref": "#/$defs/grid" },
     { "$ref": "#/$defs/gridPage" },
     { "$ref": "#/$defs/gridQuery" },
+    { "$ref": "#/$defs/gridCursorPage" },
+    { "$ref": "#/$defs/gridCursorQuery" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -51,16 +53,21 @@
           "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
           "contains": { "not": { "required": ["hidden"], "properties": { "hidden": { "const": true } } } }
         },
-        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "const": "offset", "description": "Known-count offset navigation; absent preserves the original offset contract." } } },
+        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." } } },
         "stateKey": { "type": "string" },
         "timeZone": { "enum": ["utc", "local"] },
         "labels": { "$ref": "#/$defs/view/properties/labels" },
-        "query": { "$ref": "#/$defs/gridQuery" },
+        "query": { "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] },
         "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } }
       },
       "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
       "then": { "required": ["rows"] },
-      "else": { "not": { "required": ["rows"] } }
+      "else": { "not": { "required": ["rows"] } },
+      "allOf": [{
+        "if": { "properties": { "source": { "required": ["navigation"], "properties": { "navigation": { "const": "cursor" } } } } },
+        "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
+        "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
+      }]
     },
     "gridPage": {
       "description": "A page after full-dataset filtering and sorting. Writers and readers check offset <= matched <= total, page bounds, and unique row identities.",
@@ -100,6 +107,38 @@
           } }
         },
         "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilter" } }
+      }
+    },
+    "gridCursorPage": {
+      "description": "A complete visible page reached through opaque host cursors. Offset is the actual ordinal position; unknown counts are null. Readers enforce contiguous navigation, consistent revisions/counts, page bounds and unique identities.",
+      "type": "object", "additionalProperties": false,
+      "required": ["protocol", "type", "view", "revision", "offset", "total", "matched", "items"],
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridCursorPage" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "total": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "matched": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "nextCursor": { "$ref": "#/$defs/gridCursor" }, "previousCursor": { "$ref": "#/$defs/gridCursor" },
+        "items": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/gridRow" } }
+      }
+    },
+    "gridCursor": { "type": "string", "minLength": 1, "maxLength": 4096, "$comment": "Runtime and writer enforce the limit in UTF-16 code units and reject malformed Unicode." },
+    "gridCursorQuery": {
+      "description": "The same full-dataset query criteria as gridQuery, traversed through an optional opaque cursor; no random-access offset is sent.",
+      "type": "object", "additionalProperties": false,
+      "required": ["protocol", "type", "view", "limit", "search", "sort", "filters"],
+      "dependentRequired": { "cursor": ["revision"] },
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridCursorQuery" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "cursor": { "$ref": "#/$defs/gridCursor" },
+        "limit": { "$ref": "#/$defs/gridQuery/properties/limit" },
+        "search": { "$ref": "#/$defs/gridQuery/properties/search" },
+        "searchMode": { "$ref": "#/$defs/gridQuery/properties/searchMode" },
+        "sort": { "$ref": "#/$defs/gridQuery/properties/sort" },
+        "filters": { "$ref": "#/$defs/gridQuery/properties/filters" },
+        "filterGroup": { "$ref": "#/$defs/gridQuery/properties/filterGroup" }
       }
     },
     "gridFilterGroup": {
@@ -426,6 +465,9 @@
             "gridNextPage": { "$ref": "#/$defs/accessibleLabel" },
             "gridLastPage": { "$ref": "#/$defs/accessibleLabel" },
             "gridResultCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridUnknownCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridMatchedCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCursorRange": { "$ref": "#/$defs/accessibleLabel" },
             "gridClearQuery": { "$ref": "#/$defs/accessibleLabel" },
             "gridRemoveSearch": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupedFilters": { "$ref": "#/$defs/accessibleLabel" },

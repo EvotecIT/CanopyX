@@ -39,9 +39,16 @@ export interface GridQuery {
   /** Combined with search and flat filters using AND. */
   readonly filterGroup?: GridFilterGroup;
 }
-export type GridQueryInput = Partial<GridQuery>;
+/** Sequential host query. Tokens require their issuing revision; there is no random-access offset. */
+export interface GridCursorQuery extends Omit<GridQuery, "type" | "offset"> {
+  readonly type: "gridCursorQuery";
+  readonly cursor?: string;
+}
+export type AcceptedGridQuery = GridQuery | GridCursorQuery;
+export type GridQueryInput<Q extends AcceptedGridQuery = GridQuery> = Partial<Q>;
+type GridCount<Q extends AcceptedGridQuery> = Q extends GridCursorQuery ? number | null : number;
 
-interface GridDefinition {
+interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   protocol: "canopyx/2";
   type: "grid";
   id: string;
@@ -61,11 +68,16 @@ interface GridDefinition {
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
-  query?: GridQuery;
+  query?: Q;
 }
 export interface InlineGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rows: GridRow[]; }
 export interface HostGridView extends GridDefinition { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
-export type GridView = InlineGridView | HostGridView;
+export interface CursorGridView extends GridDefinition<GridCursorQuery> {
+  source: { kind: "host"; navigation: "cursor" };
+  presentation: "paged";
+  rows?: never;
+}
+export type GridView = InlineGridView | HostGridView | CursorGridView;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
 export interface GridPage {
@@ -80,25 +92,40 @@ export interface GridPage {
 }
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
 export interface GridSource { readonly navigation?: "offset"; query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>; }
+/** One complete visible page. Null counts remain unknown; ordinal positions do not grant random access. */
+export interface GridCursorPage extends Omit<GridPage, "type" | "total" | "matched"> {
+  type: "gridCursorPage";
+  total: number | null;
+  matched: number | null;
+  nextCursor?: string;
+  previousCursor?: string;
+}
+export interface GridCursorSource {
+  readonly navigation: "cursor";
+  query(query: GridCursorQuery, options: { signal: AbortSignal }): GridCursorPage | PromiseLike<GridCursorPage>;
+}
 /** Accepted presentation; indices are zero based, while the visible range is one based (0–0 when empty). */
-export interface GridPaging {
+export interface GridPaging<Q extends AcceptedGridQuery = GridQuery> {
   readonly presentation: "continuous" | "paged";
   readonly pageLength: number;
-  readonly pageIndex: number;
-  readonly pageCount: number;
+  readonly navigation?: Q extends GridCursorQuery ? "cursor" : "offset";
+  readonly pageIndex: Q extends GridCursorQuery ? null : number;
+  readonly pageCount: Q extends GridCursorQuery ? null : number;
   readonly first: number;
   readonly last: number;
-  readonly matched: number;
-  readonly total: number;
+  readonly matched: GridCount<Q>;
+  readonly total: GridCount<Q>;
+  readonly hasNext?: boolean;
+  readonly hasPrevious?: boolean;
 }
-export interface GridQueryEvent { query: GridQuery; revision: string; total: number; matched: number; }
+export interface GridQueryEvent<Q extends AcceptedGridQuery = GridQuery> { query: Q; revision: string; total: GridCount<Q>; matched: GridCount<Q>; }
 /** Exports retain the accepted revision, query ordering, columns and selected IDs at invocation. */
-export interface GridExportRequest {
+export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
   readonly scope: "filtered" | "selected" | "all";
-  readonly query: GridQuery;
+  readonly query: Q;
   readonly revision: string;
-  readonly total: number;
-  readonly matched: number;
+  readonly total: GridCount<Q>;
+  readonly matched: GridCount<Q>;
   readonly selection: readonly string[];
   readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];
   readonly values: "raw" | "display";
@@ -113,72 +140,77 @@ export interface GridExportOptions {
   /** Client CSV defaults to 50000; clipboard to 10000. Larger results use a host hook. */
   maxRows?: number;
 }
-export interface GridExport {
-  readonly request: GridExportRequest;
+export interface GridExport<Q extends AcceptedGridQuery = GridQuery> {
+  readonly request: GridExportRequest<Q>;
   /** Each enumeration requests fresh serial windows from the captured revision, independently of the viewport. */
   rows(): AsyncIterable<GridExportRow>;
 }
 export interface GridCellContext { column: string; index: number; }
 /** Versioned view settings. Queries omit dataset revisions; restoration revalidates against the current source. */
-export interface GridState {
+export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   version: 1;
   view: string;
   columns: { id: string; width: number; hidden: boolean }[];
-  query: GridQuery;
+  query: Q;
   timeZone: TimeZone;
   selection: string[];
   scrollTop: number;
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
   paging?: { pageLength: number; offset: number };
 }
-export interface GridHostOptions {
+export interface GridHostOptions<Q extends AcceptedGridQuery = GridQuery> {
   /** False lets a host compose controls around the same grid controller. */
   toolbar?: boolean;
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
   searchDelayMs?: number;
-  source?: GridSource;
+  source?: Q extends GridCursorQuery ? GridCursorSource : GridSource;
   labels?: Partial<CanopyLabels>;
   renderers?: Record<string, (row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void>;
   cachePageLimit?: number;
   requestTimeoutMs?: number;
-  onQuery?: (event: GridQueryEvent) => void;
+  onQuery?: (event: GridQueryEvent<Q>) => void;
   onSelect?: (event: { ids: string[] }) => void;
   onError?: (event: { error: Error }) => void;
-  onState?: (event: { query: GridQuery | null; state: GridState }) => void;
+  onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
-  onExport?: (event: { format: string; request: GridExportRequest; signal: AbortSignal }) => void | PromiseLike<void>;
+  onExport?: (event: { format: string; request: GridExportRequest<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
-  onDetails?: (event: { row: GridExportRow; query: GridQuery; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
 }
 export type GridOptions = GridHostOptions & ({ view: InlineGridView } | { view: HostGridView; source: GridSource });
+export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   readonly element: HTMLElement;
   readonly view: GridView;
-  readonly ready: Promise<GridQuery>;
-  getQuery(): GridQuery | null;
-  setQuery(query: GridQueryInput): Promise<GridQuery>;
-  sort(sorts: readonly GridSort[]): Promise<GridQuery>;
-  getPaging(): GridPaging;
-  goToPage(index: number): Promise<GridQuery>;
-  setPageLength(length: number): Promise<GridQuery>;
+  readonly ready: Promise<Q>;
+  getQuery(): Q | null;
+  setQuery(query: GridQueryInput<Q>): Promise<Q>;
+  sort(sorts: readonly GridSort[]): Promise<Q>;
+  getPaging(): GridPaging<Q>;
+  /** Offset sources only. Cursor sources reject random page access. */
+  goToPage(index: number): Promise<Q>;
+  firstPage(): Promise<Q>;
+  previousPage(): Promise<Q>;
+  nextPage(): Promise<Q>;
+  setPageLength(length: number): Promise<Q>;
   setColumnWidth(id: string, width: number): void;
   setColumnVisible(id: string, visible: boolean): void;
   setColumnOrder(ids: string[]): void;
-  getState(): GridState;
-  setState(state: GridState): Promise<GridQuery>;
-  resetView(): Promise<GridQuery>;
+  getState(): GridState<Q>;
+  setState(state: GridState<Q>): Promise<Q>;
+  resetView(): Promise<Q>;
   getSavedViews(): string[];
   saveView(name: string): void;
-  applySavedView(name: string): Promise<GridQuery>;
+  applySavedView(name: string): Promise<Q>;
   removeSavedView(name: string): void;
   setTimeZone(zone: TimeZone): void;
   getTimeZone(): TimeZone;
   getSelection(): string[];
   setSelection(ids: string[]): void;
   clearSelection(): void;
-  prepareExport(options: GridExportOptions): GridExport;
+  prepareExport(options: GridExportOptions): GridExport<Q>;
   toCsv(options: GridExportOptions): Promise<string>;
   copy(options: GridExportOptions): Promise<string>;
   exportToHost(format: string, options: GridExportOptions): Promise<void>;
@@ -187,16 +219,17 @@ export interface DataGrid {
   focus(): void;
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
   scrollToRow(index: number): Promise<void>;
-  retry(): Promise<GridQuery | void>;
+  retry(): Promise<Q | void>;
   refresh(): void;
   destroy(): void;
 }
 /** Requires a browser DOM. The grid runtime also hosts both existing tree variants. */
 export function createDataGrid(host: HTMLElement, options: GridOptions): DataGrid;
+export function createDataGrid(host: HTMLElement, options: CursorGridOptions): DataGrid<GridCursorQuery>;
 /** Registers options before either a tree or flat-grid fragment mounts. */
-export function configure(viewId: string, options: HostOptions | GridHostOptions): () => void;
+export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery>): () => void;
 /** Mounts tree and flat-grid fragments below root. Narrow a controller before using view-specific methods. */
-export function mount(root?: ParentNode): Array<TreeGrid | DataGrid>;
+export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
 
 declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;

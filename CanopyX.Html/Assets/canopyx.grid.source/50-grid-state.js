@@ -19,7 +19,7 @@
       this.savedViews = new Map();
       this.defaultState = { version: 1, view: this.view.id,
         columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
-        query: gridQuery(this.view, Object.assign({}, this.view.query || {}, { offset: 0, revision: undefined })),
+        query: gridQuery(this.view, gridQueryStart(this.view.query)),
         timeZone: this.local ? "local" : "utc", selection: [], scrollTop: 0 };
       if (this.paged) this.defaultState.paging = { pageLength: this.pageLength, offset: 0 };
       const stored = this.readStoredState();
@@ -36,9 +36,9 @@
       const query = this.getQuery() || this.defaultState.query;
       const state = { version: 1, view: this.view.id,
         columns: this.columns.map(column => ({ id: column.id, width: column.width, hidden: !!column.hidden })),
-        query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: 0, revision: undefined }))),
+        query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
-      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.pageOffset };
+      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset };
       return state;
     },
 
@@ -52,14 +52,14 @@
       const input = state.query;
       if (!input || typeof input !== "object" || !Array.isArray(input.sort) || !Array.isArray(input.filters)) throw new Error("CanopyX: invalid state query.");
       const known = id => this.columns.some(column => column.id === id);
-      const query = gridQuery(this.view, Object.assign({}, input, { offset: 0, revision: undefined,
+      const query = gridQuery(this.view, gridQueryStart(input, {
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
       const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
         timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
       if (this.paged) {
         const paging = state.paging || this.defaultState.paging;
         if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
-            !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER)
+            !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER || this.cursor && paging.offset !== 0)
           throw new Error("CanopyX: invalid paged view state.");
         parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
       }

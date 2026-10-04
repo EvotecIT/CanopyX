@@ -37,7 +37,7 @@
     return {
       query(query, options) {
         if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
-        const shape = JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]);
+        const shape = gridResultShape(query);
         if (shape !== lastShape) {
           const terms = gridSearchTerms(query.search, query.searchMode);
           ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&

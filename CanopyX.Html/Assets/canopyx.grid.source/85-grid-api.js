@@ -5,23 +5,18 @@
     const existing = activeGrids.get(host);
     if (existing) return existing;
     const grid = new DataGrid(host, options);
-    const api = Object.freeze({
+    const api = {
       element: host, view: grid.view, ready: grid.ready,
-      getQuery: () => grid.getQuery(), setQuery: query => grid.setQuery(query), sort: sorts => grid.sort(sorts),
-      getPaging: () => grid.getPaging(), goToPage: index => grid.goToPage(index), setPageLength: length => grid.setPageLength(length),
-      setColumnWidth: (id, width) => grid.setColumnWidth(id, width), setColumnVisible: (id, visible) => grid.setColumnVisible(id, visible),
-      setColumnOrder: ids => grid.setColumnOrder(ids),
-      getState: () => grid.getState(), setState: state => grid.setState(state), resetView: () => grid.resetView(),
-      getSavedViews: () => grid.getSavedViews(), saveView: name => grid.saveView(name),
-      applySavedView: name => grid.applySavedView(name), removeSavedView: name => grid.removeSavedView(name),
-      setTimeZone: zone => grid.setTimeZone(zone), getTimeZone: () => grid.local ? "local" : "utc",
-      getSelection: () => [...grid.selected], setSelection: ids => grid.setSelection(ids), clearSelection: () => grid.setSelection([]),
-      prepareExport: options => grid.prepareExport(options), toCsv: options => grid.toCsv(options), copy: options => grid.copy(options),
-      exportToHost: (format, options) => grid.exportToHost(format, options), openDetails: id => grid.openDetails(id),
+      getTimeZone: () => grid.local ? "local" : "utc",
+      getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
       focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
-      scrollToRow: index => grid.scrollToRow(index),
-      retry: () => grid.retry(), refresh: () => { grid.version++; grid.scheduleRender(); },
+      refresh: () => { grid.version++; grid.scheduleRender(); },
       destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
-    });
+    };
+    for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
+      "setColumnWidth", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
+      "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
+      api[name] = grid[name].bind(grid);
+    Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
   }

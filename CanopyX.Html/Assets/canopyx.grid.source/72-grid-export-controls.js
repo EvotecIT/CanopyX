@@ -8,7 +8,7 @@
       const panel = this.controlPanel(this.labels.gridExport, "cx-grid-export").panel, scope = h("select");
       scope.setAttribute("aria-label", this.labels.gridExport);
       for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]]) {
-        const option = h("option"); option.value = value; setText(option, this.labels[label]); scope.appendChild(option);
+        scope.appendChild(gridOption(value, this.labels[label]));
       }
       panel.appendChild(scope);
       const status = h("p", "cx-grid-control-error"); status.setAttribute("role", "status");

@@ -2,6 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
@@ -15,6 +16,24 @@ const gridSource: GridSource = { async query(query, { signal }) {
 } };
 const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: 300,
   labels: { gridResultCount: "{count} / {total}", gridRemoveCondition: "Remove: {condition}" } });
+const offsetCount: number = dataGrid.getPaging().matched;
+const cursorView: CursorGridView = { ...gridView, source: { kind: "host", navigation: "cursor" }, presentation: "paged", query: undefined };
+const cursorSource: GridCursorSource = { navigation: "cursor", query(query, { signal }) {
+  const token: string | undefined = query.cursor;
+  // @ts-expect-error Cursor traversal has no random-access position in its request.
+  query.offset;
+  return { protocol: "canopyx/2", type: "gridCursorPage", view: query.view, revision: "r1", offset: 0, total: null, matched: null, items: [] };
+} };
+const cursorGrid = createDataGrid(document.createElement("div"), { view: cursorView, source: cursorSource,
+  onQuery(event) { const count: number | null = event.matched; } });
+const cursorQuery: GridCursorQuery = await cursorGrid.nextPage();
+const unknownCount: number | null = cursorGrid.getPaging().matched;
+// @ts-expect-error A cursor source may not know a complete-result count.
+const assumedCount: number = cursorGrid.prepareExport({ scope: "all" }).request.total;
+// @ts-expect-error A cursor controller rejects offset requests.
+await cursorGrid.setQuery({ offset: 25 });
+// @ts-expect-error Offset and cursor source contracts are distinct.
+createDataGrid(document.createElement("div"), { view: cursorView, source: gridSource });
 gridView.searchDelayMs = 0;
 gridView.presentation = "paged";
 gridView.pageLength = 50;
