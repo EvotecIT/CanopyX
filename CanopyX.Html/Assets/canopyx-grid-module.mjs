@@ -5660,6 +5660,8 @@ if (grid.destroyed || signal && signal.aborted) throw new DOMException("Grid ope
 }
 Object.assign(DataGrid.prototype, {
 prepareExport(options) {
+if (!this.view.reporting && options && ["fileName", "locale", "timeZone", "onProgress"].some(key => options[key] !== undefined))
+throw new Error("CanopyX: delivery metadata and progress require the reporting runtime.");
 if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted grid query.");
 if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: choose an explicit export scope.");
 const columnIds = options.columns === undefined ? this.visibleColumns().map(column => column.id) : options.columns;
@@ -5730,7 +5732,7 @@ if (maxRows === undefined) maxRows = 50000;
 if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is between 1 and 1000000.");
 const request = exported.request, expected = request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
 if (expected > maxRows) throw new Error("CanopyX: export exceeds the client row limit; use a host export hook.");
-const fmt = formatting(this.lang, request.timeZone === "local", this.labels);
+const fmt = formatting(request.locale || this.lang, request.timeZone === "local", this.labels);
 const lines = [request.columns.map(column => gridExportField(column.title, delimiter)).join(delimiter)];
 let count = 0;
 for await (const row of exported.rows()) {

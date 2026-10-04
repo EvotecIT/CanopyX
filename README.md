@@ -158,6 +158,8 @@ Declare `Reporting.FacetColumns.Add("status")` to add values and counts to that 
 
 Saved reporting views can survive browser sessions with `inventory.StateKey = "inventory-reader"` and `inventory.Reporting.ViewStorage = CanopyGridViewStorage.Local`. The Saved views menu offers rename and default choices; Reset view restores the definition while keeping named views. JavaScript hosts can supply `viewStore.load/save` hooks for governed preference storage instead. Use `api.flushViewSettings()` before disposal when the host must acknowledge a save. `api.getShareState()` keeps layout and sorting while removing searches, filters, selected IDs and dataset positions. See the [preference contract](docs/data-protocol.md#flat-grid-documents) for bounds, schema evolution, cancellation and privacy.
 
+Reporting exports offer progress and cancellation for full filtered, selected or all-result scopes. Optional `fileName`, `locale` and `timeZone` options stay with the captured request. A host can call `api.materializeExport({ scope: "filtered", maxRows: 1000 })` for a complete bounded snapshot, or configure `onPrint({ snapshot, signal })` and call `api.print({ scope: "filtered" })`. The host uses its existing renderer and honors cancellation before delivery. Larger Office or print reports use `exportToHost`, with authorization and generation governed by that host. See the [delivery contract](docs/data-protocol.md#export-clipboard-and-record-details) for bounds, progress and offline choices.
+
 Grouped reporting views retain record-based paging and export scope:
 
 ```csharp

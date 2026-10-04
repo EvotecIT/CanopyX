@@ -329,3 +329,6 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;paddin
 .cx-grid-group-toggle:focus-visible { outline:2px solid var(--cx-accent);outline-offset:-2px; }
 .cx-grid-group-text { overflow:hidden;text-overflow:ellipsis;min-width:0; }
 .cx-grid-group-aggregates { flex:0 1 auto;color:var(--cx-muted);font-weight:400;margin-inline-start:12px;overflow:hidden;text-overflow:ellipsis; }
+.cx-grid-delivery-status { margin:0;font-size:.875em;overflow-wrap:anywhere; }
+.cx-grid-delivery-status:empty { display:none; }
+.cx-grid-export progress { width:100%;max-width:100%;accent-color:var(--cx-accent); }

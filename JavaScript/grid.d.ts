@@ -231,6 +231,15 @@ export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
   readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];
   readonly values: "raw" | "display";
   readonly timeZone: TimeZone;
+  /** Reporting delivery captures the canonical locale and a safe suggested basename without a format extension. */
+  readonly locale?: string;
+  readonly fileName?: string;
+}
+/** Record counts refer to the complete captured export scope, including selected-query exclusions. */
+export interface GridExportProgress {
+  readonly phase: "reading" | "generating" | "ready";
+  readonly completed: number;
+  readonly total: number | null;
 }
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
@@ -240,6 +249,19 @@ export interface GridExportOptions {
   signal?: AbortSignal;
   /** Client CSV defaults to 50000; clipboard to 10000. Larger results use a host hook. */
   maxRows?: number;
+  /** Reporting runtime only. A safe basename up to 100 UTF-16 units; hosts append their format extension. */
+  fileName?: string;
+  /** Reporting runtime only. A browser-supported locale; display formatting is captured at invocation. */
+  locale?: string;
+  /** Reporting runtime only. Overrides the captured display zone without changing the view. */
+  timeZone?: TimeZone;
+  /** Reporting runtime only. Observational synchronous progress; a throwing callback aborts the operation. */
+  onProgress?: (progress: GridExportProgress) => void;
+}
+/** A complete bounded snapshot for a host renderer: at most 10000 records and 4 Mi UTF-16 units. */
+export interface GridExportSnapshot<Q extends AcceptedGridQuery = GridQuery> {
+  readonly request: GridExportRequest<Q>;
+  readonly rows: readonly GridExportRow[];
 }
 export interface GridExport<Q extends AcceptedGridQuery = GridQuery> {
   readonly request: GridExportRequest<Q>;
@@ -299,7 +321,11 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onError?: (event: { error: Error }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
-  onExport?: (event: { format: string; request: GridExportRequest<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
+  onExport?: (event: { format: string; request: GridExportRequest<Q>; signal: AbortSignal;
+    /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
+    reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
+  /** Reporting runtime only. Render the complete snapshot through a host-owned renderer; honor cancellation before delivery. */
+  onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
 }
@@ -378,6 +404,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   toCsv(options: GridExportOptions): Promise<string>;
   copy(options: GridExportOptions): Promise<string>;
   exportToHost(format: string, options: GridExportOptions): Promise<void>;
+  /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
+  materializeExport?(options: GridExportOptions): Promise<GridExportSnapshot<Q>>;
+  /** Reporting runtime only. Passes the same bounded snapshot to onPrint; never prints viewport DOM. */
+  print?(options: GridExportOptions): Promise<void>;
   /** Details are opened for loaded records, by toolbar, double click or Ctrl/Command+Enter. */
   openDetails(id: string): Promise<void>;
   focus(): void;

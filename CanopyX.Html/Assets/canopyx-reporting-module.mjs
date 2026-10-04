@@ -5660,6 +5660,8 @@ if (grid.destroyed || signal && signal.aborted) throw new DOMException("Grid ope
 }
 Object.assign(DataGrid.prototype, {
 prepareExport(options) {
+if (!this.view.reporting && options && ["fileName", "locale", "timeZone", "onProgress"].some(key => options[key] !== undefined))
+throw new Error("CanopyX: delivery metadata and progress require the reporting runtime.");
 if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted grid query.");
 if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: choose an explicit export scope.");
 const columnIds = options.columns === undefined ? this.visibleColumns().map(column => column.id) : options.columns;
@@ -5730,7 +5732,7 @@ if (maxRows === undefined) maxRows = 50000;
 if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is between 1 and 1000000.");
 const request = exported.request, expected = request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
 if (expected > maxRows) throw new Error("CanopyX: export exceeds the client row limit; use a host export hook.");
-const fmt = formatting(this.lang, request.timeZone === "local", this.labels);
+const fmt = formatting(request.locale || this.lang, request.timeZone === "local", this.labels);
 const lines = [request.columns.map(column => gridExportField(column.title, delimiter)).join(delimiter)];
 let count = 0;
 for await (const row of exported.rows()) {
@@ -8701,6 +8703,158 @@ return GROUP_STATE_BASE.applyStatePresentation.call(this, state);
 },
 getShareState() { const { collapsedGroups, ...state } = GROUP_STATE_BASE.getShareState.call(this); return gridFreeze(state); }
 });
+const DELIVERY_PREPARE = DataGrid.prototype.prepareExport, DELIVERY_TEXT = DataGrid.prototype.exportText,
+DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap();
+function reportingExportTotal(request) {
+if (request.querySelection) return request.querySelection.matched === null ? null : request.querySelection.matched - request.querySelection.excludedIds.length;
+return request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
+}
+function reportingFileName(value) {
+if (typeof value !== "string" || !value || value.length > 100 || value !== value.trim() ||
+/[\\/:*?"<>|\x00-\x1f\x7f-\x9f\u2028\u2029\u202a-\u202e\u2066-\u2069]/u.test(value) ||
+/^\.|[. ]$/.test(value) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(value))
+throw new Error("CanopyX: export file name must be a safe basename of at most 100 characters.");
+requireIdentifier(value, "export file name"); return value;
+}
+function reportingExportProgress(grid, request, callback, signal) {
+const total = reportingExportTotal(request); let completed = 0, phase = "reading";
+const order = { reading: 0, generating: 1, ready: 2 };
+return (next, count = completed) => {
+if (grid.destroyed || signal?.aborted) return;
+if (!Object.hasOwn(order, next) || order[next] < order[phase] || !Number.isSafeInteger(count) || count < completed ||
+total !== null && count > total) throw new Error("CanopyX: invalid export progress.");
+completed = count; phase = next;
+callback?.(Object.freeze({ phase, completed, total })); return completed;
+};
+}
+async function reportingExportSnapshot(grid, exported, maxRows, signal, progress) {
+if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10000) throw new Error("CanopyX: print snapshots support 1 to 10000 records.");
+const total = reportingExportTotal(exported.request);
+if (total !== null && total > maxRows) throw new Error("CanopyX: snapshot exceeds its row bound; use a host export hook.");
+const rows = []; let size = JSON.stringify({ request: exported.request, rows: [] }).length;
+progress("reading", 0);
+for await (const row of grid.exportRows(exported.request, signal)) {
+if (rows.length >= maxRows || (size += JSON.stringify(row).length + 1) > 4194304)
+throw new Error("CanopyX: snapshot exceeds its row or text bound; use a host export hook.");
+rows.push(row); if (rows.length % 100 === 0) progress("reading", rows.length);
+}
+gridOperationActive(grid, signal); progress("generating", rows.length);
+return gridFreeze({ request: exported.request, rows });
+}
+GRID_REPORTING.api = (api, grid) => {
+DELIVERY_API?.(api, grid);
+api.materializeExport = grid.materializeExport.bind(grid);
+api.print = grid.print.bind(grid);
+};
+Object.assign(DataGrid.prototype, {
+prepareExport(options) {
+if (options?.onProgress !== undefined && typeof options.onProgress !== "function") throw new Error("CanopyX: export progress needs a callback.");
+const exported = DELIVERY_PREPARE.call(this, options);
+let locale = this.lang;
+if (options.locale !== undefined) {
+if (typeof options.locale !== "string" || options.locale.length > 128)
+throw new Error("CanopyX: export locale must be supported by this browser.");
+try {
+locale = Intl.getCanonicalLocales(options.locale)[0];
+if (!Intl.NumberFormat.supportedLocalesOf(locale).length) throw new Error();
+} catch { throw new Error("CanopyX: export locale must be supported by this browser."); }
+}
+if (options.timeZone !== undefined && !["utc", "local"].includes(options.timeZone)) throw new Error("CanopyX: export time zone is utc or local.");
+const fileName = reportingFileName(options.fileName ?? ("canopyx-" + this.view.id.replace(/[^a-z0-9_-]/gi, "_")).slice(0, 100));
+const request = gridFreeze({ ...exported.request, locale, fileName, timeZone: options.timeZone || exported.request.timeZone }), grid = this,
+signal = options.signal, callback = options.onProgress;
+const result = Object.freeze({ request, rows: async function* () {
+const progress = reportingExportProgress(grid, request, callback, signal); let count = 0;
+progress("reading", 0);
+for await (const row of grid.exportRows(request, signal)) { yield row; if (++count % 100 === 0) progress("reading", count); }
+progress("generating", count);
+} });
+DELIVERY_CALLBACKS.set(result, callback); return result;
+},
+async exportText(exported, maxRows, delimiter, signal) {
+let count = 0;
+const rows = async function* () { for await (const row of exported.rows()) { count++; yield row; } };
+const text = await DELIVERY_TEXT.call(this, { request: exported.request, rows }, maxRows, delimiter, signal);
+reportingExportProgress(this, exported.request, DELIVERY_CALLBACKS.get(exported), signal)("ready", count); return text;
+},
+materializeExport(options) {
+const exported = this.prepareExport(options), maxRows = options.maxRows ?? 1000, callback = DELIVERY_CALLBACKS.get(exported);
+return this.runGridHook(async signal => {
+const progress = reportingExportProgress(this, exported.request, callback, signal);
+const result = await reportingExportSnapshot(this, exported, maxRows, signal, progress);
+progress("ready", result.rows.length); return result;
+}, options.signal);
+},
+print(options) {
+const exported = this.prepareExport(options), maxRows = options.maxRows ?? 1000, callback = DELIVERY_CALLBACKS.get(exported);
+if (typeof this.opts.onPrint !== "function") throw new Error("CanopyX: printing needs an onPrint host hook.");
+return this.runGridHook(async signal => {
+const progress = reportingExportProgress(this, exported.request, callback, signal);
+const snapshot = await reportingExportSnapshot(this, exported, maxRows, signal, progress);
+await this.opts.onPrint({ snapshot, signal }); gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
+}, options.signal);
+},
+exportToHost(format, options) {
+const exported = this.prepareExport(options), { request } = exported, callback = DELIVERY_CALLBACKS.get(exported);
+if (typeof format !== "string" || !format.trim() || typeof this.opts.onExport !== "function") throw new Error("CanopyX: host export needs a format and an onExport hook.");
+return this.runGridHook(async signal => {
+const progress = reportingExportProgress(this, request, callback, signal); progress("reading", 0);
+let completed = 0;
+await this.opts.onExport({ format, request, signal, reportProgress: (phase, count) => { completed = progress(phase, count); } });
+gridOperationActive(this, signal); progress("ready", reportingExportTotal(request) ?? completed);
+}, options.signal);
+}
+});
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
+gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridPrint: "Print report"
+}));
+const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls;
+DataGrid.prototype.buildExportControls = function () {
+DELIVERY_CONTROLS.call(this);
+const panel = this.toolbar.querySelector(".cx-grid-export .cx-grid-panel");
+panel.replaceChildren();
+const scope = h("select"); scope.setAttribute("aria-label", this.labels.gridExport);
+for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
+scope.appendChild(gridOption(value, this.labels[label]));
+const status = h("p", "cx-grid-delivery-status"); status.setAttribute("role", "status");
+const meter = h("progress"); meter.setAttribute("aria-label", this.labels.gridExport); meter.hidden = true;
+let operation = null;
+const cancel = gridButton(this.labels.gridCancelExport, () => operation?.abort()); cancel.hidden = true;
+const progress = value => {
+if (this.destroyed || !operation || operation.signal.aborted) return;
+setText(status, fill(value.total === null ? this.labels.gridExportReading : this.labels.gridExportProgress,
+{ completed: numberFormat(this.lang).format(value.completed), total: value.total === null ? "" : numberFormat(this.lang).format(value.total) }));
+if (value.total === null) meter.removeAttribute("value");
+else { meter.max = Math.max(1, value.total); meter.value = value.completed; }
+};
+const run = action => {
+if (operation) return;
+const controller = operation = new AbortController();
+scope.disabled = true; buttons.forEach(button => button.disabled = true);
+cancel.hidden = false; meter.hidden = false; meter.removeAttribute("value"); setText(status, this.labels.loading);
+const options = { scope: scope.value, signal: controller.signal, onProgress: progress };
+Promise.resolve().then(() => action(options)).then(() => { if (!this.destroyed) setText(status, ""); }, error => {
+if (!this.destroyed) setText(status, error.name === "AbortError" ? this.labels.gridExportCancelled : error.message);
+if (error.name !== "AbortError") this.emit("error", { error });
+}).finally(() => {
+if (operation === controller) operation = null;
+if (!this.destroyed) { scope.disabled = false; buttons.forEach(button => button.disabled = false); cancel.hidden = true; meter.hidden = true; }
+});
+};
+const csv = gridButton(this.labels.gridDownloadCsv, () => run(async options => {
+const exported = this.prepareExport(options), fileName = exported.request.fileName;
+const text = await this.exportText(exported, 50000, ",", options.signal); gridOperationActive(this, options.signal);
+const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+try {
+const link = h("a"); link.href = url; link.download = fileName + ".csv";
+document.body.appendChild(link); link.click(); link.remove();
+} finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+}));
+const copy = gridButton(this.labels.gridCopy, () => run(options => this.copy(options))), buttons = [csv, copy];
+if (typeof this.opts.onPrint === "function") buttons.push(gridButton(this.labels.gridPrint, () => run(options => this.print(options))));
+panel.append(scope, ...buttons, cancel, meter, status);
+};
 function createTreeGrid(host, options) {
 if (!host || !options || !options.view) {
 throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
