@@ -8850,7 +8850,11 @@ if (!this.destroyed) setText(status, error.name === "AbortError" ? this.labels.g
 if (error.name !== "AbortError") this.emit("error", { error });
 }).finally(() => {
 if (operation === controller) operation = null;
-if (!this.destroyed) { scope.disabled = false; buttons.forEach(button => button.disabled = false); cancel.hidden = true; meter.hidden = true; }
+if (!this.destroyed) {
+const returnFocus = document.activeElement === cancel;
+scope.disabled = false; buttons.forEach(button => button.disabled = false); cancel.hidden = true; meter.hidden = true;
+if (returnFocus) scope.focus();
+}
 });
 };
 const csv = gridButton(this.labels.gridDownloadCsv, () => run(async options => {
