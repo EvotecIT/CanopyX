@@ -27,6 +27,7 @@
   const SEARCH_CANDIDATES = 5;
   const MAX_PROTOCOL_INTEGER = 2147483647;
   const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
+  function renderedColumnWidth(column) { return column.renderWidth === undefined ? column.width : column.renderWidth; }
   const activeGrids = new WeakMap();
   let instanceSeq = 0;
 

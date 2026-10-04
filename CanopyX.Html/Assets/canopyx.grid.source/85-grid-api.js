@@ -17,6 +17,7 @@
       "setColumnWidth", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
       api[name] = grid[name].bind(grid);
+    if (GRID_REPORTING.fitColumn) api.autoFitColumn = id => GRID_REPORTING.fitColumn(grid, id);
     Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
   }

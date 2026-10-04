@@ -24,6 +24,7 @@ const DATE_CACHE = 4096;
 const SEARCH_CANDIDATES = 5;
 const MAX_PROTOCOL_INTEGER = 2147483647;
 const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
+function renderedColumnWidth(column) { return column.renderWidth === undefined ? column.width : column.renderWidth; }
 const activeGrids = new WeakMap();
 let instanceSeq = 0;
 function h(tag, className) {
@@ -1727,12 +1728,13 @@ Object.assign(TreeGrid.prototype, {
 applyWidths() {
 let sum = 0;
 this.cols.forEach((column, i) => {
-this.headCells[i].style.width = column.width + "px";
+const width = renderedColumnWidth(column);
+this.headCells[i].style.width = width + "px";
 const grip = this.headCells[i].querySelector(".cx-resize");
 grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
-grip.setAttribute("aria-valuenow", String(column.width));
-grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
-sum += column.width;
+grip.setAttribute("aria-valuenow", String(width));
+grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
+sum += width;
 });
 this.rowWidth = sum;
 this.headRow.style.width = sum + "px";
@@ -1741,7 +1743,7 @@ const resizeRow = (row) => {
 row.style.width = sum + "px";
 if (!row._kind || !row.firstElementChild) return;
 if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = renderedColumnWidth(column) + "px"; });
 };
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
@@ -2110,7 +2112,7 @@ rowEl._cells[0].text = label.appendChild(document.createTextNode(""));
 return;
 }
 rowEl._cells = this.cols.map((column, i) => {
-const cell = this.cell(rowEl, i, column.width, column.kind);
+const cell = this.cell(rowEl, i, renderedColumnWidth(column), column.kind);
 const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
 cell.className = slot.base;
 if (i === 0) {
@@ -2328,7 +2330,7 @@ Object.assign(TreeGrid.prototype, {
 paintHostSlot(slot, node, column, index, w) {
 const tree = slot.content !== slot.cell;
 const previous = slot.content;
-const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
+const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), renderedColumnWidth(column), column.kind);
 const shape = attributeShape(fresh);
 previous.replaceWith(fresh);
 this.setSlotContent(slot, fresh, tree);

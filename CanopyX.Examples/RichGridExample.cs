@@ -7,7 +7,7 @@ namespace CanopyX.Examples;
 internal static class RichGridExample {
     internal static void Write(string output) {
         var view = new CanopyGridView("rich-grid", "Rich inventory") {
-            Reporting = new CanopyGridReporting { HeaderFilters = true }, Selection = CanopySelectionMode.Multiple,
+            Reporting = new CanopyGridReporting { HeaderFilters = true, ColumnReorder = true }, Selection = CanopySelectionMode.Multiple,
             Presentation = CanopyGridPresentation.Paged, PageLength = 25, PageSize = 100
         };
         view.Columns.Add(new CanopyColumn("name", "Record") { Width = 230, Sortable = true });
@@ -17,6 +17,9 @@ internal static class RichGridExample {
         view.Columns.Add(new CanopyColumn("enabled", "Enabled") { Width = 110, Sortable = true });
         view.Columns.Add(new CanopyColumn("owners", "Owners") { Width = 220 });
         view.Columns.Add(new CanopyColumn("notes", "Notes") { Width = 280 });
+        view.Reporting.Layout.Add("name", new CanopyGridColumnLayout(160, 320));
+        view.Reporting.Layout.Add("owners", new CanopyGridColumnLayout(140, 380, 1));
+        view.Reporting.Layout.Add("notes", new CanopyGridColumnLayout(180, 800, 2));
         view.Reporting.Presenters.Add("name", CanopyGridPresenter.Link("url", newWindow: true));
         view.Reporting.Presenters.Add("status", CanopyGridPresenter.Icon("●"));
         view.Reporting.Presenters.Add("progress", CanopyGridPresenter.Progress());

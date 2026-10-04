@@ -57,6 +57,8 @@ The reporting filter editor provides inclusive numeric/date ranges, category sug
 
 `Reporting.Presenters` adds safe links, decorative icons with text alternatives, native progress, translated boolean values, compact lists and complete-text dialogs. For example, `inventory.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText())` expands notes without changing virtual row height. Query and export values remain independent of the display; explicit host renderers take precedence.
 
+Reporting grids support direct pointer/keyboard header moves, per-column minimum/maximum widths and optional flex sizing. Auto-fit explicitly samples up to 200 loaded accepted-query records and applies a bounded width estimate. Manual sizing disables flex until reset or saved-state restoration; column identities continue to govern sorting, visibility and export order.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX

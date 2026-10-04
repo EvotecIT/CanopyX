@@ -91,6 +91,9 @@ public sealed partial class CanopyLabels {
         [nameof(GridHeaderFilter)] = "Filter {column}",
         [nameof(GridExpandCell)] = "{column}: show complete text",
         [nameof(GridCloseCell)] = "Close complete text",
+        [nameof(GridMoveColumn)] = "{column}: drag to move, or use Left/Right",
+        [nameof(GridResizeHelp)] = "Enter fits up to 200 loaded rows; Left/Right resizes.",
+        [nameof(GridColumnMoved)] = "{column} moved to position {position}",
         [nameof(GridContains)] = "contains",
         [nameof(GridStartsWith)] = "starts with",
         [nameof(GridIn)] = "is any of (one per line)",
@@ -134,6 +137,7 @@ public sealed partial class CanopyLabels {
     private static readonly string[] RuntimeNames = {
         nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
         nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter), nameof(GridExpandCell), nameof(GridCloseCell),
+        nameof(GridMoveColumn), nameof(GridResizeHelp), nameof(GridColumnMoved),
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
         nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
         nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),

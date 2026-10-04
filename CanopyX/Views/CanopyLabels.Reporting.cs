@@ -25,9 +25,17 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the complete-text dialog close label.</summary>
     public string GridCloseCell { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the column move control name, including <c>{column}</c>.</summary>
+    public string GridMoveColumn { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the resize keyboard and bounded auto-fit help.</summary>
+    public string GridResizeHelp { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the column move announcement, including <c>{column}</c> and <c>{position}</c>.</summary>
+    public string GridColumnMoved { get => Get(); set => Set(value); }
+
     /// <summary>Gets whether translated reporting controls require the optional reporting entry point.</summary>
     public bool RequiresReportingRuntime => _values.ContainsKey(nameof(GridBetween)) || _values.ContainsKey(nameof(GridRangeEnd)) ||
         _values.ContainsKey(nameof(GridInvalidRange)) || _values.ContainsKey(nameof(GridSuggestedCategory)) || _values.ContainsKey(nameof(GridChooseCategory)) ||
         _values.ContainsKey(nameof(GridBooleanValue)) || _values.ContainsKey(nameof(GridTrue)) || _values.ContainsKey(nameof(GridFalse)) || _values.ContainsKey(nameof(GridHeaderFilter)) ||
-        _values.ContainsKey(nameof(GridExpandCell)) || _values.ContainsKey(nameof(GridCloseCell));
+        _values.ContainsKey(nameof(GridExpandCell)) || _values.ContainsKey(nameof(GridCloseCell)) ||
+        _values.ContainsKey(nameof(GridMoveColumn)) || _values.ContainsKey(nameof(GridResizeHelp)) || _values.ContainsKey(nameof(GridColumnMoved));
 }

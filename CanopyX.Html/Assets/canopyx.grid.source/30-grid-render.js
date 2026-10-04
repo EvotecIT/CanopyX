@@ -41,7 +41,7 @@
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-      this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
+      this.resizeObserver = new ResizeObserver(() => { this.applyWidths(); this.scheduleRender(); }); this.resizeObserver.observe(grid);
     },
 
     setNotice(text, error) {
@@ -78,7 +78,7 @@
         element.textContent = ""; element._kind = kind; element._layout = this.layout; element._attrs = {}; element._cls = null;
         element.setAttribute("role", "row"); element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
         element._cells = (row.status ? [null] : this.cols).map((column, index) => {
-          const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
+          const cell = this.cell(element, index, column ? renderedColumnWidth(column) : this.rowWidth, column ? column.kind : null);
           if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
           const slot = { cell: cell, content: cell, base: cell.className, cls: null, title: null, badges: [], mode: "default" };
           slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;

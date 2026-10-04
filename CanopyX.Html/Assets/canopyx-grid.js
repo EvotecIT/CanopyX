@@ -20,6 +20,7 @@ const DATE_CACHE = 4096;
 const SEARCH_CANDIDATES = 5;
 const MAX_PROTOCOL_INTEGER = 2147483647;
 const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
+function renderedColumnWidth(column) { return column.renderWidth === undefined ? column.width : column.renderWidth; }
 const activeGrids = new WeakMap();
 let instanceSeq = 0;
 function h(tag, className) {
@@ -1723,12 +1724,13 @@ Object.assign(TreeGrid.prototype, {
 applyWidths() {
 let sum = 0;
 this.cols.forEach((column, i) => {
-this.headCells[i].style.width = column.width + "px";
+const width = renderedColumnWidth(column);
+this.headCells[i].style.width = width + "px";
 const grip = this.headCells[i].querySelector(".cx-resize");
 grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
-grip.setAttribute("aria-valuenow", String(column.width));
-grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
-sum += column.width;
+grip.setAttribute("aria-valuenow", String(width));
+grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
+sum += width;
 });
 this.rowWidth = sum;
 this.headRow.style.width = sum + "px";
@@ -1737,7 +1739,7 @@ const resizeRow = (row) => {
 row.style.width = sum + "px";
 if (!row._kind || !row.firstElementChild) return;
 if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = renderedColumnWidth(column) + "px"; });
 };
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
@@ -2106,7 +2108,7 @@ rowEl._cells[0].text = label.appendChild(document.createTextNode(""));
 return;
 }
 rowEl._cells = this.cols.map((column, i) => {
-const cell = this.cell(rowEl, i, column.width, column.kind);
+const cell = this.cell(rowEl, i, renderedColumnWidth(column), column.kind);
 const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
 cell.className = slot.base;
 if (i === 0) {
@@ -2324,7 +2326,7 @@ Object.assign(TreeGrid.prototype, {
 paintHostSlot(slot, node, column, index, w) {
 const tree = slot.content !== slot.cell;
 const previous = slot.content;
-const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
+const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), renderedColumnWidth(column), column.kind);
 const shape = attributeShape(fresh);
 previous.replaceWith(fresh);
 this.setSlotContent(slot, fresh, tree);
@@ -5123,7 +5125,7 @@ document.addEventListener("focusin", event => {
 if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
 }, { signal: signal });
 this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
+this.resizeObserver = new ResizeObserver(() => { this.applyWidths(); this.scheduleRender(); }); this.resizeObserver.observe(grid);
 },
 setNotice(text, error) {
 this.notice.textContent = ""; this.notice.hidden = !text;
@@ -5156,7 +5158,7 @@ if (element._kind !== kind || element._layout !== this.layout) {
 element.textContent = ""; element._kind = kind; element._layout = this.layout; element._attrs = {}; element._cls = null;
 element.setAttribute("role", "row"); element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
 element._cells = (row.status ? [null] : this.cols).map((column, index) => {
-const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
+const cell = this.cell(element, index, column ? renderedColumnWidth(column) : this.rowWidth, column ? column.kind : null);
 if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
 const slot = { cell: cell, content: cell, base: cell.className, cls: null, title: null, badges: [], mode: "default" };
 slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
@@ -5255,11 +5257,16 @@ this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (erro
 event.preventDefault(); event.stopPropagation();
 }
 });
-function gridStateColumn(column) { return { id: column.id, width: column.width, hidden: !!column.hidden }; }
+function gridStateColumn(column) { return Object.assign({ id: column.id, width: column.width, hidden: !!column.hidden },
+column.flex === undefined ? {} : { flex: column.flex }); }
 function gridStateColumns(grid, input) {
 if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
 const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
-const columns = input.map(column => readStateColumn(column, seen)).filter(column => declared.has(column.id));
+const columns = input.map(column => {
+const saved = readStateColumn(column, seen);
+if (declared.has(saved.id) && GRID_REPORTING.stateColumn) GRID_REPORTING.stateColumn(grid, column, saved);
+return saved;
+}).filter(column => declared.has(column.id));
 for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
 if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
 return columns;
@@ -5327,7 +5334,8 @@ await pending;
 if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
 if (this.cancelResize) this.cancelResize();
 const current = new Map(this.columns.map(column => [column.id, column]));
-this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { width: saved.width, hidden: saved.hidden }));
+this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { width: saved.width, hidden: saved.hidden },
+saved.flex === undefined ? {} : { flex: saved.flex }));
 this.setTimeZone(state.timeZone); this.setSelection(state.selection);
 this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
 return this.getQuery();
@@ -5876,6 +5884,7 @@ for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "se
 "setColumnWidth", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
 "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
 api[name] = grid[name].bind(grid);
+if (GRID_REPORTING.fitColumn) api.autoFitColumn = id => GRID_REPORTING.fitColumn(grid, id);
 Object.freeze(api);
 activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
 }

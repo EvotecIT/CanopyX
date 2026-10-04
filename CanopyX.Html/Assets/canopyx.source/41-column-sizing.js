@@ -4,12 +4,13 @@
     applyWidths() {
       let sum = 0;
       this.cols.forEach((column, i) => {
-        this.headCells[i].style.width = column.width + "px";
+        const width = renderedColumnWidth(column);
+        this.headCells[i].style.width = width + "px";
         const grip = this.headCells[i].querySelector(".cx-resize");
         grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
-        grip.setAttribute("aria-valuenow", String(column.width));
-        grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
-        sum += column.width;
+        grip.setAttribute("aria-valuenow", String(width));
+        grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
+        sum += width;
       });
       this.rowWidth = sum;
       this.headRow.style.width = sum + "px";
@@ -20,7 +21,7 @@
         row.style.width = sum + "px";
         if (!row._kind || !row.firstElementChild) return;
         if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+        else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = renderedColumnWidth(column) + "px"; });
       };
       this.rendered.forEach(resizeRow);
       this.pool.forEach(resizeRow);

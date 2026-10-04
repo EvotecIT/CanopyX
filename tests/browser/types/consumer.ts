@@ -6,11 +6,12 @@ import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evoteci
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 
 const reportingHost = document.createElement("div");
-ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
+const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
   source: { kind: "inline" }, rows: [], rowHeight: 28, pageSize: 100, selection: "none", search: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 200, sortable: true }],
-  reporting: { ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
+  reporting: { columnReorder: true, layout: { name: { minimum: 120, maximum: 800, flex: 1 } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
     presenters: { name: { kind: "link", newWindow: true } } } } });
+reportingApi.autoFitColumn?.("name");
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,

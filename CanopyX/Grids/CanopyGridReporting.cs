@@ -11,6 +11,12 @@ public sealed class CanopyGridReporting {
     /// <remarks>The editor queries all records; the button does not filter only the mounted rows.</remarks>
     public bool HeaderFilters { get; set; }
 
+    /// <summary>Gets or sets whether headers offer pointer dragging and keyboard column move controls.</summary>
+    public bool ColumnReorder { get; set; }
+
+    /// <summary>Gets immutable width and flex policies keyed by declared column identities.</summary>
+    public IDictionary<string, CanopyGridColumnLayout> Layout { get; } = new Dictionary<string, CanopyGridColumnLayout>(StringComparer.Ordinal);
+
     /// <summary>Gets immutable text ordering policies keyed by declared sortable text-column identities.</summary>
     public IDictionary<string, CanopyGridOrdering> Ordering { get; } = new Dictionary<string, CanopyGridOrdering>(StringComparer.Ordinal);
 
@@ -18,6 +24,12 @@ public sealed class CanopyGridReporting {
     public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
 
     internal void Validate(IList<CanopyColumn> columns) {
+        foreach (var pair in Layout) {
+            CanopyColumn? declared = null;
+            foreach (var column in columns) if (column.Id == pair.Key) declared = column;
+            if (declared == null || pair.Value == null || declared.Width < pair.Value.Minimum || declared.Width > pair.Value.Maximum)
+                throw new InvalidOperationException("A layout needs a declared column whose initial width is within its non-null policy bounds.");
+        }
         foreach (var pair in Ordering) {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
@@ -43,6 +55,12 @@ public sealed class CanopyGridReporting {
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
         if (HeaderFilters) writer.Property("headerFilters", true);
+        if (ColumnReorder) writer.Property("columnReorder", true);
+        if (Layout.Count != 0) {
+            writer.Name("layout").BeginObject();
+            foreach (var pair in Layout) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }
+            writer.EndObject();
+        }
         if (Ordering.Count != 0) {
             writer.Name("ordering").BeginObject();
             foreach (var pair in Ordering) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }

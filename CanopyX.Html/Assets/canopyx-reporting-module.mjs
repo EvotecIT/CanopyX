@@ -24,6 +24,7 @@ const DATE_CACHE = 4096;
 const SEARCH_CANDIDATES = 5;
 const MAX_PROTOCOL_INTEGER = 2147483647;
 const MAX_COLUMN_WIDTH = MAX_PROTOCOL_INTEGER;
+function renderedColumnWidth(column) { return column.renderWidth === undefined ? column.width : column.renderWidth; }
 const activeGrids = new WeakMap();
 let instanceSeq = 0;
 function h(tag, className) {
@@ -1727,12 +1728,13 @@ Object.assign(TreeGrid.prototype, {
 applyWidths() {
 let sum = 0;
 this.cols.forEach((column, i) => {
-this.headCells[i].style.width = column.width + "px";
+const width = renderedColumnWidth(column);
+this.headCells[i].style.width = width + "px";
 const grip = this.headCells[i].querySelector(".cx-resize");
 grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
-grip.setAttribute("aria-valuenow", String(column.width));
-grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
-sum += column.width;
+grip.setAttribute("aria-valuenow", String(width));
+grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
+sum += width;
 });
 this.rowWidth = sum;
 this.headRow.style.width = sum + "px";
@@ -1741,7 +1743,7 @@ const resizeRow = (row) => {
 row.style.width = sum + "px";
 if (!row._kind || !row.firstElementChild) return;
 if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = renderedColumnWidth(column) + "px"; });
 };
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
@@ -2110,7 +2112,7 @@ rowEl._cells[0].text = label.appendChild(document.createTextNode(""));
 return;
 }
 rowEl._cells = this.cols.map((column, i) => {
-const cell = this.cell(rowEl, i, column.width, column.kind);
+const cell = this.cell(rowEl, i, renderedColumnWidth(column), column.kind);
 const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
 cell.className = slot.base;
 if (i === 0) {
@@ -2328,7 +2330,7 @@ Object.assign(TreeGrid.prototype, {
 paintHostSlot(slot, node, column, index, w) {
 const tree = slot.content !== slot.cell;
 const previous = slot.content;
-const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
+const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), renderedColumnWidth(column), column.kind);
 const shape = attributeShape(fresh);
 previous.replaceWith(fresh);
 this.setSlotContent(slot, fresh, tree);
@@ -5127,7 +5129,7 @@ document.addEventListener("focusin", event => {
 if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
 }, { signal: signal });
 this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
+this.resizeObserver = new ResizeObserver(() => { this.applyWidths(); this.scheduleRender(); }); this.resizeObserver.observe(grid);
 },
 setNotice(text, error) {
 this.notice.textContent = ""; this.notice.hidden = !text;
@@ -5160,7 +5162,7 @@ if (element._kind !== kind || element._layout !== this.layout) {
 element.textContent = ""; element._kind = kind; element._layout = this.layout; element._attrs = {}; element._cls = null;
 element.setAttribute("role", "row"); element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
 element._cells = (row.status ? [null] : this.cols).map((column, index) => {
-const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
+const cell = this.cell(element, index, column ? renderedColumnWidth(column) : this.rowWidth, column ? column.kind : null);
 if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
 const slot = { cell: cell, content: cell, base: cell.className, cls: null, title: null, badges: [], mode: "default" };
 slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
@@ -5259,11 +5261,16 @@ this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (erro
 event.preventDefault(); event.stopPropagation();
 }
 });
-function gridStateColumn(column) { return { id: column.id, width: column.width, hidden: !!column.hidden }; }
+function gridStateColumn(column) { return Object.assign({ id: column.id, width: column.width, hidden: !!column.hidden },
+column.flex === undefined ? {} : { flex: column.flex }); }
 function gridStateColumns(grid, input) {
 if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
 const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
-const columns = input.map(column => readStateColumn(column, seen)).filter(column => declared.has(column.id));
+const columns = input.map(column => {
+const saved = readStateColumn(column, seen);
+if (declared.has(saved.id) && GRID_REPORTING.stateColumn) GRID_REPORTING.stateColumn(grid, column, saved);
+return saved;
+}).filter(column => declared.has(column.id));
 for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
 if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
 return columns;
@@ -5331,7 +5338,8 @@ await pending;
 if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
 if (this.cancelResize) this.cancelResize();
 const current = new Map(this.columns.map(column => [column.id, column]));
-this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { width: saved.width, hidden: saved.hidden }));
+this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { width: saved.width, hidden: saved.hidden },
+saved.flex === undefined ? {} : { flex: saved.flex }));
 this.setTimeZone(state.timeZone); this.setSelection(state.selection);
 this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
 return this.getQuery();
@@ -5880,6 +5888,7 @@ for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "se
 "setColumnWidth", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
 "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
 api[name] = grid[name].bind(grid);
+if (GRID_REPORTING.fitColumn) api.autoFitColumn = id => GRID_REPORTING.fitColumn(grid, id);
 Object.freeze(api);
 activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
 }
@@ -6781,7 +6790,7 @@ return gridOrder(a.length - i, b.length - j);
 }
 GRID_REPORTING.validate = view => {
 const options = view.reporting;
-if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "presenters"].includes(key)) ||
+if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "presenters", "layout", "columnReorder"].includes(key)) ||
 options.headerFilters !== undefined && typeof options.headerFilters !== "boolean")
 throw new Error("CanopyX: invalid reporting options.");
 if (options.ordering === undefined) return;
@@ -6972,6 +6981,194 @@ item.getAttribute("data-cx-filter-column") === this.reportingFilterReturn);
 (button || this.reportingFilters.details.querySelector("summary")).focus({ preventScroll: true });
 }
 });
+const LAYOUT_VALIDATE = GRID_REPORTING.validate, LAYOUT_PREPARE = DataGrid.prototype.prepareState;
+function reportingLayout(grid, column) { return grid.columnLayouts.get(column.id) || { minimum: 40, maximum: MAX_COLUMN_WIDTH, flex: 0 }; }
+function reportingWidth(grid, column, width) {
+const policy = reportingLayout(grid, column); return Math.min(policy.maximum, Math.max(policy.minimum, width));
+}
+GRID_REPORTING.validate = view => {
+LAYOUT_VALIDATE(view);
+const options = view.reporting;
+if (options.columnReorder !== undefined && typeof options.columnReorder !== "boolean") throw new Error("CanopyX: columnReorder must be boolean.");
+if (options.layout === undefined) return;
+if (!options.layout || typeof options.layout !== "object" || Array.isArray(options.layout)) throw new Error("CanopyX: layout is keyed by column ID.");
+for (const [id, policy] of Object.entries(options.layout)) {
+const column = view.columns.find(item => item && item.id === id);
+if (!column || !policy || typeof policy !== "object" || Array.isArray(policy) ||
+Object.keys(policy).some(key => !["minimum", "maximum", "flex"].includes(key)) ||
+!Number.isInteger(policy.minimum) || policy.minimum < 40 || !Number.isInteger(policy.maximum) ||
+policy.maximum < policy.minimum || policy.maximum > MAX_COLUMN_WIDTH ||
+policy.flex !== undefined && (!Number.isFinite(policy.flex) || policy.flex < 0 || policy.flex > 100) ||
+column.width < policy.minimum || column.width > policy.maximum)
+throw new Error("CanopyX: invalid column layout or initial width.");
+}
+};
+DataGrid.prototype.prepareState = function () {
+this.columnLayouts = new Map(Object.entries(this.view.reporting && this.view.reporting.layout || {}).map(([id, policy]) =>
+[id, Object.assign({ flex: 0 }, policy)]));
+for (const column of this.columns) if (reportingLayout(this, column).flex > 0) column.flex = true;
+return LAYOUT_PREPARE.call(this);
+};
+GRID_REPORTING.stateColumn = (grid, input, saved) => {
+if (input.flex !== undefined && typeof input.flex !== "boolean") throw new Error("CanopyX: saved flex must be boolean.");
+const column = grid.columns.find(item => item.id === saved.id);
+saved.width = reportingWidth(grid, column, saved.width);
+if (reportingLayout(grid, column).flex > 0) saved.flex = input.flex === undefined ? true : input.flex;
+};
+const LAYOUT_WIDTHS = DataGrid.prototype.applyWidths, LAYOUT_SET_WIDTH = DataGrid.prototype.setColumnWidth,
+LAYOUT_START_RESIZE = DataGrid.prototype.startResize;
+DataGrid.prototype.applyWidths = function () {
+let total = 0;
+for (const column of this.cols) {
+column.width = reportingWidth(this, column, column.width); column.renderWidth = column.width; total += column.width;
+}
+let remaining = Math.max(0, this.grid.clientWidth - total), flexible = this.cols.filter(column => column.flex &&
+reportingLayout(this, column).maximum > column.renderWidth);
+while (remaining > 0.5 && flexible.length) {
+const weight = flexible.reduce((sum, column) => sum + reportingLayout(this, column).flex, 0);
+if (!weight) break;
+let used = 0;
+for (const column of flexible) {
+const policy = reportingLayout(this, column), extra = Math.min(policy.maximum - column.renderWidth, remaining * policy.flex / weight);
+column.renderWidth += extra; used += extra;
+}
+remaining -= used; flexible = flexible.filter(column => reportingLayout(this, column).maximum - column.renderWidth > 0.5);
+if (used < 0.5) break;
+}
+LAYOUT_WIDTHS.call(this);
+this.cols.forEach((column, index) => {
+const grip = this.headCells[index].querySelector(".cx-resize"), policy = reportingLayout(this, column);
+grip.setAttribute("aria-valuemin", String(policy.minimum)); grip.setAttribute("aria-valuemax", String(policy.maximum));
+});
+};
+function reportingManualWidth(grid, column) {
+column.width = renderedColumnWidth(column); if (column.flex !== undefined) column.flex = false;
+}
+DataGrid.prototype.setColumnWidth = function (id, width) {
+const column = this.columns.find(item => item.id === id);
+if (column && Number.isFinite(width)) { if (column.flex !== undefined) column.flex = false; width = reportingWidth(this, column, width); }
+return LAYOUT_SET_WIDTH.call(this, id, width);
+};
+DataGrid.prototype.startResize = function (event, column) {
+if (!this.destroyed && event.button === 0) reportingManualWidth(this, column);
+return LAYOUT_START_RESIZE.call(this, event, column);
+};
+GRID_REPORTING.fitColumn = (grid, id) => {
+const column = grid.columns.find(item => item.id === id);
+if (!column || grid.destroyed || grid.pendingQuery || !grid.acceptedQuery) throw new Error("CanopyX: auto-fit needs a declared column and an accepted query.");
+const context = document.createElement("canvas").getContext("2d"), style = getComputedStyle(grid.grid);
+if (!context) throw new Error("CanopyX: text measurement is unavailable.");
+context.font = style.font || style.fontSize + " " + style.fontFamily;
+let width = context.measureText(column.title.slice(0, 2048)).width + 76, sampled = 0;
+for (const row of grid.rowCache.values()) {
+if (sampled === 200) break;
+width = Math.max(width, context.measureText(cellText(row.h.cells[column.id], column, grid.fmt).slice(0, 2048)).width + 32); sampled++;
+}
+grid.setColumnWidth(id, Math.ceil(Math.min(800, width)));
+return Object.freeze({ width: column.width, sampled: sampled, scope: "loaded" });
+};
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridMoveColumn: "{column}: drag to move, or use Left/Right", gridResizeHelp: "Enter fits up to 200 loaded rows; Left/Right resizes.",
+gridColumnMoved: "{column} moved to position {position}"
+}));
+const LAYOUT_HEADER = DataGrid.prototype.buildHeader, LAYOUT_ORDER = DataGrid.prototype.setColumnOrder;
+DataGrid.prototype.buildHeader = function () {
+if (this.cancelColumnDrag) this.cancelColumnDrag();
+const active = document.activeElement, held = active && active.classList.contains("cx-column-move") && this.headRow.contains(active) ?
+active.closest("[data-cx-column]").getAttribute("data-cx-column") : null;
+LAYOUT_HEADER.call(this);
+this.cols.forEach((column, index) => {
+const cell = this.headCells[index], grip = cell.querySelector(".cx-resize");
+grip.setAttribute("aria-description", this.labels.gridResizeHelp); grip.title = this.labels.gridResizeHelp;
+grip.addEventListener("dblclick", () => GRID_REPORTING.fitColumn(this, column.id));
+grip.addEventListener("keydown", event => {
+if (event.key === "Enter") { event.preventDefault(); GRID_REPORTING.fitColumn(this, column.id); }
+else if (["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) reportingManualWidth(this, column);
+}, true);
+if (!this.view.reporting || !this.view.reporting.columnReorder) return;
+const move = h("button", "cx-column-move"); move.type = "button"; setText(move, "⋮⋮");
+move.setAttribute("aria-label", fill(this.labels.gridMoveColumn, { column: column.title })); move.title = move.getAttribute("aria-label");
+cell.prepend(move);
+move.addEventListener("keydown", event => {
+if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+event.preventDefault(); event.stopPropagation();
+const at = this.cols.indexOf(column), target = this.cols[at + (event.key === "ArrowLeft" ? -1 : 1)];
+if (target) this.moveReportingColumn(column, target, event.key === "ArrowRight");
+});
+move.addEventListener("pointerdown", event => this.startColumnDrag(event, column));
+if (held === column.id) move.focus({ preventScroll: true });
+});
+};
+DataGrid.prototype.setColumnOrder = function (ids) {
+const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
+LAYOUT_ORDER.call(this, ids);
+if (held && columnId) {
+this.render(); const index = this.cols.findIndex(column => column.id === columnId);
+if (index >= 0) this.focusCell(held.w, index, held.control < 0 ? null : held.control);
+}
+};
+DataGrid.prototype.moveReportingColumn = function (column, target, after) {
+if (column === target) return;
+const ids = this.columns.map(item => item.id).filter(id => id !== column.id), at = ids.indexOf(target.id) + (after ? 1 : 0);
+ids.splice(at, 0, column.id); this.setColumnOrder(ids);
+const position = this.cols.findIndex(item => item.id === column.id);
+this.headCells[position].querySelector(".cx-column-move").focus({ preventScroll: true });
+setText(this.live, fill(this.labels.gridColumnMoved, { column: column.title, position: position + 1 }));
+};
+DataGrid.prototype.startColumnDrag = function (event, column) {
+if (this.destroyed || event.button !== 0) return;
+if (this.cancelColumnDrag) this.cancelColumnDrag();
+if (this.cancelResize) this.cancelResize();
+event.preventDefault(); event.currentTarget.focus({ preventScroll: true });
+const pointer = event.pointerId, start = event.clientX, startY = event.clientY;
+let ghost = null, target = null, after = false, latest = event.clientX, frame = 0;
+const clear = () => this.headCells.forEach(cell => cell.classList.remove("cx-drop-before", "cx-drop-after"));
+const locate = () => {
+clear(); target = null;
+for (let index = 0; index < this.headCells.length; index++) {
+const box = this.headCells[index].getBoundingClientRect();
+if (latest < box.right || index === this.headCells.length - 1) {
+target = this.cols[index]; after = latest > box.left + box.width / 2;
+this.headCells[index].classList.add(after ? "cx-drop-after" : "cx-drop-before"); break;
+}
+}
+};
+const scroll = () => {
+const box = this.grid.getBoundingClientRect(), delta = latest < box.left + 36 ? -12 : latest > box.right - 36 ? 12 : 0;
+if (delta) { this.grid.scrollLeft += delta; locate(); }
+frame = requestAnimationFrame(scroll);
+};
+const move = ev => {
+if (ev.pointerId !== pointer) return;
+latest = ev.clientX;
+if (!ghost && Math.hypot(latest - start, ev.clientY - startY) < 5) return;
+if (!ghost) {
+ghost = h("div", "cx-column-drag"); ghost.setAttribute("aria-hidden", "true"); setText(ghost, column.title);
+const theme = getComputedStyle(this.host);
+for (const token of ["surface", "text", "accent", "line"]) ghost.style.setProperty("--cx-" + token, theme.getPropertyValue("--cx-" + token));
+document.body.appendChild(ghost); frame = requestAnimationFrame(scroll);
+}
+ghost.style.left = ev.clientX + 12 + "px"; ghost.style.top = ev.clientY + 12 + "px"; locate();
+};
+const stop = () => {
+global.removeEventListener("pointermove", move); global.removeEventListener("pointerup", end);
+global.removeEventListener("pointercancel", cancel); global.removeEventListener("blur", stop); global.removeEventListener("keydown", key);
+this.lifetime.signal.removeEventListener("abort", stop);
+cancelAnimationFrame(frame); if (ghost) ghost.remove(); clear();
+if (this.cancelColumnDrag === stop) this.cancelColumnDrag = null;
+};
+const end = ev => {
+if (ev.pointerId !== pointer) return;
+const next = ghost && target, direction = after; stop();
+if (next && !this.destroyed) this.moveReportingColumn(column, next, direction);
+};
+const cancel = ev => { if (ev.pointerId === pointer) stop(); };
+const key = ev => { if (ev.key === "Escape") { ev.preventDefault(); stop(); } };
+this.cancelColumnDrag = stop;
+this.lifetime.signal.addEventListener("abort", stop, { once: true });
+global.addEventListener("pointermove", move); global.addEventListener("pointerup", end);
+global.addEventListener("pointercancel", cancel); global.addEventListener("blur", stop); global.addEventListener("keydown", key);
+};
 DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
 gridExpandCell: "{column}: show complete text", gridCloseCell: "Close complete text"
 }));

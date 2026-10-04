@@ -76,8 +76,19 @@
       "properties": {
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "headerFilters": { "type": "boolean" },
+        "columnReorder": { "type": "boolean" },
+        "layout": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridColumnLayout" } },
         "presenters": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridPresenter" } }
       }
+    },
+    "gridColumnLayout": {
+      "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
+      "properties": {
+        "minimum": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
+        "maximum": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
+        "flex": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "$comment": "Writers/readers require minimum <= initial column width <= maximum. Runtime state preserves base width and flex-enabled intent separately from viewport allocation."
     },
     "gridPresenter": {
       "oneOf": [
@@ -543,6 +554,9 @@
             "gridHeaderFilter": { "$ref": "#/$defs/accessibleLabel" },
             "gridExpandCell": { "$ref": "#/$defs/accessibleLabel" },
             "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
+            "gridColumnMoved": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },

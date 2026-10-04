@@ -45,7 +45,7 @@
     paintHostSlot(slot, node, column, index, w) {
       const tree = slot.content !== slot.cell;
       const previous = slot.content;
-      const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.width, column.kind);
+      const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), renderedColumnWidth(column), column.kind);
       const shape = attributeShape(fresh);
       previous.replaceWith(fresh);
       this.setSlotContent(slot, fresh, tree);
