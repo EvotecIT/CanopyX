@@ -94,6 +94,8 @@ inventory.SaveHtmlPage("inventory.html");
 
 Sorting, search and typed predicates use raw values; display text and badges remain presentation. Missing values sort last in either direction, with ordinal record identity as the final tie-breaker. Filters and sort keys apply to the full dataset before returning a window.
 
+Set a query's `SearchMode` to `CanopyGridSearchMode.Words` to match every word or quoted phrase across searchable columns. `inventory.SearchColumns` restricts the searched columns, and a cell's `SearchText` supplies alternate keywords without changing its display, sorting or export value. Existing queries keep substring matching. An optional `CanopyGridFilterGroup` combines typed predicates with nested AND/OR rules; search, flat filters and that group all apply before sorting and paging. `inventory-grid-query.html` demonstrates these contracts on the complete inventory.
+
 JavaScript hosts import `createDataGrid` from `@evotecit/canopyx/grid` and the matching `@evotecit/canopyx/grid.css`. A host source receives a frozen query and cancellation signal and returns a complete requested `gridPage` window. The host owns data access and authorization; CanopyX keeps accepted rows during a replacement request, rejects stale responses and bounds its page cache. See [the grid protocol](docs/data-protocol.md) for query operators and revision semantics.
 
 The grid toolbar provides typed filters, column visibility and ordering, and named saved views. Text/category membership accepts one raw value per line; date operands use ISO timestamps in UTC or with an explicit offset. Columns resize by dragging their separators or using Left/Right when a separator has focus. Headers stay visible while rows scroll.

@@ -14,6 +14,15 @@ const gridSource: GridSource = { async query(query, { signal }) {
     total: 0, matched: 0, items: [] };
 } };
 const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource });
+gridView.searchColumns = ["name"];
+await dataGrid.setQuery({ search: 'ready "north office"', searchMode: "words", filterGroup: {
+  operator: "or", filters: [{ column: "name", operator: "eq", values: ["Alpha"] }],
+  groups: [{ operator: "and", filters: [{ column: "name", operator: "isNotNull", values: [] }], groups: [] }]
+} });
+// @ts-expect-error Query modes name a supported matching contract.
+await dataGrid.setQuery({ searchMode: "regex" });
+const alternateSearchCell = { value: "Alpha", text: "Visible", searchText: "north office" };
+const searchRow: import("@evotecit/canopyx/grid").GridRow = { id: "alternate", cells: { name: alternateSearchCell } };
 GridRuntime.configure(gridView.id, { source: gridSource });
 dataGrid.setQuery({ filters: [{ column: "name", operator: "in", values: ["Atlas"] }] });
 dataGrid.setSelection(["row-1"]);

@@ -42,6 +42,7 @@
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
         "search": { "type": "boolean" },
+        "searchColumns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" }, "$comment": "Every identity must bind to a declared grid column; absent searches every declared column." },
         "columns": {
           "type": "array", "minItems": 1,
           "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
@@ -75,7 +76,7 @@
       }
     },
     "gridQuery": {
-      "description": "Search and AND-combined typed predicates precede ordered sorting and paging. Missing values sort last; row identity breaks final ties.",
+      "description": "Search, AND-combined flat predicates and the optional nested filter group precede ordered sorting and paging. Missing values sort last; row identity breaks final ties.",
       "type": "object",
       "required": ["protocol", "type", "view", "offset", "limit", "search", "sort", "filters"],
       "additionalProperties": false,
@@ -87,6 +88,8 @@
         "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "limit": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "search": { "type": "string" },
+        "searchMode": { "enum": ["substring", "words"], "default": "substring" },
+        "filterGroup": { "$ref": "#/$defs/gridFilterGroup" },
         "sort": {
           "type": "array",
           "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": {
@@ -95,6 +98,18 @@
         },
         "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilter" } }
       }
+    },
+    "gridFilterGroup": {
+      "description": "A nonempty AND/OR group. Readers enforce eight levels, 64 groups and 64 predicates total, including flat query predicates.",
+      "type": "object",
+      "required": ["operator", "filters", "groups"],
+      "additionalProperties": false,
+      "properties": {
+        "operator": { "enum": ["and", "or"] },
+        "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilter" } },
+        "groups": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilterGroup" } }
+      },
+      "anyOf": [{ "properties": { "filters": { "minItems": 1 } } }, { "properties": { "groups": { "minItems": 1 } } }]
     },
     "gridFilter": {
       "type": "object",
@@ -142,6 +157,7 @@
           "properties": {
             "value": { "$ref": "#/$defs/cellValue" },
             "text": { "type": "string" },
+            "searchText": { "type": "string", "description": "Alternate flat-grid search text; it does not change display, sort, filter or export values." },
             "title": { "type": "string" },
             "tone": { "$ref": "#/$defs/tone" },
             "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } }

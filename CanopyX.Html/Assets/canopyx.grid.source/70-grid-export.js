@@ -30,6 +30,7 @@
       const selected = options.scope === "selected" ? [...this.selected] : [];
       const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: 0, limit: this.pageSize,
         search: options.scope === "filtered" ? this.acceptedQuery.search : "",
+        filterGroup: options.scope === "filtered" ? this.acceptedQuery.filterGroup : undefined,
         filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] }));
       const request = gridFreeze({ scope: options.scope, query: query, revision: this.snapshot.revision,
         total: this.snapshot.total, matched: this.snapshot.matched, selection: selected,

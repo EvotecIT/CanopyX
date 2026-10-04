@@ -15,7 +15,7 @@
       form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
       const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
       form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-        rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+        rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
       }));
       form.appendChild(error); panel.appendChild(form);
       form.addEventListener("submit", event => {

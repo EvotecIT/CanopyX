@@ -32,15 +32,16 @@
 
   function inlineGridSource(view) {
     const rows = view.rows, columns = new Map(view.columns.map(column => [column.id, column]));
+    const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     let lastShape = null, ordered = null;
     return {
       query(query, options) {
         if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
-        const shape = JSON.stringify([query.search, query.filters, query.sort]);
+        const shape = JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]);
         if (shape !== lastShape) {
-          const search = foldText(query.search);
-          ordered = rows.filter(row => (!search || view.columns.some(column => foldText(cellValue(row.cells[column.id])).includes(search))) &&
-            query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))));
+          const terms = gridSearchTerms(query.search, query.searchMode);
+          ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+            query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
           ordered.sort((a, b) => {
             for (const sort of query.sort) {
               const compared = gridCompare(a, b, columns.get(sort.column), sort.direction);

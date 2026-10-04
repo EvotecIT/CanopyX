@@ -16,6 +16,13 @@ export type GridFilter = {
   readonly values: readonly Exclude<CellValue, null>[];
 } | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; };
 
+/** A nonempty nested expression: at most eight levels, 64 groups and 64 total predicates including flat filters. */
+export interface GridFilterGroup {
+  readonly operator: "and" | "or";
+  readonly filters: readonly GridFilter[];
+  readonly groups: readonly GridFilterGroup[];
+}
+
 /** A frozen accepted query. Sorting/filtering cover the entire source before the requested window. */
 export interface GridQuery {
   readonly protocol: "canopyx/2";
@@ -25,8 +32,12 @@ export interface GridQuery {
   readonly offset: number;
   readonly limit: number;
   readonly search: string;
+  /** Absent preserves substring matching; words matches all words/quoted phrases across searchable cells. */
+  readonly searchMode?: "substring" | "words";
   readonly sort: readonly GridSort[];
   readonly filters: readonly GridFilter[];
+  /** Combined with search and flat filters using AND. */
+  readonly filterGroup?: GridFilterGroup;
 }
 export type GridQueryInput = Partial<GridQuery>;
 
@@ -40,6 +51,8 @@ interface GridDefinition {
   pageSize: number;
   selection: "none" | "single" | "multiple";
   search: boolean;
+  /** Unique declared IDs; absent searches every column, including hidden columns. */
+  searchColumns?: string[];
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;

@@ -27,6 +27,19 @@ internal static class InventoryGridExample {
         view.Query.Sort.Add(new CanopyGridSort("size", descending: true));
         WritePage(view, output, "inventory-grid.html", CanopyTheme.Light);
         WritePage(view, output, "inventory-grid-dark.html", CanopyTheme.Dark);
+        view.StateKey = "file-inventory-query";
+        view.SearchColumns.Add("name");
+        view.SearchColumns.Add("category");
+        view.Rows[4998].Cells["name"].SearchText = "Record 4998 source code";
+        view.Query = new CanopyGridQuery(view.Id) {
+            Search = "source record", SearchMode = CanopyGridSearchMode.Words, Limit = view.PageSize,
+            FilterGroup = new CanopyGridFilterGroup(CanopyGridFilterJunction.Any,
+                new CanopyGridFilter("size", CanopyGridFilterOperator.GreaterThanOrEqual, 4900L * 1024),
+                new CanopyGridFilter("name", CanopyGridFilterOperator.Equal, "Record 0002"))
+        };
+        view.Query.Sort.Add(new CanopyGridSort("size", descending: true));
+        WritePage(view, output, "inventory-grid-query.html", CanopyTheme.Light);
+        WritePage(view, output, "inventory-grid-query-dark.html", CanopyTheme.Dark);
     }
 
     private static void WritePage(CanopyGridView view, string output, string name, CanopyTheme theme) {

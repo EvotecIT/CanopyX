@@ -9,6 +9,8 @@ export interface CanopyBadge { text: string; tone?: string; title?: string; }
 export interface CanopyCell {
   value?: CellValue;
   text?: string;
+  /** Alternate flat-grid search text, independent of display, typed queries and export. */
+  searchText?: string;
   title?: string;
   tone?: string;
   badges?: CanopyBadge[];

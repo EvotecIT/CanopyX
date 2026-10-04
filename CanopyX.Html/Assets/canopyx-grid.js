@@ -4393,6 +4393,47 @@ const ROW_HELPERS = {};
 for (const name of ["buildHeader", "visibleColumns", "applyWidths", "setColumnWidth", "startResize", "cell", "newCell", "paintSlot", "paintBadges",
 "paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
 ROW_HELPERS[name] = TreeGrid.prototype[name];
+function gridPredicate(filter, columns, budget) {
+if (++budget.predicates > 64) throw new Error("CanopyX: at most 64 grid predicates are supported across all groups.");
+const column = filter && columns.get(filter.column), values = filter && filter.values;
+if (!column || !["eq", "ne", "contains", "startsWith", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"].includes(filter.operator) ||
+!Array.isArray(values) || Object.keys(filter).some(name => !["column", "operator", "values"].includes(name)))
+throw new Error("CanopyX: invalid grid predicate.");
+const nullTest = filter.operator === "isNull" || filter.operator === "isNotNull";
+if (nullTest ? values.length !== 0 : filter.operator === "in" ? values.length < 1 || values.length > 1000 : values.length !== 1)
+throw new Error("CanopyX: invalid grid predicate arity.");
+if (["contains", "startsWith"].includes(filter.operator) && (column.kind !== "text" || values.some(value => typeof value !== "string")) ||
+["gt", "ge", "lt", "le"].includes(filter.operator) && !["number", "datetime"].includes(column.kind))
+throw new Error("CanopyX: predicate does not match the column kind.");
+values.forEach(value => { if (value == null || typeof value === "object") throw new Error("CanopyX: predicate operands are non-null raw values."); gridScalar(value, column); });
+return Object.freeze({ column: column.id, operator: filter.operator, values: Object.freeze(values.slice()) });
+}
+function gridFilterGroup(group, columns, budget, depth) {
+if (depth > 8 || ++budget.groups > 64) throw new Error("CanopyX: grid filter groups exceed their depth or count limit.");
+if (!group || !["and", "or"].includes(group.operator) || !Array.isArray(group.filters) || !Array.isArray(group.groups) ||
+!group.filters.length && !group.groups.length || Object.keys(group).some(name => !["operator", "filters", "groups"].includes(name)))
+throw new Error("CanopyX: invalid or empty grid filter group.");
+const filters = group.filters.map(filter => gridPredicate(filter, columns, budget));
+const groups = group.groups.map(child => gridFilterGroup(child, columns, budget, depth + 1));
+return Object.freeze({ operator: group.operator, filters: Object.freeze(filters), groups: Object.freeze(groups) });
+}
+function gridMatchesGroup(row, group, columns) {
+if (!group) return true;
+if (group.operator === "and") return group.filters.every(filter => gridMatches(row, filter, columns.get(filter.column))) &&
+group.groups.every(child => gridMatchesGroup(row, child, columns));
+return group.filters.some(filter => gridMatches(row, filter, columns.get(filter.column))) ||
+group.groups.some(child => gridMatchesGroup(row, child, columns));
+}
+function gridSearchTerms(text, mode) {
+if (mode !== "words") return text ? [foldText(text)] : [];
+return [...text.matchAll(/"([^"]*)(?:"|$)|([^\s"]+)/g)].map(match => foldText(match[1] === undefined ? match[2] : match[1])).filter(Boolean);
+}
+function gridMatchesSearch(row, terms, columns) {
+return terms.every(term => columns.some(column => {
+const cell = row.cells[column.id], text = isCellObject(cell) && cell.searchText !== undefined ? cell.searchText : cellValue(cell);
+return foldText(text).includes(term);
+}));
+}
 function gridScalar(cell, column) {
 const value = cellValue(cell);
 if (value == null) return null;
@@ -4421,8 +4462,8 @@ for (const id of Object.keys(row.cells)) {
 if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
 const cell = row.cells[id];
 if (isCellObject(cell)) {
-if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "title", "tone", "badges"].includes(name)) ||
-["text", "title", "tone"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
+if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "searchText", "title", "tone", "badges"].includes(name)) ||
+["text", "searchText", "title", "tone"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
 cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
 ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
 throw new Error("CanopyX: malformed grid cell.");
@@ -4445,6 +4486,9 @@ throw new Error("CanopyX: grid columns need unique IDs, supported kinds and vali
 ids.add(column.id);
 }
 if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||
+new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
+throw new Error("CanopyX: search columns must identify unique declared columns.");
 if (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64 ||
 !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
 !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
@@ -4457,7 +4501,7 @@ return view;
 function gridQuery(view, input) {
 input = input || {};
 if (typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(name =>
-!["protocol", "type", "view", "revision", "search", "sort", "filters", "offset", "limit"].includes(name)) ||
+!["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit"].includes(name)) ||
 input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== "gridQuery" ||
 input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
 const query = { protocol: PROTOCOL, type: "gridQuery", view: view.id, offset: input.offset === undefined ? 0 : input.offset,
@@ -4465,6 +4509,10 @@ limit: input.limit === undefined ? view.pageSize : input.limit, search: input.se
 if (!validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
 throw new Error("CanopyX: invalid grid query window or search.");
 if (input.revision !== undefined) { requireIdentifier(input.revision, "grid revision"); query.revision = input.revision; }
+if (input.searchMode !== undefined) {
+if (!["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
+query.searchMode = input.searchMode;
+}
 const columns = new Map(view.columns.map(column => [column.id, column])), sorts = new Set();
 if (input.sort !== undefined && !Array.isArray(input.sort) || input.filters !== undefined && !Array.isArray(input.filters))
 throw new Error("CanopyX: grid sort and filters must be arrays.");
@@ -4474,21 +4522,9 @@ if (!sort || !columns.has(sort.column) || !columns.get(sort.column).sortable || 
 throw new Error("CanopyX: invalid grid sort column or direction.");
 sorts.add(sort.column); return Object.freeze({ column: sort.column, direction: sort.direction });
 });
-if ((input.filters || []).length > 64) throw new Error("CanopyX: at most 64 grid predicates are supported.");
-query.filters = (input.filters || []).map(filter => {
-const column = filter && columns.get(filter.column), values = filter && filter.values;
-if (!column || !["eq", "ne", "contains", "startsWith", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"].includes(filter.operator) ||
-!Array.isArray(values) || Object.keys(filter).some(name => !["column", "operator", "values"].includes(name)))
-throw new Error("CanopyX: invalid grid predicate.");
-const nullTest = filter.operator === "isNull" || filter.operator === "isNotNull";
-if (nullTest ? values.length !== 0 : filter.operator === "in" ? values.length < 1 || values.length > 1000 : values.length !== 1)
-throw new Error("CanopyX: invalid grid predicate arity.");
-if (["contains", "startsWith"].includes(filter.operator) && (column.kind !== "text" || values.some(value => typeof value !== "string")) ||
-["gt", "ge", "lt", "le"].includes(filter.operator) && !["number", "datetime"].includes(column.kind))
-throw new Error("CanopyX: predicate does not match the column kind.");
-values.forEach(value => { if (value == null || typeof value === "object") throw new Error("CanopyX: predicate operands are non-null raw values."); gridScalar(value, column); });
-return Object.freeze({ column: column.id, operator: filter.operator, values: Object.freeze(values.slice()) });
-});
+const budget = { predicates: 0, groups: 0 };
+query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
+if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
 Object.freeze(query.sort); Object.freeze(query.filters); return Object.freeze(query);
 }
 function validateGridPage(page, view, query, accepted) {
@@ -4531,15 +4567,16 @@ return false;
 }
 function inlineGridSource(view) {
 const rows = view.rows, columns = new Map(view.columns.map(column => [column.id, column]));
+const searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
 let lastShape = null, ordered = null;
 return {
 query(query, options) {
 if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
-const shape = JSON.stringify([query.search, query.filters, query.sort]);
+const shape = JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]);
 if (shape !== lastShape) {
-const search = foldText(query.search);
-ordered = rows.filter(row => (!search || view.columns.some(column => foldText(cellValue(row.cells[column.id])).includes(search))) &&
-query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))));
+const terms = gridSearchTerms(query.search, query.searchMode);
+ordered = rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
 ordered.sort((a, b) => {
 for (const sort of query.sort) {
 const compared = gridCompare(a, b, columns.get(sort.column), sort.direction);
@@ -5183,7 +5220,7 @@ const add = predicate => this.addGridFilter(rows, predicate);
 form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
 const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
 form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
 }));
 form.appendChild(error); panel.appendChild(form);
 form.addEventListener("submit", event => {
@@ -5307,6 +5344,7 @@ if (options.signal !== undefined && !(options.signal instanceof AbortSignal)) th
 const selected = options.scope === "selected" ? [...this.selected] : [];
 const query = gridQuery(this.view, Object.assign({}, this.acceptedQuery, { offset: 0, limit: this.pageSize,
 search: options.scope === "filtered" ? this.acceptedQuery.search : "",
+filterGroup: options.scope === "filtered" ? this.acceptedQuery.filterGroup : undefined,
 filters: options.scope === "filtered" ? this.acceptedQuery.filters : [] }));
 const request = gridFreeze({ scope: options.scope, query: query, revision: this.snapshot.revision,
 total: this.snapshot.total, matched: this.snapshot.matched, selection: selected,

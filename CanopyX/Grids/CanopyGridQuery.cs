@@ -6,7 +6,7 @@ namespace CanopyX;
 
 /// <summary>The accepted full-dataset query and requested result window of a flat data grid.</summary>
 /// <remarks>
-/// Search and all column predicates are combined with AND, followed by the ordered sort keys and a stable
+/// Search, all flat column predicates and the optional nested group are combined with AND, followed by the ordered sort keys and a stable
 /// ordinal row-identity tie-breaker. Missing values sort last in either direction. Paging is applied last.
 /// Host query engines implement this contract without transferring their domain logic to CanopyX.
 /// </remarks>
@@ -27,11 +27,17 @@ public sealed class CanopyGridQuery {
     /// <summary>Gets or sets search text over raw values of declared columns. Null is empty search.</summary>
     public string? Search { get; set; }
 
+    /// <summary>Gets or sets substring or all-word/quoted-phrase matching. Existing queries default to substring matching.</summary>
+    public CanopyGridSearchMode SearchMode { get; set; }
+
     /// <summary>Gets or sets the expected dataset snapshot identity. Null requests the current snapshot.</summary>
     public string? Revision { get; set; }
 
     /// <summary>Gets the AND-combined typed column predicates.</summary>
     public IList<CanopyGridFilter> Filters { get; } = new List<CanopyGridFilter>();
+
+    /// <summary>Gets or sets an optional bounded AND/OR expression, combined with search and flat predicates using AND.</summary>
+    public CanopyGridFilterGroup? FilterGroup { get; set; }
 
     /// <summary>Gets the ordered sort keys. The runtime appends stable identity as the final tie-breaker.</summary>
     public IList<CanopyGridSort> Sort { get; } = new List<CanopyGridSort>();
@@ -66,6 +72,7 @@ public sealed class CanopyGridQuery {
     }
 
     internal void Validate(CanopyGridView view) {
+        if (SearchMode != CanopyGridSearchMode.Substring && SearchMode != CanopyGridSearchMode.Words) throw new ArgumentOutOfRangeException(nameof(SearchMode));
         if (view.Id != View) throw new InvalidOperationException("A grid query must target its owning view.");
         if (Revision != null) CanopyIdentifiers.Require(Revision, nameof(Revision));
         if (Filters.Count > 64) throw new InvalidOperationException("A grid query supports at most 64 column predicates.");
@@ -81,6 +88,9 @@ public sealed class CanopyGridQuery {
             if (filter == null || !columns.TryGetValue(filter.Column, out var column)) throw new InvalidOperationException("Grid predicates must identify declared columns.");
             filter.Validate(column);
         }
+        var predicates = Filters.Count;
+        var groups = 0;
+        FilterGroup?.Validate(columns, 1, ref predicates, ref groups);
     }
 
     internal void WriteJson(CanopyJsonWriter writer, CanopyGridView view) {
@@ -90,6 +100,12 @@ public sealed class CanopyGridQuery {
         foreach (var sort in Sort) sort.WriteJson(writer);
         writer.EndArray().Name("filters").BeginArray();
         foreach (var filter in Filters) filter.WriteJson(writer);
-        writer.EndArray().EndObject();
+        writer.EndArray();
+        if (SearchMode == CanopyGridSearchMode.Words) writer.Property("searchMode", "words");
+        if (FilterGroup != null) {
+            writer.Name("filterGroup");
+            FilterGroup.WriteJson(writer);
+        }
+        writer.EndObject();
     }
 }

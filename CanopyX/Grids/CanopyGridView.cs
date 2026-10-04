@@ -64,6 +64,9 @@ public sealed class CanopyGridView {
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;
 
+    /// <summary>Gets the column identities searched by flat-grid queries. An empty collection searches every declared column, including hidden columns.</summary>
+    public IList<string> SearchColumns { get; } = new List<string>();
+
     /// <summary>Gets or sets the session-storage key for this grid's saved view. Null disables persistence.</summary>
     public string? StateKey { get; set; }
 
@@ -90,7 +93,13 @@ public sealed class CanopyGridView {
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
         foreach (var column in Columns) column.WriteJson(writer);
-        writer.EndArray().Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host").EndObject();
+        writer.EndArray();
+        if (SearchColumns.Count > 0) {
+            writer.Name("searchColumns").BeginArray();
+            foreach (var column in SearchColumns) writer.String(column);
+            writer.EndArray();
+        }
+        writer.Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host").EndObject();
         writer.OptionalProperty("stateKey", StateKey).OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         if (Query != null) {
             writer.Name("query");
@@ -123,6 +132,10 @@ public sealed class CanopyGridView {
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        var searchable = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var id in SearchColumns) {
+            if (id == null || !columnIds.Contains(id) || !searchable.Add(id)) throw new InvalidOperationException("Search columns must identify unique declared columns.");
+        }
         if (Source == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
         CanopyGridRows.Validate(Rows, columnIds, Columns);
         Query?.Validate(this);
