@@ -41,7 +41,12 @@
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-      this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
+      this.resizeObserver = new ResizeObserver(() => {
+        host.style.setProperty("--cx-grid-min", [...host.children].reduce((height, child) =>
+          height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2) + "px");
+        this.applyWidths(); this.scheduleRender();
+      });
+      this.resizeObserver.observe(grid);
     },
 
     setNotice(text, error) {

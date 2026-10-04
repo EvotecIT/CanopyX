@@ -5104,7 +5104,12 @@ document.addEventListener("focusin", event => {
 if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
 }, { signal: signal });
 this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
+this.resizeObserver = new ResizeObserver(() => {
+host.style.setProperty("--cx-grid-min", [...host.children].reduce((height, child) =>
+height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2) + "px");
+this.applyWidths(); this.scheduleRender();
+});
+this.resizeObserver.observe(grid);
 },
 setNotice(text, error) {
 this.notice.textContent = ""; this.notice.hidden = !text;
@@ -5657,13 +5662,13 @@ if (typeof value !== "number" && /^[\s\uFEFF]*[=+\-@]/.test(text)) text = "'" + 
 return text.includes(delimiter) || /["\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 }
 function gridOperationActive(grid, signal) {
-if (grid.destroyed || signal?.aborted) throw new DOMException("Grid operation was cancelled.", "AbortError");
+if (grid.destroyed || signal?.aborted) throw new DOMException("Grid operation cancelled.", "AbortError");
 }
 Object.assign(DataGrid.prototype, {
 prepareExport(options) {
 if (!this.view.reporting && ["fileName", "locale", "timeZone", "onProgress"].some(key => options?.[key] !== undefined))
 throw new Error("CanopyX: this view needs the reporting runtime.");
-if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted grid query.");
+if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted query.");
 if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: choose an explicit export scope.");
 const { scope, values, signal } = options, filtered = scope === "filtered";
 const columnIds = options.columns === undefined ? this.visibleColumns().map(column => column.id) : options.columns;
@@ -5695,30 +5700,30 @@ const query = gridQuery(this.view, { ...request.query, offset: this.cursor ? und
 const page = (this.cursor ? validateGridCursorPage : validateGridPage)(await this.requestPage(query, signal), this.view, query, expected);
 if (this.cursor && (page.offset !== offset || scope !== "filtered" && page.total !== null &&
 (page.matched !== null && page.matched !== page.total || page.nextCursor === undefined && page.offset + page.items.length !== page.total)))
-throw new Error("CanopyX: incomplete or noncontiguous cursor export.");
+throw new Error("CanopyX: incomplete cursor export.");
 expected.matched = page.matched;
 for (const row of page.items) {
 gridOperationActive(this, signal);
-if (seen.has(row.id)) throw new Error("CanopyX: export encountered a repeated row identity.");
+if (seen.has(row.id)) throw new Error("CanopyX: export repeated a row identity.");
 seen.add(row.id);
 if (scope !== "selected" || remaining.delete(row.id)) {
 const cells = Object.create(null);
-for (const column of request.columns) if (Object.prototype.hasOwnProperty.call(row.cells, column.id)) cells[column.id] = row.cells[column.id];
+for (const column of request.columns) if (Object.hasOwn(row.cells, column.id)) cells[column.id] = row.cells[column.id];
 yield gridFreeze({ id: row.id, cells });
 }
 }
 offset += this.cursor ? page.items.length : request.query.limit;
 if (this.cursor) {
 cursor = page.nextCursor; if (cursor === undefined) break;
-if (tokens.has(cursor)) throw new Error("CanopyX: cursor export repeated a traversal token.");
+if (tokens.has(cursor)) throw new Error("CanopyX: cursor export repeated a token.");
 tokens.add(cursor);
 }
 }
 gridOperationActive(this, signal);
-if (remaining.size) throw new Error("CanopyX: selected records are absent from the accepted dataset revision.");
+if (remaining.size) throw new Error("CanopyX: selected records are absent from the accepted revision.");
 },
 async exportText(exported, maxRows = 50000, delimiter, signal) {
-if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is between 1 and 1000000.");
+if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is 1 to 1000000.");
 const request = exported.request, expected = request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
 if (expected > maxRows) throw new Error("CanopyX: export exceeds the client row limit; use a host export hook.");
 const fmt = formatting(request.locale || this.lang, request.timeZone === "local", this.labels);
@@ -5749,19 +5754,19 @@ return this.focusResult(index, false);
 async runGridHook(run, signal) {
 const controller = new AbortController(); let rejectHook;
 const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
-const abort = () => { controller.abort(); rejectHook(new DOMException("Grid operation was cancelled.", "AbortError")); };
+const abort = () => { controller.abort(); rejectHook(new DOMException("Grid operation cancelled.", "AbortError")); };
 this.lifetime.signal.addEventListener("abort", abort, { once: true });
-if (signal) signal.addEventListener("abort", abort, { once: true });
+signal?.addEventListener("abort", abort, { once: true });
 const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: host operation timed out.")); }, this.requestTimeoutMs);
 try {
-if (this.destroyed || signal && signal.aborted) abort();
+if (this.destroyed || signal?.aborted) abort();
 return await Promise.race([Promise.resolve().then(() => {
 gridOperationActive(this, controller.signal);
 return run(controller.signal);
 }), cancelled]);
 } finally {
 clearTimeout(timer); controller.abort(); this.lifetime.signal.removeEventListener("abort", abort);
-if (signal) signal.removeEventListener("abort", abort);
+signal?.removeEventListener("abort", abort);
 }
 },
 async copy(options) {
@@ -5771,9 +5776,10 @@ await this.writeClipboard(text, options.signal); return text;
 },
 writeClipboard(text, signal) {
 gridOperationActive(this, signal);
-if (!global.navigator.clipboard || typeof global.navigator.clipboard.writeText !== "function")
-return Promise.reject(new Error("CanopyX: clipboard access is unavailable in this browser context."));
-return global.navigator.clipboard.writeText(text);
+const clipboard = global.navigator.clipboard;
+if (typeof clipboard?.writeText !== "function")
+return Promise.reject(new Error("CanopyX: clipboard unavailable."));
+return this.runGridHook(() => clipboard.writeText(text), signal);
 },
 copyFocused(row, cell) {
 if (this.selected.size) return this.copy({ scope: "selected" });
@@ -5792,7 +5798,7 @@ if (this.detailController) this.detailController.abort();
 const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;
 const abort = () => controller.abort(); dataSignal.addEventListener("abort", abort, { once: true });
 const record = gridFreeze(JSON.parse(JSON.stringify(row.h))), query = this.acceptedQuery, returnFocus = document.activeElement;
-return this.runGridHook(signal => this.opts.onDetails({ row: record, query: query, signal: signal, returnFocus: returnFocus }), controller.signal)
+return this.runGridHook(signal => this.opts.onDetails({ row: record, query, signal, returnFocus }), controller.signal)
 .finally(() => { dataSignal.removeEventListener("abort", abort); if (this.detailController === controller) this.detailController = null; });
 }
 });
@@ -7185,14 +7191,9 @@ if (reportingLayout(grid, column).flex > 0) saved.flex = source.flex === undefin
 return result;
 };
 const LAYOUT_WIDTHS = DataGrid.prototype.applyWidths, LAYOUT_SET_WIDTH = DataGrid.prototype.setColumnWidth,
-LAYOUT_START_RESIZE = DataGrid.prototype.startResize, LAYOUT_CELL = DataGrid.prototype.newCell, LAYOUT_BUILD = DataGrid.prototype.build;
+LAYOUT_START_RESIZE = DataGrid.prototype.startResize, LAYOUT_CELL = DataGrid.prototype.newCell;
 DataGrid.prototype.newCell = function (index, width, kind) {
 return LAYOUT_CELL.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind);
-};
-DataGrid.prototype.build = function () {
-LAYOUT_BUILD.call(this);
-this.resizeObserver.disconnect();
-this.resizeObserver = new ResizeObserver(() => { this.applyWidths(); this.scheduleRender(); }); this.resizeObserver.observe(this.grid);
 };
 DataGrid.prototype.applyWidths = function () {
 let total = 0;
@@ -8747,6 +8748,7 @@ if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10000) throw new Erro
 const total = reportingExportTotal(exported.request);
 if (total !== null && total > maxRows) throw new Error("CanopyX: snapshot exceeds its row bound; use a host export hook.");
 const rows = []; let size = JSON.stringify({ request: exported.request, rows: [] }).length;
+if (size > 4194304) throw new Error("CanopyX: snapshot exceeds its text bound; use a host export hook.");
 progress("reading", 0);
 for await (const row of grid.exportRows(exported.request, signal)) {
 if (rows.length >= maxRows || (size += JSON.stringify(row).length + 1) > 4194304)
@@ -8827,6 +8829,7 @@ gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", grid
 const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls;
 DataGrid.prototype.buildExportControls = function () {
 DELIVERY_CONTROLS.call(this);
+if (!this.view.reporting) return;
 const panel = this.toolbar.querySelector(".cx-grid-export .cx-grid-panel");
 panel.replaceChildren();
 const scope = h("select"); scope.setAttribute("aria-label", this.labels.gridExport);

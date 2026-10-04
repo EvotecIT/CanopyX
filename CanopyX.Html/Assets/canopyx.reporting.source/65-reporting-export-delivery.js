@@ -28,6 +28,7 @@
     const total = reportingExportTotal(exported.request);
     if (total !== null && total > maxRows) throw new Error("CanopyX: snapshot exceeds its row bound; use a host export hook.");
     const rows = []; let size = JSON.stringify({ request: exported.request, rows: [] }).length;
+    if (size > 4194304) throw new Error("CanopyX: snapshot exceeds its text bound; use a host export hook.");
     progress("reading", 0);
     for await (const row of grid.exportRows(exported.request, signal)) {
       if (rows.length >= maxRows || (size += JSON.stringify(row).length + 1) > 4194304)

@@ -1,17 +1,11 @@
   // ---------- viewport remainder allocation and bounded loaded-row auto-fit ----------
   const LAYOUT_WIDTHS = DataGrid.prototype.applyWidths, LAYOUT_SET_WIDTH = DataGrid.prototype.setColumnWidth,
-    LAYOUT_START_RESIZE = DataGrid.prototype.startResize, LAYOUT_CELL = DataGrid.prototype.newCell, LAYOUT_BUILD = DataGrid.prototype.build;
+    LAYOUT_START_RESIZE = DataGrid.prototype.startResize, LAYOUT_CELL = DataGrid.prototype.newCell;
 
   // Reuse the neutral sizing and cell painters; flexible geometry belongs only to the optional reporting view.
   DataGrid.prototype.newCell = function (index, width, kind) {
     return LAYOUT_CELL.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind);
   };
-  DataGrid.prototype.build = function () {
-    LAYOUT_BUILD.call(this);
-    this.resizeObserver.disconnect();
-    this.resizeObserver = new ResizeObserver(() => { this.applyWidths(); this.scheduleRender(); }); this.resizeObserver.observe(this.grid);
-  };
-
   DataGrid.prototype.applyWidths = function () {
     let total = 0;
     for (const column of this.cols) {

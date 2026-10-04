@@ -1,14 +1,16 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, runtimeAssets } from "./support.mjs";
 const api="document.querySelector('[data-canopyx-host]').canopyx";
 const definition=(extra={})=>({protocol:'canopyx/2',type:'grid',id:'delivery',label:'Inventory',source:{kind:'inline'},rowHeight:28,
   pageSize:10,presentation:'paged',pageLength:5,selection:'multiple',search:true,reporting:{selectionControls:true},
   columns:[{id:'name',title:'Name',kind:'text',width:200,sortable:true},{id:'amount',title:'Amount',kind:'number',width:150,sortable:true},
     {id:'when',title:'Updated',kind:'datetime',width:200,sortable:true}],
   rows:Array.from({length:137},(_,i)=>({id:'r'+i,cells:{name:i%2?'Archive':'Current',amount:i+0.5,when:'2026-10-04T12:30:00Z'}})),...extra});
-async function open(page,view=definition(),setup='') {
-  await page.route('http://canopyx.test/delivery',route=>route.fulfill({contentType:'text/html',body:viewPage(view)
+async function open(page,view=definition(),setup='',runtime) {
+  let html=viewPage(view);
+  if(runtime)html=html.replace(/<script>[\s\S]*?<\/script>/,()=>'<script>'+runtimeAssets(runtime).script+'</script>');
+  await page.route('http://canopyx.test/delivery',route=>route.fulfill({contentType:'text/html',body:html
     .replace('</head>','<script>'+setup+'</script></head>')}));
   await page.goto('http://canopyx.test/delivery');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
 }
@@ -125,4 +127,58 @@ test('a large text record fails the snapshot text bound before any print deliver
   await open(page,definition({source:{kind:'host'},rows:undefined}),setup);
   const error=await page.evaluate(api+".print({scope:'all'}).catch(e=>e.message)");
   expect(error).toContain('row or text bound');expect(await page.evaluate('window.printed')).toBe(undefined);
+});
+
+test('ordinary grid CSV and Copy retain their controls on a reporting runtime page',async({page})=>{
+  const plain=definition();delete plain.reporting;
+  await open(page,plain,"window.copied=[];Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>copied.push(text)}});",'reporting');
+  await page.locator('.cx-grid-export > summary').click();
+  await page.getByRole('button',{name:'Copy',exact:true}).click();
+  await expect.poll(()=>page.evaluate('copied.length')).toBe(1);
+  expect(await page.evaluate('copied[0]')).toContain('136.5');
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSV',exact:true}).click();
+  const download=await pending;expect(fs.readFileSync(await download.path(),'utf8')).toContain('136.5');
+});
+
+const deferredClipboard="window.clipboardStarted=false;Object.defineProperty(navigator,'clipboard',{value:{writeText(){clipboardStarted=true;return new Promise(resolve=>window.finishClipboard=resolve);}}});";
+test('Cancel settles a pending clipboard permission and ignores its late completion',async({page})=>{
+  await open(page,definition(),deferredClipboard);
+  await page.locator('.cx-grid-export > summary').click();await page.getByRole('button',{name:'Copy',exact:true}).click();
+  await expect.poll(()=>page.evaluate('clipboardStarted')).toBe(true);
+  await page.getByRole('button',{name:'Cancel export',exact:true}).click();
+  await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled',{timeout:1500});
+  await expect(page.getByRole('button',{name:'Copy',exact:true})).toBeEnabled();
+  await page.evaluate('finishClipboard()');await nextFrames(page);
+  await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
+});
+
+test('clipboard delivery observes destruction and the existing host deadline',async({page})=>{
+  await open(page,definition(),deferredClipboard+"CanopyX.configure('delivery',{requestTimeoutMs:1000});");
+  expect(await page.evaluate(async()=>{const g=document.querySelector('[data-canopyx-host]').canopyx;
+    return await g.copy({scope:'all'}).catch(e=>e.message);})).toContain('timed out');
+  const result=await page.evaluate(async()=>{const g=document.querySelector('[data-canopyx-host]').canopyx;
+    clipboardStarted=false;const pending=g.copy({scope:'all'}).catch(e=>e.name);
+    while(!clipboardStarted)await new Promise(r=>setTimeout(r,0));g.destroy();return pending;});
+  expect(result).toBe('AbortError');
+});
+
+test('zero-record snapshots enforce the initial descriptor text bound before printing',async({page})=>{
+  await open(page,definition({rows:[]}),"window.printed=[];CanopyX.configure('delivery',{onPrint(e){printed.push(e);}});");
+  const result=await page.evaluate(async()=>{const g=document.querySelector('[data-canopyx-host]').canopyx;
+    await g.setQuery({search:'x'.repeat(4194304)});
+    return [await g.materializeExport({scope:'filtered'}).catch(e=>e.message),await g.print({scope:'filtered'}).catch(e=>e.message),printed.length];});
+  expect(result[0]).toContain('text bound');expect(result[1]).toContain('text bound');expect(result[2]).toBe(0);
+});
+
+for(const reporting of [false,true])test(`short ${reporting?'reporting':'ordinary'} grid preserves records and paging as controls wrap`,async({page})=>{
+  await page.setViewportSize({width:390,height:820});const view=definition();if(!reporting)delete view.reporting;
+  await open(page,view,"addEventListener('DOMContentLoaded',()=>{const h=document.querySelector('[data-canopyx-host]');h.style.height='320px';h.style.padding='0';});");
+  const geometry=()=>page.evaluate(()=>{const h=document.querySelector('[data-canopyx-host]'),g=h.querySelector('.cx-grid'),p=h.querySelector('.cx-grid-pager');
+    return {viewport:g.clientHeight,pagerFits:p.getBoundingClientRect().bottom<=h.getBoundingClientRect().bottom+1,height:h.offsetHeight};});
+  await expect.poll(async()=>(await geometry()).viewport).toBeGreaterThanOrEqual(112);
+  expect((await geometry()).pagerFits).toBe(true);await expect(page.locator('.cx-row').first()).toBeVisible();
+  const compact=(await geometry()).height;await page.setViewportSize({width:1400,height:820});await nextFrames(page);
+  expect((await geometry()).height).toBeLessThan(compact);expect((await geometry()).pagerFits).toBe(true);
+  await page.setViewportSize({width:390,height:820});await nextFrames(page);
+  await expect.poll(async()=>(await geometry()).viewport).toBeGreaterThanOrEqual(112);
 });

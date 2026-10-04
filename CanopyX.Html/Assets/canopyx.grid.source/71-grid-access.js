@@ -9,19 +9,19 @@
     async runGridHook(run, signal) {
       const controller = new AbortController(); let rejectHook;
       const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
-      const abort = () => { controller.abort(); rejectHook(new DOMException("Grid operation was cancelled.", "AbortError")); };
+      const abort = () => { controller.abort(); rejectHook(new DOMException("Grid operation cancelled.", "AbortError")); };
       this.lifetime.signal.addEventListener("abort", abort, { once: true });
-      if (signal) signal.addEventListener("abort", abort, { once: true });
+      signal?.addEventListener("abort", abort, { once: true });
       const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: host operation timed out.")); }, this.requestTimeoutMs);
       try {
-        if (this.destroyed || signal && signal.aborted) abort();
+        if (this.destroyed || signal?.aborted) abort();
         return await Promise.race([Promise.resolve().then(() => {
           gridOperationActive(this, controller.signal);
           return run(controller.signal);
         }), cancelled]);
       } finally {
         clearTimeout(timer); controller.abort(); this.lifetime.signal.removeEventListener("abort", abort);
-        if (signal) signal.removeEventListener("abort", abort);
+        signal?.removeEventListener("abort", abort);
       }
     },
 
@@ -32,9 +32,10 @@
     },
     writeClipboard(text, signal) {
       gridOperationActive(this, signal);
-      if (!global.navigator.clipboard || typeof global.navigator.clipboard.writeText !== "function")
-        return Promise.reject(new Error("CanopyX: clipboard access is unavailable in this browser context."));
-      return global.navigator.clipboard.writeText(text);
+      const clipboard = global.navigator.clipboard;
+      if (typeof clipboard?.writeText !== "function")
+        return Promise.reject(new Error("CanopyX: clipboard unavailable."));
+      return this.runGridHook(() => clipboard.writeText(text), signal);
     },
     copyFocused(row, cell) {
       if (this.selected.size) return this.copy({ scope: "selected" });
@@ -54,7 +55,7 @@
       const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;
       const abort = () => controller.abort(); dataSignal.addEventListener("abort", abort, { once: true });
       const record = gridFreeze(JSON.parse(JSON.stringify(row.h))), query = this.acceptedQuery, returnFocus = document.activeElement;
-      return this.runGridHook(signal => this.opts.onDetails({ row: record, query: query, signal: signal, returnFocus: returnFocus }), controller.signal)
+      return this.runGridHook(signal => this.opts.onDetails({ row: record, query, signal, returnFocus }), controller.signal)
         .finally(() => { dataSignal.removeEventListener("abort", abort); if (this.detailController === controller) this.detailController = null; });
     }
   });

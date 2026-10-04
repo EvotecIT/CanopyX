@@ -6,6 +6,7 @@
   const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls;
   DataGrid.prototype.buildExportControls = function () {
     DELIVERY_CONTROLS.call(this);
+    if (!this.view.reporting) return;
     const panel = this.toolbar.querySelector(".cx-grid-export .cx-grid-panel");
     panel.replaceChildren();
     const scope = h("select"); scope.setAttribute("aria-label", this.labels.gridExport);

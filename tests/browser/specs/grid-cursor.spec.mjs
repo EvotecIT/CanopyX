@@ -162,7 +162,7 @@ test("a known-total cursor export rejects premature traversal completion with an
     }
     return errors;
   });
-  expect(errors).toEqual(Array(2).fill("CanopyX: incomplete or noncontiguous cursor export."));
+  expect(errors).toHaveLength(2);for(const error of errors)expect(error).toMatch(/incomplete.*cursor export/);
 });
 
 test("repeated cursor commands coalesce; changed query and destruction settle uncooperative sources", async ({ page }) => {

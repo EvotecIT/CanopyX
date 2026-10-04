@@ -36,6 +36,8 @@ Trees and flat grids share logical scrolling, focused-row retention, row recycli
 
 Paged flat grids restrict row lookup and loading to the accepted page, using the canonical viewport's existing handling of absent rows. Row indices stay global while row positions and scrollbar height are relative to the accepted page. The query owns full-source filtering/sorting; presentation owns visible page length and navigation. No second row renderer or query engine is introduced, and tree runtime assets retain their existing budget.
 
+Grid height is a preferred size. When controls wrap or a status message grows, the shared sizing observer keeps enough room for the header and records and keeps the pager inside the host. A short compact report can therefore grow taller than its requested height. The minimum contracts again when the controls fit on fewer lines; hosts should allow this height or provide outer scrolling rather than clip the frame.
+
 `CanopyStaticHtml.RenderGrid` renders a script-free fallback for the same definition. An inline definition retains source order; a host grid requires an explicit result page. Supply a query-result page when the fallback needs accepted filtering or sorting. A partial snapshot includes a note naming the number shown and the matching total.
 
 The runtime and the data it reads come from the same build. A page, the runtime it loads, and its sidecar files are written by one version of CanopyX and published together; an older runtime cannot be expected to read newer data (a runtime from before packs cannot open a packed bundle), and nothing promises the reverse either.

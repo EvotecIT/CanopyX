@@ -239,6 +239,8 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;paddin
 .cx-drop-target[data-cx-drop-placement="after"] { border-bottom: 3px solid Highlight; }
 }
 @media print { .cx-interaction-panel { display: none; } }
+.cx-data-grid { min-height:var(--cx-grid-min,0px); }
+.cx-data-grid > .cx-toolbar { flex:none; }
 .cx-data-grid .cx-grid-notice { flex:none;padding:6px 8px;color:var(--cx-muted); }
 .cx-data-grid .cx-grid-notice[role="alert"] { color:var(--cx-tone-danger); }
 .cx-data-grid .cx-grid-retry { max-width:100%;white-space:normal;text-align:start;color:inherit; }
