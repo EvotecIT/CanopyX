@@ -149,6 +149,8 @@ export interface DataGrid {
   /** Details are opened for loaded records, by toolbar, double click or Ctrl/Command+Enter. */
   openDetails(id: string): Promise<void>;
   focus(): void;
+  /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
+  scrollToRow(index: number): void;
   retry(): Promise<GridQuery | void>;
   refresh(): void;
   destroy(): void;

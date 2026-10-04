@@ -1,5 +1,10 @@
   // ---------- read-only host hooks, clipboard and record details ----------
   Object.assign(DataGrid.prototype, {
+    scrollToRow(index) {
+      if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) || index < 0 || index >= this.snapshot.matched)
+        throw new Error("CanopyX: scroll to a row position in the accepted result.");
+      this.setFocus(this.rowItem(index), false);
+    },
     async runGridHook(run, signal) {
       const controller = new AbortController(); let rejectHook;
       const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });

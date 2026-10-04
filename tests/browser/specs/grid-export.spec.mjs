@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import fs from "node:fs/promises";
 import { viewPage, nextFrames, openExample } from "./support.mjs";
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 test("the generated inventory details dialog returns focus to its invoking record", async ({page}) => {
@@ -105,5 +106,20 @@ test("export controls download the chosen scope and preserve the existing Enter 
   await page.keyboard.press('F2');await expect(row).toBeFocused();await page.keyboard.press('Control+Enter');await expect.poll(()=>page.evaluate(()=>window.opened)).toEqual(['000']);
   await page.locator('.cx-grid-export > summary').click();await page.locator('.cx-grid-export').getByRole('combobox').selectOption('all');
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSV',exact:true}).click();
-  expect((await download).suggestedFilename()).toBe('records.csv');await nextFrames(page);
+  const file = await download;
+  expect(file.suggestedFilename()).toBe('records.csv');
+  const csv = await fs.readFile(await file.path(), 'utf8');
+  expect(csv.split('\r\n').filter(Boolean)).toHaveLength(81);
+  await nextFrames(page);
+});
+
+test("host record navigation reveals uncached rows without taking focus from a drawer", async ({page}) => {
+  await open(page, hostView(), hostSetup);
+  await page.getByRole('searchbox').focus();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.scrollToRow(79));
+  await expect(page.locator('.cx-row[data-cx-id="079"]')).toBeVisible();
+  await expect(page.getByRole('searchbox')).toBeFocused();
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.focus());
+  await expect(page.locator('.cx-row[data-cx-id="079"]')).toBeFocused();
+  expect(await page.evaluate(() => { try { document.querySelector('[data-canopyx-host]').canopyx.scrollToRow(80); return false; } catch { return true; } })).toBe(true);
 });

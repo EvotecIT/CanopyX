@@ -5368,6 +5368,11 @@ return this.runGridHook(signal => this.opts.onExport({ format: format, request: 
 }
 });
 Object.assign(DataGrid.prototype, {
+scrollToRow(index) {
+if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) || index < 0 || index >= this.snapshot.matched)
+throw new Error("CanopyX: scroll to a row position in the accepted result.");
+this.setFocus(this.rowItem(index), false);
+},
 async runGridHook(run, signal) {
 const controller = new AbortController(); let rejectHook;
 const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
@@ -5473,6 +5478,7 @@ getSelection: () => [...grid.selected], setSelection: ids => grid.setSelection(i
 prepareExport: options => grid.prepareExport(options), toCsv: options => grid.toCsv(options), copy: options => grid.copy(options),
 exportToHost: (format, options) => grid.exportToHost(format, options), openDetails: id => grid.openDetails(id),
 focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
+scrollToRow: index => grid.scrollToRow(index),
 retry: () => grid.retry(), refresh: () => { grid.version++; grid.scheduleRender(); },
 destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
 });

@@ -18,6 +18,7 @@
       prepareExport: options => grid.prepareExport(options), toCsv: options => grid.toCsv(options), copy: options => grid.copy(options),
       exportToHost: (format, options) => grid.exportToHost(format, options), openDetails: id => grid.openDetails(id),
       focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
+      scrollToRow: index => grid.scrollToRow(index),
       retry: () => grid.retry(), refresh: () => { grid.version++; grid.scheduleRender(); },
       destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
     });
