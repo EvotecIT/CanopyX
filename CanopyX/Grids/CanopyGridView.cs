@@ -12,6 +12,7 @@ namespace CanopyX;
 public sealed class CanopyGridView {
     private int _rowHeight = 28;
     private int _pageSize = 100;
+    private int? _searchDelayMilliseconds;
     private CanopyLabels _labels = new CanopyLabels();
 
     /// <summary>Creates a flat-grid definition.</summary>
@@ -64,6 +65,16 @@ public sealed class CanopyGridView {
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;
 
+    /// <summary>Gets or sets the search-input debounce in milliseconds, from 0 to 5,000. Null uses zero for inline sources and 300 for hosted sources.</summary>
+    /// <remarks>Enter applies immediately. Input-method composition is never submitted before it completes. This setting affects controls, not programmatic queries.</remarks>
+    public int? SearchDelayMilliseconds {
+        get => _searchDelayMilliseconds;
+        set {
+            if (value < 0 || value > 5000) throw new ArgumentOutOfRangeException(nameof(value), value, "Search delay must be between 0 and 5,000 milliseconds.");
+            _searchDelayMilliseconds = value;
+        }
+    }
+
     /// <summary>Gets the column identities searched by flat-grid queries. An empty collection searches every declared column, including hidden columns.</summary>
     public IList<string> SearchColumns { get; } = new List<string>();
 
@@ -94,6 +105,7 @@ public sealed class CanopyGridView {
             .Name("columns").BeginArray();
         foreach (var column in Columns) column.WriteJson(writer);
         writer.EndArray();
+        if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
         if (SearchColumns.Count > 0) {
             writer.Name("searchColumns").BeginArray();
             foreach (var column in SearchColumns) writer.String(column);

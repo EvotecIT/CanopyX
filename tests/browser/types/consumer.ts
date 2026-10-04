@@ -13,7 +13,11 @@ const gridSource: GridSource = { async query(query, { signal }) {
   return { protocol: "canopyx/2", type: "gridPage", view: query.view, revision: "v1", offset: query.offset,
     total: 0, matched: 0, items: [] };
 } };
-const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource });
+const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: 300,
+  labels: { gridResultCount: "{count} / {total}", gridRemoveCondition: "Remove: {condition}" } });
+gridView.searchDelayMs = 0;
+// @ts-expect-error Debounce is a bounded number, not a textual duration.
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: "300ms" });
 gridView.searchColumns = ["name"];
 await dataGrid.setQuery({ search: 'ready "north office"', searchMode: "words", filterGroup: {
   operator: "or", filters: [{ column: "name", operator: "eq", values: ["Alpha"] }],

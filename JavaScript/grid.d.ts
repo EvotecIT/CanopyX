@@ -51,6 +51,8 @@ interface GridDefinition {
   pageSize: number;
   selection: "none" | "single" | "multiple";
   search: boolean;
+  /** Search-input debounce (0..5000). Absent uses 0 for inline and 300 for host sources. */
+  searchDelayMs?: number;
   /** Unique declared IDs; absent searches every column, including hidden columns. */
   searchColumns?: string[];
   stateKey?: string;
@@ -116,6 +118,8 @@ export interface GridState {
 export interface GridHostOptions {
   /** False lets a host compose controls around the same grid controller. */
   toolbar?: boolean;
+  /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
+  searchDelayMs?: number;
   source?: GridSource;
   labels?: Partial<CanopyLabels>;
   renderers?: Record<string, (row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void>;

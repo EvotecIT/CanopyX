@@ -37,6 +37,12 @@ public sealed class CanopyLabels {
         [nameof(SearchFailed)] = "Search failed: {error}",
         [nameof(Columns)] = "Columns",
         [nameof(GridFilters)] = "Filters",
+        [nameof(GridResultCount)] = "{count} of {total} rows",
+        [nameof(GridClearQuery)] = "Clear search and filters",
+        [nameof(GridRemoveSearch)] = "Clear search: {search}",
+        [nameof(GridGroupedFilters)] = "Grouped filters ({count} conditions)",
+        [nameof(GridRemoveGroup)] = "Clear grouped filters",
+        [nameof(GridRemoveCondition)] = "Remove condition: {condition}",
         [nameof(GridExport)] = "Export",
         [nameof(GridFilteredResults)] = "Filtered results",
         [nameof(GridSelectedRows)] = "Selected rows",
@@ -104,6 +110,7 @@ public sealed class CanopyLabels {
 
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
         nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
@@ -168,6 +175,24 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the flat-grid control text. Default "Filters".</summary>
     public string GridFilters { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accepted-result summary using <c>{count}</c> and <c>{total}</c>. Default "{count} of {total} rows".</summary>
+    public string GridResultCount { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the action that clears search and every filter. Default "Clear search and filters".</summary>
+    public string GridClearQuery { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the search-chip action using <c>{search}</c>. Default "Clear search: {search}".</summary>
+    public string GridRemoveSearch { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the grouped-filter chip using <c>{count}</c>. Default "Grouped filters ({count} conditions)".</summary>
+    public string GridGroupedFilters { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the grouped-filter removal action. Default "Clear grouped filters".</summary>
+    public string GridRemoveGroup { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the predicate removal action using <c>{condition}</c>. Default "Remove condition: {condition}".</summary>
+    public string GridRemoveCondition { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the flat-grid control text. Default "Column".</summary>
     public string GridColumn { get => Get(); set => Set(value); }

@@ -21,3 +21,7 @@
 .cx-data-grid .cx-grid-views .cx-button { align-self:flex-start; }
 .cx-data-grid :is(button,select,input,textarea):focus-visible { outline:2px solid var(--cx-accent);outline-offset:2px; }
 .cx-data-grid [hidden] { display:none!important; }
+.cx-data-grid .cx-grid-query-summary { display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;width:100%;min-width:0;color:var(--cx-muted); }
+.cx-data-grid .cx-grid-result-count { flex:none;font-variant-numeric:tabular-nums; }
+.cx-data-grid .cx-grid-query-chips { display:flex;flex-wrap:wrap;gap:6px;min-width:0; }
+.cx-data-grid .cx-grid-chip { max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:16px;background:var(--cx-hover-bg); }

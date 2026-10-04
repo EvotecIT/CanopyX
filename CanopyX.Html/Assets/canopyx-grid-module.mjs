@@ -4490,6 +4490,8 @@ throw new Error("CanopyX: grid columns need unique IDs, supported kinds and vali
 ids.add(column.id);
 }
 if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+if (view.searchDelayMs !== undefined && (!Number.isInteger(view.searchDelayMs) || view.searchDelayMs < 0 || view.searchDelayMs > 5000))
+throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
 if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||
 new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
 throw new Error("CanopyX: search columns must identify unique declared columns.");
@@ -4604,6 +4606,10 @@ this.lifetime = new AbortController(); this.dataLifetime = new AbortController()
 this.source = options.source || (this.view.source.kind === "inline" ? inlineGridSource(this.view) : null);
 if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
 this.pageSize = this.view.pageSize; this.rowH = this.view.rowHeight;
+this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
+this.view.source.kind === "inline" ? 0 : 300 : this.view.searchDelayMs : options.searchDelayMs;
+if (!Number.isInteger(this.searchDelayMs) || this.searchDelayMs < 0 || this.searchDelayMs > 5000)
+throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
 this.cachePageLimit = options.cachePageLimit === undefined ? 40 : options.cachePageLimit;
 this.requestTimeoutMs = options.requestTimeoutMs === undefined ? 30000 : options.requestTimeoutMs;
 if (!Number.isInteger(this.cachePageLimit) || this.cachePageLimit < 2 || this.cachePageLimit > 1000 ||
@@ -4646,6 +4652,7 @@ queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
 async setQuery(input) {
 if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
 const query = gridQuery(this.view, input), epoch = ++this.queryEpoch;
+clearTimeout(this.searchTimer);
 this.dataLifetime.abort(); this.dataLifetime = new AbortController();
 const lifetime = this.dataLifetime;
 this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels.loading, false);
@@ -4670,6 +4677,7 @@ this.render();
 if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
 this.host.setAttribute("data-cx-ready", "true");
 if (this.searchInput && document.activeElement !== this.searchInput) this.searchInput.value = query.search;
+this.syncQuerySummary();
 this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });
 this.stateChanged(); return this.getQuery();
 } catch (error) {
@@ -4846,18 +4854,9 @@ host.classList.add("cx-host", "cx-data-grid");
 if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
 host.style.setProperty("--cx-row-h", this.rowH + "px");
 this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
-if (this.view.search) {
-const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input");
-input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
-const update = () => {
-clearTimeout(this.searchTimer);
-this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
-};
-input.addEventListener("input", () => { clearTimeout(this.searchTimer); this.searchTimer = setTimeout(update, 200); }, { signal: signal });
-input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });
-search.appendChild(input); this.toolbar.appendChild(search);
-}
+if (this.view.search) this.buildGridSearch();
 this.buildGridControls();
+this.buildQuerySummary();
 const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
 grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
 if (this.multi) grid.setAttribute("aria-multiselectable", "true");
@@ -5113,6 +5112,84 @@ writeStoredState(state) {
 if (!this.storageKey || this.destroyed) return;
 try { global.sessionStorage.setItem(this.storageKey, JSON.stringify({ current: state, views: [...this.savedViews].map(([name, value]) => ({ name: name, state: value })) })); }
 catch (_) { /* A disabled or full storage leaves the current session usable. */ }
+}
+});
+DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+gridResultCount: "{count} of {total} rows", gridClearQuery: "Clear search and filters",
+gridRemoveSearch: "Clear search: {search}", gridGroupedFilters: "Grouped filters ({count} conditions)",
+gridRemoveGroup: "Clear grouped filters", gridRemoveCondition: "Remove condition: {condition}"
+}));
+Object.assign(DataGrid.prototype, {
+buildGridSearch() {
+const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input"), signal = this.lifetime.signal;
+input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
+const update = () => {
+clearTimeout(this.searchTimer);
+if (this.destroyed || this.searchComposing) return;
+if (this.queryForChange().search === input.value) return;
+this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
+};
+const schedule = () => {
+clearTimeout(this.searchTimer);
+if (this.searchComposing) return;
+if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
+};
+input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); }, { signal: signal });
+input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
+input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
+input.addEventListener("keydown", event => {
+if (event.key === "Enter" && !this.searchComposing && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); update(); }
+}, { signal: signal });
+search.appendChild(input); this.toolbar.appendChild(search);
+},
+buildQuerySummary() {
+this.querySummary = h("div", "cx-grid-query-summary");
+this.resultCount = h("span", "cx-grid-result-count"); this.resultCount.setAttribute("role", "status");
+this.queryChips = h("div", "cx-grid-query-chips");
+this.querySummary.append(this.resultCount, this.queryChips); this.toolbar.appendChild(this.querySummary);
+},
+syncQuerySummary() {
+if (!this.acceptedQuery || !this.querySummary) return;
+const query = this.acceptedQuery, active = document.activeElement, focused = this.queryChips.contains(active);
+const key = focused && active.getAttribute("data-cx-condition");
+const numbers = numberFormat(this.lang);
+setText(this.resultCount, fill(this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
+this.queryChips.textContent = "";
+const apply = patch => {
+this.setQuery(Object.assign({}, this.queryForChange(), patch, { offset: 0, revision: undefined })).catch(() => {});
+};
+const chip = (text, label, id, run) => {
+const button = gridButton(text + " ×", run); button.classList.add("cx-grid-chip");
+button.title = text;
+button.setAttribute("aria-label", label); button.setAttribute("data-cx-condition", id); this.queryChips.appendChild(button);
+};
+if (query.search) chip(query.search, fill(this.labels.gridRemoveSearch, { search: query.search }), "search", () => {
+if (this.searchInput) this.searchInput.value = ""; apply({ search: "" });
+});
+query.filters.forEach((filter, index) => {
+const column = this.columns.find(item => item.id === filter.column), name = GRID_FILTER_LABELS[filter.operator];
+const condition = column.title + " " + (this.labels[name] || name) + (filter.values.length ? " " + filter.values.join(", ") : "");
+chip(condition, fill(this.labels.gridRemoveCondition, { condition: condition }), "filter-" + index, () => {
+const filters = this.queryForChange().filters.slice(), at = filters.findIndex(item => JSON.stringify(item) === JSON.stringify(filter));
+if (at >= 0) { filters.splice(at, 1); apply({ filters: filters }); }
+});
+});
+if (query.filterGroup) {
+const count = group => group.filters.length + group.groups.reduce((total, child) => total + count(child), 0);
+chip(fill(this.labels.gridGroupedFilters, { count: numbers.format(count(query.filterGroup)) }), this.labels.gridRemoveGroup, "group", () => {
+if (JSON.stringify(this.queryForChange().filterGroup) === JSON.stringify(query.filterGroup)) apply({ filterGroup: undefined });
+});
+}
+if (query.search || query.filters.length || query.filterGroup) {
+const clear = gridButton(this.labels.gridClearQuery, () => {
+if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined });
+});
+clear.setAttribute("data-cx-condition", "clear"); this.queryChips.appendChild(clear);
+}
+if (focused) {
+const target = [...this.queryChips.children].find(button => button.getAttribute("data-cx-condition") === key);
+(target || this.queryChips.lastElementChild || this.searchInput || this.grid).focus({ preventScroll: true });
+}
 }
 });
 DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {

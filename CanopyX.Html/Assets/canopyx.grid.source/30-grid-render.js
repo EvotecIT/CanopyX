@@ -6,18 +6,9 @@
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       host.style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
-      if (this.view.search) {
-        const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input");
-        input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
-        const update = () => {
-          clearTimeout(this.searchTimer);
-          this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
-        };
-        input.addEventListener("input", () => { clearTimeout(this.searchTimer); this.searchTimer = setTimeout(update, 200); }, { signal: signal });
-        input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });
-        search.appendChild(input); this.toolbar.appendChild(search);
-      }
+      if (this.view.search) this.buildGridSearch();
       this.buildGridControls();
+      this.buildQuerySummary();
       const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
       grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
       if (this.multi) grid.setAttribute("aria-multiselectable", "true");

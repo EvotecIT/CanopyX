@@ -53,6 +53,8 @@
       ids.add(column.id);
     }
     if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+    if (view.searchDelayMs !== undefined && (!Number.isInteger(view.searchDelayMs) || view.searchDelayMs < 0 || view.searchDelayMs > 5000))
+      throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
     if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||
         new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
       throw new Error("CanopyX: search columns must identify unique declared columns.");

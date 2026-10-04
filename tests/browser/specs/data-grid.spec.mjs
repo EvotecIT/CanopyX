@@ -89,7 +89,8 @@ test("search and typed filters cover the full inline dataset before the result w
   expect(await ids(page)).toEqual(["row-498", "row-497"]);
   await page.evaluate(async () => document.querySelector("[data-canopyx-host]").canopyx.setQuery({ search: "Display only" }));
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "1");
-  await expect(page.getByRole("status")).toHaveText("No results");
+  await expect(page.getByRole("status").filter({ hasText: /^No results$/ })).toBeVisible();
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("0 of 500 rows");
 });
 
 test("headers add multi-column sorting and keyboard navigation follows cells without tree semantics", async ({ page }) => {

@@ -8,6 +8,10 @@
       this.source = options.source || (this.view.source.kind === "inline" ? inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
       this.pageSize = this.view.pageSize; this.rowH = this.view.rowHeight;
+      this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
+        this.view.source.kind === "inline" ? 0 : 300 : this.view.searchDelayMs : options.searchDelayMs;
+      if (!Number.isInteger(this.searchDelayMs) || this.searchDelayMs < 0 || this.searchDelayMs > 5000)
+        throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
       this.cachePageLimit = options.cachePageLimit === undefined ? 40 : options.cachePageLimit;
       this.requestTimeoutMs = options.requestTimeoutMs === undefined ? 30000 : options.requestTimeoutMs;
       if (!Number.isInteger(this.cachePageLimit) || this.cachePageLimit < 2 || this.cachePageLimit > 1000 ||
@@ -53,6 +57,7 @@
     async setQuery(input) {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       const query = gridQuery(this.view, input), epoch = ++this.queryEpoch;
+      clearTimeout(this.searchTimer);
       this.dataLifetime.abort(); this.dataLifetime = new AbortController();
       const lifetime = this.dataLifetime;
       this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels.loading, false);
@@ -77,6 +82,7 @@
         if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
         this.host.setAttribute("data-cx-ready", "true");
         if (this.searchInput && document.activeElement !== this.searchInput) this.searchInput.value = query.search;
+        this.syncQuerySummary();
         this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });
         this.stateChanged(); return this.getQuery();
       } catch (error) {
