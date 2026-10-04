@@ -47,3 +47,5 @@
 .cx-grid-column-choice select { max-width:92px;min-width:0;min-height:28px;padding:2px 4px;border:1px solid var(--cx-line);border-radius:3px;background:var(--cx-surface);color:var(--cx-text);font:inherit; }
 .cx-grid-column-choice select:focus-visible { outline:2px solid var(--cx-accent);outline-offset:1px; }
 .cx-grid-responsive-note { flex-basis:100%;font-size:.85em;color:var(--cx-muted); }
+.cx-grid-view-default,.cx-grid-view-storage { flex-basis:100%;margin:0;overflow-wrap:anywhere; }
+.cx-grid-view-storage:empty { display:none; }
