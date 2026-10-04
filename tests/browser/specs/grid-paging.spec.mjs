@@ -78,6 +78,37 @@ test("keyboard and host position navigation cross page boundaries with global ro
   expect(await page.evaluate(controller + ".getPaging().pageIndex")).toBe(22);
 });
 
+for (const direction of ["down", "up"]) for (const action of ["continue", "column", "reverse", "escape"])
+test(`rapid ${direction} page navigation preserves later ${action} intent without restarting the same request`, async ({ page }) => {
+  const view = definition({ pageSize: 25 }); view.source = { kind: "host" }; delete view.rows;
+  const offset = direction === "down" ? 25 : 0, start = direction === "down" ? 24 : 25;
+  await open(page, view, `window.pending=[];window.hold=false;CanopyX.configure('inventory',{source:{query(query,{signal}){
+    const result={protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:query.offset,total:137,matched:137,
+      items:Array.from({length:Math.min(query.limit,137-query.offset)},(_,i)=>({id:'row-'+(query.offset+i),cells:{name:'Row '+(query.offset+i),amount:query.offset+i}}))};
+    return hold&&query.offset===${offset}?new Promise(resolve=>pending.push({signal,accept:()=>resolve(result)})):result;
+  }}});`);
+  if (direction === "up") await page.evaluate(controller + ".goToPage(1)");
+  await page.evaluate(controller + ".scrollToRow(" + start + ")");
+  await page.locator('.cx-row[data-cx-id="row-' + start + '"]').focus();
+  await page.keyboard.press("Enter"); await page.keyboard.press("ArrowRight");
+  await page.evaluate(() => { window.hold = true; });
+  const key = direction === "down" ? "ArrowDown" : "ArrowUp", step = direction === "down" ? 1 : -1;
+  await page.keyboard.press(key);
+  await expect.poll(() => page.evaluate(() => pending.length)).toBe(1);
+  if (action === "column") await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press(action === "reverse" ? direction === "down" ? "ArrowUp" : "ArrowDown" : key);
+  if (action === "escape") await page.keyboard.press("Escape");
+  expect(await page.evaluate(() => pending.length)).toBe(1);
+  if (action === "reverse") {
+    await expect(page.locator('.cx-row[data-cx-id="row-' + start + '"]').getByRole("gridcell").nth(1)).toBeFocused();
+    expect(await page.evaluate(() => pending[0].signal.aborted)).toBe(true);
+  } else expect(await page.evaluate(() => pending[0].signal.aborted)).toBe(false);
+  await page.evaluate(() => pending[0].accept());
+  const destination = action === "reverse" ? start : action === "escape" ? offset : start + 2 * step;
+  const target = page.locator('.cx-row[data-cx-id="row-' + destination + '"]');
+  await expect(action === "escape" ? target : target.getByRole("gridcell").nth(action === "column" ? 0 : 1)).toBeFocused();
+});
+
 for (const presentation of ["paged", "continuous"]) {
 for (const action of ["continue", "escape", "column", "last", "outside", "row"]) test(`loading cell navigation retains later ${action} intent (${presentation})`, async ({ page }) => {
   const view = definition({ presentation }); view.source = { kind: "host" }; delete view.rows;

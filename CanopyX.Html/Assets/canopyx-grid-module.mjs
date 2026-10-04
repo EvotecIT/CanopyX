@@ -4917,8 +4917,13 @@ if (!this.paged || !this.acceptedQuery || !Number.isInteger(index) || index < 0)
 throw new Error("CanopyX: choose a nonnegative page in an accepted paged result.");
 const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
 const page = queuedSearch ? 0 : Math.min(index, Math.max(0, this.getPaging().pageCount - 1));
-return this.setQuery(Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
-revision: queuedSearch ? undefined : query.revision }));
+const request = gridQuery(this.view, Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
+revision: queuedSearch ? undefined : query.revision })), key = JSON.stringify(request);
+const pending = this.pendingPageNavigation;
+if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
+const operation = this.setQuery(request), navigation = { epoch: this.queryEpoch, key: key };
+navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
+this.pendingPageNavigation = navigation; return navigation.promise;
 },
 setPageLength(length) {
 if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > 10000)
@@ -4971,7 +4976,12 @@ const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColu
 const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, focus: focus };
 this.pendingNavigation = navigation;
 try {
-if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
+const pendingPage = this.pendingPageNavigation;
+if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last ||
+this.pendingQuery && pendingPage && pendingPage.epoch === this.queryEpoch)) {
+const operation = this.goToPage(Math.floor(index / this.pageLength));
+navigation.epoch = this.queryEpoch; await operation;
+}
 if (this.pendingNavigation !== navigation) return;
 if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
 const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
@@ -5025,6 +5035,8 @@ Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit
 grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
 this.canvas.addEventListener("focusin", event => {
 const element = event.target.closest(".cx-row");
+if (element && element._w && this.pendingNavigation && this.pendingQuery && element._w._ri !== this.pendingNavigation.index)
+this.pendingNavigation = null;
 if (element && element._w && this.focused !== element._w) {
 this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
 }
@@ -5106,8 +5118,10 @@ onKey(event) {
 const element = event.target.closest(".cx-row"), row = element && element._w;
 if (!row || event.defaultPrevented || event.isComposing || event.altKey) return;
 const cells = this.rowCells(element), navigation = this.pendingNavigation;
+const pendingPage = navigation && navigation.focus && navigation.epoch === this.queryEpoch && this.pendingQuery &&
+this.pendingPageNavigation && this.pendingPageNavigation.epoch === this.queryEpoch && this.focused === row;
 let column = cells.findIndex(cell => cell.contains(event.target));
-if (row.status && navigation && navigation.epoch === this.queryEpoch && navigation.index === row._ri && navigation.focus)
+if (pendingPage || row.status && navigation && navigation.epoch === this.queryEpoch && navigation.index === row._ri && navigation.focus)
 column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
 const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
 const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
@@ -5126,7 +5140,7 @@ this.focusCell(row, column, null); cell._cxAt = controls.indexOf(control);
 event.preventDefault(); event.stopPropagation(); return;
 }
 const at = control ? controls.indexOf(control) : cell && cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
-let index = row._ri, nextColumn = column, nextControl = null;
+let index = pendingPage ? navigation.index : row._ri, nextColumn = column, nextControl = null;
 switch (event.key) {
 case "ArrowUp": index--; break;
 case "ArrowDown": index++; break;

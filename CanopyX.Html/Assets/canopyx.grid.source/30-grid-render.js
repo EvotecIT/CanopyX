@@ -31,6 +31,8 @@
       grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");
+        if (element && element._w && this.pendingNavigation && this.pendingQuery && element._w._ri !== this.pendingNavigation.index)
+          this.pendingNavigation = null;
         if (element && element._w && this.focused !== element._w) {
           this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
         }

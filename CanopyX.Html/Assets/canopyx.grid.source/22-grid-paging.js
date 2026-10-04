@@ -20,8 +20,13 @@
         throw new Error("CanopyX: choose a nonnegative page in an accepted paged result.");
       const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
       const page = queuedSearch ? 0 : Math.min(index, Math.max(0, this.getPaging().pageCount - 1));
-      return this.setQuery(Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
-        revision: queuedSearch ? undefined : query.revision }));
+      const request = gridQuery(this.view, Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
+        revision: queuedSearch ? undefined : query.revision })), key = JSON.stringify(request);
+      const pending = this.pendingPageNavigation;
+      if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
+      const operation = this.setQuery(request), navigation = { epoch: this.queryEpoch, key: key };
+      navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
+      this.pendingPageNavigation = navigation; return navigation.promise;
     },
     setPageLength(length) {
       if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > 10000)
@@ -75,7 +80,12 @@
       const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, focus: focus };
       this.pendingNavigation = navigation;
       try {
-        if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last)) await this.goToPage(Math.floor(index / this.pageLength));
+        const pendingPage = this.pendingPageNavigation;
+        if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last ||
+            this.pendingQuery && pendingPage && pendingPage.epoch === this.queryEpoch)) {
+          const operation = this.goToPage(Math.floor(index / this.pageLength));
+          navigation.epoch = this.queryEpoch; await operation;
+        }
         if (this.pendingNavigation !== navigation) return;
         if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
         const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);

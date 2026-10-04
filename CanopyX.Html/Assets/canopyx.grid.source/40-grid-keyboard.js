@@ -26,8 +26,10 @@
       const element = event.target.closest(".cx-row"), row = element && element._w;
       if (!row || event.defaultPrevented || event.isComposing || event.altKey) return;
       const cells = this.rowCells(element), navigation = this.pendingNavigation;
+      const pendingPage = navigation && navigation.focus && navigation.epoch === this.queryEpoch && this.pendingQuery &&
+        this.pendingPageNavigation && this.pendingPageNavigation.epoch === this.queryEpoch && this.focused === row;
       let column = cells.findIndex(cell => cell.contains(event.target));
-      if (row.status && navigation && navigation.epoch === this.queryEpoch && navigation.index === row._ri && navigation.focus)
+      if (pendingPage || row.status && navigation && navigation.epoch === this.queryEpoch && navigation.index === row._ri && navigation.focus)
         column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
       const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
@@ -46,7 +48,7 @@
         event.preventDefault(); event.stopPropagation(); return;
       }
       const at = control ? controls.indexOf(control) : cell && cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
-      let index = row._ri, nextColumn = column, nextControl = null;
+      let index = pendingPage ? navigation.index : row._ri, nextColumn = column, nextControl = null;
       switch (event.key) {
         case "ArrowUp": index--; break;
         case "ArrowDown": index++; break;
