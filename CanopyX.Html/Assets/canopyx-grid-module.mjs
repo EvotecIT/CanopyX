@@ -4841,22 +4841,24 @@ return restoreFocus;
 },
 trimPages() {
 if (!this.window || this.pages.size <= this.cachePageLimit) return;
+const ranges = this.window.ranges || [this.window];
 const center = (this.window.first + this.window.last) / 2;
 const removable = [...this.pages.values()].filter(page => page.rows && !page.rows.some(row =>
-row === this.focused || row._ri >= this.window.first && row._ri <= this.window.last));
+row === this.focused || ranges.some(range => row._ri >= range.first && row._ri <= range.last)));
 removable.sort((a, b) => Math.abs(b.offset - center) - Math.abs(a.offset - center));
 while (this.pages.size > this.cachePageLimit && removable.length) {
 const page = removable.shift(); this.pages.delete(page.offset);
 for (const row of page.rows) if (this.rowCache.get(row._ri) === row) this.rowCache.delete(row._ri);
 }
 for (const [offset, page] of this.pages) if (this.pages.size > this.cachePageLimit && page.error &&
-(offset + this.pageSize <= this.window.first || offset > this.window.last)) this.pages.delete(offset);
+!ranges.some(range => offset <= range.last && offset + this.pageSize > range.first)) this.pages.delete(offset);
 },
 loadWindow() {
 if (this.cursor || !this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
 const offsets = new Set();
 const bounds = this.rowBounds();
-for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
+for (const range of this.window.ranges || [this.window])
+for (let index = Math.max(bounds.first, range.first); index <= Math.min(bounds.last, range.last); index++)
 if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
 if (this.focused?.status && this.focused._ri >= 0) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
 for (const offset of offsets) {

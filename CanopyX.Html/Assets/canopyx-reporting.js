@@ -4837,22 +4837,24 @@ return restoreFocus;
 },
 trimPages() {
 if (!this.window || this.pages.size <= this.cachePageLimit) return;
+const ranges = this.window.ranges || [this.window];
 const center = (this.window.first + this.window.last) / 2;
 const removable = [...this.pages.values()].filter(page => page.rows && !page.rows.some(row =>
-row === this.focused || row._ri >= this.window.first && row._ri <= this.window.last));
+row === this.focused || ranges.some(range => row._ri >= range.first && row._ri <= range.last)));
 removable.sort((a, b) => Math.abs(b.offset - center) - Math.abs(a.offset - center));
 while (this.pages.size > this.cachePageLimit && removable.length) {
 const page = removable.shift(); this.pages.delete(page.offset);
 for (const row of page.rows) if (this.rowCache.get(row._ri) === row) this.rowCache.delete(row._ri);
 }
 for (const [offset, page] of this.pages) if (this.pages.size > this.cachePageLimit && page.error &&
-(offset + this.pageSize <= this.window.first || offset > this.window.last)) this.pages.delete(offset);
+!ranges.some(range => offset <= range.last && offset + this.pageSize > range.first)) this.pages.delete(offset);
 },
 loadWindow() {
 if (this.cursor || !this.window || !this.snapshot || this.pendingQuery || this.destroyed) return;
 const offsets = new Set();
 const bounds = this.rowBounds();
-for (let index = Math.max(bounds.first, this.window.first); index <= Math.min(bounds.last, this.window.last); index++)
+for (const range of this.window.ranges || [this.window])
+for (let index = Math.max(bounds.first, range.first); index <= Math.min(bounds.last, range.last); index++)
 if (!this.rowCache.has(index)) offsets.add(Math.floor(index / this.pageSize) * this.pageSize);
 if (this.focused?.status && this.focused._ri >= 0) offsets.add(Math.floor(this.focused._ri / this.pageSize) * this.pageSize);
 for (const offset of offsets) {
@@ -8468,7 +8470,7 @@ return SUMMARY_BASE.render.call(this);
 }
 });
 function reportingAggregateValues(view, rows, first = 0, last = rows.length) {
-const values = {};
+const values = Object.create(null);
 for (const aggregate of view.reporting.aggregates || []) {
 const column = view.columns.find(item => item.id === aggregate.column);
 let count = 0, sum = 0, correction = 0, minimum = Infinity, maximum = -Infinity;
@@ -8545,9 +8547,12 @@ const segment = find(recordSegments, row._ri, "first");
 return !segment || row._ri > segment.last || segment.length === 1 || this.indexOf(row) < 0 ? -1 : segment.start + 1 + row._ri - segment.first;
 },
 recordWindow: (first, last) => {
-let start = Infinity, end = -1;
-for (let i = first; i <= last; i++) { const row = projection.rowItem(i); if (row && !row.group) { start = Math.min(start, row._ri); end = Math.max(end, row._ri); } }
-return { first: start === Infinity ? bounds.first : start, last: end };
+const ranges = [];
+for (const segment of segments) {
+const start = Math.max(first, segment.start + 1), end = Math.min(last, segment.start + segment.length - 1);
+if (start <= end) ranges.push({ first: segment.first + start - segment.start - 1, last: segment.first + end - segment.start - 1 });
+}
+return { first: ranges[0]?.first ?? bounds.first, last: ranges.at(-1)?.last ?? -1, ranges };
 }
 };
 const focus = this.focused;
@@ -8666,9 +8671,20 @@ return;
 }
 if (!["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(event.key)) return GROUP_BASE.onKey.call(this, event);
 const step = event.key.startsWith("Page") ? Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)) : 1;
-const index = Math.max(0, Math.min(this.rowProjection.rowCount() - 1, this.rowProjection.indexOf(row) + (/Up$/.test(event.key) ? -step : step)));
-const target = this.rowProjection.rowItem(index), cells = this.rowCells(this.rendered.get(row)), column = cells.findIndex(cell => cell.contains(event.target));
+const direction = /Up$/.test(event.key) ? -1 : 1, proposed = this.rowProjection.indexOf(row) + direction * step;
+const cells = this.rowCells(this.rendered.get(row)), column = cells.findIndex(cell => cell.contains(event.target));
 event.preventDefault(); event.stopPropagation();
+if (this.paged && (proposed < 0 || proposed >= this.rowProjection.rowCount())) {
+const bounds = this.rowBounds();
+if (row.group && (direction < 0 && bounds.first === 0 || direction > 0 && bounds.last === this.rowCount() - 1)) {
+this.setFocus(this.rowProjection.rowItem(Math.max(0, Math.min(this.rowProjection.rowCount() - 1, proposed))), true); return;
+}
+const ordinal = row.group ? (direction < 0 ? bounds.first - step : bounds.last + step) : row._ri + direction * step;
+this.focusResult(Math.max(0, Math.min(this.rowCount() - 1, ordinal)), true, column, null)
+.catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
+return;
+}
+const index = Math.max(0, Math.min(this.rowProjection.rowCount() - 1, proposed)), target = this.rowProjection.rowItem(index);
 if (target?.group) this.setFocus(target, true);
 else if (target) this.focusResult(target._ri, true, column, null).catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
 }

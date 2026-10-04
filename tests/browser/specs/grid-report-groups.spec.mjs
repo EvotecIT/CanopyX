@@ -116,6 +116,63 @@ test('a million hosted rows retain sparse groups, bounded pages and record-based
   expect(await page.evaluate(api+'.getPaging().matched')).toBe(1000000);
 });
 
+test('collapsed middle ranges never fetch hidden pages between visible records',async({page})=>{
+  const setup=`window.calls=[];window.collapsed=false;
+    CanopyX.configure('groups',{cachePageLimit:2,source:{query(q,{signal}){
+      calls.push(q.offset);
+      if(collapsed && q.offset>=10 && q.offset<99990) return new Promise((resolve,reject)=>
+        signal.addEventListener('abort',()=>reject(new DOMException('Cancelled','AbortError')),{once:true}));
+      return {protocol:'canopyx/2',type:'gridPage',view:q.view,revision:'sparse',offset:q.offset,total:100000,matched:100000,
+        items:Array.from({length:Math.min(q.limit,100000-q.offset)},(_,i)=>{const index=q.offset+i;
+          return {id:'host-'+index,cells:{name:'Record '+index,category:index<5?'A':index<99995?'B':'C',amount:index}};})};},
+      summary(q){return {protocol:'canopyx/2',type:'gridSummary',view:q.view,revision:'sparse',query:q,matched:100000,aggregates:{},
+        groups:[{key:'a',value:'A',offset:0,count:5,aggregates:{}},{key:'b',value:'B',offset:5,count:99990,aggregates:{}},
+          {key:'c',value:'C',offset:99995,count:5,aggregates:{}}]};}}});`;
+  await open(page,hostedView(),setup);
+  await page.evaluate(`(()=>{calls=[];collapsed=true;${api}.setGroupCollapsed('b',true);})()`);
+  await expect(page.locator('[data-cx-id="host-99999"]')).toBeVisible();
+  expect(await page.evaluate('calls')).toEqual([99990]);
+  expect(await page.locator('.cx-grid').getAttribute('aria-rowcount')).toBe('14');
+  await page.locator('[data-cx-id="host-99995"]').focus();await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowUp');
+  expect(await page.evaluate('document.activeElement.dataset.cxId')).toBe('host-4');
+  expect(await page.evaluate('calls')).toEqual([99990]);
+});
+
+test('grouped page keys cross record pages and skip collapsed presentation ranges',async({page})=>{
+  await open(page);
+  await page.locator('.cx-grid').evaluate(grid=>grid.style.height='200px');await nextFrames(page);
+  await page.evaluate(api+'.scrollToRow(4)');await page.locator('[data-cx-id="r04"]').focus();
+  await page.keyboard.press('ArrowDown');await expect(page.locator('[data-cx-id="r05"]')).toBeFocused();
+  await page.keyboard.press('ArrowUp');expect(await page.evaluate('document.activeElement.classList.contains("cx-grid-group")')).toBe(true);
+  await page.keyboard.press('ArrowUp');await expect(page.locator('[data-cx-id="r04"]')).toBeFocused();
+  await page.evaluate(api+'.goToPage(1)');await page.locator('.cx-grid-group').first().focus();
+  await page.keyboard.press('ArrowUp');await expect(page.locator('[data-cx-id="r04"]')).toBeFocused();
+  const step=await page.locator('.cx-grid').evaluate(grid=>Math.max(1,Math.floor((grid.clientHeight-grid.querySelector('.cx-head').offsetHeight)/28)));
+  const forward=Math.min(23,4+step);
+  await page.keyboard.press('PageDown');await expect(page.locator(`[data-cx-id="r${String(forward).padStart(2,'0')}"]`)).toBeFocused();
+  await page.keyboard.press('PageUp');await expect(page.locator(`[data-cx-id="r${String(Math.max(0,forward-step)).padStart(2,'0')}"]`)).toBeFocused();
+  await page.evaluate(api+'.scrollToRow(23)');await page.locator('[data-cx-id="r23"]').focus();
+  await page.keyboard.press('PageDown');await expect(page.locator('[data-cx-id="r23"]')).toBeFocused();
+  await page.evaluate(api+'.scrollToRow(1)');await page.locator('[data-cx-id="r01"]').focus();
+  await page.keyboard.press('PageUp');await expect(page.locator('[data-cx-id="r00"]')).toBeFocused();
+  await page.evaluate(api+'.goToPage(0)');
+  const key=await page.evaluate(api+'.getSummary().groups[0].key');
+  await page.evaluate(api+`.setGroupCollapsed(${JSON.stringify(key)},true)`);
+  await page.locator('.cx-grid-group').first().focus();await page.keyboard.press('ArrowDown');
+  await expect(page.locator('[data-cx-id="r05"]')).toBeFocused();
+  await page.screenshot({path:test.info().outputPath('group-keyboard-page-boundary.png')});
+});
+
+test('aggregate identifiers retain prototype-property names as own numeric bindings',async({page})=>{
+  const view=definition();view.reporting.aggregates=['__proto__','constructor','toString'].map(id=>({id,column:'amount',operation:'count',label:id}));
+  await open(page,view);
+  const result=await page.evaluate(`(()=>{const values=${api}.getSummary().aggregates,keys=Object.keys(values);
+    return {keys,values:keys.map(id=>[Object.hasOwn(values,id),values[id]])};})()`);
+  expect(result.keys).toEqual(['__proto__','constructor','toString']);
+  expect(result.values).toEqual([[true,19],[true,19],[true,19]]);
+});
+
 test('host summary cancellation and stale responses cannot replace the accepted query',async({page})=>{
   await open(page,hostedView(),hostedSetup);
   await page.evaluate(`(()=>{holdSummary=true;window.retired=${api}.setQuery({search:'old'}).catch(e=>e.name);})()`);
