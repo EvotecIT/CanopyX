@@ -10,17 +10,17 @@
       const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input"), signal = this.lifetime.signal;
       input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
       const update = () => {
-        clearTimeout(this.searchTimer);
+        clearTimeout(this.searchTimer); this.searchTimer = null;
         if (this.destroyed || this.searchComposing) return;
         if (this.queryForChange().search === input.value) return;
         this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
       };
       const schedule = () => {
-        clearTimeout(this.searchTimer);
+        clearTimeout(this.searchTimer); this.searchTimer = null;
         if (this.searchComposing) return;
         if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
       };
-      input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); }, { signal: signal });
+      input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
       input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
       input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
       input.addEventListener("keydown", event => {
@@ -44,7 +44,7 @@
       setText(this.resultCount, fill(this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
       this.queryChips.textContent = "";
       const apply = patch => {
-        this.setQuery(Object.assign({}, this.queryForChange(), patch, { offset: 0, revision: undefined })).catch(() => {});
+        this.setQuery(Object.assign({}, this.queryForChange(true), patch, { offset: 0, revision: undefined })).catch(() => {});
       };
       const chip = (text, label, id, run) => {
         const button = gridButton(text + " ×", run); button.classList.add("cx-grid-chip");

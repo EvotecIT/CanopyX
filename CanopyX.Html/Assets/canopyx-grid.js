@@ -4644,11 +4644,15 @@ const state = this.getState(); this.writeStoredState(state); this.emit("state", 
 }, 200);
 }
 getQuery() { return this.acceptedQuery || null; }
-queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
+queryForChange(includeQueuedInput) {
+const query = this.pendingQuery || this.acceptedQuery || {};
+return includeQueuedInput && this.searchTimer != null && !this.searchComposing ?
+Object.assign({}, query, { search: this.searchInput.value, offset: 0, revision: undefined }) : query;
+}
 async setQuery(input) {
 if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
 const query = gridQuery(this.view, input), epoch = ++this.queryEpoch;
-clearTimeout(this.searchTimer);
+clearTimeout(this.searchTimer); this.searchTimer = null;
 this.dataLifetime.abort(); this.dataLifetime = new AbortController();
 const lifetime = this.dataLifetime;
 this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels.loading, false);
@@ -4672,7 +4676,7 @@ this.focused = [...this.rowCache.values()].find(row => row.key === previousId) |
 this.render();
 if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
 this.host.setAttribute("data-cx-ready", "true");
-if (this.searchInput && document.activeElement !== this.searchInput) this.searchInput.value = query.search;
+if (this.searchInput && !this.searchComposing && this.searchTimer == null) this.searchInput.value = query.search;
 this.syncQuerySummary();
 this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });
 this.stateChanged(); return this.getQuery();
@@ -4687,7 +4691,7 @@ throw error;
 }
 }
 querySortHeader(id, event) {
-const previous = gridQuery(this.view, this.queryForChange()), sorts = previous.sort.slice();
+const previous = gridQuery(this.view, this.queryForChange(true)), sorts = previous.sort.slice();
 const found = sorts.findIndex(sort => sort.column === id), old = found >= 0 ? sorts[found].direction : null;
 const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
 const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
@@ -4695,7 +4699,7 @@ if (next) changed.splice(event && event.shiftKey && found >= 0 ? Math.min(found,
 this.setQuery(Object.assign({}, previous, { offset: 0, sort: changed, revision: undefined })).catch(() => {});
 }
 sort(sorts) {
-return this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, sort: sorts, revision: undefined }));
+return this.setQuery(Object.assign({}, this.queryForChange(true), { offset: 0, sort: sorts, revision: undefined }));
 }
 rowCount() { return this.snapshot ? this.snapshot.matched : 0; }
 rowTop(index) { return index * this.rowH; }
@@ -4737,7 +4741,7 @@ if (this.destroyed) return;
 this.writeStoredState(this.getState());
 this.destroyed = true; this.queryEpoch++; this.lifetime.abort(); this.dataLifetime.abort();
 if (this.rafId) cancelAnimationFrame(this.rafId);
-clearTimeout(this.searchTimer);
+clearTimeout(this.searchTimer); this.searchTimer = null;
 clearTimeout(this.stateTimer);
 if (this.disposeControls) this.disposeControls();
 if (this.cancelResize) this.cancelResize();
@@ -5058,7 +5062,7 @@ timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
 },
 async setState(input) {
 const state = this.readGridState(input);
-clearTimeout(this.searchTimer);
+clearTimeout(this.searchTimer); this.searchTimer = null;
 const pending = this.setQuery(state.query), epoch = this.queryEpoch;
 this.restoringEpoch = epoch;
 try {
@@ -5120,17 +5124,17 @@ buildGridSearch() {
 const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input"), signal = this.lifetime.signal;
 input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
 const update = () => {
-clearTimeout(this.searchTimer);
+clearTimeout(this.searchTimer); this.searchTimer = null;
 if (this.destroyed || this.searchComposing) return;
 if (this.queryForChange().search === input.value) return;
 this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
 };
 const schedule = () => {
-clearTimeout(this.searchTimer);
+clearTimeout(this.searchTimer); this.searchTimer = null;
 if (this.searchComposing) return;
 if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
 };
-input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); }, { signal: signal });
+input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
 input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
 input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
 input.addEventListener("keydown", event => {
@@ -5152,7 +5156,7 @@ const numbers = numberFormat(this.lang);
 setText(this.resultCount, fill(this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
 this.queryChips.textContent = "";
 const apply = patch => {
-this.setQuery(Object.assign({}, this.queryForChange(), patch, { offset: 0, revision: undefined })).catch(() => {});
+this.setQuery(Object.assign({}, this.queryForChange(true), patch, { offset: 0, revision: undefined })).catch(() => {});
 };
 const chip = (text, label, id, run) => {
 const button = gridButton(text + " ×", run); button.classList.add("cx-grid-chip");
@@ -5297,14 +5301,14 @@ const add = predicate => this.addGridFilter(rows, predicate);
 form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
 const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
 form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(true), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
 }));
 form.appendChild(error); panel.appendChild(form);
 form.addEventListener("submit", event => {
 event.preventDefault();
 try {
 const filters = [...rows.children].map(row => this.readGridFilter(row));
-this.setQuery(Object.assign({}, this.queryForChange(), { filters: filters, offset: 0, revision: undefined }))
+this.setQuery(Object.assign({}, this.queryForChange(true), { filters: filters, offset: 0, revision: undefined }))
 .then(() => setText(error, ""), failure => setText(error, failure.message));
 } catch (failure) { setText(error, failure.message); }
 });

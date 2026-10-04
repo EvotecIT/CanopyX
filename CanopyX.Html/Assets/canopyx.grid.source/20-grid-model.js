@@ -52,12 +52,16 @@
       }, 200);
     }
     getQuery() { return this.acceptedQuery || null; }
-    queryForChange() { return this.pendingQuery || this.acceptedQuery || {}; }
+    queryForChange(includeQueuedInput) {
+      const query = this.pendingQuery || this.acceptedQuery || {};
+      return includeQueuedInput && this.searchTimer != null && !this.searchComposing ?
+        Object.assign({}, query, { search: this.searchInput.value, offset: 0, revision: undefined }) : query;
+    }
 
     async setQuery(input) {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       const query = gridQuery(this.view, input), epoch = ++this.queryEpoch;
-      clearTimeout(this.searchTimer);
+      clearTimeout(this.searchTimer); this.searchTimer = null;
       this.dataLifetime.abort(); this.dataLifetime = new AbortController();
       const lifetime = this.dataLifetime;
       this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels.loading, false);
@@ -81,7 +85,7 @@
         this.render();
         if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
         this.host.setAttribute("data-cx-ready", "true");
-        if (this.searchInput && document.activeElement !== this.searchInput) this.searchInput.value = query.search;
+        if (this.searchInput && !this.searchComposing && this.searchTimer == null) this.searchInput.value = query.search;
         this.syncQuerySummary();
         this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });
         this.stateChanged(); return this.getQuery();
@@ -97,7 +101,7 @@
     }
 
     querySortHeader(id, event) {
-      const previous = gridQuery(this.view, this.queryForChange()), sorts = previous.sort.slice();
+      const previous = gridQuery(this.view, this.queryForChange(true)), sorts = previous.sort.slice();
       const found = sorts.findIndex(sort => sort.column === id), old = found >= 0 ? sorts[found].direction : null;
       const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
       const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
@@ -106,7 +110,7 @@
     }
 
     sort(sorts) {
-      return this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, sort: sorts, revision: undefined }));
+      return this.setQuery(Object.assign({}, this.queryForChange(true), { offset: 0, sort: sorts, revision: undefined }));
     }
 
     rowCount() { return this.snapshot ? this.snapshot.matched : 0; }
@@ -154,7 +158,7 @@
       this.writeStoredState(this.getState());
       this.destroyed = true; this.queryEpoch++; this.lifetime.abort(); this.dataLifetime.abort();
       if (this.rafId) cancelAnimationFrame(this.rafId);
-      clearTimeout(this.searchTimer);
+      clearTimeout(this.searchTimer); this.searchTimer = null;
       clearTimeout(this.stateTimer);
       if (this.disposeControls) this.disposeControls();
       if (this.cancelResize) this.cancelResize();

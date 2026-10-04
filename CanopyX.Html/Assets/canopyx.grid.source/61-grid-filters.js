@@ -15,14 +15,14 @@
       form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => add(null)));
       const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
       form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-        rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
+        rows.textContent = ""; this.setQuery(Object.assign({}, this.queryForChange(true), { filters: [], filterGroup: undefined, offset: 0, revision: undefined })).catch(failure => setText(error, failure.message));
       }));
       form.appendChild(error); panel.appendChild(form);
       form.addEventListener("submit", event => {
         event.preventDefault();
         try {
           const filters = [...rows.children].map(row => this.readGridFilter(row));
-          this.setQuery(Object.assign({}, this.queryForChange(), { filters: filters, offset: 0, revision: undefined }))
+          this.setQuery(Object.assign({}, this.queryForChange(true), { filters: filters, offset: 0, revision: undefined }))
             .then(() => setText(error, ""), failure => setText(error, failure.message));
         } catch (failure) { setText(error, failure.message); }
       });

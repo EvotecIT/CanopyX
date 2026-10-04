@@ -33,7 +33,9 @@ test("immediate inline search waits for composition and Enter bypasses a configu
   await page.evaluate(controller + ".destroy()");
   await page.evaluate(() => { document.querySelector("[data-canopyx-host]").canopyx = CanopyX.createDataGrid(document.querySelector("[data-canopyx-host]"),
     { view: JSON.parse(document.querySelector("script.cx-config").textContent), searchDelayMs: 5000 }); });
-  await page.waitForSelector("[data-cx-ready]");
+  await page.evaluate(controller + ".ready");
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 2 rows");
+  await page.clock.install();
   await search.fill("Beta"); await nextFrames(page);
   await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 2 rows");
   await search.press("Enter"); await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 2 rows");
@@ -100,4 +102,28 @@ test("invalid input timing rejects browser overrides before creating controls", 
     });
   });
   expect(rejected).toEqual(Array(6).fill(true));
+});
+
+test("incremental controls include queued search text while explicit reset replaces it", async ({ page }) => {
+  await open(page, view({ searchDelayMs: 5000, query: { filters: [{ column: "amount", operator: "ge", values: [10] }] } }));
+  await page.getByRole("searchbox").fill("Beta");
+  await page.getByRole("button", { name: "Amount", exact: true }).click();
+  expect(await page.evaluate(controller + ".getQuery().search")).toBe("Beta");
+  expect(await page.evaluate(controller + ".getQuery().sort")).toEqual([{ column: "amount", direction: "asc" }]);
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 2 rows");
+  await page.getByRole("searchbox").fill("Alpha");
+  await page.getByRole("button", { name: "Remove condition: Amount ≥ 10", exact: true }).click();
+  expect(await page.evaluate(controller + ".getQuery().search")).toBe("Alpha");
+  expect(await page.evaluate(controller + ".getQuery().filters")).toEqual([]);
+  await page.locator(".cx-grid-filters > summary").click();
+  await page.getByRole("searchbox").fill("Beta");
+  await page.locator(".cx-grid-filters").getByRole("button", { name: "Apply", exact: true }).click();
+  expect(await page.evaluate(controller + ".getQuery().search")).toBe("Beta");
+  await page.getByRole("searchbox").fill("Alpha");
+  await page.locator(".cx-grid-filters").getByRole("button", { name: "Clear filters", exact: true }).click();
+  expect(await page.evaluate(controller + ".getQuery().search")).toBe("Alpha");
+  await page.getByRole("searchbox").fill("Beta");
+  await page.evaluate(controller + ".resetView()");
+  expect(await page.evaluate(controller + ".getQuery().search")).toBe("");
+  await expect(page.getByRole("searchbox")).toHaveValue("");
 });
