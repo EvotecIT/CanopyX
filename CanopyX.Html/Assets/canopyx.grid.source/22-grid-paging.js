@@ -132,11 +132,16 @@
           throw new Error("CanopyX: cursor keys stay inside the accepted page.");
         if (this.paged && !this.cursor && (index < this.rowBounds().first || index > this.rowBounds().last ||
             this.pendingQuery && pendingPage && pendingPage.epoch === this.queryEpoch)) {
-          const operation = this.goToPage(Math.floor(index / this.pageLength));
+          // Positions belong to the accepted result. Uncommitted search text cannot redefine them.
+          const request = gridQuery(this.view, Object.assign({}, this.acceptedQuery, {
+            offset: Math.floor(index / this.pageLength) * this.pageLength, limit: this.pageSize }));
+          const operation = this.navigatePageQuery(request);
           navigation.epoch = this.queryEpoch; await operation;
         }
         if (this.pendingNavigation !== navigation) return;
         if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+        if (index < this.rowBounds().first || index > this.rowBounds().last)
+          throw new Error("CanopyX: row position is outside the accepted result page.");
         const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
         this.setFocus(this.rowItem(index), ownsFocus);
         navigation.epoch = epoch; this.pendingNavigation = navigation;
