@@ -56,13 +56,15 @@
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
       const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
         timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
-      if (this.paged) {
+      if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
         if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
             !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER)
           throw new Error("CanopyX: invalid paged view state.");
-        parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
-        if (!state.paging) parsed.scrollTop = 0;
+        if (this.paged) {
+          parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
+          if (!state.paging) parsed.scrollTop = 0;
+        } else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER, paging.offset * this.rowH + state.scrollTop);
       }
       return parsed;
     },

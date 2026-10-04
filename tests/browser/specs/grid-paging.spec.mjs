@@ -102,6 +102,38 @@ test("keyboard and host position navigation cross page boundaries with global ro
   expect(await page.evaluate(controller + ".getPaging().pageIndex")).toBe(22);
 });
 
+test("paged saved positions become global positions when the definition becomes continuous", async ({ page }) => {
+  await open(page, definition({ pageLength: 100 }));
+  const state = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    await grid.goToPage(1); const state = grid.getState(); state.scrollTop = 56; return state;
+  });
+  await page.unroute("http://canopyx.test/paging");
+  await open(page, definition({ presentation: "continuous" }));
+  await page.evaluate(state => document.querySelector('[data-canopyx-host]').canopyx.setState(state), state);
+  expect(await page.evaluate(controller + ".getState().scrollTop")).toBe(2856);
+  await expect(page.locator('.cx-row[data-cx-id="row-102"]')).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("paged-to-continuous.png") });
+});
+
+for (const composing of [false, true]) test(`host row positions use the accepted query with ${composing ? "composing" : "queued"} search`, async ({ page }) => {
+  await open(page, definition({ searchDelayMs: 5000 }));
+  const input = page.getByRole("searchbox");
+  if (composing) {
+    await input.focus(); await input.dispatchEvent("compositionstart");
+    await input.evaluate(element => { element.value = "Row 136"; element.dispatchEvent(new InputEvent("input", { bubbles: true, isComposing: true })); });
+  } else await input.fill("Row 136");
+  await page.evaluate(controller + ".scrollToRow(75)");
+  expect(await page.evaluate(controller + ".getQuery().search")).toBe("");
+  expect(await page.evaluate(controller + ".getPaging().pageIndex")).toBe(3);
+  await expect(page.locator('.cx-row[data-cx-id="row-75"]')).toBeVisible();
+  await expect(input).toBeFocused();
+  if (composing) {
+    await input.dispatchEvent("compositionend"); await input.press("Enter");
+    await expect(page.locator('.cx-grid-page-range')).toHaveText("1–1 of 1 rows");
+  } else await expect(input).toHaveValue("");
+});
+
 for (const direction of ["down", "up"]) for (const action of ["continue", "column", "reverse", "escape"])
 test(`rapid ${direction} page navigation preserves later ${action} intent without restarting the same request`, async ({ page }) => {
   const view = definition({ pageSize: 25 }); view.source = { kind: "host" }; delete view.rows;

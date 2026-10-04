@@ -21,10 +21,14 @@
       const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
       const page = queuedSearch ? 0 : Math.min(index, Math.max(0, this.getPaging().pageCount - 1));
       const request = gridQuery(this.view, Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
-        revision: queuedSearch ? undefined : query.revision })), key = JSON.stringify(request);
+        revision: queuedSearch ? undefined : query.revision }));
+      return this.navigatePageQuery(request);
+    },
+    navigatePageQuery(request, paging) {
+      const key = JSON.stringify(request);
       const pending = this.pendingPageNavigation;
       if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
-      const operation = this.setQuery(request), navigation = { epoch: this.queryEpoch, key: key };
+      const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key: key };
       navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
       this.pendingPageNavigation = navigation; return navigation.promise;
     },
@@ -83,11 +87,16 @@
         const pendingPage = this.pendingPageNavigation;
         if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last ||
             this.pendingQuery && pendingPage && pendingPage.epoch === this.queryEpoch)) {
-          const operation = this.goToPage(Math.floor(index / this.pageLength));
+          // Positions belong to the accepted result. Uncommitted search text cannot redefine them.
+          const request = gridQuery(this.view, Object.assign({}, this.acceptedQuery, {
+            offset: Math.floor(index / this.pageLength) * this.pageLength, limit: this.pageSize }));
+          const operation = this.navigatePageQuery(request);
           navigation.epoch = this.queryEpoch; await operation;
         }
         if (this.pendingNavigation !== navigation) return;
         if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+        if (index < this.rowBounds().first || index > this.rowBounds().last)
+          throw new Error("CanopyX: row position is outside the accepted result page.");
         const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
         this.setFocus(this.rowItem(index), ownsFocus);
         navigation.epoch = epoch; this.pendingNavigation = navigation;

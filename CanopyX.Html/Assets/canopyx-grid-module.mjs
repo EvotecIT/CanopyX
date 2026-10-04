@@ -4918,10 +4918,14 @@ throw new Error("CanopyX: choose a nonnegative page in an accepted paged result.
 const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
 const page = queuedSearch ? 0 : Math.min(index, Math.max(0, this.getPaging().pageCount - 1));
 const request = gridQuery(this.view, Object.assign({}, query, { offset: page * this.pageLength, limit: this.pageSize,
-revision: queuedSearch ? undefined : query.revision })), key = JSON.stringify(request);
+revision: queuedSearch ? undefined : query.revision }));
+return this.navigatePageQuery(request);
+},
+navigatePageQuery(request, paging) {
+const key = JSON.stringify(request);
 const pending = this.pendingPageNavigation;
 if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
-const operation = this.setQuery(request), navigation = { epoch: this.queryEpoch, key: key };
+const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key: key };
 navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
 this.pendingPageNavigation = navigation; return navigation.promise;
 },
@@ -4979,11 +4983,15 @@ try {
 const pendingPage = this.pendingPageNavigation;
 if (this.paged && (index < this.rowBounds().first || index > this.rowBounds().last ||
 this.pendingQuery && pendingPage && pendingPage.epoch === this.queryEpoch)) {
-const operation = this.goToPage(Math.floor(index / this.pageLength));
+const request = gridQuery(this.view, Object.assign({}, this.acceptedQuery, {
+offset: Math.floor(index / this.pageLength) * this.pageLength, limit: this.pageSize }));
+const operation = this.navigatePageQuery(request);
 navigation.epoch = this.queryEpoch; await operation;
 }
 if (this.pendingNavigation !== navigation) return;
 if (this.destroyed || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");
+if (index < this.rowBounds().first || index > this.rowBounds().last)
+throw new Error("CanopyX: row position is outside the accepted result page.");
 const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
 this.setFocus(this.rowItem(index), ownsFocus);
 navigation.epoch = epoch; this.pendingNavigation = navigation;
@@ -5231,13 +5239,15 @@ const query = gridQuery(this.view, Object.assign({}, input, { offset: 0, revisio
 sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
 const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
 timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
-if (this.paged) {
+if (this.paged || state.paging) {
 const paging = state.paging || this.defaultState.paging;
 if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
 !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER)
 throw new Error("CanopyX: invalid paged view state.");
+if (this.paged) {
 parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
 if (!state.paging) parsed.scrollTop = 0;
+} else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER, paging.offset * this.rowH + state.scrollTop);
 }
 return parsed;
 },
