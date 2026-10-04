@@ -15,14 +15,15 @@
         if (this.queryForChange().search === input.value) return;
         this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
       };
-      const schedule = () => {
+      const schedule = this.scheduleGridSearch = (delay = this.searchDelayMs) => {
         clearTimeout(this.searchTimer); this.searchTimer = null;
         if (this.searchComposing) return;
-        if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
+        this.searchDeadline = performance.now() + delay;
+        if (delay === 0) update(); else this.searchTimer = setTimeout(update, delay);
       };
-      input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
-      input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
-      input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
+      input.addEventListener("compositionstart", () => { this.noteViewPreferenceIntent?.(); this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
+      input.addEventListener("compositionend", () => { this.noteViewPreferenceIntent?.(); this.searchComposing = false; schedule(); }, { signal: signal });
+      input.addEventListener("input", event => { this.noteViewPreferenceIntent?.(); if (!event.isComposing) schedule(); }, { signal: signal });
       input.addEventListener("keydown", event => {
         if (event.key === "Enter" && !this.searchComposing && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); update(); }
       }, { signal: signal });

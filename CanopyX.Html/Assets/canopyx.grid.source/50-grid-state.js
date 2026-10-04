@@ -67,12 +67,14 @@
 
     async setState(input) {
       const state = this.readGridState(input);
+      const preference = this.viewPreferenceIntent;
       clearTimeout(this.searchTimer); this.searchTimer = null;
       const pending = this.setQuery(Object.assign({}, state.query, { offset: state.paging ? state.paging.offset : 0 }), state.paging), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
         await pending;
         if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
+        if (preference !== this.viewPreferenceIntent) return this.getQuery();
         if (this.cancelResize) this.cancelResize();
         const current = new Map(this.columns.map(column => [column.id, column]));
         this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));

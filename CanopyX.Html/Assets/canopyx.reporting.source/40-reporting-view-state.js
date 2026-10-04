@@ -31,7 +31,7 @@
 
   Object.assign(DataGrid.prototype, {
     prepareState() {
-      this.viewSettingsIntent = 0; this.defaultSavedView = null;
+      this.viewSettingsIntent = 0; this.viewPreferenceIntent = 0; this.defaultSavedView = null;
       if (this.opts.viewStore && (!this.view.reporting || typeof this.view.stateKey !== "string" || !this.view.stateKey.trim() ||
           this.view.stateKey.length > 512 || typeof this.opts.viewStore.load !== "function" || typeof this.opts.viewStore.save !== "function"))
         throw new Error("CanopyX: a host view store needs a reporting grid, bounded state key, load and save hooks.");
@@ -63,7 +63,10 @@
       if (!this.storageKey || this.destroyed || this.loadingViewSettings || this.viewStorageRejected) return;
       try {
         const settings = this.getViewSettings();
-        if (this.opts.viewStore) return this.queueViewSettings(settings);
+        if (this.opts.viewStore) {
+          this.viewPersistenceError = null;
+          return this.queueViewSettings(settings);
+        }
         global[this.view.reporting.viewStorage === "local" ? "localStorage" : "sessionStorage"].setItem(this.storageKey, JSON.stringify(settings));
         this.viewPersistenceError = null; this.setViewPreferenceError("");
       } catch (error) { this.viewPersistenceError = error; this.setViewPreferenceError(error.message); }

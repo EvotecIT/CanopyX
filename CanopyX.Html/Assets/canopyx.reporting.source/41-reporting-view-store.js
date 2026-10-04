@@ -7,7 +7,15 @@
       api[name] = grid[name].bind(grid);
   };
 
+  for (const name of ["setColumnWidth", "setColumnVisible", "setColumnOrder", "setColumnPinned", "setTimeZone", "setSelection"]) {
+    const original = DataGrid.prototype[name];
+    DataGrid.prototype[name] = function (...args) {
+      const result = original.apply(this, args); this.noteViewPreferenceIntent(); return result;
+    };
+  }
+
   Object.assign(DataGrid.prototype, {
+    noteViewPreferenceIntent() { this.viewPreferenceIntent++; },
     setQuery(input, paging) {
       const pending = VIEW_STORE_QUERY.call(this, input, paging);
       this.viewQueryPromise = pending; return pending;
@@ -15,7 +23,7 @@
     async initializeState() {
       if (!this.opts.viewStore) return VIEW_STORE_INITIALIZE.call(this);
       this.loadingViewSettings = true; this.setViewPreferenceError(this.labels.loading);
-      const epoch = this.queryEpoch, intent = this.viewSettingsIntent;
+      const epoch = this.queryEpoch, intent = this.viewSettingsIntent, preference = this.viewPreferenceIntent;
       try {
         const input = await this.runGridHook(signal => this.opts.viewStore.load({ key: this.storageKey, view: this.view.id, signal }));
         gridOperationActive(this);
@@ -24,14 +32,22 @@
           const settings = reportingStoredSettings(this, input);
           this.savedViews = new Map(settings.views.map(entry => [entry.name, entry.state]));
           this.defaultSavedView = settings.defaultView;
-          if (epoch === this.queryEpoch) this.initialState = this.defaultSavedView ? this.savedViews.get(this.defaultSavedView) : settings.current;
+          if (epoch === this.queryEpoch && preference === this.viewPreferenceIntent)
+            this.initialState = this.defaultSavedView ? this.savedViews.get(this.defaultSavedView) : settings.current;
           this.syncSavedViews(); this.setViewPreferenceError(this.viewPreferenceError || "");
         }
       } catch (error) {
         if (this.destroyed) throw error;
         this.viewStoreFaulted = true; this.setViewPreferenceError(error.message);
       } finally { this.loadingViewSettings = false; }
-      return epoch === this.queryEpoch ? VIEW_STORE_INITIALIZE.call(this) : this.viewQueryPromise;
+      if (epoch !== this.queryEpoch) return this.viewQueryPromise;
+      const deadline = this.searchTimer == null ? null : this.searchDeadline, text = this.searchInput?.value;
+      const pending = VIEW_STORE_INITIALIZE.call(this);
+      // Starting the definition query clears a queued search; retain its input and original deadline.
+      if (deadline !== null) {
+        this.searchInput.value = text; this.scheduleGridSearch(Math.max(0, deadline - performance.now()));
+      }
+      return pending;
     },
     queueViewSettings(settings) {
       if (this.viewStoreFaulted) return;

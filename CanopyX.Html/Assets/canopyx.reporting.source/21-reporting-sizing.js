@@ -39,6 +39,7 @@
     if (active && this.headRow.contains(active) && active.matches(".cx-column-move,.cx-resize")) this.focusReportingHeader(active);
   };
   function reportingManualWidth(grid, column) {
+    grid.noteViewPreferenceIntent?.();
     column.width = column.renderWidth ?? column.width; if (column.flex !== undefined) column.flex = false;
   }
   DataGrid.prototype.setColumnWidth = function (id, width) {

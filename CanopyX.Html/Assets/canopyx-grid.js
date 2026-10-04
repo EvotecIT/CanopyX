@@ -5320,12 +5320,14 @@ return parsed;
 },
 async setState(input) {
 const state = this.readGridState(input);
+const preference = this.viewPreferenceIntent;
 clearTimeout(this.searchTimer); this.searchTimer = null;
 const pending = this.setQuery(Object.assign({}, state.query, { offset: state.paging ? state.paging.offset : 0 }), state.paging), epoch = this.queryEpoch;
 this.restoringEpoch = epoch;
 try {
 await pending;
 if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
+if (preference !== this.viewPreferenceIntent) return this.getQuery();
 if (this.cancelResize) this.cancelResize();
 const current = new Map(this.columns.map(column => [column.id, column]));
 this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
@@ -5387,14 +5389,15 @@ if (this.destroyed || this.searchComposing) return;
 if (this.queryForChange().search === input.value) return;
 this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
 };
-const schedule = () => {
+const schedule = this.scheduleGridSearch = (delay = this.searchDelayMs) => {
 clearTimeout(this.searchTimer); this.searchTimer = null;
 if (this.searchComposing) return;
-if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
+this.searchDeadline = performance.now() + delay;
+if (delay === 0) update(); else this.searchTimer = setTimeout(update, delay);
 };
-input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
-input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
-input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
+input.addEventListener("compositionstart", () => { this.noteViewPreferenceIntent?.(); this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
+input.addEventListener("compositionend", () => { this.noteViewPreferenceIntent?.(); this.searchComposing = false; schedule(); }, { signal: signal });
+input.addEventListener("input", event => { this.noteViewPreferenceIntent?.(); if (!event.isComposing) schedule(); }, { signal: signal });
 input.addEventListener("keydown", event => {
 if (event.key === "Enter" && !this.searchComposing && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); update(); }
 }, { signal: signal });
