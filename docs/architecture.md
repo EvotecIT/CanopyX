@@ -197,6 +197,8 @@ Selection proposals share one owner across clicks, keyboard ranges, path navigat
 
 ### Theming
 
+The approved [data-grid design specification](design/data-grid-spec.html) is the reference for grid tokens, components, and interactions. Open it with `#light` or `#dark` to compare either theme.
+
 `canopyx.css` defines a small set of base colours as custom properties (`--cx-surface`, `--cx-text`, `--cx-accent`, `--cx-line`, and one colour per tone it ships). A tone is a name, and a host adds its own, such as the steps of a severity scale, by defining `--cx-tone-<name>` and optionally `--cx-tone-<name>-bg` in its theme (see "Tones" in data-protocol.md). Hover, selection, alternate rows, and muted text are derived with `color-mix()`. Host renderers draw badges and chips with `CanopyX.badge({ text, tone, title })`, which returns the element the runtime draws for a badge (a `span` with `cx-badge`, the tone classes, and for a host tone the custom properties that point at its theme colours), so a host never repeats the badge markup or the tone rules; `tone` defaults to `neutral`, and a missing or non-string `text` throws. A dark palette applies under `data-cx-theme="dark"`, or under `data-cx-theme="auto"` when the system prefers dark. Hosts theme CanopyX by setting the base colours, for example from their own design tokens.
 
 ## Performance
