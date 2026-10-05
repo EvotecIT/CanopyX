@@ -176,6 +176,7 @@ test("named session views survive reload, restore accepted settings and have an 
 test("open grid controls remain accessible in compact dark layouts", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 }); await openGrid(page);
   await page.locator("[data-canopyx-host]").evaluate(host => host.setAttribute("data-cx-theme", "dark"));
+  await expect(page.locator('.cx-grid-overflow .cx-grid-views > summary')).toBeHidden();
   for (const selector of [".cx-grid-columns", ".cx-grid-filters", ".cx-grid-views"]) {
     await openGridControl(page, selector.replace(".cx-grid-", ""));
     if (selector === ".cx-grid-filters") await page.getByRole("button", { name: "+ Condition", exact: true }).click();

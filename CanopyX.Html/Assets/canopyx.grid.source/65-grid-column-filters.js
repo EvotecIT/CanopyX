@@ -20,7 +20,9 @@
       for(const row of rows){const value=cellValue(row.cells[column.id])??null,key=typeof value+":"+foldText(value),item=buckets.get(key);
         if(item)item.count++;else buckets.set(key,{value,count:1});}
       const items=[...buckets.values()].filter(item=>foldText(item.value).includes(foldText(search)));
-      items.sort((a,b)=>gridOrder(a.value,b.value));return {items:items.slice(0,200),matched:rows.length,totalValues:items.length,truncated:items.length>200};
+      items.sort((a,b)=>a.value===null||b.value===null?(a.value===b.value?0:a.value===null?1:-1):
+        gridOrder(typeof a.value,typeof b.value)||gridOrder(foldText(a.value),foldText(b.value)));
+      return {items:items.slice(0,200),matched:rows.length,totalValues:items.length,truncated:items.length>200};
     },
     openColumnFilter(id,anchor){
       if(!this.acceptedQuery||this.pendingQuery)return;

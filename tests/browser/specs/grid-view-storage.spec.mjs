@@ -102,6 +102,21 @@ test("durable named views retain defaults across tabs, rename safely and reset w
   } finally { await other.close(); }
 });
 
+test("an unchanged preference flush preserves a newer tab's accepted settings", async ({page,context}) => {
+  await open(page);
+  await page.evaluate(`(async()=>{await ${api}.setQuery({search:'Archive'});${api}.saveView('Original');${api}.setDefaultView('Original');await ${api}.flushViewSettings();})()`);
+  const other=await context.newPage();
+  try {
+    await open(other);
+    await other.evaluate(`(async()=>{${api}.removeSavedView('Original');await ${api}.setQuery({search:'Source'});await ${api}.flushViewSettings();})()`);
+    await page.evaluate(api+'.flushViewSettings()');
+    expect(await page.evaluate(api+'.getSavedViews()')).toEqual([]);
+    await other.reload();await other.waitForSelector('[data-cx-ready]');
+    expect(await other.evaluate(api+'.getDefaultView()')).toBeNull();
+    expect(await other.evaluate(api+'.getQuery().search')).toBe('Source');
+  } finally {await other.close();}
+});
+
 test("an older tab's presentation autosave preserves newer named metadata without importing its query", async ({page,context}) => {
   await open(page);await page.evaluate(api+".saveView('Original')");
   const other=await context.newPage();

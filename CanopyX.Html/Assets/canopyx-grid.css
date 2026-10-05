@@ -181,6 +181,7 @@ border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-siz
 .cx-switch { display:inline-flex;align-items:center;gap:var(--cx-size-7px);min-height:var(--cx-size-34px);cursor:pointer;}
 .cx-switch input { accent-color:var(--cx-accent);width:var(--cx-size-16px);height:var(--cx-size-16px);margin:0;}
 .cx-columns { position:relative;}
+.cx-columns:not([open]) > .cx-columns-list { display:none; }
 .cx-columns > summary { display:flex;align-items:center;gap:var(--cx-size-10px);min-height:var(--cx-size-34px);cursor:pointer;padding:var(--cx-size-6px) var(--cx-size-10px);border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-size-7px);list-style:none;}
 .cx-columns > summary::after { content:"";width:var(--cx-size-6px);height:var(--cx-size-6px);border-right:var(--cx-size-1d5px) solid currentColor;border-bottom:var(--cx-size-1d5px) solid currentColor;transform:rotate(45deg) translateY(var(--cx-size-neg-2px));}
 .cx-columns[open] > summary,.cx-columns > summary:hover { background:var(--cx-hover-bg);}

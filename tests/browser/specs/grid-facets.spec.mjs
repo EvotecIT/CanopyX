@@ -129,7 +129,9 @@ test('numeric facet API retains distinct binary64 values without rounding labels
 });
 async function editor(page){await page.getByRole('button',{name:'Filter Category',exact:true}).click();return page.getByRole('dialog',{name:'Category: Filter…'});}
 test('column value counts cover the whole query and distinguish raw boolean, string and missing choices',async({page})=>{
- await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);await expect(pop.locator('.cx-val-n')).toHaveText(['3','2','1','1','1','2']);
+ await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);
+ expect(await pop.locator('.cx-val').evaluateAll(rows=>rows.map(row=>[row.querySelector('.cx-facet-value').textContent,row.querySelector('.cx-val-n').textContent])))
+   .toEqual([['No','1'],['Yes','1'],['ALPHA','3'],['Beta','2'],['true','1'],['—','2']]);
  await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();const bool=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^Yes$/})});await bool.locator('input').check();await pop.getByRole('button',{name:'Done',exact:true}).click();
  await expect(page.locator('.cx-grid-result-count')).toHaveText('1 of 10 rows');expect((await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filterGroup.filters).toEqual([filter('category','in',true)]);
  const next=await editor(page);await expect(next.locator('.cx-val')).toHaveCount(6);await next.getByRole('checkbox',{name:'Select all values',exact:true}).check();await next.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await next.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input').check();await next.getByRole('button',{name:'Done',exact:true}).click();
