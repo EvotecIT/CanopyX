@@ -55,6 +55,7 @@
       cell.title = label + (aggregates ? " — " + aggregates : "");
       if (aggregates) { const summary = h("span", "cx-grid-group-aggregates"); setText(summary, aggregates); cell.appendChild(summary); }
       element._cells = [{ cell, content: cell }];
+      this.paintGridHighlights(element, row);
     },
     setQuery(input, paging) {
       const pending = GROUP_BASE.setQuery.call(this, input, paging);

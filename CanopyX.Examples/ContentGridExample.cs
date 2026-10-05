@@ -11,6 +11,10 @@ internal static class ContentGridExample {
         view.Columns.Add(new CanopyColumn("reference", "Reference") { Sortable = true });
         view.Columns.Add(new CanopyColumn("notes", "Notes") { Wrap = true });
         view.AutoRowHeight = true;
+        view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Needs review"),
+            CanopyTone.Warning, "needs-review"));
+        view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Complete"),
+            CanopyTone.Success, target: CanopyGridHighlightTarget.Cell));
         view.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 300);
         view.Reporting.Layout["notes"] = new CanopyGridColumnLayout(200, 500, flex: 1);
         for (var i = 0; i < 300; i++) {

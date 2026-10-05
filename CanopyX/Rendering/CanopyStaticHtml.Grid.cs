@@ -37,10 +37,21 @@ public static partial class CanopyStaticHtml {
         foreach (var column in columns) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append(Align(column)).Append("\">").Append(Encode(column.Title)).Append("</th>");
         html.Append("</tr></thead><tbody>");
         foreach (var row in rows) {
-            html.Append("<tr>");
+            var rowRule = CanopyGridHighlights.Find(view, row, null);
+            var rowTone = rowRule != null && rowRule.Tone != CanopyTone.None ? rowRule.Tone : row.Tone;
+            var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
+            html.Append("<tr");
+            if (rowClasses.Length != 0) html.Append(" class=\"").Append(Encode(rowClasses)).Append('"');
+            if (rowTone != CanopyTone.None) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append('"');
+            html.Append('>');
             foreach (var column in columns) {
                 row.Cells.TryGetValue(column.Id, out var cell);
-                html.Append("<td style=\"").Append(styles.Cell).Append(Align(column)).Append(styles.ToneColor(cell?.Tone ?? CanopyTone.None)).Append('"');
+                var rule = CanopyGridHighlights.Find(view, row, column.Id);
+                var tone = rule != null && rule.Tone != CanopyTone.None ? rule.Tone : cell?.Tone ?? CanopyTone.None;
+                html.Append("<td style=\"").Append(styles.Cell).Append(Align(column)).Append(styles.ToneColor(tone));
+                if (column.Wrap) html.Append("white-space:pre-wrap;overflow-wrap:anywhere;");
+                html.Append('"');
+                if (rule?.ClassName != null) html.Append(" class=\"").Append(Encode(rule.ClassName)).Append('"');
                 if (!string.IsNullOrEmpty(cell?.Title)) html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
                 html.Append('>').Append(Encode(cell?.DisplayText(column.Kind, view.Labels) ?? string.Empty));
                 if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles);

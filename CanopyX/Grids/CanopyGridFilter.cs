@@ -69,8 +69,12 @@ public sealed class CanopyGridFilter {
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
-        writer.BeginObject().Property("column", Column).Property("operator", WireOperator).Name("values").BeginArray();
+        writer.BeginObject(); WriteFields(writer); writer.EndObject();
+    }
+
+    internal void WriteFields(CanopyJsonWriter writer) {
+        writer.Property("column", Column).Property("operator", WireOperator).Name("values").BeginArray();
         foreach (var operand in Values) operand.WriteValue(writer);
-        writer.EndArray().EndObject();
+        writer.EndArray();
     }
 }

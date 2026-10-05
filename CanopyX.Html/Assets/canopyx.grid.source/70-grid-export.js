@@ -68,7 +68,8 @@
             if (scope !== "selected" || remaining.delete(row.id)) {
               const cells = Object.create(null);
               for (const column of request.columns) if (Object.hasOwn(row.cells, column.id)) cells[column.id] = row.cells[column.id];
-              yield gridFreeze({ id: row.id, cells });
+              yield gridFreeze({ id: row.id, cells, ...(row.tone === undefined ? {} : { tone: row.tone }),
+                ...(row.className === undefined ? {} : { className: row.className }) });
             }
           }
           offset += this.cursor ? page.items.length : request.query.limit;

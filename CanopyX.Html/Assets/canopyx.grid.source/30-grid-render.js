@@ -45,9 +45,10 @@
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
       this.resizeObserver = new ResizeObserver(() => {
-        if (this.destroyed || !this.hasGridSize()) return;
+        if (this.destroyed || !grid.clientWidth || !grid.checkVisibility()) return;
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
           height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
+        if (!this.hasGridSize()) return;
         this.applyWidths();
         if (this.hiddenScrollTop !== undefined) {
           const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
@@ -117,6 +118,11 @@
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {
         error: ((this.pages.get(Math.floor(row._ri / this.pageSize) * this.pageSize) || {}).error || {}).message || ""
       }) : this.labels.loading;
-      else for (let i = 0; i < this.cols.length; i++) this.paintSlot(element._cells[i], row.h, this.cols[i], this.columnIndex[i], row);
+      else for (let i = 0; i < this.cols.length; i++) {
+        const slot = element._cells[i];
+        if (slot.highlighted) { slot.cls = null; slot.highlighted = false; }
+        this.paintSlot(slot, row.h, this.cols[i], this.columnIndex[i], row);
+      }
+      this.paintGridHighlights(element, row);
     }
   });

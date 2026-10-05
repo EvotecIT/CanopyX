@@ -28,6 +28,19 @@ Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 
 Set a grid column's `wrap: true` and the grid's `rowHeight: "auto"` to display complete multiline notes. Fixed rows remain the default. In .NET, set `CanopyColumn.Wrap = true` and `CanopyGridView.AutoRowHeight = true`; `RowHeight` supplies the minimum and initial estimate. Rendered records are measured as they enter the viewport, with stable scroll anchoring and pixel-based keyboard paging. The generated `wrapped-grid.html` examples demonstrate continuous, paged and grouped views. Grids created inside hidden tabs, accordions and details render automatically when shown; see `contained-grids.html`.
 
+### Highlight records by raw values
+
+Grid rows accept optional `tone` and `className`. Declare ordered `highlightRules` to decorate records without a callback:
+
+```javascript
+highlightRules: [
+  { column: "status", operator: "eq", values: ["Failed"], tone: "danger" },
+  { column: "size", operator: "gt", values: [1000000], target: "cell", className: "large-value" }
+]
+```
+
+In .NET, add `new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Failed"), CanopyTone.Danger)` to `view.HighlightRules`. The default target is the row; `CanopyGridHighlightTarget.Cell` decorates the condition column's cell. The first match wins separately for the row and each cell. Rules use typed raw values and the existing filter semantics; display text is independent. Row tones use the existing theme palette, and script-free fallback tables retain the rules and classes. The content-sized example demonstrates these rules.
+
 ### JavaScript Hosts
 
 The optional `@evotecit/canopyx` package contains the complete interactive runtime, CSS, and TypeScript declarations. It has no runtime dependencies. The module and classic scripts are assembled from the same JavaScript source; .NET consumers keep their existing build with no JavaScript compiler or bundler.

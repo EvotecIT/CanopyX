@@ -26,8 +26,9 @@
       requireIdentifier(row && row.id, "grid row ID");
       if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
       ids.add(row.id);
-      if (Object.keys(row).some(name => !["id", "cells"].includes(name)) || !row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
-        throw new Error("CanopyX: flat rows contain only id and cells.");
+      if (Object.keys(row).some(name => !["id", "cells", "tone", "className"].includes(name)) || !row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
+        throw new Error("CanopyX: invalid flat row fields.");
+      gridDecoration(row.tone, row.className);
       for (const id of Object.keys(row.cells)) {
         if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
         const cell = row.cells[id];
@@ -61,6 +62,7 @@
       ids.add(column.id);
     }
     if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+    validateGridHighlights(view);
     if (view.searchDelayMs !== undefined && (!Number.isInteger(view.searchDelayMs) || view.searchDelayMs < 0 || view.searchDelayMs > 5000))
       throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
     if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||

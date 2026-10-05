@@ -41,6 +41,9 @@ public sealed class CanopyGridView {
     /// <summary>Gets all rows of an inline source. Host sources must leave this collection empty.</summary>
     public IList<CanopyGridRow> Rows { get; } = new List<CanopyGridRow>();
 
+    /// <summary>Gets at most 64 ordered raw-value highlight rules. The first match wins independently for the row and each condition cell.</summary>
+    public IList<CanopyGridHighlightRule> HighlightRules { get; } = new List<CanopyGridHighlightRule>();
+
     /// <summary>Gets or sets whether rows come from the complete inline dataset or a host query hook.</summary>
     public CanopyGridSourceKind Source { get; set; }
 
@@ -130,6 +133,11 @@ public sealed class CanopyGridView {
             .Name("columns").BeginArray();
         foreach (var column in Columns) column.WriteJson(writer, grid: true);
         writer.EndArray();
+        if (HighlightRules.Count > 0) {
+            writer.Name("highlightRules").BeginArray();
+            foreach (var rule in HighlightRules) rule.WriteJson(writer);
+            writer.EndArray();
+        }
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
@@ -178,6 +186,13 @@ public sealed class CanopyGridView {
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        if (HighlightRules.Count > 64) throw new InvalidOperationException("A grid supports at most 64 highlight rules.");
+        foreach (var rule in HighlightRules) {
+            CanopyColumn? conditionColumn = null;
+            foreach (var column in Columns) if (column.Id == rule?.Condition.Column) conditionColumn = column;
+            if (rule == null || conditionColumn == null) throw new InvalidOperationException("Highlight rules require a declared condition column.");
+            rule.Condition.Validate(conditionColumn);
+        }
         Reporting?.Validate(Columns);
         if ((Reporting?.Grouping != null || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");

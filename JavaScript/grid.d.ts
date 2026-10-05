@@ -5,9 +5,15 @@ import type { HostOptions } from "./hosts.js";
 export * from "./index.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
-export interface GridRow { id: string; cells: Record<string, Cell>; }
+export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string; }
+/** First match wins separately for the row and each condition-column cell; raw filter semantics apply. */
+export type GridHighlightRule = GridFilter & { target?: "row" | "cell" } &
+  ({ tone: string; className?: string } | { tone?: string; className: string });
 /** An immutable record projected onto the declared export columns. */
-export interface GridExportRow { readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>; }
+export interface GridExportRow {
+  readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>;
+  readonly tone?: string; readonly className?: string;
+}
 export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   editable?: false; wrap?: boolean;
   /** Omit to fit the header and at most 200 loaded records on first layout. Saved widths take precedence. */
@@ -116,6 +122,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   rowHeight: number | "auto";
   /** Minimum and estimate for unseen automatic rows (20..64, default 28). */
   estimatedRowHeight?: number;
+  /** At most 64 ordered rules; a tone or className is required on each rule. */
+  highlightRules?: readonly GridHighlightRule[];
   pageSize: number;
   /** Presentation only; pageSize remains the source fetch size. */
   presentation?: "continuous" | "paged";

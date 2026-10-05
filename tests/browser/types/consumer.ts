@@ -8,6 +8,8 @@ import ReportingRuntime from "@evotecit/canopyx/reporting";
 const reportingHost = document.createElement("div");
 const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
   source: { kind: "inline" }, rows: [], rowHeight: "auto", estimatedRowHeight: 32, pageSize: 100, selection: "none", search: true,
+  highlightRules: [{ column: "name", operator: "eq", values: ["Needs review"], tone: "warning", className: "needs-review" },
+    { column: "name", operator: "isNull", values: [], target: "cell", className: "empty" }],
   columns: [{ id: "name", title: "Name", kind: "text", sortable: true, wrap: true }],
   reporting: { columnReorder: true, responsive: true, filterGroups: true, facetColumns: ["name"], minimumCenterWidth: 160,
     layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
