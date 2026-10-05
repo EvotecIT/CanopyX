@@ -44,11 +44,14 @@
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
+      // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
+      this.sized = this.hasGridSize();
       this.resizeObserver = new ResizeObserver(() => {
-        if (this.destroyed || !grid.clientWidth || !grid.checkVisibility()) return;
+        if (this.destroyed) return;
+        if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
           height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
-        if (!this.hasGridSize()) return;
+        if (!(this.sized = this.hasGridSize())) return;
         this.applyWidths();
         if (this.hiddenScrollTop !== undefined) {
           const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);

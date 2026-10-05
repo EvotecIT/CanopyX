@@ -160,7 +160,7 @@
     }
 
     render() {
-      if (this.destroyed || !this.hasGridSize()) return;
+      if (this.destroyed || !this.sized) return;
       let measured = false;
       if (this.autoRows) this.syncRowOffsets();
       for (let pass = 0; ; pass++) {
