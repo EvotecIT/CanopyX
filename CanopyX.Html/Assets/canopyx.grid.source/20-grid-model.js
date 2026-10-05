@@ -192,6 +192,7 @@
       if (this.disposeControls) this.disposeControls();
       if (this.cancelResize) this.cancelResize();
       this.resizeObserver.disconnect();
+      this.restoreHeight();
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
@@ -201,8 +202,5 @@
       this.host.removeAttribute("data-cx-ready"); this.host.removeAttribute("data-canopyx-mounted");
     }
   }
-  Object.assign(DataGrid.prototype, ROW_SCROLLING, ROW_DOM_ORDER, ROW_VIEWPORT);
   // Reuse the canonical column sizing, cell formatting and focus helpers without tree hierarchy or expanders.
-  for (const name of ["visibleColumns", "applyWidths", "setColumnWidth", "startResize", "cell", "newCell", "paintSlot", "paintBadges",
-      "paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
-    DataGrid.prototype[name] = ROW_HELPERS[name];
+  Object.assign(DataGrid.prototype, ROW_SCROLLING, ROW_DOM_ORDER, ROW_VIEWPORT, ROW_HELPERS);

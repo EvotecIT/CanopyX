@@ -189,3 +189,27 @@ test('a host that owns its toolbar retains explicit short and empty viewport hei
   await page.evaluate(api+".setQuery({search:'missing'})");await nextFrames(page);
   expect(await page.evaluate("document.querySelector('[data-canopyx-host]').offsetHeight")).toBe(58);
 });
+
+for(const prior of [false,true])test(`destroy releases grid sizing before a tree remount (${prior?'prior host styling':'unowned styling'})`,async({page})=>{
+  await page.setViewportSize({width:390,height:820});
+  await open(page,definition(),`addEventListener('DOMContentLoaded',()=>{const h=document.querySelector('[data-canopyx-host]');h.style.height='320px';h.style.padding='0';});`);
+  if(prior)await page.evaluate(async()=>{
+    const h=document.querySelector('[data-canopyx-host]'),view=h.canopyx.view;h.canopyx.destroy();
+    h.style.setProperty('--cx-min-h','75px','important');
+    await CanopyX.createDataGrid(h,{view}).ready;
+  });
+  const host=page.locator('[data-canopyx-host]');
+  await expect.poll(()=>host.evaluate(h=>h.offsetHeight)).toBeGreaterThan(320);
+  const result=await page.evaluate(async()=>{
+    const h=document.querySelector('[data-canopyx-host]'),old=h.canopyx;
+    old.destroy();h.style.height='70px';
+    const replacement=CanopyX.createTreeGrid(h,{toolbar:false,view:{protocol:'canopyx/2',type:'view',id:'replacement',label:'Replacement',source:{kind:'inline'},
+      columns:[{id:'name',title:'Name',width:200}],roots:[{id:'root',label:'Replacement'}]}});
+    await replacement.ready;old.destroy();
+    return {minimum:h.style.getPropertyValue('--cx-min-h'),priority:h.style.getPropertyPriority('--cx-min-h'),gridClass:h.classList.contains('cx-data-grid'),retained:h.canopyx===replacement};
+  });
+  expect(result).toEqual({minimum:prior?'75px':'',priority:prior?'important':'',gridClass:false,retained:true});
+  await expect.poll(()=>host.evaluate(h=>h.offsetHeight)).toBe(70);
+  await expect(page.getByRole('treegrid')).toBeVisible();
+  await page.screenshot({path:test.info().outputPath('grid-destroy-tree-remount.png')});
+});

@@ -51,7 +51,7 @@
     let lastShape = null, ordered = null;
     return {
       query(query, options) {
-        if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
+        if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
         const shape = gridResultShape(query);
         if (shape !== lastShape) {
           ordered = gridQueryRows(view, query, columns, compare);

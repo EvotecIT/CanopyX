@@ -9,7 +9,7 @@
     async runGridHook(run, signal) {
       const controller = new AbortController(); let rejectHook;
       const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
-      const abort = () => { controller.abort(); rejectHook(new DOMException("Grid operation cancelled.", "AbortError")); };
+      const abort = () => { controller.abort(); rejectHook(new DOMException("Grid cancelled.", "AbortError")); };
       this.lifetime.signal.addEventListener("abort", abort, { once: true });
       signal?.addEventListener("abort", abort, { once: true });
       const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: host operation timed out.")); }, this.requestTimeoutMs);
@@ -31,11 +31,11 @@
       await this.writeClipboard(text, options.signal); return text;
     },
     writeClipboard(text, signal) {
-      gridOperationActive(this, signal);
-      const clipboard = global.navigator.clipboard;
-      if (typeof clipboard?.writeText !== "function")
-        return Promise.reject(new Error("CanopyX: clipboard unavailable."));
-      return this.runGridHook(() => clipboard.writeText(text), signal);
+      return this.runGridHook(() => {
+        const clipboard = global.navigator.clipboard;
+        if (typeof clipboard?.writeText !== "function") throw new Error("CanopyX: clipboard unavailable.");
+        return clipboard.writeText(text);
+      }, signal);
     },
     copyFocused(row, cell) {
       if (this.selected.size) return this.copy({ scope: "selected" });
@@ -48,9 +48,9 @@
     openDetails(id) {
       requireIdentifier(id, "detail row ID");
       if (this.destroyed || !this.acceptedQuery || this.pendingQuery || typeof this.opts.onDetails !== "function")
-        throw new Error("CanopyX: record details need an accepted query and an onDetails hook.");
+        throw new Error("CanopyX: details require accepted query and onDetails.");
       const row = [...this.rowCache.values()].find(item => item.key === id);
-      if (!row) throw new Error("CanopyX: open details for a loaded record.");
+      if (!row) throw new Error("CanopyX: details require a loaded record.");
       if (this.detailController) this.detailController.abort();
       const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;
       const abort = () => controller.abort(); dataSignal.addEventListener("abort", abort, { once: true });

@@ -121,7 +121,7 @@ test("unknown-count exports replay the captured revision and scope independently
     try { await document.querySelector('[data-canopyx-host]').canopyx.toCsv({ scope: "all", maxRows: 12 }); }
     catch (error) { return error.message; }
   });
-  expect(error).toContain("exceeds the client row limit");
+  expect(error).toContain("client row limit");
 });
 
 for (const totalKnown of [false, true]) for (const matchedKnown of [false, true])

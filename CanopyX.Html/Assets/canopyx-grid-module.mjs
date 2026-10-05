@@ -4588,7 +4588,7 @@ const compare = GRID_REPORTING.compare?.(view);
 let lastShape = null, ordered = null;
 return {
 query(query, options) {
-if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
+if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
 const shape = gridResultShape(query);
 if (shape !== lastShape) {
 ordered = gridQueryRows(view, query, columns, compare);
@@ -4801,6 +4801,7 @@ clearTimeout(this.stateTimer);
 if (this.disposeControls) this.disposeControls();
 if (this.cancelResize) this.cancelResize();
 this.resizeObserver.disconnect();
+this.restoreHeight();
 this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
 this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
 this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
@@ -4810,10 +4811,7 @@ if (this.pager) this.pager.remove();
 this.host.removeAttribute("data-cx-ready"); this.host.removeAttribute("data-canopyx-mounted");
 }
 }
-Object.assign(DataGrid.prototype, ROW_SCROLLING, ROW_DOM_ORDER, ROW_VIEWPORT);
-for (const name of ["visibleColumns", "applyWidths", "setColumnWidth", "startResize", "cell", "newCell", "paintSlot", "paintBadges",
-"paintHostSlot", "setSlotContent", "setTimeZone", "rowCells", "heldCell", "restoreCell", "focusCell", "revealInRow", "revealInCell", "settleCell"])
-DataGrid.prototype[name] = ROW_HELPERS[name];
+Object.assign(DataGrid.prototype, ROW_SCROLLING, ROW_DOM_ORDER, ROW_VIEWPORT, ROW_HELPERS);
 Object.assign(DataGrid.prototype, {
 requestPage(query, signal) { return this.runGridHook(signal => this.source.query(query, { signal }), signal); },
 storePage(page) {
@@ -5065,6 +5063,10 @@ if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(
 Object.assign(DataGrid.prototype, {
 build() {
 const host = this.host, signal = this.lifetime.signal;
+const minimum = host.style.getPropertyValue("--cx-min-h"), priority = host.style.getPropertyPriority("--cx-min-h");
+this.restoreHeight = () => {
+host.style.setProperty("--cx-min-h", minimum, priority); host.classList.remove("cx-data-grid");
+};
 host.classList.add("cx-host", "cx-data-grid");
 if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
 host.style.setProperty("--cx-row-h", this.rowH + "px");
@@ -5662,27 +5664,28 @@ if (typeof value !== "number" && /^[\s\uFEFF]*[=+\-@]/.test(text)) text = "'" + 
 return text.includes(delimiter) || /["\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 }
 function gridOperationActive(grid, signal) {
-if (grid.destroyed || signal?.aborted) throw new DOMException("Grid operation cancelled.", "AbortError");
+if (grid.destroyed || signal?.aborted) throw new DOMException("Grid cancelled.", "AbortError");
 }
 Object.assign(DataGrid.prototype, {
 prepareExport(options) {
 if (!this.view.reporting && ["fileName", "locale", "timeZone", "onProgress"].some(key => options?.[key] !== undefined))
 throw new Error("CanopyX: export metadata requires reporting.");
 if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted query.");
-if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: choose an explicit export scope.");
+if (!options || !["filtered", "selected", "all"].includes(options.scope)) throw new Error("CanopyX: explicit export scope required.");
 const { scope, values, signal } = options, filtered = scope === "filtered";
 const columnIds = options.columns === undefined ? this.visibleColumns().map(column => column.id) : options.columns;
+const columns = Array.isArray(columnIds) ? columnIds.map(id => this.columns.find(column => column.id === id)) : [];
 if (!Array.isArray(columnIds) || !columnIds.length || new Set(columnIds).size !== columnIds.length ||
-columnIds.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: export columns must be unique declared IDs.");
-if (values !== undefined && !["raw", "display"].includes(values)) throw new Error("CanopyX: export values are raw or display.");
-if (signal !== undefined && !(signal instanceof AbortSignal)) throw new Error("CanopyX: export cancellation needs an AbortSignal.");
+columns.some(column => !column)) throw new Error("CanopyX: invalid export columns.");
+if (values !== undefined && !["raw", "display"].includes(values)) throw new Error("CanopyX: export values must be raw/display.");
+if (signal !== undefined && !(signal instanceof AbortSignal)) throw new Error("CanopyX: export requires AbortSignal.");
 const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: undefined, limit: this.pageSize,
 search: filtered ? this.acceptedQuery.search : "",
 filterGroup: filtered ? this.acceptedQuery.filterGroup : undefined,
 filters: filtered ? this.acceptedQuery.filters : [] });
 const request = gridFreeze({ scope, query, revision: this.snapshot.revision,
 total: this.snapshot.total, matched: this.snapshot.matched, selection: scope === "selected" ? [...this.selected] : [],
-columns: columnIds.map(id => { const column = this.columns.find(item => item.id === id); return { id, title: column.title, kind: column.kind }; }),
+columns: columns.map(({ id, title, kind }) => ({ id, title, kind })),
 values: values || "display", timeZone: this.local ? "local" : "utc" });
 return Object.freeze({ request, rows: () => this.exportRows(request, signal) });
 },
@@ -5704,7 +5707,7 @@ throw new Error("CanopyX: incomplete cursor export.");
 expected.matched = page.matched;
 for (const row of page.items) {
 gridOperationActive(this, signal);
-if (seen.has(row.id)) throw new Error("CanopyX: export repeated a row identity.");
+if (seen.has(row.id)) throw new Error("CanopyX: repeated export row ID.");
 seen.add(row.id);
 if (scope !== "selected" || remaining.delete(row.id)) {
 const cells = Object.create(null);
@@ -5720,17 +5723,17 @@ tokens.add(cursor);
 }
 }
 gridOperationActive(this, signal);
-if (remaining.size) throw new Error("CanopyX: selected records are absent from the accepted revision.");
+if (remaining.size) throw new Error("CanopyX: selected IDs absent from revision.");
 },
 async exportText(exported, maxRows = 50000, delimiter, signal) {
 if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is 1 to 1000000.");
 const request = exported.request, expected = request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
-if (expected > maxRows) throw new Error("CanopyX: export exceeds the client row limit; use a host export hook.");
+if (expected > maxRows) throw new Error("CanopyX: client row limit exceeded.");
 const fmt = formatting(request.locale || this.lang, request.timeZone === "local", this.labels);
 const lines = [request.columns.map(column => gridExportField(column.title, delimiter)).join(delimiter)];
 let count = 0;
 for await (const row of exported.rows()) {
-if (++count > maxRows) throw new Error("CanopyX: export exceeds the client row limit; use a host export hook.");
+if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded.");
 lines.push(request.columns.map(column => gridExportField(request.values === "raw" ? cellValue(row.cells[column.id]) :
 cellText(row.cells[column.id], column, fmt), delimiter)).join(delimiter));
 }
@@ -5740,7 +5743,7 @@ return lines.join("\r\n") + "\r\n";
 toCsv(options) { return this.exportText(this.prepareExport(options), options.maxRows, ",", options.signal); },
 exportToHost(format, options) {
 const { request } = this.prepareExport(options);
-if (typeof format !== "string" || !format.trim() || typeof this.opts.onExport !== "function") throw new Error("CanopyX: host export needs a format and an onExport hook.");
+if (typeof format !== "string" || !format.trim() || typeof this.opts.onExport !== "function") throw new Error("CanopyX: format and onExport required.");
 return this.runGridHook(signal => this.opts.onExport({ format, request, signal }), options.signal);
 }
 });
@@ -5754,7 +5757,7 @@ return this.focusResult(index, false);
 async runGridHook(run, signal) {
 const controller = new AbortController(); let rejectHook;
 const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
-const abort = () => { controller.abort(); rejectHook(new DOMException("Grid operation cancelled.", "AbortError")); };
+const abort = () => { controller.abort(); rejectHook(new DOMException("Grid cancelled.", "AbortError")); };
 this.lifetime.signal.addEventListener("abort", abort, { once: true });
 signal?.addEventListener("abort", abort, { once: true });
 const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: host operation timed out.")); }, this.requestTimeoutMs);
@@ -5775,11 +5778,11 @@ const text = await this.exportText(exported, options.maxRows === undefined ? 100
 await this.writeClipboard(text, options.signal); return text;
 },
 writeClipboard(text, signal) {
-gridOperationActive(this, signal);
+return this.runGridHook(() => {
 const clipboard = global.navigator.clipboard;
-if (typeof clipboard?.writeText !== "function")
-return Promise.reject(new Error("CanopyX: clipboard unavailable."));
-return this.runGridHook(() => clipboard.writeText(text), signal);
+if (typeof clipboard?.writeText !== "function") throw new Error("CanopyX: clipboard unavailable.");
+return clipboard.writeText(text);
+}, signal);
 },
 copyFocused(row, cell) {
 if (this.selected.size) return this.copy({ scope: "selected" });
@@ -5791,9 +5794,9 @@ return this.writeClipboard(text);
 openDetails(id) {
 requireIdentifier(id, "detail row ID");
 if (this.destroyed || !this.acceptedQuery || this.pendingQuery || typeof this.opts.onDetails !== "function")
-throw new Error("CanopyX: record details need an accepted query and an onDetails hook.");
+throw new Error("CanopyX: details require accepted query and onDetails.");
 const row = [...this.rowCache.values()].find(item => item.key === id);
-if (!row) throw new Error("CanopyX: open details for a loaded record.");
+if (!row) throw new Error("CanopyX: details require a loaded record.");
 if (this.detailController) this.detailController.abort();
 const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;
 const abort = () => controller.abort(); dataSignal.addEventListener("abort", abort, { once: true });
@@ -5834,7 +5837,7 @@ const buttons = [csv, copy]; panel.append(csv, copy, status);
 if (typeof this.opts.onDetails === "function") this.toolbar.appendChild(gridButton(this.labels.gridDetails, () => {
 try {
 const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
-if (!row || row.status) throw new Error("CanopyX: focus a loaded record to open details.");
+if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
 this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
 } catch (error) { this.emit("error", { error: error }); }
 }));

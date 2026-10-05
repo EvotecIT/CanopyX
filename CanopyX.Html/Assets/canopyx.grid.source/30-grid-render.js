@@ -2,6 +2,10 @@
   Object.assign(DataGrid.prototype, {
     build() {
       const host = this.host, signal = this.lifetime.signal;
+      const minimum = host.style.getPropertyValue("--cx-min-h"), priority = host.style.getPropertyPriority("--cx-min-h");
+      this.restoreHeight = () => {
+        host.style.setProperty("--cx-min-h", minimum, priority); host.classList.remove("cx-data-grid");
+      };
       host.classList.add("cx-host", "cx-data-grid");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       host.style.setProperty("--cx-row-h", this.rowH + "px");

@@ -31,7 +31,7 @@
       if (typeof this.opts.onDetails === "function") this.toolbar.appendChild(gridButton(this.labels.gridDetails, () => {
         try {
           const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
-          if (!row || row.status) throw new Error("CanopyX: focus a loaded record to open details.");
+          if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
           this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
         } catch (error) { this.emit("error", { error: error }); }
       }));
