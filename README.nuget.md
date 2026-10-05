@@ -63,6 +63,10 @@ Reporting layouts also support left/right pins and responsive retention prioriti
 
 Set an explicit `StateKey` and `Reporting.ViewStorage = CanopyGridViewStorage.Local` for preferences that survive browser sessions. Saved views offer rename, delete and default choices; reset restores the definition and keeps named views. JavaScript host storage hooks govern remote preference delivery, and shareable state strips searches, filters, selected identities and dataset positions. Preferences never authorize record access.
 
+Reporting grids group records by a declared column and show complete-query aggregates. Group keys lead sorting, followed by user sorts and stable row IDs. Collapsing a group changes presentation; paging, selection and exports still count records. Inline sources calculate summaries, while hosted sources return revisioned summary metadata through an explicit hook.
+
+Exports capture the accepted query, revision, scope and column order with filename, locale and time-zone metadata. Progress and cancellation belong to that operation. `materializeExport` returns a bounded immutable snapshot without truncation; `print` passes the complete snapshot to a host renderer. Hosts supply large Office and print generation through the export hook. Standalone CSV/copy remains available without an HTTP host, and Office generation adds no dependency to CanopyX.
+
 ## Links
 
 - Repository: https://github.com/EvotecIT/CanopyX
