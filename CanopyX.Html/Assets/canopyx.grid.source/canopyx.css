@@ -58,6 +58,7 @@ body .cx-host.cx-data-grid { padding:0; }
 .cx-data-grid .cx-auto-row > .cx-cell { padding-block:var(--cx-size-7px); }
 .cx-data-grid .cx-wrap :is(.cx-text,.cx-presenter-text) { white-space:pre-wrap;overflow-wrap:anywhere;text-overflow:clip;min-width:0; }
 .cx-data-grid .cx-row > .cx-cell:first-child:not([data-cx-pin]) { position:relative; }
+.cx-data-grid .cx-row[data-cx-tone] { color:var(--cx-text); }
 .cx-data-grid .cx-row[aria-selected="true"] > .cx-cell:first-child::before { content:"";position:absolute;inset:0 auto 0 0;width:var(--cx-size-2px);background:var(--cx-accent);pointer-events:none;z-index:4; }
 .cx-data-grid .cx-row[data-cx-tone] > .cx-cell:first-child::after { content:"";position:absolute;inset:0 auto 0 0;width:var(--cx-size-3px);background:var(--cx-row-tone);pointer-events:none;z-index:4; }
 .cx-data-grid .cx-row[data-cx-tone][aria-selected="true"] > .cx-cell:first-child::after { left:var(--cx-size-2px); }

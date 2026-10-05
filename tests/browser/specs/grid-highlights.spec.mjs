@@ -32,7 +32,9 @@ test("raw rules win in order per target, preserve host classes, and use the exis
   await expect(row.locator('.cx-cell').nth(3)).toHaveClass(/old-date/);
   const colors = await row.evaluate(row => ({ actual: getComputedStyle(row).color,
     expected: getComputedStyle(row).getPropertyValue('--cx-tone-danger').trim() }));
-  expect(colors.actual).toBe("rgb(184, 41, 42)"); expect(colors.expected).toBe("#b8292a");
+  expect(colors.actual).toBe("rgb(22, 24, 28)"); expect(colors.expected).toBe("#b8292a");
+  expect(await row.locator('.cx-cell').first().evaluate(cell => getComputedStyle(cell,'::after').backgroundColor)).toBe("rgb(184, 41, 42)");
+  expect(await row.locator('.cx-cell').nth(1).evaluate(cell => getComputedStyle(cell).color)).toBe("rgb(140, 92, 5)");
   const exported = await page.evaluate(async () => { const api = document.querySelector('[data-canopyx-host]').canopyx;
     const iterator = api.prepareExport({ scope: "all", values: "raw" }).rows()[Symbol.asyncIterator](); return (await iterator.next()).value; });
   expect(exported.tone).toBe("info"); expect(exported.className).toBe("host-row");
