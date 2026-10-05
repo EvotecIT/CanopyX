@@ -49,7 +49,7 @@
         }
       }
       this.syncGridChrome();
-      signal.addEventListener("abort",()=>this.headerSelectionFlyout?.dispose(),{once:true});
+      signal.addEventListener("abort",()=>{this.headerSelectionFlyout?.dispose();this.headerMenusLifetime?.abort();this.closeGridPopover(false);},{once:true});
     },
     syncGridChrome() {
       if (!this.selectionBar) return;

@@ -7,16 +7,7 @@
       typeof scalar === "boolean" ? "b:" + scalar : "n:" + scalar;
   }
 
-  function reportingFacetProjection(query, column) {
-    const project = group => {
-      if (!group) return undefined;
-      const filters = group.filters.filter(filter => filter.column !== column), groups = group.groups.map(project);
-      if (group.operator === "or" && (filters.length !== group.filters.length || groups.some(child => !child))) return undefined;
-      const children = groups.filter(Boolean);
-      return filters.length || children.length ? { operator: group.operator, filters, groups: children } : undefined;
-    };
-    return { ...query, filters: query.filters.filter(filter => filter.column !== column), filterGroup: project(query.filterGroup) };
-  }
+  function reportingFacetProjection(query,column) { return gridColumnProjection(query,column); }
 
   function reportingFacetPage(input, grid, request) {
     checkDocument(input, "gridFacetPage");

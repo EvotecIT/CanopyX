@@ -31,6 +31,9 @@ public sealed class RuntimeAssetTests {
                     : Enumerable.Empty<string>())
                 .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
         }
+        var editorParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "filter-editor-parts.json")))!;
+        var editorPaths = editorParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        files = files.Where(file => !editorPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
         var parts = files
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
@@ -52,6 +55,9 @@ public sealed class RuntimeAssetTests {
         var compact = actual.Groups[1].Value;
         Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
         expected = expected.Replace(marker, compact);
+        expected = expected.Replace("__CX_FILTER_VERSION__", CanopyHtmlAssets.FilterEditorVersion)
+            .Replace("__CX_FILTER_SCRIPT__", CanopyHtmlAssets.HashedFilterEditorScriptFileName)
+            .Replace("__CX_FILTER_STYLE__", CanopyHtmlAssets.HashedFilterEditorStyleFileName);
         expected = CompressScriptSpacing(expected);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");

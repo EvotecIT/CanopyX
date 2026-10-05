@@ -1067,7 +1067,12 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "gridMore": { "type": "string" },
+            "gridFitContent": { "type": "string" },
+        "gridUnpin": { "type": "string" },
+        "gridWhere": { "type": "string" },
+        "gridComplexFilter": { "type": "string" },
+        "gridClearColumnFilter": { "type": "string" },
+        "gridMore": { "type": "string" },
         "gridDone": { "type": "string" },
         "gridClearAll": { "type": "string" },
         "gridRows": { "type": "string" },

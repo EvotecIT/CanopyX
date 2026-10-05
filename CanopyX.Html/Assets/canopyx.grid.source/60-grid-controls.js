@@ -2,7 +2,7 @@
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridFilters: "Filters", gridColumn: "Column", gridOperator: "Condition", gridValue: "Value (UTC for dates)",
     gridValueType: "Raw value type", gridText: "Text", gridBoolean: "Boolean", gridAddFilter: "Add filter",
-    gridRemoveFilter: "Remove {column} filter", gridApply: "Apply", gridClearFilters: "Clear filters",
+    gridRemoveFilter: "Remove {column} filter", gridApply: "Apply", gridClearFilters: "Clear all filters",
     gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later",
     gridFitColumn: "Fit {column}", gridFitAllColumns: "Fit all columns",
     gridViews: "Views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",

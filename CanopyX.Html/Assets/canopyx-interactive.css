@@ -19,6 +19,12 @@
 --cx-cell-px:12px;
 --cx-on-accent:#ffffff;
 --cx-shadow-ink:#000;
+--cx-size-d06em:.06em;
+--cx-size-210px:210px;
+--cx-size-neg-4px:-4px;
+--cx-size-56px:56px;
+--cx-size-64px:64px;
+--cx-size-160px:160px;
 --cx-size-12d5px:12.5px;
 --cx-size-640px:640px;
 --cx-size-17px:17px;
@@ -100,6 +106,7 @@
 --cx-alt-bg:var(--cx-group-bg);
 --cx-hover-bg:color-mix(in srgb,var(--cx-text) 4%,var(--cx-surface));
 --cx-selected-bg:color-mix(in srgb,var(--cx-accent) 11%,var(--cx-surface));
+--cx-accent-text:color-mix(in srgb,var(--cx-accent) 98%,var(--cx-text));
 --cx-accent-soft:color-mix(in srgb,var(--cx-accent) 13%,var(--cx-surface));
 --cx-line-strong:color-mix(in srgb,var(--cx-text) 22%,var(--cx-surface));
 --cx-row-line:var(--cx-line);

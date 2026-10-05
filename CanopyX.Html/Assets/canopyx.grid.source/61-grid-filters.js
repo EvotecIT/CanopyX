@@ -49,6 +49,7 @@
       const columnField = gridInputLabel(this.labels.gridColumn, column), conditionField = gridInputLabel(this.labels.gridOperator, operator);
       const typeField = gridInputLabel(this.labels.gridValueType, type), valueField = gridInputLabel(this.labels.gridValue, input),
         multipleField = gridInputLabel(this.labels.gridValue, multiple);
+      columnField.classList.add("cx-condition-column"); conditionField.classList.add("cx-condition-operator"); typeField.classList.add("cx-condition-type"); valueField.classList.add("cx-condition-value"); multipleField.classList.add("cx-condition-value");
       multipleField.hidden = true; row.append(columnField, conditionField, typeField, valueField, multipleField);
       const change = () => {
         const definition = this.columns.find(item => item.id === column.value), previous = operator.value;
@@ -63,8 +64,8 @@
         next.value = raw; input.replaceWith(next); input = next;
         input.addEventListener("input", () => { row._filter.edited = true; });
         if (row._filter) row._filter.input = input;
-        if (remove) setText(remove, fill(this.labels.gridRemoveFilter, { column: definition.title }));
-        typeField.hidden = definition.kind !== "text"; update();
+        if (remove) { if(remove.classList.contains("icon")) remove.setAttribute("aria-label",fill(this.labels.gridRemoveFilter,{column:definition.title})); else setText(remove,fill(this.labels.gridRemoveFilter,{column:definition.title})); }
+        typeField.hidden = definition.kind !== "text" || row._design && type.value === "string"; update();
       };
       const update = () => {
         const raw = multipleField.hidden ? input.value : multiple.value, none = ["isNull", "isNotNull"].includes(operator.value), many = operator.value === "in";
@@ -101,7 +102,7 @@
           return Number(raw);
         }
         if (column.kind === "datetime") {
-          const text = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : raw + "Z";
+          const text = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : this.local ? new Date(raw).toISOString() : raw + "Z";
           gridScalar(text, column); return text;
         }
         if (fields.type.value === "boolean") {

@@ -1,6 +1,16 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the clear filter label.</summary>
+    public string GridClearColumnFilter { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the this column belongs to a mixed condition group edit it in filters label.</summary>
+    public string GridComplexFilter { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the where label.</summary>
+    public string GridWhere { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the unpin label.</summary>
+    public string GridUnpin { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the fit to content label.</summary>
+    public string GridFitContent { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the more label.</summary>
     public string GridMore { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the done label.</summary>

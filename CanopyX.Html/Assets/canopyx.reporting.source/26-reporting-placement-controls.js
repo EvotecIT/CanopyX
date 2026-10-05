@@ -1,8 +1,5 @@
   // ---------- stable layout order and user controls ----------
-  DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridPinColumn: "{column}: pinned region", gridPinNone: "Scroll", gridPinLeft: "Left", gridPinRight: "Right",
-    gridResponsiveHidden: "Hidden at this width"
-  }));
+
   function reportingColumnOrder(columns) { return ["left", "none", "right"].flatMap(pin => columns.filter(column => column.pin === pin)); }
   const PLACEMENT_HEADER = DataGrid.prototype.buildHeader, PLACEMENT_MOVE = DataGrid.prototype.moveReportingColumn,
     PLACEMENT_CONTROLS = DataGrid.prototype.syncColumnControls;

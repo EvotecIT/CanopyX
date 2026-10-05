@@ -118,6 +118,11 @@ export type LabelName =
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
   | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint"
+  | "gridFitContent"
+  | "gridUnpin"
+  | "gridWhere"
+  | "gridComplexFilter"
+  | "gridClearColumnFilter"
   | "gridMore" | "gridDone" | "gridClearAll" | "gridRows" | "gridResultNoun" | "gridSearchNoun" | "gridChart" | "gridColumnMenu" | "gridSortAscending" | "gridSortDescending" | "gridClearSort" | "gridFilterColumn" | "gridHideColumn" | "gridGroupedBy" | "gridRemoveGrouping" | "gridSelectAllValues" | "gridFilterValues" | "gridAddCondition" | "gridAddGroup" | "gridAnd" | "gridOr" | "gridEditAsText" | "gridFilterText" | "gridDeepFilters" | "gridToday" | "gridYesterday" | "gridLastSevenDays" | "gridLastThirtyDays" | "gridThisMonth" | "gridDateRange" | "gridEmpty" | "gridEmptyReason" | "gridNoMatches" | "gridNoMatchesReason" | "gridRetry" | "gridLoadFailed" | "gridAll" | "gridPageOf" | "gridStatusCount" | "gridDetailsSection" | "gridPreviousRecord" | "gridNextRecord" | "gridShowMore" | "gridNoData" | "gridPeriodRange" | "gridHealthy";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 

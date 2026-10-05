@@ -98,6 +98,8 @@
           button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + ", " + (index + 1));
         }
       }
+      this.buildHeaderSelection?.();
+      this.buildColumnMenus?.();
     },
 
     cellOf(row, column) { return row.cells[column.id]; },
@@ -123,8 +125,6 @@
         this.observeDetail(element, !row.status);
         this.measureNeeded = true;
       }
-      this.buildHeaderSelection?.();
-      this.buildColumnMenus?.();
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {

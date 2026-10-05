@@ -1,10 +1,5 @@
   // ---------- reporting filter controls over the existing typed query owner ----------
-  DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridBetween: "between (inclusive)", gridRangeEnd: "Upper value (UTC for dates)",
-    gridInvalidRange: "Enter an upper value greater than or equal to the lower value.",
-    gridSuggestedCategory: "Suggested category", gridChooseCategory: "Choose a category", gridBooleanValue: "Boolean value",
-    gridTrue: "True", gridFalse: "False", gridHeaderFilter: "Filter {column}"
-  }));
+
   const REPORT_FILTER_BASE = {};
   for (const method of ["buildGridFilters", "renderGridFilters", "addGridFilter", "readGridFilter", "buildHeader"])
     REPORT_FILTER_BASE[method] = DataGrid.prototype[method];
@@ -71,48 +66,7 @@
       this.reportingFilters.details.addEventListener("toggle", () => this.syncReportingFilterHeaders());
     },
 
-    renderGridFilters(panel) {
-      if (!this.view.reporting) return REPORT_FILTER_BASE.renderGridFilters.call(this, panel);
-      panel.textContent = "";
-      this.reportingFilterDraftBase = reportingFilterShape(this.queryForChange());
-      const form = h("form", "cx-grid-filter-form"), rows = h("div"), error = h("p", "cx-grid-control-error");
-      panel.classList.toggle("cx-grid-group-editor", !!this.view.reporting.filterGroups);
-      error.setAttribute("role", "status");
-      reportingRangeRows(this.queryForChange().filters || []).forEach(filter => this.addGridFilter(rows, filter));
-      form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => this.addGridFilter(rows, null)));
-      const groups = this.view.reporting.filterGroups ? this.buildReportingFilterGroups(form, error) : null;
-      const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
-      form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-        rows.textContent = "";
-        if (groups) { groups.textContent = ""; groups._sync(); }
-        this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined }), error);
-      }));
-      form.appendChild(error); panel.appendChild(form);
-      form.addEventListener("submit", event => {
-        event.preventDefault();
-        try {
-          const filters = [...rows.children].flatMap(row => this.readGridFilter(row));
-          const filterGroup = groups ? this.readReportingFilterGroups(groups) : this.queryForChange().filterGroup;
-          this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }), error);
-        } catch (failure) { reportingFilterError(error, failure.message); }
-      });
-      const requested = this.reportingFilterColumn;
-      if (requested) {
-        let row = [...rows.children].find(item => item._filter.column.value === requested);
-        if (!row && rows.children.length < 64) {
-          this.addGridFilter(rows, null); row = rows.lastElementChild;
-          row._filter.column.value = requested; row._filter.column.dispatchEvent(new Event("change"));
-        }
-        const target = row ? [row._filter.boolean, row._filter.input, row._filter.multiple, row._filter.operator]
-          .find(control => control && !control.disabled && !control.closest("[hidden]")) : apply;
-        target.focus({ preventScroll: true });
-        queueMicrotask(() => {
-          if (!this.destroyed && target.isConnected && this.reportingFilters.details.open && document.activeElement === target)
-            target.scrollIntoView({ block: "nearest", inline: "nearest" });
-        });
-        this.reportingFilterColumn = null;
-      }
-    },
+    renderGridFilters(panel) { return REPORT_FILTER_BASE.renderGridFilters.call(this,panel); },
 
     addGridFilter(parent, predicate) {
       if (!this.view.reporting) return REPORT_FILTER_BASE.addGridFilter.call(this, parent, predicate);

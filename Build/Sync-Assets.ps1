@@ -110,8 +110,11 @@ $assets = @(
     }
 )
 
+$filterEditorParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'filter-editor-parts.json') -Raw | ConvertFrom-Json)
+$filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+
 function Join-AssetSource {
-    param([string] $SourcePath, [string[]] $ExtensionPath)
+    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
@@ -125,6 +128,7 @@ function Join-AssetSource {
         else { $parts = @($parts | Where-Object Name -LT '90-') + @($extra) + @($parts | Where-Object Name -GE '90-') }
     }
 
+    if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -207,6 +211,7 @@ export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge
 export default CanopyX;
 '@
     if ($Grid) {
+        $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
         $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
@@ -239,11 +244,44 @@ function Compress-ScriptSpacing {
     $output.ToString()
 }
 
+function Get-AssetHash([string] $Content) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Content)))).Replace('-', '').ToLowerInvariant().Substring(0, 16) }
+    finally { $sha.Dispose() }
+}
+
+$editorBody = Join-AssetSource -SourcePath $filterEditorPaths[0] -ExtensionPath $filterEditorPaths[1..($filterEditorPaths.Count - 1)] -IncludeFilterEditor
+$editorStyle = Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css')
+$editorVersion = Get-AssetHash ($editorBody + $editorStyle)
+$editorHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
+if (installed.has(context.DataGrid.prototype)) return;
+const {DataGrid,h,setText,setAttr,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
+gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
+gridOverlayTheme,gridRestoreFocus,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER} = context;
+const buildFilters = DataGrid.prototype.buildGridFilters;
+'@
+$editorFooter = @'
+DataGrid.prototype.buildGridFilters = buildFilters;
+installed.add(DataGrid.prototype);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$editorScript = Compress-ScriptSpacing (($editorHeader.Replace('__VERSION__', $editorVersion).Replace("`r`n", "`n")) + "`n" + $editorBody + $editorFooter.Replace("`r`n", "`n") + "`n")
+$editorScriptName = 'canopyx-filter-editor.' + (Get-AssetHash $editorScript) + '.js'
+$editorStyleName = 'canopyx-filter-editor.' + (Get-AssetHash $editorStyle) + '.css'
+$assets += @(@{ Generated = $editorScript; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.js' },
+    @{ Generated = $editorStyle; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.css' })
+
 foreach ($asset in $assets) {
-    $sourcePath = Join-Path $root $asset.Source
+    $sourcePath = if ($asset.Source) { Join-Path $root $asset.Source } else { $null }
     $targetPath = Join-Path $root $asset.Target
     $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
-    $generated = Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath
+    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath }
+    $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)

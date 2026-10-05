@@ -57,7 +57,7 @@ internal static class CanopyHtmlWriter {
     internal static string Fragment(CanopyGridView view, CanopyHtmlOptions options) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
-        return FragmentDocument(view.ToJson(), options);
+        return FragmentDocument(view.ToJson(), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.FilterEditorMarkup : string.Empty);
     }
 
     internal static string Page(CanopyGridView view, CanopyHtmlOptions options) {
@@ -67,7 +67,7 @@ internal static class CanopyHtmlWriter {
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
-            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount })
+            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, AssetMode = options.AssetMode })
         };
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
