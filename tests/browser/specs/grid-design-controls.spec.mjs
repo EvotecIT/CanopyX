@@ -13,6 +13,7 @@ const menu=(page,column)=>page.getByRole('button',{name:'Menu for '+column,exact
 test('column menus have roving focus and generic sorting, pinning and hiding',async({page})=>{
   await open(page);await menu(page,'Amount').press('ArrowDown');const panel=page.getByRole('menu',{name:'Menu for Amount'});
   await expect(panel.getByRole('menuitem',{name:'Sort ascending',exact:true})).toBeFocused();await page.keyboard.press('ArrowDown');await expect(panel.getByRole('menuitem',{name:'Sort descending',exact:true})).toBeFocused();
+  expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
   if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'column-menu-light.png')});
   await page.keyboard.press('Home');await page.keyboard.press('Enter');await expect(page.locator('.cx-hcell[data-cx-column="amount"]')).toHaveAttribute('aria-sort','ascending');
   await menu(page,'Name').click();await page.getByRole('menuitem',{name:'Pin left',exact:true}).click();await expect(page.locator('.cx-hcell[data-cx-column="name"]')).toHaveAttribute('data-cx-pin','left');
@@ -36,6 +37,17 @@ test.describe('date calendar boundaries',()=>{test.use({timezoneId:'Europe/Warsa
     if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'column-filter-date-light.png')});
   });
 });
+
+test('complex saved column conditions open the shared builder in an ordinary grid',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));await open(page);
+  await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.setQuery({filters:[
+    {column:'amount',operator:'gt',values:[4]},{column:'amount',operator:'lt',values:[18]},{column:'amount',operator:'ne',values:[9]}
+  ]}));
+  await menu(page,'Amount').click();await page.getByRole('menuitem',{name:'Filter…',exact:true}).click();
+  await page.getByRole('button',{name:'Edit as text',exact:true}).click();await expect(page.locator('form.cx-grid-filter-form')).toBeVisible();
+  await expect(page.locator('.cx-grid-filter-form .cx-grid-filter')).toHaveCount(3);expect(errors).toEqual([]);
+  await expect(page.locator('.cx-grid-result-count')).toContainText('12');
+});
 test('sentence builder applies typed groups and preserves deeper saved filters for text editing',async({page})=>{
   await open(page);await page.locator('.cx-grid-filters > summary').click();const form=page.locator('.cx-grid-filter-form');
   await form.getByRole('button',{name:'+ Group',exact:true}).first().click();const group=form.locator('.cx-group').first();await group.getByRole('button',{name:'+ Condition',exact:true}).click();
@@ -46,4 +58,11 @@ test('sentence builder applies typed groups and preserves deeper saved filters f
   await page.evaluate(async()=>{const api=document.querySelector('[data-canopyx-host]').canopyx;const condition={column:'amount',operator:'gt',values:[4]};await api.setQuery({filterGroup:{operator:'and',filters:[],groups:[{operator:'and',filters:[],groups:[{operator:'and',filters:[condition],groups:[]}]}]}});});
   await page.locator('.cx-grid-filters > summary').click();await expect(page.getByRole('textbox',{name:'Filter expression'})).toHaveAttribute('readonly','');
   await page.getByRole('button',{name:'Edit as text',exact:true}).click();await expect(page.getByRole('textbox',{name:'Filter expression'})).not.toHaveAttribute('readonly','');
+  await page.getByRole('textbox',{name:'Filter expression'}).evaluate(input=>{
+    input.value=JSON.stringify({filters:[{column:'amount',operator:'gt',values:[9]}]});input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.value='{';input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await expect(form.locator('.cx-grid-control-error')).toHaveText('Enter a valid filter value.');
+  await page.waitForTimeout(250);await expect(page.locator('.cx-grid-result-count')).toContainText('15');
+  expect(await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery().filterGroup.groups[0].groups[0].filters[0].values)).toEqual([4]);
 });

@@ -176,6 +176,7 @@ public sealed partial class CanopyLabels {
         GridExportCancelled = "Eksport anulowany",
         GridCancelExport = "Anuluj eksport",
         GridPrint = "Drukuj",
+        GridCloseRecord = "Zamknij szczegóły rekordu",
         GridContains = "zawiera",
         GridStartsWith = "zaczyna się od",
         GridIn = "jest jedną z wartości (po jednej w wierszu)",

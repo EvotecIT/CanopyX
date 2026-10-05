@@ -13,6 +13,6 @@
       controls[(index+(event.shiftKey?-1:1)+controls.length)%controls.length].focus({preventScroll:true});
     });
     dialog.addEventListener("close",()=>{signal.removeEventListener("abort",abort);dialog.remove();if(this.reportingText===dialog)this.reportingText=null;
-      if(!signal.aborted)gridRestoreFocus(this,returnFocus,rowId,column);},{once:true});
+      if(!this.reportingText&&!signal.aborted)gridRestoreFocus(this,returnFocus,rowId,column);},{once:true});
     dialog.showModal();content.focus();
   };

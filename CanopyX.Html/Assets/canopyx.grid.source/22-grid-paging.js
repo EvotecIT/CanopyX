@@ -97,7 +97,7 @@
       }
       navigation.append(...this.pageButtons.slice(2));
       const length = this.pageLengthChoice = h("select");
-      const rpp=gridInputLabel(this.labels.gridPageLength,length);rpp.classList.add("cx-rpp");pager.append(rpp,this.pageRange,navigation);
+      const rpp=gridInputLabel(this.labels.gridPageLength,length);rpp.classList.add("cx-rpp");pager.append(this.pageRange,navigation,rpp);
       length.addEventListener("change", () => run(() => this.setPageLength(length.value==="all"?"all":Number(length.value))), { signal: signal });
       pager.addEventListener("submit", event => { event.preventDefault();
         if (this.pageNumber && this.pageNumber.checkValidity()) run(() => this.goToPage(Number(this.pageNumber.value) - 1)); }, { signal: signal });

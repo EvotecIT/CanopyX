@@ -39,7 +39,7 @@
       footer.append(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),
         gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}));
       const faceted=column.kind==="text"&&(this.view.source.kind==="inline"||this.view.reporting?.facetColumns?.includes(id)&&typeof this.source.facet==="function");
-      if(!faceted&&clauses.some(item=>item.groups&&(item.groups.length||item.filters.length>2))||!faceted&&clauses.length>2){setText(body,this.labels.gridComplexFilter);body.appendChild(gridButton(this.labels.gridEditAsText,()=>{this.closeGridPopover(false);this.reportingFilters.details.open=true;}));}
+      if(!faceted&&clauses.some(item=>item.groups&&(item.groups.length||item.filters.length>2))||!faceted&&clauses.length>2){setText(body,this.labels.gridComplexFilter);body.appendChild(gridButton(this.labels.gridEditAsText,()=>{this.closeGridPopover(false);this.toolbar.querySelector('.cx-grid-filters').open=true;}));}
       else if(faceted)this.renderColumnValues(column,body,clauses,apply,error,signal);else this.renderColumnConditions(column,body,clauses,apply,error);
       this.gridPopover.position();
     },

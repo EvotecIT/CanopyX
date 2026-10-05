@@ -2,7 +2,7 @@
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExpandCell: "{column}: show complete text", gridCloseCell: "Close complete text"
   }));
-  const GRID_PRESENTERS_BUILD = DataGrid.prototype.build, GRID_PRESENTERS_PAINT = DataGrid.prototype.paintSlot;
+  const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
     const fields = {link:["hrefColumn","newWindow"],icon:["glyph"],progress:["maximum","thresholds"],boolean:["inverted"],
       list:["separator","limit"],longText:["mono"],enum:["tones"],state:["tones"],change:["deltaColumn","higherIsGood"],
@@ -57,10 +57,4 @@
       if (options&&!column.render) column.render=gridCellRenderer(this,column,options);
     }
     return GRID_PRESENTERS_BUILD.call(this);
-  };
-  DataGrid.prototype.paintSlot = function (slot,node,column,index,row) {
-    GRID_PRESENTERS_PAINT.call(this,slot,node,column,index,row);
-    if (!column.render&&!slot.text.data) {slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
-    else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
-    if(this.phone||slot.hiddenFields)this.paintHiddenFields?.(slot,node,column,index);
   };

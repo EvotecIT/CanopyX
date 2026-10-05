@@ -60,12 +60,14 @@
         if (!(this.sized = this.hasGridSize())) return;
         this.applyWidths();
         this.updateGridPhone();
+        this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
         if (this.hiddenScrollTop !== undefined) {
           const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
         }
         this.scheduleRender();
       }));
       this.resizeObserver.observe(grid);
+      this.resizeObserver.observe(this.head);
     },
 
     setLogicalTop(top) {
@@ -125,7 +127,11 @@
       else for (let i = 0; i < this.cols.length; i++) {
         const slot = element._cells[i];
         if (slot.highlighted) { slot.cls = null; slot.highlighted = false; }
-        this.paintSlot(slot, row.h, this.cols[i], this.columnIndex[i], row);
+        const column=this.cols[i];
+        this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
+        if(!column.render&&!slot.text.data){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
+        else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
+        if(this.phone||slot.hiddenFields)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
       }
       this.paintGridHighlights(element, row);
       if(row.status)this.paintGridSkeleton(element,row);

@@ -64,6 +64,7 @@
   "GridHeaderFilter": ["Filtruj kolumnę {column}","{column} filtern","Filtrar {column}"],
   "GridExpandCell": ["{column}: pokaż pełny tekst","{column}: vollständigen Text anzeigen","{column}: mostrar el texto completo"],
   "GridCloseCell": ["Zamknij pełny tekst","Vollständigen Text schließen","Cerrar el texto completo"],
+  "GridCloseRecord": ["Zamknij szczegóły rekordu","Datensatzdetails schließen","Cerrar detalles del registro"],
   "GridMoveColumn": ["{column}: przeciągnij, aby przenieść, lub użyj strzałek w lewo i w prawo","{column}: zum Verschieben ziehen oder Pfeil links/rechts verwenden","{column}: arrastre para mover o use las flechas izquierda y derecha"],
   "GridResizeHelp": ["Enter dopasowuje do maksymalnie 200 wczytanych wierszy; strzałki w lewo i w prawo zmieniają szerokość.","Eingabe passt die Breite an bis zu 200 geladene Zeilen an; Pfeil links/rechts ändert die Breite.","Entrar ajusta el ancho a un máximo de 200 filas cargadas; las flechas izquierda y derecha cambian el ancho."],
   "GridFitColumn": ["Dopasuj kolumnę {column}","{column} anpassen","Ajustar {column}"],

@@ -33,20 +33,20 @@
     },
     openColumnMenu(id,anchor){
       const column=this.columns.find(item=>item.id===id),panel=this.openGridPopover(anchor,"cx-column-menu",fill(this.labels.gridColumnMenu,{column:column.title}),id);
-      panel.setAttribute("role","menu");
+      const menu=h("div");menu.setAttribute("role","menu");menu.setAttribute("aria-label",panel.getAttribute("aria-label"));panel.appendChild(menu);
       const icons=new Map([[this.labels.gridSortAscending,"up"],[this.labels.gridSortDescending,"down"],[this.labels.gridFilterColumn,"filter"],[this.labels.gridPinLeft,"pin"],[this.labels.gridPinRight,"pin"],[this.labels.gridFitContent,"fit"],[this.labels.gridHideColumn,"hide"]]);
       const paths={pin:'<path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/>',fit:'<path d="M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3M4 5v14M20 5v14"/>',hide:'<path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9 6-.3.8-1.2 2.3-2.6 3.6M6.4 7.6C4.6 8.9 3.4 10.8 3 12c.5 1.5 4 6 9 6 1.6 0 3-.4 4.3-1.1"/>'};
       const add=(label,action,disabled=false)=>{const button=gridButton(label,()=>{this.closeGridPopover(false);Promise.resolve().then(action).catch(error=>this.emit("error",{error}));});
         const icon=h("span","ico"),name=icons.get(label);if(name){const svg=gridIcon(name);if(paths[name])svg.innerHTML=paths[name];icon.appendChild(svg);}button.prepend(icon);
-        button.classList.add("cx-mi");button.setAttribute("role","menuitem");button.tabIndex=-1;button.disabled=disabled;panel.appendChild(button);};
+        button.classList.add("cx-mi");button.setAttribute("role","menuitem");button.tabIndex=-1;button.disabled=disabled;menu.appendChild(button);};
       const sort=direction=>this.setQuery(gridQueryStart(this.queryForChange(true),{sort:[...(this.queryForChange().sort||[]).filter(item=>item.column!==id),...direction?[{column:id,direction}]:[]]}));
       add(this.labels.gridSortAscending,()=>sort("asc"),!column.sortable||this.view.reporting?.grouping?.column===id);
       add(this.labels.gridSortDescending,()=>sort("desc"),!column.sortable||this.view.reporting?.grouping?.column===id);
       add(this.labels.gridClearSort,()=>sort(null),!(this.getQuery()?.sort||[]).some(item=>item.column===id));
-      panel.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFilterColumn,()=>this.openColumnFilter(id,this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]')));
-      panel.appendChild(h("hr","cx-menu-rule"));
+      menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFilterColumn,()=>this.openColumnFilter(id,this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]')));
+      menu.appendChild(h("hr","cx-menu-rule"));
       for(const [pin,label]of [["left","gridPinLeft"],["right","gridPinRight"],["none","gridUnpin"]])add(this.labels[label],()=>this.setColumnPinned(id,pin));
-      panel.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFitContent,()=>this.autoFitColumn(id),!this.acceptedQuery||!!this.pendingQuery);
+      menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFitContent,()=>this.autoFitColumn(id),!this.acceptedQuery||!!this.pendingQuery);
       add(this.labels.gridFitAllColumns,()=>this.autoFitColumns(),!this.acceptedQuery||!!this.pendingQuery);
       add(this.labels.gridHideColumn,()=>this.setColumnVisible(id,false),this.columns.filter(item=>!item.hidden).length===1);
       const first=panel.querySelector('[role="menuitem"]:not(:disabled)');if(first){first.tabIndex=0;first.focus();}

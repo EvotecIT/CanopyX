@@ -27,7 +27,7 @@
       const notice=h("p");setText(notice,this.labels.gridDeepFilters);text=h("textarea","cx-filter-text");text.setAttribute("aria-label",this.labels.gridFilterText);text.readOnly=true;
       text.value=JSON.stringify({filters:this.queryForChange().filters||[],filterGroup:this.queryForChange().filterGroup},null,2);
       const edit=gridButton(this.labels.gridEditAsText,()=>{editingText=true;text.readOnly=false;text.focus();});body.append(notice,text,edit);
-      text.addEventListener("input",()=>{try{const value=JSON.parse(text.value);apply(gridQueryStart(this.queryForChange(true),{filters:value.filters||[],filterGroup:value.filterGroup}));}catch(_){setText(error,this.labels.gridInvalidFilter);}});
+      text.addEventListener("input",()=>{try{const value=JSON.parse(text.value);apply(gridQueryStart(this.queryForChange(true),{filters:value.filters||[],filterGroup:value.filterGroup}));}catch(_){clearTimeout(timer);draft=null;setText(error,this.labels.gridInvalidFilter);}});
       return;
     }
     const update=()=>{try{syncWords(root);apply(readQuery());setText(error,"");}catch(_){clearTimeout(timer);draft=null;setText(error,this.labels.gridInvalidFilter);}};

@@ -69,7 +69,7 @@ body .cx-host.cx-data-grid { padding:0; }
 .cx-data-grid .cx-grid-views .cx-grid-field { width:100%; }
 .cx-data-grid :is(button,summary,select,input,textarea):focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px); }
 .cx-data-grid .cx-grid-pager { flex:none;display:flex;align-items:center;gap:var(--cx-size-4px);padding:var(--cx-size-8px) var(--cx-size-12px);border-top:var(--cx-size-1px) solid var(--cx-line);font-size:var(--cx-size-13d5px);color:var(--cx-muted); }
-.cx-data-grid .cx-grid-page-range { margin-inline-end:auto;font-variant-numeric:tabular-nums; }
+.cx-data-grid .cx-grid-page-range { font-variant-numeric:tabular-nums; }
 .cx-data-grid .cx-grid-pager .cx-grid-field { flex:none;flex-direction:row;align-items:center;gap:var(--cx-size-8px);white-space:nowrap; }
 .cx-data-grid .cx-grid-pager :is(input,select) { width:var(--cx-size-52px);height:var(--cx-size-30px);padding:0 var(--cx-size-8px); }
 .cx-data-grid .cx-grid-pager select { width:var(--cx-size-72px); }
@@ -77,7 +77,7 @@ body .cx-host.cx-data-grid { padding:0; }
 .cx-data-grid .cx-grid-overflow .cx-grid-panel { right:0;left:auto;width:var(--cx-size-244px); }
 .cx-data-grid .cx-grid-overflow .cx-grid-panel > .cx-button { width:100%;justify-content:start;border:0;border-radius:var(--cx-radius-sm); }
 .cx-phone .cx-toolbar { gap:var(--cx-size-6px); }
-.cx-phone .cx-search { max-width:none;flex-basis:100%; }
+.cx-phone .cx-search { max-width:none;flex-basis:100%;height:var(--cx-size-44px); }
 .cx-phone .cx-spacer,.cx-phone .cx-sep { display:none; }
 .cx-phone .cx-grid-columns > summary { width:var(--cx-size-44px);font-size:0;padding:0; }
 .cx-phone .cx-grid-columns > summary .cx-ico { width:var(--cx-size-16px);height:var(--cx-size-16px); }
@@ -86,7 +86,7 @@ body .cx-host.cx-data-grid { padding:0; }
 .cx-phone .cx-toolbar :is(.cx-btn,.cx-button) { min-height:var(--cx-size-44px); }
 .cx-phone .cx-grid-pager .cx-grid-page-range,.cx-phone .cx-grid-pager > .cx-grid-field:last-child { display:none; }
 .cx-phone .cx-grid-pager { justify-content:center; }
-.cx-phone .cx-grid-panel { position:fixed!important;inset:auto 0 0!important;width:100%;max-width:100%;max-height:var(--cx-size-85vh);overflow:auto;border-radius:var(--cx-radius) var(--cx-radius) 0 0;z-index:30; }
+.cx-phone .cx-grid-panel { position:fixed!important;inset:auto 0 0!important;width:100%;max-width:100%;max-height:var(--cx-size-85vh)!important;overflow:auto;border-radius:var(--cx-radius) var(--cx-radius) 0 0;z-index:30; }
 .cx-phone .cx-grid-panel::before { content:"";display:block;width:var(--cx-size-32px);height:var(--cx-size-4px);border-radius:var(--cx-radius);background:var(--cx-muted);margin:0 auto var(--cx-size-8px);flex-basis:var(--cx-size-32px); }
 .cx-data-grid.cx-phone .cx-grid-panel { width:100%!important;max-width:100%!important; }
 .cx-data-grid .cx-search-input:focus-visible { outline:0; }
@@ -152,7 +152,6 @@ body .cx-host.cx-data-grid { padding:0; }
 :is(.cx-data-grid,.cx-grid-overlay) .cx-clamped { display:flex; flex-direction:column; align-items:stretch; justify-content:center; }
 :is(.cx-data-grid,.cx-grid-overlay) .cx-clamped .cx-wrapped-text { mask-image:linear-gradient(to bottom, var(--cx-shadow-ink) 65%, transparent); }
 :is(.cx-data-grid,.cx-grid-overlay) .cx-presenter-expand { align-self:flex-start; padding:0; border:0; background:transparent; color:var(--cx-accent); font:inherit; cursor:pointer; }
-.cx-data-grid .cx-single-text { display:block; white-space:nowrap; }
 .cx-grid-overlay { color:var(--cx-text); font:var(--cx-font-size)/1.45 var(--cx-font); }
 body .cx-host.cx-grid-overlay { height:auto; min-height:0; padding:0; }
 .cx-grid-overlay [hidden] { display:none!important; }
@@ -163,7 +162,7 @@ body .cx-host.cx-grid-overlay { height:auto; min-height:0; padding:0; }
 .cx-data-grid .cx-tag-list { flex:1; min-width:0; overflow:hidden; white-space:nowrap; }
 .cx-data-grid .cx-list-cell .cx-presenter-expand { flex:none; align-self:center; }
 
-.cx-data-grid .cx-grid-column-menu { width:var(--cx-size-24px); height:var(--cx-size-24px); min-height:0; padding:0; opacity:0; margin-left:auto; }
+.cx-data-grid .cx-grid-column-menu { width:var(--cx-size-24px); height:var(--cx-size-24px); min-height:0; padding:0; opacity:0; margin-left:auto; border:0; background:transparent; color:var(--cx-muted); }
 .cx-data-grid .cx-hcell:hover .cx-grid-column-menu,.cx-data-grid .cx-hcell:focus-within .cx-grid-column-menu,.cx-data-grid.cx-phone .cx-grid-column-menu { opacity:1; }
 .cx-data-grid .cx-grid-header-filter { width:var(--cx-size-20px); height:var(--cx-size-24px); min-height:0; padding:0; border:0; background:transparent; color:var(--cx-muted); }
 .cx-data-grid .cx-grid-header-filter[data-cx-filtered="true"] { color:var(--cx-accent); }
@@ -207,7 +206,7 @@ body .cx-host.cx-grid-overlay { height:auto; min-height:0; padding:0; }
 
 
 .cx-data-grid .cx-grid-notice.cx-state { flex:1; align-content:center; }
-.cx-data-grid:has(:is(.cx-initial-skeleton,.cx-state):not([hidden])) .cx-grid { flex:0 0 auto; height:var(--cx-head-h); }
+.cx-data-grid.cx-grid-awaiting .cx-grid { flex:0 0 auto; height:var(--cx-head-h); }
 .cx-initial-skeleton .cx-skel,.cx-cell > .cx-skel { display:flex; width:100%; min-width:0; }
 .cx-skel > span { padding:0 var(--cx-cell-px);min-width:0;display:flex;align-items:center;height:var(--cx-row-h); }
 .cx-skel i { width:65%; }
@@ -235,6 +234,7 @@ body .cx-host.cx-grid-overlay { height:auto; min-height:0; padding:0; }
 .cx-data-grid .cx-header-check[data-cx-checked="true"] svg { opacity:1; }
 .cx-data-grid .cx-header-check[data-cx-checked="mixed"]::before { content:"";width:var(--cx-size-8px);height:var(--cx-size-2px);background:var(--cx-on-accent);position:absolute; }
 .cx-phone .cx-hrow { height:var(--cx-size-44px); }
+.cx-data-grid.cx-grid-awaiting.cx-phone .cx-grid { height:var(--cx-size-44px); }
 .cx-phone .cx-hcell :is(.cx-grid-column-menu,.cx-grid-header-filter) { min-width:var(--cx-size-44px);min-height:var(--cx-size-44px); }
 .cx-phone .cx-header-selection { width:var(--cx-size-44px);padding:var(--cx-size-14px); }
 .cx-phone .cx-header-check { position:relative; }

@@ -88,7 +88,7 @@ export function viewPage(view) {
   const interactive = view.checkboxes || view.dragDrop || view.contextActions && view.contextActions.length || view.columns.some(column => column.editable);
   const { script, style } = runtimeAssets(view.type === "grid" ? view.reporting ? "reporting" : "grid" : interactive ? "interactive" : "tree");
   const json = JSON.stringify(view).replace(/</g, "\\" + "u003c");
-  return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
+  return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
     + "</script></head><body class=\"cx-page\"><div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\"><script type=\"application/json\" class=\"cx-config\">"
     + json + "</script></div></body></html>";
 }

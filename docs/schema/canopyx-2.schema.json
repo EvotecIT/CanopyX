@@ -1196,6 +1196,7 @@
             "gridHeaderFilter": { "$ref": "#/$defs/accessibleLabel" },
             "gridExpandCell": { "$ref": "#/$defs/accessibleLabel" },
             "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCloseRecord": { "$ref": "#/$defs/accessibleLabel" },
             "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
             "gridFitColumn": { "$ref": "#/$defs/accessibleLabel" },

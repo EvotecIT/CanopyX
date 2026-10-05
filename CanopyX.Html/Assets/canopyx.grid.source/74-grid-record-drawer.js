@@ -1,10 +1,12 @@
   let activeRecordDrawer;
   DataGrid.prototype.openGridDrawer=function(record,index,returnFocus){
+    if(activeRecordDrawer?.contains(returnFocus))returnFocus=activeRecordDrawer._returnFocus;
     activeRecordDrawer?.close();
     const dialog=h("dialog","cx-host cx-grid-overlay cx-drawer"),head=h("div","cx-drawer-h"),identity=h("div"),title=h("h4"),subtitle=h("p"),body=h("div","cx-drawer-body");
+    dialog._returnFocus=returnFocus;
     gridOverlayTheme(this,dialog);title.id=this.id+"-record-title";title.tabIndex=-1;title.setAttribute("aria-level","2");dialog.setAttribute("aria-labelledby",title.id);
     const previous=gridDecorateButton(gridButton("",()=>navigate(-1)),"up",true),next=gridDecorateButton(gridButton("",()=>navigate(1)),"down",true),close=gridDecorateButton(gridButton("",()=>dialog.close()),"close",true);
-    previous.setAttribute("aria-label",this.labels.gridPreviousRecord);next.setAttribute("aria-label",this.labels.gridNextRecord);close.setAttribute("aria-label",this.labels.gridCloseCell);
+    previous.setAttribute("aria-label",this.labels.gridPreviousRecord);next.setAttribute("aria-label",this.labels.gridNextRecord);close.setAttribute("aria-label",this.labels.gridCloseRecord);
     for(const button of [previous,next,close])button.classList.add("icon");identity.append(title,subtitle);head.append(identity,previous,next,close);dialog.append(head,body);
     document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false;
@@ -36,6 +38,6 @@
     });
     const abort=()=>{retiredForNavigation=dialog._navigating;dialog.close();};owner.signal.addEventListener("abort",abort,{once:true});
     dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
-      if(!dialog._navigating&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
+      if(!this.recordDrawer&&!dialog._navigating&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
     paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();title.focus({preventScroll:true});
   };

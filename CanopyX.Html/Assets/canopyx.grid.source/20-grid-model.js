@@ -208,7 +208,7 @@
       this.resizeObserver.disconnect();
       this.detailObserver?.disconnect(); this.rowHeights?.clear(); this.rowOffsets = null;
       this.restoreHeight();
-      this.host.classList.remove("cx-data-grid","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right");
+      this.host.classList.remove("cx-data-grid","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right","cx-grid-awaiting");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);

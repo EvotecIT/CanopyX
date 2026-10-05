@@ -2,13 +2,14 @@
   Object.assign(DataGrid.prototype,{
     setNotice(text,error){
       clearTimeout(this.gridLoadingTimer);this.notice.replaceChildren();this.notice.hidden=true;this.host.insertBefore(this.notice,this.grid);
+      this.host.classList.remove("cx-grid-awaiting");
       if(!this.stateCleanup){this.stateCleanup=true;this.lifetime.signal.addEventListener("abort",()=>{clearTimeout(this.gridLoadingTimer);clearTimeout(this.gridSkeletonTimer);},{once:true});}
       this.notice.className="cx-grid-notice";this.notice.setAttribute("role",error?"alert":"status");
       if(this.pendingQuery&&!error){
         const epoch=this.queryEpoch;this.gridLoadingTimer=setTimeout(()=>{
           if(this.destroyed||epoch!==this.queryEpoch||!this.pendingQuery)return;
           setText(this.live,this.labels.loading);
-          if(!this.snapshot){this.notice.classList.add("cx-initial-skeleton");this.notice.hidden=false;this.host.insertBefore(this.notice,this.grid.nextSibling);
+          if(!this.snapshot){this.host.classList.add("cx-grid-awaiting");this.notice.classList.add("cx-initial-skeleton");this.notice.hidden=false;this.host.insertBefore(this.notice,this.grid.nextSibling);
             for(let index=0;index<6;index++){const row=h("div","cx-skel");row.setAttribute("aria-hidden","true");
               for(const column of this.visibleColumns()){const cell=h("span"),bar=h("i");cell.style.flex=column.renderWidth||column.width;cell.appendChild(bar);row.appendChild(cell);}this.notice.appendChild(row);}}
         },150);return;
@@ -21,7 +22,7 @@
       }
       if(this.snapshot&&(this.cursor?this.cursorWindow.end===this.pageOffset:this.snapshot.matched===0)){
         const query=this.acceptedQuery,active=!!query.search||gridFilterCount(query)>0,title=h("h4"),reason=h("p"),actions=h("div","acts");
-        this.notice.classList.add("cx-state");this.host.insertBefore(this.notice,this.grid.nextSibling);title.setAttribute("aria-level","2");setText(title,fill(active?this.labels.gridNoMatches:this.labels.gridEmpty,{noun:this.noun}));
+        this.host.classList.add("cx-grid-awaiting");this.notice.classList.add("cx-state");this.host.insertBefore(this.notice,this.grid.nextSibling);title.setAttribute("aria-level","2");setText(title,fill(active?this.labels.gridNoMatches:this.labels.gridEmpty,{noun:this.noun}));
         setText(reason,active?fill(this.labels.gridNoMatchesReason,{search:query.search||"—",count:gridFilterCount(query)}):this.view.emptyReason||this.labels.gridEmptyReason);
         if(active)actions.appendChild(gridButton(this.labels.gridClearAll,()=>this.setQuery(gridQueryStart(this.queryForChange(true),{search:"",filters:[],filterGroup:undefined})).catch(()=>{})));
         this.notice.append(title,reason,actions);this.notice.hidden=false;setText(this.live,title.textContent+" "+reason.textContent);

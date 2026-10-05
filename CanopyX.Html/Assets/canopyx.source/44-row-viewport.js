@@ -17,7 +17,7 @@
       const grid = this.grid;
       // A repaint can replace the cell that holds focus (host-drawn cells and details are rebuilt); focus goes back.
       const held = this.heldCell();
-      const viewHeight = grid.clientHeight - this.head.offsetHeight;
+      const viewHeight = this.viewportHeight ?? grid.clientHeight - this.head.offsetHeight;
       const top = this.logicalTop();
       const shift = this.scaledScroll ? top - grid.scrollTop : 0;
       const n = rows.rowCount();
