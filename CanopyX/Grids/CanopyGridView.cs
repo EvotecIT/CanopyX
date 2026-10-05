@@ -10,7 +10,7 @@ namespace CanopyX;
 /// the host owns transport, query execution, and authorization. Both use the same column and cell definitions.
 /// </remarks>
 public sealed class CanopyGridView {
-    private int _rowHeight = 28;
+    private int? _rowHeight;
     private int _pageSize = 100;
     private int _pageLength = 50;
     private int? _searchDelayMilliseconds;
@@ -65,12 +65,18 @@ public sealed class CanopyGridView {
 
     /// <summary>Gets or sets the fixed height, or the minimum and estimate for automatic rows, in CSS pixels between 20 and 64.</summary>
     public int RowHeight {
-        get => _rowHeight;
+        get => _rowHeight ?? (Density == CanopyGridDensity.Compact ? 28 : Density == CanopyGridDensity.Comfortable ? 42 : 34);
         set {
             if (value < 20 || value > 64) throw new ArgumentOutOfRangeException(nameof(value), value, "Row height must be between 20 and 64 pixels.");
             _rowHeight = value;
         }
     }
+
+    /// <summary>Gets or sets the row density. Explicit <see cref="RowHeight"/> values take precedence over density.</summary>
+    public CanopyGridDensity Density { get; set; }
+
+    /// <summary>Gets or sets whether alternate records have a subtle background. Defaults to false.</summary>
+    public bool Zebra { get; set; }
 
     /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
     public bool AutoRowHeight { get; set; }
@@ -127,6 +133,8 @@ public sealed class CanopyGridView {
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
         writer.Property("rowHeight", RowHeight);
+        if (Density != CanopyGridDensity.Default) writer.Property("density", Density == CanopyGridDensity.Compact ? "compact" : "comfortable");
+        if (Zebra) writer.Property("zebra", true);
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
@@ -175,6 +183,8 @@ public sealed class CanopyGridView {
             throw new ArgumentOutOfRangeException(nameof(Source), Source, "Unknown grid source.");
         }
         CanopyJsonNames.Selection(Selection);
+        if (Density != CanopyGridDensity.Default && Density != CanopyGridDensity.Compact && Density != CanopyGridDensity.Comfortable)
+            throw new ArgumentOutOfRangeException(nameof(Density), Density, "Unknown grid density.");
         if (Presentation != CanopyGridPresentation.Continuous && Presentation != CanopyGridPresentation.Paged)
             throw new ArgumentOutOfRangeException(nameof(Presentation), Presentation, "Unknown grid presentation.");
         if (Navigation != CanopyGridNavigation.Offset && Navigation != CanopyGridNavigation.Cursor)

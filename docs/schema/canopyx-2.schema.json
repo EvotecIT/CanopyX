@@ -58,6 +58,8 @@
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
         "autoRowHeight": { "type": "boolean", "description": "Measure record heights; rowHeight supplies the minimum and unseen-row estimate." },
+        "density": { "enum": ["compact", "default", "comfortable"], "description": "Graphite spacing; explicit rowHeight wins." },
+        "zebra": { "type": "boolean", "description": "Optional alternate-row backgrounds; off by default." },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },

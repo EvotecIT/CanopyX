@@ -63,6 +63,8 @@
       ids.add(column.id);
     }
     if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+    if (view.density !== undefined && !["compact", "default", "comfortable"].includes(view.density) ||
+        view.zebra !== undefined && typeof view.zebra !== "boolean") throw new Error("CanopyX: invalid grid density or zebra option.");
     validateGridHighlights(view);
     if (view.searchDelayMs !== undefined && (!Number.isInteger(view.searchDelayMs) || view.searchDelayMs < 0 || view.searchDelayMs > 5000))
       throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
@@ -70,7 +72,7 @@
         new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
       throw new Error("CanopyX: search columns must identify unique declared columns.");
     if (view.autoRowHeight !== undefined && typeof view.autoRowHeight !== "boolean" ||
-        view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64) ||
+        view.rowHeight !== undefined && view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64) ||
         view.estimatedRowHeight !== undefined && (!Number.isInteger(view.estimatedRowHeight) || view.estimatedRowHeight < 20 || view.estimatedRowHeight > 64) ||
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
@@ -85,7 +87,7 @@
     if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
-    return view;
+    return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 28 : view.density === "comfortable" ? 42 : 34) };
   }
 
   function gridQuery(view, input) {

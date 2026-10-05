@@ -38,7 +38,7 @@ public sealed class StaticHtmlTests {
         var html = CanopyStaticHtml.Render(view, options);
         // The cell and its badge take the host's colour; a host tone without one keeps the normal text colour.
         Assert.Equal(2, Regex.Matches(html, "color:#9a3412;").Count);
-        Assert.Contains("color:#1f2328;\">Planned</span>", html);
+        Assert.Contains("color:#16181c;\">Planned</span>", html);
 
         options.ToneColors[high] = "red;background:url(x)";
         Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.Render(view, options));
@@ -173,9 +173,9 @@ public sealed class StaticHtmlTests {
     public void Render_TonesBadgesAndDetails_UseLiteralColoursAndNestedTables() {
         var html = CanopyStaticHtml.Render(SmallView());
 
-        Assert.Contains("color:#b3261e;", html); // danger tone
-        Assert.Contains("background:#efeae0;color:#7d4e00;", html); // warning badge: the tone on a tint of it
-        Assert.Contains("<caption style=\"text-align:left;color:#5e6164;padding:0 0 2px 0;\">Changed settings</caption>", html);
+        Assert.Contains("color:#b8292a;", html); // danger tone
+        Assert.Contains("background:#f1ebe1;color:#8c5c05;", html); // warning badge: the tone on a tint of it
+        Assert.Contains("<caption style=\"text-align:left;color:#656769;padding:0 0 2px 0;\">Changed settings</caption>", html);
         Assert.Contains(">30 days</td>", html);
         Assert.Contains("text-align:right;", html); // number column
     }

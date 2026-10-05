@@ -2,6 +2,8 @@
 
 This is the wire format between hosts and the CanopyX browser runtime. The C# types in the `CanopyX` package write it; the runtime in `CanopyX.Html` reads it. A host that is not .NET can produce the same documents by hand. The JSON schema is [schema/canopyx-2.schema.json](schema/canopyx-2.schema.json).
 
+Flat grids optionally declare `density` (`compact`, `default`, `comfortable`) and `zebra` (boolean, default false). Density supplies spacing; the required numeric wire `rowHeight` remains authoritative. The .NET writer resolves an unassigned height to 28, 34 or 42 pixels respectively. These optional fields remain in `canopyx/2`.
+
 ## Versioning
 
 Every top-level document carries two fields:

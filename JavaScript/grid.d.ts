@@ -121,7 +121,11 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   label: string;
   columns: GridColumn[];
   /** Fixed CSS pixel height (20..64), or content measurement. Fixed is the default writer behavior. */
-  rowHeight: number | "auto";
+  rowHeight?: number | "auto";
+  /** Graphite spacing; an explicit rowHeight remains authoritative. */
+  density?: "compact" | "default" | "comfortable";
+  /** Subtle alternate-row backgrounds. Off by default. */
+  zebra?: boolean;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */

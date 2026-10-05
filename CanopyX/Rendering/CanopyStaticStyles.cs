@@ -34,16 +34,16 @@ internal sealed class CanopyStaticStyles {
         _text = Base("--cx-text", theme.Text);
         _line = Base("--cx-line", theme.Line);
         // The mixes of canopyx.css: --cx-muted, --cx-alt-bg, --cx-line-strong, and --cx-head-bg.
-        _muted = Mix(_text, 72, _surface);
-        _quiet = Mix(_text, 3, _surface);
-        var strong = Mix(_text, 28, _surface);
+        _muted = Mix(_text, 66, _surface);
+        _quiet = Mix(_text, 2.5, _surface);
+        var strong = Mix(_text, 22, _surface);
         var mutedColor = Declare("color", _muted);
         var rowLine = Border("border-bottom", _line);
 
         Table = "border-collapse:collapse;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.4;" + Declare("color", _text) + Declare("background", _surface);
         // A caption lies outside the table's own box, so it carries the surface itself.
         Caption = "text-align:left;font-weight:600;font-size:14px;padding:4px 8px 6px 8px;" + Declare("background", _surface);
-        Header = "text-align:left;font-weight:600;padding:4px 8px;" + Border("border-bottom", strong) + Declare("background", Mix(_text, 5, _surface)) + "white-space:nowrap;";
+        Header = "text-align:left;font-weight:700;padding:4px 12px;" + Border("border-bottom", strong) + Declare("background", Mix(_text, theme.Surface == "#16181c" ? 4.5 : 3.5, _surface)) + "white-space:nowrap;";
         Cell = "padding:3px 8px;" + rowLine + "vertical-align:top;";
         Detail = "padding:4px 8px 6px 8px;" + rowLine + Declare("background", _quiet);
         DetailCaption = "text-align:left;" + mutedColor + "padding:0 0 2px 0;";
@@ -175,11 +175,11 @@ internal sealed class CanopyStaticStyles {
     private Ink Base(string variable, string literal) => new Ink(literal, _variables ? "var(" + variable + "," + literal + ")" : null);
 
     /// <summary><c>color-mix(in srgb, a percent%, b)</c>, as a literal and, with theme variables, as that expression.</summary>
-    private Ink Mix(Ink a, int percent, Ink b) => new Ink(
+    private Ink Mix(Ink a, double percent, Ink b) => new Ink(
         "#" + Channel(a.Literal, b.Literal, 0, percent) + Channel(a.Literal, b.Literal, 1, percent) + Channel(a.Literal, b.Literal, 2, percent),
         _variables ? "color-mix(in srgb," + a.Css + " " + percent.ToString(CultureInfo.InvariantCulture) + "%," + b.Css + ")" : null);
 
-    private static string Channel(string a, string b, int channel, int percent) =>
+    private static string Channel(string a, string b, int channel, double percent) =>
         ((int)Math.Round((Value(a, channel) * percent + Value(b, channel) * (100 - percent)) / 100.0, MidpointRounding.AwayFromZero)).ToString("x2", CultureInfo.InvariantCulture);
 
     /// <summary>One channel of <c>#rgb</c> or <c>#rrggbb</c>, from 0 to 255.</summary>

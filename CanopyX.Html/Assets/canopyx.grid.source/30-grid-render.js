@@ -6,6 +6,7 @@
       this.restoreHeight = () => style.setProperty("--cx-min-h", minimum, priority);
       style.removeProperty("--cx-min-h");
       host.classList.add("cx-host", "cx-data-grid");
+      host.setAttribute("data-cx-density", this.view.density || "default");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
@@ -110,7 +111,8 @@
           slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }
-      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : this.autoRows ? " cx-auto-row" : ""));
+      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : (this.autoRows ? " cx-auto-row" : "") +
+        (this.view.zebra && row._ri % 2 ? " cx-alt" : "")));
       if (this.autoRows) {
         element.style.height = row.status ? this.rowH + "px" : "auto";
         this.observeDetail(element, !row.status);

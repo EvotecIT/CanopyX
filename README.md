@@ -1,5 +1,7 @@
 # CanopyX
 
+Flat grids use the [Graphite design](docs/design/data-grid-spec.html). Choose `density: "compact"`, `"default"`, or `"comfortable"` in JavaScript, or `CanopyGridView.Density` in .NET, for 28, 34 or 42 pixel rows. An explicit row height takes precedence. `zebra: true` / `Zebra = true` enables alternate-row backgrounds. Hosts can set the existing colour tokens and the typography, spacing and radius inputs documented in [architecture](docs/architecture.md#theming).
+
 CanopyX renders large interactive data views from .NET without runtime dependencies. Its tree grid supports hierarchy, paged lazy children, search that opens a node's path, details and accessible cell navigation. Its flat data grid queries typed records before paging, with stable identities, multi-column sorting and bounded virtual rows. A 2D matrix view is planned (see [TODO.md](TODO.md)).
 
 CanopyX is generic. Hosts supply the data, including rollup counts, badges, and flags; CanopyX knows nothing about the products that use it.
