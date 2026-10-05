@@ -60,8 +60,12 @@
       if (!check) {
         check = h("input", "cx-grid-row-select"); check.type = "checkbox"; check.tabIndex = -1; cell.insertBefore(check, cell.firstChild);
         check.addEventListener("click", event => {
+          if (!event.shiftKey) return;
           event.preventDefault(); const current = element._w;
-          this.reportingSelectionIntent(current, !this.reportingRowSelected(current), event.shiftKey, event.ctrlKey || event.metaKey);
+          this.reportingSelectionIntent(current, !this.reportingRowSelected(current), true, event.ctrlKey || event.metaKey);
+        });
+        check.addEventListener("change", () => {
+          this.reportingSelectionIntent(element._w, check.checked, false, false);
         });
         check.addEventListener("keydown", event => {
           if (event.key === " " && event.shiftKey) {
