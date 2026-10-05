@@ -4798,6 +4798,7 @@ if (this.disposeControls) this.disposeControls();
 if (this.cancelResize) this.cancelResize();
 this.resizeObserver.disconnect();
 this.restoreHeight();
+this.host.classList.remove("cx-data-grid");
 this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
 this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
 this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
@@ -5058,14 +5059,13 @@ if (currentTop !== navigationTop) { this.setLogicalTop(currentTop); this.render(
 });
 Object.assign(DataGrid.prototype, {
 build() {
-const host = this.host, signal = this.lifetime.signal;
-const minimum = host.style.getPropertyValue("--cx-min-h"), priority = host.style.getPropertyPriority("--cx-min-h");
-this.restoreHeight = () => {
-host.style.setProperty("--cx-min-h", minimum, priority); host.classList.remove("cx-data-grid");
-};
+const host = this.host, style = host.style, signal = this.lifetime.signal;
+const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h");
+this.restoreHeight = () => style.setProperty("--cx-min-h", minimum, priority);
+style.removeProperty("--cx-min-h");
 host.classList.add("cx-host", "cx-data-grid");
 if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
-host.style.setProperty("--cx-row-h", this.rowH + "px");
+style.setProperty("--cx-row-h", this.rowH + "px");
 this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
 if (this.view.search) this.buildGridSearch();
 this.buildGridControls();
@@ -5103,7 +5103,7 @@ if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.conta
 }, { signal: signal });
 this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
 this.resizeObserver = new ResizeObserver(() => {
-host.style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
 height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
 this.applyWidths(); this.scheduleRender();
 });
@@ -5747,7 +5747,7 @@ Object.assign(DataGrid.prototype, {
 scrollToRow(index) {
 if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) ||
 index < (this.cursor ? this.pageOffset : 0) || index >= this.rowCount())
-throw new Error("CanopyX: scroll to a row position in the accepted result.");
+throw new Error("CanopyX: invalid accepted row position.");
 return this.focusResult(index, false);
 },
 async runGridHook(run, signal) {
@@ -5756,7 +5756,7 @@ const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
 const abort = () => { controller.abort(); rejectHook(new DOMException("Grid cancelled.", "AbortError")); };
 this.lifetime.signal.addEventListener("abort", abort, { once: true });
 signal?.addEventListener("abort", abort, { once: true });
-const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: host operation timed out.")); }, this.requestTimeoutMs);
+const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: operation timed out.")); }, this.requestTimeoutMs);
 try {
 if (this.destroyed || signal?.aborted) abort();
 return await Promise.race([Promise.resolve().then(() => {

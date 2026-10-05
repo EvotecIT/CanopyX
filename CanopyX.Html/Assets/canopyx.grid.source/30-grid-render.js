@@ -1,14 +1,13 @@
   // ---------- flat-grid scaffold, shared cells and accessible header ----------
   Object.assign(DataGrid.prototype, {
     build() {
-      const host = this.host, signal = this.lifetime.signal;
-      const minimum = host.style.getPropertyValue("--cx-min-h"), priority = host.style.getPropertyPriority("--cx-min-h");
-      this.restoreHeight = () => {
-        host.style.setProperty("--cx-min-h", minimum, priority); host.classList.remove("cx-data-grid");
-      };
+      const host = this.host, style = host.style, signal = this.lifetime.signal;
+      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h");
+      this.restoreHeight = () => style.setProperty("--cx-min-h", minimum, priority);
+      style.removeProperty("--cx-min-h");
       host.classList.add("cx-host", "cx-data-grid");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
-      host.style.setProperty("--cx-row-h", this.rowH + "px");
+      style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
       if (this.view.search) this.buildGridSearch();
       this.buildGridControls();
@@ -46,7 +45,7 @@
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
       this.resizeObserver = new ResizeObserver(() => {
-        host.style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+        style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
           height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
         this.applyWidths(); this.scheduleRender();
       });

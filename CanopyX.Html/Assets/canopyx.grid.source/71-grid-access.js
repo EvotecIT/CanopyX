@@ -3,7 +3,7 @@
     scrollToRow(index) {
       if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) ||
           index < (this.cursor ? this.pageOffset : 0) || index >= this.rowCount())
-        throw new Error("CanopyX: scroll to a row position in the accepted result.");
+        throw new Error("CanopyX: invalid accepted row position.");
       return this.focusResult(index, false);
     },
     async runGridHook(run, signal) {
@@ -12,7 +12,7 @@
       const abort = () => { controller.abort(); rejectHook(new DOMException("Grid cancelled.", "AbortError")); };
       this.lifetime.signal.addEventListener("abort", abort, { once: true });
       signal?.addEventListener("abort", abort, { once: true });
-      const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: host operation timed out.")); }, this.requestTimeoutMs);
+      const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: operation timed out.")); }, this.requestTimeoutMs);
       try {
         if (this.destroyed || signal?.aborted) abort();
         return await Promise.race([Promise.resolve().then(() => {

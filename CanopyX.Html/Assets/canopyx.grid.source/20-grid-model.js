@@ -193,6 +193,7 @@
       if (this.cancelResize) this.cancelResize();
       this.resizeObserver.disconnect();
       this.restoreHeight();
+      this.host.classList.remove("cx-data-grid");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
