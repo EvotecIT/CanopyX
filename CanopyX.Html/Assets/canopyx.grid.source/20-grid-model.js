@@ -28,7 +28,8 @@
           !this.view.columns.some(column => column.id === id) || typeof renderers[id] !== "function"))
         throw new Error("CanopyX: grid renderers are functions by declared column ID.");
       this.columns = this.view.columns.map(column => Object.assign({}, column, {
-        width: Math.min(MAX_COLUMN_WIDTH, column.width), render: Object.prototype.hasOwnProperty.call(renderers, column.id) ? renderers[column.id] : null
+        width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.width === undefined,
+        render: Object.prototype.hasOwnProperty.call(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;
       this.labels = labelsFor(this.view.labels, options.labels); this.local = this.view.timeZone === "local";
@@ -103,7 +104,7 @@
         this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
         this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1));
         this.grid.tabIndex = hasRows ? -1 : 0;
-        this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader();
+        this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader(); this.syncColumnControls();
         this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
         if (hadFocus) {
           this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(this.cursor ? page.offset : query.offset) || null;

@@ -128,7 +128,7 @@ public sealed class CanopyGridView {
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
-        foreach (var column in Columns) column.WriteJson(writer);
+        foreach (var column in Columns) column.WriteJson(writer, grid: true);
         writer.EndArray();
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);

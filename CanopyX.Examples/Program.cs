@@ -81,7 +81,8 @@ CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
 GroupedGridExample.Write(output);
 ContainedGridsExample.Write(output);
-WrappedGridExample.Write(output);
+        WrappedGridExample.Write(output);
+ContentGridExample.Write(output);
 RichGridExample.Write(output);
 
 var largeTree = new SyntheticFileTree();

@@ -12,6 +12,7 @@ public sealed class CanopyColumn {
     public const int MinWidth = 40;
 
     private int _width = 160;
+    internal bool HasExplicitWidth { get; private set; }
 
     /// <summary>Creates a column.</summary>
     /// <param name="id">The id that node cells use as their key.</param>
@@ -34,7 +35,7 @@ public sealed class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets or sets the initial width in CSS pixels. Users can resize columns in the browser.</summary>
+    /// <summary>Gets or sets the initial width in CSS pixels. Unassigned flat-grid widths fit loaded content; tree widths default to 160. Users can resize columns.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below <see cref="MinWidth"/>.</exception>
     public int Width {
         get => _width;
@@ -44,6 +45,7 @@ public sealed class CanopyColumn {
             }
 
             _width = value;
+            HasExplicitWidth = true;
         }
     }
 
@@ -63,12 +65,12 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
     public bool Wrap { get; set; }
 
-    internal void WriteJson(CanopyJsonWriter writer) {
+    internal void WriteJson(CanopyJsonWriter writer, bool grid = false) {
         writer.BeginObject()
             .Property("id", Id)
-            .Property("title", Title)
-            .Property("width", _width)
-            .Property("kind", CanopyJsonNames.ColumnKind(Kind));
+            .Property("title", Title);
+        if (!grid || HasExplicitWidth) writer.Property("width", _width);
+        writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {
             writer.Property("sortable", true);
         }

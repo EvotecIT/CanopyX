@@ -83,7 +83,7 @@
     applyStatePresentation(state) {
       if (this.cancelResize) this.cancelResize();
       const current = new Map(this.columns.map(column => [column.id, column]));
-      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
+      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved, { autoWidth: false }));
       this.setTimeZone(state.timeZone); this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
     },

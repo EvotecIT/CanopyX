@@ -8,7 +8,11 @@ export * from "./index.js";
 export interface GridRow { id: string; cells: Record<string, Cell>; }
 /** An immutable record projected onto the declared export columns. */
 export interface GridExportRow { readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>; }
-export type GridColumn = Omit<CanopyColumn, "editable"> & { editable?: false; wrap?: boolean };
+export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
+  editable?: false; wrap?: boolean;
+  /** Omit to fit the header and at most 200 loaded records on first layout. Saved widths take precedence. */
+  width?: number;
+};
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
 export interface GridOrdering {
@@ -359,7 +363,9 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   setPageLength(length: number): Promise<Q>;
   setColumnWidth(id: string, width: number): void;
   /** Reporting runtime only: samples at most 200 cached accepted-query records and 2048 display code units per value, capped at 800 CSS pixels before declared constraints. No fetching or viewport scraping. */
-  autoFitColumn?(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
+  autoFitColumn(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
+  /** Fits every declared column from the same bounded loaded sample, including hidden columns. */
+  autoFitColumns(): Readonly<Record<string, Readonly<{ width: number; sampled: number; scope: "loaded" }>>>;
   setColumnPinned?(id: string, pin: GridColumnPin): void;
   getColumnLayout?(): readonly GridColumnPlacement[];
   /** Reporting runtime only: revisioned, bounded full-query aggregation. Never reads the viewport cache for counts. */

@@ -79,7 +79,7 @@ public sealed class CanopyGridReporting {
         foreach (var pair in Layout) {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
-            if (declared == null || pair.Value == null || declared.Width < pair.Value.Minimum || declared.Width > pair.Value.Maximum)
+            if (declared == null || pair.Value == null || declared.HasExplicitWidth && (declared.Width < pair.Value.Minimum || declared.Width > pair.Value.Maximum))
                 throw new InvalidOperationException("A layout needs a declared column whose initial width is within its non-null policy bounds.");
         }
         foreach (var pair in Ordering) {

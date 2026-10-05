@@ -14,7 +14,7 @@
       destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
     };
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
-      "setColumnWidth", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
+      "setColumnWidth", "autoFitColumn", "autoFitColumns", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
       api[name] = grid[name].bind(grid);
     GRID_REPORTING.api?.(api, grid);

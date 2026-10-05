@@ -56,7 +56,7 @@
     for (const column of view.columns) {
       requireIdentifier(column && column.id, "grid column ID");
       if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
-          !Number.isInteger(column.width) || column.width < 40 || column.wrap !== undefined && typeof column.wrap !== "boolean")
+          column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) || column.wrap !== undefined && typeof column.wrap !== "boolean")
         throw new Error("CanopyX: grid columns need unique IDs, supported kinds and valid widths.");
       ids.add(column.id);
     }

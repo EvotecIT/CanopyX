@@ -17,6 +17,7 @@
     return ["left", "none", "right"].flatMap(pin => visible.filter(column => column.pin === pin));
   };
   DataGrid.prototype.applyWidths = function () {
+    this.fitInitialColumns();
     const visible = this.visibleColumns();
     if (this.cols && (visible.length !== this.cols.length || visible.some((column, index) => column !== this.cols[index]))) {
       const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;

@@ -55,7 +55,7 @@
         "reporting": { "$ref": "#/$defs/gridReporting" },
         "columns": {
           "type": "array", "minItems": 1,
-          "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
+          "items": { "$ref": "#/$defs/gridColumn" },
           "contains": { "not": { "required": ["hidden"], "properties": { "hidden": { "const": true } } } }
         },
         "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." } } },
@@ -495,6 +495,16 @@
         "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." }
       }
     },
+    "gridColumn": {
+      "type": "object", "required": ["id", "title", "kind"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/column/properties/id" },
+        "title": { "$ref": "#/$defs/column/properties/title" },
+        "width": { "$ref": "#/$defs/column/properties/width" },
+        "kind": { "$ref": "#/$defs/column/properties/kind" },
+        "sortable": { "type": "boolean" }, "editable": { "const": false }, "hidden": { "type": "boolean" }, "wrap": { "type": "boolean" }
+      }
+    },
     "source": {
       "type": "object",
       "required": ["kind"],
@@ -681,6 +691,8 @@
             "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
             "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFitColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFitAllColumns": { "$ref": "#/$defs/accessibleLabel" },
             "gridColumnMoved": { "$ref": "#/$defs/accessibleLabel" },
             "gridPinColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridPinNone": { "$ref": "#/$defs/accessibleLabel" },

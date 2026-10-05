@@ -7,6 +7,7 @@
     return LAYOUT_CELL.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind);
   };
   DataGrid.prototype.applyWidths = function () {
+    this.fitInitialColumns();
     let total = 0;
     for (const column of this.cols) {
       column.width = reportingWidth(this, column, column.width); column.renderWidth = column.width; total += column.width;
@@ -49,14 +50,5 @@
   GRID_REPORTING.fitColumn = (grid, id) => {
     const column = grid.columns.find(item => item.id === id);
     if (!column || grid.destroyed || grid.pendingQuery || !grid.acceptedQuery) throw new Error("CanopyX: auto-fit needs a declared column and an accepted query.");
-    const context = document.createElement("canvas").getContext("2d"), style = getComputedStyle(grid.grid);
-    if (!context) throw new Error("CanopyX: text measurement is unavailable.");
-    context.font = style.font || style.fontSize + " " + style.fontFamily;
-    let width = context.measureText(column.title.slice(0, 2048)).width + 76, sampled = 0;
-    for (const row of grid.rowCache.values()) {
-      if (sampled === 200) break;
-      width = Math.max(width, context.measureText(cellText(row.h.cells[column.id], column, grid.fmt).slice(0, 2048)).width + 32); sampled++;
-    }
-    grid.setColumnWidth(id, Math.ceil(Math.min(800, width)));
-    return Object.freeze({ width: column.width, sampled: sampled, scope: "loaded" });
+    return grid.autoFitColumn(id);
   };

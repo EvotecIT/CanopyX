@@ -4,6 +4,7 @@
     gridValueType: "Raw value type", gridText: "Text", gridBoolean: "Boolean", gridAddFilter: "Add filter",
     gridRemoveFilter: "Remove {column} filter", gridApply: "Apply", gridClearFilters: "Clear filters",
     gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later",
+    gridFitColumn: "Fit {column}", gridFitAllColumns: "Fit all columns",
     gridViews: "Saved views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",
     gridResetView: "Reset view", gridChooseView: "Choose a saved view", gridInvalidFilter: "Enter a valid filter value.",
     gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of (one per line)", gridIsNull: "is missing", gridIsNotNull: "is present"
@@ -69,7 +70,13 @@
           move.setAttribute("data-cx-layout-column", column.id); move.setAttribute("data-cx-layout-action", delta < 0 ? "earlier" : "later"); row.appendChild(move);
         }
         this.columnPanel.appendChild(row);
+        const fit = gridButton("↔", () => { if (!this.pendingQuery && this.acceptedQuery) this.autoFitColumn(column.id); });
+        fit.disabled = !!this.pendingQuery || !this.acceptedQuery;
+        fit.setAttribute("aria-label", fill(this.labels.gridFitColumn, { column: column.title })); fit.title = fit.getAttribute("aria-label");
+        fit.setAttribute("data-cx-layout-column", column.id); fit.setAttribute("data-cx-layout-action", "fit"); row.appendChild(fit);
       });
+      const fitAll = gridButton(this.labels.gridFitAllColumns, () => { if (!this.pendingQuery && this.acceptedQuery) this.autoFitColumns(); });
+      fitAll.disabled = !!this.pendingQuery || !this.acceptedQuery; this.columnPanel.appendChild(fitAll);
       if (columnId) {
         const target = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].find(input =>
           input.getAttribute("data-cx-layout-column") === columnId && input.getAttribute("data-cx-layout-action") === action && !input.disabled);

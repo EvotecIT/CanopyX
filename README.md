@@ -123,6 +123,8 @@ Reporting grids also offer direct header moves with `inventory.Reporting.ColumnR
 
 Press Enter on a reporting-grid resize separator, double-click it, or call `api.autoFitColumn("name")` to fit loaded values. The method measures at most 200 cached records from the accepted query, limits each measured display value to 2,048 code units, and caps its estimate at 800 pixels before applying declared width constraints. It does not fetch unseen records or inspect a custom renderer's DOM. The result states the sampled count and `scope: "loaded"`.
 
+Omit a grid column's JavaScript `width`, or leave its .NET `Width` unassigned, to fit the header and the first loaded sample automatically. Declared widths and saved views take precedence. Initial fitting keeps flex sizing; an explicit auto-fit counts as a manual width choice. Use the per-column fit buttons or **Fit all columns** in Columns, or call `api.autoFitColumns()`, to fit every declared column, including hidden ones. This uses the same bounded sample and constraints as `autoFitColumn`. See `content-grid.html` for an example without configured widths.
+
 Reporting layouts can retain important fields at the edges and adapt the rest to the available width:
 
 ```csharp

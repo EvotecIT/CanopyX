@@ -93,6 +93,8 @@ public sealed partial class CanopyLabels {
         [nameof(GridCloseCell)] = "Close complete text",
         [nameof(GridMoveColumn)] = "{column}: drag to move, or use Left/Right",
         [nameof(GridResizeHelp)] = "Enter fits up to 200 loaded rows; Left/Right resizes.",
+        [nameof(GridFitColumn)] = "Fit {column}",
+        [nameof(GridFitAllColumns)] = "Fit all columns",
         [nameof(GridColumnMoved)] = "{column} moved to position {position}",
         [nameof(GridPinColumn)] = "{column}: pinned region",
         [nameof(GridPinNone)] = "Scroll",
@@ -180,7 +182,7 @@ public sealed partial class CanopyLabels {
     private static readonly string[] RuntimeNames = {
         nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
         nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter), nameof(GridExpandCell), nameof(GridCloseCell),
-        nameof(GridMoveColumn), nameof(GridResizeHelp), nameof(GridColumnMoved),
+        nameof(GridMoveColumn), nameof(GridResizeHelp), nameof(GridColumnMoved), nameof(GridFitColumn), nameof(GridFitAllColumns),
         nameof(GridPinColumn), nameof(GridPinNone), nameof(GridPinLeft), nameof(GridPinRight), nameof(GridResponsiveHidden),
         nameof(GridFilterGroupTitle), nameof(GridFilterMatch), nameof(GridFilterAll), nameof(GridFilterAny), nameof(GridAddFilterGroup), nameof(GridDeleteFilterGroup),
         nameof(GridFacetValues), nameof(GridFacetSearch), nameof(GridFacetIncludeCurrent), nameof(GridFacetLoad), nameof(GridFacetChoose), nameof(GridFacetCounts), nameof(GridFacetReload),

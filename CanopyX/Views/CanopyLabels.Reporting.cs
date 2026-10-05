@@ -1,6 +1,10 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the column auto-fit action name, including <c>{column}</c>.</summary>
+    public string GridFitColumn { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the action that fits all declared columns to loaded content.</summary>
+    public string GridFitAllColumns { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the inclusive range operator label. Default "between (inclusive)".</summary>
     public string GridBetween { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the upper range operand label. Default "Upper value (UTC for dates)".</summary>
