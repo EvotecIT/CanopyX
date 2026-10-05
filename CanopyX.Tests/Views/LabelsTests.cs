@@ -86,7 +86,7 @@ public sealed class LabelsTests {
         // The runtime's English texts are the C# defaults, name for name.
         var script = CanopyX.Html.CanopyHtmlAssets.GetScript(CanopyX.Html.CanopyRuntime.ReportingGrid);
         var blocks = System.Text.RegularExpressions.Regex.Matches(script,
-            @"DEFAULT_LABELS = Object\.freeze\((?:Object\.assign\(\{\}, DEFAULT_LABELS, )?\{(?<body>[\s\S]*?)\}\)?\);");
+            @"DEFAULT_LABELS\s*=\s*Object\.freeze\((?:Object\.assign\(\{\},\s*DEFAULT_LABELS,\s*)?\{(?<body>[\s\S]*?)\}\)?\);");
         var runtime = blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
                 "(\\w+): (\"(?:[^\"\\\\]|\\\\.)*\")"))
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));

@@ -47,11 +47,12 @@ public sealed class RuntimeAssetTests {
         var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
         var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
         Assert.NotEmpty(encoded);
-        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS = \"([A-Za-z0-9+/=]+)\";");
+        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS\\s*=\\s*\"([A-Za-z0-9+/=]+)\";");
         Assert.True(actual.Success, "The browser folding table is missing.");
         var compact = actual.Groups[1].Value;
         Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
         expected = expected.Replace(marker, compact);
+        expected = CompressScriptSpacing(expected);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
         Assert.True(expected == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
@@ -225,6 +226,12 @@ public sealed class RuntimeAssetTests {
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
+
+    private static string CompressScriptSpacing(string value) => string.Join("\n", value.Split('\n').Select(line => {
+        var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/.*)");
+        for (var i = 0; i < parts.Length; i += 2) parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]])\s*", "$1");
+        return string.Concat(parts);
+    }));
 
     /// <summary>Decodes the browser representation independently and compares every pair to the canonical table.</summary>
     private static byte[] ExpandFoldingTable(string encoded) {

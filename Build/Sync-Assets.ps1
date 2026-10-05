@@ -213,6 +213,20 @@ export default CanopyX;
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
 
+function Compress-ScriptSpacing {
+    param([string] $Content)
+
+    # Preserve ASI boundaries and quoted literals. A slash may start a regex, comment or division: keep its suffix.
+    $literal = '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|/.*)'
+    (($Content.Split("`n") | ForEach-Object {
+        $pieces = [regex]::Split($_, $literal)
+        for ($i = 0; $i -lt $pieces.Length; $i += 2) {
+            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]])\s*', '$1')
+        }
+        $pieces -join ''
+    }) -join "`n")
+}
+
 foreach ($asset in $assets) {
     $sourcePath = Join-Path $root $asset.Source
     $targetPath = Join-Path $root $asset.Target
@@ -223,6 +237,7 @@ foreach ($asset in $assets) {
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
     if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) }
+    if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

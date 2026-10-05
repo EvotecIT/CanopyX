@@ -155,7 +155,7 @@
     }
 
     render() {
-      if (this.destroyed) return;
+      if (this.destroyed || !this.hasGridSize()) return;
       this.renderPass();
       for (const [index, row] of this.placeholders) if (!this.rendered.has(row) && this.focused !== row) this.placeholders.delete(index);
       this.loadWindow();

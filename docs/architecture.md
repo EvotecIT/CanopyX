@@ -26,6 +26,14 @@ Every document on the wire carries `"protocol": "canopyx/2"`. The runtime reject
 
 ## Assets and Caching
 
+Grids in hidden tabs, accordions and closed details load their data but defer row rendering while their viewport
+has zero size. ResizeObserver applies layout at the first nonzero size and after resizing. Hosts do not need to
+call refresh when opening a panel. Hidden state restoration retains the requested logical scroll position until
+the viewport is measurable. The `contained-grids.html` example exercises these layouts.
+
+The assembler removes optional JavaScript delimiter spacing while preserving quoted literals, slash-led suffixes
+and every line boundary. Source parts remain readable; no minifier dependency or npm build step is required.
+
 Flat grids use the optional `canopyx-grid.js` entry point and its stylesheet. This entry point also contains the interactive tree runtime, so a mixed page loads one runtime. Ordinary tree pages retain their smaller entry points. The data-grid assets have an 80 KiB combined gzip budget; core trees retain their 48 KiB budget and interactive trees retain 64 KiB.
 
 Reporting capabilities live in `canopyx.reporting.source`, assembled into `canopyx-reporting.js` and its module/style companions. A grid with a `reporting` definition selects this entry point automatically through `CanopyHtmlAssets.GetRuntime(view)`. It also hosts ordinary grids and both tree runtimes. The optional reporting payload has a separate 112 KiB combined gzip budget; ordinary entry-point budgets stay unchanged. Hosts include one entry point per page and use the largest required entry point for mixed content. Unsupported reporting definitions fail explicitly in the ordinary grid entry point.
@@ -50,6 +58,7 @@ File names keep that rule when files are cached or shared:
 - A host with an asset pipeline of its own takes the text from `CanopyHtmlAssets.Script` and `Style` and names the files itself; `ScriptHash` and `StyleHash` give it the same content hash for names and cache keys (16 hex digits of the SHA-256; not a subresource integrity digest). `CanopyAssetNaming.Plain` (on `CanopyHtmlOptions.AssetNaming` and `WriteTo`, which take the same value: a page references what the assets were written as) writes and references the fixed names `canopyx.js` and `canopyx.css`; every page that uses them is then republished with each new build.
 
 ## Static Fallback
+
 
 `CanopyStaticHtml` renders a view and its nodes as a plain indented outline table: no script, no classes that need a stylesheet, inline styles only, and a row limit with an overflow note that says how many rows were left out. Email (through `HtmlForgeX.Email`), print, and Word exports use it. The runtime also builds an outline of the rows that are open when the user prints. The live browser view can render host-trusted HTML details; the built-in print outline encodes that markup as text. A host `renderDetail` callback can supply its own formatted print content. The script-free C# fallback also preserves arbitrary HTML details as text.
 
