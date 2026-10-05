@@ -1,15 +1,16 @@
   const GRID_PIN_PREPARE=DataGrid.prototype.prepareState,GRID_PIN_WIDTHS=DataGrid.prototype.applyWidths,GRID_PIN_CELL=DataGrid.prototype.newCell;
   function gridPinGeometry(grid){
+    const width=column=>column.renderWidth??column.width;
     const budget=Math.max(0,grid.grid.clientWidth-(grid.view.reporting?.minimumCenterWidth||128));
     for(const column of grid.columns)column.effectivePin="none";
     const left=grid.cols.filter(column=>column.pin==="left"),right=grid.cols.filter(column=>column.pin==="right").reverse();
     let used=0;const stopped=[false,false];
     for(let index=0;index<Math.max(left.length,right.length);index++)for(const [side,column]of [left[index],right[index]].entries())if(column&&!stopped[side]){
-      if(used+column.renderWidth>budget)stopped[side]=true;else{used+=column.renderWidth;column.effectivePin=column.pin;}}
+      if(used+width(column)>budget)stopped[side]=true;else{used+=width(column);column.effectivePin=column.pin;}}
     let start=0,end=0;
-    for(const column of grid.cols){column.pinOffset=column.effectivePin==="left"?start:0;if(column.effectivePin==="left")start+=column.renderWidth;}
-    for(const column of [...grid.cols].reverse())if(column.effectivePin==="right"){column.pinOffset=end;end+=column.renderWidth;}
-    grid.pinnedLeftWidth=start;grid.pinnedRightWidth=end;
+    for(const column of grid.cols){column.pinOffset=column.effectivePin==="left"?start:0;if(column.effectivePin==="left")start+=width(column);}
+    for(const column of [...grid.cols].reverse())if(column.effectivePin==="right"){column.pinOffset=end;end+=width(column);}
+    grid.pinnedLeftWidth=start;grid.pinnedRightWidth=end;grid.host.classList.toggle("cx-pins",used>0);
     grid.cols.forEach((column,index)=>grid.applyColumnPin(grid.headCells[index],column));
     for(const row of [...grid.rendered.values(),...grid.pool])if(row._kind==="node")grid.cols.forEach((column,index)=>{if(row.children[index])grid.applyColumnPin(row.children[index],column);});
   }

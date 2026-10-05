@@ -37,6 +37,27 @@ test("Graphite rows are unstriped by default and preserve explicit zebra styling
   await mount(page,{...view,zebra:true});await expect(page.locator('.cx-row.cx-alt')).toHaveCount(1);
 });
 
+test("numeric headers align their control group and selected pinned cells remain opaque",async({page})=>{
+  await page.setViewportSize({width:650,height:900});await mount(page,{...base,columns:[...base.columns,{id:'amount',title:'Amount',kind:'number',width:180,sortable:true},{id:'note',title:'Note',kind:'text',width:600}],rows:[{id:'r1',tone:'warning',cells:{name:'First record',amount:20,note:'Wide scrolling content'}}]});
+  const header=page.locator('.cx-hcell[data-cx-column="amount"]');
+  expect(await header.evaluate(cell=>cell.querySelector('.cx-sort').getBoundingClientRect().left-cell.getBoundingClientRect().left)).toBeGreaterThan(40);
+  await page.evaluate(()=>{grid.setColumnPinned('name','left');grid.setSelection(['r1']);});
+  const row=page.locator('.cx-row[data-cx-id="r1"]');await expect(row).toHaveAttribute('aria-selected','true');await row.hover();
+  expect(await row.evaluate(element=>getComputedStyle(element.querySelector('[data-cx-pin]')).backgroundColor)).toBe(await row.evaluate(element=>getComputedStyle(element).backgroundColor));
+  expect(await row.evaluate(element=>getComputedStyle(element.querySelector('[data-cx-pin]'),'::before').width)).toBe('2px');
+  expect(await row.evaluate(element=>getComputedStyle(element.querySelector('[data-cx-pin]')).position)).toBe('sticky');
+  const pinned=row.locator('[data-cx-pin]'),start=await pinned.boundingBox();
+  await page.locator('.cx-grid').evaluate(element=>element.scrollLeft=200);
+  await expect.poll(async()=>(await pinned.boundingBox()).x).toBeCloseTo(start.x,0);
+  expect(await pinned.evaluate(element=>getComputedStyle(element,'::after').width)).toBe('3px');
+  expect(await pinned.evaluate(element=>getComputedStyle(element,'::after').left)).toBe('2px');
+  await page.evaluate(()=>grid.setColumnPinned('amount','left'));
+  const cells=row.locator('[data-cx-pin="left"]');await expect(cells).toHaveCount(2);
+  expect((await cells.nth(1).boundingBox()).x).toBeCloseTo((await cells.nth(0).boundingBox()).x+220,0);
+  await page.setViewportSize({width:390,height:900});
+  await expect(row.locator('[data-cx-pin="left"]')).toHaveCount(1);
+});
+
 test("Graphite toolbar separates search, selection and the accepted result line", async ({page}) => {
   await page.setViewportSize({width:1440,height:900});
   await mount(page, {...base,noun:"servers"});
