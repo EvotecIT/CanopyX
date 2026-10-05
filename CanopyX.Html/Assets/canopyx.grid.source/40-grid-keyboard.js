@@ -4,10 +4,8 @@
       this.pendingNavigation = null;
       if (!row || this.indexOf(row) < 0 || this.destroyed) return;
       this.focused = row;
-      const top = this.rowTop(row._ri), viewport = this.grid.clientHeight - this.head.offsetHeight;
-      if (top < this.logicalTop()) this.setLogicalTop(top);
-      else if (top + this.rowH > this.logicalTop() + viewport) this.setLogicalTop(top + this.rowH - viewport);
-      this.render();
+      this.revealGridRow(row, row._ri);
+      if (this.render()) { this.revealGridRow(row, row._ri); this.render(); }
       if (focus) { const element = this.rendered.get(row); if (element) element.focus({ preventScroll: true }); }
     },
 
@@ -52,8 +50,8 @@
       switch (event.key) {
         case "ArrowUp": index--; break;
         case "ArrowDown": index++; break;
-        case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
-        case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
+        case "PageUp": index = this.gridPageStep({ ...row, _ri: index }, -1); break;
+        case "PageDown": index = this.gridPageStep({ ...row, _ri: index }, 1); break;
         case "Home": if (event.ctrlKey || event.metaKey) index = this.cursor ? this.rowBounds().first : 0; else nextColumn = 0; break;
         case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = columnCount - 1; break;
         case "ArrowLeft":

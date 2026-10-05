@@ -88,7 +88,7 @@ public sealed class LabelsTests {
         var blocks = System.Text.RegularExpressions.Regex.Matches(script,
             @"DEFAULT_LABELS\s*=\s*Object\.freeze\((?:Object\.assign\(\{\},\s*DEFAULT_LABELS,\s*)?\{(?<body>[\s\S]*?)\}\)?\);");
         var runtime = blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
-                "(\\w+): (\"(?:[^\"\\\\]|\\\\.)*\")"))
+                "(\\w+):\\s*(\"(?:[^\"\\\\]|\\\\.)*\")"))
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();

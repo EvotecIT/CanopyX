@@ -43,7 +43,8 @@
         "type": { "const": "grid" },
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/accessibleLabel" },
-        "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
+        "rowHeight": { "oneOf": [{ "type": "integer", "minimum": 20, "maximum": 64 }, { "const": "auto" }] },
+        "estimatedRowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
         "search": { "type": "boolean" },
@@ -490,7 +491,8 @@
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
         "editable": { "type": "boolean" },
-        "hidden": { "type": "boolean" }
+        "hidden": { "type": "boolean" },
+        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." }
       }
     },
     "source": {

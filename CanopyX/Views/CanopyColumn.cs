@@ -60,6 +60,9 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
     public bool Hidden { get; set; }
 
+    /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
+    public bool Wrap { get; set; }
+
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject()
             .Property("id", Id)
@@ -70,6 +73,7 @@ public sealed class CanopyColumn {
             writer.Property("sortable", true);
         }
         if (Editable) writer.Property("editable", true);
+        if (Wrap) writer.Property("wrap", true);
 
         if (Hidden) {
             writer.Property("hidden", true);

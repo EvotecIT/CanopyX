@@ -10,7 +10,9 @@
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
         throw new Error("CanopyX: source navigation must match the grid definition.");
-      this.pageSize = this.view.pageSize; this.rowH = this.view.rowHeight;
+      this.pageSize = this.view.pageSize; this.autoRows = this.view.rowHeight === "auto";
+      this.rowH = this.autoRows ? this.view.estimatedRowHeight || 28 : this.view.rowHeight;
+      if (this.autoRows) this.rowHeights = new Map();
       this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
       this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
         this.view.source.kind === "inline" ? 0 : 300 : this.view.searchDelayMs : options.searchDelayMs;
@@ -95,6 +97,7 @@
         this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
         this.pageLength = length; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
         if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
+        if (this.autoRows) { if (!same) this.rowHeights.clear(); this.rowOffsets = null; }
         this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
         const hasRows = this.cursor ? page.items.length : page.matched;
         this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
@@ -140,8 +143,9 @@
 
     rowCount() { return this.cursor ? this.cursorWindow ? this.cursorWindow.end : 0 : this.snapshot ? this.snapshot.matched : 0; }
     rowBounds() { return { first: this.pageOffset, last: this.paged ? Math.min(this.rowCount(), this.pageOffset + this.pageLength) - 1 : this.rowCount() - 1 }; }
-    rowTop(index) { return (index - this.pageOffset) * this.rowH; }
-    rowAt(top) { const bounds = this.rowBounds(); return Math.max(bounds.first, Math.min(bounds.last, bounds.first + Math.floor(top / this.rowH))); }
+    rowTop(index) { return this.autoRows && this.rowOffsets ? this.rowOffsets.top(index - this.pageOffset) : (index - this.pageOffset) * this.rowH; }
+    rowAt(top) { const bounds = this.rowBounds(); return Math.max(bounds.first, Math.min(bounds.last, bounds.first +
+      (this.autoRows && this.rowOffsets ? this.rowOffsets.at(top) : Math.floor(top / this.rowH)))); }
     indexOf(row) {
       if (!row || this.paged && (row._ri < this.pageOffset || row._ri >= this.pageOffset + this.pageLength)) return -1;
       return this.rowCache.get(row._ri) === row || this.placeholders.get(row._ri) === row ? row._ri : -1;
@@ -156,9 +160,17 @@
 
     render() {
       if (this.destroyed || !this.hasGridSize()) return;
-      this.renderPass();
+      let measured = false;
+      if (this.autoRows) this.syncRowOffsets();
+      for (let pass = 0; ; pass++) {
+        this.renderPass();
+        if (!this.autoRows || !this.measureGridRows()) break;
+        measured = true;
+        if (pass === 3) { this.scheduleRender(); break; }
+      }
       for (const [index, row] of this.placeholders) if (!this.rendered.has(row) && this.focused !== row) this.placeholders.delete(index);
       this.loadWindow();
+      return measured;
     }
 
     observeDetail() {}
@@ -192,6 +204,7 @@
       if (this.disposeControls) this.disposeControls();
       if (this.cancelResize) this.cancelResize();
       this.resizeObserver.disconnect();
+      this.detailObserver?.disconnect(); this.rowHeights?.clear(); this.rowOffsets = null;
       this.restoreHeight();
       this.host.classList.remove("cx-data-grid");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);

@@ -216,15 +216,26 @@ export default CanopyX;
 function Compress-ScriptSpacing {
     param([string] $Content)
 
-    # Preserve ASI boundaries and quoted literals. A slash may start a regex, comment or division: keep its suffix.
+    # Preserve ASI boundaries and quoted literals. A slash may start a regex, comment or division: keep its suffix
+    # and the following newline. Join only after delimiters that cannot end an ASI statement, or before a closer.
     $literal = '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|/.*)'
-    (($Content.Split("`n") | ForEach-Object {
-        $pieces = [regex]::Split($_, $literal)
+    $output = [System.Text.StringBuilder]::new()
+    $previous = ''
+    $slash = $false
+    foreach ($line in $Content.Split("`n")) {
+        $pieces = [regex]::Split($line, $literal)
         for ($i = 0; $i -lt $pieces.Length; $i += 2) {
-            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]])\s*', '$1')
+            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]<>!&|?:%*^])\s*', '$1')
         }
-        $pieces -join ''
-    }) -join "`n")
+        $compact = $pieces -join ''
+        if ($output.Length -and ($slash -or ($previous -notmatch '[;,{(\[]$' -and $compact -notmatch '^[)}\]]'))) {
+            [void]$output.Append("`n")
+        }
+        [void]$output.Append($compact)
+        $previous = $compact
+        $slash = @($pieces | Where-Object { $_.StartsWith('/') }).Count -gt 0
+    }
+    $output.ToString()
 }
 
 foreach ($asset in $assets) {

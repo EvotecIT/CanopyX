@@ -60,7 +60,7 @@ public sealed class CanopyGridView {
         }
     }
 
-    /// <summary>Gets or sets the fixed row height in CSS pixels, between 20 and 64.</summary>
+    /// <summary>Gets or sets the fixed height, or the minimum and estimate for automatic rows, in CSS pixels between 20 and 64.</summary>
     public int RowHeight {
         get => _rowHeight;
         set {
@@ -68,6 +68,9 @@ public sealed class CanopyGridView {
             _rowHeight = value;
         }
     }
+
+    /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
+    public bool AutoRowHeight { get; set; }
 
     /// <summary>Gets or sets the requested result-page size, between 1 and 10,000.</summary>
     /// <remarks>Paging follows full-dataset filtering and sorting; it is not a limit on the inline dataset.</remarks>
@@ -119,8 +122,10 @@ public sealed class CanopyGridView {
     public string ToJson() {
         Validate();
         var writer = new CanopyJsonWriter(4096);
-        writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label)
-            .Property("rowHeight", RowHeight).Property("pageSize", PageSize)
+        writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
+        if (AutoRowHeight) writer.Property("rowHeight", "auto").Property("estimatedRowHeight", RowHeight);
+        else writer.Property("rowHeight", RowHeight);
+        writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
         foreach (var column in Columns) column.WriteJson(writer);

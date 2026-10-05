@@ -24,6 +24,10 @@ The images come from the pages `CanopyX.Examples` generates; `tests/browser/tool
 
 Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 
+### Wrapped grid rows
+
+Set a grid column's `wrap: true` and the grid's `rowHeight: "auto"` to display complete multiline notes. Fixed rows remain the default. In .NET, set `CanopyColumn.Wrap = true` and `CanopyGridView.AutoRowHeight = true`; `RowHeight` supplies the minimum and initial estimate. Rendered records are measured as they enter the viewport, with stable scroll anchoring and pixel-based keyboard paging. The generated `wrapped-grid.html` examples demonstrate continuous, paged and grouped views. Grids created inside hidden tabs, accordions and details render automatically when shown; see `contained-grids.html`.
+
 ### JavaScript Hosts
 
 The optional `@evotecit/canopyx` package contains the complete interactive runtime, CSS, and TypeScript declarations. It has no runtime dependencies. The module and classic scripts are assembled from the same JavaScript source; .NET consumers keep their existing build with no JavaScript compiler or bundler.

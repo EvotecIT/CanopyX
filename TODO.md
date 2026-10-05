@@ -179,6 +179,8 @@ Standalone examples and a separate HtmlForgeX inventory host have contract, brow
 
 ### Reporting Grid Replacement Scope
 
+Report-engine foundations include hidden-container layout, wrapped automatic rows, stable measured scroll anchoring and pixel-based keyboard paging. The standalone contained and wrapped examples exercise these paths in continuous, paged and grouped presentations. Consumer: portable inventory reports and TestimoX tables. Host migration still needs each report's workflow qualification.
+
 The replacement target is a complete reporting workflow: readers can find records, change their layout, inspect content, select a defined scope, and export the same accepted results. Existing DataTables callers also depend on formatting, paging controls, responsive hidden-column details, grouping and print behavior. Replacing a table must preserve those outcomes, not merely its row renderer.
 
 The following assessment uses the current CanopyX source and the primary reference documentation linked below. It is a product backlog; unchecked capabilities are not implemented. Delivery stages express order rather than promised versions or dates.

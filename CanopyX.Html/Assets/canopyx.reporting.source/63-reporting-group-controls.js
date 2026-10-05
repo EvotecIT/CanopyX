@@ -34,6 +34,7 @@
     },
     fillRow(element, row) {
       if (!row.group) { element.removeAttribute("data-cx-group"); return GROUP_BASE.fillRow.call(this, element, row); }
+      this.observeDetail(element, false);
       element.textContent = ""; element._w = row; element._kind = "group"; element._layout = this.layout;
       element._attrs = {}; element._cls = null; element.className = "cx-row cx-grid-group";
       element.setAttribute("role", "row"); element.removeAttribute("data-cx-id"); element.removeAttribute("data-cx-status");
@@ -68,10 +69,9 @@
       }
       const index = this.rowProjection.indexOf(row); if (index < 0 || this.destroyed) return;
       this.pendingNavigation = null; this.focused = row;
-      const top = index * this.rowH, height = this.grid.clientHeight - this.head.offsetHeight;
-      if (top < this.logicalTop()) this.setLogicalTop(top);
-      else if (top + this.rowH > this.logicalTop() + height) this.setLogicalTop(top + this.rowH - height);
-      this.render(); if (focus) this.rendered.get(this.focused)?.focus({ preventScroll: true });
+      this.revealGridRow(row, index, this.rowProjection);
+      if (this.render()) { this.revealGridRow(row, index, this.rowProjection); this.render(); }
+      if (focus) this.rendered.get(this.focused)?.focus({ preventScroll: true });
     },
     onKey(event) {
       const row = event.target.closest(".cx-row")?._w;
@@ -99,7 +99,8 @@
       }
       if (!["ArrowUp", "ArrowDown", "PageUp", "PageDown"].includes(event.key)) return GROUP_BASE.onKey.call(this, event);
       const step = event.key.startsWith("Page") ? Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)) : 1;
-      const direction = /Up$/.test(event.key) ? -1 : 1, proposed = this.rowProjection.indexOf(row) + direction * step;
+      const direction = /Up$/.test(event.key) ? -1 : 1, proposed = this.autoRows && event.key.startsWith("Page") ?
+        this.gridPageStep(row, direction, this.rowProjection) : this.rowProjection.indexOf(row) + direction * step;
       const cells = this.rowCells(this.rendered.get(row)), column = cells.findIndex(cell => cell.contains(event.target));
       event.preventDefault(); event.stopPropagation();
       if (this.paged && (proposed < 0 || proposed >= this.rowProjection.rowCount())) {

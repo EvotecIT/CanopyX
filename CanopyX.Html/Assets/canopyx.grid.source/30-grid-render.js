@@ -102,11 +102,16 @@
         element._cells = (row.status ? [null] : this.cols).map((column, index) => {
           const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
           if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
-          const slot = { cell: cell, content: cell, base: cell.className, cls: null, title: null, badges: [], mode: "default" };
+          const slot = { cell: cell, content: cell, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
           slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }
-      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : ""));
+      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : this.autoRows ? " cx-auto-row" : ""));
+      if (this.autoRows) {
+        element.style.height = row.status ? this.rowH + "px" : "auto";
+        this.observeDetail(element, !row.status);
+        this.measureNeeded = true;
+      }
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {

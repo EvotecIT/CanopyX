@@ -227,11 +227,21 @@ public sealed class RuntimeAssetTests {
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
 
-    private static string CompressScriptSpacing(string value) => string.Join("\n", value.Split('\n').Select(line => {
-        var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/.*)");
-        for (var i = 0; i < parts.Length; i += 2) parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]])\s*", "$1");
-        return string.Concat(parts);
-    }));
+    private static string CompressScriptSpacing(string value) {
+        var output = new StringBuilder();
+        var previous = "";
+        var slash = false;
+        foreach (var line in value.Split('\n')) {
+            var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/.*)");
+            for (var i = 0; i < parts.Length; i += 2) parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]<>!&|?:%*^])\s*", "$1");
+            var compact = string.Concat(parts);
+            if (output.Length > 0 && (slash || (!Regex.IsMatch(previous, @"[;,{(\[]$") && !Regex.IsMatch(compact, @"^[)}\]]")))) output.Append('\n');
+            output.Append(compact);
+            previous = compact;
+            slash = parts.Any(part => part.StartsWith("/", StringComparison.Ordinal));
+        }
+        return output.ToString();
+    }
 
     /// <summary>Decodes the browser representation independently and compares every pair to the canonical table.</summary>
     private static byte[] ExpandFoldingTable(string encoded) {

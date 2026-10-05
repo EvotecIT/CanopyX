@@ -8,7 +8,7 @@ export * from "./index.js";
 export interface GridRow { id: string; cells: Record<string, Cell>; }
 /** An immutable record projected onto the declared export columns. */
 export interface GridExportRow { readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>; }
-export type GridColumn = Omit<CanopyColumn, "editable"> & { editable?: false };
+export type GridColumn = Omit<CanopyColumn, "editable"> & { editable?: false; wrap?: boolean };
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
 export interface GridOrdering {
@@ -108,7 +108,10 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   id: string;
   label: string;
   columns: GridColumn[];
-  rowHeight: number;
+  /** Fixed CSS pixel height (20..64), or content measurement. Fixed is the default writer behavior. */
+  rowHeight: number | "auto";
+  /** Minimum and estimate for unseen automatic rows (20..64, default 28). */
+  estimatedRowHeight?: number;
   pageSize: number;
   /** Presentation only; pageSize remains the source fetch size. */
   presentation?: "continuous" | "paged";

@@ -32,7 +32,8 @@ call refresh when opening a panel. Hidden state restoration retains the requeste
 the viewport is measurable. The `contained-grids.html` example exercises these layouts.
 
 The assembler removes optional JavaScript delimiter spacing while preserving quoted literals, slash-led suffixes
-and every line boundary. Source parts remain readable; no minifier dependency or npm build step is required.
+and automatic-semicolon-insertion boundaries. It joins only delimiter boundaries; source parts remain readable.
+No minifier dependency or npm build step is required.
 
 Flat grids use the optional `canopyx-grid.js` entry point and its stylesheet. This entry point also contains the interactive tree runtime, so a mixed page loads one runtime. Ordinary tree pages retain their smaller entry points. The data-grid assets have an 80 KiB combined gzip budget; core trees retain their 48 KiB budget and interactive trees retain 64 KiB.
 
@@ -40,7 +41,7 @@ Reporting capabilities live in `canopyx.reporting.source`, assembled into `canop
 
 `CanopyGridView` carries typed columns and stable record identities. An inline source queries its complete dataset before returning a window. A host source implements `query(query, { signal })` and returns a `gridPage` covering the requested window, or the remaining rows at its end. The host owns transport, authorization and full-dataset query execution. Every accepted query records the returned revision; subsequent windows must keep that revision and the same total and matching counts. A failed replacement query keeps the accepted rows and offers a retry.
 
-Trees and flat grids share logical scrolling, focused-row retention, row recycling and DOM ordering. Trees keep hierarchy and measured details; flat grids use fixed-height records and bounded page caches. Missing host rows are temporary status rows, so a million-record result does not allocate a million browser wrappers. Selection stores record IDs independently of cached windows. The flat-grid container uses `role="grid"` and rows have no tree levels or expanders. Keyboard navigation follows visible cells.
+Trees and flat grids share logical scrolling, focused-row retention, row recycling and DOM ordering. Trees keep hierarchy and measured details; flat grids default to fixed-height records and bounded page caches. Automatic rows use the shared detail ResizeObserver with sparse prefix offsets over estimated heights. Measuring an overscan row adjusts the logical scroll position to retain the visible row and its pixel offset, including above the bounded scrollbar threshold. Column changes retain prior measurements as estimates until remeasured. Missing host rows are temporary status rows, so a million-record result does not allocate a million browser wrappers. Selection stores record IDs independently of cached windows. The flat-grid container uses `role="grid"` and rows have no tree levels or expanders. Keyboard navigation follows visible cells.
 
 Paged flat grids restrict row lookup and loading to the accepted page, using the canonical viewport's existing handling of absent rows. Row indices stay global while row positions and scrollbar height are relative to the accepted page. The query owns full-source filtering/sorting; presentation owns visible page length and navigation. No second row renderer or query engine is introduced, and tree runtime assets retain their existing budget.
 
