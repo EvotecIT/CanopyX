@@ -6,8 +6,8 @@ import { expect, test } from "@playwright/test";
 import { exampleUrl } from "./support.mjs";
 
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"];
-const LIGHT = { surface: "rgb(255, 255, 255)", text: "rgb(31, 35, 40)" };
-const DARK = { surface: "rgb(13, 17, 23)", text: "rgb(230, 237, 243)" };
+const LIGHT = { surface: "rgb(255, 255, 255)", text: "rgb(22, 24, 28)" };
+const DARK = { surface: "rgb(22, 24, 28)", text: "rgb(242, 243, 245)" };
 
 async function expectNoViolations(page) {
   const result = await new AxeBuilder({ page }).withTags(TAGS).analyze();

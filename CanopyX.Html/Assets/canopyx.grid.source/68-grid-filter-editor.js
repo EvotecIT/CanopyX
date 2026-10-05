@@ -3,7 +3,7 @@
   const FILTER_RUNTIME_URL=typeof document!=="undefined"&&document.currentScript?.src;
   let filterEditorReady;
   function gridFilterEditorContext(){return {DataGrid,h,setText,setAttr,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
-    gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
+    GRID_FILTER_LABELS,gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
     gridOverlayTheme,gridRestoreFocus,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER};}
   function loadGridFilterEditor(){
     if(filterEditorReady)return filterEditorReady;
@@ -32,10 +32,12 @@
       this.reportingFilters.panel.id=this.id+"-filters";
     },
     async renderGridFilters(panel){
+      const epoch=this.queryEpoch;
       setText(panel,this.labels.loading);
-      try{await loadGridFilterEditor();if(!this.destroyed&&panel.isConnected&&panel.parentElement.open){this.renderGridFilters(panel);this.controlFlyouts.forEach(item=>item.position());}}
+      try{await loadGridFilterEditor();if(epoch!==this.queryEpoch){panel.parentElement.open=false;return;}if(!this.destroyed&&panel.isConnected&&panel.parentElement.open){this.renderGridFilters(panel);this.controlFlyouts.forEach(item=>item.position());}}
       catch(error){if(!this.destroyed&&panel.isConnected){setText(panel,this.labels.gridLoadFailed);panel.appendChild(gridButton(this.labels.gridRetry,()=>this.renderGridFilters(panel)));this.emit("error",{error});}}
     },
+    async showReportingText(...args){const epoch=this.queryEpoch;try{await loadGridFilterEditor();if(!this.destroyed&&epoch===this.queryEpoch)this.showReportingText(...args);}catch(error){this.emit("error",{error});}},
     async openColumnMenu(id,anchor){
       try{await loadGridFilterEditor();if(!this.destroyed)this.openColumnMenu(id,anchor?.isConnected?anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]'));}
       catch(error){this.setNotice(this.labels.gridLoadFailed,true);this.emit("error",{error});}

@@ -49,7 +49,6 @@
         const preview=add(text.length>budget?text.slice(0,budget).replace(/[\uD800-\uDBFF]$/,"")+" …":text,"cx-wrapped-text"+(options.mono?" p-mono":""));
         if(!grid.autoRows)element.classList.add("cx-fixed-text");
         if(!column.wrap||text.length>Math.max(40,(column.renderWidth||column.width)/7*4)||text.split("\n").length>4){element.classList.add("cx-clamped");more(text);}
-        else preview.classList.add("cx-single-text");
       } else add(text);
       if(object)for(const badge of cell.badges||[])element.appendChild(badgeElement(badge));
       return true;

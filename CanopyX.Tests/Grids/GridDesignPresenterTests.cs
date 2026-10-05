@@ -6,6 +6,15 @@ namespace CanopyX.Tests.Grids;
 
 public sealed class GridDesignPresenterTests {
     [Fact]
+    public void BooleanFactory_RetainsTheParameterlessPublicMethod() {
+        Func<CanopyGridPresenter> existingFactory = CanopyGridPresenter.Boolean;
+        Assert.Equal(CanopyGridPresenterKind.Boolean, existingFactory().Kind);
+        Assert.False(existingFactory().Inverted);
+        Assert.NotNull(typeof(CanopyGridPresenter).GetMethod(nameof(CanopyGridPresenter.Boolean), Type.EmptyTypes));
+        Assert.True(CanopyGridPresenter.Boolean(true).Inverted);
+    }
+
+    [Fact]
     public void ColumnPresentersAndHistory_PreserveRawValuesAndStaticTextForms() {
         var view = new CanopyGridView("visual", "Visual history") { StatusBar = true, Noun = "records" };
         view.Columns.Add(new CanopyColumn("id", "Name") { Presenter = CanopyGridPresenter.Identifier(mono: true) });

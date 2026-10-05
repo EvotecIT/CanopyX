@@ -19,11 +19,25 @@ const base={protocol:'canopyx/2',type:'grid',id:'presenters',label:'Presenter ga
   {id:'one',cells:{name:{value:'alpha',secondary:'example.test'},flag:true,state:'Healthy',change:142,delta:-6,history:{value:'Healthy',series:periods},trend:{value:'Trend',series:periods.slice(0,10).map((point,i)=>({...point,value:i*5}))},tags:'One,Two,Three,Four,Five',notes:'A long paragraph. '.repeat(80)}},
   {id:'two',cells:{name:'beta',flag:false,state:'Failing',change:318,delta:84,history:{value:'No data',series:[{period:'Today'}]}}}
 ]};
-async function open(page,theme='light') {
+async function open(page,theme='light',view=base) {
   const {script,style}=runtimeAssets('grid');
   await page.setContent('<!doctype html><html lang="en"><head><title>Presenters</title><style>'+style+'</style></head><body><main><h1>Presenter gallery</h1><div id="host" data-cx-theme="'+theme+'"></div></main></body></html>');
-  await page.addScriptTag({content:script});await page.evaluate(async view=>{window.grid=CanopyX.createDataGrid(document.querySelector('#host'),{view});await grid.ready;},base);
+  await page.addScriptTag({content:script});await page.evaluate(async view=>{window.grid=CanopyX.createDataGrid(document.querySelector('#host'),{view});await grid.ready;},view);
 }
+
+test('long bar histories preserve an early worst period and the last-period marker within the available width',async({page})=>{
+  for(const mark of ['worst','last']){
+    const column={id:'history',title:'Daily history',kind:'text',width:120,presenter:{kind:'sparklineBars',mark,thresholds:[{upperBound:10,tone:'success'},{upperBound:100,tone:'danger'}]}};
+    const series=periods.map((point,index)=>({period:point.period,value:index===2?75:5}));
+    await open(page,'light',{...base,columns:[column],rows:[{id:'one',cells:{history:{value:'90 daily samples',series}}}]});
+    const bars=page.locator('.p-spark');expect(await bars.locator('i').count()).toBeLessThan(90);
+    await expect(bars.locator('i.danger')).toHaveCount(1);await expect(bars.locator('i.danger')).toHaveAttribute('title',/Day 1.*75/);
+    await expect(bars.locator('.cx-history-mark')).toHaveCount(1);
+    await expect(bars.locator('.cx-history-mark')).toHaveAttribute('title',mark==='worst'?/75/:/Day 90/);
+    expect(await bars.evaluate(element=>element.getBoundingClientRect().width)).toBeLessThanOrEqual(96);
+    await page.evaluate(()=>grid.destroy());
+  }
+});
 test('ordinary column presenters preserve raw exports, long strip periods and accessible names',async({page})=>{
   await page.setViewportSize({width:1440,height:900});await open(page);
   const first=page.locator('.cx-row[data-cx-id="one"]');

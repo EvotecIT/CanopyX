@@ -47,10 +47,14 @@
 
     openDetails(id) {
       requireIdentifier(id, "detail row ID");
-      if (this.destroyed || !this.acceptedQuery || this.pendingQuery || typeof this.opts.onDetails !== "function")
-        throw new Error("CanopyX: details require accepted query and onDetails.");
+      if (this.destroyed || !this.acceptedQuery || this.pendingQuery)
+        throw new Error("CanopyX: details require an accepted query.");
       const row = [...this.rowCache.values()].find(item => item.key === id);
       if (!row) throw new Error("CanopyX: details require a loaded record.");
+      if(typeof this.opts.onDetails!=="function"){
+        const epoch=this.queryEpoch,returnFocus=document.activeElement;
+        return loadGridFilterEditor().then(()=>{if(!this.destroyed&&!this.pendingQuery&&epoch===this.queryEpoch)this.openGridDrawer(row.h,row._ri,returnFocus);});
+      }
       if (this.detailController) this.detailController.abort();
       const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;
       const abort = () => controller.abort(); dataSignal.addEventListener("abort", abort, { once: true });

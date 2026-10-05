@@ -22,7 +22,7 @@
     this.lifetime.signal.addEventListener("abort",()=>controller.abort(),{once:true,signal:controller.signal});
     panel.parentElement.addEventListener("toggle",()=>{if(!panel.parentElement.open)controller.abort();},{signal:controller.signal});
     const close=()=>{clearTimeout(timer);panel.parentElement.open=false;panel.parentElement.querySelector("summary").focus();};
-    footer.append(gridButton(this.labels.gridClearFilters,()=>{clearTimeout(timer);this.setQuery(gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined})).catch(failure=>setText(error,failure.message));this.renderGridFilters(panel);}),gridButton(this.labels.gridDone,()=>{flush();close();}));
+    footer.append(gridButton(this.labels.gridClearFilters,()=>{clearTimeout(timer);this.setQuery(gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined})).catch(failure=>setText(error,failure.message));this.renderGridFilters(panel);}),gridButton(this.labels.gridDone,()=>{draft=gridQueryStart(draft||this.queryForChange(),{search:this.queryForChange(true).search});flush();close();}));
     if(gridFilterDepth(this.queryForChange().filterGroup)>2){
       const notice=h("p");setText(notice,this.labels.gridDeepFilters);text=h("textarea","cx-filter-text");text.setAttribute("aria-label",this.labels.gridFilterText);text.readOnly=true;
       text.value=JSON.stringify({filters:this.queryForChange().filters||[],filterGroup:this.queryForChange().filterGroup},null,2);
@@ -30,10 +30,11 @@
       text.addEventListener("input",()=>{try{const value=JSON.parse(text.value);apply(gridQueryStart(this.queryForChange(true),{filters:value.filters||[],filterGroup:value.filterGroup}));}catch(_){setText(error,this.labels.gridInvalidFilter);}});
       return;
     }
-    const update=()=>{try{syncWords(root);apply(readQuery());setText(error,"");}catch(_){setText(error,this.labels.gridInvalidFilter);}};
+    const update=()=>{try{syncWords(root);apply(readQuery());setText(error,"");}catch(_){clearTimeout(timer);draft=null;setText(error,this.labels.gridInvalidFilter);}};
     const makeGroup=(parent,definition,depth)=>{
       const block=h("div",depth?"cx-group cx-grid-filter-group":"cx-filter-root"),heading=h("div","cx-group-h"),rows=h("div","cx-condition-rows"),children=h("div","cx-grid-filter-group-children"),actions=h("div","cx-adds");
-      const segment=gridFilterSegment(this,definition?.operator||"and",update);heading.append(document.createTextNode(this.labels.gridFilterMatch+" "),segment);
+      const segment=gridFilterSegment(this,definition?.operator||"and",update);if(!depth)heading.append(document.createTextNode(this.labels.gridShowRowsWhere+" "));
+      heading.append(segment,document.createTextNode(" "+(depth?this.labels.gridOfThese:this.labels.gridOfTheseAreTrue)));
       block._group={segment,rows,children};block.append(heading,rows,children,actions);parent.appendChild(block);
       const add=predicate=>{
         if(form.querySelectorAll('.cx-grid-filter').length>=64)return;
@@ -43,14 +44,15 @@
         if((this.columns.find(column=>column.id===row._filter.column.value)?.presenter||this.view.reporting?.presenters?.[row._filter.column.value])?.kind==="boolean"){
           row._filter.type.value="boolean";row._filter.type.dispatchEvent(new Event("change"));typeLabel.hidden=true;
         }
-        const remove=row.querySelector(':scope > button');if(remove){remove.replaceChildren(gridIcon("close"));remove.classList.add("icon");remove.setAttribute("aria-label",this.labels.gridRemoveCondition);remove.addEventListener("click",update);}
+        const remove=row.querySelector(':scope > button');if(remove){remove.replaceChildren(gridIcon("close"));remove.classList.add("icon");remove.setAttribute("aria-label",this.labels.gridDeleteCondition);remove.addEventListener("click",update);}
         syncWords(block);return row;
       };
       const condition=gridButton(this.labels.gridAddCondition,()=>{const row=add(null);row?._filter.column.focus();});condition.classList.add("cx-link");
       const group=gridButton(this.labels.gridAddGroup,()=>{makeGroup(children,null,depth+1);syncWords(block);});group.classList.add("cx-link");group.disabled=depth>=2;
       actions.append(condition,group);
       if(depth){const remove=gridDecorateButton(gridButton("",()=>{const target=parent.parentElement.querySelector(":scope > .cx-adds > button");block.remove();update();target?.focus();}),"close",true);remove.classList.add("icon");remove.setAttribute("aria-label",this.labels.gridDeleteFilterGroup);heading.appendChild(remove);}
-      (definition?.filters||[]).forEach(add);(definition?.groups||[]).forEach(child=>makeGroup(children,child,depth+1));return block;
+      const predicates=definition?.filters||[];
+      (this.view.reporting&&definition.operator==="and"?reportingRangeRows(predicates):predicates).forEach(add);(definition?.groups||[]).forEach(child=>makeGroup(children,child,depth+1));return block;
     };
     const syncWords=block=>{const data=block._group;[...data.rows.children].forEach((row,index)=>setText(row.querySelector('.w'),index===0?this.labels.gridWhere:data.segment._operator==="and"?this.labels.gridAnd:this.labels.gridOr));
       for(const child of data.children.children)syncWords(child);};

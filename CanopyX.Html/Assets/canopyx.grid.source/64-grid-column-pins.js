@@ -14,7 +14,7 @@
     for(const row of [...grid.rendered.values(),...grid.pool])if(row._kind==="node")grid.cols.forEach((column,index)=>{if(row.children[index])grid.applyColumnPin(row.children[index],column);});
   }
   DataGrid.prototype.prepareState=function(){for(const column of this.columns)if(column.pin===undefined)column.pin="none";return GRID_PIN_PREPARE.call(this);};
-  DataGrid.prototype.applyWidths=function(){GRID_PIN_WIDTHS.call(this);if(!this.view.reporting)gridPinGeometry(this);};
+  DataGrid.prototype.applyWidths=function(widths){GRID_PIN_WIDTHS.call(this,widths);if(!this.view.reporting)gridPinGeometry(this);this.syncPinnedShadows();};
   DataGrid.prototype.applyColumnPin=function(cell,column){
     const pin=column.effectivePin||"none";if(pin==="none")cell.removeAttribute("data-cx-pin");else cell.dataset.cxPin=pin;
     cell.style.left=pin==="left"?column.pinOffset+"px":"";cell.style.right=pin==="right"?column.pinOffset+"px":"";

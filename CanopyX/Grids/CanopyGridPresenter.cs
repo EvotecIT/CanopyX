@@ -57,9 +57,13 @@ public sealed partial class CanopyGridPresenter {
     }
 
     /// <summary>Creates a check for true and a dash for false, with translated accessible names.</summary>
+    /// <returns>The immutable descriptor.</returns>
+    public static CanopyGridPresenter Boolean() => Boolean(false);
+
+    /// <summary>Creates a boolean check/dash presenter with an explicit healthy direction.</summary>
     /// <param name="inverted">Whether true denotes a problem and uses the danger tone.</param>
     /// <returns>The immutable descriptor.</returns>
-    public static CanopyGridPresenter Boolean(bool inverted = false) => new CanopyGridPresenter(CanopyGridPresenterKind.Boolean) { Inverted = inverted };
+    public static CanopyGridPresenter Boolean(bool inverted) => new CanopyGridPresenter(CanopyGridPresenterKind.Boolean) { Inverted = inverted };
 
     /// <summary>Creates a bounded preview of delimiter-separated text and a complete-text dialog.</summary>
     /// <param name="separator">A nonempty literal separator of at most 16 code units.</param>

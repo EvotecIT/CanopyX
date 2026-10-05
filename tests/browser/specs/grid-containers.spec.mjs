@@ -37,5 +37,8 @@ test("a hidden restored grid keeps its requested scroll position through reveal 
   await page.locator("#intro-tab").click(); await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("#records-tab").click();
   await expect.poll(() => grid.evaluate(element => element.scrollTop)).toBe(2800);
-  await expect(page.locator('#records-panel .cx-row[aria-rowindex="102"][data-cx-id]')).toBeVisible();
+  const index = await page.locator('#records-panel script.cx-config').evaluate(script => {
+    const view = JSON.parse(script.textContent); return Math.floor(2800 / view.rowHeight) + 2;
+  });
+  await expect(page.locator(`#records-panel .cx-row[aria-rowindex="${index}"][data-cx-id]`)).toBeVisible();
 });

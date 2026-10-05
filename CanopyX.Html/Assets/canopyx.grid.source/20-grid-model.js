@@ -96,7 +96,7 @@
         this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.focused = null;
         this.acceptedQuery = gridQuery(this.view, { ...query, revision: page.revision });
         this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
-        this.pageLength = length; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
+        this.pageLength = length; if(paging)this.pageAll=!!paging.allRows; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
         if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
         if (this.autoRows) { if (!same) this.rowHeights.clear(); this.rowOffsets = null; }
         this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
@@ -208,13 +208,15 @@
       this.resizeObserver.disconnect();
       this.detailObserver?.disconnect(); this.rowHeights?.clear(); this.rowOffsets = null;
       this.restoreHeight();
-      this.host.classList.remove("cx-data-grid");
+      this.host.classList.remove("cx-data-grid","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
       this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.pendingPages.clear(); this.rendered.clear(); this.pool.length = 0;
       this.toolbar.remove(); this.grid.remove(); this.notice.remove(); this.live.remove();
+      this.querySummary?.remove();
       if (this.pager) this.pager.remove();
+      this.statusBar?.remove(); this.groupBar?.remove(); this.statusAggregateController?.abort();
       this.host.removeAttribute("data-cx-ready"); this.host.removeAttribute("data-canopyx-mounted");
     }
   }

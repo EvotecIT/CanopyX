@@ -273,7 +273,7 @@ const tabRow=visibleFocus||rows.rowItem(n?rows.rowAt(top):0)||null;const fragmen
 if(w._v!==this.version||rowEl._w!==w){this.fillRow(rowEl,w);w._v=this.version;}else if(!w.status)this.refreshRowState(rowEl,w);const y=this.scaledScroll&&(index<first||index>last)?
 (index<first?-w.hpx - viewHeight:NATIVE_HEIGHT + viewHeight):rows.rowTop(index)- shift;if(rowEl._top!==y){rowEl.style.transform="translateY(" + y + "px)";rowEl._top=y;}
 if(rowEl._index!==index){rowEl.setAttribute("aria-rowindex",index + 2);rowEl._index=index;}
-const alt=index%2===1&&!w.status&&!w.h.detail;if(rowEl._alt!==alt){rowEl.classList.toggle("cx-alt",alt);rowEl._alt=alt;}
+const alt=index%2===1&&!w.status&&!w.h.detail&&(this.view.type!=="grid"||!!this.view.zebra);if(rowEl._alt!==alt){rowEl.classList.toggle("cx-alt",alt);rowEl._alt=alt;}
 const tab=w===tabRow?0:-1;if(rowEl._tab!==tab){rowEl.tabIndex=tab;rowEl._tab=tab;}}
 for(const rowEl of free){rowEl._w=null;this.observeDetail(rowEl,false);if(this.pool.length<200)this.pool.push(rowEl);}
 if(fragment.firstChild)this.canvas.appendChild(fragment);this.window={first,last};this.keepDomOrder(first,last,rows);if(held)this.restoreCell(held);this.trimInactiveCache();}};Object.assign(TreeGrid.prototype,ROW_VIEWPORT);function setAttr(element,name,value){const cache=element._attrs||(element._attrs={});if(cache[name]===value){return;}

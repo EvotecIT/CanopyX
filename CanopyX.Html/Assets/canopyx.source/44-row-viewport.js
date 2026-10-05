@@ -73,7 +73,7 @@
           rowEl.setAttribute("aria-rowindex", index + 2);
           rowEl._index = index;
         }
-        const alt = index % 2 === 1 && !w.status && !w.h.detail;
+        const alt = index % 2 === 1 && !w.status && !w.h.detail && (this.view.type !== "grid" || !!this.view.zebra);
         if (rowEl._alt !== alt) {
           rowEl.classList.toggle("cx-alt", alt);
           rowEl._alt = alt;

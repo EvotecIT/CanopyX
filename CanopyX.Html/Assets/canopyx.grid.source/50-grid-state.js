@@ -34,7 +34,7 @@
         columns: this.columns.map(gridStateColumn),
         query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
-      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset };
+      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset, ...this.pageAll?{allRows:true}:{} };
       return state;
     },
 
@@ -54,11 +54,11 @@
         timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
       if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
-        if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
+        if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > Math.max(10000,this.view.source.kind==="inline"?this.view.rows.length:0) || paging.allRows!==undefined&&(typeof paging.allRows!=="boolean"||paging.allRows&&this.view.source.kind!=="inline") ||
             !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER || this.cursor && paging.offset !== 0)
           throw new Error("CanopyX: invalid paged view state.");
         if (this.paged) {
-          parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
+          parsed.paging = { pageLength: paging.pageLength, offset: paging.offset, ...paging.allRows?{allRows:true}:{} };
           if (!state.paging) parsed.scrollTop = 0;
         } else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER * this.rowH, paging.offset * this.rowH + state.scrollTop);
       }

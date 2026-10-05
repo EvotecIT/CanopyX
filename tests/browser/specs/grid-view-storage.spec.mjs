@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, openGridControl } from "./support.mjs";
 
 const definition = () => ({ protocol: "canopyx/2", type: "grid", id: "prefs", label: "Preference inventory",
   source: { kind: "inline" }, rowHeight: 28, pageSize: 10, presentation: "paged", pageLength: 5,
@@ -316,7 +316,7 @@ test("shareable layout strips query-sensitive values, positions and dataset iden
 test("saved-view controls expose rename/default/reset and remain keyboard accessible in compact dark layouts", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   await page.locator("[data-canopyx-host]").evaluate(host=>host.dataset.cxTheme="dark");
-  await page.locator(".cx-grid-views > summary").click(); const panel=page.locator(".cx-grid-views");
+  await openGridControl(page, "views"); const panel=page.locator(".cx-grid-views");
   await panel.getByRole("textbox", {name:"View name",exact:true}).fill("Inventory");
   await panel.getByRole("button", {name:"Save view",exact:true}).click();
   await panel.getByRole("button", {name:"Make default",exact:true}).click();

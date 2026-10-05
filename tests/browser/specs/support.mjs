@@ -34,6 +34,22 @@ export function nextFrames(page) {
   return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 
+/** Opens a toolbar control through its desktop button or the phone overflow. */
+export async function openGridControl(page, kind) {
+  const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');
+  if (!await summary.isVisible()) await page.locator('.cx-grid-overflow > summary').click();
+  if (!await control.evaluate(element => element.open)) await summary.click();
+  if (kind === 'filters') await control.getByRole('button', { name: 'Done', exact: true }).waitFor();
+}
+
+/** Done flushes the live editor immediately; optionally reopen it for the next edit. */
+export async function flushGridFilters(page, reopen = true) {
+  await page.locator('.cx-grid-filters').getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('grid').and(page.locator('.cx-data-grid .cx-grid')).waitFor();
+  await page.waitForFunction(() => document.querySelector('.cx-data-grid .cx-grid').getAttribute('aria-busy') === 'false');
+  if (reopen) await openGridControl(page, 'filters');
+}
+
 /** Opens an example page and waits until the view has mounted, loaded its first page, and painted. */
 export async function openExample(page, name, hash) {
   await page.goto(exampleUrl(name) + (hash || ""));

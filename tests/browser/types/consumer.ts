@@ -29,6 +29,23 @@ const measuredWireView: InlineGridView = { protocol: "canopyx/2", type: "grid", 
   source: { kind: "inline" }, rows: [], pageSize: 100, selection: "none", search: false, rowHeight: 32, autoRowHeight: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 160, autoWidth: true, wrap: true }] };
 createDataGrid(document.createElement("div"), { view: measuredWireView });
+const graphiteView: InlineGridView = {
+  ...measuredWireView, id: "graphite", density: "comfortable", noun: "services", emptyReason: "No connected source.",
+  zebra: false, statusBar: true, presentation: "paged", pageLength: 25,
+  columns: [
+    { id: "name", title: "Name", kind: "text", presenter: { kind: "identifier", mono: true }, section: "Identity" },
+    { id: "enabled", title: "Enabled", kind: "text", presenter: { kind: "boolean", inverted: true } },
+    { id: "state", title: "State", kind: "text", presenter: { kind: "state", tones: { Healthy: "success" } } },
+    { id: "amount", title: "Amount", kind: "number", aggregatable: true,
+      presenter: { kind: "sparklineLine", minimum: 0, scaleMaximum: 100, mark: "last", thresholds: [{ upperBound: 50, tone: "success" }] } },
+    { id: "history", title: "History", kind: "text", presenter: { kind: "statusStrip" } }
+  ], rows: [{ id: "one", cells: { name: { value: "Service", secondary: "Region" }, amount: { value: 20,
+    series: [{ period: "2026-10-05", value: 20, state: "Healthy", tone: "success" }] } } }]
+};
+const graphite = createDataGrid(document.createElement("div"), { view: graphiteView,
+  onChart: ({ signal, selection }) => { if (signal.aborted) return; }, onUngroup: ({ signal }) => {} });
+await graphite.setPageLength("all");
+const allRows: boolean | undefined = graphite.getState().paging?.allRows;
 const recordSelection = reportingApi.getSelectionDescriptor?.();
 if (recordSelection?.kind === "query") {
   const matched: number | null = recordSelection.matched;

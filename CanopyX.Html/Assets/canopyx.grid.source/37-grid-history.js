@@ -24,21 +24,24 @@
     if(!values.length){setText(element,"—");element.classList.add("p-missing");return;}
     const minimum=options.minimum??Math.min(0,...values.map(point=>point.value)),maximum=options.scaleMaximum??Math.max(...values.map(point=>point.value));
     const fraction=value=>Math.max(0,Math.min(1,(value-minimum)/(maximum-minimum||1)));
+    const worse=(point,previousPoint)=>{
+      const rank=GRID_TONE_RANK[gridHistoryTone(point,options)]??2,previous=GRID_TONE_RANK[gridHistoryTone(previousPoint,options)]??2;
+      return rank>previous||rank===previous&&(options.higherIsGood?point.value<previousPoint.value:point.value>previousPoint.value);
+    };
     let marked=values[values.length-1];
-    if(options.mark!=="last")for(const point of values) {
-      const rank=GRID_TONE_RANK[gridHistoryTone(point,options)]??2,previous=GRID_TONE_RANK[gridHistoryTone(marked,options)]??2;
-      if(rank>previous||rank===previous&&(options.higherIsGood?point.value<marked.value:point.value>marked.value))marked=point;
-    }
+    if(options.mark!=="last")for(const point of values)if(worse(point,marked))marked=point;
     if(options.kind==="sparklineBars") {
-      const box=h("span","p-spark"),visible=values.slice(-Math.max(1,Math.floor(width/6)));
+      const box=h("span","p-spark"),size=Math.max(1,Math.ceil(values.length/Math.max(1,Math.floor(width/6))));
       box.setAttribute("role","img");box.setAttribute("aria-label",column.title+": "+text);
-      for(const point of visible){const item=h("i",gridHistoryTone(point,options));item.style.height=Math.max(2,fraction(point.value)*20)+"px";item.title=title(point);
-        if(point===marked)item.classList.add("cx-history-mark");toneColors(item,toneOf(gridHistoryTone(point,options)));box.appendChild(item);}element.appendChild(box);
+      for(let start=0;start<values.length;start+=size){const points=values.slice(start,start+size);let point=points[0];for(const sample of points)if(worse(sample,point))point=sample;
+        const item=h("i",gridHistoryTone(point,options));item.style.height=Math.max(2,fraction(point.value)*20)+"px";
+        item.title=points.length===1?title(point):fill(grid.labels.gridPeriodRange,{from:points[0].period,to:points[points.length-1].period,state:point.state??String(point.value)});
+        if(points.includes(marked))item.classList.add("cx-history-mark");toneColors(item,toneOf(gridHistoryTone(point,options)));box.appendChild(item);}element.appendChild(box);
     } else {
       const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg"),line=document.createElementNS(ns,"polyline"),mark=document.createElementNS(ns,"circle");
       svg.classList.add("p-line");svg.setAttribute("width","96");svg.setAttribute("height","22");svg.setAttribute("viewBox","0 0 96 22");svg.setAttribute("role","img");
-      svg.setAttribute("aria-label",column.title+": "+text);const xy=point=>[values.length===1?48:1+values.indexOf(point)/(values.length-1)*94,20-fraction(point.value)*18];
-      line.setAttribute("points",values.map(point=>xy(point).join(",")).join(" "));const [x,y]=xy(marked);
+      svg.setAttribute("aria-label",column.title+": "+text);const xy=(point,index)=>[values.length===1?48:1+index/(values.length-1)*94,20-fraction(point.value)*18];
+      line.setAttribute("points",values.map((point,index)=>xy(point,index).join(",")).join(" "));const [x,y]=xy(marked,values.indexOf(marked));
       mark.setAttribute("cx",String(x));mark.setAttribute("cy",String(y));mark.setAttribute("r","2.2");mark.classList.add(gridHistoryTone(marked,options));
       const tooltip=document.createElementNS(ns,"title");setText(tooltip,title(marked));mark.appendChild(tooltip);svg.append(line,mark);element.appendChild(svg);
     }

@@ -60,7 +60,7 @@
   };
   DataGrid.prototype.paintSlot = function (slot,node,column,index,row) {
     GRID_PRESENTERS_PAINT.call(this,slot,node,column,index,row);
-    if (!column.render&&!slot.text.data) {slot.text.data="—";slot.cell.classList.add("p-missing");}
-    else slot.cell.classList.remove("p-missing");
-    this.paintHiddenFields?.(slot,node,column,index);
+    if (!column.render&&!slot.text.data) {slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
+    else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
+    if(this.phone||slot.hiddenFields)this.paintHiddenFields?.(slot,node,column,index);
   };

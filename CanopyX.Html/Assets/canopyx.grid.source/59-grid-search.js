@@ -1,3 +1,11 @@
+  const GRID_FILTER_LABELS = { eq: "=", ne: "≠", contains: "gridContains", startsWith: "gridStartsWith", in: "gridIn",
+    gt: ">", ge: "≥", lt: "<", le: "≤", isNull: "gridIsNull", isNotNull: "gridIsNotNull" };
+  function gridCountLabel(element,label,values){
+    element.replaceChildren(...label.split(/(\{count\}|\{selected\})/).map(part=>{
+      if(!/^\{(?:count|selected)\}$/.test(part))return document.createTextNode(fill(part,values));
+      const bold=h("b");setText(bold,values[part.slice(1,-1)]);return bold;
+    }));
+  }
   // ---------- search input and the accepted query's visible conditions ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridResultCount: "{count} of {total} rows", gridClearQuery: "Clear search and filters",
@@ -49,8 +57,8 @@
       const numbers = numberFormat(this.lang);
       this.querySummary.hidden = !query.search && !gridFilterCount(query);
       this.syncGridChrome();
-      setText(this.resultCount, this.snapshot.matched === null ? this.labels.gridUnknownCount : fill(this.snapshot.total === null ?
-        this.labels.gridMatchedCount : this.view.noun ? this.labels.gridResultNoun : this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total), noun: this.view.noun || this.labels.gridRows }));
+      gridCountLabel(this.resultCount, this.snapshot.matched === null ? this.labels.gridUnknownCount : this.snapshot.total === null ?
+        this.labels.gridMatchedCount : this.view.noun ? this.labels.gridResultNoun : this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total), noun: this.view.noun || this.labels.gridRows });
       this.queryChips.textContent = "";
       const apply = patch => {
         this.setQuery(gridQueryStart(this.queryForChange(true), patch)).catch(() => {});

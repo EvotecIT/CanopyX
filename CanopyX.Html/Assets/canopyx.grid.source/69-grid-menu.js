@@ -1,8 +1,13 @@
   function gridMenuFocus(panel,event){
-    if(!["ArrowDown","ArrowUp","Home","End"].includes(event.key))return;
     const items=[...panel.querySelectorAll('[role="menuitem"]')].filter(item=>!item.disabled),index=items.indexOf(document.activeElement);
-    if(!items.length)return;event.preventDefault();
-    const next=event.key==="Home"?0:event.key==="End"?items.length-1:(index+(event.key==="ArrowDown"?1:-1)+items.length)%items.length;
+    if(!items.length)return;
+    let next;
+    if(["ArrowDown","ArrowUp","Home","End"].includes(event.key))next=event.key==="Home"?0:event.key==="End"?items.length-1:(index+(event.key==="ArrowDown"?1:-1)+items.length)%items.length;
+    else if(event.key.length===1&&!event.ctrlKey&&!event.metaKey&&!event.altKey){
+      const now=performance.now();panel._typeAhead=now-(panel._typeAt||0)>700?event.key:panel._typeAhead+event.key;panel._typeAt=now;
+      const matches=items.map((_,i)=>(index+i+1)%items.length);next=matches.find(i=>foldText(items[i].textContent.trim()).startsWith(foldText(panel._typeAhead)));
+    }else return;
+    if(next===undefined)return;event.preventDefault();
     items.forEach((item,i)=>item.tabIndex=i===next?0:-1);items[next].focus({preventScroll:true});
   }
   Object.assign(DataGrid.prototype,{
@@ -29,7 +34,10 @@
     openColumnMenu(id,anchor){
       const column=this.columns.find(item=>item.id===id),panel=this.openGridPopover(anchor,"cx-column-menu",fill(this.labels.gridColumnMenu,{column:column.title}),id);
       panel.setAttribute("role","menu");
+      const icons=new Map([[this.labels.gridSortAscending,"up"],[this.labels.gridSortDescending,"down"],[this.labels.gridFilterColumn,"filter"],[this.labels.gridPinLeft,"pin"],[this.labels.gridPinRight,"pin"],[this.labels.gridFitContent,"fit"],[this.labels.gridHideColumn,"hide"]]);
+      const paths={pin:'<path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/>',fit:'<path d="M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3M4 5v14M20 5v14"/>',hide:'<path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9 6-.3.8-1.2 2.3-2.6 3.6M6.4 7.6C4.6 8.9 3.4 10.8 3 12c.5 1.5 4 6 9 6 1.6 0 3-.4 4.3-1.1"/>'};
       const add=(label,action,disabled=false)=>{const button=gridButton(label,()=>{this.closeGridPopover(false);Promise.resolve().then(action).catch(error=>this.emit("error",{error}));});
+        const icon=h("span","ico"),name=icons.get(label);if(name){const svg=gridIcon(name);if(paths[name])svg.innerHTML=paths[name];icon.appendChild(svg);}button.prepend(icon);
         button.classList.add("cx-mi");button.setAttribute("role","menuitem");button.tabIndex=-1;button.disabled=disabled;panel.appendChild(button);};
       const sort=direction=>this.setQuery(gridQueryStart(this.queryForChange(true),{sort:[...(this.queryForChange().sort||[]).filter(item=>item.column!==id),...direction?[{column:id,direction}]:[]]}));
       add(this.labels.gridSortAscending,()=>sort("asc"),!column.sortable||this.view.reporting?.grouping?.column===id);

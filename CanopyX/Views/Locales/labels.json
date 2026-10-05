@@ -97,7 +97,7 @@
   "GridSelectPage": ["Zaznacz stronę","Seite auswählen","Seleccionar página"],
   "GridSelectMatching": ["Zaznacz wszystkie pasujące","Alle passenden auswählen","Seleccionar todos los coincidentes"],
   "GridClearSelection": ["Wyczyść zaznaczenie","Auswahl aufheben","Borrar selección"],
-  "GridSelectionCount": ["Zaznaczone rekordy: {count}","{count} Datensätze ausgewählt","{count} registros seleccionados"],
+  "GridSelectionCount": ["{count} zaznaczonych","{count} ausgewählt","{count} seleccionados"],
   "GridSelectionQueryCount": ["Zaznaczone pasujące rekordy: {count}; wykluczone: {excluded}","{count} passende Datensätze ausgewählt; {excluded} ausgeschlossen","{count} registros coincidentes seleccionados; {excluded} excluidos"],
   "GridSelectionQueryUnknown": ["Zaznaczono wszystkie pasujące rekordy; wykluczone: {excluded}","Alle passenden Datensätze ausgewählt; {excluded} ausgeschlossen","Todos los registros coincidentes seleccionados; {excluded} excluidos"],
   "GridSelectRecord": ["Zaznacz rekord {id}","Datensatz {id} auswählen","Seleccionar registro {id}"],
@@ -199,5 +199,13 @@
   "GridUnpin": ["Odepnij","Fixierung aufheben","Desfijar"],
   "GridWhere": ["Gdzie","Wenn","Donde"],
   "GridComplexFilter": ["Ta kolumna należy do mieszanej grupy warunków. Edytuj ją w Filtrach.","Diese Spalte gehört zu einer gemischten Bedingungsgruppe. Bearbeiten Sie sie unter Filter.","Esta columna pertenece a un grupo mixto de condiciones. Edítelo en Filtros."],
-  "GridClearColumnFilter": ["Wyczyść filtr","Filter löschen","Borrar filtro"]
+  "GridClearColumnFilter": ["Wyczyść filtr","Filter löschen","Borrar filtro"],
+  "GridSelectionAggregate": ["Liczba: {count} · Suma: {sum} · Średnia: {average} · Minimum: {minimum} · Maksimum: {maximum}","Anzahl: {count} · Summe: {sum} · Durchschnitt: {average} · Minimum: {minimum} · Maximum: {maximum}","Cantidad: {count} · Suma: {sum} · Media: {average} · Mínimo: {minimum} · Máximo: {maximum}"],
+  "GridConditionValue": ["Wartość","Wert","Valor"],
+  "GridConditionUpperValue": ["Górna wartość","Oberer Wert","Valor superior"],
+  "GridDeleteCondition": ["Usuń warunek","Bedingung entfernen","Eliminar condición"],
+  "GridShowRowsWhere": ["Pokaż wiersze, dla których","Zeilen anzeigen, für die","Mostrar filas donde"],
+  "GridOfTheseAreTrue": ["z tych warunków są spełnione","dieser Bedingungen zutreffen","de estas condiciones se cumplen"],
+  "GridOfThese": ["z tych warunków","dieser Bedingungen","de estas condiciones"],
+  "GridGroupCount": ["Grupy: {count}","{count} Gruppen","{count} grupos"]
 }

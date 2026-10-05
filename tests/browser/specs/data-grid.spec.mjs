@@ -89,7 +89,7 @@ test("search and typed filters cover the full inline dataset before the result w
   expect(await ids(page)).toEqual(["row-498", "row-497"]);
   await page.evaluate(async () => document.querySelector("[data-canopyx-host]").canopyx.setQuery({ search: "Display only" }));
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "1");
-  await expect(page.getByRole("status").filter({ hasText: /^No results$/ })).toBeVisible();
+  await expect(page.getByRole("heading",{name:"No matching rows",exact:true})).toBeVisible();
   await expect(page.locator(".cx-grid-result-count")).toHaveText("0 of 500 rows");
 });
 
@@ -267,7 +267,7 @@ for (const [scenario, outcome] of [
   }}});`;
   await openGrid(page, hostView(), setup); await page.waitForSelector("[data-cx-ready]");
   await page.locator('.cx-row[data-cx-id="row-0"]').focus();
-  if (cell) await page.keyboard.press("Enter");
+  if (cell) await page.keyboard.press("F2");
   await page.keyboard.press("Control+End");
   await expect(page.locator('.cx-row[aria-rowindex="201"][data-cx-status="loading"]')).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.pending.some(item => item.query.offset === 190))).toBe(true);

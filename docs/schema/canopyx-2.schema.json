@@ -219,7 +219,7 @@
       "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
         "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "aggregates": { "$ref": "#/$defs/gridAggregateValues" } }
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" } }
     },
     "gridColumnLayout": {
       "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
@@ -1072,6 +1072,14 @@
         "gridWhere": { "type": "string" },
         "gridComplexFilter": { "type": "string" },
         "gridClearColumnFilter": { "type": "string" },
+        "gridSelectionAggregate": { "type": "string" },
+        "gridConditionValue": { "type": "string" },
+        "gridConditionUpperValue": { "type": "string" },
+        "gridDeleteCondition": { "type": "string" },
+        "gridShowRowsWhere": { "type": "string" },
+        "gridOfTheseAreTrue": { "type": "string" },
+        "gridOfThese": { "type": "string" },
+        "gridGroupCount": { "type": "string" },
         "gridMore": { "type": "string" },
         "gridDone": { "type": "string" },
         "gridClearAll": { "type": "string" },

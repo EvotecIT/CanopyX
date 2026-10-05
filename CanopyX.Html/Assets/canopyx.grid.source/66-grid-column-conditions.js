@@ -20,15 +20,15 @@
       if(column.kind==="number"&&!input.value.trim())throw new Error(this.labels.gridInvalidFilter);gridScalar(value,column);
       return {column:column.id,operator:operator.value,values:[value]};});
       return predicates.length===1?predicates[0]:{operator:join.value,filters:predicates,groups:[]};};
-    const update=()=>{try{apply(read());setText(error,"");if(preset)preset.value="range";}catch(failure){setText(error,this.labels.gridInvalidFilter);}};
+    const update=()=>{apply.cancel();try{apply(read());setText(error,"");if(preset)preset.value="range";}catch(failure){setText(error,this.labels.gridInvalidFilter);}};
     const add=filter=>{
       if(rows.children.length>=2)return;const row=h("div","cx-column-condition"),operator=h("select","cx-input"),input=h("input","cx-input");
       for(const value of text?["contains","eq","ne","startsWith","isNull","isNotNull"]:["eq","ne","gt","ge","lt","le","isNull","isNotNull"])operator.appendChild(gridOption(value,this.labels[GRID_FILTER_LABELS[value]]||GRID_FILTER_LABELS[value]));
-      operator.setAttribute("aria-label",this.labels.gridOperator);input.setAttribute("aria-label",this.labels.gridValue);input.type=date?"datetime-local":text?"text":"number";if(!text)input.step="any";
+      operator.setAttribute("aria-label",this.labels.gridOperator);input.setAttribute("aria-label",this.labels.gridConditionValue);input.type=date?"datetime-local":text?"text":"number";if(!text)input.step="any";
       if(filter){operator.value=filter.operator;input.value=date?gridDateInput(filter.values[0],this.local):String(filter.values[0]??"");}
       input.disabled=["isNull","isNotNull"].includes(operator.value);row._condition={operator,input,original:filter?{filter,input:input.value}:null};
       row.append(operator,input);if(rows.children.length){const remove=gridDecorateButton(gridButton("",()=>{row.remove();join.hidden=true;addButton.hidden=false;update();}),"close",true);
-        remove.setAttribute("aria-label",this.labels.gridRemoveCondition);row.appendChild(remove);rows.appendChild(row);}else rows.appendChild(row);
+        remove.setAttribute("aria-label",this.labels.gridDeleteCondition);row.appendChild(remove);rows.appendChild(row);}else rows.appendChild(row);
       input.addEventListener("input",update);operator.addEventListener("change",()=>{input.disabled=["isNull","isNotNull"].includes(operator.value);update();});
     };
     if(date){preset=h("select","cx-input");preset.setAttribute("aria-label",this.labels.gridDateRange);
@@ -38,4 +38,5 @@
     const addButton=gridButton(this.labels.gridAddCondition,()=>{add(null);join.hidden=false;addButton.hidden=true;rows.lastElementChild.querySelector('input').focus();});addButton.classList.add("cx-link");
     add(filters[0]);if(filters[1]){add(filters[1]);join.hidden=false;addButton.hidden=true;}
     join.addEventListener("change",update);body.append(rows,join,addButton);
+    if(date){const zone=h("p","cx-muted");setText(zone,new Intl.DateTimeFormat(this.lang,{timeZone:this.local?undefined:"UTC"}).resolvedOptions().timeZone);body.appendChild(zone);}
   };

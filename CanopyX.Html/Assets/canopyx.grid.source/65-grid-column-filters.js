@@ -14,8 +14,8 @@
     return gridQueryStart(base,{filterGroup:base.filterGroup?{operator:"and",filters:[],groups:[base.filterGroup,clause]}:clause});
   }
   Object.assign(DataGrid.prototype,{
-    async columnFacetItems(column,search=""){
-      if(this.view.source.kind==="host")return this.getFacets(column.id,{search,includeCurrentFilter:false,limit:200});
+    async columnFacetItems(column,search="",signal){
+      if(this.view.source.kind==="host")return this.getFacets(column.id,{search,includeCurrentFilter:false,limit:200,signal});
       const query=gridColumnProjection(this.queryForChange(),column.id),columns=new Map(this.view.columns.map(item=>[item.id,item])),rows=gridQueryRows(this.view,query,columns,false),buckets=new Map();
       for(const row of rows){const value=cellValue(row.cells[column.id])??null,key=typeof value+":"+foldText(value),item=buckets.get(key);
         if(item)item.count++;else buckets.set(key,{value,count:1});}
@@ -34,6 +34,7 @@
         try{const promise=this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,draft));draft=undefined;this.reportingFilterSubmitEpoch=this.queryEpoch;
           promise.then(()=>setText(error,""),failure=>setText(error,failure.message));}catch(failure){setText(error,failure.message);}};
       const apply=clause=>{draft=clause??null;clearTimeout(timer);timer=setTimeout(flush,200);};
+      apply.cancel=()=>{clearTimeout(timer);draft=undefined;};
       signal.addEventListener("abort",()=>clearTimeout(timer),{once:true});
       footer.append(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),
         gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}));
@@ -47,7 +48,10 @@
       search.type="search";search.setAttribute("aria-label",this.labels.gridFilterValues);search.placeholder=this.labels.gridFilterValues;
       all.type="checkbox";all.checked=!clauses.length;const allLabel=gridInputLabel(this.labels.gridSelectAllValues,all);body.append(allLabel,search,list,status);
       const flatten=group=>group.groups?group.filters.concat(group.groups.flatMap(flatten)):[group],predicates=clauses.flatMap(flatten);
-      let baseAll=!clauses.length,items=[],selected=new Map(),request=0,initial=true;
+      const criteria=()=>JSON.stringify([gridResultShape(gridColumnProjection(this.getQuery(),column.id)),this.snapshot.revision]),originalCriteria=criteria();
+      this.host.addEventListener("canopyx:query",()=>{if(criteria()!==originalCriteria)this.closeGridPopover(false);},{signal});
+      let baseAll=!clauses.length,items=[],selected=new Map(),request=0,initial=true,facetController;
+      signal.addEventListener("abort",()=>facetController?.abort(),{once:true});
       const key=value=>typeof value+":"+foldText(value),chosen=value=>selected.has(key(value))?selected.get(key(value)):
         !clauses.length||clauses.every(clause=>clause.groups?gridMatchesGroup({cells:{[column.id]:value}},clause,new Map([[column.id,column]])):gridMatches({cells:{[column.id]:value}},clause,column));
       for(const predicate of predicates)if(["in","eq"].includes(predicate.operator))for(const value of predicate.values)selected.set(key(value),true);
@@ -67,13 +71,13 @@
           setText(count,numberFormat(this.lang).format(item.count));label.append(check,value,count);list.appendChild(label);
           check.addEventListener("change",()=>{selected.set(key(item.value),check.checked);all.checked=items.every(item=>chosen(item.value));all.indeterminate=!all.checked&&items.some(item=>chosen(item.value));commit();});}
         all.checked=items.length>0&&items.every(item=>chosen(item.value));all.indeterminate=!all.checked&&items.some(item=>chosen(item.value));};
-      const load=async()=>{const generation=++request;setText(status,this.labels.loading);
-        try{const page=await this.columnFacetItems(column,search.value);if(signal.aborted||generation!==request)return;
+      const load=async()=>{const generation=++request;facetController?.abort();facetController=new AbortController();setText(status,this.labels.loading);
+        try{const page=await this.columnFacetItems(column,search.value,facetController.signal);if(signal.aborted||generation!==request)return;
           const previous=new Map(items.map(item=>[key(item.value),item]));for(const item of page.items)previous.set(key(item.value),item);items=[...previous.values()];
           render();for(const row of list.children)row.hidden=!foldText(row.querySelector('.cx-facet-value').textContent).includes(foldText(search.value));
-          if(initial){search.hidden=page.totalValues<=12;initial=false;}
+          if(initial&&!search.value){search.hidden=page.totalValues<=12;initial=false;}
           setText(status,page.truncated?fill(this.labels.gridFacetCounts,{count:page.matched,shown:page.items.length,total:page.totalValues}):"");this.gridPopover?.position();
-        }catch(failure){if(!signal.aborted)setText(error,failure.message);}};
+        }catch(failure){if(!signal.aborted&&generation===request&&failure.name!=="AbortError")setText(error,failure.message);}};
       all.addEventListener("change",()=>{baseAll=all.checked;selected.clear();for(const item of items)selected.set(key(item.value),all.checked);render();commit();});
       search.addEventListener("input",load);load();
     }

@@ -72,7 +72,7 @@ test("left and right cells stay aligned with headers while the center scrolls an
   for (const [id, index] of [["name", 0], ["action", 4]]) {
     expect((await row.getByRole("gridcell").nth(index).boundingBox()).x).toBeCloseTo((await header(page, id).boundingBox()).x, 0);
   }
-  await row.press("Enter"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight");
+  await row.press("F2"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight");
   const box = await page.evaluate(() => ({ cell: document.activeElement.getBoundingClientRect().toJSON(),
     left: document.querySelector('.cx-hcell[data-cx-column=name]').getBoundingClientRect().right,
     right: document.querySelector('.cx-hcell[data-cx-column=action]').getBoundingClientRect().left }));
@@ -130,7 +130,7 @@ test("header moves cross pinned groups and the column chooser preserves its own 
 
 test("responsive layout returns focus to the record when its entered field disappears", async ({ page }) => {
   await page.setViewportSize({ width: 1200, height: 700 }); await open(page, { reporting: { ...view.reporting, responsive: true } });
-  await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("End"); await page.keyboard.press("ArrowLeft");
+  await page.locator('.cx-row[data-cx-id="r0"]').press("F2"); await page.keyboard.press("End"); await page.keyboard.press("ArrowLeft");
   expect(await page.evaluate(() => document.activeElement.textContent)).toContain("hidden field 0");
   await page.setViewportSize({ width: 390, height: 700 }); await nextFrames(page);
   await expect(page.locator('.cx-row[data-cx-id="r0"]')).toBeFocused();
@@ -144,7 +144,7 @@ test("an oversized outer pin suspends its whole edge prefix and leaves center na
     action: { minimum: 40, maximum: 400, pin: "right" } } } });
   expect((await layout(page)).filter(c => c.requestedPin === "left").map(c => c.pin)).toEqual(["none", "none"]);
   expect((await layout(page)).find(c => c.id === "action").pin).toBe("right");
-  await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("ArrowRight");
+  await page.locator('.cx-row[data-cx-id="r0"]').press("F2"); await page.keyboard.press("ArrowRight");
   const frame = await page.locator(".cx-grid").boundingBox(), focused = await page.evaluate(() => document.activeElement.getBoundingClientRect().toJSON());
   expect(focused.left).toBeGreaterThanOrEqual(frame.x - 1); expect(focused.right).toBeLessThanOrEqual(frame.x + frame.width - 160 + 1);
 });
@@ -160,7 +160,7 @@ test("growing a pinned edge leaves the focused center header control uncovered",
 
 test("growing a pinned edge also reveals the entered center cell", async ({ page }) => {
   await page.setViewportSize({ width: 650, height: 700 }); await open(page);
-  await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("End"); await page.keyboard.press("ArrowLeft");
+  await page.locator('.cx-row[data-cx-id="r0"]').press("F2"); await page.keyboard.press("End"); await page.keyboard.press("ArrowLeft");
   await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnWidth("action", 240)); await nextFrames(page);
   const focused = await page.evaluate(() => document.activeElement.getBoundingClientRect().toJSON()), edge = await header(page, "action").boundingBox();
   expect(focused.right).toBeLessThanOrEqual(edge.x + 1);
@@ -216,8 +216,8 @@ for (const mode of ["", "-continuous"]) for (const theme of ["", "-dark"]) test(
   await expect(page.locator("#record-fields")).toContainText("without interpreting markup");
   const colors = await page.locator("#record-details").evaluate(dialog => ({ background: getComputedStyle(dialog).backgroundColor,
     foreground: getComputedStyle(dialog).color }));
-  expect(colors).toEqual(theme ? { background: "rgb(13, 17, 23)", foreground: "rgb(230, 237, 243)" } :
-    { background: "rgb(255, 255, 255)", foreground: "rgb(31, 35, 40)" });
+  expect(colors).toEqual(theme ? { background: "rgb(22, 24, 28)", foreground: "rgb(242, 243, 245)" } :
+    { background: "rgb(255, 255, 255)", foreground: "rgb(22, 24, 28)" });
   await page.keyboard.press("Escape"); await expect(row).toBeFocused();
   await page.locator(".cx-grid-columns > summary").click();
   await expect(page.getByText("Hidden at this width", { exact: true })).toHaveCount(4);

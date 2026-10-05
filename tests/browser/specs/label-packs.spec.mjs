@@ -44,8 +44,9 @@ for (const [language,labels,staticLabels] of packs) {
     await page.setViewportSize({width:390,height:844});
     await openExample(page,`localized-grid-${language}.html`);
     await expect(page.getByPlaceholder(labels.searchPlaceholder)).toBeVisible();
-    await expect(page.getByRole('button',{name:labels.gridSelectPage,exact:true})).toBeVisible();
+    await page.locator('.cx-header-check').click();await expect(page.getByRole('button',{name:labels.gridSelectPage,exact:true})).toBeVisible();
     await page.getByRole('button',{name:labels.gridSelectPage,exact:true}).click();
+    await page.keyboard.press('Escape');
     await expect(page.locator('.cx-grid-row-select').first()).toBeChecked();
     await page.getByRole('button',{name:labels.gridNextPage,exact:true}).click();await nextFrames(page);
     await expect(page.getByRole('spinbutton',{name:labels.gridPageNumber,exact:true})).toHaveValue('2');

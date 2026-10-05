@@ -37,7 +37,7 @@ for (const theme of ["light", "dark"]) {
     await openExample(page, "inline.html");
     // The auto theme follows the system preference, so the dark run really scans dark colours.
     const surface = await page.evaluate(() => getComputedStyle(document.querySelector(".cx-host")).backgroundColor);
-    expect(surface).toBe(theme === "dark" ? "rgb(13, 17, 23)" : "rgb(255, 255, 255)");
+    expect(surface).toBe(theme === "dark" ? "rgb(22, 24, 28)" : "rgb(255, 255, 255)");
     await openEverything(page);
     await expectNoViolations(page);
     // Transient states: the column chooser, the search results, and a filtered tree with a "show more" row.

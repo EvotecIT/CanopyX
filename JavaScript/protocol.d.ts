@@ -16,6 +16,10 @@ export interface CanopyCell {
   title?: string;
   tone?: string;
   badges?: CanopyBadge[];
+  /** Secondary identifier text, independent of the raw value. */
+  secondary?: string;
+  /** At most 4096 ordered periods for a flat-grid history presenter. */
+  series?: CellPeriod[];
 }
 export type Cell = CellValue | CanopyCell;
 
@@ -123,6 +127,14 @@ export type LabelName =
   | "gridWhere"
   | "gridComplexFilter"
   | "gridClearColumnFilter"
+  | "gridSelectionAggregate"
+  | "gridConditionValue"
+  | "gridConditionUpperValue"
+  | "gridDeleteCondition"
+  | "gridShowRowsWhere"
+  | "gridOfTheseAreTrue"
+  | "gridOfThese"
+  | "gridGroupCount"
   | "gridMore" | "gridDone" | "gridClearAll" | "gridRows" | "gridResultNoun" | "gridSearchNoun" | "gridChart" | "gridColumnMenu" | "gridSortAscending" | "gridSortDescending" | "gridClearSort" | "gridFilterColumn" | "gridHideColumn" | "gridGroupedBy" | "gridRemoveGrouping" | "gridSelectAllValues" | "gridFilterValues" | "gridAddCondition" | "gridAddGroup" | "gridAnd" | "gridOr" | "gridEditAsText" | "gridFilterText" | "gridDeepFilters" | "gridToday" | "gridYesterday" | "gridLastSevenDays" | "gridLastThirtyDays" | "gridThisMonth" | "gridDateRange" | "gridEmpty" | "gridEmptyReason" | "gridNoMatches" | "gridNoMatchesReason" | "gridRetry" | "gridLoadFailed" | "gridAll" | "gridPageOf" | "gridStatusCount" | "gridDetailsSection" | "gridPreviousRecord" | "gridNextRecord" | "gridShowMore" | "gridNoData" | "gridPeriodRange" | "gridHealthy";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 

@@ -260,7 +260,7 @@ const installed = new WeakSet();
 global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
 if (installed.has(context.DataGrid.prototype)) return;
 const {DataGrid,h,setText,setAttr,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
-gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
+GRID_FILTER_LABELS,gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
 gridOverlayTheme,gridRestoreFocus,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER} = context;
 const buildFilters = DataGrid.prototype.buildGridFilters;
 '@

@@ -2,8 +2,8 @@
   Object.assign(DataGrid.prototype, {
     build() {
       const host = this.host, style = host.style, signal = this.lifetime.signal;
-      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h");
-      this.restoreHeight = () => style.setProperty("--cx-min-h", minimum, priority);
+      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h"),rowHeight=style.getPropertyValue("--cx-row-h"),rowPriority=style.getPropertyPriority("--cx-row-h"),density=host.getAttribute("data-cx-density");
+      this.restoreHeight = () => {style.setProperty("--cx-min-h",minimum,priority);style.setProperty("--cx-row-h",rowHeight,rowPriority);if(density===null)host.removeAttribute("data-cx-density");else host.setAttribute("data-cx-density",density);};
       style.removeProperty("--cx-min-h");
       host.classList.add("cx-host", "cx-data-grid");
       host.setAttribute("data-cx-density", this.view.density || "default");
@@ -27,12 +27,13 @@
       if (this.groupBar) host.appendChild(this.groupBar);
       host.append(this.notice, grid, this.live);
       this.buildPager();
+      this.buildGridStatus();
       this.buildHeader();
       grid.addEventListener("scroll", () => { this.scheduleRender(); this.syncPinnedShadows(); this.stateChanged(); }, { passive: true, signal: signal });
       grid.addEventListener("click", event => this.onClick(event), { signal: signal });
       grid.addEventListener("dblclick", event => {
         const element = event.target.closest(".cx-row"), row = element && element._w;
-        if (row && !row.status && typeof this.opts.onDetails === "function" && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
+        if (row && !row.status && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
           Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error }));
       }, { signal: signal });
       grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
@@ -50,7 +51,8 @@
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
-      this.resizeObserver = new ResizeObserver(() => {
+      // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
+      this.resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => {
         if (this.destroyed) return;
         if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
@@ -62,7 +64,7 @@
           const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
         }
         this.scheduleRender();
-      });
+      }));
       this.resizeObserver.observe(grid);
     },
 
@@ -74,15 +76,6 @@
     logicalTop() { return this.hiddenScrollTop ?? ROW_SCROLLING.logicalTop.call(this); },
 
     hasGridSize() { return !!(this.grid.clientWidth && this.grid.clientHeight && this.grid.checkVisibility()); },
-
-    setNotice(text, error) {
-      this.notice.textContent = ""; this.notice.hidden = !text;
-      this.notice.setAttribute("role", error ? "alert" : "status");
-      if (error) {
-        const retry = h("button", "cx-button cx-grid-retry"); retry.type = "button"; setText(retry, text);
-        retry.addEventListener("click", () => this.retry().catch(() => {}), { signal: this.lifetime.signal }); this.notice.appendChild(retry);
-      } else setText(this.notice, text);
-    },
 
     buildHeader() {
       const sorts = this.acceptedQuery ? this.acceptedQuery.sort : [];
@@ -118,8 +111,7 @@
           slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }
-      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : (this.autoRows ? " cx-auto-row" : "") +
-        (this.view.zebra && row._ri % 2 ? " cx-alt" : "")));
+      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : this.autoRows ? " cx-auto-row" : ""));
       if (this.autoRows) {
         element.style.height = row.status ? this.rowH + "px" : "auto";
         this.observeDetail(element, !row.status);
@@ -136,5 +128,6 @@
         this.paintSlot(slot, row.h, this.cols[i], this.columnIndex[i], row);
       }
       this.paintGridHighlights(element, row);
+      if(row.status)this.paintGridSkeleton(element,row);
     }
   });

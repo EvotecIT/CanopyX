@@ -28,8 +28,10 @@ test("compact grouped example header filters can be clicked and return focus", a
     const button = filters.nth(index);
     await button.click({ timeout: 4000 });
     await expect(button).toHaveAttribute("aria-expanded", "true");
-    await expect(page.locator(".cx-grid-filter-form")).toBeVisible();
-    await page.locator(".cx-grid-filter-form").locator("input:visible,select:visible").first().focus();
+    const columnFilter=page.locator('.cx-column-filter');
+    await expect(columnFilter).toBeVisible();
+    await expect(page.locator('.cx-grid-filters')).not.toHaveAttribute('open','');
+    await columnFilter.locator('input:visible,select:visible').first().focus();
     await page.keyboard.press("Escape");
     await expect(button).toBeFocused();
   }
@@ -48,8 +50,8 @@ test("compact reporting example header filters remain reachable while scrolling 
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeGreaterThanOrEqual(0);
     await buttons.nth(index).click({ timeout: 4000 });
-    await expect(page.locator(".cx-grid-filter-form")).toBeVisible();
-    await page.locator(".cx-grid-filter-form").locator("input:visible,select:visible").first().focus();
+    await expect(page.locator('.cx-column-filter')).toBeVisible();
+    await page.locator('.cx-column-filter').locator('input:visible,select:visible').first().focus();
     await page.keyboard.press("Escape");
   }
 });

@@ -18,12 +18,12 @@
     return rows;
   }
 
-  function reportingRangeValue(raw, column, labels) {
+  function reportingRangeValue(raw, column, labels, local) {
     if (column.kind === "number") {
       if (!raw.trim()) throw new Error(labels.gridInvalidFilter);
       const value = Number(raw); gridScalar(value, column); return value;
     }
-    const value = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : raw + "Z";
+    const value = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : local ? new Date(raw).toISOString() : raw + "Z";
     gridScalar(value, column); return value;
   }
 
@@ -74,7 +74,7 @@
       REPORT_FILTER_BASE.addGridFilter.call(this, parent, range ? { column: predicate.column, operator: "ge", values: [predicate.values[0]] } : predicate);
       if (parent.children.length === count) return;
       const row = parent.lastElementChild, fields = row._filter, upper = h("input", "cx-grid-filter-value"), choices = h("select"), boolean = h("select");
-      const upperField = gridInputLabel(this.labels.gridRangeEnd, upper), categoryField = gridInputLabel(this.labels.gridSuggestedCategory, choices),
+      const upperField = gridInputLabel(this.labels.gridConditionUpperValue, upper), categoryField = gridInputLabel(this.labels.gridSuggestedCategory, choices),
         booleanField = gridInputLabel(this.labels.gridBooleanValue, boolean);
       boolean.append(gridOption("true", this.labels.gridTrue), gridOption("false", this.labels.gridFalse));
       row.insertBefore(upperField, row.lastElementChild); row.insertBefore(categoryField, row.lastElementChild); row.insertBefore(booleanField, row.lastElementChild);
@@ -104,7 +104,7 @@
       refresh();
       if (range) {
         fields.operator.value = "between";
-        upper.value = upper.type === "datetime-local" ? new Date(predicate.values[1]).toISOString().slice(0, -1) : String(predicate.values[1]); refresh();
+        upper.value = upper.type === "datetime-local" ? gridDateInput(predicate.values[1],this.local) : String(predicate.values[1]); refresh();
         fields.rangeOriginal = { column: predicate.column, values: predicate.values.slice(), inputs: [fields.input.value, upper.value] };
       }
     },
@@ -115,7 +115,7 @@
       const column = this.columns.find(item => item.id === fields.column.value);
       const original = fields.rangeOriginal, inputs = [fields.input.value, fields.upper.value];
       const values = inputs.map((raw, index) => original && original.column === column.id && raw === original.inputs[index] ?
-        original.values[index] : reportingRangeValue(raw, column, this.labels));
+        original.values[index] : reportingRangeValue(raw, column, this.labels, this.local));
       if (gridScalar(values[0], column) > gridScalar(values[1], column)) throw new Error(this.labels.gridInvalidRange);
       return [{ column: column.id, operator: "ge", values: [values[0]] }, { column: column.id, operator: "le", values: [values[1]] }];
     }

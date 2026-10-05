@@ -25,6 +25,9 @@
     };
     const run = action => {
       if (operation) return;
+      // Print lives in the overflow; expose the shared progress and cancellation controls.
+      panel.parentElement.open = true;
+      if (!this.phone && this.overflow) this.overflow.details.open = false;
       const controller = operation = new AbortController();
       scope.disabled = true; buttons.forEach(button => button.disabled = true);
       cancel.hidden = false; meter.hidden = false; meter.removeAttribute("value"); setText(status, this.labels.loading);
@@ -51,6 +54,6 @@
       } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
     }));
     const copy = gridButton(this.labels.gridCopy, () => run(options => this.copy(options))), buttons = [csv, copy];
-    if (typeof this.opts.onPrint === "function") buttons.push(gridButton(this.labels.gridPrint, () => run(options => this.print(options))));
+    if (typeof this.opts.onPrint === "function") {const print=gridButton(this.labels.gridPrint,()=>run(options=>this.print(options)));print.classList.add("cx-grid-print");this.toolbar.appendChild(print);buttons.push(print);}
     panel.append(scope, ...buttons, cancel, meter, status);
   };

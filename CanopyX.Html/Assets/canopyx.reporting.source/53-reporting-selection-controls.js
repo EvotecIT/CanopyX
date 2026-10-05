@@ -1,6 +1,5 @@
   // ---------- native row checkboxes and explicit page/query selection controls ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridSelection: "Selection",
     gridSelectionQueryCount: "{count} matching records selected; {excluded} excluded",
     gridSelectRecord: "Select record {id}"
   }));

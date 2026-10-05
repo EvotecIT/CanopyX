@@ -1,6 +1,22 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the {count} groups label.</summary>
+    public string GridGroupCount { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the of these label.</summary>
+    public string GridOfThese { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the of these are true label.</summary>
+    public string GridOfTheseAreTrue { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the show rows where label.</summary>
+    public string GridShowRowsWhere { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the remove condition label.</summary>
+    public string GridDeleteCondition { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the upper value label.</summary>
+    public string GridConditionUpperValue { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the value label.</summary>
+    public string GridConditionValue { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the count: {count} · sum: {sum} · average: {average} · minimum: {minimum} · maximum: {maximum} label.</summary>
+    public string GridSelectionAggregate { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the clear filter label.</summary>
     public string GridClearColumnFilter { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the this column belongs to a mixed condition group edit it in filters label.</summary>

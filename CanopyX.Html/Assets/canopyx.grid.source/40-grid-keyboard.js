@@ -14,6 +14,7 @@
       if (!row || event.defaultPrevented || event.target.closest("a,button,input,select,textarea,[contenteditable]")) return;
       this.setFocus(row, true);
       if (row.status) { if (row.status === "error") this.retry().catch(() => {}); return; }
+      if(this.phone){Promise.resolve().then(()=>this.openDetails(row.key)).catch(error=>this.emit("error",{error}));return;}
       if (this.view.selection === "none") return;
       const next = this.multi && (event.ctrlKey || event.metaKey) ? new Set(this.selected) : new Set();
       if (next.has(row.key)) next.delete(row.key); else next.add(row.key);
@@ -31,11 +32,12 @@
         column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
       const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
+      if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();Promise.resolve().then(()=>this.openDetails(row.key)).catch(error=>this.emit("error",{error}));return;}
       if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
         if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
           event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error: error })); return;
         }
-        if (event.key === "Enter" && typeof this.opts.onDetails === "function") {
+        if (event.key === "Enter") {
           event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error })); return;
         }
       }
@@ -66,7 +68,7 @@
         case "Escape": this.setFocus(row, true); event.preventDefault(); return;
         case "F2":
           if (column >= 0) { this.setFocus(row, true); event.preventDefault(); return; }
-          // Row focus enters its first cell, as Enter does.
+          // F2 enters the first cell from row focus.
         case "Enter":
           if (row.status) { if (row.status === "error") this.retry().catch(() => {}); }
           else if (!control) this.focusCell(row, Math.max(0, column), Math.max(0, at), true);

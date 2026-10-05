@@ -11,7 +11,7 @@ public static partial class CanopyHtmlAssets {
     public const string FilterEditorStyleFileName = "canopyx-filter-editor.css";
     private static readonly Lazy<string> FilterScriptResource = new Lazy<string>(() => CanopyHtmlResources.Read(FilterEditorScriptFileName));
     private static readonly Lazy<string> FilterStyleResource = new Lazy<string>(() => CanopyHtmlResources.Read(FilterEditorStyleFileName));
-    /// <summary>Gets the optional filter editor registration script. It does not install until a filter opens.</summary>
+    /// <summary>Gets the optional editor registration script. It installs when a menu, editor, drawer, or selected aggregate is used.</summary>
     public static string FilterEditorScript => FilterScriptResource.Value;
     /// <summary>Gets the optional filter editor stylesheet.</summary>
     public static string FilterEditorStyle => FilterStyleResource.Value;
@@ -28,7 +28,7 @@ public static partial class CanopyHtmlAssets {
     /// <summary>Gets the content-hashed filter stylesheet file name.</summary>
     public static string HashedFilterEditorStyleFileName => "canopyx-filter-editor." + Hash(FilterEditorStyle) + ".css";
     /// <summary>Gets inert payload markup for hosts embedding the runtime into a single-file page.</summary>
-    /// <remarks>Grid fragments already carry this markup. Custom JavaScript hosts can include it once outside a mounted host; it activates when a filter opens.</remarks>
+    /// <remarks>Grid fragments already carry this markup. Custom JavaScript hosts can include it once outside a mounted host; it activates on first use of an editor, menu, drawer, or selected aggregate.</remarks>
     public static string FilterEditorMarkup => "<script type=\"application/x-canopyx-filter-style\" data-cx-version=\"" + FilterEditorVersion + "\">" + FilterEditorStyle
         + "</script><script type=\"application/x-canopyx-filter-editor\" data-cx-version=\"" + FilterEditorVersion + "\">" + FilterEditorScript + "</script>";
 

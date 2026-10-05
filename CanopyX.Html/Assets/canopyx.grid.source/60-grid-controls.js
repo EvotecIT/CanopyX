@@ -38,6 +38,7 @@
     controlPanel(title, className, onOpen) {
       const details = h("details", "cx-columns " + className), summary = h("summary"), panel = h("div", "cx-columns-list cx-grid-panel");
       summary.classList.add("cx-btn");
+      summary.setAttribute("role","button");
       if (className !== "cx-grid-filters") summary.classList.add("ghost");
       const icon = className === "cx-grid-filters" ? "filter" : className === "cx-grid-columns" ? "columns" : className === "cx-grid-views" ? "views" : "export";
       setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);

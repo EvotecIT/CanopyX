@@ -23,14 +23,25 @@
     },
     buildGridControls() {
       GROUP_BASE.buildGridControls.call(this);
-      if (!reportingSummaryEnabled(this.view)) return;
-      this.summaryControls = h("div", "cx-grid-summary"); this.summaryControls.setAttribute("role", "status");
+      if (!this.view.reporting?.aggregates?.length) return;
+      this.summaryControls = h("div", "cx-grid-summary"); this.summaryControls.setAttribute("role", "rowgroup");
       this.summaryControls.setAttribute("aria-label", this.labels.gridSummary); this.toolbar.appendChild(this.summaryControls);
     },
     syncSummaryControls() {
+      if(this.statusBar&&this.summary&&this.statusGroupSummary!==this.summary){
+        this.statusGroupSummary=this.summary;this.statusGroups??=h("span");this.statusCount.after(this.statusGroups);
+        this.statusGroups.hidden=!this.summary.groups.length;setText(this.statusGroups,fill(this.labels.gridGroupCount,{count:numberFormat(this.lang).format(this.summary.groups.length)}));
+      }
       if (!this.summaryControls || !this.summary) return;
-      setText(this.summaryControls, (this.view.reporting.aggregates || []).map(aggregate =>
-        aggregate.label + ": " + formatValue(this.summary.aggregates[aggregate.id], "number", this.fmt)).join(" · "));
+      if(this.summaryControls.parentElement!==this.grid)this.grid.appendChild(this.summaryControls);
+      const count=this.rowProjection?this.rowProjection.rowCount():this.rowCount();this.grid.setAttribute("aria-rowcount",String(count+2));
+      const key=[this.summary,count,this.layout,this.rowWidth,...this.cols.map(column=>column.renderWidth+":"+column.effectivePin)];
+      if(this.summaryRenderKey?.every((value,index)=>value===key[index]))return;this.summaryRenderKey=key;
+      this.summaryControls.replaceChildren();const row=h("div","cx-summary-row");row.setAttribute("role","row");row.setAttribute("aria-rowindex",String(count+2));row.style.width=this.rowWidth+"px";
+      this.cols.forEach((column,index)=>{const cell=this.newCell(index,column.width,column.kind);cell.setAttribute("role","gridcell");cell.style.width=column.renderWidth+"px";
+        const aggregates=this.view.reporting.aggregates.filter(item=>item.column===column.id),value=aggregates.map(item=>formatValue(this.summary.aggregates[item.id],"number",this.fmt)).join(" · ");
+        setText(cell,value||index===0?value||this.labels.gridSummary:"");cell.title=aggregates.map(item=>item.label+": "+formatValue(this.summary.aggregates[item.id],"number",this.fmt)).join(" · ");row.appendChild(cell);});
+      this.summaryControls.appendChild(row);
     },
     fillRow(element, row) {
       if (!row.group) { element.removeAttribute("data-cx-group"); return GROUP_BASE.fillRow.call(this, element, row); }
@@ -40,21 +51,20 @@
       element.setAttribute("role", "row"); element.removeAttribute("data-cx-id"); element.removeAttribute("data-cx-status");
       element.removeAttribute("aria-selected"); element.removeAttribute("aria-busy"); element.dataset.cxGroup = row.group.key;
       element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
-      // A spanning heading has no column kind: sizing and pinning policies apply only to record cells.
-      const cell = this.cell(element, 0, this.rowWidth), button = h("button", "cx-grid-group-toggle");
-      cell.setAttribute("aria-colspan", String(this.cols.length));
-      button.type = "button"; button.tabIndex = -1; const collapsed = this.collapsedGroups.has(row.group.key);
-      button.disabled = !!this.pendingQuery;
-      button.setAttribute("aria-expanded", String(!collapsed));
-      button.setAttribute("aria-label", collapsed ? this.labels.gridGroupExpand : this.labels.gridGroupCollapse); setText(button, collapsed ? "▸" : "▾");
-      button.addEventListener("click", () => { if (!this.pendingQuery) { this.setFocus(row, false); this.setGroupCollapsed(row.group.key, !this.collapsedGroups.has(row.group.key)); this.setFocus(this.focused, true); } });
-      const column = this.columns.find(item => item.id === this.view.reporting.grouping.column);
-      const label = fill(this.labels.gridGroupHeading, { column: column.title, value: row.group.value === null ? this.labels.gridGroupMissing : formatValue(row.group.value, column.kind, this.fmt), count: numberFormat(this.lang).format(row.group.count) });
-      const text = h("span", "cx-grid-group-text"); setText(text, label); cell.append(button, text);
-      const aggregates = (this.view.reporting.aggregates || []).map(item => item.label + ": " + formatValue(row.group.aggregates[item.id], "number", this.fmt)).join(" · ");
-      cell.title = label + (aggregates ? " — " + aggregates : "");
-      if (aggregates) { const summary = h("span", "cx-grid-group-aggregates"); setText(summary, aggregates); cell.appendChild(summary); }
-      element._cells = [{ cell, content: cell }];
+      const button=h("button","cx-grid-group-toggle");button.type="button";button.tabIndex=-1;const collapsed=this.collapsedGroups.has(row.group.key);
+      button.disabled=!!this.pendingQuery;button.setAttribute("aria-expanded",String(!collapsed));button.setAttribute("aria-label",collapsed?this.labels.gridGroupExpand:this.labels.gridGroupCollapse);setText(button,collapsed?"▸":"▾");
+      button.addEventListener("click",()=>{if(!this.pendingQuery){this.setFocus(row,false);this.setGroupCollapsed(row.group.key,!this.collapsedGroups.has(row.group.key));this.setFocus(this.focused,true);}});
+      const groupColumn=this.columns.find(item=>item.id===this.view.reporting.grouping.column),label=fill(this.labels.gridGroupHeading,{column:groupColumn.title,value:row.group.value===null?this.labels.gridGroupMissing:formatValue(row.group.value,groupColumn.kind,this.fmt),count:numberFormat(this.lang).format(row.group.count)}),cells=[];
+      this.cols.forEach((column,index)=>{const cell=this.cell(element,index,column.width,column.kind);cells.push({cell,content:cell});
+        if(index===0){const text=h("span","cx-grid-group-text"),count=h("span","cx-grid-group-count");setText(text,row.group.value===null?this.labels.gridGroupMissing:formatValue(row.group.value,groupColumn.kind,this.fmt));setText(count,numberFormat(this.lang).format(row.group.count));cell.append(button,text,count);cell.title=label;}
+        else {const aggregates=(this.view.reporting.aggregates||[]).filter(item=>item.column===column.id);
+          if(!aggregates.length&&Object.hasOwn(row.group.cells||{},column.id)){
+            const options=column.presenter||this.view.reporting.presenters?.[column.id];
+            if(options)gridCellRenderer(this,column,options)({id:row.group.key,cells:row.group.cells},cell);
+            else setText(cell,cellText(row.group.cells[column.id],column,this.fmt));
+          }else{setText(cell,aggregates.map(item=>formatValue(row.group.aggregates[item.id],"number",this.fmt)).join(" · "));cell.title=aggregates.map(item=>item.label+": "+formatValue(row.group.aggregates[item.id],"number",this.fmt)).join(" · ");}}
+      });
+      element._cells = cells;
       this.paintGridHighlights(element, row);
     },
     setQuery(input, paging) {

@@ -25,6 +25,10 @@
   --cx-cell-px:12px;
   --cx-on-accent:#ffffff;
   --cx-shadow-ink:#000;
+  --cx-size-d04em:.04em;
+  --cx-size-46ch:46ch;
+  --cx-size-440px:440px;
+  --cx-size-140px:140px;
 
   --cx-size-d06em:.06em;
   --cx-size-210px:210px;
@@ -87,23 +91,11 @@
   --cx-size-3px:3px;
   --cx-size-13px:13px;
   --cx-size-360px:360px;
-  --cx-size-7em:7em;
   --cx-size-22px:22px;
   --cx-size-24px:24px;
-  --cx-size-60px:60px;
-  --cx-size-680px:680px;
-  --cx-size-90vw:90vw;
   --cx-size-80vh:80vh;
-  --cx-size-55vh:55vh;
-  --cx-size-1d1em:1.1em;
   --cx-size-240px:240px;
-  --cx-size-1em:1em;
   --cx-size-d875em:.875em;
-  --cx-size-12rem:12rem;
-  --cx-size-32rem:32rem;
-  --cx-size-2rem:2rem;
-  --cx-size-36rem:36rem;
-  --cx-size-70vh:70vh;
   --cx-size-92px:92px;
   --cx-size-28px:28px;
   --cx-text-2:color-mix(in srgb,var(--cx-text) 78%,var(--cx-surface));

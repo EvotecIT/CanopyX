@@ -51,7 +51,7 @@ test("keyboard moves preserve hidden columns, sort priority, focus and export co
 });
 
 test("API reordering returns focus to the same record and column", async ({ page }) => {
-  await open(page); await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("ArrowRight");
+  await open(page); await page.locator('.cx-row[data-cx-id="r0"]').press("F2"); await page.keyboard.press("ArrowRight");
   await expect(page.locator('.cx-row[data-cx-id="r0"] [role=gridcell]').nth(1)).toBeFocused();
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["notes", "amount", "name", "hidden"])); await nextFrames(page);
   expect(await page.evaluate(() => ({ text: document.activeElement.textContent, row: document.activeElement.closest('[data-cx-id]')?.getAttribute('data-cx-id') })))

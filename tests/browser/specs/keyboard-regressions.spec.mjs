@@ -80,7 +80,7 @@ for (const theme of ["dark", "auto"]) {
     await page.locator(".cx-host").evaluate((host, theme) => host.setAttribute("data-cx-theme", theme), theme);
     await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
     await page.emulateMedia({ media: "print", colorScheme: "dark" });
-    await expect(page.locator(".cx-outline .cx-tone-danger")).toHaveCSS("color", "rgb(179, 38, 30)");
+    await expect(page.locator(".cx-outline .cx-tone-danger")).toHaveCSS("color", "rgb(184, 41, 42)");
     await expect(page.locator(".cx-host")).toHaveCSS("background-color", "rgb(255, 255, 255)");
     await page.screenshot({ path: path.join(repo, `artifacts/takeover/print-${theme}.png`), fullPage: true });
   });

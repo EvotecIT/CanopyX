@@ -222,6 +222,8 @@ export interface GridAggregate {
 export interface GridGroup {
   readonly key: string; readonly value: CellValue; readonly offset: number; readonly count: number;
   readonly aggregates: Readonly<Record<string, number | null>>;
+  /** Host-owned complete-group display values; rendered with column presenters, excluded from record queries and exports. */
+  readonly cells?: Readonly<Record<string, Cell>>;
 }
 export interface GridSummary {
   readonly protocol: "canopyx/2"; readonly type: "gridSummary"; readonly view: string; readonly revision: string;
@@ -329,7 +331,7 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   /** Reporting grouping only. At most 10000 bounded stable keys; omitted from shareable state. */
   collapsedGroups?: string[];
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
-  paging?: { pageLength: number; offset: number };
+  paging?: { pageLength: number; offset: number; allRows?: boolean };
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -340,7 +342,7 @@ export type GridPreferenceState<Q extends AcceptedGridQuery = GridQuery> = Reado
   readonly query: GridPreferenceQuery<Q>;
   readonly columns: readonly Readonly<GridState<Q>["columns"][number]>[];
   readonly selection: readonly string[];
-  readonly paging?: Readonly<{ pageLength: number; offset: number }>;
+  readonly paging?: Readonly<{ pageLength: number; offset: number; allRows?: boolean }>;
 };
 export interface GridViewSettings<Q extends AcceptedGridQuery = GridQuery> {
   readonly version: 1;
@@ -407,7 +409,7 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   firstPage(): Promise<Q>;
   previousPage(): Promise<Q>;
   nextPage(): Promise<Q>;
-  setPageLength(length: number): Promise<Q>;
+  setPageLength(length: number | "all"): Promise<Q>;
   setColumnWidth(id: string, width: number): void;
   /** Reporting runtime only: samples at most 200 cached accepted-query records and 2048 display code units per value, capped at 800 CSS pixels before declared constraints. No fetching or viewport scraping. */
   autoFitColumn(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;

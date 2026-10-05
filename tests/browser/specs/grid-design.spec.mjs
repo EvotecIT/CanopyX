@@ -22,6 +22,14 @@ test("density supplies default row sizes and preserves explicit dimensions", asy
   await expect(page.locator('.cx-row')).toHaveCSS('height','29px');
 });
 
+test("Graphite rows are unstriped by default and preserve explicit zebra styling",async({page})=>{
+  const view={...base,rows:[...base.rows,{id:'r2',cells:{name:'Second record'}}]};
+  await mount(page,view);await expect(page.locator('.cx-row.cx-alt')).toHaveCount(0);
+  const backgrounds=await page.locator('.cx-row').evaluateAll(rows=>rows.map(row=>getComputedStyle(row).backgroundColor));
+  expect(backgrounds[0]).toBe(backgrounds[1]);await page.evaluate(()=>grid.destroy());
+  await mount(page,{...view,zebra:true});await expect(page.locator('.cx-row.cx-alt')).toHaveCount(1);
+});
+
 test("Graphite toolbar separates search, selection and the accepted result line", async ({page}) => {
   await page.setViewportSize({width:1440,height:900});
   await mount(page, {...base,noun:"servers"});

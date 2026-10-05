@@ -10,6 +10,10 @@ internal static class GraphiteGridExample {
             Noun = "records", StatusBar = true, AutoRowHeight = true,
             Selection = CanopySelectionMode.Multiple, Presentation = CanopyGridPresentation.Paged, PageLength = 10
         };
+        view.Reporting = new CanopyGridReporting { Responsive = true };
+        view.Reporting.Layout.Add("name", new CanopyGridColumnLayout(priority: 0, alwaysVisible: true));
+        view.Reporting.Layout.Add("state", new CanopyGridColumnLayout(priority: 1, alwaysVisible: true));
+        view.Reporting.Layout.Add("latency", new CanopyGridColumnLayout(minimum: 80, priority: 2));
         view.Columns.Add(new CanopyColumn("name", "Record") { Width = 180, Sortable = true, Presenter = CanopyGridPresenter.Identifier(mono: true), Section = "Identity" });
         view.Columns.Add(new CanopyColumn("state", "State") { Width = 120, Sortable = true, Presenter = CanopyGridPresenter.Enum(), Section = "Status" });
         view.Columns.Add(new CanopyColumn("flag", "Enabled") { Width = 80, Presenter = CanopyGridPresenter.Boolean(), Section = "Status" });
