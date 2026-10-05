@@ -65,6 +65,15 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
     public bool Wrap { get; set; }
 
+    /// <summary>Gets or sets a safe flat-grid presenter. Raw values still drive search, sort and export.</summary>
+    public CanopyGridPresenter? Presenter { get; set; }
+
+    /// <summary>Gets or sets whether selected raw numeric values contribute to the optional status bar.</summary>
+    public bool Aggregatable { get; set; }
+
+    /// <summary>Gets or sets the record drawer section label. Null uses the default details section.</summary>
+    public string? Section { get; set; }
+
     internal void WriteJson(CanopyJsonWriter writer, bool grid = false, int? width = null) {
         writer.BeginObject()
             .Property("id", Id)
@@ -77,6 +86,9 @@ public sealed class CanopyColumn {
         }
         if (Editable) writer.Property("editable", true);
         if (Wrap) writer.Property("wrap", true);
+        if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
+        if (grid && Aggregatable) writer.Property("aggregatable", true);
+        if (grid) writer.OptionalProperty("section", Section);
 
         if (Hidden) {
             writer.Property("hidden", true);

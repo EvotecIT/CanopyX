@@ -211,6 +211,9 @@ public sealed class CanopyGridView {
             if (column == null || !columnIds.Add(column.Id)) throw new InvalidOperationException("Grid columns must have unique identities and cannot be null.");
             CanopyJsonNames.ColumnKind(column.Kind);
             if (column.Editable) throw new InvalidOperationException("Flat-grid editing is host composition; grid definitions do not expose edit proposals.");
+            column.Presenter?.Validate(column, Columns);
+            if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
+            if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");

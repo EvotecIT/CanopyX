@@ -124,6 +124,7 @@
         this.measureNeeded = true;
       }
       this.buildHeaderSelection?.();
+      this.buildColumnMenus?.();
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {

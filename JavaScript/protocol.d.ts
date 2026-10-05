@@ -6,6 +6,8 @@ export type CheckState = boolean | "mixed";
 export type SortDirection = "asc" | "desc";
 
 export interface CanopyBadge { text: string; tone?: string; title?: string; }
+/** Ordered visual history metadata; raw cell values still drive queries and exports. */
+export interface CellPeriod { period: string; value?: number | null; state?: string | null; tone?: string; }
 export interface CanopyCell {
   value?: CellValue;
   text?: string;

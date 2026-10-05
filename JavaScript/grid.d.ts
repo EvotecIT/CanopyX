@@ -16,6 +16,12 @@ export interface GridExportRow {
 }
 export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   editable?: false; wrap?: boolean;
+  /** Declarative presentation; explicit host renderers take precedence. */
+  presenter?: GridPresenter;
+  /** Include selected numeric values in the optional status bar. */
+  aggregatable?: boolean;
+  /** Record drawer section label. */
+  section?: string;
   /** Omit to fit the header and at most 200 loaded records on first layout. Saved widths take precedence. */
   width?: number;
   /** Wire documents retain a numeric width and set this flag for initial content fitting. */
@@ -32,10 +38,23 @@ export interface GridOrdering {
 export type GridPresenter =
   | { readonly kind: "link"; readonly hrefColumn?: string; readonly newWindow?: boolean }
   | { readonly kind: "icon"; readonly glyph: string }
-  | { readonly kind: "progress"; readonly maximum: number }
-  | { readonly kind: "boolean" }
+  | { readonly kind: "progress"; readonly maximum: number; readonly thresholds?: readonly GridThreshold[] }
+  | { readonly kind: "boolean"; readonly inverted?: boolean }
   | { readonly kind: "list"; readonly separator: string; readonly limit: number }
-  | { readonly kind: "longText" };
+  | { readonly kind: "longText"; readonly mono?: boolean }
+  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>> }
+  | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
+  | { readonly kind: "statusStrip" | "missing" }
+  | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
+  | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
+  | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 };
+/** Ascending inclusive upper bounds; unmatched values use cell tones. */
+export interface GridThreshold { readonly upperBound: number; readonly tone: string; }
+/** Both shared scale bounds must be supplied together; otherwise each cell scales independently. */
+export interface GridHistoryPresentation {
+  readonly minimum?: number; readonly scaleMaximum?: number; readonly thresholds?: readonly GridThreshold[];
+  readonly higherIsGood?: boolean; readonly mark?: "worst" | "last";
+}
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
@@ -52,7 +71,7 @@ export interface GridReporting {
   readonly minimumCenterWidth?: number;
   readonly layout?: Readonly<Record<string, GridColumnLayout>>;
   readonly ordering?: Readonly<Record<string, GridOrdering>>;
-  /** Header buttons open the complete-query filter editor. */
+  /** Header buttons open a filter scoped to their column. */
   readonly headerFilters?: boolean;
   /** Offer a bounded nested AND/OR editor over the accepted query's filterGroup. */
   readonly filterGroups?: boolean;

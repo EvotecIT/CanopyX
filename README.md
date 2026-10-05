@@ -197,7 +197,9 @@ inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
 
 The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts and totals; collapsing a group hides its rows without removing records from selections or exports. The toolbar totals follow the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](docs/data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
 
-Safe cell presenters are optional reporting configuration:
+Safe cell presenters can be declared on any flat-grid column. For example, `new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.State() }` uses each cell's host-supplied tone. JavaScript uses `presenter: { kind: "state" }`. The existing reporting configuration remains supported:
+
+Graphite adds enum pills, quiet healthy states, directional deltas, period strips, bar and line sparklines, identifiers with secondary text, tags and missing-value dashes. History metadata lives in `CanopyCell.Series` / `cell.series`; the cell's raw value retains its search, sorting and export meaning. [The protocol reference](docs/data-protocol.md#safe-cell-presenters) describes thresholds and shared scales. The generated `graphite-grid.html` and dark variant show the presenters together, including 90 daily periods and clamped text.
 
 ```csharp
 view.Reporting.Presenters.Add("name", CanopyGridPresenter.Link("address", newWindow: true));

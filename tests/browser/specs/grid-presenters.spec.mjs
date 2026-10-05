@@ -32,17 +32,17 @@ async function open(page, patch = {}) {
 const row = (page, id) => page.locator('.cx-row[data-cx-id="' + id + '"]');
 
 test("safe links, glyph alternatives, boolean labels and progress retain full-query raw values", async ({ page }) => {
-  await open(page, { labels: { gridTrue: "Enabled", gridFalse: "Disabled" } });
+  await open(page, { labels: { yes: "Enabled", no: "Disabled" } });
   const link = row(page, "a").getByRole("link", { name: "Open A" });
   await expect(link).toHaveAttribute("href", "https://example.com/a"); await expect(link).toHaveAttribute("rel", "noopener noreferrer");
   await expect(row(page, "b").getByRole("link")).toHaveCount(0); await expect(row(page, "c").getByRole("link")).toHaveCount(0);
   await expect(row(page, "a").locator(".cx-presenter-icon")).toHaveAttribute("aria-hidden", "true");
   await expect(row(page, "a").getByText("Healthy", { exact: true })).toBeVisible();
   await expect(row(page, "a").getByText("Ready", { exact: true })).toBeVisible();
-  await expect(row(page, "a").getByText("Enabled", { exact: true })).toBeVisible();
-  expect(await row(page, "a").locator("progress").evaluate(item => item.value)).toBe(100);
-  expect(await row(page, "b").locator("progress").evaluate(item => item.value)).toBe(0);
-  await expect(row(page, "c").locator("progress")).toHaveCount(0);
+  await expect(row(page, "a").getByRole("img", { name: "Enabled", exact: true })).toBeVisible();
+  await expect(row(page, "a").getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
+  await expect(row(page, "b").getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
+  await expect(row(page, "c").getByRole("progressbar")).toHaveCount(0);
   const exported = await page.evaluate(async () => {
     const api = document.querySelector('[data-canopyx-host]').canopyx;
     await api.setQuery({ sort: [{ column: "amount", direction: "desc" }] });
@@ -112,11 +112,15 @@ test("compact dark complete-text dialogs retain visible gutters and keyboard clo
   const dialog = page.getByRole("dialog"), bounds = await dialog.boundingBox();
   expect(bounds.x).toBeGreaterThanOrEqual(12); expect(bounds.x + bounds.width).toBeLessThanOrEqual(378);
   await dialog.locator("pre").press("Tab");
-  const close = page.getByRole("button", { name: "Close complete text" }); await expect(close).toBeFocused();
-  await close.press("Shift+Tab"); await expect(dialog.locator("pre")).toBeFocused();
+  const copy = dialog.getByRole("button", {name:"Copy",exact:true}); await expect(copy).toBeFocused();
+  const close = page.getByRole("button", { name: "Close complete text" });
+  await copy.press("Tab"); await expect(close).toBeFocused();
+  await close.press("Shift+Tab"); await expect(copy).toBeFocused();
+  await copy.press("Shift+Tab"); await expect(dialog.locator("pre")).toBeFocused();
   await dialog.locator("pre").press("Shift+Tab"); await expect(close).toBeFocused();
   await close.press("Tab"); await expect(dialog.locator("pre")).toBeFocused();
-  await dialog.locator("pre").press("Tab"); await expect(close).toBeFocused();
+  await dialog.locator("pre").press("Tab"); await expect(copy).toBeFocused();
+  await copy.press("Tab"); await expect(close).toBeFocused();
   await close.press("Enter"); await expect(dialog).toHaveCount(0);
 });
 

@@ -53,7 +53,7 @@ public static partial class CanopyStaticHtml {
                 html.Append('"');
                 if (rule?.ClassName != null) html.Append(" class=\"").Append(Encode(rule.ClassName)).Append('"');
                 if (!string.IsNullOrEmpty(cell?.Title)) html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
-                html.Append('>').Append(Encode(cell?.DisplayText(column.Kind, view.Labels) ?? string.Empty));
+                html.Append('>').Append(Encode(GridPresenterText(view, row, column, cell)));
                 if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles);
                 html.Append("</td>");
             }

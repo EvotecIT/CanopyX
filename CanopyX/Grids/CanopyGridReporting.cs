@@ -92,15 +92,7 @@ public sealed class CanopyGridReporting {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
             if (declared == null || pair.Value == null) throw new InvalidOperationException("A presenter needs a declared column and a non-null descriptor.");
-            var presenter = pair.Value;
-            if (presenter.Kind == CanopyGridPresenterKind.Progress && declared.Kind != CanopyColumnKind.Number ||
-                (presenter.Kind == CanopyGridPresenterKind.Boolean || presenter.Kind == CanopyGridPresenterKind.List || presenter.Kind == CanopyGridPresenterKind.Link) && declared.Kind != CanopyColumnKind.Text)
-                throw new InvalidOperationException("The presenter is incompatible with the column's raw value kind.");
-            if (presenter.HrefColumn != null) {
-                CanopyColumn? href = null;
-                foreach (var column in columns) if (column.Id == presenter.HrefColumn) href = column;
-                if (href == null || href.Kind != CanopyColumnKind.Text) throw new InvalidOperationException("A link destination needs a declared text column.");
-            }
+            pair.Value.Validate(declared, columns);
         }
     }
 

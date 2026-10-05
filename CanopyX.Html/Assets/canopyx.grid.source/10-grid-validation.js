@@ -33,8 +33,9 @@
         if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
         const cell = row.cells[id];
         if (isCellObject(cell)) {
-          if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "searchText", "title", "tone", "badges"].includes(name)) ||
-              ["text", "searchText", "title", "tone"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
+          if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "searchText", "title", "tone", "badges", "secondary", "series"].includes(name)) ||
+              ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
+              cell.secondary !== undefined && cell.secondary.length > 4096 || cell.series !== undefined && !gridSeriesValid(cell.series) ||
               cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
                 ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
             throw new Error("CanopyX: malformed grid cell.");
@@ -61,10 +62,16 @@
           ["wrap", "autoWidth"].some(name => column[name] !== undefined && typeof column[name] !== "boolean"))
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
+      if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
+      if (column.aggregatable !== undefined && (typeof column.aggregatable !== "boolean" || column.aggregatable && column.kind !== "number") ||
+          column.section !== undefined && (typeof column.section !== "string" || !column.section.trim() || column.section.length > 256))
+        throw new Error("CanopyX: invalid column aggregate or drawer section.");
     }
     if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
     if (view.density !== undefined && !["compact", "default", "comfortable"].includes(view.density) ||
-        view.zebra !== undefined && typeof view.zebra !== "boolean") throw new Error("CanopyX: invalid grid density or zebra option.");
+        view.zebra !== undefined && typeof view.zebra !== "boolean" || view.statusBar !== undefined && typeof view.statusBar !== "boolean" ||
+        view.noun !== undefined && (typeof view.noun !== "string" || !view.noun.trim() || view.noun.length > 256) ||
+        view.emptyReason !== undefined && (typeof view.emptyReason !== "string" || view.emptyReason.length > 4096)) throw new Error("CanopyX: invalid grid appearance or state text.");
     validateGridHighlights(view);
     if (view.searchDelayMs !== undefined && (!Number.isInteger(view.searchDelayMs) || view.searchDelayMs < 0 || view.searchDelayMs > 5000))
       throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");

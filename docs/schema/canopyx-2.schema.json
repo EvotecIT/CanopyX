@@ -235,12 +235,370 @@
     },
     "gridPresenter": {
       "oneOf": [
-        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "link" }, "hrefColumn": { "$ref": "#/$defs/identifier" }, "newWindow": { "type": "boolean" } } },
-        { "type": "object", "required": ["kind", "glyph"], "additionalProperties": false, "properties": { "kind": { "const": "icon" }, "glyph": { "type": "string", "minLength": 1, "maxLength": 32 } } },
-        { "type": "object", "required": ["kind", "maximum"], "additionalProperties": false, "properties": { "kind": { "const": "progress" }, "maximum": { "type": "number", "exclusiveMinimum": 0, "maximum": 9007199254740991 } } },
-        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "boolean" } } },
-        { "type": "object", "required": ["kind", "separator", "limit"], "additionalProperties": false, "properties": { "kind": { "const": "list" }, "separator": { "type": "string", "minLength": 1, "maxLength": 16 }, "limit": { "type": "integer", "minimum": 1, "maximum": 16 } } },
-        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "longText" } } }
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "link"
+            },
+            "hrefColumn": {
+              "$ref": "#/$defs/identifier"
+            },
+            "newWindow": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "glyph"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "icon"
+            },
+            "glyph": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "maximum"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "progress"
+            },
+            "maximum": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "thresholds": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "required": [
+                  "upperBound",
+                  "tone"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "upperBound": {
+                    "type": "number",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "tone": {
+                    "$ref": "#/$defs/tone"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "boolean"
+            },
+            "inverted": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "separator",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "list"
+            },
+            "separator": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "longText"
+            },
+            "mono": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "enum"
+            },
+            "tones": {
+              "type": "object",
+              "maxProperties": 512,
+              "propertyNames": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/tone"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "state"
+            },
+            "tones": {
+              "type": "object",
+              "maxProperties": 512,
+              "propertyNames": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/tone"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "deltaColumn"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "change"
+            },
+            "deltaColumn": {
+              "$ref": "#/$defs/identifier"
+            },
+            "higherIsGood": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "statusStrip"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "sparklineBars"
+            },
+            "thresholds": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "required": [
+                  "upperBound",
+                  "tone"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "upperBound": {
+                    "type": "number",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "tone": {
+                    "$ref": "#/$defs/tone"
+                  }
+                }
+              }
+            },
+            "minimum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "scaleMaximum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "higherIsGood": {
+              "type": "boolean"
+            },
+            "mark": {
+              "enum": [
+                "worst",
+                "last"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "sparklineLine"
+            },
+            "thresholds": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "required": [
+                  "upperBound",
+                  "tone"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "upperBound": {
+                    "type": "number",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "tone": {
+                    "$ref": "#/$defs/tone"
+                  }
+                }
+              }
+            },
+            "minimum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "scaleMaximum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "higherIsGood": {
+              "type": "boolean"
+            },
+            "mark": {
+              "enum": [
+                "worst",
+                "last"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "identifier"
+            },
+            "secondaryColumn": {
+              "$ref": "#/$defs/identifier"
+            },
+            "mono": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "separator"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "tags"
+            },
+            "separator": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "limit": {
+              "const": 3
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "missing"
+            }
+          }
+        }
       ]
     },
     "gridOrdering": {
@@ -371,20 +729,50 @@
       }
     },
     "cellValue": { "type": ["string", "number", "boolean", "null"], "minimum": -9007199254740991, "maximum": 9007199254740991 },
+    "cellPeriod": {"type":"object","required":["period"],"additionalProperties":false,"properties":{"period":{"type":"string","minLength":1,"maxLength":256},"value":{"type":["number","null"],"minimum":-9007199254740991,"maximum":9007199254740991},"state":{"type":["string","null"],"maxLength":4096},"tone":{"$ref":"#/$defs/tone"}}},
     "cell": {
       "description": "A bare value, or an object with a value plus display text, tooltip, tone, and badges.",
       "oneOf": [
-        { "$ref": "#/$defs/cellValue" },
+        {
+          "$ref": "#/$defs/cellValue"
+        },
         {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "value": { "$ref": "#/$defs/cellValue" },
-            "text": { "type": "string" },
-            "searchText": { "type": "string", "description": "Alternate flat-grid search text; it does not change display, sort, filter or export values." },
-            "title": { "type": "string" },
-            "tone": { "$ref": "#/$defs/tone" },
-            "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } }
+            "value": {
+              "$ref": "#/$defs/cellValue"
+            },
+            "text": {
+              "type": "string"
+            },
+            "searchText": {
+              "type": "string",
+              "description": "Alternate flat-grid search text; it does not change display, sort, filter or export values."
+            },
+            "title": {
+              "type": "string"
+            },
+            "tone": {
+              "$ref": "#/$defs/tone"
+            },
+            "badges": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/badge"
+              }
+            },
+            "secondary": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "series": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/cellPeriod"
+              }
+            }
           }
         }
       ]
@@ -515,14 +903,54 @@
       }
     },
     "gridColumn": {
-      "type": "object", "required": ["id", "title", "width", "kind"], "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "width",
+        "kind"
+      ],
+      "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/column/properties/id" },
-        "title": { "$ref": "#/$defs/column/properties/title" },
-        "width": { "$ref": "#/$defs/column/properties/width" },
-        "autoWidth": { "type": "boolean", "description": "Fit loaded content on first layout. Width remains a numeric fallback; saved widths take precedence." },
-        "kind": { "$ref": "#/$defs/column/properties/kind" },
-        "sortable": { "type": "boolean" }, "editable": { "const": false }, "hidden": { "type": "boolean" }, "wrap": { "type": "boolean" }
+        "id": {
+          "$ref": "#/$defs/column/properties/id"
+        },
+        "title": {
+          "$ref": "#/$defs/column/properties/title"
+        },
+        "width": {
+          "$ref": "#/$defs/column/properties/width"
+        },
+        "autoWidth": {
+          "type": "boolean",
+          "description": "Fit loaded content on first layout. Width remains a numeric fallback; saved widths take precedence."
+        },
+        "kind": {
+          "$ref": "#/$defs/column/properties/kind"
+        },
+        "sortable": {
+          "type": "boolean"
+        },
+        "editable": {
+          "const": false
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "wrap": {
+          "type": "boolean"
+        },
+        "presenter": {
+          "$ref": "#/$defs/gridPresenter"
+        },
+        "aggregatable": {
+          "type": "boolean"
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
       }
     },
     "source": {

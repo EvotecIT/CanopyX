@@ -197,7 +197,11 @@ Summaries require known-count offset sources; cursor sources reject them. Paging
 
 ### Safe cell presenters
 
-Optional `reporting.presenters` maps declared column IDs to safe display descriptors. An explicit trusted host renderer takes precedence. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
+Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
+
+Graphite also provides `enum` and `state` with an optional raw-value `tones` map, `change` with a numeric `deltaColumn` and `higherIsGood`, `statusStrip`, `sparklineBars`, `sparklineLine`, `identifier` with `secondaryColumn` and `mono`, `tags` with a literal `separator`, and `missing`. Booleans accept `inverted`. Progress and sparklines accept up to 32 ascending `thresholds` (`upperBound`, `tone`); the first inclusive bound wins, and unmatched values use the cell tone. Sparkline `minimum` and `scaleMaximum` must be supplied together for a shared scale; otherwise each cell scales independently. `mark: "last"` selects the last point; the default marks the worst tone, then the least healthy value according to `higherIsGood`.
+
+Cell objects optionally include `secondary` and up to 4096 ordered `series` periods (`period`, optional numeric `value`, text `state`, and `tone`). This visual metadata does not become the raw value. Strips shrink to two-pixel segments and then merge adjacent periods into worst-state buckets, with the complete range in the tooltip. Static output uses check/dash, state and pill text, numeric deltas and compact history summaries. These additive fields remain in `canopyx/2`.
 
 | Kind | Fields | Presentation |
 | --- | --- | --- |

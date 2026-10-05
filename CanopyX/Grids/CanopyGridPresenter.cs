@@ -5,7 +5,7 @@ namespace CanopyX;
 
 /// <summary>An immutable presentation descriptor for a reporting-grid column.</summary>
 /// <remarks>Presenters do not change search, sort or export values. Custom DOM renderers remain an explicit host option.</remarks>
-public sealed class CanopyGridPresenter {
+public sealed partial class CanopyGridPresenter {
     private CanopyGridPresenter(CanopyGridPresenterKind kind, string? hrefColumn = null, bool newWindow = false,
         string? glyph = null, double maximum = 100, string? separator = null, int limit = 3) {
         Kind = kind; HrefColumn = hrefColumn; NewWindow = newWindow; Glyph = glyph;
@@ -56,9 +56,10 @@ public sealed class CanopyGridPresenter {
         return new CanopyGridPresenter(CanopyGridPresenterKind.Progress, maximum: maximum);
     }
 
-    /// <summary>Creates translated boolean labels; missing and nonboolean values retain normal formatting.</summary>
+    /// <summary>Creates a check for true and a dash for false, with translated accessible names.</summary>
+    /// <param name="inverted">Whether true denotes a problem and uses the danger tone.</param>
     /// <returns>The immutable descriptor.</returns>
-    public static CanopyGridPresenter Boolean() => new CanopyGridPresenter(CanopyGridPresenterKind.Boolean);
+    public static CanopyGridPresenter Boolean(bool inverted = false) => new CanopyGridPresenter(CanopyGridPresenterKind.Boolean) { Inverted = inverted };
 
     /// <summary>Creates a bounded preview of delimiter-separated text and a complete-text dialog.</summary>
     /// <param name="separator">A nonempty literal separator of at most 16 code units.</param>
@@ -79,7 +80,11 @@ public sealed class CanopyGridPresenter {
     internal string WireKind => Kind switch {
         CanopyGridPresenterKind.Link => "link", CanopyGridPresenterKind.Icon => "icon",
         CanopyGridPresenterKind.Progress => "progress", CanopyGridPresenterKind.Boolean => "boolean",
-        CanopyGridPresenterKind.List => "list", _ => "longText"
+        CanopyGridPresenterKind.List => "list", CanopyGridPresenterKind.LongText => "longText",
+        CanopyGridPresenterKind.Enum => "enum", CanopyGridPresenterKind.State => "state",
+        CanopyGridPresenterKind.Change => "change", CanopyGridPresenterKind.StatusStrip => "statusStrip",
+        CanopyGridPresenterKind.SparklineBars => "sparklineBars", CanopyGridPresenterKind.SparklineLine => "sparklineLine",
+        CanopyGridPresenterKind.Identifier => "identifier", CanopyGridPresenterKind.Tags => "tags", _ => "missing"
     };
 
     internal void WriteJson(CanopyJsonWriter writer) {
@@ -89,6 +94,7 @@ public sealed class CanopyGridPresenter {
         if (Glyph != null) writer.Property("glyph", Glyph);
         if (Kind == CanopyGridPresenterKind.Progress) writer.Name("maximum").Number(Maximum);
         if (Separator != null) writer.Property("separator", Separator).Property("limit", Limit);
+        WriteDesignJson(writer);
         writer.EndObject();
     }
 }

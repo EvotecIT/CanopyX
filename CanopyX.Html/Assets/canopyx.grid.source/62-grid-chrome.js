@@ -49,6 +49,7 @@
         }
       }
       this.syncGridChrome();
+      signal.addEventListener("abort",()=>this.headerSelectionFlyout?.dispose(),{once:true});
     },
     syncGridChrome() {
       if (!this.selectionBar) return;
@@ -74,7 +75,6 @@
       summary.appendChild(gridIcon("check")); panel.appendChild(this.selectionControls); menu.append(summary,panel);
       this.headCells[0].prepend(menu);
       const flyout = this.headerSelectionFlyout = watchFlyout(menu,panel,()=>menu.open);
-      this.lifetime.signal.addEventListener("abort",()=>flyout.dispose(),{once:true});
       menu.addEventListener("toggle",()=>{if(menu.open)flyout.position();});
       menu.addEventListener("keydown",event=>{if(event.key==="Escape"){menu.open=false;summary.focus();event.preventDefault();}});
     },
