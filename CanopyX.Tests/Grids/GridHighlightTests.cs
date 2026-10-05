@@ -28,6 +28,19 @@ public sealed class GridHighlightTests {
         Assert.Contains("white-space:pre-wrap", html); Assert.DoesNotContain("<script", html);
     }
 
+    [Theory]
+    [InlineData(true, CanopyGridFilterOperator.Contains, "ru", true)]
+    [InlineData(false, CanopyGridFilterOperator.Contains, "ru", false)]
+    [InlineData(false, CanopyGridFilterOperator.StartsWith, "fa", true)]
+    [InlineData(true, CanopyGridFilterOperator.StartsWith, "fa", false)]
+    public void StaticTextRulesOnBooleanCellsMatchBrowserRawText(bool value, CanopyGridFilterOperator op, string operand, bool match) {
+        var view = new CanopyGridView("boolean", "Boolean record"); view.Columns.Add(new CanopyColumn("flag", "Flag"));
+        var row = new CanopyGridRow("one"); row.Cells["flag"] = new CanopyCell(value) { Text = "Unrelated display" }; view.Rows.Add(row);
+        view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("flag", op, operand), className: "matched"));
+        var html = CanopyStaticHtml.RenderGrid(view);
+        Assert.Equal(match, html.Contains("class=\"matched\"", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void RuleValidationUsesTheFilterContractAndRejectsUndeclaredOrUndecoratedRules() {
         var filter = new CanopyGridFilter("name", CanopyGridFilterOperator.Equal, "A");

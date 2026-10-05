@@ -31,8 +31,11 @@ internal static class CanopyGridHighlights {
         }
         if (op == CanopyGridFilterOperator.Equal) return Equals(value, operand);
         if (op == CanopyGridFilterOperator.NotEqual) return !Equals(value, operand);
-        if (op == CanopyGridFilterOperator.Contains) return ((string)value).IndexOf((string)operand!, StringComparison.Ordinal) >= 0;
-        if (op == CanopyGridFilterOperator.StartsWith) return ((string)value).StartsWith((string)operand!, StringComparison.Ordinal);
+        if (op == CanopyGridFilterOperator.Contains || op == CanopyGridFilterOperator.StartsWith) {
+            var text = value is bool boolean ? boolean ? "true" : "false" : (string)value;
+            return op == CanopyGridFilterOperator.Contains ? text.IndexOf((string)operand!, StringComparison.Ordinal) >= 0 :
+                text.StartsWith((string)operand!, StringComparison.Ordinal);
+        }
         var comparison = ((IComparable)value).CompareTo(operand);
         return op == CanopyGridFilterOperator.GreaterThan ? comparison > 0 : op == CanopyGridFilterOperator.GreaterThanOrEqual ? comparison >= 0 :
             op == CanopyGridFilterOperator.LessThan ? comparison < 0 : comparison <= 0;
