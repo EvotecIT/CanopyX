@@ -28,12 +28,12 @@
       }));
       const copy = gridButton(this.labels.gridCopy, () => run(() => this.copy({ scope: scope.value })));
       const buttons = [csv, copy]; panel.append(csv, copy, status);
-      if (typeof this.opts.onDetails === "function") this.toolbar.appendChild(gridButton(this.labels.gridDetails, () => {
+      this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridDetails, () => {
         try {
           const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
           if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
           this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
         } catch (error) { this.emit("error", { error: error }); }
-      }));
+      }), { className: "cx-button cx-grid-details" }));
     }
   });

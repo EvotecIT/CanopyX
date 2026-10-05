@@ -1,7 +1,7 @@
   // ---------- scoped delivery with progress and an explicit cancellation action ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
-    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridPrint: "Print report"
+    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export"
   }));
   const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls;
   DataGrid.prototype.buildExportControls = function () {

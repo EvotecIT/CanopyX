@@ -184,6 +184,7 @@
       const next = new Set(ids);
       if (this.view.selection === "none" && next.size || !this.multi && next.size > 1) throw new Error("CanopyX: selection exceeds the view's mode.");
       this.selected = next; this.version++; this.scheduleRender(); this.emit("select", { ids: [...next] });
+      this.syncGridChrome();
       this.stateChanged();
     }
 

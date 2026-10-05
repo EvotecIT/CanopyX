@@ -12,6 +12,7 @@
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
       if (this.view.search) this.buildGridSearch();
       this.buildGridControls();
+      this.buildGridChrome();
       this.buildQuerySummary();
       const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
       grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
@@ -22,10 +23,12 @@
       grid.appendChild(this.head); grid.appendChild(this.canvas);
       this.notice = h("div", "cx-grid-notice"); this.notice.hidden = true;
       this.live = h("div", "cx-live cx-sr-only"); this.live.setAttribute("aria-live", "polite");
-      host.appendChild(this.toolbar); host.appendChild(grid); host.appendChild(this.notice); host.appendChild(this.live);
+      host.append(this.toolbar, this.querySummary);
+      if (this.groupBar) host.appendChild(this.groupBar);
+      host.append(this.notice, grid, this.live);
       this.buildPager();
       this.buildHeader();
-      grid.addEventListener("scroll", () => { this.scheduleRender(); this.stateChanged(); }, { passive: true, signal: signal });
+      grid.addEventListener("scroll", () => { this.scheduleRender(); this.syncPinnedShadows(); this.stateChanged(); }, { passive: true, signal: signal });
       grid.addEventListener("click", event => this.onClick(event), { signal: signal });
       grid.addEventListener("dblclick", event => {
         const element = event.target.closest(".cx-row"), row = element && element._w;
@@ -54,6 +57,7 @@
           height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
         if (!(this.sized = this.hasGridSize())) return;
         this.applyWidths();
+        this.updateGridPhone();
         if (this.hiddenScrollTop !== undefined) {
           const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
         }
@@ -90,6 +94,7 @@
           cell.setAttribute("data-cx-sort", sorts[index].direction); cell.setAttribute("data-cx-sort-priority", String(index + 1));
           const button = cell.querySelector(".cx-sort");
           button.setAttribute("data-cx-sort-priority", String(index + 1));
+          if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.appendChild(priority); }
           button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + ", " + (index + 1));
         }
       }
@@ -118,6 +123,7 @@
         this.observeDetail(element, !row.status);
         this.measureNeeded = true;
       }
+      this.buildHeaderSelection?.();
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {

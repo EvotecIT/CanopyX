@@ -126,6 +126,12 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   density?: "compact" | "default" | "comfortable";
   /** Subtle alternate-row backgrounds. Off by default. */
   zebra?: boolean;
+  /** Host-owned plural noun, such as "servers". */
+  noun?: string;
+  /** Host-owned explanation for an empty source. */
+  emptyReason?: string;
+  /** Optional result and selected-record counts. */
+  statusBar?: boolean;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
@@ -351,6 +357,12 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  /** Adds Chart to the selection bar. The host owns chart generation. */
+  onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
+  /** Host-owned secondary actions in overflow. */
+  actions?: readonly { label: string; run: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void> }[];
+  /** Optional host-governed removal of the report's fixed grouping. */
+  onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
 }
 /** A host store binds to an explicit keyed reporting definition; ordinary grids have no store option. */
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (

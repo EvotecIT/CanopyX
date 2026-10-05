@@ -78,6 +78,15 @@ public sealed class CanopyGridView {
     /// <summary>Gets or sets whether alternate records have a subtle background. Defaults to false.</summary>
     public bool Zebra { get; set; }
 
+    /// <summary>Gets or sets the host's plural record noun for search, result and empty-state text. Null uses translated rows.</summary>
+    public string? Noun { get; set; }
+
+    /// <summary>Gets or sets the host's explanation when the dataset is empty. Null uses the translated default.</summary>
+    public string? EmptyReason { get; set; }
+
+    /// <summary>Gets or sets whether to show result and selected-record counts in a status bar.</summary>
+    public bool StatusBar { get; set; }
+
     /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
     public bool AutoRowHeight { get; set; }
 
@@ -135,6 +144,8 @@ public sealed class CanopyGridView {
         writer.Property("rowHeight", RowHeight);
         if (Density != CanopyGridDensity.Default) writer.Property("density", Density == CanopyGridDensity.Compact ? "compact" : "comfortable");
         if (Zebra) writer.Property("zebra", true);
+        writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
+        if (StatusBar) writer.Property("statusBar", true);
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
@@ -183,6 +194,8 @@ public sealed class CanopyGridView {
             throw new ArgumentOutOfRangeException(nameof(Source), Source, "Unknown grid source.");
         }
         CanopyJsonNames.Selection(Selection);
+        if (Noun != null && (string.IsNullOrWhiteSpace(Noun) || Noun.Length > 256) || EmptyReason?.Length > 4096)
+            throw new InvalidOperationException("Grid noun and empty reason must fit their text bounds.");
         if (Density != CanopyGridDensity.Default && Density != CanopyGridDensity.Compact && Density != CanopyGridDensity.Comfortable)
             throw new ArgumentOutOfRangeException(nameof(Density), Density, "Unknown grid density.");
         if (Presentation != CanopyGridPresentation.Continuous && Presentation != CanopyGridPresentation.Paged)

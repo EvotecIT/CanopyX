@@ -27,14 +27,19 @@
       input.addEventListener("keydown", event => {
         if (event.key === "Enter" && !this.searchComposing && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); update(); }
       }, { signal: signal });
-      search.appendChild(input); this.toolbar.appendChild(search);
+      const shortcut = h("kbd"); setText(shortcut, "/"); search.append(gridIcon("search"), input, shortcut); this.toolbar.appendChild(search);
+      this.host.addEventListener("keydown", event => {
+        if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest("input,textarea,select,[contenteditable]")) {
+          event.preventDefault(); input.focus();
+        }
+      }, { signal });
     },
 
     buildQuerySummary() {
       this.querySummary = h("div", "cx-grid-query-summary");
       this.resultCount = h("span", "cx-grid-result-count"); this.resultCount.setAttribute("role", "status");
       this.queryChips = h("div", "cx-grid-query-chips");
-      this.querySummary.append(this.resultCount, this.queryChips); this.toolbar.appendChild(this.querySummary);
+      this.querySummary.append(this.resultCount, this.queryChips); this.querySummary.hidden = true;
     },
 
     syncQuerySummary() {
@@ -42,8 +47,10 @@
       const query = this.acceptedQuery, active = document.activeElement, focused = this.queryChips.contains(active);
       const key = focused && active.getAttribute("data-cx-condition");
       const numbers = numberFormat(this.lang);
+      this.querySummary.hidden = !query.search && !gridFilterCount(query);
+      this.syncGridChrome();
       setText(this.resultCount, this.snapshot.matched === null ? this.labels.gridUnknownCount : fill(this.snapshot.total === null ?
-        this.labels.gridMatchedCount : this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total) }));
+        this.labels.gridMatchedCount : this.view.noun ? this.labels.gridResultNoun : this.labels.gridResultCount, { count: numbers.format(this.snapshot.matched), total: numbers.format(this.snapshot.total), noun: this.view.noun || this.labels.gridRows }));
       this.queryChips.textContent = "";
       const apply = patch => {
         this.setQuery(gridQueryStart(this.queryForChange(true), patch)).catch(() => {});
@@ -71,10 +78,11 @@
         });
       }
       if (query.search || query.filters.length || query.filterGroup) {
-        const clear = gridButton(this.labels.gridClearQuery, () => {
+        const clear = gridButton(this.labels.gridClearAll, () => {
           clear.focus({ preventScroll: true });
           if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined });
         });
+        clear.classList.add("cx-link"); clear.setAttribute("aria-label", this.labels.gridClearQuery);
         clear.setAttribute("data-cx-condition", "clear"); this.queryChips.appendChild(clear);
       }
       if (focused) {

@@ -1,9 +1,8 @@
   // ---------- native row checkboxes and explicit page/query selection controls ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridSelection: "Selection", gridSelectPage: "Select page", gridSelectMatching: "Select all matching",
-    gridClearSelection: "Clear selection", gridSelectionCount: "{count} selected records",
+    gridSelection: "Selection",
     gridSelectionQueryCount: "{count} matching records selected; {excluded} excluded",
-    gridSelectionQueryUnknown: "All matching records selected; {excluded} excluded", gridSelectRecord: "Select record {id}"
+    gridSelectRecord: "Select record {id}"
   }));
   const SELECTION_CONTROLS_BASE = {};
   for (const name of ["buildGridControls", "fillRow", "refreshRowState", "onClick", "onKey", "setQuery"])
@@ -18,7 +17,7 @@
       const all = this.multi ? gridButton(this.labels.gridSelectMatching, () => this.runReportingSelection(() => this.selectAllMatching())) : null;
       const clear = gridButton(this.labels.gridClearSelection, () => this.setSelection([]));
       this.selectionButtons = [page, all, clear].filter(Boolean);
-      controls.append(...this.selectionButtons, status); this.toolbar.appendChild(controls); this.syncSelectionControls();
+      controls.append(...this.selectionButtons, status); this.selectionControls = controls; this.syncSelectionControls();
     },
     syncSelectionControls() {
       if (!this.selectionStatus) return;

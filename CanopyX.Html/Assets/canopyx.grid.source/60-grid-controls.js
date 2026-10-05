@@ -5,7 +5,7 @@
     gridRemoveFilter: "Remove {column} filter", gridApply: "Apply", gridClearFilters: "Clear filters",
     gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later",
     gridFitColumn: "Fit {column}", gridFitAllColumns: "Fit all columns",
-    gridViews: "Saved views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",
+    gridViews: "Views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",
     gridResetView: "Reset view", gridChooseView: "Choose a saved view", gridInvalidFilter: "Enter a valid filter value.",
     gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of (one per line)", gridIsNull: "is missing", gridIsNotNull: "is present"
   }));
@@ -26,9 +26,9 @@
   Object.assign(DataGrid.prototype, {
     buildGridControls() {
       this.controlFlyouts = [];
-      this.buildGridColumns(); this.buildGridFilters(); this.buildSavedViews();
+      this.buildGridFilters(); this.buildGridColumns(); this.buildSavedViews();
       this.buildExportControls();
-      this.toolbar.appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
+      this.toolbar.querySelector(".cx-grid-views .cx-grid-panel").appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
       document.addEventListener("pointerdown", event => {
         for (const details of this.toolbar.children) if (details.open && !details.contains(event.target)) details.open = false;
@@ -37,7 +37,11 @@
 
     controlPanel(title, className, onOpen) {
       const details = h("details", "cx-columns " + className), summary = h("summary"), panel = h("div", "cx-columns-list cx-grid-panel");
+      summary.classList.add("cx-btn");
+      if (className !== "cx-grid-filters") summary.classList.add("ghost");
+      const icon = className === "cx-grid-filters" ? "filter" : className === "cx-grid-columns" ? "columns" : className === "cx-grid-views" ? "views" : "export";
       setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);
+      summary.prepend(gridIcon(icon)); panel.classList.add("cx-pop");
       const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
       details.addEventListener("toggle", () => { if (details.open) { if (onOpen) onOpen(panel); flyout.position(); } });
       details.addEventListener("keydown", event => {
