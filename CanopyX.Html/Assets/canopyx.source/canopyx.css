@@ -167,6 +167,7 @@
 .cx-host *,.cx-host *::before,.cx-host *::after { box-sizing:border-box;}
 
 .cx-sr-only {
+  --cx-size-1px:1px;--cx-size-neg-1px:-1px;
   position:absolute !important;
   width:var(--cx-size-1px);height:var(--cx-size-1px);padding:0;margin:var(--cx-size-neg-1px);
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;

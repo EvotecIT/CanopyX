@@ -11,6 +11,13 @@ async function mount(page, view, options = {}, runtime = "grid") {
 const base = {protocol:"canopyx/2",type:"grid",id:"design",label:"Records",pageSize:100,selection:"multiple",search:true,
   source:{kind:"inline"},columns:[{id:"name",title:"Name",kind:"text",width:220,sortable:true}],rows:[{id:"r1",cells:{name:"First record"}}]};
 
+test("screen-reader headings outside a view do not widen the phone viewport",async({page})=>{
+  await page.setViewportSize({width:390,height:844});await mount(page,base);
+  await page.evaluate(()=>{const title=document.createElement('h1');title.className='cx-sr-only';title.textContent='A complete inventory with an accessible page title that is much wider than the phone';document.body.prepend(title);});
+  const title=page.locator('h1.cx-sr-only');await expect(title).toHaveCSS('width','1px');await expect(title).toHaveCSS('height','1px');
+  expect(await title.getAttribute('aria-hidden')).toBeNull();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
+});
+
 test("density supplies default row sizes and preserves explicit dimensions", async ({page}) => {
   for (const [density,height,padding] of [["compact",28,8],["default",34,12],["comfortable",42,14]]) {
     await mount(page,{...base,density});
