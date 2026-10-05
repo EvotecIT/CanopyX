@@ -41,7 +41,8 @@
   --cx-cell-px: 12px;
   /* Derived (runtime computes these; hosts normally leave them) */
   --cx-text-2: color-mix(in srgb, var(--cx-text) 78%, var(--cx-surface));
-  --cx-muted: color-mix(in srgb, var(--cx-text) 62%, var(--cx-surface));
+  --cx-muted: color-mix(in srgb, var(--cx-text) 66%, var(--cx-surface));
+  --cx-control-border: color-mix(in srgb, var(--cx-text) 54%, var(--cx-surface));
   --cx-head-bg: color-mix(in srgb, var(--cx-text) 3.5%, var(--cx-surface));
   --cx-group-bg: color-mix(in srgb, var(--cx-text) 2.5%, var(--cx-surface));
   --cx-hover-bg: color-mix(in srgb, var(--cx-text) 4%, var(--cx-surface));
@@ -109,7 +110,7 @@ table.tok { border-collapse: collapse; width: 100%; font-size: 14px; background:
 
 /* Toolbar */
 .cx-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--cx-line); flex-wrap: wrap; }
-.cx-search { flex: 1 1 240px; max-width: 360px; height: var(--cx-control-h); display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--cx-line-strong); border-radius: var(--cx-radius); color: var(--cx-muted); background: var(--cx-surface); min-width: 0; }
+.cx-search { flex: 1 1 240px; max-width: 360px; height: var(--cx-control-h); display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--cx-control-border); border-radius: var(--cx-radius); color: var(--cx-muted); background: var(--cx-surface); min-width: 0; }
 .cx-search input { all: unset; flex: 1; min-width: 0; color: var(--cx-text); font-size: 14px; }
 .cx-search kbd { font: 11px var(--cx-font-mono); color: var(--cx-muted); border: 1px solid var(--cx-line); border-radius: 4px; padding: 0 5px; }
 .cx-btn { height: var(--cx-control-h); display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; border: 1px solid var(--cx-line-strong); border-radius: var(--cx-radius); background: var(--cx-surface); color: var(--cx-text); font: 500 14px var(--cx-font); cursor: pointer; white-space: nowrap; }
@@ -172,7 +173,7 @@ table.cx-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-
 .cx-grid tfoot td { background: var(--cx-head-bg); font-weight: 700; border-top: 1px solid var(--cx-line-strong); border-bottom: 0; }
 .cx-grid .pin { position: sticky; left: 0; z-index: 1; background: var(--cx-surface); box-shadow: 1px 0 0 var(--cx-line-strong), 6px 0 8px -6px color-mix(in srgb, #000 22%, transparent); }
 .cx-grid th.pin { background: var(--cx-head-bg); z-index: 2; }
-.cx-check { width: 16px; height: 16px; border: 1.5px solid var(--cx-line-strong); border-radius: 4px; display: inline-grid; place-items: center; vertical-align: middle; background: var(--cx-surface); }
+.cx-check { width: 16px; height: 16px; border: 1.5px solid var(--cx-control-border); border-radius: 4px; display: inline-grid; place-items: center; vertical-align: middle; background: var(--cx-surface); }
 .cx-check.on { background: var(--cx-accent); border-color: var(--cx-accent); color: var(--cx-on-accent); }
 .cx-check.mixed { background: var(--cx-accent); border-color: var(--cx-accent); }
 .cx-check.mixed::before { content: ""; width: 8px; height: 2px; background: var(--cx-on-accent); border-radius: 1px; }
@@ -237,7 +238,7 @@ table.cx-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-
 .cx-mi.on .ico { color: var(--cx-accent); }
 .cx-msep { height: 1px; background: var(--cx-line); margin: 4px 6px; }
 .cx-mlabel { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--cx-muted); font-weight: 700; padding: 6px 10px 2px; }
-.cx-input { height: var(--cx-control-h); width: 100%; border: 1px solid var(--cx-line-strong); border-radius: var(--cx-radius); padding: 0 10px; background: var(--cx-surface); color: var(--cx-text); font: 14px var(--cx-font); display: flex; align-items: center; gap: 8px; }
+.cx-input { height: var(--cx-control-h); width: 100%; border: 1px solid var(--cx-control-border); border-radius: var(--cx-radius); padding: 0 10px; background: var(--cx-surface); color: var(--cx-text); font: 14px var(--cx-font); display: flex; align-items: center; gap: 8px; }
 .cx-input.sel::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-right: 1.5px solid var(--cx-muted); border-bottom: 1.5px solid var(--cx-muted); transform: rotate(45deg) translateY(-2px); }
 .cx-input .ph { color: var(--cx-muted); }
 .cx-facets { max-height: 210px; overflow: auto; display: grid; gap: 1px; margin-inline: -4px; }
@@ -355,7 +356,7 @@ main > *, section.spec > *, .split > * { min-width: 0; }
 
 <header class="top">
   <div class="top-in">
-    <span class="eyebrow">CanopyX · design spec · draft 1 · 5 October 2026</span>
+    <span class="eyebrow">CanopyX · design spec · draft 2 · 5 October 2026</span>
     <h1>The data grid's face</h1>
     <p>The visual and interaction spec for the CanopyX flat grid in the Graphite look: tokens, toolbar, headers, rows, groups, cell presenters, column menu, filters, states, paging, status bar and the record drawer. Everything below is live HTML and CSS drawn from the proposed tokens; Codex ports it into the runtime and the reviewer compares the result against this page in both themes, at 1440 and 390 px.</p>
     <div class="theme-switch" role="group" aria-label="Theme">
@@ -410,7 +411,7 @@ main > *, section.spec > *, .split > * { min-width: 0; }
       </tbody>
     </table></div>
   </div>
-  <p class="note"><b>Derived:</b> text-2 (78 % text), muted (62 %), head-bg (3.5 %), group-bg (2.5 %), hover-bg (4 %), selected-bg (accent 11 %), accent-soft (accent 13 %), line-strong (22 %), tone-*-bg (tone 11–13 %), quiet (success 55 %), panel-shadow. Contrast: muted text must stay ≥ 4.5:1 on surface and head-bg in both themes; the runtime test checks it.</p>
+  <p class="note"><b>Derived:</b> text-2 (78 % text), muted (66 %), control-border (54 %, checkbox and input borders, ≥ 3:1 on every background), head-bg (3.5 %), group-bg (2.5 %), hover-bg (4 %), selected-bg (accent 11 %), accent-soft (accent 13 %), line-strong (22 %), tone-*-bg (tone 11–13 %), quiet (success 55 %), panel-shadow. Contrast: muted text must stay ≥ 4.5:1 on surface and head-bg in both themes; the runtime test checks it.</p>
 </section>
 
 <section class="spec">
