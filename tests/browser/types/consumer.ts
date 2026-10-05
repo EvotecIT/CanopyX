@@ -2,6 +2,60 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
+import ReportingRuntime from "@evotecit/canopyx/reporting";
+
+const reportingHost = document.createElement("div");
+const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
+  source: { kind: "inline" }, rows: [], rowHeight: 28, pageSize: 100, selection: "none", search: true,
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200, sortable: true }],
+  reporting: { columnReorder: true, responsive: true, filterGroups: true, facetColumns: ["name"], minimumCenterWidth: 160,
+    layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
+    presenters: { name: { kind: "link", newWindow: true } } } } });
+reportingApi.autoFitColumn?.("name");
+const recordSelection = reportingApi.getSelectionDescriptor?.();
+if (recordSelection?.kind === "query") {
+  const matched: number | null = recordSelection.matched;
+  // @ts-expect-error Query selection exclusions are immutable.
+  recordSelection.excludedIds.push("injected");
+} else if (recordSelection) {
+  const revision: string | null = recordSelection.revision;
+  // @ts-expect-error Explicit selection snapshots are immutable.
+  recordSelection.ids.push("injected");
+}
+await reportingApi.selectPage?.(true, { signal: new AbortController().signal });
+await reportingApi.selectRange?.(0, 50, { additive: true });
+reportingApi.selectAllMatching?.();
+const selectedExport = reportingApi.prepareExport({ scope: "selected" }).request;
+if (selectedExport.querySelection) {
+  const capturedSearch: string = selectedExport.querySelection.query.search;
+  // @ts-expect-error Export selection descriptors remain immutable.
+  selectedExport.querySelection.matched = 10;
+}
+const storedPreferences = reportingApi.getViewSettings?.();
+if (storedPreferences?.current) {
+  // @ts-expect-error A retained preference snapshot is immutable.
+  storedPreferences.current.columns[0].width = 400;
+  await reportingApi.setState(storedPreferences.current);
+}
+reportingApi.renameSavedView?.("Old", "New");
+reportingApi.setDefaultView?.("New");
+const sharedPreferences = reportingApi.getShareState?.();
+if (sharedPreferences) await reportingApi.setState(sharedPreferences);
+await reportingApi.flushViewSettings?.();
+reportingApi.setColumnPinned?.("name", "right");
+const facetPage = await reportingApi.getFacets?.("name", { search: "Pinned", limit: 100, includeCurrentFilter: false });
+if (facetPage) {
+  const matched: number = facetPage.matched;
+  // @ts-expect-error Accepted facet response buckets are immutable.
+  facetPage.items[0].count = matched;
+}
+const placement = reportingApi.getColumnLayout?.()[0];
+if (placement) {
+  const requested: import("@evotecit/canopyx/grid").GridColumnPin = placement.requestedPin;
+  // @ts-expect-error Effective layout snapshots are read-only.
+  placement.responsiveHidden = false;
+}
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
@@ -12,8 +66,70 @@ const gridSource: GridSource = { async query(query, { signal }) {
   query.sort.push({ column: "name", direction: "asc" });
   return { protocol: "canopyx/2", type: "gridPage", view: query.view, revision: "v1", offset: query.offset,
     total: 0, matched: 0, items: [] };
+}, facet(request, { signal }) {
+  const revision: string = request.query.revision;
+  return { protocol: "canopyx/2", type: "gridFacetPage", view: request.query.view, revision, column: request.column,
+    search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: 0, totalValues: 0, truncated: false, items: [] };
 } };
-const dataGrid = createDataGrid(document.createElement("div"), { view: gridView, source: gridSource });
+const dataGrid = createDataGrid(document.createElement("div"), { view: { ...gridView, reporting: {}, stateKey: "host-inventory" }, source: gridSource, searchDelayMs: 300,
+  viewStore: { load({ key, signal }) { return null; }, save({ settings, signal }) {
+    // @ts-expect-error Host preference callbacks receive immutable snapshots.
+    settings.views.push({ name: "Injected", state: dataGrid.getState() });
+  } },
+  labels: { gridResultCount: "{count} / {total}", gridRemoveCondition: "Remove: {condition}" } });
+const preferenceStore: import("@evotecit/canopyx/grid").GridViewStore = {load(){return null;},save(){}};
+// @ts-expect-error Host preference storage requires a typed keyed reporting definition.
+const unboundStore: import("@evotecit/canopyx/grid").GridHostOptions = {viewStore:preferenceStore};
+// @ts-expect-error Reporting storage also requires a state key.
+createDataGrid(document.createElement("div"), {view:{...gridView,reporting:{}},source:gridSource,viewStore:preferenceStore});
+// @ts-expect-error Fragment configuration binds storage to its keyed reporting definition.
+GridRuntime.configure('inventory',{viewStore:preferenceStore});
+GridRuntime.configure('inventory',{view:{...gridView,stateKey:'inventory-reader',reporting:{}},viewStore:preferenceStore});
+// @ts-expect-error Ordinary grids do not opt into reporting preference storage.
+createDataGrid(document.createElement("div"), {view:gridView,source:gridSource,viewStore:preferenceStore});
+// @ts-expect-error Durable preference queries cannot contain dataset snapshot credentials.
+const revisionPreference: import("@evotecit/canopyx/grid").GridPreferenceState["query"] = {protocol:"canopyx/2",type:"gridQuery",view:"inventory",offset:0,limit:10,search:"",sort:[],filters:[],revision:"secret"};
+// @ts-expect-error Cursor preferences cannot retain continuation credentials.
+const cursorPreference: import("@evotecit/canopyx/grid").GridPreferenceState<GridCursorQuery>["query"] = {protocol:"canopyx/2",type:"gridCursorQuery",view:"inventory",limit:10,search:"",sort:[],filters:[],cursor:"secret"};
+const offsetCount: number = dataGrid.getPaging().matched;
+const cursorView: CursorGridView = { ...gridView, source: { kind: "host", navigation: "cursor" }, presentation: "paged", query: undefined };
+const cursorSource: GridCursorSource = { navigation: "cursor", query(query, { signal }) {
+  const token: string | undefined = query.cursor;
+  // @ts-expect-error Cursor traversal has no random-access position in its request.
+  query.offset;
+  return { protocol: "canopyx/2", type: "gridCursorPage", view: query.view, revision: "r1", offset: 0, total: null, matched: null, items: [] };
+} };
+const cursorGrid = createDataGrid(document.createElement("div"), { view: cursorView, source: cursorSource,
+  onQuery(event) { const count: number | null = event.matched; } });
+const cursorQuery: GridCursorQuery = await cursorGrid.nextPage();
+const unknownCount: number | null = cursorGrid.getPaging().matched;
+// @ts-expect-error A cursor source may not know a complete-result count.
+const assumedCount: number = cursorGrid.prepareExport({ scope: "all" }).request.total;
+// @ts-expect-error A cursor controller rejects offset requests.
+await cursorGrid.setQuery({ offset: 25 });
+// @ts-expect-error Offset and cursor source contracts are distinct.
+createDataGrid(document.createElement("div"), { view: cursorView, source: gridSource });
+gridView.searchDelayMs = 0;
+gridView.presentation = "paged";
+gridView.pageLength = 50;
+gridView.source.navigation = "offset";
+await dataGrid.goToPage(1);
+await dataGrid.setPageLength(25);
+await dataGrid.scrollToRow(80);
+const paging: import("@evotecit/canopyx/grid").GridPaging = dataGrid.getPaging();
+// @ts-expect-error Cursor-only sources cannot masquerade as known-count offset sources.
+gridView.source.navigation = "cursor";
+// @ts-expect-error Debounce is a bounded number, not a textual duration.
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, searchDelayMs: "300ms" });
+gridView.searchColumns = ["name"];
+await dataGrid.setQuery({ search: 'ready "north office"', searchMode: "words", filterGroup: {
+  operator: "or", filters: [{ column: "name", operator: "eq", values: ["Alpha"] }],
+  groups: [{ operator: "and", filters: [{ column: "name", operator: "isNotNull", values: [] }], groups: [] }]
+} });
+// @ts-expect-error Query modes name a supported matching contract.
+await dataGrid.setQuery({ searchMode: "regex" });
+const alternateSearchCell = { value: "Alpha", text: "Visible", searchText: "north office" };
+const searchRow: import("@evotecit/canopyx/grid").GridRow = { id: "alternate", cells: { name: alternateSearchCell } };
 GridRuntime.configure(gridView.id, { source: gridSource });
 dataGrid.setQuery({ filters: [{ column: "name", operator: "in", values: ["Atlas"] }] });
 dataGrid.setSelection(["row-1"]);
@@ -26,6 +142,11 @@ for await (const record of exported.rows()) {
 dataGrid.toCsv({ columns: ["name"] });
 await dataGrid.toCsv({ scope: "filtered", maxRows: 1000 });
 await dataGrid.exportToHost("xlsx", { scope: "all" });
+await reportingApi.materializeExport?.({ scope: "filtered", maxRows: 500, fileName: "October inventory", locale: "pl-PL", timeZone: "utc",
+  onProgress(progress) { const total: number | null = progress.total; const count: number = progress.completed; void total; void count; } });
+await reportingApi.print?.({ scope: "selected", columns: ["name"], values: "raw" });
+// @ts-expect-error Delivery phases have a fixed read/generate/ready vocabulary.
+const invalidDeliveryPhase: import("@evotecit/canopyx/grid").GridExportProgress["phase"] = "downloaded";
 // @ts-expect-error Host views require a query source.
 createDataGrid(document.createElement("div"), { view: gridView });
 const inlineGrid: InlineGridView = { ...gridView, source: { kind: "inline" }, rows: [{ id: "row-1", cells: { name: "Atlas" } }] };

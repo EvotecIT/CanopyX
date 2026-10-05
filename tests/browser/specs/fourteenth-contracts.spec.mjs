@@ -94,7 +94,8 @@ test("user toggle during startup restoration survives the slow saved path", asyn
       } } });
     });
     await page.waitForFunction(() => !!window.finishSlow);
-    await page.locator('[data-cx-id="other"] .cx-exp').click();
+    // Exercise user intent without a pointer coordinate that changes when the slow loading row appears.
+    await page.locator('[data-cx-id="other"]').press("ArrowRight");
     await page.evaluate(() => window.finishSlow({ items: [{ id: "leaf", label: "Leaf" }] }));
     await page.evaluate(() => api.ready);
     await expect(page.locator('[data-cx-id="other-leaf"]')).toBeVisible();
@@ -119,7 +120,6 @@ test("user toggle during a later setState is replayed when restoration settles",
     window.restoration = api.setState({ expanded: [["slow"]] });
   });
   await page.waitForFunction(() => !!window.finishSlow);
-  await expect(page.locator('[data-cx-id="slow"]')).toHaveAttribute("aria-expanded", "true");
   // The loading row changes the following row's position. Wait for that layout before clicking its expander.
   await expect(page.locator('[data-cx-id="slow"]')).toHaveAttribute("aria-expanded", "true");
   await page.locator('[data-cx-id="other"] .cx-exp').click();

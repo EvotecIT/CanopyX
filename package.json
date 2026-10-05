@@ -19,7 +19,13 @@
       "import": "./CanopyX.Html/Assets/canopyx-grid-module.mjs"
     },
     "./grid.css": "./CanopyX.Html/Assets/canopyx-grid.css",
-    "./grid.js": "./CanopyX.Html/Assets/canopyx-grid.js"
+    "./grid.js": "./CanopyX.Html/Assets/canopyx-grid.js",
+    "./reporting": {
+      "types": "./JavaScript/grid.d.ts",
+      "import": "./CanopyX.Html/Assets/canopyx-reporting-module.mjs"
+    },
+    "./reporting.css": "./CanopyX.Html/Assets/canopyx-reporting.css",
+    "./reporting.js": "./CanopyX.Html/Assets/canopyx-reporting.js"
   },
   "files": [
     "JavaScript/*.d.ts",
@@ -30,7 +36,10 @@
     "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs",
     "CanopyX.Html/Assets/canopyx-grid.js",
-    "CanopyX.Html/Assets/canopyx-grid.css"
+    "CanopyX.Html/Assets/canopyx-grid.css",
+    "CanopyX.Html/Assets/canopyx-reporting-module.mjs",
+    "CanopyX.Html/Assets/canopyx-reporting.js",
+    "CanopyX.Html/Assets/canopyx-reporting.css"
   ],
   "keywords": ["treegrid", "treeview", "virtualization", "accessibility", "lazy-loading"],
   "engines": { "node": ">=18" }

@@ -1,6 +1,4 @@
-/*
- * CanopyX browser runtime: canopyx/2.
- */
+/* CanopyX: canopyx/2. */
 /*
  * CanopyX browser runtime: a virtualized tree grid over the canopyx/2 data protocol. No dependencies.
  * Assembled from CanopyX.Html/Assets/canopyx.source/*.js by Build/Sync-Assets.ps1; edit the parts, not canopyx.js.

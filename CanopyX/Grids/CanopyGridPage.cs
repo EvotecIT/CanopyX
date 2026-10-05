@@ -55,7 +55,8 @@ public sealed class CanopyGridPage {
         if (Rows.Count > 10000) throw new InvalidOperationException("A grid result page cannot contain more than 10,000 rows.");
         if (Rows.Count > Matched - Offset) throw new InvalidOperationException("A grid page cannot extend past its matching row count.");
         if (Rows.Count == 0 && Offset < Matched) throw new InvalidOperationException("A grid page cannot be empty before the end of its matching rows.");
-        if (view != null && view.Id != View) throw new InvalidOperationException("A grid page must target its owning view.");
+        if (view != null && (view.Id != View || view.Navigation != CanopyGridNavigation.Offset))
+            throw new InvalidOperationException("An offset page must target its owning offset grid.");
         CanopyGridRows.Validate(Rows, view?.Validate(), view?.Columns);
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("gridPage").Property("view", View).Property("revision", Revision)

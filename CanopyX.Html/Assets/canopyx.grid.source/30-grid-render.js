@@ -1,23 +1,17 @@
   // ---------- flat-grid scaffold, shared cells and accessible header ----------
   Object.assign(DataGrid.prototype, {
     build() {
-      const host = this.host, signal = this.lifetime.signal;
+      const host = this.host, style = host.style, signal = this.lifetime.signal;
+      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h");
+      this.restoreHeight = () => style.setProperty("--cx-min-h", minimum, priority);
+      style.removeProperty("--cx-min-h");
       host.classList.add("cx-host", "cx-data-grid");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
-      host.style.setProperty("--cx-row-h", this.rowH + "px");
+      style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
-      if (this.view.search) {
-        const search = h("div", "cx-search"), input = this.searchInput = h("input", "cx-search-input");
-        input.type = "search"; input.placeholder = this.labels.searchPlaceholder; input.setAttribute("aria-label", this.labels.searchPlaceholder);
-        const update = () => {
-          clearTimeout(this.searchTimer);
-          this.setQuery(Object.assign({}, this.queryForChange(), { offset: 0, search: input.value, revision: undefined })).catch(() => {});
-        };
-        input.addEventListener("input", () => { clearTimeout(this.searchTimer); this.searchTimer = setTimeout(update, 200); }, { signal: signal });
-        input.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); update(); } }, { signal: signal });
-        search.appendChild(input); this.toolbar.appendChild(search);
-      }
+      if (this.view.search) this.buildGridSearch();
       this.buildGridControls();
+      this.buildQuerySummary();
       const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
       grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
       if (this.multi) grid.setAttribute("aria-multiselectable", "true");
@@ -28,6 +22,7 @@
       this.notice = h("div", "cx-grid-notice"); this.notice.hidden = true;
       this.live = h("div", "cx-live cx-sr-only"); this.live.setAttribute("aria-live", "polite");
       host.appendChild(this.toolbar); host.appendChild(grid); host.appendChild(this.notice); host.appendChild(this.live);
+      this.buildPager();
       this.buildHeader();
       grid.addEventListener("scroll", () => { this.scheduleRender(); this.stateChanged(); }, { passive: true, signal: signal });
       grid.addEventListener("click", event => this.onClick(event), { signal: signal });
@@ -39,10 +34,22 @@
       grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");
-        if (element && element._w && this.focused !== element._w) { this.focused = element._w; this.scheduleRender(); }
+        if (element && element._w && this.pendingNavigation && this.pendingQuery && element._w._ri !== this.pendingNavigation.index)
+          this.pendingNavigation = null;
+        if (element && element._w && this.focused !== element._w) {
+          this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
+        }
+      }, { signal: signal });
+      document.addEventListener("focusin", event => {
+        if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
       }, { signal: signal });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-      this.resizeObserver = new ResizeObserver(() => this.scheduleRender()); this.resizeObserver.observe(grid);
+      this.resizeObserver = new ResizeObserver(() => {
+        style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+          height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
+        this.applyWidths(); this.scheduleRender();
+      });
+      this.resizeObserver.observe(grid);
     },
 
     setNotice(text, error) {

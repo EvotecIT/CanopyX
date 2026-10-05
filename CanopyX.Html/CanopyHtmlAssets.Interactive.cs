@@ -22,6 +22,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.TreeGrid => Script,
         CanopyRuntime.InteractiveTreeGrid => InteractiveScriptResource.Value,
         CanopyRuntime.DataGrid => GridScriptResource.Value,
+        CanopyRuntime.ReportingGrid => ReportingScriptResource.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -33,6 +34,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.TreeGrid => Style,
         CanopyRuntime.InteractiveTreeGrid => InteractiveStyleResource.Value,
         CanopyRuntime.DataGrid => GridStyleResource.Value,
+        CanopyRuntime.ReportingGrid => ReportingStyleResource.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -44,6 +46,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.TreeGrid => ScriptHash,
         CanopyRuntime.InteractiveTreeGrid => InteractiveScriptHash.Value,
         CanopyRuntime.DataGrid => GridScriptHash.Value,
+        CanopyRuntime.ReportingGrid => ReportingScriptHash.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -55,6 +58,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.TreeGrid => StyleHash,
         CanopyRuntime.InteractiveTreeGrid => InteractiveStyleHash.Value,
         CanopyRuntime.DataGrid => GridStyleHash.Value,
+        CanopyRuntime.ReportingGrid => ReportingStyleHash.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -65,7 +69,7 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="runtime"/> is unknown.</exception>
     public static string GetScriptFileName(CanopyAssetNaming naming, CanopyRuntime runtime) {
         var hash = GetScriptHash(runtime);
-        var stem = runtime == CanopyRuntime.TreeGrid ? "canopyx" : runtime == CanopyRuntime.DataGrid ? "canopyx-grid" : "canopyx-interactive";
+        var stem = RuntimeStem(runtime);
         return stem + (naming == CanopyAssetNaming.Plain ? "" : "." + hash) + ".js";
     }
 
@@ -76,7 +80,14 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="runtime"/> is unknown.</exception>
     public static string GetStyleFileName(CanopyAssetNaming naming, CanopyRuntime runtime) {
         var hash = GetStyleHash(runtime);
-        var stem = runtime == CanopyRuntime.TreeGrid ? "canopyx" : runtime == CanopyRuntime.DataGrid ? "canopyx-grid" : "canopyx-interactive";
+        var stem = RuntimeStem(runtime);
         return stem + (naming == CanopyAssetNaming.Plain ? "" : "." + hash) + ".css";
     }
+
+    private static string RuntimeStem(CanopyRuntime runtime) => runtime switch {
+        CanopyRuntime.TreeGrid => "canopyx",
+        CanopyRuntime.DataGrid => "canopyx-grid",
+        CanopyRuntime.ReportingGrid => "canopyx-reporting",
+        _ => "canopyx-interactive"
+    };
 }

@@ -18,6 +18,10 @@
     const label = h("label", "cx-grid-field"); label.appendChild(document.createTextNode(text)); label.appendChild(input); return label;
   }
 
+  function gridOption(value, text) {
+    const option = h("option"); option.value = value; setText(option, text); return option;
+  }
+
   Object.assign(DataGrid.prototype, {
     buildGridControls() {
       this.controlFlyouts = [];
@@ -26,7 +30,7 @@
       this.toolbar.appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
       document.addEventListener("pointerdown", event => {
-        this.toolbar.querySelectorAll("details[open]").forEach(details => { if (!details.contains(event.target)) details.open = false; });
+        for (const details of this.toolbar.children) if (details.open && !details.contains(event.target)) details.open = false;
       }, { signal: this.lifetime.signal });
     },
 
@@ -94,8 +98,8 @@
     syncSavedViews() {
       if (!this.savedChoice) return;
       const selected = this.savedChoice.value; this.savedChoice.textContent = "";
-      const empty = h("option"); empty.value = ""; setText(empty, this.labels.gridChooseView); this.savedChoice.appendChild(empty);
-      this.getSavedViews().forEach(name => { const option = h("option"); option.value = name; setText(option, name); this.savedChoice.appendChild(option); });
+      this.savedChoice.appendChild(gridOption("", this.labels.gridChooseView));
+      this.getSavedViews().forEach(name => this.savedChoice.appendChild(gridOption(name, name)));
       if (this.savedViews.has(selected)) this.savedChoice.value = selected;
     }
   });

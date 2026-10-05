@@ -56,6 +56,13 @@ var interactionPage = view.ToHtmlPage();
 Require(interactionPage.Contains("\"editable\":true", StringComparison.Ordinal) && interactionPage.Contains("\"contextActions\"", StringComparison.Ordinal), "interaction definitions are missing");
 Require(interactionPage.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid), StringComparison.Ordinal), "interaction definitions chose the wrong runtime");
 
+var reporting = new CanopyGridView("reporting", "Ordered report") { Reporting = new CanopyGridReporting() };
+reporting.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
+reporting.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
+var reportingRow = new CanopyGridRow("item-2"); reportingRow.Cells["name"] = "Item 2"; reporting.Rows.Add(reportingRow);
+Require(CanopyHtmlAssets.GetRuntime(reporting) == CanopyRuntime.ReportingGrid, "reporting definitions chose the wrong runtime");
+Require(reporting.ToHtmlPage().Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid), StringComparison.Ordinal), "the package lost the embedded reporting script");
+Require(CanopyStaticHtml.RenderGrid(reporting).Contains("Item 2", StringComparison.Ordinal), "the reporting static fallback lost its record");
 Console.WriteLine("CanopyX package smoke passed.");
 
 static void Require(bool condition, string failure) {

@@ -73,6 +73,10 @@ public sealed class CanopyCell {
     /// <summary>Gets or sets the text shown instead of the formatted value.</summary>
     public string? Text { get; set; }
 
+    /// <summary>Gets or sets alternate search text for flat grids, independently of display, sorting and export values.</summary>
+    /// <remarks>Null searches the raw value. Empty text deliberately excludes this cell's value from text search. Tree search indexes retain their existing contract.</remarks>
+    public string? SearchText { get; set; }
+
     /// <summary>Gets or sets an optional tooltip.</summary>
     public string? Title { get; set; }
 
@@ -183,7 +187,7 @@ public sealed class CanopyCell {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         ValidateShape();
-        var simple = Text == null && Title == null && Tone == CanopyTone.None && !HasBadges;
+        var simple = Text == null && SearchText == null && Title == null && Tone == CanopyTone.None && !HasBadges;
         if (simple) {
             WriteValue(writer);
             return;
@@ -196,6 +200,7 @@ public sealed class CanopyCell {
         }
 
         writer.OptionalProperty("text", Text);
+        writer.OptionalProperty("searchText", SearchText);
         writer.OptionalProperty("title", Title);
         writer.OptionalProperty("tone", Tone.Name);
         if (HasBadges) {

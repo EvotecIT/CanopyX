@@ -20,8 +20,9 @@
       case "eq": return value === operand;
       case "ne": return value !== operand;
       case "in": return values.includes(value);
-      case "contains": return foldText(value).includes(foldText(operand));
-      case "startsWith": return foldText(value).startsWith(foldText(operand));
+      // Text strings were folded above; boolean text keeps its distinct raw type for eq/in.
+      case "contains": return String(value).includes(String(operand));
+      case "startsWith": return String(value).startsWith(String(operand));
       case "gt": return value > operand;
       case "ge": return value >= operand;
       case "lt": return value < operand;
@@ -30,28 +31,34 @@
     return false;
   }
 
+  function gridQueryRows(view, query, columns, compare = gridCompare) {
+    const terms = gridSearchTerms(query.search, query.searchMode),
+      searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
+    const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
+      query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+    return compare ? rows.sort((a, b) => {
+      for (const sort of query.sort) {
+        const compared = compare(a, b, columns.get(sort.column), sort.direction);
+        if (compared) return compared;
+      }
+      return gridOrder(a.id, b.id);
+    }) : rows;
+  }
+
   function inlineGridSource(view) {
-    const rows = view.rows, columns = new Map(view.columns.map(column => [column.id, column]));
+    const columns = new Map(view.columns.map(column => [column.id, column]));
+    const compare = GRID_REPORTING.compare?.(view);
     let lastShape = null, ordered = null;
     return {
       query(query, options) {
-        if (options.signal.aborted) throw new DOMException("Grid query was cancelled.", "AbortError");
-        const shape = JSON.stringify([query.search, query.filters, query.sort]);
+        if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
+        const shape = gridResultShape(query);
         if (shape !== lastShape) {
-          const search = foldText(query.search);
-          ordered = rows.filter(row => (!search || view.columns.some(column => foldText(cellValue(row.cells[column.id])).includes(search))) &&
-            query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))));
-          ordered.sort((a, b) => {
-            for (const sort of query.sort) {
-              const compared = gridCompare(a, b, columns.get(sort.column), sort.direction);
-              if (compared) return compared;
-            }
-            return gridOrder(a.id, b.id);
-          });
+          ordered = gridQueryRows(view, query, columns, compare);
           lastShape = shape;
         }
         return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
-          total: rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
+          total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
       }
     };
   }

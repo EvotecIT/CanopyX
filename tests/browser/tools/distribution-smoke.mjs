@@ -23,7 +23,8 @@ try {
   const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
-    "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css"];
+    "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
+    "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css"];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
   const version = await fs.readFile(path.join(repo, "Directory.Build.props"), "utf8");
@@ -40,15 +41,17 @@ try {
   const importCheck = `import assert from 'node:assert/strict';
     import CanopyX, * as runtime from '@evotecit/canopyx';
     import GridRuntime, { createDataGrid } from '@evotecit/canopyx/grid';
+    import ReportingRuntime from '@evotecit/canopyx/reporting';
     assert.equal(runtime.protocol, 'canopyx/2');
     assert.equal(runtime.createTreeGrid, CanopyX.createTreeGrid);
     assert.equal(createDataGrid, GridRuntime.createDataGrid);
+    assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
     assert.equal(Object.hasOwn(globalThis, 'CanopyX'), false);
     assert.equal(Object.hasOwn(globalThis, 'CanopyXSidecar'), false);
     const view = { pageSize: 2, roots: [{id:'a',label:'Atlas'}] };
     const page = await runtime.sources.inline(view).page(null, null);
     assert.deepEqual(page.items, view.roots);
-    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js']) {
+    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js']) {
       assert.ok(import.meta.resolve('@evotecit/canopyx/' + name).startsWith('file:'));
     }`;
   await fs.writeFile(path.join(consumer, "import-check.mjs"), importCheck);

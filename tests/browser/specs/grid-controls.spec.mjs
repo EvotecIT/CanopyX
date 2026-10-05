@@ -43,7 +43,12 @@ test(`membership editing displays and retains every original ${column} operand`,
 test("reset supersedes queued search input before a slow host restoration", async ({ page }) => {
   const view = definition(); view.source = { kind: "host" }; delete view.rows;
   await openGrid(page, view, `window.queries=[];CanopyX.configure('inventory',{source:{async query(query){window.queries.push(query.search);await new Promise(resolve=>setTimeout(resolve,300));return {protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:0,total:0,matched:0,items:[]};}}});`);
-  await page.getByRole("searchbox").fill("queued"); await page.getByRole("button", { name: "Reset view", exact: true }).click();
+  // Dispatch input and Reset in one browser turn so the debounce has not expired during automation actionability checks.
+  await page.getByRole("button", { name: "Reset view", exact: true }).evaluate(button => {
+    const input = document.querySelector('[data-canopyx-host] input[type="search"]');
+    input.value = "queued"; input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+    button.click();
+  });
   await expect.poll(() => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().search)).toBe("");
   await expect(page.getByRole("grid")).toHaveAttribute("aria-busy", "false");
   expect(await page.evaluate(() => window.queries)).toEqual(["", ""]);

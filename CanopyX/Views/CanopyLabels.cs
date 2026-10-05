@@ -24,7 +24,7 @@ namespace CanopyX;
 /// <c>CanopyX.configure</c>, which applies on top of the view's.
 /// </para>
 /// </remarks>
-public sealed class CanopyLabels {
+public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",
@@ -37,6 +37,23 @@ public sealed class CanopyLabels {
         [nameof(SearchFailed)] = "Search failed: {error}",
         [nameof(Columns)] = "Columns",
         [nameof(GridFilters)] = "Filters",
+        [nameof(GridResultCount)] = "{count} of {total} rows",
+        [nameof(GridUnknownCount)] = "Result count unavailable",
+        [nameof(GridMatchedCount)] = "{count} matching rows",
+        [nameof(GridCursorRange)] = "Rows {first}–{last}",
+        [nameof(GridPaging)] = "Result pages",
+        [nameof(GridPageRange)] = "{first}–{last} of {count} rows",
+        [nameof(GridPageNumber)] = "Page",
+        [nameof(GridPageLength)] = "Rows per page",
+        [nameof(GridFirstPage)] = "First page",
+        [nameof(GridPreviousPage)] = "Previous page",
+        [nameof(GridNextPage)] = "Next page",
+        [nameof(GridLastPage)] = "Last page",
+        [nameof(GridClearQuery)] = "Clear search and filters",
+        [nameof(GridRemoveSearch)] = "Clear search: {search}",
+        [nameof(GridGroupedFilters)] = "Grouped filters ({count} conditions)",
+        [nameof(GridRemoveGroup)] = "Clear grouped filters",
+        [nameof(GridRemoveCondition)] = "Remove condition: {condition}",
         [nameof(GridExport)] = "Export",
         [nameof(GridFilteredResults)] = "Filtered results",
         [nameof(GridSelectedRows)] = "Selected rows",
@@ -63,6 +80,63 @@ public sealed class CanopyLabels {
         [nameof(GridResetView)] = "Reset view",
         [nameof(GridChooseView)] = "Choose a saved view",
         [nameof(GridInvalidFilter)] = "Enter a valid filter value.",
+        [nameof(GridBetween)] = "between (inclusive)",
+        [nameof(GridRangeEnd)] = "Upper value (UTC for dates)",
+        [nameof(GridInvalidRange)] = "Enter an upper value greater than or equal to the lower value.",
+        [nameof(GridSuggestedCategory)] = "Suggested category",
+        [nameof(GridChooseCategory)] = "Choose a category",
+        [nameof(GridBooleanValue)] = "Boolean value",
+        [nameof(GridTrue)] = "True",
+        [nameof(GridFalse)] = "False",
+        [nameof(GridHeaderFilter)] = "Filter {column}",
+        [nameof(GridExpandCell)] = "{column}: show complete text",
+        [nameof(GridCloseCell)] = "Close complete text",
+        [nameof(GridMoveColumn)] = "{column}: drag to move, or use Left/Right",
+        [nameof(GridResizeHelp)] = "Enter fits up to 200 loaded rows; Left/Right resizes.",
+        [nameof(GridColumnMoved)] = "{column} moved to position {position}",
+        [nameof(GridPinColumn)] = "{column}: pinned region",
+        [nameof(GridPinNone)] = "Scroll",
+        [nameof(GridPinLeft)] = "Left",
+        [nameof(GridPinRight)] = "Right",
+        [nameof(GridResponsiveHidden)] = "Hidden at this width",
+        [nameof(GridFilterGroupTitle)] = "Additional grouped conditions",
+        [nameof(GridFilterMatch)] = "Match",
+        [nameof(GridFilterAll)] = "All conditions (AND)",
+        [nameof(GridFilterAny)] = "Any condition (OR)",
+        [nameof(GridAddFilterGroup)] = "Add condition group",
+        [nameof(GridDeleteFilterGroup)] = "Remove condition group",
+        [nameof(GridFacetValues)] = "Values and counts from applied filters",
+        [nameof(GridFacetSearch)] = "Search values",
+        [nameof(GridFacetIncludeCurrent)] = "Include this column's applied filters",
+        [nameof(GridFacetLoad)] = "Load values",
+        [nameof(GridFacetChoose)] = "Choose a value",
+        [nameof(GridFacetCounts)] = "{count} matching rows; {shown} of {total} values.",
+        [nameof(GridFacetReload)] = "Values changed or the request was cancelled. Load values again.",
+        [nameof(GridRenameView)] = "Rename view",
+        [nameof(GridDefaultView)] = "Make default",
+        [nameof(GridClearDefaultView)] = "Clear default",
+        [nameof(GridDefaultViewName)] = "Default view: {name}",
+        [nameof(GridNoDefaultView)] = "No default view",
+        [nameof(GridDefaultViewOption)] = "{name} (default)",
+        [nameof(GridSelection)] = "Selection",
+        [nameof(GridSelectPage)] = "Select page",
+        [nameof(GridSelectMatching)] = "Select all matching",
+        [nameof(GridClearSelection)] = "Clear selection",
+        [nameof(GridSelectionCount)] = "{count} selected records",
+        [nameof(GridSelectionQueryCount)] = "{count} matching records selected; {excluded} excluded",
+        [nameof(GridSelectionQueryUnknown)] = "All matching records selected; {excluded} excluded",
+        [nameof(GridSelectRecord)] = "Select record {id}",
+        [nameof(GridGroupHeading)] = "{column}: {value} ({count} records)",
+        [nameof(GridGroupMissing)] = "Missing value",
+        [nameof(GridGroupExpand)] = "Expand group",
+        [nameof(GridGroupCollapse)] = "Collapse group",
+        [nameof(GridSummary)] = "Query totals",
+        [nameof(GridGroupOrder)] = "Group order is fixed by this report",
+        [nameof(GridExportProgress)] = "{completed} of {total} records",
+        [nameof(GridExportReading)] = "{completed} records",
+        [nameof(GridExportCancelled)] = "Export cancelled",
+        [nameof(GridCancelExport)] = "Cancel export",
+        [nameof(GridPrint)] = "Print report",
         [nameof(GridContains)] = "contains",
         [nameof(GridStartsWith)] = "starts with",
         [nameof(GridIn)] = "is any of (one per line)",
@@ -104,6 +178,20 @@ public sealed class CanopyLabels {
 
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
+        nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter), nameof(GridExpandCell), nameof(GridCloseCell),
+        nameof(GridMoveColumn), nameof(GridResizeHelp), nameof(GridColumnMoved),
+        nameof(GridPinColumn), nameof(GridPinNone), nameof(GridPinLeft), nameof(GridPinRight), nameof(GridResponsiveHidden),
+        nameof(GridFilterGroupTitle), nameof(GridFilterMatch), nameof(GridFilterAll), nameof(GridFilterAny), nameof(GridAddFilterGroup), nameof(GridDeleteFilterGroup),
+        nameof(GridFacetValues), nameof(GridFacetSearch), nameof(GridFacetIncludeCurrent), nameof(GridFacetLoad), nameof(GridFacetChoose), nameof(GridFacetCounts), nameof(GridFacetReload),
+        nameof(GridRenameView), nameof(GridDefaultView), nameof(GridClearDefaultView), nameof(GridDefaultViewName), nameof(GridNoDefaultView), nameof(GridDefaultViewOption),
+        nameof(GridSelection), nameof(GridSelectPage), nameof(GridSelectMatching), nameof(GridClearSelection), nameof(GridSelectionCount),
+        nameof(GridSelectionQueryCount), nameof(GridSelectionQueryUnknown), nameof(GridSelectRecord),
+        nameof(GridGroupHeading), nameof(GridGroupMissing), nameof(GridGroupExpand), nameof(GridGroupCollapse), nameof(GridSummary), nameof(GridGroupOrder),
+        nameof(GridExportProgress), nameof(GridExportReading), nameof(GridExportCancelled), nameof(GridCancelExport), nameof(GridPrint),
+        nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
+        nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
+        nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
         nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
@@ -123,6 +211,13 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the placeholder and accessible name of the search box when the view's search options set none (<see cref="CanopySearchOptions.Placeholder"/>). Default "Search".</summary>
     public string SearchPlaceholder { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the result summary when a source cannot provide a matching count. Default "Result count unavailable".</summary>
+    public string GridUnknownCount { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the known matching count when the unfiltered total is unknown, including <c>{count}</c>. Default "{count} matching rows".</summary>
+    public string GridMatchedCount { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the returned range when its matching total is unknown, including <c>{first}</c> and <c>{last}</c>. Default "Rows {first}–{last}".</summary>
+    public string GridCursorRange { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the grid export panel label. Default "Export".</summary>
     public string GridExport { get => Get(); set => Set(value); }
@@ -168,6 +263,48 @@ public sealed class CanopyLabels {
 
     /// <summary>Gets or sets the flat-grid control text. Default "Filters".</summary>
     public string GridFilters { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accepted-result summary using <c>{count}</c> and <c>{total}</c>. Default "{count} of {total} rows".</summary>
+    public string GridResultCount { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the page navigation form name. Default "Result pages".</summary>
+    public string GridPaging { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the visible range using <c>{first}</c>, <c>{last}</c> and <c>{count}</c>. Default "{first}–{last} of {count} rows".</summary>
+    public string GridPageRange { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the page jump input label. Default "Page".</summary>
+    public string GridPageNumber { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the visible page length label. Default "Rows per page".</summary>
+    public string GridPageLength { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the first-page action. Default "First page".</summary>
+    public string GridFirstPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the previous-page action. Default "Previous page".</summary>
+    public string GridPreviousPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the next-page action. Default "Next page".</summary>
+    public string GridNextPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the last-page action. Default "Last page".</summary>
+    public string GridLastPage { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the action that clears search and every filter. Default "Clear search and filters".</summary>
+    public string GridClearQuery { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the search-chip action using <c>{search}</c>. Default "Clear search: {search}".</summary>
+    public string GridRemoveSearch { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the grouped-filter chip using <c>{count}</c>. Default "Grouped filters ({count} conditions)".</summary>
+    public string GridGroupedFilters { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the grouped-filter removal action. Default "Clear grouped filters".</summary>
+    public string GridRemoveGroup { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the predicate removal action using <c>{condition}</c>. Default "Remove condition: {condition}".</summary>
+    public string GridRemoveCondition { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the flat-grid control text. Default "Column".</summary>
     public string GridColumn { get => Get(); set => Set(value); }

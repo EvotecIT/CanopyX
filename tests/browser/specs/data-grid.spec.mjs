@@ -89,7 +89,8 @@ test("search and typed filters cover the full inline dataset before the result w
   expect(await ids(page)).toEqual(["row-498", "row-497"]);
   await page.evaluate(async () => document.querySelector("[data-canopyx-host]").canopyx.setQuery({ search: "Display only" }));
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "1");
-  await expect(page.getByRole("status")).toHaveText("No results");
+  await expect(page.getByRole("status").filter({ hasText: /^No results$/ })).toBeVisible();
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("0 of 500 rows");
 });
 
 test("headers add multi-column sorting and keyboard navigation follows cells without tree semantics", async ({ page }) => {
@@ -253,9 +254,10 @@ test("rapid header and search changes compose against the pending host query", a
 
 for (const [scenario, outcome] of [
   ["stay", "keeps keyboard focus on the requested row"], ["leave", "preserves focus outside the grid"],
-  ["scroll", "preserves an intervening scroll while retaining row focus"]
+  ["scroll", "preserves an intervening scroll while retaining row focus"],
+  ["cell-scroll", "preserves an intervening scroll while retaining cell focus"]
 ]) test(`an arriving host page ${outcome}`, async ({ page }) => {
-  const leave = scenario === "leave", scroll = scenario === "scroll";
+  const leave = scenario === "leave", cell = scenario === "cell-scroll", scroll = scenario === "scroll" || cell;
   const setup = `window.pending=[]; CanopyX.configure('inventory',{source:{query(query) {
     const response=()=>({protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'v1',offset:query.offset,
       total:200,matched:200,items:Array.from({length:Math.min(query.limit,200-query.offset)},(_,i)=>
@@ -264,7 +266,9 @@ for (const [scenario, outcome] of [
     return new Promise(resolve=>window.pending.push({query,resolve:()=>resolve(response())}));
   }}});`;
   await openGrid(page, hostView(), setup); await page.waitForSelector("[data-cx-ready]");
-  await page.locator('.cx-row[data-cx-id="row-0"]').focus(); await page.keyboard.press("Control+End");
+  await page.locator('.cx-row[data-cx-id="row-0"]').focus();
+  if (cell) await page.keyboard.press("Enter");
+  await page.keyboard.press("Control+End");
   await expect(page.locator('.cx-row[aria-rowindex="201"][data-cx-status="loading"]')).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.pending.some(item => item.query.offset === 190))).toBe(true);
   if (scroll) {
@@ -282,9 +286,12 @@ for (const [scenario, outcome] of [
   await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeAttached();
   if (leave) await expect(page.locator("#after-grid")).toBeFocused();
   else {
-    await expect(page.locator('.cx-row[data-cx-id="row-199"]')).toBeFocused();
+    await expect(cell ? page.locator('.cx-row[data-cx-id="row-199"]').getByRole("gridcell").first() :
+      page.locator('.cx-row[data-cx-id="row-199"]')).toBeFocused();
     if (scroll) expect(await page.getByRole("grid").evaluate(grid => grid.scrollTop)).toBe(0);
-    await page.keyboard.press("ArrowUp"); await expect(page.locator('.cx-row[data-cx-id="row-198"]')).toBeFocused();
+    await page.keyboard.press("ArrowUp");
+    await expect(cell ? page.locator('.cx-row[data-cx-id="row-198"]').getByRole("gridcell").first() :
+      page.locator('.cx-row[data-cx-id="row-198"]')).toBeFocused();
   }
 });
 

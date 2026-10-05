@@ -8,7 +8,7 @@
       const panel = this.controlPanel(this.labels.gridExport, "cx-grid-export").panel, scope = h("select");
       scope.setAttribute("aria-label", this.labels.gridExport);
       for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]]) {
-        const option = h("option"); option.value = value; setText(option, this.labels[label]); scope.appendChild(option);
+        scope.appendChild(gridOption(value, this.labels[label]));
       }
       panel.appendChild(scope);
       const status = h("p", "cx-grid-control-error"); status.setAttribute("role", "status");
@@ -31,7 +31,7 @@
       if (typeof this.opts.onDetails === "function") this.toolbar.appendChild(gridButton(this.labels.gridDetails, () => {
         try {
           const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
-          if (!row || row.status) throw new Error("CanopyX: focus a loaded record to open details.");
+          if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
           this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
         } catch (error) { this.emit("error", { error: error }); }
       }));

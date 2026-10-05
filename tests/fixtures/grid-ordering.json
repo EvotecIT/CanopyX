@@ -1,0 +1,7 @@
+[
+  { "text": "ordinal", "values": ["item2", "item10", "Item3"], "ascending": [2, 1, 0], "descending": [0, 1, 2] },
+  { "text": "foldedOrdinal", "values": ["A", "a", "B", null, ""], "ascending": [4, 0, 1, 2, 3], "descending": [2, 0, 1, 4, 3] },
+  { "text": "natural", "values": ["item2", "item10", "item02", "item00000000000000000000000002", "item9007199254740993", "item9007199254740992"], "ascending": [0, 2, 3, 1, 5, 4], "descending": [4, 5, 1, 0, 2, 3] },
+  { "text": "foldedNatural", "values": ["ITEM2", "item10", "item02", "ŁÓDŹ2", "łódź10", "x99999999999999999999"], "ascending": [0, 2, 1, 5, 3, 4], "descending": [4, 3, 5, 1, 0, 2] },
+  { "text": "foldedNatural", "categories": ["Critical", "Warning", "Healthy"], "values": ["Other10", "Warning", "CRITICAL", "Healthy", "Other2", null], "ascending": [2, 1, 3, 4, 0, 5], "descending": [0, 4, 3, 1, 2, 5] }
+]

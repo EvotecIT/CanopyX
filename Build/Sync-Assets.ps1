@@ -88,6 +88,25 @@ $assets = @(
         Module = $true
         Grid = $true
     }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', 'CanopyX.Html/Assets/canopyx.reporting.source')
+        Target = 'CanopyX.Html/Assets/canopyx-reporting.js'
+        Folding = $true
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css')
+        Target = 'CanopyX.Html/Assets/canopyx-reporting.css'
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source'
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', 'CanopyX.Html/Assets/canopyx.reporting.source')
+        Target = 'CanopyX.Html/Assets/canopyx-reporting-module.mjs'
+        Folding = $true
+        Module = $true
+        Grid = $true
+    }
 )
 
 function Join-AssetSource {

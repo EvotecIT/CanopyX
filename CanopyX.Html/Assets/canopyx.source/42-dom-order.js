@@ -4,15 +4,15 @@
     // Screen readers in browse mode read rows in DOM order, so rows are kept (or put back) in visual order. The focused
     // row is never moved, because moving a focused element drops its focus. After in-place reuse the DOM is usually a
     // rotation of the visual order, and moving the smaller block keeps the number of restyled rows low.
-    keepDomOrder(first, last) {
+    keepDomOrder(first, last, rows) {
       const ordered = [];
-      const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
+      const focusedIndex = rows.indexOf(this.focused);
       const focusedEl = focusedIndex >= 0 ? this.rendered.get(this.focused) : null;
       if (focusedEl && focusedIndex < first) {
         ordered.push(focusedEl);
       }
       for (let i = first; i <= last; i++) {
-        const rowEl = this.rendered.get(this.rowItem(i));
+        const rowEl = this.rendered.get(rows.rowItem(i));
         if (rowEl) {
           ordered.push(rowEl);
         }
@@ -20,22 +20,12 @@
       if (focusedEl && focusedIndex > last) {
         ordered.push(focusedEl);
       }
-      const kids = Array.prototype.slice.call(this.canvas.children);
+      const kids = [...this.canvas.children];
       const n = ordered.length;
-      let inOrder = kids.length === n;
-      for (let k = 0; inOrder && k < n; k++) {
-        inOrder = kids[k] === ordered[k];
-      }
-      if (inOrder) {
-        return;
-      }
+      if (kids.length === n && ordered.every((rowEl, k) => kids[k] === rowEl)) return;
       if (kids.length === n && !focusedEl) {
         const shift = kids.indexOf(ordered[0]);
-        let rotation = shift > 0;
-        for (let k = 0; rotation && k < n; k++) {
-          rotation = kids[(shift + k) % n] === ordered[k];
-        }
-        if (rotation) {
+        if (shift > 0 && ordered.every((rowEl, k) => kids[(shift + k) % n] === rowEl)) {
           if (shift <= n - shift) {
             for (let k = 0; k < shift; k++) {
               this.canvas.appendChild(kids[k]);

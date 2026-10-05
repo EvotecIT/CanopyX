@@ -1,6 +1,4 @@
-/*
- * CanopyX browser runtime: canopyx/2.
- */
+/* CanopyX: canopyx/2. */
 (function (global) {
 "use strict";
 if (global.CanopyX) {
@@ -1657,6 +1655,7 @@ setText(title, column.title);
 cell.appendChild(title);
 }
 const grip = h("span", "cx-resize");
+grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
 grip.tabIndex = 0;
 grip.setAttribute("role", "separator");
 grip.setAttribute("aria-orientation", "vertical");
@@ -1720,24 +1719,23 @@ return measured;
 }
 });
 Object.assign(TreeGrid.prototype, {
-applyWidths() {
+applyWidths(widths = this.cols.map(column => column.width)) {
 let sum = 0;
 this.cols.forEach((column, i) => {
-this.headCells[i].style.width = column.width + "px";
+const width = widths[i];
+this.headCells[i].style.width = width + "px";
 const grip = this.headCells[i].querySelector(".cx-resize");
-grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
-grip.setAttribute("aria-valuenow", String(column.width));
-grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(column.width) }));
-sum += column.width;
+grip.setAttribute("aria-valuenow", String(width));
+grip.setAttribute("aria-valuetext", fill(this.labels.columnWidth, { width: numberFormat(this.lang).format(width) }));
+sum += width;
 });
 this.rowWidth = sum;
-this.headRow.style.width = sum + "px";
-this.canvas.style.width = sum + "px";
+this.headRow.style.width = this.canvas.style.width = sum + "px";
 const resizeRow = (row) => {
 row.style.width = sum + "px";
 if (!row._kind || !row.firstElementChild) return;
 if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
-else this.cols.forEach((column, i) => { if (row.children[i]) row.children[i].style.width = column.width + "px"; });
+else widths.forEach((width, i) => { if (row.children[i]) row.children[i].style.width = width + "px"; });
 };
 this.rendered.forEach(resizeRow);
 this.pool.forEach(resizeRow);
@@ -1785,15 +1783,15 @@ global.addEventListener("blur", stop);
 }
 });
 const ROW_DOM_ORDER = {
-keepDomOrder(first, last) {
+keepDomOrder(first, last, rows) {
 const ordered = [];
-const focusedIndex = this.focused ? this.indexOf(this.focused) : -1;
+const focusedIndex = rows.indexOf(this.focused);
 const focusedEl = focusedIndex >= 0 ? this.rendered.get(this.focused) : null;
 if (focusedEl && focusedIndex < first) {
 ordered.push(focusedEl);
 }
 for (let i = first; i <= last; i++) {
-const rowEl = this.rendered.get(this.rowItem(i));
+const rowEl = this.rendered.get(rows.rowItem(i));
 if (rowEl) {
 ordered.push(rowEl);
 }
@@ -1801,22 +1799,12 @@ ordered.push(rowEl);
 if (focusedEl && focusedIndex > last) {
 ordered.push(focusedEl);
 }
-const kids = Array.prototype.slice.call(this.canvas.children);
+const kids = [...this.canvas.children];
 const n = ordered.length;
-let inOrder = kids.length === n;
-for (let k = 0; inOrder && k < n; k++) {
-inOrder = kids[k] === ordered[k];
-}
-if (inOrder) {
-return;
-}
+if (kids.length === n && ordered.every((rowEl, k) => kids[k] === rowEl)) return;
 if (kids.length === n && !focusedEl) {
 const shift = kids.indexOf(ordered[0]);
-let rotation = shift > 0;
-for (let k = 0; rotation && k < n; k++) {
-rotation = kids[(shift + k) % n] === ordered[k];
-}
-if (rotation) {
+if (shift > 0 && ordered.every((rowEl, k) => kids[(shift + k) % n] === rowEl)) {
 if (shift <= n - shift) {
 for (let k = 0; k < shift; k++) {
 this.canvas.appendChild(kids[k]);
@@ -1946,70 +1934,58 @@ this.render();
 });
 }
 },
-renderPass() {
-if (this.destroyed) {
-return;
-}
+renderPass(rows = this) {
+if (this.destroyed) return;
 const grid = this.grid;
 const held = this.heldCell();
 const viewHeight = grid.clientHeight - this.head.offsetHeight;
 const top = this.logicalTop();
 const shift = this.scaledScroll ? top - grid.scrollTop : 0;
-const n = this.rowCount();
+const n = rows.rowCount();
 const over = this.lean ? 0 : OVERSCAN;
-const first = n ? Math.max(0, this.rowAt(top) - over) : 0;
-const last = n ? Math.min(n - 1, this.rowAt(top + viewHeight) + over) : -1;
+const first = n ? Math.max(0, rows.rowAt(top) - over) : 0;
+const last = n ? Math.min(n - 1, rows.rowAt(top + viewHeight) + over) : -1;
 const want = new Set();
-for (let i = first; i <= last; i++) {
-want.add(this.rowItem(i));
-}
-const visibleFocus = this.indexOf(this.focused) >= 0 ? this.focused : null;
-if (visibleFocus) {
-want.add(visibleFocus);
-}
+for (let i = first; i <= last; i++) want.add(rows.rowItem(i));
+const visibleFocus = rows.indexOf(this.focused) >= 0 ? this.focused : null;
+if (visibleFocus) want.add(visibleFocus);
 const free = [];
 const active = document.activeElement;
 for (const [w, rowEl] of this.rendered) {
 if (!want.has(w)) {
 this.rendered.delete(w);
-if (rowEl.contains(active)) {
 rowEl.remove();
+if (rowEl.contains(active)) {
 rowEl._w = null;
 this.observeDetail(rowEl, false);
 } else {
-rowEl.remove();
 free.push(rowEl);
 }
 }
 }
-const tabRow = visibleFocus || this.rowItem(n ? this.rowAt(top) : 0) || null;
+const tabRow = visibleFocus || rows.rowItem(n ? rows.rowAt(top) : 0) || null;
 const fragment = document.createDocumentFragment();
 for (const w of want) {
-const index = this.indexOf(w);
-if (index < 0) {
-continue;
-}
+const index = rows.indexOf(w);
+if (index < 0) continue;
 let rowEl = this.rendered.get(w);
 if (!rowEl) {
 rowEl = free.pop() || this.pool.pop() || h("div");
-if (!rowEl.parentNode) {
 fragment.appendChild(rowEl);
-}
 this.rendered.set(w, rowEl);
-w._v = 0;
 }
 if (w._v !== this.version || rowEl._w !== w) {
 this.fillRow(rowEl, w);
 w._v = this.version;
 } else if (!w.status) this.refreshRowState(rowEl, w);
 const y = this.scaledScroll && (index < first || index > last) ?
-(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : this.rowTop(index) - shift;
+(index < first ? -w.hpx - viewHeight : NATIVE_HEIGHT + viewHeight) : rows.rowTop(index) - shift;
 if (rowEl._top !== y) {
 rowEl.style.transform = "translateY(" + y + "px)";
 rowEl._top = y;
 }
 if (rowEl._index !== index) {
-rowEl.setAttribute("aria-rowindex", String(index + 2));
+rowEl.setAttribute("aria-rowindex", index + 2);
 rowEl._index = index;
 }
 const alt = index % 2 === 1 && !w.status && !w.h.detail;
@@ -2026,15 +2002,11 @@ rowEl._tab = tab;
 for (const rowEl of free) {
 rowEl._w = null;
 this.observeDetail(rowEl, false);
-if (this.pool.length < 200) {
-this.pool.push(rowEl);
+if (this.pool.length < 200) this.pool.push(rowEl);
 }
-}
-if (fragment.childNodes.length) {
-this.canvas.appendChild(fragment);
-}
-this.window = { first: first, last: last };
-this.keepDomOrder(first, last);
+if (fragment.firstChild) this.canvas.appendChild(fragment);
+this.window = { first, last };
+this.keepDomOrder(first, last, rows);
 if (held) this.restoreCell(held);
 this.trimInactiveCache();
 }
@@ -3852,6 +3824,12 @@ global.removeEventListener("scroll", position, true);
 }
 };
 }
+function readStateColumn(c, seen) {
+requireIdentifier(c && c.id, "state column ID");
+if (seen.has(c.id) || !Number.isFinite(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
+throw new Error("CanopyX: invalid state column.");
+seen.add(c.id); return { id: c.id, width: c.width, hidden: c.hidden };
+}
 function statePaths(value) {
 if (!Array.isArray(value)) throw new Error("CanopyX: state paths must be arrays.");
 return value.map(path => {
@@ -3880,14 +3858,8 @@ result.selection = statePaths(state.selection);
 if (!this.multi && result.selection.length > 1) return null;
 if (!Array.isArray(state.columns) || !Array.isArray(state.filters)) return null;
 const seen = new Set();
-result.columns = state.columns.map(c => {
-requireIdentifier(c && c.id, "state column ID");
-if (seen.has(c.id) || !Number.isFinite(c.width) || c.width < 40 || c.width > MAX_COLUMN_WIDTH || typeof c.hidden !== "boolean")
-throw new Error("CanopyX: invalid state column.");
-seen.add(c.id);
-if (c.id === this.columns[0].id && c.hidden) throw new Error("CanopyX: the tree column remains visible.");
-return { id: c.id, width: c.width, hidden: c.hidden };
-});
+result.columns = state.columns.map(c => readStateColumn(c, seen));
+if (result.columns.some(c => c.id === this.columns[0].id && c.hidden)) return null;
 result.filters = state.filters.map(id => { requireIdentifier(id, "state filter ID"); return id; })
 .filter(id => (this.view.filters || []).some(f => f.id === id));
 result.sort = null;

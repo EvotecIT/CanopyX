@@ -85,28 +85,105 @@ Define typed columns and complete inline records with `CanopyGridView`, then wri
 var inventory = new CanopyGridView("inventory", "Inventory");
 inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
 inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
-var record = new CanopyGridRow("record-17");
-record.Cells["name"] = "Archive";
-record.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
-inventory.Rows.Add(record);
+var row = new CanopyGridRow("record-17");
+row.Cells["name"] = "Archive";
+row.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
+inventory.Rows.Add(row);
 inventory.SaveHtmlPage("inventory.html");
 ```
 
 Sorting, search and typed predicates use raw values; display text and badges remain presentation. Missing values sort last in either direction, with ordinal record identity as the final tie-breaker. Filters and sort keys apply to the full dataset before returning a window.
 
+Set `inventory.Presentation = CanopyGridPresentation.Paged` and `inventory.PageLength = 50` to show pages with first/previous/next/last controls, direct page entry and a visible range. `PageSize` remains the source fetch size; it does not set the visible page length. Continuous mode remains the default. The `inventory-grid-paged.html` example uses the same full-query results and exports as the continuous inventory.
+
+Browser hosts use `getPaging()`, `goToPage(index)` and `setPageLength(length)` over known-count offset sources. Page indices are zero based; displayed ranges are one based. Saved views retain page length and position, and restoration clamps to the refreshed matching count. `scrollToRow(index)` returns a promise so a host can await navigation across pages. Sources must provide complete offset windows and exact counts; cursor-only and unknown-count sources require a separate host/navigation contract.
+
+Set a query's `SearchMode` to `CanopyGridSearchMode.Words` to match every word or quoted phrase across searchable columns. `inventory.SearchColumns` restricts the searched columns, and a cell's `SearchText` supplies alternate keywords without changing its display, sorting or export value. Existing queries keep substring matching. An optional `CanopyGridFilterGroup` combines typed predicates with nested AND/OR rules; search, flat filters and that group all apply before sorting and paging. `inventory-grid-query.html` demonstrates these contracts on the complete inventory.
+
+The toolbar shows the accepted matching and total row counts, removable search/filter chips, and a clear action. Inline search input applies immediately; hosted input waits 300 ms to avoid a request on every keystroke. Set `SearchDelayMilliseconds` in C# or `searchDelayMs` in browser options to choose a delay from 0 to 5,000 ms. Enter applies immediately, and input-method composition completes before submitting. Programmatic queries apply immediately. Counts and chips retain the accepted conditions while a new query is loading or fails.
+
 JavaScript hosts import `createDataGrid` from `@evotecit/canopyx/grid` and the matching `@evotecit/canopyx/grid.css`. A host source receives a frozen query and cancellation signal and returns a complete requested `gridPage` window. The host owns data access and authorization; CanopyX keeps accepted rows during a replacement request, rejects stale responses and bounds its page cache. See [the grid protocol](docs/data-protocol.md) for query operators and revision semantics.
 
 The grid toolbar provides typed filters, column visibility and ordering, and named saved views. Text/category membership accepts one raw value per line; date operands use ISO timestamps in UTC or with an explicit offset. Columns resize by dragging their separators or using Left/Right when a separator has focus. Headers stay visible while rows scroll.
 
+Enable reporting selection after defining the inventory above, before writing the page:
+
+```csharp
+inventory.Reporting = new CanopyGridReporting { SelectionControls = true };
+inventory.Selection = CanopySelectionMode.Multiple;
+```
+
+This adds row checkboxes, whole-page selection, Shift ranges and a selected-record summary. “Select all matching” captures the accepted query and revision with bounded exclusions, so a large selection does not allocate every record ID. `api.getSelectionDescriptor()` distinguishes explicit identities from that query scope; `getSelection()` is available for explicit identities. Selected CSV/copy exports use the captured scope, and host export hooks receive `request.querySelection` when active. Hosts validate that descriptor and its authorization. Paging preserves selection; changed criteria clear query selection and a new revision clears both modes. Query selection is not retained in saved preferences. See [record selection scopes](docs/data-protocol.md#record-selection-scopes) for range, cancellation and cursor behavior.
+
+Reporting grids also offer direct header moves with `inventory.Reporting.ColumnReorder = true`. Drag a header's move handle or use Left/Right while that handle has focus. Hidden columns, sorting, saved state and export order follow stable column IDs. `inventory.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 600, flex: 1)` constrains its width and allocates spare viewport space. A manual resize disables that column's flex sizing; resetting or restoring a saved view restores its sizing intent.
+
+Press Enter on a reporting-grid resize separator, double-click it, or call `api.autoFitColumn("name")` to fit loaded values. The method measures at most 200 cached records from the accepted query, limits each measured display value to 2,048 code units, and caps its estimate at 800 pixels before applying declared width constraints. It does not fetch unseen records or inspect a custom renderer's DOM. The result states the sampled count and `scope: "loaded"`.
+
+Reporting layouts can retain important fields at the edges and adapt the rest to the available width:
+
+```csharp
+inventory.Reporting.Responsive = true;
+inventory.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 600,
+    pin: CanopyGridColumnPin.Left, priority: 0, alwaysVisible: true);
+```
+
+Lower priorities remain visible longer. Temporary responsive hiding preserves the user's saved visibility choices, search, full record details and default export columns. The column chooser can pin fields left or right; pins suspend when they cannot leave the configured scrolling center and return when space permits. `api.getColumnLayout()` distinguishes requested pins and temporary layout decisions. The generated `responsive-grid.html` example combines pinning, rich cells and a host-owned record dialog in paged/continuous and light/dark variants.
+
 Use `api.getState()` and `await api.setState(state)` to save and restore the accepted query, column layout, time zone, selection IDs and scroll position. `api.saveView("Archives")` saves a named snapshot; `await api.applySavedView("Archives")` restores it, and `api.removeSavedView("Archives")` removes it. A grid's `StateKey` remembers the current settings and up to 20 named views in session storage. `await api.resetView()` restores the original definition and clears selection while retaining named views. A host that supplies its own toolbar passes `toolbar: false` and uses these same controller methods.
 
-Grid pages choose `CanopyRuntime.DataGrid`, which also hosts interactive trees. For mixed fragments, request that runtime from `CanopyHtmlAssets.WriteTo` and include it once. Load the grid entry point first on a mixed page; a smaller tree entry point cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
+Grid pages choose the entry point required by their definition, which also hosts interactive trees. For mixed fragments, use `CanopyHtmlAssets.GetRuntime(view)` with `CanopyHtmlAssets.WriteTo` and include the largest required entry point once. Load that entry point first; a smaller tree or ordinary-grid runtime cannot be upgraded after loading. `CanopyStaticHtml.RenderGrid` supplies a script-free fallback, with an explicit accepted page for hosted results.
+
+Reporting grids add natural or case-folded text ordering, category order and typed filter controls without enlarging the ordinary grid entry point:
+
+The reporting filter editor provides inclusive number/date ranges, category suggestions from declared ordering policies, and translated boolean choices. `HeaderFilters` adds a filter button beside each column title; Escape returns focus to that header. Ranges remain two ordinary typed predicates, so hosted queries and exports keep their existing meaning. Category suggestions leave free-text filtering available for values outside the declared list. Active-condition chips and counts describe the accepted full query, including predicates on hidden columns. `Labels.GridBetween`, `GridTrue`, `GridFalse` and `GridHeaderFilter` customize the new controls.
+
+```csharp
+view.Reporting = new CanopyGridReporting { HeaderFilters = true };
+view.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
+view.Reporting.Ordering.Add("status", new CanopyGridOrdering(CanopyGridTextOrder.FoldedOrdinal,
+    new[] { "Critical", "Warning", "Healthy" }));
+```
+
+The columns identify declared sortable text fields. Complete-page writers select `CanopyRuntime.ReportingGrid` automatically. JavaScript hosts import from `@evotecit/canopyx/reporting` with its matching `reporting.css`, and supply `reporting: { ordering: { name: { text: "foldedNatural" } } }` in the grid definition. Host query engines can reuse `CanopyGridOrdering`; sorting precedes result windows and export order remains the accepted query order. See the [protocol's ordering and precision rules](docs/data-protocol.md#flat-grid-documents) for categories, missing values, exact text representations and UTC millisecond dates.
 
 The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
 
 Configure `onDetails` to open a host-owned drawer for a record. The hook receives its immutable row, accepted query, cancellation signal and a focus-return callback. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](docs/data-protocol.md#export-clipboard-and-record-details) for revision checks, limits, column selection and keyboard behavior.
 
 The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](TODO.md).
+
+Set `Reporting.FilterGroups = true` (JavaScript `reporting: { filterGroups: true }`) to compose nested “all” and “any” condition groups in the filter editor. The existing flat conditions remain an outer conjunction. Groups use the same typed predicates, saved query state and whole-result export semantics as API-authored queries. Inclusive ranges inside an “any” group stay one condition, represented by an inner AND group. Apply validates the complete expression before requesting data; empty groups and queries beyond eight levels, 64 groups or 64 total predicates retain the previously accepted results. The add/remove controls keep focus within the editor. This option does not enable whole-dataset facet counts.
+
+Declare `Reporting.FacetColumns.Add("status")` to add values and counts to that column's filter editor. Inline grids count the entire accepted query; hosted grids supply `source.facet(request, { signal })`. The control searches available values, preserves raw types and lets users include or exclude that column's applied conditions from the counts. Choosing a value edits the draft until Apply. Counts never come from just the visible page, and changing the accepted query retires stale choices. `api.getFacets("status", { search: "review", limit: 100, includeCurrentFilter: false })` exposes the same bounded source contract; see the [facet protocol](docs/data-protocol.md#flat-grid-documents) for projection and snapshot rules.
+
+Saved reporting views can survive browser sessions with `inventory.StateKey = "inventory-reader"` and `inventory.Reporting.ViewStorage = CanopyGridViewStorage.Local`. The Saved views menu offers rename and default choices; Reset view restores the definition while keeping named views. JavaScript hosts can supply `viewStore.load/save` hooks for governed preference storage instead. Use `api.flushViewSettings()` before disposal when the host must acknowledge a save. `api.getShareState()` keeps layout and sorting while removing searches, filters, selected IDs and dataset positions. See the [preference contract](docs/data-protocol.md#flat-grid-documents) for bounds, schema evolution, cancellation and privacy.
+
+Reporting exports offer progress and cancellation for full filtered, selected or all-result scopes. Optional `fileName`, `locale` and `timeZone` options stay with the captured request. A host can call `api.materializeExport({ scope: "filtered", maxRows: 1000 })` for a complete bounded snapshot, or configure `onPrint({ snapshot, signal })` and call `api.print({ scope: "filtered" })`. The host uses its existing renderer and honors cancellation before delivery. Larger Office or print reports use `exportToHost`, with authorization and generation governed by that host. See the [delivery contract](docs/data-protocol.md#export-clipboard-and-record-details) for bounds, progress and offline choices.
+
+Grouped reporting views retain record-based paging and export scope:
+
+```csharp
+inventory.Reporting = new CanopyGridReporting {
+    Grouping = new CanopyGridGrouping("category"), SelectionControls = true
+};
+inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
+    "total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
+```
+
+The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts and totals; collapsing a group hides its rows without removing records from selections or exports. The toolbar totals follow the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](docs/data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
+
+Safe cell presenters are optional reporting configuration:
+
+```csharp
+view.Reporting.Presenters.Add("name", CanopyGridPresenter.Link("address", newWindow: true));
+view.Reporting.Presenters.Add("status", CanopyGridPresenter.Icon("●"));
+view.Reporting.Presenters.Add("completion", CanopyGridPresenter.Progress(maximum: 100));
+view.Reporting.Presenters.Add("enabled", CanopyGridPresenter.Boolean());
+view.Reporting.Presenters.Add("owners", CanopyGridPresenter.List(", ", limit: 2));
+view.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText());
+```
+
+The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
 
 ## Tree Grid Features
 

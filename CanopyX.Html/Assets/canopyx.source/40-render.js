@@ -117,6 +117,7 @@
           cell.appendChild(title);
         }
         const grip = h("span", "cx-resize");
+        grip.setAttribute("aria-label", fill(this.labels.resizeColumn, { column: column.title }));
         grip.tabIndex = 0;
         grip.setAttribute("role", "separator");
         grip.setAttribute("aria-orientation", "vertical");

@@ -8,6 +8,11 @@
     { "$ref": "#/$defs/grid" },
     { "$ref": "#/$defs/gridPage" },
     { "$ref": "#/$defs/gridQuery" },
+    { "$ref": "#/$defs/gridCursorPage" },
+    { "$ref": "#/$defs/gridCursorQuery" },
+    { "$ref": "#/$defs/gridFacetQuery" },
+    { "$ref": "#/$defs/gridFacetPage" },
+    { "$ref": "#/$defs/gridSummary" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -42,21 +47,189 @@
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
         "search": { "type": "boolean" },
+        "presentation": { "enum": ["continuous", "paged"] },
+        "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "searchDelayMs": { "type": "integer", "minimum": 0, "maximum": 5000, "description": "Search-input debounce; absent uses zero for inline sources and 300 for hosted sources. Enter applies immediately." },
+        "searchColumns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" }, "$comment": "Every identity must bind to a declared grid column; absent searches every declared column." },
+        "reporting": { "$ref": "#/$defs/gridReporting" },
         "columns": {
           "type": "array", "minItems": 1,
           "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
           "contains": { "not": { "required": ["hidden"], "properties": { "hidden": { "const": true } } } }
         },
-        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] } } },
+        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." } } },
         "stateKey": { "type": "string" },
         "timeZone": { "enum": ["utc", "local"] },
         "labels": { "$ref": "#/$defs/view/properties/labels" },
-        "query": { "$ref": "#/$defs/gridQuery" },
+        "query": { "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] },
         "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } }
       },
       "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
       "then": { "required": ["rows"] },
-      "else": { "not": { "required": ["rows"] } }
+      "else": { "not": { "required": ["rows"] } },
+      "allOf": [{
+        "if": { "properties": { "source": { "required": ["navigation"], "properties": { "navigation": { "const": "cursor" } } } } },
+        "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
+        "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
+      }]
+    },
+    "gridFacetQuery": {
+      "type": "object", "required": ["protocol", "type", "query", "column", "search", "limit", "includeCurrentFilter"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetQuery" },
+        "column": { "$ref": "#/$defs/identifier" }, "search": { "type": "string", "maxLength": 16384 },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 200 }, "includeCurrentFilter": { "type": "boolean" },
+        "query": { "allOf": [{ "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] }, { "required": ["revision"] }] }
+      },
+      "$comment": "The target must be opted in by reporting.facetColumns. Window and sort do not limit counts. Excluding the current facet replaces its predicates with true; host authorization is preserved."
+    },
+    "gridFacetPage": {
+      "type": "object", "required": ["protocol", "type", "view", "revision", "column", "search", "includeCurrentFilter", "matched", "totalValues", "truncated", "items"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetPage" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
+        "search": { "type": "string", "maxLength": 16384 }, "includeCurrentFilter": { "type": "boolean" },
+        "matched": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "totalValues": { "type": "integer", "minimum": 0, "maximum": 2147483647 }, "truncated": { "type": "boolean" },
+        "items": { "type": "array", "maxItems": 200, "items": {
+          "type": "object", "required": ["value", "count"], "additionalProperties": false,
+          "properties": { "value": { "$ref": "#/$defs/cellValue" }, "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 } }
+        } }
+      },
+      "$comment": "Runtime checks the request identity/projection/revision, raw column kind, distinct typed canonical buckets and count relations. Without value search a complete response accounts for every matching row, including one missing/null bucket."
+    },
+    "gridSelection": {
+      "oneOf": [
+        { "type": "object", "required": ["kind", "revision", "ids"], "additionalProperties": false,
+          "properties": { "kind": { "const": "ids" }, "revision": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+            "ids": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } } } },
+        { "$ref": "#/$defs/gridQuerySelection" }
+      ]
+    },
+    "gridQuerySelection": {
+      "description": "Ephemeral accepted-query selection. Hosts validate query, revision, count and exclusion membership before acting.",
+      "type": "object", "required": ["kind", "query", "revision", "matched", "excludedIds"], "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "query" }, "revision": { "$ref": "#/$defs/identifier" },
+        "query": { "allOf": [{ "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] }, { "required": ["revision"] }] },
+        "matched": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "excludedIds": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } }
+      }
+    },
+    "gridState": {
+      "description": "Canonical browser preference snapshot. Runtime binds columns, queries and selection policy to the current definition.",
+      "type": "object", "required": ["version", "view", "columns", "query", "timeZone", "selection", "scrollTop"], "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 }, "view": { "$ref": "#/$defs/identifier" },
+        "columns": { "type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["id", "width", "hidden"], "additionalProperties": false,
+          "properties": { "id": { "$ref": "#/$defs/identifier" }, "width": { "type": "number", "minimum": 40, "maximum": 2147483647 },
+            "hidden": { "type": "boolean" }, "flex": { "type": "boolean" }, "pin": { "enum": ["none", "left", "right"] } }
+        } },
+        "query": { "allOf": [
+          { "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] },
+          { "not": { "anyOf": [{ "required": ["revision"] }, { "required": ["cursor"] }] } }
+        ] },
+        "timeZone": { "enum": ["utc", "local"] },
+        "selection": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "scrollTop": { "type": "number", "minimum": 0, "maximum": 137438953408 },
+        "collapsedGroups": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
+        "paging": { "type": "object", "required": ["pageLength", "offset"], "additionalProperties": false,
+          "properties": { "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
+            "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 } } }
+      }
+    },
+    "gridViewSettings": {
+      "description": "Versioned preference envelope, separate from data authorization and dataset revisions. Serialized envelopes are bounded to 1048576 UTF-16 code units.",
+      "type": "object", "required": ["version", "view", "views"], "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 }, "view": { "$ref": "#/$defs/identifier" }, "current": { "$ref": "#/$defs/gridState" },
+        "views": { "type": "array", "maxItems": 20, "items": {
+          "type": "object", "required": ["name", "state"], "additionalProperties": false,
+          "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 100 }, "state": { "$ref": "#/$defs/gridState" } }
+        } },
+        "defaultView": { "type": "string", "minLength": 1, "maxLength": 100 }
+      },
+      "$comment": "Runtime checks unique trimmed names, owning view, default membership and current definition compatibility. Legacy session envelopes without version/view remain readable."
+    },
+    "gridReporting": {
+      "type": "object", "additionalProperties": false,
+      "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
+      "properties": {
+        "grouping": { "$ref": "#/$defs/gridGrouping" },
+        "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
+        "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
+        "viewStorage": { "enum": ["session", "local"] },
+        "selectionControls": { "type": "boolean" },
+        "headerFilters": { "type": "boolean" },
+        "filterGroups": { "type": "boolean" },
+        "facetColumns": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "columnReorder": { "type": "boolean" },
+        "responsive": { "type": "boolean" },
+        "minimumCenterWidth": { "type": "integer", "minimum": 40, "maximum": 4096 },
+        "layout": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridColumnLayout" } },
+        "presenters": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/gridPresenter" } }
+      }
+    },
+    "gridGrouping": {
+      "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+      "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } }
+    },
+    "gridAggregate": {
+      "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
+        "operation": { "enum": ["count", "sum", "average", "minimum", "maximum"] },
+        "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
+    },
+    "gridAggregateValues": {
+      "type": "object", "maxProperties": 32, "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "type": ["number", "null"], "minimum": -9007199254740991, "maximum": 9007199254740991 }
+    },
+    "gridSummary": {
+      "type": "object", "required": ["protocol", "type", "view", "revision", "query", "matched", "aggregates", "groups"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridSummary" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "query": { "allOf": [{ "$ref": "#/$defs/gridQuery" }, { "required": ["revision"], "properties": { "offset": { "const": 0 } } }] },
+        "matched": { "$ref": "#/$defs/count" }, "aggregates": { "$ref": "#/$defs/gridAggregateValues" },
+        "groups": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/gridGroup" } } },
+      "$comment": "Readers validate exact view/revision/query ownership, aggregate bindings, contiguous groups accounting for matched records and a 4194304-code-unit envelope bound. Grouping requires known-count offset navigation."
+    },
+    "gridGroup": {
+      "type": "object", "required": ["key", "value", "offset", "count", "aggregates"], "additionalProperties": false,
+      "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
+        "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" } }
+    },
+    "gridColumnLayout": {
+      "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
+      "properties": {
+        "minimum": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
+        "maximum": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
+        "flex": { "type": "number", "minimum": 0, "maximum": 100 },
+        "pin": { "enum": ["none", "left", "right"] },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "alwaysVisible": { "type": "boolean" }
+      },
+      "$comment": "Writers/readers require minimum <= initial column width <= maximum. Runtime state preserves base width and flex-enabled intent separately from viewport allocation."
+    },
+    "gridPresenter": {
+      "oneOf": [
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "link" }, "hrefColumn": { "$ref": "#/$defs/identifier" }, "newWindow": { "type": "boolean" } } },
+        { "type": "object", "required": ["kind", "glyph"], "additionalProperties": false, "properties": { "kind": { "const": "icon" }, "glyph": { "type": "string", "minLength": 1, "maxLength": 32 } } },
+        { "type": "object", "required": ["kind", "maximum"], "additionalProperties": false, "properties": { "kind": { "const": "progress" }, "maximum": { "type": "number", "exclusiveMinimum": 0, "maximum": 9007199254740991 } } },
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "boolean" } } },
+        { "type": "object", "required": ["kind", "separator", "limit"], "additionalProperties": false, "properties": { "kind": { "const": "list" }, "separator": { "type": "string", "minLength": 1, "maxLength": 16 }, "limit": { "type": "integer", "minimum": 1, "maximum": 16 } } },
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "longText" } } }
+      ]
+    },
+    "gridOrdering": {
+      "type": "object", "required": ["text"], "additionalProperties": false,
+      "properties": {
+        "text": { "enum": ["ordinal", "foldedOrdinal", "natural", "foldedNatural"] },
+        "categories": { "type": "array", "maxItems": 512, "uniqueItems": true, "items": { "type": "string", "maxLength": 4096 },
+          "$comment": "Writers and readers also reject category collisions after the selected frozen case folding." }
+      }
     },
     "gridPage": {
       "description": "A page after full-dataset filtering and sorting. Writers and readers check offset <= matched <= total, page bounds, and unique row identities.",
@@ -75,7 +248,7 @@
       }
     },
     "gridQuery": {
-      "description": "Search and AND-combined typed predicates precede ordered sorting and paging. Missing values sort last; row identity breaks final ties.",
+      "description": "Search, AND-combined flat predicates and the optional nested filter group precede ordered sorting and paging. Missing values sort last; row identity breaks final ties.",
       "type": "object",
       "required": ["protocol", "type", "view", "offset", "limit", "search", "sort", "filters"],
       "additionalProperties": false,
@@ -87,6 +260,8 @@
         "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "limit": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "search": { "type": "string" },
+        "searchMode": { "enum": ["substring", "words"], "default": "substring" },
+        "filterGroup": { "$ref": "#/$defs/gridFilterGroup" },
         "sort": {
           "type": "array",
           "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": {
@@ -95,6 +270,50 @@
         },
         "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilter" } }
       }
+    },
+    "gridCursorPage": {
+      "description": "A complete visible page reached through opaque host cursors. Offset is the actual ordinal position; unknown counts are null. Readers enforce contiguous navigation, consistent revisions/counts, page bounds and unique identities.",
+      "type": "object", "additionalProperties": false,
+      "required": ["protocol", "type", "view", "revision", "offset", "total", "matched", "items"],
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridCursorPage" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "total": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "matched": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "nextCursor": { "$ref": "#/$defs/gridCursor" }, "previousCursor": { "$ref": "#/$defs/gridCursor" },
+        "items": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/gridRow" } }
+      }
+    },
+    "gridCursor": { "type": "string", "minLength": 1, "maxLength": 4096, "$comment": "Runtime and writer enforce the limit in UTF-16 code units and reject malformed Unicode." },
+    "gridCursorQuery": {
+      "description": "The same full-dataset query criteria as gridQuery, traversed through an optional opaque cursor; no random-access offset is sent.",
+      "type": "object", "additionalProperties": false,
+      "required": ["protocol", "type", "view", "limit", "search", "sort", "filters"],
+      "dependentRequired": { "cursor": ["revision"] },
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridCursorQuery" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "cursor": { "$ref": "#/$defs/gridCursor" },
+        "limit": { "$ref": "#/$defs/gridQuery/properties/limit" },
+        "search": { "$ref": "#/$defs/gridQuery/properties/search" },
+        "searchMode": { "$ref": "#/$defs/gridQuery/properties/searchMode" },
+        "sort": { "$ref": "#/$defs/gridQuery/properties/sort" },
+        "filters": { "$ref": "#/$defs/gridQuery/properties/filters" },
+        "filterGroup": { "$ref": "#/$defs/gridQuery/properties/filterGroup" }
+      }
+    },
+    "gridFilterGroup": {
+      "description": "A nonempty AND/OR group. Readers enforce eight levels, 64 groups and 64 predicates total, including flat query predicates.",
+      "type": "object",
+      "required": ["operator", "filters", "groups"],
+      "additionalProperties": false,
+      "properties": {
+        "operator": { "enum": ["and", "or"] },
+        "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilter" } },
+        "groups": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFilterGroup" } }
+      },
+      "anyOf": [{ "properties": { "filters": { "minItems": 1 } } }, { "properties": { "groups": { "minItems": 1 } } }]
     },
     "gridFilter": {
       "type": "object",
@@ -142,6 +361,7 @@
           "properties": {
             "value": { "$ref": "#/$defs/cellValue" },
             "text": { "type": "string" },
+            "searchText": { "type": "string", "description": "Alternate flat-grid search text; it does not change display, sort, filter or export values." },
             "title": { "type": "string" },
             "tone": { "$ref": "#/$defs/tone" },
             "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } }
@@ -398,6 +618,23 @@
             "searchFailed": { "$ref": "#/$defs/accessibleLabel" },
             "columns": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilters": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPaging": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPageRange": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPageNumber": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPageLength": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFirstPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPreviousPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridNextPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridLastPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResultCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridUnknownCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridMatchedCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCursorRange": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearQuery": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRemoveSearch": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupedFilters": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRemoveGroup": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRemoveCondition": { "$ref": "#/$defs/accessibleLabel" },
             "gridExport": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilteredResults": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectedRows": { "$ref": "#/$defs/accessibleLabel" },
@@ -429,6 +666,63 @@
             "gridIn": { "$ref": "#/$defs/accessibleLabel" },
             "gridIsNull": { "$ref": "#/$defs/accessibleLabel" },
             "gridIsNotNull": { "$ref": "#/$defs/accessibleLabel" },
+            "gridBetween": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRangeEnd": { "$ref": "#/$defs/accessibleLabel" },
+            "gridInvalidRange": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSuggestedCategory": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChooseCategory": { "$ref": "#/$defs/accessibleLabel" },
+            "gridBooleanValue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridTrue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFalse": { "$ref": "#/$defs/accessibleLabel" },
+            "gridHeaderFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExpandCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
+            "gridColumnMoved": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinNone": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinLeft": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinRight": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResponsiveHidden": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFilterGroupTitle": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetValues": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetSearch": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetIncludeCurrent": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetLoad": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetChoose": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetCounts": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFacetReload": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRenameView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDefaultView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearDefaultView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDefaultViewName": { "$ref": "#/$defs/accessibleLabel" },
+            "gridNoDefaultView": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDefaultViewOption": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelection": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectMatching": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearSelection": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectionCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectionQueryCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectionQueryUnknown": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectRecord": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupHeading": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupMissing": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupExpand": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupCollapse": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSummary": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupOrder": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExportProgress": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExportReading": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExportCancelled": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCancelExport": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPrint": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFilterMatch": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFilterAll": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFilterAny": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAddFilterGroup": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDeleteFilterGroup": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
