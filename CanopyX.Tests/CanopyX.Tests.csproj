@@ -23,6 +23,7 @@
   <ItemGroup>
     <None Include="..\docs\schema\canopyx-2.schema.json" Link="Schema\canopyx-2.schema.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\CanopyX\Views\Locales\labels.json" Link="Fixtures\labels.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <!-- The search benchmark trees double as the index size fixture, so the test and the benchmark measure the same trees. -->

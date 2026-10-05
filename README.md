@@ -41,6 +41,10 @@ highlightRules: [
 
 In .NET, add `new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Failed"), CanopyTone.Danger)` to `view.HighlightRules`. The default target is the row; `CanopyGridHighlightTarget.Cell` decorates the condition column's cell. The first match wins separately for the row and each cell. Rules use typed raw values and the existing filter semantics; display text is independent. Row tones use the existing theme palette, and script-free fallback tables retain the rules and classes. The content-sized example demonstrates these rules.
 
+### Shipped languages
+
+Polish, German and Spanish packs cover all browser controls and static-fallback labels. Set `view.Labels = CanopyLabels.Polish()` (or `German()` / `Spanish()`) in .NET. JavaScript hosts import labels from `@evotecit/canopyx/locales/pl`, `/de` or `/es` and pass them as `labels` on the definition or host options. Individual host overrides still take precedence. The packs are optional assets; the runtime bundles retain their English defaults and existing size budgets. See [label packs](docs/labels.md) for offline classic scripts, placeholders and page language, and the generated `localized-grid-pl.html`, `localized-grid-de.html` and `localized-grid-es.html` examples.
+
 ### JavaScript Hosts
 
 The optional `@evotecit/canopyx` package contains the complete interactive runtime, CSS, and TypeScript declarations. It has no runtime dependencies. The module and classic scripts are assembled from the same JavaScript source; .NET consumers keep their existing build with no JavaScript compiler or bundler.

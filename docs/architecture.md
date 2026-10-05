@@ -35,6 +35,10 @@ The assembler removes optional JavaScript delimiter spacing while preserving quo
 and automatic-semicolon-insertion boundaries. It joins only delimiter boundaries; source parts remain readable.
 No minifier dependency or npm build step is required.
 
+Complete Polish, German and Spanish label packs are generated from one translation table into .NET factories and
+optional JavaScript module/classic assets. They are loaded only by hosts that choose a pack; no language table is
+added to the four runtime entry points. Browser and script-free label coverage share the same source.
+
 Flat grids use the optional `canopyx-grid.js` entry point and its stylesheet. This entry point also contains the interactive tree runtime, so a mixed page loads one runtime. Ordinary tree pages retain their smaller entry points. The data-grid assets have an 80 KiB combined gzip budget; core trees retain their 48 KiB budget and interactive trees retain 64 KiB.
 
 Reporting capabilities live in `canopyx.reporting.source`, assembled into `canopyx-reporting.js` and its module/style companions. A grid with a `reporting` definition selects this entry point automatically through `CanopyHtmlAssets.GetRuntime(view)`. It also hosts ordinary grids and both tree runtimes. The optional reporting payload has a separate 112 KiB combined gzip budget; ordinary entry-point budgets stay unchanged. Hosts include one entry point per page and use the largest required entry point for mixed content. Unsupported reporting definitions fail explicitly in the ordinary grid entry point.

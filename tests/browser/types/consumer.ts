@@ -4,6 +4,15 @@ import CanopyX, {
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
 import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
+import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
+import german from "@evotecit/canopyx/locales/de";
+import spanish from "@evotecit/canopyx/locales/es";
+const translatedNote: string = polishStatic.fullReport;
+CanopyX.configure("polish", { labels: polish });
+CanopyX.configure("german", { labels: { ...german, columns: "Host columns" } });
+CanopyX.configure("spanish", { labels: spanish });
+// @ts-expect-error Shipped packs are immutable; use a host override.
+polish.columns = translatedNote;
 
 const reportingHost = document.createElement("div");
 const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
