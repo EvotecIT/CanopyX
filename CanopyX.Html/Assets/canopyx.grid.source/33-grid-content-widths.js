@@ -23,7 +23,7 @@
   Object.assign(DataGrid.prototype, {
     measureGridColumn(column) {
       const context = document.createElement("canvas").getContext("2d"), style = getComputedStyle(this.grid);
-      if (!context) throw new Error("CanopyX: text measurement is unavailable.");
+      if (!context) throw new Error("CanopyX: no canvas context.");
       context.font = style.font || style.fontSize + " " + style.fontFamily;
       let width = context.measureText(column.title.slice(0, 2048)).width + 76, sampled = 0;
       for (const row of this.rowCache.values()) {
@@ -46,7 +46,7 @@
     autoFitColumn(id) {
       const column = this.columns.find(item => item.id === id);
       if (!column || this.destroyed || this.pendingQuery || !this.acceptedQuery || !this.hasGridSize())
-        throw new Error("CanopyX: auto-fit needs a visible grid, a declared column and an accepted query.");
+        throw new Error("CanopyX: auto-fit is unavailable.");
       const result = this.measureGridColumn(column); this.setColumnWidth(id, result.width); return result;
     },
     autoFitColumns() {

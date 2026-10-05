@@ -2,13 +2,14 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { viewPage, nextFrames } from "./support.mjs";
 
-async function open(page, { reporting, responsive = false, hidden = false, saved = false } = {}) {
+async function open(page, { reporting, responsive = false, hidden = false, saved = false, wire = false } = {}) {
   const view = { protocol: "canopyx/2", type: "grid", id: "widths", label: "Content widths", rowHeight: 28,
     pageSize: 250, selection: "single", search: false, columns: [
       { id: "name", title: "Name", kind: "text" }, { id: "code", title: "Identifier", kind: "text" },
       { id: "fixed", title: "Fixed", kind: "text", width: 123 }
     ], source: { kind: "inline" }, rows: Array.from({ length: 300 }, (_, i) => ({ id: "r" + String(i).padStart(3, "0"),
       cells: { name: "R " + i, code: "LongIdentifierForLoadedRecord_" + i, fixed: "A very long explicit-width value" } })) };
+  if (wire) for (const column of view.columns.slice(0, 2)) { column.width = 160; column.autoWidth = true; }
   if (reporting) view.reporting = { layout: { name: { minimum: 80, maximum: 180, flex: 1 }, code: { minimum: 200, maximum: 220 } } };
   if (responsive) { view.reporting.responsive = true; view.reporting.layout.code.maximum = 600; }
   if (saved) view.stateKey = "widths";
@@ -23,7 +24,7 @@ async function open(page, { reporting, responsive = false, hidden = false, saved
 }
 
 test("first layout measures loaded content, respects explicit widths, and exposes bounded fit all", async ({ page }) => {
-  await open(page);
+  await open(page, { wire: true });
   const widths = await page.evaluate(() => getApi().getState().columns.map(column => column.width));
   expect(widths[1]).toBeGreaterThan(widths[0]); expect(widths[2]).toBe(123);
   const result = await page.evaluate(() => getApi().autoFitColumns());

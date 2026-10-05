@@ -18,6 +18,8 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   editable?: false; wrap?: boolean;
   /** Omit to fit the header and at most 200 loaded records on first layout. Saved widths take precedence. */
   width?: number;
+  /** Wire documents retain a numeric width and set this flag for initial content fitting. */
+  autoWidth?: boolean;
 };
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
@@ -120,7 +122,9 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   columns: GridColumn[];
   /** Fixed CSS pixel height (20..64), or content measurement. Fixed is the default writer behavior. */
   rowHeight: number | "auto";
-  /** Minimum and estimate for unseen automatic rows (20..64, default 28). */
+  /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
+  autoRowHeight?: boolean;
+  /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
   estimatedRowHeight?: number;
   /** At most 64 ordered rules; a tone or className is required on each rule. */
   highlightRules?: readonly GridHighlightRule[];

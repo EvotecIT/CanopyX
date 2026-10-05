@@ -25,8 +25,9 @@ async function anchor(page) {
 }
 
 test("wrapped rows measure content, page by pixels, recycle, and keep ordered accessible rows", async ({ page }) => {
-  await open(page);
+  await open(page, 400, { rowHeight: 32, autoRowHeight: true });
   const short = page.locator('[data-cx-id="r000000"]'), tall = page.locator('[data-cx-id="r000001"]');
+  expect((await short.boundingBox()).height).toBe(32);
   expect((await tall.boundingBox()).height).toBeGreaterThan((await short.boundingBox()).height);
   await short.focus(); await page.keyboard.press("PageDown");
   const ordinal = await page.evaluate(() => Number(document.activeElement.getAttribute("aria-rowindex")) - 2);

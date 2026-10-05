@@ -11,12 +11,12 @@ public sealed class GridRowHeightTests {
         var row = new CanopyGridRow("a"); row.Cells["notes"] = "First line\nSecond line"; view.Rows.Add(row);
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "automatic row layout");
         using var doc = JsonDocument.Parse(json);
-        Assert.Equal("auto", doc.RootElement.GetProperty("rowHeight").GetString());
-        Assert.Equal(32, doc.RootElement.GetProperty("estimatedRowHeight").GetInt32());
+        Assert.Equal(32, doc.RootElement.GetProperty("rowHeight").GetInt32());
+        Assert.True(doc.RootElement.GetProperty("autoRowHeight").GetBoolean());
         Assert.True(doc.RootElement.GetProperty("columns")[0].GetProperty("wrap").GetBoolean());
         view.AutoRowHeight = false; json = view.ToJson(); ProtocolSchema.AssertValid(json, "fixed row layout");
         using var fixedDoc = JsonDocument.Parse(json);
         Assert.Equal(32, fixedDoc.RootElement.GetProperty("rowHeight").GetInt32());
-        Assert.False(fixedDoc.RootElement.TryGetProperty("estimatedRowHeight", out _));
+        Assert.False(fixedDoc.RootElement.TryGetProperty("autoRowHeight", out _));
     }
 }

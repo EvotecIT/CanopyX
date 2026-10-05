@@ -65,11 +65,12 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
     public bool Wrap { get; set; }
 
-    internal void WriteJson(CanopyJsonWriter writer, bool grid = false) {
+    internal void WriteJson(CanopyJsonWriter writer, bool grid = false, int? width = null) {
         writer.BeginObject()
             .Property("id", Id)
             .Property("title", Title);
-        if (!grid || HasExplicitWidth) writer.Property("width", _width);
+        writer.Property("width", width ?? _width);
+        if (grid && !HasExplicitWidth) writer.Property("autoWidth", true);
         writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {
             writer.Property("sortable", true);

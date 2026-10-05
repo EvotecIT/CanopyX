@@ -56,8 +56,8 @@
         "type": { "const": "grid" },
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/accessibleLabel" },
-        "rowHeight": { "oneOf": [{ "type": "integer", "minimum": 20, "maximum": 64 }, { "const": "auto" }] },
-        "estimatedRowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
+        "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
+        "autoRowHeight": { "type": "boolean", "description": "Measure record heights; rowHeight supplies the minimum and unseen-row estimate." },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
@@ -510,11 +510,12 @@
       }
     },
     "gridColumn": {
-      "type": "object", "required": ["id", "title", "kind"], "additionalProperties": false,
+      "type": "object", "required": ["id", "title", "width", "kind"], "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/column/properties/id" },
         "title": { "$ref": "#/$defs/column/properties/title" },
         "width": { "$ref": "#/$defs/column/properties/width" },
+        "autoWidth": { "type": "boolean", "description": "Fit loaded content on first layout. Width remains a numeric fallback; saved widths take precedence." },
         "kind": { "$ref": "#/$defs/column/properties/kind" },
         "sortable": { "type": "boolean" }, "editable": { "const": false }, "hidden": { "type": "boolean" }, "wrap": { "type": "boolean" }
       }

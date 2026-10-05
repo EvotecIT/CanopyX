@@ -74,9 +74,9 @@
       else if (top + Math.min(row.hpx, viewport) > this.logicalTop() + viewport) this.setLogicalTop(top + Math.min(row.hpx, viewport) - viewport);
     },
     gridPageStep(row, direction, rows = this) {
-      if (!this.autoRows) return (this.rowProjection ? rows.indexOf(row) : row._ri) + direction * Math.max(1,
-        Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH));
       const index = this.rowProjection ? rows.indexOf(row) : row._ri;
+      if (!this.autoRows) return index + direction * Math.max(1,
+        Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH));
       const proposed = rows.rowAt(Math.max(0, rows.rowTop(index) + direction * (this.grid.clientHeight - this.head.offsetHeight)));
       return direction > 0 ? Math.max(index + 1, proposed) : Math.min(index - 1, proposed);
     }

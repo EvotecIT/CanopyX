@@ -126,12 +126,17 @@ public sealed class CanopyGridView {
         Validate();
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
-        if (AutoRowHeight) writer.Property("rowHeight", "auto").Property("estimatedRowHeight", RowHeight);
-        else writer.Property("rowHeight", RowHeight);
+        writer.Property("rowHeight", RowHeight);
+        if (AutoRowHeight) writer.Property("autoRowHeight", true);
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
-        foreach (var column in Columns) column.WriteJson(writer, grid: true);
+        foreach (var column in Columns) {
+            var width = column.Width;
+            if (!column.HasExplicitWidth && Reporting != null && Reporting.Layout.TryGetValue(column.Id, out var layout))
+                width = Math.Max(layout.Minimum, Math.Min(layout.Maximum, width));
+            column.WriteJson(writer, grid: true, width: width);
+        }
         writer.EndArray();
         if (HighlightRules.Count > 0) {
             writer.Name("highlightRules").BeginArray();

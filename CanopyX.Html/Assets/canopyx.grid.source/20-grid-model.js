@@ -10,8 +10,8 @@
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
         throw new Error("CanopyX: source navigation must match the grid definition.");
-      this.pageSize = this.view.pageSize; this.autoRows = this.view.rowHeight === "auto";
-      this.rowH = this.autoRows ? this.view.estimatedRowHeight || 28 : this.view.rowHeight;
+      this.pageSize = this.view.pageSize; this.autoRows = this.view.rowHeight === "auto" || !!this.view.autoRowHeight;
+      this.rowH = this.view.rowHeight === "auto" ? this.view.estimatedRowHeight || 28 : this.view.rowHeight;
       if (this.autoRows) this.rowHeights = new Map();
       this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
       this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
@@ -28,7 +28,7 @@
           !this.view.columns.some(column => column.id === id) || typeof renderers[id] !== "function"))
         throw new Error("CanopyX: grid renderers are functions by declared column ID.");
       this.columns = this.view.columns.map(column => Object.assign({}, column, {
-        width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.width === undefined,
+        width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.autoWidth || column.width === undefined,
         render: Object.prototype.hasOwnProperty.call(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;

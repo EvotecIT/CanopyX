@@ -6,7 +6,7 @@
   }
   function validateGridHighlights(view) {
     if (view.highlightRules === undefined) return;
-    if (!Array.isArray(view.highlightRules) || view.highlightRules.length > 64) throw new Error("CanopyX: highlightRules needs at most 64 rules.");
+    if (!Array.isArray(view.highlightRules) || view.highlightRules.length > 64) throw new Error("CanopyX: at most 64 highlight rules.");
     const columns = new Map(view.columns.map(column => [column.id, column])), budget = { predicates: 0 };
     for (const rule of view.highlightRules) {
       if (!rule || Object.keys(rule).some(key => !["column", "operator", "values", "target", "tone", "className"].includes(key)) ||

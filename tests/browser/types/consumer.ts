@@ -25,6 +25,10 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
 reportingApi.autoFitColumns();
+const measuredWireView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "measured", label: "Measured records",
+  source: { kind: "inline" }, rows: [], pageSize: 100, selection: "none", search: false, rowHeight: 32, autoRowHeight: true,
+  columns: [{ id: "name", title: "Name", kind: "text", width: 160, autoWidth: true, wrap: true }] };
+createDataGrid(document.createElement("div"), { view: measuredWireView });
 const recordSelection = reportingApi.getSelectionDescriptor?.();
 if (recordSelection?.kind === "query") {
   const matched: number | null = recordSelection.matched;
