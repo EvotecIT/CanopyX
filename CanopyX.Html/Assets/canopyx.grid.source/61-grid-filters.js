@@ -40,7 +40,7 @@
         const column = columnOf(); loaded = true;
         try { for (const item of (await grid.columnFacetItems(column, "")).items) if (item.value != null && column === columnOf()) facets.set(key(item.value), item); } catch (_) {}
       }
-      render();
+      render(); if (box.open) list.scrollIntoView({ block: "nearest" });
     });
     search.addEventListener("input", render);
     search.addEventListener("keydown", event => {

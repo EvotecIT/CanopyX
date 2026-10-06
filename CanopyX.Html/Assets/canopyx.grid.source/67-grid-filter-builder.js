@@ -20,7 +20,8 @@
     const apply=query=>{draft=query;clearTimeout(timer);timer=setTimeout(flush,200);};
     controller.signal.addEventListener("abort",()=>clearTimeout(timer),{once:true});
     this.lifetime.signal.addEventListener("abort",()=>controller.abort(),{once:true,signal:controller.signal});
-    document.addEventListener("pointerdown",event=>{for(const box of form.querySelectorAll(".cx-ms[open]"))if(!box.contains(event.target))box.open=false;},{signal:controller.signal});
+    // Close open value lists after the click lands: collapsing the inline list moves the controls below it.
+    document.addEventListener("click",event=>{for(const box of form.querySelectorAll(".cx-ms[open]"))if(!box.contains(event.target))box.open=false;},{signal:controller.signal});
     form.addEventListener("keydown",event=>{const box=event.target.closest(".cx-ms[open]");if(event.key==="Escape"&&box){box.open=false;box.firstChild.focus();event.stopPropagation();}});
     panel.parentElement.addEventListener("toggle",()=>{if(!panel.parentElement.open)controller.abort();},{signal:controller.signal});
     const close=()=>{clearTimeout(timer);panel.parentElement.open=false;panel.parentElement.querySelector("summary").focus();};
