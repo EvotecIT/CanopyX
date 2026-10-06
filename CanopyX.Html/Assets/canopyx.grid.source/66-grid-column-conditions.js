@@ -1,4 +1,5 @@
   function gridDateInput(value,local){const date=new Date(value);return Number.isFinite(date.getTime())?new Date(date.getTime()-(local?date.getTimezoneOffset()*60000:0)).toISOString().slice(0,19):"";}
+  const GRID_DATE_PRESETS=[["today","gridToday"],["yesterday","gridYesterday"],["last7","gridLastSevenDays"],["last30","gridLastThirtyDays"],["month","gridThisMonth"]];
   function gridDatePreset(local,preset){
     const start=new Date(),end=new Date();
     if(local){start.setHours(0,0,0,0);end.setHours(0,0,0,0);end.setDate(end.getDate()+1);}
@@ -32,7 +33,7 @@
       input.addEventListener("input",update);operator.addEventListener("change",()=>{input.disabled=["isNull","isNotNull"].includes(operator.value);update();});
     };
     if(date){preset=h("select","cx-input");preset.setAttribute("aria-label",this.labels.gridDateRange);
-      for(const [value,label]of [["range","gridDateRange"],["today","gridToday"],["yesterday","gridYesterday"],["last7","gridLastSevenDays"],["last30","gridLastThirtyDays"],["month","gridThisMonth"]])preset.appendChild(gridOption(value,this.labels[label]));
+      for(const [value,label]of [["range","gridDateRange"],...GRID_DATE_PRESETS])preset.appendChild(gridOption(value,this.labels[label]));
       preset.addEventListener("change",()=>{if(preset.value==="range")return;const [start,end]=gridDatePreset(this.local,preset.value);
         rows.replaceChildren();add({column:column.id,operator:"ge",values:[start]});add({column:column.id,operator:"lt",values:[end]});join.value="and";join.hidden=false;addButton.hidden=true;apply(read());});body.appendChild(preset);}
     const addButton=gridButton(this.labels.gridAddCondition,()=>{add(null);join.hidden=false;addButton.hidden=true;rows.lastElementChild.querySelector('input').focus();});addButton.classList.add("cx-link");

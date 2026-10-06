@@ -406,7 +406,6 @@ body .cx-host.cx-data-grid { padding:0; }
 .cx-data-grid .cx-grid-column-choice label { flex:1;display:flex;flex-direction:row-reverse;justify-content:flex-end; }
 .cx-data-grid .cx-grid-field { display:flex;flex-direction:column;gap:var(--cx-size-4px);align-items:stretch;min-width:0; }
 .cx-data-grid .cx-grid-field :is(input:not([type="checkbox"]),select,textarea),.cx-data-grid .cx-grid-panel > select { min-width:0;width:100%;height:var(--cx-control-h);padding:0 var(--cx-size-10px);border:var(--cx-size-1px) solid var(--cx-control-border);border-radius:var(--cx-radius);background:var(--cx-surface);color:var(--cx-text);font:inherit; }
-.cx-data-grid .cx-grid-field textarea { height:auto;padding-block:var(--cx-size-7px); }
 .cx-grid-control-error { color:var(--cx-tone-danger);margin:0;width:100%;overflow-wrap:anywhere; }
 .cx-data-grid .cx-grid-views .cx-grid-field { width:100%; }
 .cx-data-grid :is(button,summary,select,input,textarea):focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px); }

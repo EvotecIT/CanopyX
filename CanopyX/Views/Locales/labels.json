@@ -115,7 +115,7 @@
   "GridPrint": ["Drukuj","Drucken","Imprimir"],
   "GridContains": ["zawiera","enthält","contiene"],
   "GridStartsWith": ["zaczyna się od","beginnt mit","empieza por"],
-  "GridIn": ["jest jedną z wartości (po jednej w wierszu)","ist einer der Werte (einer pro Zeile)","es uno de estos valores (uno por línea)"],
+  "GridIn": ["jest jedną z wartości","ist einer der Werte","es uno de estos valores"],
   "GridIsNull": ["brak wartości","fehlt","está ausente"],
   "GridIsNotNull": ["wartość istnieje","ist vorhanden","está presente"],
   "VisibleColumns": ["Widoczne kolumny","Sichtbare Spalten","Columnas visibles"],

@@ -179,7 +179,7 @@ public sealed partial class CanopyLabels {
         GridCloseRecord = "Datensatzdetails schließen",
         GridContains = "enthält",
         GridStartsWith = "beginnt mit",
-        GridIn = "ist einer der Werte (einer pro Zeile)",
+        GridIn = "ist einer der Werte",
         GridIsNull = "fehlt",
         GridIsNotNull = "ist vorhanden",
         VisibleColumns = "Sichtbare Spalten",

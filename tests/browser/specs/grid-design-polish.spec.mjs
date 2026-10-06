@@ -25,6 +25,54 @@ async function addCondition(page,column,operator){
   return row;
 }
 
+test('filter builder value fields are single-line typed inputs, with date presets and faceted membership',async({page})=>{
+  await open(page);await openGridControl(page,'filters');
+  // Membership first: the live date preset below narrows the full-query facet counts once it applies.
+  const membership=await addCondition(page,'state','in'),summary=membership.locator('.cx-ms > summary');
+  const control=await box(membership.getByRole('combobox',{name:'Column',exact:true}));
+  expect((await box(summary)).height).toBe(control.height);await expect(summary).toHaveText('Choose a value');
+  await summary.click();await expect(membership.locator('.cx-val')).toHaveCount(2);
+  expect(await membership.locator('.cx-val').evaluateAll(rows=>rows.map(row=>[row.textContent.replace(/\d+$/,''),row.querySelector('.cx-val-n').textContent]))).toEqual([['Failing','8'],['Healthy','22']]);
+  const failing=membership.locator('.cx-val').filter({hasText:'Failing'}).locator('input');await failing.check();await expect(summary).toHaveText('Failing');
+  await failing.press('Escape');await expect(membership.locator('.cx-ms')).not.toHaveAttribute('open','');await expect(panel(page)).toBeVisible();
+  const row=await addCondition(page,'name');
+  await expect(row.locator('input.cx-grid-filter-value')).toHaveJSProperty('type','text');
+  await row.getByRole('combobox',{name:'Column',exact:true}).selectOption('amount');await expect(row.locator('input.cx-grid-filter-value')).toHaveAttribute('type','number');
+  await row.getByRole('combobox',{name:'Column',exact:true}).selectOption('date');await expect(row.locator('input.cx-grid-filter-value')).toHaveAttribute('type','datetime-local');
+  expect((await box(row.locator('input.cx-grid-filter-value'))).height).toBe(control.height);
+  expect(await row.getByRole('combobox',{name:'Condition',exact:true}).locator('option').evaluateAll(options=>options.map(option=>option.value))).toEqual(expect.arrayContaining(['today','yesterday','last7','last30','month']));
+  await row.getByRole('combobox',{name:'Condition',exact:true}).selectOption('last7');await expect(row.locator('.cx-condition-value:visible')).toHaveCount(0);
+  await expect(panel(page).locator('textarea')).toHaveCount(0);
+  await flushGridFilters(page,false);
+  const filters=(await query(page)).filters;expect(filters[0]).toEqual({column:'state',operator:'in',values:['Failing']});
+  expect(filters.slice(1).map(item=>[item.column,item.operator])).toEqual([['date','ge'],['date','lt']]);
+  expect(Date.parse(filters[2].values[0])-Date.parse(filters[1].values[0])).toBe(7*86400000);
+});
+test('filter builder caps its height to the viewport and scrolls conditions between a visible header and footer',async({page})=>{
+  await page.setViewportSize({width:1440,height:620});
+  await open(page,{rows:base.rows.slice(0,3),pageLength:3});
+  await setQuery(page,{filters:Array.from({length:12},(_,i)=>({column:'amount',operator:'ne',values:[100+i]}))});
+  await openGridControl(page,'filters');
+  const pop=await box(panel(page)),grid=await box(page.locator('[data-canopyx-host]'));
+  expect(pop.bottom).toBeGreaterThan(grid.bottom);expect(pop.bottom).toBeLessThanOrEqual(620-8+0.5);
+  const body=panel(page).locator('.cx-pop-b');
+  expect(await body.evaluate(element=>element.scrollHeight>element.clientHeight&&getComputedStyle(element).overflowY==='auto')).toBe(true);
+  const done=panel(page).getByRole('button',{name:'Done',exact:true}),clear=panel(page).getByRole('button',{name:'Clear all filters',exact:true});
+  const visible=locator=>locator.evaluate(element=>{const r=element.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)===element||element.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));});
+  expect(await visible(done)).toBe(true);expect(await visible(clear)).toBe(true);expect(await visible(panel(page).locator('.cx-pop-h'))).toBe(true);
+  const before=await box(done);await body.evaluate(element=>{element.scrollTop=element.scrollHeight;});
+  expect(await box(done)).toEqual(before);expect(await visible(done)).toBe(true);
+});
+
+test('phone filter builder is a full-screen sheet with its footer pinned',async({page})=>{
+  await page.setViewportSize({width:390,height:700});
+  await open(page);await setQuery(page,{filters:Array.from({length:12},(_,i)=>({column:'amount',operator:'ne',values:[100+i]}))});
+  await openGridControl(page,'filters');
+  expect(await box(panel(page))).toEqual({left:0,right:390,top:0,bottom:700,width:390,height:700});
+  const done=await box(panel(page).getByRole('button',{name:'Done',exact:true}));expect(done.bottom).toBeLessThanOrEqual(700);expect(done.top).toBeGreaterThan(600);
+  expect(await page.evaluate(()=>document.body.scrollWidth<=innerWidth)).toBe(true);
+});
+
 test('only a filtered header shows the filled accent funnel; column menus appear on hover and focus',async({page})=>{
   await open(page);await page.mouse.move(0,0);
   await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(0);

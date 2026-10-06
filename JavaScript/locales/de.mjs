@@ -175,7 +175,7 @@ const labels = Object.freeze({
   gridCloseRecord: "Datensatzdetails schließen",
   gridContains: "enthält",
   gridStartsWith: "beginnt mit",
-  gridIn: "ist einer der Werte (einer pro Zeile)",
+  gridIn: "ist einer der Werte",
   gridIsNull: "fehlt",
   gridIsNotNull: "ist vorhanden",
   visibleColumns: "Sichtbare Spalten",

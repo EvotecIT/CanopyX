@@ -201,7 +201,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridCloseRecord)] = "Close record details",
         [nameof(GridContains)] = "contains",
         [nameof(GridStartsWith)] = "starts with",
-        [nameof(GridIn)] = "is any of (one per line)",
+        [nameof(GridIn)] = "is any of",
         [nameof(GridIsNull)] = "is missing",
         [nameof(GridIsNotNull)] = "is present",
         [nameof(VisibleColumns)] = "Visible columns",
@@ -445,7 +445,7 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the flat-grid control text. Default "starts with".</summary>
     public string GridStartsWith { get => Get(); set => Set(value); }
 
-    /// <summary>Gets or sets the flat-grid control text. Default "is any of (one per line)".</summary>
+    /// <summary>Gets or sets the flat-grid control text. Default "is any of".</summary>
     public string GridIn { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the flat-grid control text. Default "is missing".</summary>

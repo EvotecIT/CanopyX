@@ -32,9 +32,13 @@ for (const [column, values, extra] of [["size", [111, 112], "113"], ["date", ["2
 test(`membership editing displays and retains every original ${column} operand`, async ({page}) => {
   const view = definition(); view.query = {filters:[{column, operator:"in", values}]};
   await openGrid(page, view); await page.locator(".cx-grid-filters > summary").click();
-  const membership = page.locator(".cx-grid-filter textarea:enabled");
-  await expect(membership).toHaveValue(values.join("\n"));
-  await membership.fill(values.join("\n") + "\n" + extra);
+  const membership = page.locator(".cx-grid-filter .cx-ms");
+  await expect(page.locator(".cx-grid-filter textarea")).toHaveCount(0);
+  await membership.locator("summary").click();
+  await expect(membership.locator(".cx-val input:checked")).toHaveCount(values.length);
+  await membership.getByRole("searchbox", { name: "Search values", exact: true }).fill(extra);
+  await membership.getByRole("searchbox", { name: "Search values", exact: true }).press("Enter");
+  await expect(membership.locator(".cx-val input:checked")).toHaveCount(values.length + 1);
   await flushGridFilters(page);
   const actual = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values);
   expect(actual).toEqual([...values, column === "size" ? Number(extra) : extra]);
@@ -59,7 +63,10 @@ test("inactive numeric inputs do not prevent a valid membership filter from subm
   const row = panel.locator("fieldset.cx-grid-filter"); await row.getByRole("combobox", { name: "Column", exact: true }).selectOption("size");
   await row.locator("input.cx-grid-filter-value").press("-");
   expect(await row.locator("input.cx-grid-filter-value").evaluate(input => input.validity.badInput)).toBe(true);
-  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("in"); await row.locator("textarea.cx-grid-filter-value:visible").fill("111");
+  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("in"); await row.locator(".cx-ms > summary").click();
+  await row.getByRole("searchbox", { name: "Search values", exact: true }).fill("111");
+  await expect(row.locator(".cx-val:visible")).toHaveCount(1); await row.locator(".cx-val:visible input").check();
+  await expect(row.locator(".cx-ms > summary")).toHaveText("111");
   await flushGridFilters(page);
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "2");
 });
@@ -77,7 +84,8 @@ test("typed filter controls combine category, raw numbers and UTC dates across t
     const row = panel.locator("fieldset.cx-grid-filter").last();
     await row.getByRole("combobox", { name: "Column", exact: true }).selectOption(column);
     await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption(operator);
-    await row.locator(".cx-grid-filter-value:visible").fill(value);
+    if (operator === "in") { await row.locator(".cx-ms > summary").click(); await row.getByRole("searchbox", { name: "Search values", exact: true }).fill(value); await row.getByRole("searchbox", { name: "Search values", exact: true }).press("Enter"); }
+    else await row.locator("input.cx-grid-filter-value:visible").fill(value);
     await expect(row.getByRole("button", { name: "Remove condition", exact: true })).toBeVisible();
   }
   await flushGridFilters(page);

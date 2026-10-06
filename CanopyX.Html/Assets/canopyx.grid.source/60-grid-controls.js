@@ -7,7 +7,7 @@
     gridFitColumn: "Fit {column}", gridFitAllColumns: "Fit all columns",
     gridViews: "Views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",
     gridResetView: "Reset view", gridChooseView: "Choose a saved view", gridInvalidFilter: "Enter a valid filter value.",
-    gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of (one per line)", gridIsNull: "is missing", gridIsNotNull: "is present"
+    gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of", gridIsNull: "is missing", gridIsNotNull: "is present"
   }));
 
   function gridButton(text, run) {

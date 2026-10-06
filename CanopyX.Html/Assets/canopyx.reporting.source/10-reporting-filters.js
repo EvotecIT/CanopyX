@@ -1,7 +1,7 @@
   // ---------- reporting filter controls over the existing typed query owner ----------
 
   const REPORT_FILTER_BASE = {};
-  for (const method of ["buildGridFilters", "renderGridFilters", "addGridFilter", "readGridFilter", "buildHeader"])
+  for (const method of ["buildGridFilters", "addGridFilter", "readGridFilter"])
     REPORT_FILTER_BASE[method] = DataGrid.prototype[method];
   REPORT_FILTER_BASE.syncQuerySummary = DataGrid.prototype.syncQuerySummary;
 
@@ -27,10 +27,6 @@
     gridScalar(value, column); return value;
   }
 
-  function reportingFilterError(element, message) {
-    setText(element, message);
-    if (message && element.getClientRects().length) element.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }
 
   Object.assign(DataGrid.prototype, {
     syncQuerySummary() {
@@ -46,13 +42,6 @@
       }
     },
 
-    applyReportingFilterQuery(query, error) {
-      const pending = this.setQuery(query), epoch = this.queryEpoch;
-      this.reportingFilterSubmitEpoch = epoch;
-      pending.then(() => setText(error, ""), failure => reportingFilterError(error, failure.message)).finally(() => {
-        if (this.reportingFilterSubmitEpoch === epoch) this.reportingFilterSubmitEpoch = null;
-      });
-    },
 
     buildGridFilters() {
       if (!this.view.reporting) return REPORT_FILTER_BASE.buildGridFilters.call(this);
@@ -66,7 +55,6 @@
       this.reportingFilters.details.addEventListener("toggle", () => this.syncReportingFilterHeaders());
     },
 
-    renderGridFilters(panel) { return REPORT_FILTER_BASE.renderGridFilters.call(this,panel); },
 
     addGridFilter(parent, predicate) {
       if (!this.view.reporting) return REPORT_FILTER_BASE.addGridFilter.call(this, parent, predicate);
