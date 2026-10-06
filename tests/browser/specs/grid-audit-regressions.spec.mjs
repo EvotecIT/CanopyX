@@ -20,13 +20,16 @@ test("grouped example row checkbox toggles selection and its visible state", asy
   await expect(record).toHaveAttribute("aria-selected", "true");
 });
 
-test("compact grouped example header filters can be clicked and return focus", async ({ page }) => {
+test("compact grouped example column menus open column filters and return focus", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openExample(page, "grouped-grid.html");
-  const filters = page.locator(".cx-grid-header-filter");
-  for (let index = 0; index < await filters.count(); index++) {
-    const button = filters.nth(index);
+  await expect(page.locator(".cx-grid-header-filter:visible")).toHaveCount(0);
+  const menus = page.locator(".cx-grid-column-menu");
+  expect(await menus.count()).toBeGreaterThan(0);
+  for (let index = 0; index < await menus.count(); index++) {
+    const button = menus.nth(index);
     await button.click({ timeout: 4000 });
+    await page.getByRole("menuitem", { name: "Filter…", exact: true }).click();
     await expect(button).toHaveAttribute("aria-expanded", "true");
     const columnFilter=page.locator('.cx-column-filter');
     await expect(columnFilter).toBeVisible();
@@ -37,11 +40,12 @@ test("compact grouped example header filters can be clicked and return focus", a
   }
 });
 
-test("compact reporting example header filters remain reachable while scrolling sideways", async ({ page }) => {
+test("compact reporting example column menus remain reachable while scrolling sideways", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openExample(page, "reporting-grid.html");
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setColumnWidth("reference", 64));
-  const buttons = page.locator(".cx-grid-header-filter");
+  const buttons = page.locator(".cx-grid-column-menu");
+  expect(await buttons.count()).toBeGreaterThan(0);
   for (let index = 0; index < await buttons.count(); index++) {
     const geometry = await buttons.nth(index).evaluate(button => {
       const box = button.getBoundingClientRect(), cell = button.closest(".cx-hcell").getBoundingClientRect();
@@ -50,6 +54,7 @@ test("compact reporting example header filters remain reachable while scrolling 
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeGreaterThanOrEqual(0);
     await buttons.nth(index).click({ timeout: 4000 });
+    await page.getByRole("menuitem", { name: "Filter…", exact: true }).click();
     await expect(page.locator('.cx-column-filter')).toBeVisible();
     await page.locator('.cx-column-filter').locator('input:visible,select:visible').first().focus();
     await page.keyboard.press("Escape");

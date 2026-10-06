@@ -25,6 +25,45 @@ async function addCondition(page,column,operator){
   return row;
 }
 
+test('only a filtered header shows the filled accent funnel; column menus appear on hover and focus',async({page})=>{
+  await open(page);await page.mouse.move(0,0);
+  await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(0);
+  const opacity=column=>page.locator('[data-cx-column-menu="'+column+'"]').evaluate(element=>getComputedStyle(element).opacity);
+  // A device with any coarse pointer (a touch screen) keeps every menu button visible, as the spec requires on touch.
+  const rest=await page.evaluate(()=>matchMedia('(any-pointer:coarse)').matches)?'1':'0';
+  expect(await opacity('name')).toBe(rest);
+  expect(await page.locator('[data-cx-column-menu="name"] svg').evaluate(element=>getComputedStyle(element).rotate)).toBe('90deg');
+  await page.locator('.cx-hcell[data-cx-column="name"]').hover();await expect.poll(()=>opacity('name')).toBe('1');
+  await page.mouse.move(0,0);await expect.poll(()=>opacity('name')).toBe(rest);
+  await page.locator('.cx-hcell[data-cx-column="state"] .cx-sort').focus();await expect.poll(()=>opacity('state')).toBe('1');
+  await setQuery(page,{filters:[{column:'amount',operator:'gt',values:[5]}]});
+  await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(1);
+  const funnel=page.locator('.cx-hcell[data-cx-column="amount"] .cx-grid-header-filter');await expect(funnel).toBeVisible();
+  const colors=await funnel.evaluate(element=>{const svg=element.querySelector('svg'),probe=document.createElement('span');probe.style.color='var(--cx-accent)';element.appendChild(probe);
+    const result={fill:getComputedStyle(svg).fill,stroke:getComputedStyle(svg).stroke,accent:getComputedStyle(probe).color};probe.remove();return result;});
+  expect(colors.fill).toBe(colors.accent);expect(colors.stroke).toBe(colors.accent);
+  await funnel.click();const pop=page.getByRole('dialog',{name:'Amount: Filter…'});await expect(pop).toBeVisible();await pop.getByRole('spinbutton',{name:'Value',exact:true}).press('Escape');await expect(funnel).toBeFocused();
+});
+
+test.describe('touch headers',()=>{test.use({hasTouch:true,viewport:{width:390,height:700}});
+  test('column menu buttons stay visible on touch phones',async({page})=>{
+    await open(page);
+    expect(await page.locator('.cx-grid-column-menu').evaluateAll(buttons=>buttons.map(button=>getComputedStyle(button).opacity))).toEqual(['1','1','1','1']);
+    await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(0);
+  });
+});
+
+test('column value filter keeps Select all in the checkbox column with a right-aligned total',async({page})=>{
+  await open(page);await menu(page,'State').click();await page.getByRole('menuitem',{name:'Filter…',exact:true}).click();
+  const pop=page.getByRole('dialog',{name:'State: Filter…'});await expect(pop.locator('.cx-val')).toHaveCount(2);
+  const all=pop.getByRole('checkbox',{name:'Select all values',exact:true}),first=pop.locator('.cx-val input').first();
+  const allBox=await box(all),firstBox=await box(first);expect(Math.abs(allBox.left-firstBox.left)).toBeLessThanOrEqual(0.5);
+  expect(await all.evaluate(input=>input===input.parentElement.firstElementChild)).toBe(true);
+  const total=pop.locator('.cx-val-all .cx-val-n');await expect(total).toHaveText('2');
+  expect(Math.abs((await box(total)).right-(await box(pop.locator('.cx-val .cx-val-n').first())).right)).toBeLessThanOrEqual(0.5);
+  expect(await pop.locator('.cx-val-all').evaluate(label=>label.nextElementSibling.className)).toBe('cx-val-list');
+});
+
 test('paging footer keeps the range left and groups rows per page with the pager on one line',async({page})=>{
   await open(page);
   const footer=await box(page.locator('.cx-grid-pager')),range=await box(page.locator('.cx-grid-page-range')),rows=await box(page.locator('.cx-grid-pager .cx-rpp')),pager=await box(page.locator('.cx-grid-pager .cx-pager'));

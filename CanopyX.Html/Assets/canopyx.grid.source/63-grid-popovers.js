@@ -12,7 +12,7 @@
   Object.assign(DataGrid.prototype,{
     closeGridPopover(focus=true){
       const open=this.gridPopover;if(!open)return;this.gridPopover=null;open.controller.abort();open.panel.remove();open.anchor?.setAttribute("aria-expanded","false");
-      if(focus){const anchor=open.anchor?.isConnected?open.anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(open.columnId||"")+'"]');
+      if(focus){const anchor=open.anchor?.isConnected&&!open.anchor.hidden?open.anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(open.columnId||"")+'"]');
         (anchor||this.grid).focus({preventScroll:true});}
     },
     buildColumnMenus(){
@@ -23,7 +23,7 @@
         filter.classList.add("cx-grid-header-filter","icon");menu.classList.add("cx-grid-column-menu","icon");
         filter.dataset.cxFilterColumn=id;menu.dataset.cxColumnMenu=id;filter.setAttribute("aria-label",this.labels.gridHeaderFilter?fill(this.labels.gridHeaderFilter,{column:column.title}):column.title+": "+this.labels.gridFilterColumn);
         menu.setAttribute("aria-label",fill(this.labels.gridColumnMenu,{column:column.title}));menu.setAttribute("aria-haspopup","menu");menu.setAttribute("aria-expanded","false");
-        filter.dataset.cxFiltered=String(gridColumnFiltered(this.acceptedQuery,id));filter.hidden=!gridColumnFiltered(this.acceptedQuery,id)&&!this.view.reporting?.headerFilters;
+        filter.dataset.cxFiltered=String(gridColumnFiltered(this.acceptedQuery,id));filter.hidden=filter.dataset.cxFiltered!=="true";
         menu.addEventListener("keydown",event=>{if(event.key==="ArrowDown"){event.preventDefault();this.openColumnMenu(id,menu);}},{signal});
         cell.insertBefore(filter,cell.querySelector(".cx-resize"));cell.insertBefore(menu,cell.querySelector(".cx-resize"));
       }

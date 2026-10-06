@@ -127,7 +127,7 @@ test('numeric facet API retains distinct binary64 values without rounding labels
  await open(page);await page.evaluate(async()=>{const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();view.reporting.facetColumns=['amount'];view.rows=[{id:'a',cells:{amount:0.0001}},{id:'b',cells:{amount:0.0002}}];await CanopyX.createDataGrid(host,{view}).ready;});
  expect(buckets(await facets(page,'amount'))).toEqual([[0.0001,1],[0.0002,1]]);
 });
-async function editor(page){await page.getByRole('button',{name:'Filter Category',exact:true}).click();return page.getByRole('dialog',{name:'Category: Filter…'});}
+async function editor(page){await page.getByRole('button',{name:'Menu for Category',exact:true}).click();await page.getByRole('menuitem',{name:'Filter…',exact:true}).click();return page.getByRole('dialog',{name:'Category: Filter…'});}
 test('column value counts cover the whole query and distinguish raw boolean, string and missing choices',async({page})=>{
  await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);
  expect(await pop.locator('.cx-val').evaluateAll(rows=>rows.map(row=>[row.querySelector('.cx-facet-value').textContent,row.querySelector('.cx-val-n').textContent])))

@@ -68,5 +68,5 @@ test('missing and membership operators disable inactive number controls',async({
 test('header filters stay bound to their column after reordering and return focus on Escape',async({page})=>{
  await open(page);await page.evaluate(async()=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;grid.setColumnOrder(['flag','date','amount','category','name']);await grid.setQuery({filters:[{column:'amount',operator:'gt',values:[9]}]});});
  const button=page.getByRole('button',{name:'Filter Amount',exact:true});await button.click();const pop=page.getByRole('dialog',{name:'Amount: Filter…'});await expect(pop.getByRole('combobox',{name:'Condition',exact:true})).toHaveValue('gt');await expect(panel(page)).not.toHaveAttribute('open','');await pop.getByRole('spinbutton',{name:'Value',exact:true}).press('Escape');await expect(button).toBeFocused();
- await openGridControl(page,'views');await page.getByRole('button',{name:'Reset view',exact:true}).click();await expect(button).toHaveAttribute('data-cx-filtered','false');expect((await query(page)).filters).toEqual([]);
+ await openGridControl(page,'views');await page.getByRole('button',{name:'Reset view',exact:true}).click();await expect(page.locator('[data-cx-filter-column="amount"]')).toBeHidden();expect((await query(page)).filters).toEqual([]);
 });

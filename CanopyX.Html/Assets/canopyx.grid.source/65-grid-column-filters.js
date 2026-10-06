@@ -48,7 +48,7 @@
     async renderColumnValues(column,body,clauses,apply,error,signal){
       const search=h("input","cx-input"),all=h("input"),list=h("div","cx-val-list"),status=h("p","cx-muted");
       search.type="search";search.setAttribute("aria-label",this.labels.gridFilterValues);search.placeholder=this.labels.gridFilterValues;
-      all.type="checkbox";all.checked=!clauses.length;const allLabel=gridInputLabel(this.labels.gridSelectAllValues,all);body.append(allLabel,search,list,status);
+      all.type="checkbox";all.checked=!clauses.length;const allLabel=h("label","cx-val-all"),allCount=h("span","cx-val-n");allCount.setAttribute("aria-hidden","true");allLabel.append(all,this.labels.gridSelectAllValues,allCount);body.append(search,allLabel,list,status);
       const flatten=group=>group.groups?group.filters.concat(group.groups.flatMap(flatten)):[group],predicates=clauses.flatMap(flatten);
       const criteria=()=>JSON.stringify([gridResultShape(gridColumnProjection(this.getQuery(),column.id)),this.snapshot.revision]),originalCriteria=criteria();
       this.host.addEventListener("canopyx:query",()=>{if(criteria()!==originalCriteria)this.closeGridPopover(false);},{signal});
@@ -77,7 +77,7 @@
         try{const page=await this.columnFacetItems(column,search.value,facetController.signal);if(signal.aborted||generation!==request)return;
           const previous=new Map(items.map(item=>[key(item.value),item]));for(const item of page.items)previous.set(key(item.value),item);items=[...previous.values()];
           render();for(const row of list.children)row.hidden=!foldText(row.querySelector('.cx-facet-value').textContent).includes(foldText(search.value));
-          if(initial&&!search.value){search.hidden=page.totalValues<=12;initial=false;}
+          if(initial&&!search.value){search.hidden=page.totalValues<=12;initial=false;setText(allCount,numberFormat(this.lang).format(page.totalValues));}
           setText(status,page.truncated?fill(this.labels.gridFacetCounts,{count:page.matched,shown:page.items.length,total:page.totalValues}):"");this.gridPopover?.position();
         }catch(failure){if(!signal.aborted&&generation===request&&failure.name!=="AbortError")setText(error,failure.message);}};
       all.addEventListener("change",()=>{baseAll=all.checked;selected.clear();for(const item of items)selected.set(key(item.value),all.checked);render();commit();});
