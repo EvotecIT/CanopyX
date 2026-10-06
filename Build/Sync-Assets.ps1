@@ -11,9 +11,11 @@ if (-not $foldAssignment.Success) { throw 'The canonical search folding table is
 $foldPieces = [regex]::Matches($foldAssignment.Groups['parts'].Value, '"([A-Za-z0-9+/=]+)"')
 $foldPairs = -join @($foldPieces | ForEach-Object { $_.Groups[1].Value })
 
-# Keep the frozen C# table as the canonical input. Consecutive pairs with a stride of one or two use a range
-# record instead of repeating both words. All words are little-endian; U+FFFF is the range marker, not a mapped
-# character. This changes only the browser representation, never the protocol's lowercase mapping.
+# Keep the frozen C# table as the canonical input. The browser copy is text: comma-separated records of base-36
+# numbers, "gap.delta" for one pair or "gap.delta.count.step" for three or more pairs with the same delta at a
+# fixed stride. The gap counts from the previous record's last code unit and the delta is lowercase minus
+# uppercase, so the repeated high bytes of absolute code units drop out. This changes only the browser
+# representation, never the protocol's lowercase mapping.
 $foldBytes = [Convert]::FromBase64String($foldPairs)
 $foldEntries = for ($foldOffset = 0; $foldOffset -lt $foldBytes.Length; $foldOffset += 4) {
     [pscustomobject]@{
@@ -21,26 +23,32 @@ $foldEntries = for ($foldOffset = 0; $foldOffset -lt $foldBytes.Length; $foldOff
         To = [int]$foldBytes[$foldOffset + 2] -bor ([int]$foldBytes[$foldOffset + 3] -shl 8)
     }
 }
-$foldCompact = [System.Collections.Generic.List[byte]]::new()
+function ConvertTo-Base36([int] $Value) {
+    $digits = '0123456789abcdefghijklmnopqrstuvwxyz'
+    $magnitude = [Math]::Abs($Value)
+    $text = ''
+    do { $text = [string]$digits[$magnitude % 36] + $text; $magnitude = [int][Math]::Floor($magnitude / 36) } while ($magnitude -gt 0)
+    if ($Value -lt 0) { '-' + $text } else { $text }
+}
+$foldRecords = [System.Collections.Generic.List[string]]::new()
+$foldLast = 0
 for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
     $foldEntry = $foldEntries[$foldOffset]
-    if ($foldEntry.From -eq 65535) { throw 'The folding range marker must not be a mapped character.' }
+    if ($foldEntry.From -le $foldLast) { throw 'The canonical folding table must list code units in ascending order.' }
+    $foldDelta = $foldEntry.To - $foldEntry.From
     $foldCount = 1
     $foldStep = if ($foldOffset + 1 -lt $foldEntries.Count) { $foldEntries[$foldOffset + 1].From - $foldEntry.From } else { 0 }
-    if ($foldStep -in @(1, 2)) {
-        while ($foldOffset + $foldCount -lt $foldEntries.Count -and
-            $foldEntries[$foldOffset + $foldCount].From -eq $foldEntry.From + $foldCount * $foldStep -and
-            $foldEntries[$foldOffset + $foldCount].To -eq $foldEntry.To + $foldCount * $foldStep) { $foldCount++ }
-    }
-    $foldWords = if ($foldCount -ge 3) { @(65535, $foldEntry.From, $foldEntry.To, $foldCount, $foldStep) }
-        else { @($foldEntry.From, $foldEntry.To) }
-    foreach ($foldWord in $foldWords) {
-        $foldCompact.Add([byte]($foldWord -band 255))
-        $foldCompact.Add([byte]($foldWord -shr 8))
-    }
-    $foldOffset += $(if ($foldCount -ge 3) { $foldCount } else { 1 })
+    while ($foldOffset + $foldCount -lt $foldEntries.Count -and
+        $foldEntries[$foldOffset + $foldCount].From -eq $foldEntry.From + $foldCount * $foldStep -and
+        $foldEntries[$foldOffset + $foldCount].To - $foldEntries[$foldOffset + $foldCount].From -eq $foldDelta) { $foldCount++ }
+    if ($foldCount -lt 3) { $foldCount = 1 }
+    $foldFields = @((ConvertTo-Base36 ($foldEntry.From - $foldLast)), (ConvertTo-Base36 $foldDelta))
+    if ($foldCount -ge 3) { $foldFields += @((ConvertTo-Base36 $foldCount), (ConvertTo-Base36 $foldStep)) }
+    $foldRecords.Add($foldFields -join '.')
+    $foldLast = $foldEntry.From + ($foldCount - 1) * $(if ($foldCount -ge 3) { $foldStep } else { 0 })
+    $foldOffset += $foldCount
 }
-$foldPairs = [Convert]::ToBase64String($foldCompact.ToArray())
+$foldPairs = $foldRecords -join ','
 
 $assets = @(
     @{

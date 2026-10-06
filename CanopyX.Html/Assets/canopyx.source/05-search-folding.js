@@ -2,15 +2,14 @@
   // ---------- search text folding (shared rules with the C# bundle writer, see docs/data-protocol.md) ----------
   // The table is the C# writer's complete frozen table (Build/Sync-Assets.ps1 compacts its runs); ASCII keeps a fast path.
   const EXTRA_FOLD_PAIRS = "__CANOPYX_FOLD_PAIRS__";
+  // Records are base-36 "gap.delta" or "gap.delta.count.step"; each gap counts from the previous record's last unit.
   const EXTRA_LOWERCASE = new Map();
-  const extraBytes = atob(EXTRA_FOLD_PAIRS);
-  let extraOffset = 0;
-  const extraWord = () => extraBytes.charCodeAt(extraOffset++) | (extraBytes.charCodeAt(extraOffset++) << 8);
-  while (extraOffset < extraBytes.length) {
-    let from = extraWord(), to, count = 1, step = 1;
-    if (from === 0xFFFF) { from = extraWord(); to = extraWord(); count = extraWord(); step = extraWord(); }
-    else to = extraWord();
-    for (let i = 0; i < count; i++) EXTRA_LOWERCASE.set(from + i * step, to + i * step);
+  let extraUnit = 0;
+  for (const record of EXTRA_FOLD_PAIRS.split(",")) {
+    const [gap, delta, count = 1, step = 0] = record.split(".").map(part => parseInt(part, 36));
+    extraUnit += gap;
+    for (let i = 0; i < count; i++) EXTRA_LOWERCASE.set(extraUnit + i * step, extraUnit + i * step + delta);
+    extraUnit += (count - 1) * step;
   }
   function foldCode(c) {
     if (c < 0x80) {
