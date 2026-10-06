@@ -67,15 +67,8 @@ if(a.rank===2){return 0;}
 const order=a.rank===0?(a.value<b.value?-1:a.value>b.value?1:0):collator.compare(a.value,b.value);return order*direction;}
 const EXTRA_FOLD_PAIRS="//9BAGEAGgABAP//wADgABcAAQD//9gA+AAHAAEA//8AAQEBGAACAP//MgEzAQMAAgD//zkBOgEIAAIA//9KAUsBFwACAHgB/wD//3kBegEDAAIAgQFTAoIBgwGEAYUBhgFUAocBiAGJAVYCigFXAosBjAGOAd0BjwFZApABWwKRAZIBkwFgApQBYwKWAWkClwFoApgBmQGcAW8CnQFyAp8BdQL//6ABoQEDAAIApgGAAqcBqAGpAYMCrAGtAa4BiAKvAbABsQGKArIBiwKzAbQBtQG2AbcBkgK4AbkBvAG9AcQBxgHFAcYBxwHJAcgByQHKAcwB///LAcwBCQACAP//3gHfAQkAAgDxAfMB8gHzAfQB9QH2AZUB9wG/Af//+AH5ARQAAgAgAp4B//8iAiMCCQACADoCZSw7AjwCPQKaAT4CZixBAkICQwKAAUQCiQJFAowC//9GAkcCBQACAHADcQNyA3MDdgN3A38D8wOGA6wD//+IA60DAwABAIwDzAOOA80DjwPOA///kQOxAxEAAQD//6MDwwMJAAEAzwPXA///2APZAwwAAgD0A7gD9wP4A/kD8gP6A/sD///9A3sDAwABAP//AARQBBAAAQD//xAEMAQgAAEA//9gBGEEEQACAP//igSLBBsAAgDABM8E///BBMIEBwACAP//0ATRBDAAAgD//zEFYQUmAAEA//+gEAAtJgABAMcQJy3NEC0t//+gE3CrUAABAP//8BP4EwYAAQCJHIoc//+QHNAQKwABAP//vRz9EAMAAQD//wAeAR5LAAIAnh7fAP//oB6hHjAAAgD//wgfAB8IAAEA//8YHxAfBgABAP//KB8gHwgAAQD//zgfMB8IAAEA//9IH0AfBgABAP//WR9RHwQAAgD//2gfYB8IAAEA//+IH4AfCAABAP//mB+QHwgAAQD//6gfoB8IAAEAuB+wH7kfsR+6H3Afux9xH7wfsx///8gfch8EAAEAzB/DH9gf0B/ZH9Ef2h92H9sfdx/oH+Af6R/hH+ofeh/rH3sf7B/lH/gfeB/5H3kf+h98H/sffR/8H/MfJiHJAyohawArIeUAMiFOIf//YCFwIRAAAQCDIYQh//+2JNAkGgABAP//ACwwLDAAAQBgLGEsYixrAmMsfR1kLH0C//9nLGgsAwACAG0sUQJuLHECbyxQAnAsUgJyLHMsdSx2LH4sPwJ/LEAC//+ALIEsMgACAOss7CztLO4s8izzLP//QKZBphcAAgD//4CmgaYOAAIA//8ipyOnBwACAP//Mqczpx8AAgB5p3qne6d8p32neR3//36nf6cFAAIAi6eMp42nZQKQp5GnkqeTp///lqeXpwoAAgCqp2YCq6dcAqynYQKtp2wCrqdqArCnngKxp4cCsqedArOnU6v//7SntacIAAIAxKeUp8WnggLGp44dx6fIp8mnyqfLp2QCzKfNp9Cn0af//9an16cDAAIA3KebAfWn9qf//yH/Qf8aAAEA";const EXTRA_LOWERCASE=new Map();const extraBytes=atob(EXTRA_FOLD_PAIRS);let extraOffset=0;const extraWord=()=>extraBytes.charCodeAt(extraOffset++)|(extraBytes.charCodeAt(extraOffset++)<<8);while(extraOffset<extraBytes.length){let from=extraWord(),to,count=1,step=1;if(from===0xFFFF){from=extraWord();to=extraWord();count=extraWord();step=extraWord();}
 else to=extraWord();for(let i=0;i<count;i++)EXTRA_LOWERCASE.set(from + i*step,to + i*step);}
-const GREEK_ACCENTED={0x0386:0x03AC,0x0388:0x03AD,0x0389:0x03AE,0x038A:0x03AF,0x038C:0x03CC,0x038E:0x03CD,0x038F:0x03CE};function foldCode(c){if(c<0x80){return c>=65&&c<=90?c + 32:c;}
-if(c>=0xC0&&c<=0xDE&&c!==0xD7){return c + 0x20;}
-if(c>=0x0100&&c<=0x017F){if((c<=0x012F||(c>=0x0132&&c<=0x0137)||(c>=0x014A&&c<=0x0177))&&c%2===0){return c + 1;}
-if(((c>=0x0139&&c<=0x0148)||(c>=0x0179&&c<=0x017E))&&c%2===1){return c + 1;}
-return c===0x0178?0x00FF:c;}
-if((c>=0x0391&&c<=0x03A9&&c!==0x03A2)||(c>=0x0410&&c<=0x042F)){return c + 0x20;}
-if(c>=0x0400&&c<=0x040F){return c + 0x50;}
-if(c>=0x0531&&c<=0x0556){return c + 0x30;}
-if(GREEK_ACCENTED[c])return GREEK_ACCENTED[c];return EXTRA_LOWERCASE.get(c)||c;}
+function foldCode(c){if(c<0x80){return c>=65&&c<=90?c + 32:c;}
+return EXTRA_LOWERCASE.get(c)||c;}
 function foldUnit(unit){return String.fromCharCode(foldCode(unit.charCodeAt(0)));}
 function isSeparator(code){return code<128&&!((code>=48&&code<=57)||(code>=65&&code<=90)||(code>=97&&code<=122));}
 function foldText(text){const source=String(text==null?"":text);let out="";for(let i=0;i<source.length;i++){out +=foldUnit(source.charAt(i));}
