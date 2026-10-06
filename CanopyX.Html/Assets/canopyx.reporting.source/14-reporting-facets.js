@@ -26,7 +26,7 @@
       throw new Error("CanopyX: facet counts contradict the known accepted dataset counts.");
     const keys = new Set(); let occurrences = 0;
     const items = input.items.map(item => {
-      if (!item || !Object.prototype.hasOwnProperty.call(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
+      if (!item || !Object.hasOwn(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
         throw new Error("CanopyX: invalid facet value/count bucket.");
       const key = reportingFacetKey(item.value, column);
       if (keys.has(key)) throw new Error("CanopyX: duplicate typed facet bucket.");

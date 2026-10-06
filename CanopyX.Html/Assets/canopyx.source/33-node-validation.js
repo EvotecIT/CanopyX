@@ -18,26 +18,26 @@
       const node = pending.pop();
       requireIdentifier(node && node.id, "node ID");
       if (typeof node.label !== "string") throw new Error("CanopyX: node label must be a string.");
-      if (Object.prototype.hasOwnProperty.call(node, "flags")) requireFlags(node.flags, "node flags");
-      if (Object.prototype.hasOwnProperty.call(node, "data") && (!node.data || typeof node.data !== "object" || Array.isArray(node.data) ||
+      if (Object.hasOwn(node, "flags")) requireFlags(node.flags, "node flags");
+      if (Object.hasOwn(node, "data") && (!node.data || typeof node.data !== "object" || Array.isArray(node.data) ||
           Object.keys(node.data).some((name) => !name || name === "__proto__" || typeof node.data[name] !== "string"))) {
         throw new Error("CanopyX: node data must be an object of strings with nonempty names.");
       }
       if (existing.has(node.id) || seen.has(node.id)) throw new Error("CanopyX: duplicate node ID " + node.id);
       seen.add(node.id);
       if (node.ref != null) requireIdentifier(node.ref, "node reference");
-      if (Object.prototype.hasOwnProperty.call(node, "children") && !Array.isArray(node.children)) {
+      if (Object.hasOwn(node, "children") && !Array.isArray(node.children)) {
         throw new Error("CanopyX: node children must be an array.");
       }
       if (inlineOnly && (node.ref != null || node.childCount != null && !Array.isArray(node.children) ||
           node.hasChildren === true && (!Array.isArray(node.children) || !node.children.length))) {
         throw new Error("CanopyX: inline views cannot declare lazy children.");
       }
-      if (node.detail != null && (Object.prototype.hasOwnProperty.call(node, "children") ||
+      if (node.detail != null && (Object.hasOwn(node, "children") ||
           node.hasChildren === true || node.ref != null || node.childCount != null)) {
         throw new Error("CanopyX: detail row must be a leaf.");
       }
-      if (Object.prototype.hasOwnProperty.call(node, "childCount") &&
+      if (Object.hasOwn(node, "childCount") &&
           (!validStructuralCount(node.childCount) || node.childCount < 1)) {
         throw new Error("CanopyX: node childCount must be a positive 32-bit integer.");
       }
@@ -59,7 +59,7 @@
     if (!page || !Array.isArray(page.items)) throw new Error("CanopyX: page items must be an array.");
     const items = page.items;
     if (page.revision !== undefined) requireIdentifier(page.revision, "dataset revision");
-    if (Object.prototype.hasOwnProperty.call(page, "next") && page.next !== null) {
+    if (Object.hasOwn(page, "next") && page.next !== null) {
       requireIdentifier(page.next, "page continuation");
     }
     if (page.offset !== undefined && (!Number.isInteger(page.offset) || page.offset !== expectedOffset)) {

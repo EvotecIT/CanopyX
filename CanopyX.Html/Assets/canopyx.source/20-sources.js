@@ -184,7 +184,7 @@
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
       throw new Error("CanopyX: request timeout must be an integer from 1 to 2147483647 milliseconds.");
     }
-    const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
+    const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(values, name) ? values[name] : match));
     const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
     const queryValues = request => {
       if (!source.queryAware) return {};

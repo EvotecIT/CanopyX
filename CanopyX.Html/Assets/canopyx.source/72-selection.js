@@ -62,7 +62,7 @@
       if (!this.host.dispatchEvent(event) || this.destroyed || revision !== (this.selectionRevision || 0)) return false;
       if (Array.from(next).some(w => w._invalidated || this.keyMap.get(w.key) !== w)) return false;
       this.selected = next;
-      if (Object.prototype.hasOwnProperty.call(o, "anchor")) this.anchor = o.anchor;
+      if (Object.hasOwn(o, "anchor")) this.anchor = o.anchor;
       return this.selectionChanged(target, o.notify !== false);
     },
 

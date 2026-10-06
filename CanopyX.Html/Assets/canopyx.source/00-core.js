@@ -42,10 +42,6 @@
     element.textContent = value == null ? "" : String(value);
   }
 
-  function safeId(value) {
-    return String(value).replace(/[^A-Za-z0-9_-]/g, "_");
-  }
-
   function validStructuralCount(value) {
     return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
@@ -67,11 +63,11 @@
     if (doc.type !== type) {
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
-    if (Object.prototype.hasOwnProperty.call(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
+    if (Object.hasOwn(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
     if (type === "search") {
       validateSearchResult(doc);
       if (typeof doc.truncated !== "boolean") throw new Error("CanopyX: search truncated must be a boolean.");
-      if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
+      if (Object.hasOwn(doc, "total") && !validStructuralCount(doc.total)) {
         throw new Error("CanopyX: search total must be a nonnegative 32-bit integer.");
       }
     }
@@ -82,14 +78,14 @@
         requireIdentifier(item && item.id, "counts node ID");
         if (ids.has(item.id)) throw new Error("CanopyX: duplicate counts node ID '" + item.id + "'.");
         ids.add(item.id);
-        if (Object.prototype.hasOwnProperty.call(item, "childCount") && !validStructuralCount(item.childCount)) {
+        if (Object.hasOwn(item, "childCount") && !validStructuralCount(item.childCount)) {
           throw new Error("CanopyX: counts childCount must be a nonnegative 32-bit integer.");
         }
-        if (Object.prototype.hasOwnProperty.call(item, "cells") &&
+        if (Object.hasOwn(item, "cells") &&
             (!item.cells || typeof item.cells !== "object" || Array.isArray(item.cells))) {
           throw new Error("CanopyX: counts cells must be an object.");
         }
-        if (Object.prototype.hasOwnProperty.call(item, "flags")) requireFlags(item.flags, "counts flags");
+        if (Object.hasOwn(item, "flags")) requireFlags(item.flags, "counts flags");
       }
     }
     return doc;
@@ -106,8 +102,8 @@
       if (ids.has(id)) throw new Error("CanopyX: search hit path repeats node ID '" + id + "'.");
       ids.add(id);
     }
-    if ((Object.prototype.hasOwnProperty.call(hit, "kind") && typeof hit.kind !== "string") ||
-        (Object.prototype.hasOwnProperty.call(hit, "context") && typeof hit.context !== "string")) {
+    if ((Object.hasOwn(hit, "kind") && typeof hit.kind !== "string") ||
+        (Object.hasOwn(hit, "context") && typeof hit.context !== "string")) {
       throw new Error("CanopyX: search hit kind and context must be strings.");
     }
   }
@@ -124,10 +120,10 @@
     checkDocument(doc, "page");
     if (!Array.isArray(doc.items)) throw new Error("CanopyX: page items must be an array.");
     if (!validStructuralCount(doc.offset)) throw new Error("CanopyX: page offset must be a nonnegative 32-bit integer.");
-    if (Object.prototype.hasOwnProperty.call(doc, "total") && !validStructuralCount(doc.total)) {
+    if (Object.hasOwn(doc, "total") && !validStructuralCount(doc.total)) {
       throw new Error("CanopyX: page total must be a nonnegative 32-bit integer.");
     }
-    if (!Object.prototype.hasOwnProperty.call(doc, "next")) throw new Error("CanopyX: page continuation is required.");
+    if (!Object.hasOwn(doc, "next")) throw new Error("CanopyX: page continuation is required.");
     if (doc.next !== null) requireIdentifier(doc.next, "page continuation");
     const parent = node ? node.id : null;
     if (doc.parent !== parent) throw new Error("CanopyX: page parent does not match the requested node.");
@@ -246,7 +242,7 @@
       if (source == null) continue;
       if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
       Object.keys(source).forEach((name) => {
-        if (!Object.prototype.hasOwnProperty.call(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        if (!Object.hasOwn(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
         if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
         if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
         labels[name] = source[name];
@@ -257,7 +253,7 @@
 
   /** A label with its {placeholders} replaced; a placeholder without a value stays as it is. */
   function fill(template, values) {
-    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match));
+    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.hasOwn(values, name) ? String(values[name]) : match));
   }
 
   /**

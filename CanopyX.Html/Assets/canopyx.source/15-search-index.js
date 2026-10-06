@@ -25,7 +25,7 @@
     if (!Array.isArray(index.entryPacks) || !Array.isArray(index.shardPacks) ||
         (index.entryFiles.length > 0) !== (index.entryPacks.length > 0) || (keys.length > 0) !== (index.shardPacks.length > 0) ||
         index.entryPacks.some((first, i) => !isCount(first) || first >= index.entryFiles.length || (i ? first <= index.entryPacks[i - 1] : first)) ||
-        index.shardPacks.some((key, i) => typeof key !== "string" || !Object.prototype.hasOwnProperty.call(index.shards, key) || (i ? key <= index.shardPacks[i - 1] : key !== keys[0]))) {
+        index.shardPacks.some((key, i) => typeof key !== "string" || !Object.hasOwn(index.shards, key) || (i ? key <= index.shardPacks[i - 1] : key !== keys[0]))) {
       throw badIndex("index packs");
     }
   }
@@ -38,7 +38,7 @@
     // A shard prefix has at least two code units; a one-unit word finds the shards of every prefix it starts.
     for (let length = Math.min(2, word.length); length <= word.length; length++) {
       const key = shardKey(word.slice(0, length));
-      if (Object.prototype.hasOwnProperty.call(shards, key)) return parts([key]);
+      if (Object.hasOwn(shards, key)) return parts([key]);
       const deeper = bases.filter((k) => k.length > key.length && k.startsWith(key));
       if (!deeper.length) return [];
       if (length === word.length) return parts(deeper);

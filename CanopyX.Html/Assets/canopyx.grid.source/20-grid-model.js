@@ -29,7 +29,7 @@
         throw new Error("CanopyX: grid renderers are functions by declared column ID.");
       this.columns = this.view.columns.map(column => Object.assign({}, column, {
         width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.autoWidth || column.width === undefined,
-        render: Object.prototype.hasOwnProperty.call(renderers, column.id) ? renderers[column.id] : null
+        render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;
       this.labels = labelsFor(this.view.labels, options.labels); this.local = this.view.timeZone === "local";
