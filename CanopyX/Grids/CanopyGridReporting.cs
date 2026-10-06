@@ -21,7 +21,7 @@ public sealed class CanopyGridReporting {
     /// <remarks>A host-provided view store overrides browser storage. Local storage requires a nonempty view state key.</remarks>
     public CanopyGridViewStorage ViewStorage { get; set; }
 
-    /// <summary>Gets or sets whether each visible header offers a filter-editor button.</summary>
+    /// <summary>Gets or sets whether headers opt into column filtering. Every column menu offers Filter…; a filter button appears only on a filtered column.</summary>
     /// <remarks>The editor queries all records; the button does not filter only the mounted rows.</remarks>
     public bool HeaderFilters { get; set; }
 

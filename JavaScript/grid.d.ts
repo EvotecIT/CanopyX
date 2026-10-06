@@ -71,7 +71,7 @@ export interface GridReporting {
   readonly minimumCenterWidth?: number;
   readonly layout?: Readonly<Record<string, GridColumnLayout>>;
   readonly ordering?: Readonly<Record<string, GridOrdering>>;
-  /** Header buttons open a filter scoped to their column. */
+  /** Accepted for existing hosts: column menus offer Filter…, and a filter button appears only on a filtered column. */
   readonly headerFilters?: boolean;
   /** Offer a bounded nested AND/OR editor over the accepted query's filterGroup. */
   readonly filterGroups?: boolean;
