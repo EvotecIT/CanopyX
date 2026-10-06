@@ -55,7 +55,7 @@
 .cx-data-grid .cx-grid-filters .cx-fb { width:var(--cx-size-640px); max-width:calc(var(--cx-size-100vw) - var(--cx-size-32px)); }
 .cx-fb .cx-grid-filter { margin:0; padding:0; border:0; min-width:0; }
 .cx-fb .cx-grid-filter.cx-cond { display:grid; grid-template-columns:var(--cx-size-56px) 1.2fr 1fr 1.2fr var(--cx-size-32px); gap:var(--cx-size-8px); }
-.cx-fb .cx-grid-filter > .cx-grid-field { display:block; min-width:0; font-size:0; }
+.cx-fb .cx-grid-filter > .cx-grid-field { display:block; min-width:0; padding:0; font-size:0; }
 .cx-fb .cx-grid-filter > .cx-grid-field > :is(input,select) { width:100%; min-width:0; height:var(--cx-control-h); padding:0 var(--cx-size-10px); font:var(--cx-size-14px) var(--cx-font); border:var(--cx-size-1px) solid var(--cx-control-border); border-radius:var(--cx-radius); background:var(--cx-surface); color:var(--cx-text); }
 .cx-fb .cx-condition-rows,.cx-fb .cx-grid-filter-group-children { display:grid; gap:var(--cx-size-8px); }
 .cx-fb .cx-seg button { padding:var(--cx-size-3px) var(--cx-size-10px); font-size:var(--cx-size-12d5px); font-weight:700; color:var(--cx-text-2); border:0; background:transparent; text-transform:lowercase; }

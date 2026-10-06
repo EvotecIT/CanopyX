@@ -32,6 +32,9 @@ test('filter builder value fields are single-line typed inputs, with date preset
   const control=await box(membership.getByRole('combobox',{name:'Column',exact:true}));
   expect((await box(summary)).height).toBe(control.height);await expect(summary).toHaveText('Choose a value');
   await summary.click();await expect(membership.locator('.cx-val')).toHaveCount(2);
+  // The opened list grows its own cell; the row's controls keep one top line and the joiner word stays centred on it.
+  const tops=await Promise.all([membership.getByRole('combobox',{name:'Column',exact:true}),membership.getByRole('combobox',{name:'Condition',exact:true}),summary,membership.getByRole('button',{name:'Remove condition',exact:true})].map(async item=>(await box(item)).top));
+  expect(Math.max(...tops)-Math.min(...tops)).toBeLessThanOrEqual(0.5);const word=await box(membership.locator('.w'));expect(Math.abs((word.top+word.bottom)/2-(tops[0]+control.height/2))).toBeLessThanOrEqual(1);
   expect(await membership.locator('.cx-val').evaluateAll(rows=>rows.map(row=>[row.textContent.replace(/\d+$/,''),row.querySelector('.cx-val-n').textContent]))).toEqual([['Failing','8'],['Healthy','22']]);
   const failing=membership.locator('.cx-val').filter({hasText:'Failing'}).locator('input');await failing.check();await expect(summary).toHaveText('Failing');
   await failing.press('Escape');await expect(membership.locator('.cx-ms')).not.toHaveAttribute('open','');await expect(panel(page)).toBeVisible();
