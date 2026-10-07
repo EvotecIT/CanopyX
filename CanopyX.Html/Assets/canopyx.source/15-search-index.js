@@ -167,7 +167,7 @@
         const parent = item[0] < 0 ? null : records.get(item[0]);
         const base = parent ? parent.id : "";
         if (item[1] + item[3] > base.length) throw badIndex("entry " + number);
-        records.set(number, { parent: parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4],
+        records.set(number, { parent, id: base.slice(0, item[1]) + item[2] + base.slice(base.length - item[3]), label: item[4],
           kind: item[5] == null ? undefined : item[5], ref: item[6] || null, at: item[7] || null });
       }
       return records.get(n);
@@ -178,7 +178,7 @@
   function entryHit(record, kinds) {
     const path = [];
     for (let r = record; r; r = r.parent) path.unshift(r.id);
-    const hit = { path: path, label: record.label };
+    const hit = { path, label: record.label };
     if (record.kind !== undefined) {
       if (record.kind >= kinds.length) throw badIndex("entry kind");
       hit.kind = kinds[record.kind];

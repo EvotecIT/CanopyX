@@ -62,7 +62,7 @@
         // a fragment that fails to open is not tried and announced twice.
         const href = global.location.href;
         const last = this.locationEvent;
-        this.locationEvent = last && last.href === href && last.type !== e.type ? null : { href: href, type: e.type };
+        this.locationEvent = last && last.href === href && last.type !== e.type ? null : { href, type: e.type };
         if (this.locationEvent) this.readLocation();
       };
       global.addEventListener("hashchange", this.onHash);

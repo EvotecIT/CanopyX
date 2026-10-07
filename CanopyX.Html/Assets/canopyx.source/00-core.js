@@ -262,7 +262,7 @@
    */
   function formatting(lang, local, labels) {
     const split = (template) => { const at = template.indexOf("{time}"); return [template.slice(0, at), template.slice(at + 6)]; };
-    return { lang: lang, local: local, labels: labels, utc: split(labels.utcTime), other: split(labels.localTime) };
+    return { lang, local, labels, utc: split(labels.utcTime), other: split(labels.localTime) };
   }
 
   /** In UTC, marked as UTC by the label, or in the reader's own time zone without a mark. */
@@ -320,7 +320,7 @@
       return { rank: 0, value: value ? 1 : 0 };
     }
     if (typeof value === "number") {
-      return { rank: 0, value: value };
+      return { rank: 0, value };
     }
     if (column.kind === "datetime") {
       const time = Date.parse(value);

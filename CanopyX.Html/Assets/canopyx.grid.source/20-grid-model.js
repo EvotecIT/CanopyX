@@ -43,7 +43,7 @@
     }
 
     emit(name, detail) {
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail }));
+      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail }));
       const callback = this.opts["on" + name[0].toUpperCase() + name.slice(1)];
       if (typeof callback === "function") {
         try { callback(detail); } catch (error) { if (global.console) global.console.error(error); }
@@ -55,7 +55,7 @@
       clearTimeout(this.stateTimer);
       this.stateTimer = setTimeout(() => {
         if (this.destroyed) return;
-        const state = this.getState(); this.writeStoredState(state); this.emit("state", { query: this.getQuery(), state: state });
+        const state = this.getState(); this.writeStoredState(state); this.emit("state", { query: this.getQuery(), state });
       }, 200);
     }
     getQuery() { return this.acceptedQuery || null; }
@@ -123,7 +123,7 @@
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
           this.syncPager();
-          this.emit("error", { error: error });
+          this.emit("error", { error });
         }
         throw error;
       }

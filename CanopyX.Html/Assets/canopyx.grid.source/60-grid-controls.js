@@ -37,23 +37,22 @@
     },
 
     controlPanel(title, className, onOpen) {
-      const details = h("details", "cx-columns " + className), summary = h("summary"), panel = h("div", "cx-columns-list cx-grid-panel");
-      summary.classList.add("cx-btn");
+      const details = h("details", "cx-columns " + className), summary = h("summary", "cx-btn"), panel = h("div", "cx-columns-list cx-grid-panel cx-pop");
       summary.setAttribute("role","button");
       if (className !== "cx-grid-filters") summary.classList.add("ghost");
-      const icon = className === "cx-grid-filters" ? "filter" : className === "cx-grid-columns" ? "columns" : className === "cx-grid-views" ? "views" : "export";
       setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);
-      summary.prepend(gridIcon(icon)); panel.classList.add("cx-pop");
+      // The icon is named by the control: filter, columns, views or export (the more menu's summary is its own icon).
+      summary.prepend(gridIcon(className.slice(8).replace("rs", "r")));
       const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
       details.addEventListener("toggle", () => { if (details.open) { if (onOpen) onOpen(panel); flyout.position(); } });
       details.addEventListener("keydown", event => {
         if (event.key === "Escape" && details.open) { details.open = false; summary.focus(); event.preventDefault(); event.stopPropagation(); }
       });
-      return { details: details, panel: panel };
+      return { details, panel };
     },
 
     // The Columns menu body ships with the optional editor and renders on first open.
-    buildGridColumns() { this.columnPanel = this.controlPanel(this.labels.columns, "cx-grid-columns", panel => this.renderGridColumns(panel)).panel; },
+    buildGridColumns() { this.controlPanel(this.labels.columns, "cx-grid-columns", panel => this.renderGridColumns(panel)); },
     syncColumnControls() {},
     async renderGridColumns(panel) {
       setText(panel, this.labels.loading);

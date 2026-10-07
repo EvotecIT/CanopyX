@@ -107,7 +107,7 @@
         update();
       }
       remove = gridButton(fill(this.labels.gridRemoveFilter, { column: this.columns.find(item => item.id === column.value).title }), () => row.remove());
-      row.appendChild(remove); row._filter = { column: column, operator: operator, input: input, multiple: multiple, type: type,
+      row.appendChild(remove); row._filter = { column, operator, input, multiple, type,
         original: predicate && { column: predicate.column, operator: predicate.operator, values: predicate.values.slice() }, edited: false };
       for (const field of [column, operator, type, multiple]) {
         field.addEventListener("change", () => { row._filter.edited = true; });
@@ -126,6 +126,6 @@
       const values = ["isNull", "isNotNull"].includes(operator) ? [] : operator === "in" ? [...fields.multiple._values.values()] :
         [gridFilterValue(this, column, fields.type.value, fields.input.value)];
       if (operator === "in" && !values.length) throw new Error(this.labels.gridInvalidFilter);
-      return { column: column.id, operator: operator, values: values };
+      return { column: column.id, operator, values };
     }
   });

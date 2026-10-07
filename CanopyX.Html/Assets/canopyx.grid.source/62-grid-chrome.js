@@ -6,8 +6,6 @@
         this.searchInput.placeholder = fill(this.labels.gridSearchNoun, { noun: this.noun });
         this.searchInput.setAttribute("aria-label", this.searchInput.placeholder);
       }
-      const views = this.toolbar.querySelector(".cx-grid-views > summary");
-      if (views) { views.textContent = ""; views.append(gridIcon("views"), document.createTextNode(this.labels.gridViews)); }
       this.spacer = h("span", "cx-spacer");
       this.selectionBar = h("div", "cx-selbar"); this.selectionBar.hidden = true;
       this.selectedCount = h("span"); this.selectedCount.setAttribute("role", "status"); this.selectionBar.appendChild(this.selectedCount);
@@ -19,25 +17,13 @@
       const clear = gridDecorateButton(gridButton("", () => this.setSelection([])), "close", true);
       clear.classList.add("icon"); clear.setAttribute("aria-label", this.labels.gridClearSelection); this.selectionBar.appendChild(clear);
       this.toolbarSeparator = h("span", "cx-sep");
-      const overflow = this.controlPanel(this.labels.gridMore, "cx-grid-overflow"); this.overflow = overflow;
-      const summary = overflow.details.querySelector("summary"); summary.replaceChildren(gridIcon("more"));
+      const overflow = this.overflow = this.controlPanel(this.labels.gridMore, "cx-grid-overflow");
+      const summary = overflow.details.firstChild; summary.replaceChildren(gridIcon("more"));
       summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
-      this.overflowButtons = [];
-      for (const action of this.opts.actions || []) {
-        if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
-        const button = gridButton(action.label, () => act(() => this.runGridHook(signal => action.run({query:this.getQuery(),signal}), this.dataLifetime.signal)));
-        overflow.panel.appendChild(button); this.overflowButtons.push(button);
-      }
-      const details = this.toolbar.querySelector(".cx-grid-details");
-      if (details) overflow.panel.appendChild(details);
-      if (!this.toolbar.querySelector(".cx-grid-print")) {
-        const print = gridButton(this.labels.gridPrint, () => global.print()); print.classList.add("cx-grid-print"); overflow.panel.appendChild(print);
-      } else overflow.panel.appendChild(this.toolbar.querySelector(".cx-grid-print"));
-      this.primaryControls = [...this.toolbar.children].filter(item => item !== overflow.details);
-      const exportPanel = this.toolbar.querySelector(".cx-grid-export");
-      this.toolbar.insertBefore(this.spacer, exportPanel || overflow.details);
-      this.toolbar.insertBefore(this.selectionBar, exportPanel || overflow.details);
-      this.toolbar.insertBefore(this.toolbarSeparator, exportPanel || overflow.details);
+      for (const action of this.opts.actions || []) overflow.panel.appendChild(this.gridAction(action, act));
+      overflow.panel.append(this.toolbar.querySelector(".cx-grid-details"), this.toolbar.querySelector(".cx-grid-print") ||
+        Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
+      (this.toolbar.querySelector(".cx-grid-export") || overflow.details).before(this.spacer, this.selectionBar, this.toolbarSeparator);
       this.host.addEventListener("canopyx:select", () => this.syncGridChrome(), { signal });
       this.syncGridChrome();
       signal.addEventListener("abort",()=>{this.headerSelectionFlyout?.dispose();this.headerMenusLifetime?.abort();this.closeGridPopover(false);},{once:true});
@@ -73,5 +59,10 @@
       if(!this.pinnedLeftWidth&&!this.pinnedRightWidth)return;
       this.host.classList.toggle("cx-scroll-left", this.grid.scrollLeft > 0);
       this.host.classList.toggle("cx-scroll-right", this.grid.scrollLeft + this.grid.clientWidth < this.grid.scrollWidth - 1);
+    },
+    // The reporting runtime adds content entries (render) to these handler entries.
+    gridAction(action, act) {
+      if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
+      return gridButton(action.label, () => act(() => this.runGridHook(signal => action.run({query:this.getQuery(),signal}), this.dataLifetime.signal)));
     }
   });

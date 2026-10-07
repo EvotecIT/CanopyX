@@ -66,7 +66,7 @@
       if (kind !== "node") {
         const cell = this.cell(rowEl, 0, this.rowWidth);
         cell.setAttribute("aria-colspan", String(this.cols.length));
-        rowEl._cells = [{ cell: cell }];
+        rowEl._cells = [{ cell }];
         if (kind === "status") {
           const indent = cell.appendChild(h("span", "cx-indent"));
           const label = cell.appendChild(h("span"));
@@ -78,7 +78,7 @@
       }
       rowEl._cells = this.cols.map((column, i) => {
         const cell = this.cell(rowEl, i, column.width, column.kind);
-        const slot = { cell: cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
+        const slot = { cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
         cell.className = slot.base;
         if (i === 0) {
           slot.indent = cell.appendChild(h("span", "cx-indent"));

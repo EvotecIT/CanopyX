@@ -163,7 +163,7 @@
       const index = cells.findIndex((cell) => cell.contains(active));
       if (index < 0) return null;
       // Only the raw position here, as this runs on every render pass; restoreCell resolves it when it is needed.
-      return { w: rowEl._w, index: index, control: active === cells[index] ? -1 : Array.prototype.indexOf.call(cells[index].querySelectorAll(CELL_CONTROLS), active) };
+      return { w: rowEl._w, index, control: active === cells[index] ? -1 : Array.prototype.indexOf.call(cells[index].querySelectorAll(CELL_CONTROLS), active) };
     },
 
     /** Puts focus back into the cell it was in when a repaint took the focused element away. */

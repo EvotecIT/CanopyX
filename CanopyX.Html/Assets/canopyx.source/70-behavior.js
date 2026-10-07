@@ -317,7 +317,7 @@
 
     sort(columnId, direction) {
       if (this.queryAware) return this.setQuery({ version: 1, sort: direction ? { column: columnId, direction } : null, filters: (this.pendingQuery || this.acceptedQuery).filters });
-      this.sortState = direction ? { column: columnId, direction: direction } : null;
+      this.sortState = direction ? { column: columnId, direction } : null;
       this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.buildHeader();
       this.applySort(this.root, true);

@@ -50,8 +50,8 @@
       const known = id => this.columns.some(column => column.id === id);
       const query = gridQuery(this.view, gridQueryStart(input, {
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
-      const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
-        timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
+      const parsed = { version: 1, view: this.view.id, columns, query,
+        timeZone: state.timeZone, selection, scrollTop: state.scrollTop };
       if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
         if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > Math.max(10000,this.view.source.kind==="inline"?this.view.rows.length:0) || paging.allRows!==undefined&&(typeof paging.allRows!=="boolean"||paging.allRows&&this.view.source.kind!=="inline") ||
@@ -126,7 +126,7 @@
     },
     writeStoredState(state) {
       if (!this.storageKey || this.destroyed) return;
-      try { global.sessionStorage.setItem(this.storageKey, JSON.stringify({ current: state, views: [...this.savedViews].map(([name, value]) => ({ name: name, state: value })) })); }
+      try { global.sessionStorage.setItem(this.storageKey, JSON.stringify({ current: state, views: [...this.savedViews].map(([name, value]) => ({ name, state: value })) })); }
       catch (_) { /* A disabled or full storage leaves the current session usable. */ }
     }
   });

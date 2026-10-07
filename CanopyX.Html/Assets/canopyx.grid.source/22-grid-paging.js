@@ -33,7 +33,7 @@
       const key = JSON.stringify(request);
       const pending = this.pendingPageNavigation;
       if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
-      const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key: key };
+      const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key };
       navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
       this.pendingPageNavigation = navigation; return navigation.promise;
     },
@@ -68,7 +68,7 @@
       }
       const request = gridQuery(this.view, { ...query, cursor, limit: this.pageLength,
         revision: changed ? undefined : this.snapshot.revision });
-      const paging = { pageLength: this.pageLength, direction: direction,
+      const paging = { pageLength: this.pageLength, direction,
         edge: direction === "next" ? this.cursorWindow.end : this.pageOffset };
       return this.navigatePageQuery(request, paging);
     },
@@ -81,7 +81,7 @@
       pager.hidden = this.opts.toolbar === false;
       pager.setAttribute("aria-label", this.labels.gridPaging);
       this.pageRange = h("span", "cx-grid-page-range"); this.pageRange.setAttribute("role", "status");
-      const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error: error }); } };
+      const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error }); } };
       this.pageButtons = [
         gridButton(this.labels.gridFirstPage, () => run(() => this.firstPage())),
         gridButton(this.labels.gridPreviousPage, () => run(() => this.previousPage())),
@@ -98,9 +98,9 @@
       navigation.append(...this.pageButtons.slice(2));
       const length = this.pageLengthChoice = h("select");
       const rpp=gridInputLabel(this.labels.gridPageLength,length);rpp.classList.add("cx-rpp");pager.append(this.pageRange,rpp,navigation);
-      length.addEventListener("change", () => run(() => this.setPageLength(length.value==="all"?"all":Number(length.value))), { signal: signal });
+      length.addEventListener("change", () => run(() => this.setPageLength(length.value==="all"?"all":Number(length.value))), { signal });
       pager.addEventListener("submit", event => { event.preventDefault();
-        if (this.pageNumber && this.pageNumber.checkValidity()) run(() => this.goToPage(Number(this.pageNumber.value) - 1)); }, { signal: signal });
+        if (this.pageNumber && this.pageNumber.checkValidity()) run(() => this.goToPage(Number(this.pageNumber.value) - 1)); }, { signal });
       this.host.appendChild(pager); this.syncPager();
     },
     syncPager() {
@@ -128,7 +128,7 @@
     async focusResult(index, focus, column, control) {
       const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
       // Loading rows have no cell DOM. Keep the latest column intent until arrival or an explicit focus change.
-      const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, focus: focus };
+      const navigation = { index, columnId, epoch: this.queryEpoch, focus };
       this.pendingNavigation = navigation;
       try {
         const pendingPage = this.pendingPageNavigation;

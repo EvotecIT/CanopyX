@@ -30,14 +30,14 @@
       this.buildPager();
       this.buildGridStatus();
       this.buildHeader();
-      grid.addEventListener("scroll", () => { this.scheduleRender(); this.syncPinnedShadows(); this.stateChanged(); }, { passive: true, signal: signal });
-      grid.addEventListener("click", event => this.onClick(event), { signal: signal });
+      grid.addEventListener("scroll", () => { this.scheduleRender(); this.syncPinnedShadows(); this.stateChanged(); }, { passive: true, signal });
+      grid.addEventListener("click", event => this.onClick(event), { signal });
       grid.addEventListener("dblclick", event => {
         const element = event.target.closest(".cx-row"), row = element && element._w;
         if (row && !row.status && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
-          Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error }));
-      }, { signal: signal });
-      grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
+          Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
+      }, { signal });
+      grid.addEventListener("keydown", event => this.onKey(event), { signal });
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");
         if (element && element._w && this.pendingNavigation && this.pendingQuery && element._w._ri !== this.pendingNavigation.index)
@@ -45,11 +45,11 @@
         if (element && element._w && this.focused !== element._w) {
           this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
         }
-      }, { signal: signal });
+      }, { signal });
       document.addEventListener("focusin", event => {
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
-      }, { signal: signal });
-      this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
+      }, { signal });
+      this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
       // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
@@ -111,7 +111,7 @@
         element._cells = (row.status ? [null] : this.cols).map((column, index) => {
           const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
           if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
-          const slot = { cell: cell, content: cell, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
+          const slot = { cell, content: cell, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
           slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }

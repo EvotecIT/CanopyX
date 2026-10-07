@@ -30,12 +30,12 @@
         if (this.searchComposing) return;
         if (this.searchDelayMs === 0) update(); else this.searchTimer = setTimeout(update, this.searchDelayMs);
       };
-      input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal: signal });
-      input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal: signal });
-      input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal: signal });
+      input.addEventListener("compositionstart", () => { this.searchComposing = true; clearTimeout(this.searchTimer); this.searchTimer = null; }, { signal });
+      input.addEventListener("compositionend", () => { this.searchComposing = false; schedule(); }, { signal });
+      input.addEventListener("input", event => { if (!event.isComposing) schedule(); }, { signal });
       input.addEventListener("keydown", event => {
         if (event.key === "Enter" && !this.searchComposing && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); update(); }
-      }, { signal: signal });
+      }, { signal });
       const shortcut = h("kbd"); setText(shortcut, "/"); search.append(gridIcon("search"), input, shortcut); this.toolbar.appendChild(search);
       this.host.addEventListener("keydown", event => {
         if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest("input,textarea,select,[contenteditable]")) {
@@ -75,9 +75,9 @@
       query.filters.forEach((filter, index) => {
         const column = this.columns.find(item => item.id === filter.column), name = GRID_FILTER_LABELS[filter.operator];
         const condition = column.title + " " + (this.labels[name] || name) + (filter.values.length ? " " + filter.values.join(", ") : "");
-        chip(condition, fill(this.labels.gridRemoveCondition, { condition: condition }), "filter-" + index, () => {
+        chip(condition, fill(this.labels.gridRemoveCondition, { condition }), "filter-" + index, () => {
           const filters = this.queryForChange().filters.slice(), at = filters.findIndex(item => JSON.stringify(item) === JSON.stringify(filter));
-          if (at >= 0) { filters.splice(at, 1); apply({ filters: filters }); }
+          if (at >= 0) { filters.splice(at, 1); apply({ filters }); }
         });
       });
       if (query.filterGroup) {

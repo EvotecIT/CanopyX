@@ -111,7 +111,7 @@
         !["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit", "cursor"].includes(name)) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
         input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
-    const query = { protocol: PROTOCOL, type: type, view: view.id,
+    const query = { protocol: PROTOCOL, type, view: view.id,
       limit: input.limit === undefined ? cursor ? view.pageLength || 50 : view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
     if (cursor ? input.offset !== undefined && input.offset !== 0 : input.cursor !== undefined)
       throw new Error("CanopyX: cursor and offset navigation cannot be mixed.");

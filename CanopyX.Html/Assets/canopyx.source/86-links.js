@@ -56,7 +56,7 @@
       if (this.linkOpening) this.linkOpening.abort();
       const current = this.linkOpening = new AbortController();
       const promise = this.openLink(link, current);
-      this.linkTask = { link: link, promise: promise };
+      this.linkTask = { link, promise };
       promise.then(() => {
         if (this.linkTask && this.linkTask.promise === promise) this.linkTask = null;
       });

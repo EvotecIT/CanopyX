@@ -15,7 +15,7 @@
       const run = action => {
         buttons.forEach(button => button.disabled = true); setText(status, this.labels.loading);
         Promise.resolve().then(action).then(() => setText(status, ""), error => {
-          setText(status, error.message); this.emit("error", { error: error });
+          setText(status, error.message); this.emit("error", { error });
         }).finally(() => { if (!this.destroyed) buttons.forEach(button => button.disabled = false); });
       };
       const csv = gridButton(this.labels.gridDownloadCsv, () => run(async () => {
@@ -32,8 +32,8 @@
         try {
           const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
           if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
-          this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
-        } catch (error) { this.emit("error", { error: error }); }
+          this.openDetails(row.key).catch(error => this.emit("error", { error }));
+        } catch (error) { this.emit("error", { error }); }
       }), { className: "cx-button cx-grid-details" }));
     }
   });

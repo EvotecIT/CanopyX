@@ -30,7 +30,6 @@
     buildGridFilters(){
       this.reportingFacetStops=new Set();this.reportingFacetSequence=0;
       this.reportingFilters=this.controlPanel(this.labels.gridFilters,"cx-grid-filters",panel=>this.renderGridFilters(panel));
-      this.reportingFilters.panel.id=this.id+"-filters";
     },
     async renderGridFilters(panel){
       const epoch=this.queryEpoch;

@@ -156,7 +156,7 @@
       try {
         view = JSON.parse(config.textContent);
         const create = view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
-        const api = create(host, Object.assign({}, view && configured.get(view.id), { view: view }));
+        const api = create(host, Object.assign({}, view && configured.get(view.id), { view }));
         created.push(api);
         api.ready.catch((err) => {
           // Grid query failures keep their retryable loading/error surface and accepted snapshot.
@@ -171,16 +171,16 @@
 
   global.CanopyX = Object.freeze(Object.assign({
     protocol: PROTOCOL,
-    createTreeGrid: createTreeGrid,
-    configure: configure,
-    unconfigure: unconfigure,
+    createTreeGrid,
+    configure,
+    unconfigure,
     mount: (root) => mount(root, false),
     sources: Object.freeze({ inline: inlineSource, sidecar: sidecarSource, remote: remoteSource }),
     // A badge ({ text, tone?, title? }) drawn as the grid draws one, for cells and details a host renderer draws.
     badge: hostBadge,
     // The English texts and their names, for a host that builds its translations from them.
     labels: DEFAULT_LABELS
-  }, typeof createDataGrid === "function" ? { createDataGrid: createDataGrid } : {}));
+  }, typeof createDataGrid === "function" ? { createDataGrid } : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it

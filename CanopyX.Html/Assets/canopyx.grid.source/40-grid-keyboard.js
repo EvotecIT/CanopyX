@@ -34,10 +34,10 @@
       if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();Promise.resolve().then(()=>this.openDetails(row.key)).catch(error=>this.emit("error",{error}));return;}
       if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
         if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
-          event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error: error })); return;
+          event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error })); return;
         }
         if (event.key === "Enter") {
-          event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error })); return;
+          event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error })); return;
         }
       }
       const controls = cell ? cellControls(cell) : [];
@@ -81,7 +81,7 @@
         default: return;
       }
       index = Math.max(this.cursor ? this.rowBounds().first : 0, Math.min(this.rowCount() - 1, index));
-      this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error: error }); });
+      this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
       event.preventDefault(); event.stopPropagation();
     }
   });
