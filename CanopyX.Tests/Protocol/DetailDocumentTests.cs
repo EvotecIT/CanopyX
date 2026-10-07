@@ -80,4 +80,37 @@ public sealed class DetailDocumentTests {
         Assert.Contains("width:75%;\">Setting</th>", html);
         Assert.Contains("width:25%;\">Value</th>", html);
     }
+
+    [Theory]
+    [InlineData("null header")]
+    [InlineData("null row")]
+    [InlineData("short row")]
+    [InlineData("unsafe number")]
+    [InlineData("null property")]
+    public void Validation_InvalidDetail_IsRejectedBeforeAnythingIsWritten(string fault) {
+        // Validation runs a detail through its writer without building the text, so it rejects what writing would.
+        CanopyDetail detail;
+        var table = new CanopyTableDetail().AddColumns("A", "B");
+        switch (fault) {
+            case "null header": table.Columns.Add(null!); table.Columns.RemoveAt(0); detail = table; break;
+            case "null row": table.Rows.Add(null!); detail = table; break;
+            case "short row": table.Rows.Add(new List<CanopyCell> { "a" }); detail = table; break;
+            case "unsafe number": table.AddRow("a", 1e300); detail = table; break;
+            default: var properties = new CanopyPropertiesDetail(); properties.Items.Add(null!); detail = properties; break;
+        }
+
+        var view = new CanopyView("v", "View") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var parent = new CanopyNode("p", "Parent");
+        parent.Children.Add(new CanopyNode("p/d", "Detail") { Detail = detail });
+        view.Roots.Add(parent);
+        var folder = Path.Combine(Path.GetTempPath(), "canopyx-detail-" + Guid.NewGuid().ToString("N"));
+        try {
+            Assert.Throws<InvalidOperationException>(() => view.ToJson());
+            Assert.Throws<InvalidOperationException>(() => new CanopyX.Bundles.CanopyBundleWriter().Write(view, folder));
+            Assert.False(Directory.Exists(folder) && Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Any(), "No sidecar file is written.");
+        } finally {
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
 }

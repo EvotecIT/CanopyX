@@ -9,11 +9,17 @@ namespace CanopyX.Json;
 /// Minimal forward-only JSON writer used for every <c>canopyx/2</c> document.
 /// </summary>
 /// <remarks>
+/// <para>
 /// CanopyX targets <c>net472</c> and <c>netstandard2.0</c> without runtime package dependencies, so it cannot use
 /// <c>System.Text.Json</c>. The writer is deterministic (invariant culture, no whitespace) and HTML-safe: it escapes
 /// <c>&lt;</c>, <c>&gt;</c>, <c>&amp;</c>, U+2028 and U+2029 so the output can be embedded in a
 /// <c>&lt;script&gt;</c> element or a sidecar script without further encoding. It also escapes the backtick and a
 /// <c>$</c> before <c>{</c>, so a document can sit inside a JavaScript template literal unchanged (bundle packs).
+/// </para>
+/// <para>
+/// A writer either collects the document as text (<see cref="ToString"/>) or writes nothing at all
+/// (<see cref="Discarding"/>), which runs every check of a document's writer without building its text.
+/// </para>
 /// </remarks>
 internal sealed class CanopyJsonWriter {
     private static readonly char[] Hex = "0123456789abcdef".ToCharArray();
@@ -21,7 +27,7 @@ internal sealed class CanopyJsonWriter {
     /// <summary>The ASCII characters <see cref="AppendString"/> escapes; <c>$</c> only before <c>{</c>.</summary>
     private static readonly bool[] EscapedAscii = CreateEscapedAscii();
 
-    private readonly StringBuilder _builder;
+    private readonly StringBuilder? _builder;
     /// <summary>Whether each open array or object, innermost last, holds an item yet.</summary>
     private bool[] _hasItems = new bool[16];
     private int _depth;
@@ -32,31 +38,38 @@ internal sealed class CanopyJsonWriter {
         _builder = new StringBuilder(capacity);
     }
 
-    internal int Length => _builder.Length;
+    private CanopyJsonWriter(StringBuilder? builder) {
+        _builder = builder;
+    }
+
+    /// <summary>A writer that checks what it is given and writes nothing, for validation that needs no text.</summary>
+    internal static CanopyJsonWriter Discarding() => new CanopyJsonWriter(null);
+
+    internal int Length => _builder?.Length ?? 0;
 
     internal CanopyJsonWriter BeginObject() {
         BeforeValue();
-        _builder.Append('{');
+        _builder?.Append('{');
         Push();
         return this;
     }
 
     internal CanopyJsonWriter EndObject() {
         Pop();
-        _builder.Append('}');
+        _builder?.Append('}');
         return this;
     }
 
     internal CanopyJsonWriter BeginArray() {
         BeforeValue();
-        _builder.Append('[');
+        _builder?.Append('[');
         Push();
         return this;
     }
 
     internal CanopyJsonWriter EndArray() {
         Pop();
-        _builder.Append(']');
+        _builder?.Append(']');
         return this;
     }
 
@@ -66,13 +79,13 @@ internal sealed class CanopyJsonWriter {
         }
 
         if (_hasItems[_depth - 1]) {
-            _builder.Append(',');
+            _builder?.Append(',');
         } else {
             _hasItems[_depth - 1] = true;
         }
 
         AppendString(name);
-        _builder.Append(':');
+        _builder?.Append(':');
         _afterPropertyName = true;
         return this;
     }
@@ -90,13 +103,16 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter Number(long value) {
         RequireSafeMagnitude((decimal)value);
         BeforeValue();
+        if (_builder != null) {
 #if NETCOREAPP3_0_OR_GREATER
-        Span<char> digits = stackalloc char[20];
-        value.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
-        _builder.Append(digits.Slice(0, written));
+            Span<char> digits = stackalloc char[20];
+            value.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
+            _builder.Append(digits.Slice(0, written));
 #else
-        _builder.Append(value.ToString(CultureInfo.InvariantCulture));
+            _builder.Append(value.ToString(CultureInfo.InvariantCulture));
 #endif
+        }
+
         return this;
     }
 
@@ -108,10 +124,10 @@ internal sealed class CanopyJsonWriter {
 
         BeforeValue();
 #if NETCOREAPP3_0_OR_GREATER
-        _builder.Append(value.ToString("R", CultureInfo.InvariantCulture));
+        _builder?.Append(value.ToString("R", CultureInfo.InvariantCulture));
 #else
         // "R" does not always round-trip on .NET Framework; "G17" does, at the cost of longer output.
-        _builder.Append(value.ToString("G17", CultureInfo.InvariantCulture));
+        _builder?.Append(value.ToString("G17", CultureInfo.InvariantCulture));
 #endif
         return this;
     }
@@ -119,7 +135,7 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter Number(decimal value) {
         RequireSafeMagnitude(value);
         BeforeValue();
-        _builder.Append(value.ToString(CultureInfo.InvariantCulture));
+        _builder?.Append(value.ToString(CultureInfo.InvariantCulture));
         return this;
     }
 
@@ -137,20 +153,20 @@ internal sealed class CanopyJsonWriter {
 
     internal CanopyJsonWriter Boolean(bool value) {
         BeforeValue();
-        _builder.Append(value ? "true" : "false");
+        _builder?.Append(value ? "true" : "false");
         return this;
     }
 
     internal CanopyJsonWriter Null() {
         BeforeValue();
-        _builder.Append("null");
+        _builder?.Append("null");
         return this;
     }
 
     /// <summary>Writes a value that is already serialized JSON, such as a node the bundle writer measured before packing.</summary>
     internal CanopyJsonWriter Raw(string json) {
         BeforeValue();
-        _builder.Append(json);
+        _builder?.Append(json);
         return this;
     }
 
@@ -176,7 +192,7 @@ internal sealed class CanopyJsonWriter {
     /// <summary>Writes the protocol envelope shared by every top-level document.</summary>
     internal CanopyJsonWriter Envelope(string type) => Property("protocol", CanopyProtocol.Version).Property("type", type);
 
-    public override string ToString() => _builder.ToString();
+    public override string ToString() => _builder?.ToString() ?? string.Empty;
 
     private void Push() {
         if (_depth == _hasItems.Length) {
@@ -210,7 +226,7 @@ internal sealed class CanopyJsonWriter {
         }
 
         if (_hasItems[_depth - 1]) {
-            _builder.Append(',');
+            _builder?.Append(',');
         } else {
             _hasItems[_depth - 1] = true;
         }
@@ -222,6 +238,10 @@ internal sealed class CanopyJsonWriter {
     /// </summary>
     private void AppendString(string value) {
         var builder = _builder;
+        if (builder == null) {
+            return;
+        }
+
         builder.Append('"');
         var start = 0;
         for (var index = 0; index < value.Length; index++) {

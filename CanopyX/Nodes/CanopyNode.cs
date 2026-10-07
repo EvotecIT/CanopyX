@@ -151,8 +151,8 @@ public sealed class CanopyNode {
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
     internal void ValidateShape(bool replacingInlineRef = false) {
-        // Detail collections are public; use their canonical writer validation for every renderer.
-        if (Detail != null) Detail.WriteJson(new CanopyJsonWriter());
+        // Detail collections are public; use their canonical writer validation for every renderer, without the text.
+        if (Detail != null) Detail.WriteJson(CanopyJsonWriter.Discarding());
         if (_ref != null && HasInlineChildren && !replacingInlineRef) {
             throw new InvalidOperationException("Node '" + Id + "' has both inline children and a load reference; inline children must be complete.");
         }
