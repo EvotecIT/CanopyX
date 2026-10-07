@@ -239,9 +239,14 @@ public sealed class RuntimeAssetTests {
         var slash = false;
         foreach (var line in value.Split('\n')) {
             var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/.*)");
-            for (var i = 0; i < parts.Length; i += 2) parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]<>!&|?:%*^])\s*", "$1");
+            for (var i = 0; i < parts.Length; i += 2) {
+                parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]<>!&|?:%*^])\s*", "$1");
+                parts[i] = Regex.Replace(parts[i], @"(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])", "$1");
+                parts[i] = parts[i].Replace(";}", "}");
+            }
             var compact = string.Concat(parts);
             if (output.Length > 0 && (slash || (!Regex.IsMatch(previous, @"[;,{(\[]$") && !Regex.IsMatch(compact, @"^[)}\]]")))) output.Append('\n');
+            else if (output.Length > 0 && compact.StartsWith('}') && previous.EndsWith(';')) output.Length--;
             output.Append(compact);
             previous = compact;
             slash = parts.Any(part => part.StartsWith("/", StringComparison.Ordinal));

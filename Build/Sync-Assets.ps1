@@ -240,10 +240,16 @@ function Compress-ScriptSpacing {
         $pieces = [regex]::Split($line, $literal)
         for ($i = 0; $i -lt $pieces.Length; $i += 2) {
             $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]<>!&|?:%*^])\s*', '$1')
+            # A spaced + or - joins its operands unless a neighbour is another + or -, which would form ++ or --.
+            $pieces[$i] = [regex]::Replace($pieces[$i], '(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])', '$1')
+            # A closing brace ends the statement before it; dropping a needed empty statement would not parse.
+            $pieces[$i] = $pieces[$i].Replace(';}', '}')
         }
         $compact = $pieces -join ''
         if ($output.Length -and ($slash -or ($previous -notmatch '[;,{(\[]$' -and $compact -notmatch '^[)}\]]'))) {
             [void]$output.Append("`n")
+        } elseif ($output.Length -and $compact.StartsWith('}') -and $previous.EndsWith(';')) {
+            [void]$output.Remove($output.Length - 1, 1)
         }
         [void]$output.Append($compact)
         $previous = $compact
