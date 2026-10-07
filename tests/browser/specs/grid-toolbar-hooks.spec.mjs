@@ -194,7 +194,7 @@ CanopyX.configure("inventory", { actions: [
 
 for (const size of sizes)
 for (const theme of ["light", "dark"])
-test(`a more-menu content entry keeps focus, keyboard and Escape correct (${theme}, ${size.width})`, async ({ page }) => {
+test(`a more-menu content entry keeps focus, keyboard and Escape correct (${theme}, ${size.width})`, async ({ page, browserName }) => {
   await openGrid(page, reporting(), { size, theme, setup: saveViewSetup });
   const menu = page.locator(".cx-grid-overflow"), more = menu.locator(":scope > summary"), entry = menu.locator(".cx-grid-action");
   const summary = entry.locator(":scope > summary"), name = page.getByRole("textbox", { name: "View name", exact: true });
@@ -211,7 +211,9 @@ test(`a more-menu content entry keeps focus, keyboard and Escape correct (${them
   expect(await page.evaluate(() => window.rendered)).toBe(1);
   const results = await new AxeBuilder({ page }).include(".cx-grid-overflow").analyze();
   expect(results.violations).toEqual([]);
-  await page.keyboard.press("Tab"); await expect(page.getByRole("button", { name: "Save", exact: true })).toBeFocused();
+  // macOS WebKit uses Option+Tab to include native buttons when Keyboard Navigation is off.
+  await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
   expect(await page.evaluate(`${api}.getSavedViews()`)).toEqual(["Finance only"]);
   await expect(menu).not.toHaveAttribute("open", ""); await expect(more).toBeFocused();
