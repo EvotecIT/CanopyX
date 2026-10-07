@@ -1,7 +1,8 @@
   // ---------- native row checkboxes and explicit page/query selection controls ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridSelectionQueryCount: "{count} matching records selected; {excluded} excluded",
-    gridSelectRecord: "Select record {id}"
+    gridSelectRecord: "Select record {id}",
+    gridSelection: "Selection", gridSelectPage: "Select page", gridSelectMatching: "Select all matching"
   }));
   const SELECTION_CONTROLS_BASE = {};
   for (const name of ["buildGridControls", "fillRow", "refreshRowState", "onClick", "onKey", "setQuery"])
@@ -29,8 +30,22 @@
       setText(this.selectionStatus, query ? fill(query.matched === null ? this.labels.gridSelectionQueryUnknown : this.labels.gridSelectionQueryCount,
         { count: query.matched === null ? "" : format.format(Math.max(0, query.matched - this.selectionExcluded.size)), excluded: format.format(this.selectionExcluded.size) }) :
         fill(this.labels.gridSelectionCount, { count: format.format(this.selected.size) }));
+      const header = this.headRow?.querySelector(".cx-header-check"), count = query ? query.matched === null ? null : query.matched - this.selectionExcluded.size : this.selected.size;
+      if (header) { header.dataset.cxChecked = count === 0 ? "false" : count === this.snapshot?.matched ? "true" : "mixed"; header.setAttribute("aria-label", this.labels.gridSelection + " · " + this.selectionStatus.textContent); }
     },
-    runReportingSelection(action) {
+    // The header checkbox opens the page and all-matching commands.
+    buildHeaderSelection() {
+      this.headerSelectionFlyout?.dispose();
+      if (!this.selectionControls || !this.headCells[0]) return;
+      const menu = h("details", "cx-columns cx-header-selection"), summary = h("summary"), panel = h("div", "cx-columns-list cx-grid-panel");
+      summary.setAttribute("aria-label", this.labels.gridSelection); summary.classList.add("cx-header-check");
+      summary.setAttribute("aria-haspopup", "menu"); summary.appendChild(gridIcon("check")); panel.appendChild(this.selectionControls); menu.append(summary, panel);
+      this.headCells[0].prepend(menu);
+      const flyout = this.headerSelectionFlyout = watchFlyout(menu, panel, () => menu.open);
+      menu.addEventListener("toggle", () => { if (menu.open) flyout.position(); });
+      menu.addEventListener("keydown", event => { if (event.key === "Escape") { menu.open = false; summary.focus(); event.preventDefault(); } });
+      this.syncSelectionControls();
+    },    runReportingSelection(action) {
       this.selectionControlBusy = true; this.syncSelectionControls();
       Promise.resolve().then(action).catch(error => {
         if (!this.destroyed && error.name !== "AbortError") { this.selectionControlError = error.message; this.emit("error", { error }); }
@@ -82,7 +97,7 @@
     onClick(event) {
       const element = event.target.closest(".cx-row"), row = element?._w;
       if (this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
-          !event.target.closest("a,button,input,select,textarea,[contenteditable]") && (event.shiftKey || this.querySelection && (event.ctrlKey || event.metaKey))) {
+          !event.target.closest("a,button,input,select,textarea,[contenteditable]") && (event.shiftKey || event.ctrlKey || event.metaKey)) {
         this.setFocus(row, true); this.reportingSelectionIntent(row, event.shiftKey || !this.reportingRowSelected(row), event.shiftKey, event.ctrlKey || event.metaKey); return;
       }
       try { SELECTION_CONTROLS_BASE.onClick.call(this, event); }

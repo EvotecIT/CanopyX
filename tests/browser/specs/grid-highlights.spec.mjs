@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { viewPage, nextFrames } from "./support.mjs";
 
 async function open(page, reporting = false, grouped = false) {
-  const view = { protocol: "canopyx/2", type: "grid", id: "highlights", label: "Highlighted records", rowHeight: "auto", pageSize: 100,
+  const view = { protocol: "canopyx/2", type: "grid", id: "highlights", label: "Highlighted records", rowHeight: "auto", pageSize: 100, rowAccents: true,
     selection: "multiple", search: false, columns: [{ id: "status", title: "Status", kind: "text", width: 240 },
       { id: "score", title: "Score", kind: "number", width: 100 }, { id: "flag", title: "Flag", kind: "text", width: 120 },
       { id: "date", title: "Date", kind: "datetime", width: 240 }], source: { kind: "inline" },

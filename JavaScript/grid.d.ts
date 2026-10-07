@@ -22,11 +22,26 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   aggregatable?: boolean;
   /** Record drawer section label. */
   section?: string;
-  /** Omit to fit the header and at most 200 loaded records on first layout. Saved widths take precedence. */
+  /** Preferred width; the column grows to its header and loaded content. Omit to use the content width. Saved user widths take precedence. */
   width?: number;
   /** Wire documents retain a numeric width and set this flag for initial content fitting. */
   autoWidth?: boolean;
+  /** The width is hard: it neither grows nor shrinks. Requires width. */
+  fixed?: boolean;
+  minWidth?: number;
+  /** Widest width and the content measuring cap (default cap 420). */
+  maxWidth?: number;
+  /** Share of spare width (0..100), given before the identity column. */
+  flex?: number;
+  autoSize?: "content" | "header" | "none";
+  /** How the column gives way when narrow. Integers follow DataTables responsivePriority: 0-1 essential, 10000+ optional. */
+  priority?: GridColumnPriority;
+  /** Requested edge; null unpins. Omitted: the identity column pins left. */
+  pinned?: "left" | "right" | null;
+  /** Marks the identity column; defaults to the first column. */
+  rowHeader?: boolean;
 };
+export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
 export interface GridOrdering {
@@ -42,7 +57,7 @@ export type GridPresenter =
   | { readonly kind: "boolean"; readonly inverted?: boolean }
   | { readonly kind: "list"; readonly separator: string; readonly limit: number }
   | { readonly kind: "longText"; readonly mono?: boolean }
-  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>> }
+  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain muted text. */ readonly quietTones?: readonly string[] }
   | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
@@ -151,6 +166,12 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   emptyReason?: string;
   /** Optional result and selected-record counts. */
   statusBar?: boolean;
+  /** A grid whose rows fit is as tall as its rows (default true). */
+  autoHeight?: boolean;
+  /** What a plain row click does; it never selects (default "none"). */
+  rowAction?: "none" | "details" | "link";
+  /** Draw a row tone as a bar at the row start (default false). */
+  rowAccents?: boolean;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
@@ -323,7 +344,7 @@ export interface GridCellContext { column: string; index: number; }
 export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   version: 1;
   view: string;
-  columns: { id: string; width: number; hidden: boolean; flex?: boolean; pin?: GridColumnPin }[];
+  columns: { id: string; width: number; hidden: boolean; flex?: boolean; pin?: GridColumnPin; sized?: boolean; priority?: GridColumnPriority }[];
   query: Q;
   timeZone: TimeZone;
   selection: string[];
@@ -369,6 +390,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onQuery?: (event: GridQueryEvent<Q>) => void;
   onSelect?: (event: { ids: string[]; selection?: GridSelection<Q> }) => void;
   onError?: (event: { error: Error }) => void;
+  onColumnResize?: (event: { column: string; width: number }) => void;
+  onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
   onExport?: (event: { format: string; request: GridExportRequest<Q>; signal: AbortSignal;
@@ -411,11 +434,17 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   nextPage(): Promise<Q>;
   setPageLength(length: number | "all"): Promise<Q>;
   setColumnWidth(id: string, width: number): void;
-  /** Reporting runtime only: samples at most 200 cached accepted-query records and 2048 display code units per value, capped at 800 CSS pixels before declared constraints. No fetching or viewport scraping. */
+  /** Samples at most 200 cached accepted-query records and 512 display code units per value, capped at 420 CSS pixels or maxWidth, and sets a sticky user width. No fetching or viewport scraping. */
   autoFitColumn(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
   /** Fits every declared column from the same bounded loaded sample, including hidden columns. */
   autoFitColumns(): Readonly<Record<string, Readonly<{ width: number; sampled: number; scope: "loaded" }>>>;
   setColumnPinned?(id: string, pin: GridColumnPin): void;
+  /** Drops user widths so the columns return to automatic content sizing. */
+  autoSizeColumns(ids?: readonly string[]): void;
+  setColumnPriority(id: string, priority: GridColumnPriority): void;
+  pinColumn(id: string, side: "left" | "right" | null): void;
+  /** Restores the declared order, visibility, widths and pins; keeps the query. */
+  resetColumns(): void;
   getColumnLayout?(): readonly GridColumnPlacement[];
   /** Reporting runtime only: revisioned, bounded full-query aggregation. Never reads the viewport cache for counts. */
   getFacets?(column: string, options?: GridFacetOptions): Promise<GridFacetPage>;

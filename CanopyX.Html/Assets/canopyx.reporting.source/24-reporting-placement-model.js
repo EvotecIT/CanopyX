@@ -18,7 +18,7 @@
   };
   DataGrid.prototype.prepareState = function () {
     const policies = this.view.reporting && this.view.reporting.layout || {};
-    for (const column of this.columns) column.pin = policies[column.id] && policies[column.id].pin || "none";
+    for (const column of this.columns) column.pin = policies[column.id]?.pin ?? column.pin;
     return PLACEMENT_PREPARE.call(this);
   };
   gridStateColumn = column => Object.assign(PLACEMENT_STATE_COLUMN(column), { pin: column.pin });
@@ -45,5 +45,5 @@
     if (this.cancelResize) this.cancelResize();
     const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
     column.pin = pin; this.buildHeader(); this.syncColumnControls(); this.render();
-    this.restoreReportingFocus(held, columnId); this.stateChanged();
+    this.restoreReportingFocus(held, columnId); this.stateChanged(); this.emit("columnPin", { column: id, pin });
   };

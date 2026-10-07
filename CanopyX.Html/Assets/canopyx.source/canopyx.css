@@ -116,6 +116,10 @@
   --cx-tone-success-bg:color-mix(in srgb,var(--cx-tone-success) 11%,var(--cx-surface));
   --cx-tone-info-bg:color-mix(in srgb,var(--cx-tone-info) 11%,var(--cx-surface));
   --cx-quiet:color-mix(in srgb,var(--cx-tone-success) 55%,var(--cx-surface));
+  --cx-scrollbar-thumb:color-mix(in srgb,var(--cx-text) 28%,transparent);
+  --cx-scrollbar-thumb-hover:color-mix(in srgb,var(--cx-text) 46%,transparent);
+  --cx-scrollbar-track:transparent;
+  --cx-scrollbar-size:10px;
   color-scheme:light;
 }
 
@@ -165,6 +169,14 @@
 }
 
 .cx-host *,.cx-host *::before,.cx-host *::after { box-sizing:border-box;}
+
+@media not (forced-colors:active) {
+  :where(.cx-host,.cx-host *) { scrollbar-color:var(--cx-scrollbar-thumb) var(--cx-scrollbar-track);scrollbar-width:thin;}
+  .cx-host::-webkit-scrollbar,.cx-host ::-webkit-scrollbar { width:var(--cx-scrollbar-size);height:var(--cx-scrollbar-size);}
+  .cx-host::-webkit-scrollbar-track,.cx-host ::-webkit-scrollbar-track,.cx-host ::-webkit-scrollbar-corner { background:var(--cx-scrollbar-track);}
+  .cx-host::-webkit-scrollbar-thumb,.cx-host ::-webkit-scrollbar-thumb { background:var(--cx-scrollbar-thumb) padding-box;border:var(--cx-size-2px) solid transparent;border-radius:var(--cx-size-999px);}
+  .cx-host ::-webkit-scrollbar-thumb:hover { background-color:var(--cx-scrollbar-thumb-hover);}
+}
 
 .cx-sr-only {
   --cx-size-1px:1px;--cx-size-neg-1px:-1px;

@@ -72,8 +72,11 @@ test("inactive numeric inputs do not prevent a valid membership filter from subm
 });
 test("a keyboard reorder reaching a boundary keeps focus in that column's controls", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-columns > summary").click();
-  const move = page.getByRole("button", { name: "Move Size earlier", exact: true }); await move.focus(); await move.press("Enter");
-  await expect(page.getByRole("button", { name: "Move Size later", exact: true })).toBeFocused();
+  const handle = () => page.getByRole("button", { name: /^Size: drag/ });
+  await handle().focus(); await page.keyboard.press("Alt+ArrowUp");
+  await expect(handle()).toBeFocused(); await page.keyboard.press("Alt+ArrowUp");
+  await expect(handle()).toBeFocused();
+  expect(await page.getByRole("columnheader").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn))).toEqual(["size", "name", "date"]);
 });
 
 test("typed filter controls combine category, raw numbers and UTC dates across the complete source", async ({ page }) => {
@@ -98,7 +101,7 @@ test("typed filter controls combine category, raw numbers and UTC dates across t
 test("column controls preserve a visible column, reorder keyboard cells and reset the original view", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-columns > summary").click();
   const panel = page.locator(".cx-grid-columns");
-  await panel.getByRole("button", { name: "Move Date earlier", exact: true }).click();
+  await panel.getByRole("checkbox", { name: "Date", exact: true }).press("Alt+ArrowUp");
   expect(await page.getByRole("columnheader").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn))).toEqual(["name", "date", "size"]);
   await panel.getByRole("checkbox", { name: "Name", exact: true }).uncheck();
   await panel.getByRole("checkbox", { name: "Date", exact: true }).uncheck();
@@ -108,8 +111,9 @@ test("column controls preserve a visible column, reorder keyboard cells and rese
   await openGridControl(page, "views"); await page.getByRole("button", { name: "Reset view", exact: true }).click();
   await expect(page.getByRole("columnheader")).toHaveCount(3);
   expect(await page.getByRole("columnheader").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn))).toEqual(["name", "size", "date"]);
-  await page.getByRole("separator", { name: "Resize Size", exact: true }).focus(); await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("separator", { name: "Resize Size", exact: true })).toHaveAttribute("aria-valuenow", "110");
+  const resize = page.getByRole("separator", { name: "Resize Size", exact: true }), resized = Number(await resize.getAttribute("aria-valuenow"));
+  await resize.focus(); await page.keyboard.press("ArrowRight");
+  await expect(resize).toHaveAttribute("aria-valuenow", String(resized + 10));
   const head = page.getByRole("columnheader").first(), before = await head.boundingBox();
   await page.getByRole("grid").evaluate(grid => { grid.scrollTop = 700; }); await nextFrames(page);
   expect((await head.boundingBox()).y).toBe(before.y);

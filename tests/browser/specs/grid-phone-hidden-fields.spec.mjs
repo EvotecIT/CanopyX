@@ -42,7 +42,9 @@ function affordances(page) {
       text: buttons.map(button => button.textContent).join(" "), record: buttons.map(button => button.dataset.cxRecord).join(" ") };
   }));
 }
-async function expectOnePerRow(page, text = "+1") {
+// Phones collapse every column except the essential identity column into the one "+N" affordance.
+async function expectOnePerRow(page, text) {
+  text ??= "+" + (columns.length - await page.locator(".cx-hcell").count());
   const list = await affordances(page);
   expect(list.length).toBeGreaterThan(0);
   expect(list).toEqual(list.map(row => ({ id: row.id, count: 1, inFirstCell: true, text, record: row.id })));

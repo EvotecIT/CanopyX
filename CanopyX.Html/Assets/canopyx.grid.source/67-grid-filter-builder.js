@@ -1,4 +1,16 @@
-  function gridFilterDepth(group){return group?1+Math.max(0,...group.groups.map(gridFilterDepth)):0;}
+  // An accepted chip, API or restore change retires an open filter draft, rather than silently reinstalling it on Apply.
+  const FILTER_SUMMARY = DataGrid.prototype.syncQuerySummary;
+  DataGrid.prototype.syncQuerySummary = function () {
+    FILTER_SUMMARY.call(this);
+    const controls = this.reportingFilters, query = this.getQuery(), shape = JSON.stringify([query?.filters || [], query?.filterGroup || null]);
+    if (!controls?.details.open || shape === this.reportingFilterDraftBase) return;
+    if (this.reportingFilterSubmitEpoch === this.queryEpoch) this.reportingFilterDraftBase = shape;
+    else {
+      const hadFocus = controls.panel.contains(document.activeElement);
+      controls.details.open = false;
+      if (hadFocus) controls.details.querySelector("summary").focus({ preventScroll: true });
+    }
+  };  function gridFilterDepth(group){return group?1+Math.max(0,...group.groups.map(gridFilterDepth)):0;}
   function gridFilterSegment(grid,initial,onChange){
     const segment=h("div","cx-seg"),buttons=[];segment.setAttribute("role","group");segment.setAttribute("aria-label",grid.labels.gridFilterMatch);
     segment._operator=initial;
@@ -55,7 +67,7 @@
       actions.append(condition,group);
       if(depth){const remove=gridDecorateButton(gridButton("",()=>{const target=parent.parentElement.querySelector(":scope > .cx-adds > button");block.remove();update();target?.focus();}),"close",true);remove.classList.add("icon");remove.setAttribute("aria-label",this.labels.gridDeleteFilterGroup);heading.appendChild(remove);}
       const predicates=definition?.filters||[];
-      (this.view.reporting&&definition.operator==="and"?reportingRangeRows(predicates):predicates).forEach(add);(definition?.groups||[]).forEach(child=>makeGroup(children,child,depth+1));return block;
+      (this.view.reporting&&reportingRangeRows&&definition.operator==="and"?reportingRangeRows(predicates):predicates).forEach(add);(definition?.groups||[]).forEach(child=>makeGroup(children,child,depth+1));return block;
     };
     const syncWords=block=>{const data=block._group;[...data.rows.children].forEach((row,index)=>setText(row.querySelector('.w'),index===0?this.labels.gridWhere:data.segment._operator==="and"?this.labels.gridAnd:this.labels.gridOr));
       for(const child of data.children.children)syncWords(child);};

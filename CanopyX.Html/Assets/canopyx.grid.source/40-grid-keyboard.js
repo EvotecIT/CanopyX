@@ -14,11 +14,10 @@
       if (!row || event.defaultPrevented || event.target.closest("a,button,input,select,textarea,[contenteditable]")) return;
       this.setFocus(row, true);
       if (row.status) { if (row.status === "error") this.retry().catch(() => {}); return; }
-      if(this.phone){Promise.resolve().then(()=>this.openDetails(row.key)).catch(error=>this.emit("error",{error}));return;}
-      if (this.view.selection === "none") return;
-      const next = this.multi && (event.ctrlKey || event.metaKey) ? new Set(this.selected) : new Set();
-      if (next.has(row.key)) next.delete(row.key); else next.add(row.key);
-      this.setSelection([...next]);
+      // A plain click never selects; selection comes from Space, row checkboxes or the API. The row's primary action runs.
+      const link = this.view.rowAction === "link" && element.querySelector("a[href]");
+      if (link) link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey }));
+      else if (this.phone || this.view.rowAction === "details") Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
     },
 
     onKey(event) {

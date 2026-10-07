@@ -6,7 +6,7 @@ async function open(page, { reporting, responsive = false, hidden = false, saved
   const view = { protocol: "canopyx/2", type: "grid", id: "widths", label: "Content widths", rowHeight: 28,
     pageSize: 250, selection: "single", search: false, columns: [
       { id: "name", title: "Name", kind: "text" }, { id: "code", title: "Identifier", kind: "text" },
-      { id: "fixed", title: "Fixed", kind: "text", width: 123 }
+      { id: "fixed", title: "Fixed", kind: "text", width: 123, fixed: true }
     ], source: { kind: "inline" }, rows: Array.from({ length: 300 }, (_, i) => ({ id: "r" + String(i).padStart(3, "0"),
       cells: { name: "R " + i, code: "LongIdentifierForLoadedRecord_" + i, fixed: "A very long explicit-width value" } })) };
   if (wire) for (const column of view.columns.slice(0, 2)) { column.width = 160; column.autoWidth = true; }
@@ -18,19 +18,20 @@ async function open(page, { reporting, responsive = false, hidden = false, saved
     .replace('<div class="cx-host"', '<div style="' + (hidden ? "display:none" : "") + '" class="cx-host"')
     .replace("</body>", `<script>window.getApi=()=>document.querySelector('[data-canopyx-host]').canopyx;
     ${saved ? `sessionStorage.setItem('cx:grid:widths:widths',JSON.stringify({current:{version:1,view:'widths',
-      columns:[{id:'name',width:151,hidden:false},{id:'code',width:241,hidden:false},{id:'fixed',width:123,hidden:false}],
+      columns:[{id:'name',width:151,hidden:false,sized:true},{id:'code',width:241,hidden:false,sized:true},{id:'fixed',width:123,hidden:false}],
       query:{search:'',sort:[],filters:[]},timeZone:'utc',selection:[],scrollTop:0},views:[]}));` : ""}</script></main></body>`) }));
   await page.goto("http://canopyx.test/widths"); await page.evaluate(() => getApi().ready); await nextFrames(page);
 }
 
 test("first layout measures loaded content, respects explicit widths, and exposes bounded fit all", async ({ page }) => {
   await open(page, { wire: true });
-  const widths = await page.evaluate(() => getApi().getState().columns.map(column => column.width));
-  expect(widths[1]).toBeGreaterThan(widths[0]); expect(widths[2]).toBe(123);
+  const widths = await page.locator(".cx-hcell").evaluateAll(cells => cells.map(cell => Math.round(cell.getBoundingClientRect().width)));
+  expect(widths[2]).toBe(123);
   const result = await page.evaluate(() => getApi().autoFitColumns());
   expect(Object.keys(result)).toEqual(["name", "code", "fixed"]);
-  expect(result.code.sampled).toBe(200); expect(result.code.scope).toBe("loaded"); expect(result.fixed.width).toBeGreaterThan(123);
-  await page.locator('.cx-grid-columns > summary').click(); await page.getByRole("button", { name: "Fit all columns", exact: true }).click();
+  expect(result.code.width).toBeGreaterThan(result.name.width); expect(result.code.sampled).toBe(200); expect(result.code.scope).toBe("loaded"); expect(result.fixed.width).toBeGreaterThan(123);
+  await page.locator('.cx-hcell[data-cx-column="name"]').hover(); await page.getByRole("button", { name: "Menu for Name", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Fit all columns", exact: true }).click();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
@@ -39,7 +40,7 @@ test("initial fitting respects bounds and flex, and fits a hidden grid on reveal
   expect(await page.locator('.cx-row').count()).toBe(0);
   await page.locator('[data-canopyx-host]').evaluate(host => host.style.removeProperty("display")); await nextFrames(page);
   const columns = await page.evaluate(() => getApi().getState().columns);
-  expect(columns[1].width).toBe(220); expect(columns[0].width).toBeGreaterThanOrEqual(80); expect(columns[0].width).toBeLessThanOrEqual(180);
+  expect(await page.locator('.cx-hcell[data-cx-column="code"]').evaluate(cell => Math.round(cell.getBoundingClientRect().width))).toBe(220); expect(columns[0].width).toBeGreaterThanOrEqual(80); expect(columns[0].width).toBeLessThanOrEqual(180);
   expect(columns[0].flex).toBe(true);
   expect((await page.locator('.cx-hcell[data-cx-column="name"]').boundingBox()).width).toBeGreaterThanOrEqual(columns[0].width);
 });

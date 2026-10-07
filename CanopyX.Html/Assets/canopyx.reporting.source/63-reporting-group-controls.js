@@ -23,6 +23,17 @@
     },
     buildGridControls() {
       GROUP_BASE.buildGridControls.call(this);
+      const grouping = this.view.reporting?.grouping;
+      if (grouping) {
+        this.groupBar = h("div", "cx-groupbar"); const chip = h("span", "cx-gchip");
+        setText(chip, this.columns.find(column => column.id === grouping.column).title);
+        this.groupBar.append(document.createTextNode(this.labels.gridGroupedBy + " "), chip);
+        if (typeof this.opts.onUngroup === "function") {
+          const remove = gridDecorateButton(gridButton("", () => this.runGridHook(signal => this.opts.onUngroup({ query: this.getQuery(), signal }), this.dataLifetime.signal)
+            .catch(error => this.emit("error", { error }))), "close", true);
+          remove.setAttribute("aria-label", this.labels.gridRemoveGrouping); chip.appendChild(remove);
+        }
+      }
       if (!this.view.reporting?.aggregates?.length) return;
       this.summaryControls = h("div", "cx-grid-summary"); this.summaryControls.setAttribute("role", "rowgroup");
       this.summaryControls.setAttribute("aria-label", this.labels.gridSummary); this.toolbar.appendChild(this.summaryControls);

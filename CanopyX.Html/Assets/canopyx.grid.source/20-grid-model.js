@@ -191,7 +191,7 @@
     setColumnVisible(id, visible) {
       const column = this.columns.find(item => item.id === id);
       if (!column || typeof visible !== "boolean") throw new Error("CanopyX: visibility needs a declared column and boolean.");
-      if (!visible && this.visibleColumns().length === 1 && !column.hidden) throw new Error("CanopyX: keep at least one column visible.");
+      if (!visible && this.columns.filter(item => !item.hidden).length === 1 && !column.hidden) throw new Error("CanopyX: keep at least one column visible.");
       column.hidden = !visible; this.buildHeader(); this.scheduleRender(); this.stateChanged();
       this.syncColumnControls();
     }

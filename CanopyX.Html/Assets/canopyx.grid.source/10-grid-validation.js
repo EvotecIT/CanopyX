@@ -59,7 +59,12 @@
       requireIdentifier(column && column.id, "grid column ID");
       if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
           column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) ||
-          ["wrap", "autoWidth"].some(name => column[name] !== undefined && typeof column[name] !== "boolean"))
+          ["wrap", "autoWidth", "fixed", "rowHeader"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
+          column.minWidth !== undefined && (!Number.isInteger(column.minWidth) || column.minWidth < 40) || column.maxWidth !== undefined &&
+          (!Number.isInteger(column.maxWidth) || column.maxWidth < (column.minWidth ?? 40) || column.maxWidth > MAX_COLUMN_WIDTH) ||
+          column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
+          column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
+          column.fixed && column.width === undefined)
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
@@ -67,9 +72,11 @@
           column.section !== undefined && (typeof column.section !== "string" || !column.section.trim() || column.section.length > 256))
         throw new Error("CanopyX: invalid column aggregate or drawer section.");
     }
-    if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+    if (view.columns.every(column => column.hidden) || view.columns.filter(column => column.rowHeader).length > 1)
+      throw new Error("CanopyX: a grid needs a visible column and one row header at most.");
     if (view.density !== undefined && !["compact", "default", "comfortable"].includes(view.density) ||
-        view.zebra !== undefined && typeof view.zebra !== "boolean" || view.statusBar !== undefined && typeof view.statusBar !== "boolean" ||
+        ["zebra", "statusBar", "autoHeight", "rowAccents"].some(name => view[name] !== undefined && typeof view[name] !== "boolean") ||
+        view.rowAction !== undefined && !["none", "details", "link"].includes(view.rowAction) ||
         view.noun !== undefined && (typeof view.noun !== "string" || !view.noun.trim() || view.noun.length > 256) ||
         view.emptyReason !== undefined && (typeof view.emptyReason !== "string" || view.emptyReason.length > 4096)) throw new Error("CanopyX: invalid grid appearance or state text.");
     validateGridHighlights(view);

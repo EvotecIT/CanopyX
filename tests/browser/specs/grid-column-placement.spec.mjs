@@ -94,7 +94,7 @@ test("responsive hiding retains searchable and exported fields while user hiding
   expect(await headerOrder(page)).toEqual(["name", "region", "notes", "action"]);
   expect((await layout(page)).find(column => column.id === "owner")).toMatchObject({ visible: false, responsiveHidden: false });
   await page.locator(".cx-grid-columns > summary").click();
-  await expect(page.getByLabel("owner: pinned region")).toBeVisible();
+  await expect(page.locator(".cx-grid-columns").getByRole("checkbox", { name: "owner", exact: true })).not.toBeChecked();
 });
 
 test("pin intent and widths survive compact suspension, state restoration and reset", async ({ page }) => {
@@ -121,11 +121,12 @@ test("header moves cross pinned groups and the column chooser preserves its own 
   expect((await layout(page)).find(c => c.id === "region").requestedPin).toBe("left");
   expect(await headerOrder(page)).toEqual(["region", "name", "owner", "notes", "action"]);
   await expect(header(page, "region").locator(".cx-column-move")).toBeFocused();
-  await page.locator(".cx-grid-columns > summary").click();
-  const chooser = page.getByLabel("owner: pinned region"); await chooser.focus(); await chooser.selectOption("right"); await expect(chooser).toBeFocused();
+  await header(page, "owner").hover(); await page.getByRole("button", { name: "Menu for owner", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Pin right", exact: true }).click();
   expect(await headerOrder(page)).toEqual(["region", "name", "notes", "owner", "action"]);
-  const earlier = page.getByRole("button", { name: "Move owner earlier", exact: true }); await earlier.press("Enter");
-  await expect(earlier).toBeFocused(); expect((await layout(page)).find(c => c.id === "owner").requestedPin).toBe("none");
+  await page.locator(".cx-grid-columns > summary").click();
+  const chooser = page.locator(".cx-grid-columns").getByRole("checkbox", { name: "owner", exact: true }); await chooser.press("Alt+ArrowUp");
+  await expect(chooser).toBeFocused(); expect((await layout(page)).find(c => c.id === "owner").requestedPin).toBe("none");
 });
 
 test("responsive layout returns focus to the record when its entered field disappears", async ({ page }) => {
@@ -139,14 +140,14 @@ test("responsive layout returns focus to the record when its entered field disap
 
 test("an oversized outer pin suspends its whole edge prefix and leaves center navigation available", async ({ page }) => {
   await page.setViewportSize({ width: 650, height: 700 });
-  await open(page, { columns: columns.map(c => c.id === "name" ? { ...c, width: 550 } : c), reporting: { layout: {
+  await open(page, { columns: columns.map(c => c.id === "name" ? { ...c, width: 550, fixed: true } : c), reporting: { layout: {
     name: { minimum: 100, maximum: 800, pin: "left" }, region: { minimum: 40, maximum: 400, pin: "left" },
     action: { minimum: 40, maximum: 400, pin: "right" } } } });
   expect((await layout(page)).filter(c => c.requestedPin === "left").map(c => c.pin)).toEqual(["none", "none"]);
   expect((await layout(page)).find(c => c.id === "action").pin).toBe("right");
   await page.locator('.cx-row[data-cx-id="r0"]').press("F2"); await page.keyboard.press("ArrowRight");
   const frame = await page.locator(".cx-grid").boundingBox(), focused = await page.evaluate(() => document.activeElement.getBoundingClientRect().toJSON());
-  expect(focused.left).toBeGreaterThanOrEqual(frame.x - 1); expect(focused.right).toBeLessThanOrEqual(frame.x + frame.width - 160 + 1);
+  expect(focused.left).toBeGreaterThanOrEqual(frame.x - 1); expect(focused.right).toBeLessThanOrEqual((await header(page, "action").boundingBox()).x + 1);
 });
 
 test("growing a pinned edge leaves the focused center header control uncovered", async ({ page }) => {

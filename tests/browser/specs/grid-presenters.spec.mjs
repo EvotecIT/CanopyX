@@ -9,7 +9,7 @@ const columns = [
   { id: "amount", title: "Progress", width: 170, kind: "number", sortable: true },
   { id: "flag", title: "Enabled", width: 100, kind: "text" },
   { id: "list", title: "Owners", width: 150, kind: "text" },
-  { id: "notes", title: "Notes", width: 220, kind: "text" }
+  { id: "notes", title: "Notes", width: 220, kind: "text", priority: "essential" }
 ];
 const view = { protocol: "canopyx/2", type: "grid", id: "rich", label: "Rich inventory", source: { kind: "inline" },
   rowHeight: 28, pageSize: 10, presentation: "paged", pageLength: 3, selection: "multiple", search: true, columns,

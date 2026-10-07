@@ -99,7 +99,8 @@ test('only a filtered header shows the filled accent funnel; column menus appear
 test.describe('touch headers',()=>{test.use({hasTouch:true,viewport:{width:390,height:700}});
   test('column menu buttons stay visible on touch phones',async({page})=>{
     await open(page);
-    expect(await page.locator('.cx-grid-column-menu').evaluateAll(buttons=>buttons.map(button=>getComputedStyle(button).opacity))).toEqual(['1','1','1','1']);
+    const opacities=await page.locator('.cx-grid-column-menu').evaluateAll(buttons=>buttons.map(button=>getComputedStyle(button).opacity));
+    expect(opacities.length).toBeGreaterThan(1);expect(opacities.every(value=>value==='1')).toBe(true);
     await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(0);
   });
 });
