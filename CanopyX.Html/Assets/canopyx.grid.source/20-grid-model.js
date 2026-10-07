@@ -10,7 +10,9 @@
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
         throw new Error("CanopyX: source navigation must match the grid definition.");
-      this.pageSize = this.view.pageSize; this.rowH = this.view.rowHeight;
+      this.pageSize = this.view.pageSize; this.autoRows = this.view.rowHeight === "auto" || !!this.view.autoRowHeight;
+      this.rowH = this.view.rowHeight === "auto" ? this.view.estimatedRowHeight || 28 : this.view.rowHeight;
+      if (this.autoRows) this.rowHeights = new Map();
       this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
       this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
         this.view.source.kind === "inline" ? 0 : 300 : this.view.searchDelayMs : options.searchDelayMs;
@@ -26,9 +28,14 @@
           !this.view.columns.some(column => column.id === id) || typeof renderers[id] !== "function"))
         throw new Error("CanopyX: grid renderers are functions by declared column ID.");
       this.columns = this.view.columns.map(column => Object.assign({}, column, {
-        width: Math.min(MAX_COLUMN_WIDTH, column.width), render: Object.prototype.hasOwnProperty.call(renderers, column.id) ? renderers[column.id] : null
+        width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.autoWidth || column.width === undefined,
+        render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;
+      // Per-control toolbar switches: the document's toolbar object, then the host's options; a missing switch keeps its control.
+      this.tools = Object.assign({}, this.view.toolbar, options.toolbar);
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|count)$/.test(name) || typeof value !== "boolean"))
+        throw new Error("CanopyX: toolbar options are booleans by control name.");
       this.labels = labelsFor(this.view.labels, options.labels); this.local = this.view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels); this.multi = this.view.selection === "multiple";
       this.queryAware = true; this.queryEpoch = 0; this.version = 1; this.total = 0;
@@ -40,7 +47,7 @@
     }
 
     emit(name, detail) {
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail }));
+      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail }));
       const callback = this.opts["on" + name[0].toUpperCase() + name.slice(1)];
       if (typeof callback === "function") {
         try { callback(detail); } catch (error) { if (global.console) global.console.error(error); }
@@ -52,7 +59,7 @@
       clearTimeout(this.stateTimer);
       this.stateTimer = setTimeout(() => {
         if (this.destroyed) return;
-        const state = this.getState(); this.writeStoredState(state); this.emit("state", { query: this.getQuery(), state: state });
+        const state = this.getState(); this.writeStoredState(state); this.emit("state", { query: this.getQuery(), state });
       }, 200);
     }
     getQuery() { return this.acceptedQuery || null; }
@@ -93,14 +100,15 @@
         this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.focused = null;
         this.acceptedQuery = gridQuery(this.view, { ...query, revision: page.revision });
         this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
-        this.pageLength = length; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
+        this.pageLength = length; if(paging)this.pageAll=!!paging.allRows; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
         if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
+        if (this.autoRows) { if (!same) this.rowHeights.clear(); this.rowOffsets = null; }
         this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
         const hasRows = this.cursor ? page.items.length : page.matched;
         this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
         this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1));
         this.grid.tabIndex = hasRows ? -1 : 0;
-        this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader();
+        this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader(); this.syncColumnControls();
         this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
         if (hadFocus) {
           this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(this.cursor ? page.offset : query.offset) || null;
@@ -119,7 +127,7 @@
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
           this.syncPager();
-          this.emit("error", { error: error });
+          this.emit("error", { error });
         }
         throw error;
       }
@@ -140,8 +148,9 @@
 
     rowCount() { return this.cursor ? this.cursorWindow ? this.cursorWindow.end : 0 : this.snapshot ? this.snapshot.matched : 0; }
     rowBounds() { return { first: this.pageOffset, last: this.paged ? Math.min(this.rowCount(), this.pageOffset + this.pageLength) - 1 : this.rowCount() - 1 }; }
-    rowTop(index) { return (index - this.pageOffset) * this.rowH; }
-    rowAt(top) { const bounds = this.rowBounds(); return Math.max(bounds.first, Math.min(bounds.last, bounds.first + Math.floor(top / this.rowH))); }
+    rowTop(index) { return this.autoRows && this.rowOffsets ? this.rowOffsets.top(index - this.pageOffset) : (index - this.pageOffset) * this.rowH; }
+    rowAt(top) { const bounds = this.rowBounds(); return Math.max(bounds.first, Math.min(bounds.last, bounds.first +
+      (this.autoRows && this.rowOffsets ? this.rowOffsets.at(top) : Math.floor(top / this.rowH)))); }
     indexOf(row) {
       if (!row || this.paged && (row._ri < this.pageOffset || row._ri >= this.pageOffset + this.pageLength)) return -1;
       return this.rowCache.get(row._ri) === row || this.placeholders.get(row._ri) === row ? row._ri : -1;
@@ -155,10 +164,18 @@
     }
 
     render() {
-      if (this.destroyed) return;
-      this.renderPass();
+      if (this.destroyed || !this.sized) return;
+      let measured = false;
+      if (this.autoRows) this.syncRowOffsets();
+      for (let pass = 0; ; pass++) {
+        this.renderPass();
+        if (!this.autoRows || !this.measureGridRows()) break;
+        measured = true;
+        if (pass === 3) { this.scheduleRender(); break; }
+      }
       for (const [index, row] of this.placeholders) if (!this.rendered.has(row) && this.focused !== row) this.placeholders.delete(index);
       this.loadWindow();
+      return measured;
     }
 
     observeDetail() {}
@@ -171,13 +188,14 @@
       const next = new Set(ids);
       if (this.view.selection === "none" && next.size || !this.multi && next.size > 1) throw new Error("CanopyX: selection exceeds the view's mode.");
       this.selected = next; this.version++; this.scheduleRender(); this.emit("select", { ids: [...next] });
+      this.syncGridChrome();
       this.stateChanged();
     }
 
     setColumnVisible(id, visible) {
       const column = this.columns.find(item => item.id === id);
       if (!column || typeof visible !== "boolean") throw new Error("CanopyX: visibility needs a declared column and boolean.");
-      if (!visible && this.visibleColumns().length === 1 && !column.hidden) throw new Error("CanopyX: keep at least one column visible.");
+      if (!visible && this.columns.filter(item => !item.hidden).length === 1 && !column.hidden) throw new Error("CanopyX: keep at least one column visible.");
       column.hidden = !visible; this.buildHeader(); this.scheduleRender(); this.stateChanged();
       this.syncColumnControls();
     }
@@ -192,14 +210,17 @@
       if (this.disposeControls) this.disposeControls();
       if (this.cancelResize) this.cancelResize();
       this.resizeObserver.disconnect();
+      this.detailObserver?.disconnect(); this.rowHeights?.clear(); this.rowOffsets = null;
       this.restoreHeight();
-      this.host.classList.remove("cx-data-grid");
+      this.host.classList.remove("cx-data-grid","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right","cx-grid-awaiting","cx-pins");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);
       this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.pendingPages.clear(); this.rendered.clear(); this.pool.length = 0;
       this.toolbar.remove(); this.grid.remove(); this.notice.remove(); this.live.remove();
+      this.querySummary?.remove();
       if (this.pager) this.pager.remove();
+      this.statusBar?.remove(); this.groupBar?.remove(); this.statusAggregateController?.abort();
       this.host.removeAttribute("data-cx-ready"); this.host.removeAttribute("data-canopyx-mounted");
     }
   }

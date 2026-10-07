@@ -19,14 +19,15 @@ async function open(page,view=definition(),setup='') {
 test('page selection reads every record on the page and retains explicit identities across pages',async({page})=>{
   await page.setViewportSize({width:900,height:500});await open(page);
   expect(await page.locator('.cx-row[data-cx-id]').count()).toBeLessThan(50);
-  await page.getByRole('button',{name:'Select page',exact:true}).click();
-  await expect(page.locator('.cx-grid-selection-status')).toHaveText('50 selected records');
+  await page.locator('.cx-header-check').click();await page.getByRole('button',{name:'Select page',exact:true}).click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.cx-grid-selection-status')).toHaveText('50 selected');
   expect(await page.evaluate(api+'.getSelection()')).toEqual(Array.from({length:50},(_,i)=>record(i).id));
   await page.evaluate(api+'.nextPage()');await page.evaluate(api+'.selectPage()');
   expect((await page.evaluate(api+'.getSelection()')).length).toBe(100);
   await page.evaluate(api+'.selectPage(false)');expect((await page.evaluate(api+'.getSelection()')).length).toBe(50);
   await page.getByRole('button',{name:'Clear selection',exact:true}).click();
-  await expect(page.locator('.cx-grid-selection-status')).toHaveText('0 selected records');
+  await expect(page.locator('.cx-grid-selection-status')).toHaveText('0 selected');
 });
 
 test('a million matching records use a bounded revision/query descriptor with exclusions and defined invalidation',async({page})=>{
@@ -117,8 +118,8 @@ test('checkboxes, Shift selection and cell keyboard navigation survive compact p
   await first.locator('.cx-grid-row-select').click();await expect(first).toHaveAttribute('aria-selected','false');
   await first.locator('.cx-grid-row-select').click();
   await page.locator('.cx-row[data-cx-id="r0004"]').focus();await page.keyboard.press('Shift+Space');
-  await expect(page.locator('.cx-grid-selection-status')).toHaveText('5 selected records');
-  await first.focus();await page.keyboard.press('Enter');await expect(first.locator('.cx-grid-row-select')).toBeFocused();
+  await expect(page.locator('.cx-grid-selection-status')).toHaveText('5 selected');
+  await first.focus();await page.keyboard.press('F2');await expect(first.locator('.cx-grid-row-select')).toBeFocused();
   await page.keyboard.press('Escape');await expect(first).toBeFocused();
   expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
   expect(await page.locator('.cx-row[data-cx-id]').first().locator('[role="gridcell"]').count()).toBe(2);
@@ -132,7 +133,7 @@ test('selection controls recover after a failed query and query selections remai
   await page.evaluate(api+'.selectAllMatching()');await page.evaluate(api+".saveView('Layout')");
   expect(await page.evaluate(api+'.getViewSettings().views[0].state.selection')).toEqual([]);
   await page.evaluate('fail=true');expect(await page.evaluate(api+".setQuery({search:'bad'}).catch(e=>e.message)")).toBe('Query unavailable');
-  await expect(page.getByRole('button',{name:'Select all matching',exact:true})).toBeEnabled();
+  await page.locator('.cx-header-check').click();await expect(page.getByRole('button',{name:'Select all matching',exact:true})).toBeEnabled();
   await expect(page.locator('.cx-grid-row-select').first()).toBeEnabled();
   expect(await page.evaluate(api+'.getSelectionDescriptor().kind')).toBe('query');
   await page.evaluate('fail=false');await page.evaluate(api+".applySavedView('Layout')");
@@ -144,7 +145,7 @@ test('selection checkboxes retain focus across custom host cell paints and recyc
     const link=document.createElement('a');link.href='#'+row.id;link.textContent='Inspect '+row.id;cell.appendChild(link);return true;
   }}});`);
   const first=page.locator('.cx-row[data-cx-id="r0000"]');
-  await first.focus();await page.keyboard.press('Enter');
+  await first.focus();await page.keyboard.press('F2');
   await expect(first.locator('.cx-grid-row-select')).toBeFocused();
   await page.keyboard.press('Space');await nextFrames(page);
   await expect(first.locator('.cx-grid-row-select')).toBeChecked();

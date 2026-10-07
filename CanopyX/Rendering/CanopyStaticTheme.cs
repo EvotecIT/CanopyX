@@ -28,13 +28,13 @@ namespace CanopyX.Rendering;
 /// </remarks>
 public sealed class CanopyStaticTheme {
     private string _surface = "#ffffff";
-    private string _text = "#1f2328";
-    private string _accent = "#0a58ca";
-    private string _line = "#d1d9e0";
-    private string _info = "#0550ae";
-    private string _success = "#116329";
-    private string _warning = "#7d4e00";
-    private string _danger = "#b3261e";
+    private string _text = "#16181c";
+    private string _accent = "#11776f";
+    private string _line = "#e2e4e7";
+    private string _info = "#0a728b";
+    private string _success = "#177345";
+    private string _warning = "#8c5c05";
+    private string _danger = "#b8292a";
 
     /// <summary>Creates a theme with the light palette, the same as <see cref="Light"/>.</summary>
     public CanopyStaticTheme() {
@@ -47,14 +47,14 @@ public sealed class CanopyStaticTheme {
     /// <summary>Creates a dark theme: light text on a dark surface, the dark palette of the browser runtime.</summary>
     /// <returns>A new theme; changing it affects only the options it is assigned to.</returns>
     public static CanopyStaticTheme Dark() => new CanopyStaticTheme {
-        _surface = "#0d1117",
-        _text = "#e6edf3",
-        _accent = "#58a6ff",
-        _line = "#30363d",
-        _info = "#79c0ff",
-        _success = "#56d364",
-        _warning = "#e3b341",
-        _danger = "#ff7b72"
+        _surface = "#16181c",
+        _text = "#f2f3f5",
+        _accent = "#37c9b8",
+        _line = "#272a30",
+        _info = "#3ec3dd",
+        _success = "#4cc78a",
+        _warning = "#eeb640",
+        _danger = "#f47171"
     };
 
     /// <summary>Gets or sets the background of the outline.</summary>

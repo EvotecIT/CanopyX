@@ -7,11 +7,12 @@ namespace CanopyX;
 /// A typed column shared by tree and flat-grid views. The first column of a tree view shows the node label,
 /// indent, and expander; flat-grid columns all display cell values.
 /// </summary>
-public sealed class CanopyColumn {
+public sealed partial class CanopyColumn {
     /// <summary>The narrowest width a column can have, in CSS pixels.</summary>
     public const int MinWidth = 40;
 
     private int _width = 160;
+    internal bool HasExplicitWidth { get; private set; }
 
     /// <summary>Creates a column.</summary>
     /// <param name="id">The id that node cells use as their key.</param>
@@ -34,7 +35,7 @@ public sealed class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets or sets the initial width in CSS pixels. Users can resize columns in the browser.</summary>
+    /// <summary>Gets or sets the width in CSS pixels. In a flat grid an assigned width is preferred, not a hard cap: the column grows to its content and gives way by <see cref="Priority"/>; set <see cref="Fixed"/> for a hard width. Unassigned flat-grid widths fit loaded content; tree widths default to 160. Users can resize columns.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below <see cref="MinWidth"/>.</exception>
     public int Width {
         get => _width;
@@ -44,6 +45,7 @@ public sealed class CanopyColumn {
             }
 
             _width = value;
+            HasExplicitWidth = true;
         }
     }
 
@@ -60,16 +62,34 @@ public sealed class CanopyColumn {
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
     public bool Hidden { get; set; }
 
-    internal void WriteJson(CanopyJsonWriter writer) {
+    /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
+    public bool Wrap { get; set; }
+
+    /// <summary>Gets or sets a safe flat-grid presenter. Raw values still drive search, sort and export.</summary>
+    public CanopyGridPresenter? Presenter { get; set; }
+
+    /// <summary>Gets or sets whether selected raw numeric values contribute to the optional status bar.</summary>
+    public bool Aggregatable { get; set; }
+
+    /// <summary>Gets or sets the record drawer section label. Null uses the default details section.</summary>
+    public string? Section { get; set; }
+
+    internal void WriteJson(CanopyJsonWriter writer, bool grid = false, int? width = null) {
         writer.BeginObject()
             .Property("id", Id)
-            .Property("title", Title)
-            .Property("width", _width)
-            .Property("kind", CanopyJsonNames.ColumnKind(Kind));
+            .Property("title", Title);
+        writer.Property("width", width ?? _width);
+        if (grid && !HasExplicitWidth) writer.Property("autoWidth", true);
+        writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {
             writer.Property("sortable", true);
         }
         if (Editable) writer.Property("editable", true);
+        if (Wrap) writer.Property("wrap", true);
+        if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
+        if (grid && Aggregatable) writer.Property("aggregatable", true);
+        if (grid) WriteLayoutJson(writer);
+        if (grid) writer.OptionalProperty("section", Section);
 
         if (Hidden) {
             writer.Property("hidden", true);

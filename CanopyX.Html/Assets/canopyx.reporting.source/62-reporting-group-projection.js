@@ -27,8 +27,12 @@
       };
       const projection = {
         rowCount: () => count,
-        rowAt: top => Math.max(0, Math.min(count - 1, Math.floor(top / this.rowH))),
-        rowTop: index => index * this.rowH,
+        rowAt: top => this.autoRows && this.rowOffsets ? this.rowOffsets.at(top) : Math.max(0, Math.min(count - 1, Math.floor(top / this.rowH))),
+        rowTop: index => this.autoRows && this.rowOffsets ? this.rowOffsets.top(index) : index * this.rowH,
+        recordIndex: ordinal => {
+          const segment = find(recordSegments, ordinal, "first");
+          return !segment || ordinal > segment.last || segment.length === 1 ? -1 : segment.start + 1 + ordinal - segment.first;
+        },
         rowItem: index => {
           const segment = find(segments, index, "start");
           return !segment || index >= segment.start + segment.length ? null : index === segment.start ? segment.header : this.rowItem(segment.first + index - segment.start - 1);
@@ -56,7 +60,9 @@
         if (segment && (focus.group || segment.length === 1)) this.focused = segment.header;
       }
       this.rowProjection = projection; this.groupProjectionKey = key;
-      this.total = count * this.rowH; this.syncScrollRange(this.logicalTop()); this.grid.setAttribute("aria-rowcount", String(count + 1));
+      if (this.autoRows) this.syncRowOffsets();
+      else { this.total = count * this.rowH; this.syncScrollRange(this.logicalTop()); }
+      this.grid.setAttribute("aria-rowcount", String(count + 1));
     },
     setGroupCollapsed(key, collapsed) {
       if (this.destroyed || this.pendingQuery || !this.summary || !this.view.reporting.grouping || typeof collapsed !== "boolean" ||

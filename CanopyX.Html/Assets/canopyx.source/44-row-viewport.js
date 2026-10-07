@@ -17,7 +17,7 @@
       const grid = this.grid;
       // A repaint can replace the cell that holds focus (host-drawn cells and details are rebuilt); focus goes back.
       const held = this.heldCell();
-      const viewHeight = grid.clientHeight - this.head.offsetHeight;
+      const viewHeight = this.viewportHeight ?? grid.clientHeight - this.head.offsetHeight;
       const top = this.logicalTop();
       const shift = this.scaledScroll ? top - grid.scrollTop : 0;
       const n = rows.rowCount();
@@ -73,7 +73,7 @@
           rowEl.setAttribute("aria-rowindex", index + 2);
           rowEl._index = index;
         }
-        const alt = index % 2 === 1 && !w.status && !w.h.detail;
+        const alt = index % 2 === 1 && !w.status && !w.h.detail && (this.view.type !== "grid" || !!this.view.zebra);
         if (rowEl._alt !== alt) {
           rowEl.classList.toggle("cx-alt", alt);
           rowEl._alt = alt;

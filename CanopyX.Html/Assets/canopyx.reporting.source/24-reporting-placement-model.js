@@ -18,7 +18,7 @@
   };
   DataGrid.prototype.prepareState = function () {
     const policies = this.view.reporting && this.view.reporting.layout || {};
-    for (const column of this.columns) column.pin = policies[column.id] && policies[column.id].pin || "none";
+    for (const column of this.columns) column.pin = policies[column.id]?.pin ?? column.pin;
     return PLACEMENT_PREPARE.call(this);
   };
   gridStateColumn = column => Object.assign(PLACEMENT_STATE_COLUMN(column), { pin: column.pin });
@@ -34,9 +34,14 @@
   GRID_REPORTING.api = (api, grid) => {
     PLACEMENT_API(api, grid);
     api.setColumnPinned = (id, pin) => grid.setColumnPinned(id, pin);
-    api.getColumnLayout = () => grid.columns.map(column => Object.freeze({ id: column.id, requestedPin: column.pin,
-      pin: column.effectivePin || "none", visible: !column.hidden && !column.responsiveHidden,
-      responsiveHidden: !!column.responsiveHidden, width: column.renderWidth || column.width }));
+    // hiddenReason says why a column is out of view: the reader hid it (user), it gave way by priority or responsive policy
+    // (priority), or a normal column gave way to the phone layout (phone), which hides optional and normal columns.
+    api.getColumnLayout = () => grid.columns.map(column => {
+      const hiddenReason = column.hidden ? "user" : column.responsiveHidden ? "priority" : column.fitHidden ?
+        grid.phone && gridLevel(column) === 1 ? "phone" : "priority" : null;
+      return Object.freeze({ id: column.id, requestedPin: column.pin, pin: column.effectivePin || "none", visible: !hiddenReason, hiddenReason,
+        responsiveHidden: !!column.responsiveHidden, width: column.renderWidth || column.width });
+    });
   };
 
   DataGrid.prototype.setColumnPinned = function (id, pin) {
@@ -45,5 +50,5 @@
     if (this.cancelResize) this.cancelResize();
     const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
     column.pin = pin; this.buildHeader(); this.syncColumnControls(); this.render();
-    this.restoreReportingFocus(held, columnId); this.stateChanged();
+    this.restoreReportingFocus(held, columnId); this.stateChanged(); this.emit("columnPin", { column: id, pin });
   };

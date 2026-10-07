@@ -64,9 +64,10 @@
     let offset = 0; const keys = new Set(), column = view.columns.find(item => item.id === view.reporting.grouping?.column), values = new Set();
     const compare = column ? GRID_REPORTING.compare(view) : null; let previous = null;
     for (const group of summary.groups) {
-      if (!group || !Object.hasOwn(group, "value") || Object.keys(group).some(key => !["key", "value", "offset", "count", "aggregates"].includes(key)) ||
+      if (!group || !Object.hasOwn(group, "value") || Object.keys(group).some(key => !["key", "value", "offset", "count", "aggregates", "cells"].includes(key)) ||
           group.value !== null && typeof group.value === "object") throw new Error("CanopyX: groups carry raw values.");
       requireIdentifier(group.key, "group key"); const value = gridScalar(group.value, column), key = reportingGroupKey(value);
+      if (group.cells !== undefined) validateGridRows([{id:group.key,cells:group.cells}],view.columns);
       if (group.key.length > 4096 || keys.has(group.key) || values.has(key) || group.offset !== offset ||
           !validStructuralCount(group.count) || !group.count || previous && compare(previous, {cells:{[column.id]:group.value}}, column, view.reporting.grouping.direction) >= 0)
         throw new Error("CanopyX: invalid complete group range.");

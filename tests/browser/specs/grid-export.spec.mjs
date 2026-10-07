@@ -102,7 +102,7 @@ test("record details use immutable raw records and cancel older hooks on navigat
 });
 test("export controls download the chosen scope and preserve the existing Enter and F2 cell model",async({page})=>{
   await open(page,definition(),`window.opened=[];CanopyX.configure('records',{onDetails:event=>window.opened.push(event.row.id)});`);
-  const row=page.locator('.cx-row[data-cx-id="000"]');await row.focus();await page.keyboard.press('Enter');await expect(row.getByRole('gridcell').first()).toBeFocused();
+  const row=page.locator('.cx-row[data-cx-id="000"]');await row.focus();await page.keyboard.press('F2');await expect(row.getByRole('gridcell').first()).toBeFocused();
   await page.keyboard.press('F2');await expect(row).toBeFocused();await page.keyboard.press('Control+Enter');await expect.poll(()=>page.evaluate(()=>window.opened)).toEqual(['000']);
   await page.locator('.cx-grid-export > summary').click();await page.locator('.cx-grid-export').getByRole('combobox').selectOption('all');
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSV',exact:true}).click();
@@ -153,7 +153,7 @@ test("export cancellation applies between fetched records and before an empty se
 test("focused cell clipboard fields retain formula protection and tab escaping", async ({page}) => {
   const view = definition(); view.rows[0].cells.name = '=SUM(1,2)\tvalue\nnext';
   await open(page,view,"window.copies=[];Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>window.copies.push(text)}});");
-  const row = page.locator('.cx-row[data-cx-id="000"]'); await row.focus(); await page.keyboard.press('Enter'); await page.keyboard.press('Control+c');
+  const row = page.locator('.cx-row[data-cx-id="000"]'); await row.focus(); await page.keyboard.press('F2'); await page.keyboard.press('Control+c');
   await expect.poll(() => page.evaluate(() => window.copies)).toEqual(['"\'=SUM(1,2)\tvalue\nnext"']);
 });
 

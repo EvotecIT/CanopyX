@@ -1,17 +1,16 @@
-  // ---------- reporting filter controls over the existing typed query owner ----------
+  // ---------- reporting range and category conditions; installed with the optional filter editor ----------
+  // Reporting-only and retired control labels; hosts that translate them get the reporting runtime from CanopyLabels.
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+    gridPinColumn: "{column}: pinned region", gridPinNone: "Scroll", gridFilterGroupTitle: "Additional grouped conditions",
+    gridAddFilterGroup: "Add condition group", gridFacetValues: "Values and counts from applied filters",
+    gridFacetIncludeCurrent: "Include this column's applied filters", gridFacetLoad: "Load values",
+    gridFacetReload: "Values changed or the request was cancelled. Load values again.",
     gridBetween: "between (inclusive)", gridRangeEnd: "Upper value (UTC for dates)",
     gridInvalidRange: "Enter an upper value greater than or equal to the lower value.",
     gridSuggestedCategory: "Suggested category", gridChooseCategory: "Choose a category", gridBooleanValue: "Boolean value",
-    gridTrue: "True", gridFalse: "False", gridHeaderFilter: "Filter {column}"
+    gridHealthy: "Healthy", gridValue: "Value (UTC for dates)", gridAddFilter: "Add filter",
+    gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later", gridFitColumn: "Fit {column}"
   }));
-  const REPORT_FILTER_BASE = {};
-  for (const method of ["buildGridFilters", "renderGridFilters", "addGridFilter", "readGridFilter", "buildHeader"])
-    REPORT_FILTER_BASE[method] = DataGrid.prototype[method];
-  REPORT_FILTER_BASE.syncQuerySummary = DataGrid.prototype.syncQuerySummary;
-
-  function reportingFilterShape(query) { return JSON.stringify([query?.filters || [], query?.filterGroup || null]); }
-
   function reportingRangeRows(filters) {
     const rows = [];
     for (let index = 0; index < filters.length; index++) {
@@ -23,104 +22,26 @@
     return rows;
   }
 
-  function reportingRangeValue(raw, column, labels) {
+  function reportingRangeValue(raw, column, labels, local) {
     if (column.kind === "number") {
       if (!raw.trim()) throw new Error(labels.gridInvalidFilter);
       const value = Number(raw); gridScalar(value, column); return value;
     }
-    const value = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : raw + "Z";
+    const value = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : local ? new Date(raw).toISOString() : raw + "Z";
     gridScalar(value, column); return value;
   }
 
-  function reportingFilterError(element, message) {
-    setText(element, message);
-    if (message && element.getClientRects().length) element.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }
-
+  // The editor calls this after installing, so these overrides wrap its condition rows; gridDateInput is an editor helper.
+  GRID_REPORTING.installFilters = ({ gridDateInput }) => {
+  const REPORT_FILTER_BASE = { addGridFilter: DataGrid.prototype.addGridFilter, readGridFilter: DataGrid.prototype.readGridFilter };
   Object.assign(DataGrid.prototype, {
-    syncQuerySummary() {
-      REPORT_FILTER_BASE.syncQuerySummary.call(this);
-      const controls = this.reportingFilters, shape = reportingFilterShape(this.getQuery());
-      if (!controls?.details.open || shape === this.reportingFilterDraftBase) return;
-      if (this.reportingFilterSubmitEpoch === this.queryEpoch) this.reportingFilterDraftBase = shape;
-      else {
-        // An accepted chip/API/restore change retires the old draft, rather than silently reinstalling it on Apply.
-        const hadFocus = controls.panel.contains(document.activeElement);
-        controls.details.open = false;
-        if (hadFocus) controls.details.querySelector("summary").focus({ preventScroll: true });
-      }
-    },
-
-    applyReportingFilterQuery(query, error) {
-      const pending = this.setQuery(query), epoch = this.queryEpoch;
-      this.reportingFilterSubmitEpoch = epoch;
-      pending.then(() => setText(error, ""), failure => reportingFilterError(error, failure.message)).finally(() => {
-        if (this.reportingFilterSubmitEpoch === epoch) this.reportingFilterSubmitEpoch = null;
-      });
-    },
-
-    buildGridFilters() {
-      if (!this.view.reporting) return REPORT_FILTER_BASE.buildGridFilters.call(this);
-      this.reportingFilters = this.controlPanel(this.labels.gridFilters, "cx-grid-filters", panel => this.renderGridFilters(panel));
-      this.reportingFilters.panel.id = this.id + "-filters";
-      this.reportingFilters.details.addEventListener("keydown", event => {
-        if (event.key === "Escape" && this.reportingFilterReturn) {
-          this.focusReportingFilterHeader(); this.reportingFilterReturn = null;
-        }
-      });
-      this.reportingFilters.details.addEventListener("toggle", () => this.syncReportingFilterHeaders());
-    },
-
-    renderGridFilters(panel) {
-      if (!this.view.reporting) return REPORT_FILTER_BASE.renderGridFilters.call(this, panel);
-      panel.textContent = "";
-      this.reportingFilterDraftBase = reportingFilterShape(this.queryForChange());
-      const form = h("form", "cx-grid-filter-form"), rows = h("div"), error = h("p", "cx-grid-control-error");
-      panel.classList.toggle("cx-grid-group-editor", !!this.view.reporting.filterGroups);
-      error.setAttribute("role", "status");
-      reportingRangeRows(this.queryForChange().filters || []).forEach(filter => this.addGridFilter(rows, filter));
-      form.appendChild(rows); form.appendChild(gridButton(this.labels.gridAddFilter, () => this.addGridFilter(rows, null)));
-      const groups = this.view.reporting.filterGroups ? this.buildReportingFilterGroups(form, error) : null;
-      const apply = h("button", "cx-button"); apply.type = "submit"; setText(apply, this.labels.gridApply); form.appendChild(apply);
-      form.appendChild(gridButton(this.labels.gridClearFilters, () => {
-        rows.textContent = "";
-        if (groups) { groups.textContent = ""; groups._sync(); }
-        this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters: [], filterGroup: undefined }), error);
-      }));
-      form.appendChild(error); panel.appendChild(form);
-      form.addEventListener("submit", event => {
-        event.preventDefault();
-        try {
-          const filters = [...rows.children].flatMap(row => this.readGridFilter(row));
-          const filterGroup = groups ? this.readReportingFilterGroups(groups) : this.queryForChange().filterGroup;
-          this.applyReportingFilterQuery(gridQueryStart(this.queryForChange(true), { filters, filterGroup }), error);
-        } catch (failure) { reportingFilterError(error, failure.message); }
-      });
-      const requested = this.reportingFilterColumn;
-      if (requested) {
-        let row = [...rows.children].find(item => item._filter.column.value === requested);
-        if (!row && rows.children.length < 64) {
-          this.addGridFilter(rows, null); row = rows.lastElementChild;
-          row._filter.column.value = requested; row._filter.column.dispatchEvent(new Event("change"));
-        }
-        const target = row ? [row._filter.boolean, row._filter.input, row._filter.multiple, row._filter.operator]
-          .find(control => control && !control.disabled && !control.closest("[hidden]")) : apply;
-        target.focus({ preventScroll: true });
-        queueMicrotask(() => {
-          if (!this.destroyed && target.isConnected && this.reportingFilters.details.open && document.activeElement === target)
-            target.scrollIntoView({ block: "nearest", inline: "nearest" });
-        });
-        this.reportingFilterColumn = null;
-      }
-    },
-
     addGridFilter(parent, predicate) {
       if (!this.view.reporting) return REPORT_FILTER_BASE.addGridFilter.call(this, parent, predicate);
       const count = parent.children.length, range = predicate && predicate.operator === "between";
       REPORT_FILTER_BASE.addGridFilter.call(this, parent, range ? { column: predicate.column, operator: "ge", values: [predicate.values[0]] } : predicate);
       if (parent.children.length === count) return;
       const row = parent.lastElementChild, fields = row._filter, upper = h("input", "cx-grid-filter-value"), choices = h("select"), boolean = h("select");
-      const upperField = gridInputLabel(this.labels.gridRangeEnd, upper), categoryField = gridInputLabel(this.labels.gridSuggestedCategory, choices),
+      const upperField = gridInputLabel(this.labels.gridConditionUpperValue, upper), categoryField = gridInputLabel(this.labels.gridSuggestedCategory, choices),
         booleanField = gridInputLabel(this.labels.gridBooleanValue, boolean);
       boolean.append(gridOption("true", this.labels.gridTrue), gridOption("false", this.labels.gridFalse));
       row.insertBefore(upperField, row.lastElementChild); row.insertBefore(categoryField, row.lastElementChild); row.insertBefore(booleanField, row.lastElementChild);
@@ -150,7 +71,7 @@
       refresh();
       if (range) {
         fields.operator.value = "between";
-        upper.value = upper.type === "datetime-local" ? new Date(predicate.values[1]).toISOString().slice(0, -1) : String(predicate.values[1]); refresh();
+        upper.value = upper.type === "datetime-local" ? gridDateInput(predicate.values[1],this.local) : String(predicate.values[1]); refresh();
         fields.rangeOriginal = { column: predicate.column, values: predicate.values.slice(), inputs: [fields.input.value, upper.value] };
       }
     },
@@ -161,8 +82,9 @@
       const column = this.columns.find(item => item.id === fields.column.value);
       const original = fields.rangeOriginal, inputs = [fields.input.value, fields.upper.value];
       const values = inputs.map((raw, index) => original && original.column === column.id && raw === original.inputs[index] ?
-        original.values[index] : reportingRangeValue(raw, column, this.labels));
+        original.values[index] : reportingRangeValue(raw, column, this.labels, this.local));
       if (gridScalar(values[0], column) > gridScalar(values[1], column)) throw new Error(this.labels.gridInvalidRange);
       return [{ column: column.id, operator: "ge", values: [values[0]] }, { column: column.id, operator: "le", values: [values[1]] }];
     }
   });
+  };

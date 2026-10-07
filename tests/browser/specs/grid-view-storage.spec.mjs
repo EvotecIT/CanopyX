@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, openGridControl } from "./support.mjs";
 
 const definition = () => ({ protocol: "canopyx/2", type: "grid", id: "prefs", label: "Preference inventory",
   source: { kind: "inline" }, rowHeight: 28, pageSize: 10, presentation: "paged", pageLength: 5,
@@ -100,6 +100,21 @@ test("durable named views retain defaults across tabs, rename safely and reset w
     expect(await other.evaluate(api + ".getDefaultView()")).toBe(null);
     expect(await other.evaluate(api + ".getSavedViews()")).toEqual(["Everything"]);
   } finally { await other.close(); }
+});
+
+test("an unchanged preference flush preserves a newer tab's accepted settings", async ({page,context}) => {
+  await open(page);
+  await page.evaluate(`(async()=>{await ${api}.setQuery({search:'Archive'});${api}.saveView('Original');${api}.setDefaultView('Original');await ${api}.flushViewSettings();})()`);
+  const other=await context.newPage();
+  try {
+    await open(other);
+    await other.evaluate(`(async()=>{${api}.removeSavedView('Original');await ${api}.setQuery({search:'Source'});await ${api}.flushViewSettings();})()`);
+    await page.evaluate(api+'.flushViewSettings()');
+    expect(await page.evaluate(api+'.getSavedViews()')).toEqual([]);
+    await other.reload();await other.waitForSelector('[data-cx-ready]');
+    expect(await other.evaluate(api+'.getDefaultView()')).toBeNull();
+    expect(await other.evaluate(api+'.getQuery().search')).toBe('Source');
+  } finally {await other.close();}
 });
 
 test("an older tab's presentation autosave preserves newer named metadata without importing its query", async ({page,context}) => {
@@ -250,9 +265,11 @@ test("restoring an acknowledged envelope clears a recoverable size error without
 
 test("keyboard resizing during preference loading and presentation edits during query restoration win", async ({ page }) => {
   await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
+  // Keyboard resizing starts from the rendered width, which includes the identity column's share of spare width.
+  const rendered = await page.locator('.cx-hcell[data-cx-column="name"]').evaluate(cell => Math.floor(cell.getBoundingClientRect().width));
   await page.locator('[data-cx-column="name"] .cx-resize').press('ArrowRight');
   await page.evaluate(input => loadResolve(input),settings()); await page.evaluate(api+'.ready');
-  expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(190);
+  expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(rendered + 10);
   const input=settings(), rows=definition().rows.filter(row=>row.cells.name==='Archive').slice(0,10);
   await open(page, definition(), `CanopyX.configure('prefs',{viewStore:{load(){return ${JSON.stringify(input)};},save(){}},
     source:{query(query){window.requested=query;return new Promise(r=>window.queryResolve=r);}}});`, false);
@@ -316,7 +333,7 @@ test("shareable layout strips query-sensitive values, positions and dataset iden
 test("saved-view controls expose rename/default/reset and remain keyboard accessible in compact dark layouts", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   await page.locator("[data-canopyx-host]").evaluate(host=>host.dataset.cxTheme="dark");
-  await page.locator(".cx-grid-views > summary").click(); const panel=page.locator(".cx-grid-views");
+  await openGridControl(page, "views"); const panel=page.locator(".cx-grid-views");
   await panel.getByRole("textbox", {name:"View name",exact:true}).fill("Inventory");
   await panel.getByRole("button", {name:"Save view",exact:true}).click();
   await panel.getByRole("button", {name:"Make default",exact:true}).click();

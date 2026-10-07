@@ -18,7 +18,7 @@
       const resizeRow = (row) => {
         row.style.width = sum + "px";
         if (!row._kind || !row.firstElementChild) return;
-        if (row._kind !== "node") row.firstElementChild.style.width = sum + "px";
+        if (row.children.length === 1) row.firstElementChild.style.width = sum + "px";
         else widths.forEach((width, i) => { if (row.children[i]) row.children[i].style.width = width + "px"; });
       };
       this.rendered.forEach(resizeRow);

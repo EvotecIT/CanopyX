@@ -30,7 +30,20 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
-        "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } }
+        "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
+        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
+      }
+    },
+    "gridClasses": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$" },
+    "gridHighlightRule": {
+      "type": "object", "required": ["column", "operator", "values"], "additionalProperties": false,
+      "anyOf": [{ "required": ["tone"] }, { "required": ["className"] }],
+      "allOf": [{ "$ref": "#/$defs/gridFilter/allOf/0" }],
+      "properties": {
+        "column": { "$ref": "#/$defs/gridFilter/properties/column" },
+        "operator": { "$ref": "#/$defs/gridFilter/properties/operator" },
+        "values": { "$ref": "#/$defs/gridFilter/properties/values" },
+        "target": { "enum": ["row", "cell"] }, "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
       }
     },
     "grid": {
@@ -44,6 +57,17 @@
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
+        "autoRowHeight": { "type": "boolean", "description": "Measure record heights; rowHeight supplies the minimum and unseen-row estimate." },
+        "density": { "enum": ["compact", "default", "comfortable"], "description": "Graphite spacing; explicit rowHeight wins." },
+        "zebra": { "type": "boolean", "description": "Optional alternate-row backgrounds; off by default." },
+        "noun": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "emptyReason": { "type": "string", "maxLength": 4096 },
+        "statusBar": { "type": "boolean" },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" } } },
+        "rowAction": { "enum": ["none", "details", "link"], "description": "What a plain row click does; a plain click never selects. Default none." },
+        "autoHeight": { "type": "boolean", "description": "A grid whose rows fit is as tall as its rows; false keeps the host height. Default true." },
+        "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
+        "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
         "search": { "type": "boolean" },
@@ -54,7 +78,7 @@
         "reporting": { "$ref": "#/$defs/gridReporting" },
         "columns": {
           "type": "array", "minItems": 1,
-          "items": { "allOf": [{ "$ref": "#/$defs/column" }, { "properties": { "editable": { "const": false } } }] },
+          "items": { "$ref": "#/$defs/gridColumn" },
           "contains": { "not": { "required": ["hidden"], "properties": { "hidden": { "const": true } } } }
         },
         "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." } } },
@@ -124,7 +148,9 @@
         "columns": { "type": "array", "minItems": 1, "items": {
           "type": "object", "required": ["id", "width", "hidden"], "additionalProperties": false,
           "properties": { "id": { "$ref": "#/$defs/identifier" }, "width": { "type": "number", "minimum": 40, "maximum": 2147483647 },
-            "hidden": { "type": "boolean" }, "flex": { "type": "boolean" }, "pin": { "enum": ["none", "left", "right"] } }
+            "hidden": { "type": "boolean" }, "flex": { "type": "boolean" }, "pin": { "enum": ["none", "left", "right"] },
+            "sized": { "type": "boolean", "description": "The width is a user choice; without it the column keeps automatic sizing." },
+            "priority": { "$ref": "#/$defs/gridColumn/properties/priority" } }
         } },
         "query": { "allOf": [
           { "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] },
@@ -199,7 +225,7 @@
       "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
         "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "aggregates": { "$ref": "#/$defs/gridAggregateValues" } }
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" } }
     },
     "gridColumnLayout": {
       "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
@@ -215,12 +241,372 @@
     },
     "gridPresenter": {
       "oneOf": [
-        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "link" }, "hrefColumn": { "$ref": "#/$defs/identifier" }, "newWindow": { "type": "boolean" } } },
-        { "type": "object", "required": ["kind", "glyph"], "additionalProperties": false, "properties": { "kind": { "const": "icon" }, "glyph": { "type": "string", "minLength": 1, "maxLength": 32 } } },
-        { "type": "object", "required": ["kind", "maximum"], "additionalProperties": false, "properties": { "kind": { "const": "progress" }, "maximum": { "type": "number", "exclusiveMinimum": 0, "maximum": 9007199254740991 } } },
-        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "boolean" } } },
-        { "type": "object", "required": ["kind", "separator", "limit"], "additionalProperties": false, "properties": { "kind": { "const": "list" }, "separator": { "type": "string", "minLength": 1, "maxLength": 16 }, "limit": { "type": "integer", "minimum": 1, "maximum": 16 } } },
-        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "const": "longText" } } }
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "link"
+            },
+            "hrefColumn": {
+              "$ref": "#/$defs/identifier"
+            },
+            "newWindow": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "glyph"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "icon"
+            },
+            "glyph": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "maximum"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "progress"
+            },
+            "maximum": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "thresholds": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "required": [
+                  "upperBound",
+                  "tone"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "upperBound": {
+                    "type": "number",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "tone": {
+                    "$ref": "#/$defs/tone"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "boolean"
+            },
+            "inverted": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "separator",
+            "limit"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "list"
+            },
+            "separator": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "longText"
+            },
+            "mono": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "enum"
+            },
+            "quietTones": { "$ref": "#/$defs/quietTones" },
+            "tones": {
+              "type": "object",
+              "maxProperties": 512,
+              "propertyNames": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/tone"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "state"
+            },
+            "quietTones": { "$ref": "#/$defs/quietTones" },
+            "tones": {
+              "type": "object",
+              "maxProperties": 512,
+              "propertyNames": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/tone"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "deltaColumn"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "change"
+            },
+            "deltaColumn": {
+              "$ref": "#/$defs/identifier"
+            },
+            "higherIsGood": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "statusStrip"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "sparklineBars"
+            },
+            "thresholds": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "required": [
+                  "upperBound",
+                  "tone"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "upperBound": {
+                    "type": "number",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "tone": {
+                    "$ref": "#/$defs/tone"
+                  }
+                }
+              }
+            },
+            "minimum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "scaleMaximum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "higherIsGood": {
+              "type": "boolean"
+            },
+            "mark": {
+              "enum": [
+                "worst",
+                "last"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "sparklineLine"
+            },
+            "thresholds": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "required": [
+                  "upperBound",
+                  "tone"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "upperBound": {
+                    "type": "number",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "tone": {
+                    "$ref": "#/$defs/tone"
+                  }
+                }
+              }
+            },
+            "minimum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "scaleMaximum": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "higherIsGood": {
+              "type": "boolean"
+            },
+            "mark": {
+              "enum": [
+                "worst",
+                "last"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "identifier"
+            },
+            "secondaryColumn": {
+              "$ref": "#/$defs/identifier"
+            },
+            "mono": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "separator"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "tags"
+            },
+            "separator": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            },
+            "limit": {
+              "const": 3
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "missing"
+            }
+          }
+        }
       ]
     },
     "gridOrdering": {
@@ -351,20 +737,50 @@
       }
     },
     "cellValue": { "type": ["string", "number", "boolean", "null"], "minimum": -9007199254740991, "maximum": 9007199254740991 },
+    "cellPeriod": {"type":"object","required":["period"],"additionalProperties":false,"properties":{"period":{"type":"string","minLength":1,"maxLength":256},"value":{"type":["number","null"],"minimum":-9007199254740991,"maximum":9007199254740991},"state":{"type":["string","null"],"maxLength":4096},"tone":{"$ref":"#/$defs/tone"}}},
     "cell": {
       "description": "A bare value, or an object with a value plus display text, tooltip, tone, and badges.",
       "oneOf": [
-        { "$ref": "#/$defs/cellValue" },
+        {
+          "$ref": "#/$defs/cellValue"
+        },
         {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "value": { "$ref": "#/$defs/cellValue" },
-            "text": { "type": "string" },
-            "searchText": { "type": "string", "description": "Alternate flat-grid search text; it does not change display, sort, filter or export values." },
-            "title": { "type": "string" },
-            "tone": { "$ref": "#/$defs/tone" },
-            "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } }
+            "value": {
+              "$ref": "#/$defs/cellValue"
+            },
+            "text": {
+              "type": "string"
+            },
+            "searchText": {
+              "type": "string",
+              "description": "Alternate flat-grid search text; it does not change display, sort, filter or export values."
+            },
+            "title": {
+              "type": "string"
+            },
+            "tone": {
+              "$ref": "#/$defs/tone"
+            },
+            "badges": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/badge"
+              }
+            },
+            "secondary": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "series": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/cellPeriod"
+              }
+            }
           }
         }
       ]
@@ -490,9 +906,72 @@
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
         "editable": { "type": "boolean" },
-        "hidden": { "type": "boolean" }
+        "hidden": { "type": "boolean" },
+        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." }
       }
     },
+    "gridColumn": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "width",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/column/properties/id"
+        },
+        "title": {
+          "$ref": "#/$defs/column/properties/title"
+        },
+        "width": {
+          "$ref": "#/$defs/column/properties/width"
+        },
+        "autoWidth": {
+          "type": "boolean",
+          "description": "Fit loaded content on first layout. Width remains a numeric fallback; saved widths take precedence."
+        },
+        "kind": {
+          "$ref": "#/$defs/column/properties/kind"
+        },
+        "sortable": {
+          "type": "boolean"
+        },
+        "editable": {
+          "const": false
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "wrap": {
+          "type": "boolean"
+        },
+        "presenter": {
+          "$ref": "#/$defs/gridPresenter"
+        },
+        "aggregatable": {
+          "type": "boolean"
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "minWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
+        "maxWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647, "description": "Widest width and the content measuring cap." },
+        "fixed": { "type": "boolean", "description": "The width is hard; requires width. Otherwise width is preferred." },
+        "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Share of spare width, given before the identity column." },
+        "autoSize": { "enum": ["content", "header", "none"], "description": "What content measuring reads. Default content." },
+        "priority": { "anyOf": [{ "enum": ["essential", "normal", "optional"] }, { "type": "integer", "minimum": 0, "maximum": 2147483647 }],
+          "description": "How the column gives way when narrow. Integers follow responsivePriority: 0-1 essential, 10000+ optional." },
+        "pinned": { "enum": ["left", "right", null], "description": "Requested edge; null unpins. The identity column pins left by default." },
+        "rowHeader": { "type": "boolean", "description": "The identity column; defaults to the first column. At most one." }
+      }
+    },
+    "quietTones": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/tone" },
+      "description": "Tones an enum or state presenter shows as plain muted text." },
     "source": {
       "type": "object",
       "required": ["kind"],
@@ -607,7 +1086,66 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "searchPlaceholder": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFitContent": { "type": "string" },
+        "gridUnpin": { "type": "string" },
+        "gridWhere": { "type": "string" },
+        "gridComplexFilter": { "type": "string" },
+        "gridClearColumnFilter": { "type": "string" },
+        "gridSelectionAggregate": { "type": "string" },
+        "gridConditionValue": { "type": "string" },
+        "gridConditionUpperValue": { "type": "string" },
+        "gridDeleteCondition": { "type": "string" },
+        "gridShowRowsWhere": { "type": "string" },
+        "gridOfTheseAreTrue": { "type": "string" },
+        "gridOfThese": { "type": "string" },
+        "gridGroupCount": { "type": "string" },
+        "gridMore": { "type": "string" },
+        "gridDone": { "type": "string" },
+        "gridClearAll": { "type": "string" },
+        "gridRows": { "type": "string" },
+        "gridResultNoun": { "type": "string" },
+        "gridSearchNoun": { "type": "string" },
+        "gridChart": { "type": "string" },
+        "gridColumnMenu": { "type": "string" },
+        "gridSortAscending": { "type": "string" },
+        "gridSortDescending": { "type": "string" },
+        "gridClearSort": { "type": "string" },
+        "gridFilterColumn": { "type": "string" },
+        "gridHideColumn": { "type": "string" },
+        "gridGroupedBy": { "type": "string" },
+        "gridRemoveGrouping": { "type": "string" },
+        "gridSelectAllValues": { "type": "string" },
+        "gridFilterValues": { "type": "string" },
+        "gridAddCondition": { "type": "string" },
+        "gridAddGroup": { "type": "string" },
+        "gridAnd": { "type": "string" },
+        "gridOr": { "type": "string" },
+        "gridEditAsText": { "type": "string" },
+        "gridFilterText": { "type": "string" },
+        "gridDeepFilters": { "type": "string" },
+        "gridToday": { "type": "string" },
+        "gridYesterday": { "type": "string" },
+        "gridLastSevenDays": { "type": "string" },
+        "gridLastThirtyDays": { "type": "string" },
+        "gridThisMonth": { "type": "string" },
+        "gridDateRange": { "type": "string" },
+        "gridEmpty": { "type": "string" },
+        "gridEmptyReason": { "type": "string" },
+        "gridNoMatches": { "type": "string" },
+        "gridNoMatchesReason": { "type": "string" },
+        "gridRetry": { "type": "string" },
+        "gridLoadFailed": { "type": "string" },
+        "gridAll": { "type": "string" },
+        "gridPageOf": { "type": "string" },
+        "gridStatusCount": { "type": "string" },
+        "gridDetailsSection": { "type": "string" },
+        "gridPreviousRecord": { "type": "string" },
+        "gridNextRecord": { "type": "string" },
+        "gridShowMore": { "type": "string" },
+        "gridNoData": { "type": "string" },
+        "gridPeriodRange": { "type": "string" },
+        "gridHealthy": { "type": "string" },
+        "searchPlaceholder": { "$ref": "#/$defs/accessibleLabel" },
             "searchResults": { "$ref": "#/$defs/accessibleLabel" },
             "searchResultCount": { "$ref": "#/$defs/accessibleLabel" },
             "searchResultCountOfTotal": { "$ref": "#/$defs/accessibleLabel" },
@@ -677,14 +1215,23 @@
             "gridHeaderFilter": { "$ref": "#/$defs/accessibleLabel" },
             "gridExpandCell": { "$ref": "#/$defs/accessibleLabel" },
             "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCloseRecord": { "$ref": "#/$defs/accessibleLabel" },
             "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFitColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFitAllColumns": { "$ref": "#/$defs/accessibleLabel" },
             "gridColumnMoved": { "$ref": "#/$defs/accessibleLabel" },
             "gridPinColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridPinNone": { "$ref": "#/$defs/accessibleLabel" },
             "gridPinLeft": { "$ref": "#/$defs/accessibleLabel" },
             "gridPinRight": { "$ref": "#/$defs/accessibleLabel" },
             "gridResponsiveHidden": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFindColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridShowAllColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "gridResetColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "gridReorderColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinnedLeft": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPinnedRight": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterGroupTitle": { "$ref": "#/$defs/accessibleLabel" },
             "gridFacetValues": { "$ref": "#/$defs/accessibleLabel" },
             "gridFacetSearch": { "$ref": "#/$defs/accessibleLabel" },

@@ -4,7 +4,16 @@
     gridAllResults: "All results", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details"
   }));
   Object.assign(DataGrid.prototype, {
+    // Record details is a more-menu entry, kept when the Export menu is switched off.
     buildExportControls() {
+      this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridDetails, () => {
+        try {
+          const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
+          if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
+          this.openDetails(row.key).catch(error => this.emit("error", { error }));
+        } catch (error) { this.emit("error", { error }); }
+      }), { className: "cx-button cx-grid-details" }));
+      if (this.tools.export === false) return;
       const panel = this.controlPanel(this.labels.gridExport, "cx-grid-export").panel, scope = h("select");
       scope.setAttribute("aria-label", this.labels.gridExport);
       for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]]) {
@@ -15,7 +24,7 @@
       const run = action => {
         buttons.forEach(button => button.disabled = true); setText(status, this.labels.loading);
         Promise.resolve().then(action).then(() => setText(status, ""), error => {
-          setText(status, error.message); this.emit("error", { error: error });
+          setText(status, error.message); this.emit("error", { error });
         }).finally(() => { if (!this.destroyed) buttons.forEach(button => button.disabled = false); });
       };
       const csv = gridButton(this.labels.gridDownloadCsv, () => run(async () => {
@@ -28,12 +37,5 @@
       }));
       const copy = gridButton(this.labels.gridCopy, () => run(() => this.copy({ scope: scope.value })));
       const buttons = [csv, copy]; panel.append(csv, copy, status);
-      if (typeof this.opts.onDetails === "function") this.toolbar.appendChild(gridButton(this.labels.gridDetails, () => {
-        try {
-          const row = this.focused || [...this.rowCache.values()].find(item => this.selected.has(item.key));
-          if (!row || row.status) throw new Error("CanopyX: focus a record for details.");
-          this.openDetails(row.key).catch(error => this.emit("error", { error: error }));
-        } catch (error) { this.emit("error", { error: error }); }
-      }));
     }
   });

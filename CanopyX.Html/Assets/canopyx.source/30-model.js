@@ -49,7 +49,7 @@
       if (!options.formatLink !== !options.parseLink) {
         throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
       }
-      const rendererOf = (id) => (Object.prototype.hasOwnProperty.call(renderers, id) ? renderers[id] : null);
+      const rendererOf = (id) => (Object.hasOwn(renderers, id) ? renderers[id] : null);
       this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
       this.keyMap = new Map();
       this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
@@ -151,14 +151,14 @@
       kind = parent.loading ? "loading" : parent.error ? "error" : kind;
       let row = parent._status;
       if (!row) {
-        row = parent._status = { key: null, status: kind, parent: parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
+        row = parent._status = { key: null, status: kind, parent, level: parent.level + 1, hpx: this.rowH, h: { id: "", label: "" }, _v: 0 };
       }
       row.status = kind;
       const format = numberFormat(this.lang);
       const loaded = format.format(parent.children ? parent.children.length : 0);
       const labels = this.labels;
       row.h.label = kind === "loading" ? labels.loading : kind === "error" ? fill(labels.loadError, { error: parent.error }) :
-        parent.total != null ? fill(labels.showMore, { loaded: loaded, total: format.format(parent.total) }) : fill(labels.showMoreUnknownTotal, { loaded: loaded });
+        parent.total != null ? fill(labels.showMore, { loaded, total: format.format(parent.total) }) : fill(labels.showMoreUnknownTotal, { loaded });
       row._v = 0;
       return row;
     }
@@ -166,7 +166,7 @@
     /** The cell for a column; the tree column falls back to the label. */
     cellOf(node, column, index) {
       const cells = node.cells;
-      if (cells && Object.prototype.hasOwnProperty.call(cells, column.id)) {
+      if (cells && Object.hasOwn(cells, column.id)) {
         return cells[column.id];
       }
       return index === 0 ? node.label : undefined;
@@ -174,6 +174,6 @@
 
     emit(name, detail) {
       if (this.destroyed) return;
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail: detail, bubbles: true }));
+      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail, bubbles: true }));
     }
   }

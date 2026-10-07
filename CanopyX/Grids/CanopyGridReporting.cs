@@ -21,7 +21,7 @@ public sealed class CanopyGridReporting {
     /// <remarks>A host-provided view store overrides browser storage. Local storage requires a nonempty view state key.</remarks>
     public CanopyGridViewStorage ViewStorage { get; set; }
 
-    /// <summary>Gets or sets whether each visible header offers a filter-editor button.</summary>
+    /// <summary>Gets or sets whether headers opt into column filtering. Every column menu offers Filter…; a filter button appears only on a filtered column.</summary>
     /// <remarks>The editor queries all records; the button does not filter only the mounted rows.</remarks>
     public bool HeaderFilters { get; set; }
 
@@ -79,7 +79,7 @@ public sealed class CanopyGridReporting {
         foreach (var pair in Layout) {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
-            if (declared == null || pair.Value == null || declared.Width < pair.Value.Minimum || declared.Width > pair.Value.Maximum)
+            if (declared == null || pair.Value == null || declared.HasExplicitWidth && (declared.Width < pair.Value.Minimum || declared.Width > pair.Value.Maximum))
                 throw new InvalidOperationException("A layout needs a declared column whose initial width is within its non-null policy bounds.");
         }
         foreach (var pair in Ordering) {
@@ -92,15 +92,7 @@ public sealed class CanopyGridReporting {
             CanopyColumn? declared = null;
             foreach (var column in columns) if (column.Id == pair.Key) declared = column;
             if (declared == null || pair.Value == null) throw new InvalidOperationException("A presenter needs a declared column and a non-null descriptor.");
-            var presenter = pair.Value;
-            if (presenter.Kind == CanopyGridPresenterKind.Progress && declared.Kind != CanopyColumnKind.Number ||
-                (presenter.Kind == CanopyGridPresenterKind.Boolean || presenter.Kind == CanopyGridPresenterKind.List || presenter.Kind == CanopyGridPresenterKind.Link) && declared.Kind != CanopyColumnKind.Text)
-                throw new InvalidOperationException("The presenter is incompatible with the column's raw value kind.");
-            if (presenter.HrefColumn != null) {
-                CanopyColumn? href = null;
-                foreach (var column in columns) if (column.Id == presenter.HrefColumn) href = column;
-                if (href == null || href.Kind != CanopyColumnKind.Text) throw new InvalidOperationException("A link destination needs a declared text column.");
-            }
+            pair.Value.Validate(declared, columns);
         }
     }
 

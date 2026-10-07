@@ -6,6 +6,8 @@ export type CheckState = boolean | "mixed";
 export type SortDirection = "asc" | "desc";
 
 export interface CanopyBadge { text: string; tone?: string; title?: string; }
+/** Ordered visual history metadata; raw cell values still drive queries and exports. */
+export interface CellPeriod { period: string; value?: number | null; state?: string | null; tone?: string; }
 export interface CanopyCell {
   value?: CellValue;
   text?: string;
@@ -14,6 +16,10 @@ export interface CanopyCell {
   title?: string;
   tone?: string;
   badges?: CanopyBadge[];
+  /** Secondary identifier text, independent of the raw value. */
+  secondary?: string;
+  /** At most 4096 ordered periods for a flat-grid history presenter. */
+  series?: CellPeriod[];
 }
 export type Cell = CellValue | CanopyCell;
 
@@ -107,15 +113,30 @@ export type LabelName =
   | "markMove" | "moveHere" | "moveBefore" | "moveAfter" | "cancelMove"
   | "gridFilters" | "gridColumn" | "gridOperator" | "gridValue" | "gridValueType" | "gridText" | "gridBoolean" | "gridAddFilter" | "gridRemoveFilter" | "gridApply" | "gridClearFilters" | "gridMoveEarlier" | "gridMoveLater" | "gridViews" | "gridViewName" | "gridSaveView" | "gridRemoveView" | "gridResetView" | "gridChooseView" | "gridInvalidFilter" | "gridContains" | "gridStartsWith" | "gridIn" | "gridIsNull" | "gridIsNotNull"
   | "gridBetween" | "gridRangeEnd" | "gridInvalidRange" | "gridSuggestedCategory" | "gridChooseCategory" | "gridBooleanValue" | "gridTrue" | "gridFalse" | "gridHeaderFilter"
-  | "gridExpandCell" | "gridCloseCell" | "gridMoveColumn" | "gridResizeHelp" | "gridColumnMoved"
+  | "gridExpandCell" | "gridCloseCell" | "gridCloseRecord" | "gridMoveColumn" | "gridResizeHelp" | "gridColumnMoved" | "gridFitColumn" | "gridFitAllColumns"
   | "gridPinColumn" | "gridPinNone" | "gridPinLeft" | "gridPinRight" | "gridResponsiveHidden"
+  | "gridFindColumn" | "gridShowAllColumns" | "gridResetColumns" | "gridReorderColumn" | "gridPinnedLeft" | "gridPinnedRight"
   | "gridFilterGroupTitle" | "gridFilterMatch" | "gridFilterAll" | "gridFilterAny" | "gridAddFilterGroup" | "gridDeleteFilterGroup"
   | "gridFacetValues" | "gridFacetSearch" | "gridFacetIncludeCurrent" | "gridFacetLoad" | "gridFacetChoose" | "gridFacetCounts" | "gridFacetReload"
   | "gridRenameView" | "gridDefaultView" | "gridClearDefaultView" | "gridDefaultViewName" | "gridNoDefaultView" | "gridDefaultViewOption"
   | "gridSelection" | "gridSelectPage" | "gridSelectMatching" | "gridClearSelection" | "gridSelectionCount"
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
   | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder"
-  | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint";
+  | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint"
+  | "gridFitContent"
+  | "gridUnpin"
+  | "gridWhere"
+  | "gridComplexFilter"
+  | "gridClearColumnFilter"
+  | "gridSelectionAggregate"
+  | "gridConditionValue"
+  | "gridConditionUpperValue"
+  | "gridDeleteCondition"
+  | "gridShowRowsWhere"
+  | "gridOfTheseAreTrue"
+  | "gridOfThese"
+  | "gridGroupCount"
+  | "gridMore" | "gridDone" | "gridClearAll" | "gridRows" | "gridResultNoun" | "gridSearchNoun" | "gridChart" | "gridColumnMenu" | "gridSortAscending" | "gridSortDescending" | "gridClearSort" | "gridFilterColumn" | "gridHideColumn" | "gridGroupedBy" | "gridRemoveGrouping" | "gridSelectAllValues" | "gridFilterValues" | "gridAddCondition" | "gridAddGroup" | "gridAnd" | "gridOr" | "gridEditAsText" | "gridFilterText" | "gridDeepFilters" | "gridToday" | "gridYesterday" | "gridLastSevenDays" | "gridLastThirtyDays" | "gridThisMonth" | "gridDateRange" | "gridEmpty" | "gridEmptyReason" | "gridNoMatches" | "gridNoMatchesReason" | "gridRetry" | "gridLoadFailed" | "gridAll" | "gridPageOf" | "gridStatusCount" | "gridDetailsSection" | "gridPreviousRecord" | "gridNextRecord" | "gridShowMore" | "gridNoData" | "gridPeriodRange" | "gridHealthy";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

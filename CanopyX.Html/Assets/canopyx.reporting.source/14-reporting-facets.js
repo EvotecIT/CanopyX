@@ -7,16 +7,7 @@
       typeof scalar === "boolean" ? "b:" + scalar : "n:" + scalar;
   }
 
-  function reportingFacetProjection(query, column) {
-    const project = group => {
-      if (!group) return undefined;
-      const filters = group.filters.filter(filter => filter.column !== column), groups = group.groups.map(project);
-      if (group.operator === "or" && (filters.length !== group.filters.length || groups.some(child => !child))) return undefined;
-      const children = groups.filter(Boolean);
-      return filters.length || children.length ? { operator: group.operator, filters, groups: children } : undefined;
-    };
-    return { ...query, filters: query.filters.filter(filter => filter.column !== column), filterGroup: project(query.filterGroup) };
-  }
+  function reportingFacetProjection(query,column) { return gridColumnProjection(query,column); }
 
   function reportingFacetPage(input, grid, request) {
     checkDocument(input, "gridFacetPage");
@@ -35,7 +26,7 @@
       throw new Error("CanopyX: facet counts contradict the known accepted dataset counts.");
     const keys = new Set(); let occurrences = 0;
     const items = input.items.map(item => {
-      if (!item || !Object.prototype.hasOwnProperty.call(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
+      if (!item || !Object.hasOwn(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
         throw new Error("CanopyX: invalid facet value/count bucket.");
       const key = reportingFacetKey(item.value, column);
       if (keys.has(key)) throw new Error("CanopyX: duplicate typed facet bucket.");

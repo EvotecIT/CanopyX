@@ -4,15 +4,48 @@ import CanopyX, {
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
 import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
+import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
+import german from "@evotecit/canopyx/locales/de";
+import spanish from "@evotecit/canopyx/locales/es";
+const translatedNote: string = polishStatic.fullReport;
+CanopyX.configure("polish", { labels: polish });
+CanopyX.configure("german", { labels: { ...german, columns: "Host columns" } });
+CanopyX.configure("spanish", { labels: spanish });
+// @ts-expect-error Shipped packs are immutable; use a host override.
+polish.columns = translatedNote;
 
 const reportingHost = document.createElement("div");
 const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",
-  source: { kind: "inline" }, rows: [], rowHeight: 28, pageSize: 100, selection: "none", search: true,
-  columns: [{ id: "name", title: "Name", kind: "text", width: 200, sortable: true }],
+  source: { kind: "inline" }, rows: [], rowHeight: "auto", estimatedRowHeight: 32, pageSize: 100, selection: "none", search: true,
+  highlightRules: [{ column: "name", operator: "eq", values: ["Needs review"], tone: "warning", className: "needs-review" },
+    { column: "name", operator: "isNull", values: [], target: "cell", className: "empty" }],
+  columns: [{ id: "name", title: "Name", kind: "text", sortable: true, wrap: true }],
   reporting: { columnReorder: true, responsive: true, filterGroups: true, facetColumns: ["name"], minimumCenterWidth: 160,
     layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
+reportingApi.autoFitColumns();
+const measuredWireView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "measured", label: "Measured records",
+  source: { kind: "inline" }, rows: [], pageSize: 100, selection: "none", search: false, rowHeight: 32, autoRowHeight: true,
+  columns: [{ id: "name", title: "Name", kind: "text", width: 160, autoWidth: true, wrap: true }] };
+createDataGrid(document.createElement("div"), { view: measuredWireView });
+const graphiteView: InlineGridView = {
+  ...measuredWireView, id: "graphite", density: "comfortable", noun: "services", emptyReason: "No connected source.",
+  zebra: false, statusBar: true, presentation: "paged", pageLength: 25,
+  columns: [
+    { id: "name", title: "Name", kind: "text", presenter: { kind: "identifier", mono: true }, section: "Identity" },
+    { id: "enabled", title: "Enabled", kind: "text", presenter: { kind: "boolean", inverted: true } },
+    { id: "state", title: "State", kind: "text", presenter: { kind: "state", tones: { Healthy: "success" } } },
+    { id: "amount", title: "Amount", kind: "number", aggregatable: true,
+      presenter: { kind: "sparklineLine", minimum: 0, scaleMaximum: 100, mark: "last", thresholds: [{ upperBound: 50, tone: "success" }] } },
+    { id: "history", title: "History", kind: "text", presenter: { kind: "statusStrip" } }
+  ], rows: [{ id: "one", cells: { name: { value: "Service", secondary: "Region" }, amount: { value: 20,
+    series: [{ period: "2026-10-05", value: 20, state: "Healthy", tone: "success" }] } } }]
+};
+const graphite = createDataGrid(document.createElement("div"), { view: graphiteView,
+  onChart: ({ signal, selection }) => { if (signal.aborted) return; }, onUngroup: ({ signal }) => {} });
+await graphite.setPageLength("all");
+const allRows: boolean | undefined = graphite.getState().paging?.allRows;
 const recordSelection = reportingApi.getSelectionDescriptor?.();
 if (recordSelection?.kind === "query") {
   const matched: number | null = recordSelection.matched;
@@ -55,7 +88,12 @@ if (placement) {
   const requested: import("@evotecit/canopyx/grid").GridColumnPin = placement.requestedPin;
   // @ts-expect-error Effective layout snapshots are read-only.
   placement.responsiveHidden = false;
+  const reason: "user" | "priority" | "phone" | null = placement.hiddenReason;
 }
+const endSlot: HTMLElement | undefined = reportingApi.toolbarSlot?.("end");
+endSlot?.append(document.createElement("span"));
+// @ts-expect-error Toolbar slots are start, afterSearch, afterViews and end.
+reportingApi.toolbarSlot?.("middle");
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
@@ -147,6 +185,16 @@ await reportingApi.materializeExport?.({ scope: "filtered", maxRows: 500, fileNa
 await reportingApi.print?.({ scope: "selected", columns: ["name"], values: "raw" });
 // @ts-expect-error Delivery phases have a fixed read/generate/ready vocabulary.
 const invalidDeliveryPhase: import("@evotecit/canopyx/grid").GridExportProgress["phase"] = "downloaded";
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { search: false, export: false, count: false },
+  actions: [{ label: "Reset", run: ({ query }) => void query },
+    { label: "Save view…", render: (container, { close, signal }) => { container.append("Name"); if (!signal.aborted) close(); } }] });
+// @ts-expect-error Toolbar switches are booleans by control name.
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { chips: false } });
+// @ts-expect-error An action runs a handler or renders content, not both.
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, actions: [{ label: "Both", run: () => {}, render: () => {} }] });
+const documentToolbar: HostGridView = { ...gridView, toolbar: { export: false, more: false } };
+// @ts-expect-error The document keeps the search box in its search property.
+documentToolbar.toolbar = { search: false };
 // @ts-expect-error Host views require a query source.
 createDataGrid(document.createElement("div"), { view: gridView });
 const inlineGrid: InlineGridView = { ...gridView, source: { kind: "inline" }, rows: [{ id: "row-1", cells: { name: "Atlas" } }] };

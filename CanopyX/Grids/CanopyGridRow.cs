@@ -23,8 +23,14 @@ public sealed class CanopyGridRow {
     /// <summary>Gets cells keyed by column identity. Omitted cells and null entries are empty values.</summary>
     public IDictionary<string, CanopyCell> Cells { get; } = new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
 
+    /// <summary>Gets or sets the row's default semantic or host-defined tone.</summary>
+    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets additional row CSS classes, at most 1,024 characters without controls.</summary>
+    public string? ClassName { get; set; }
+
     internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null) {
         CanopyCell.ValidateEntries(Cells);
+        CanopyGridHighlightRule.ValidateClassName(ClassName);
         foreach (var cell in Cells) {
             CanopyIdentifiers.Require(cell.Key, nameof(Cells));
             if (columnIds != null && !columnIds.Contains(cell.Key)) {
@@ -42,6 +48,6 @@ public sealed class CanopyGridRow {
             if (cell.Value == null) writer.Null();
             else cell.Value.WriteJson(writer);
         }
-        writer.EndObject().EndObject();
+        writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
     }
 }

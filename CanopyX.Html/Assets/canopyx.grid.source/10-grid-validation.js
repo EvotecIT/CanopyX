@@ -26,14 +26,16 @@
       requireIdentifier(row && row.id, "grid row ID");
       if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
       ids.add(row.id);
-      if (Object.keys(row).some(name => !["id", "cells"].includes(name)) || !row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
-        throw new Error("CanopyX: flat rows contain only id and cells.");
+      if (Object.keys(row).some(name => !["id", "cells", "tone", "className"].includes(name)) || !row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
+        throw new Error("CanopyX: invalid flat row fields.");
+      gridDecoration(row.tone, row.className);
       for (const id of Object.keys(row.cells)) {
         if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
         const cell = row.cells[id];
         if (isCellObject(cell)) {
-          if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "searchText", "title", "tone", "badges"].includes(name)) ||
-              ["text", "searchText", "title", "tone"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
+          if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "searchText", "title", "tone", "badges", "secondary", "series"].includes(name)) ||
+              ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
+              cell.secondary !== undefined && cell.secondary.length > 4096 || cell.series !== undefined && !gridSeriesValid(cell.series) ||
               cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
                 ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
             throw new Error("CanopyX: malformed grid cell.");
@@ -56,17 +58,36 @@
     for (const column of view.columns) {
       requireIdentifier(column && column.id, "grid column ID");
       if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
-          !Number.isInteger(column.width) || column.width < 40)
-        throw new Error("CanopyX: grid columns need unique IDs, supported kinds and valid widths.");
+          column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) ||
+          ["wrap", "autoWidth", "fixed", "rowHeader"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
+          column.minWidth !== undefined && (!Number.isInteger(column.minWidth) || column.minWidth < 40) || column.maxWidth !== undefined &&
+          (!Number.isInteger(column.maxWidth) || column.maxWidth < (column.minWidth ?? 40) || column.maxWidth > MAX_COLUMN_WIDTH) ||
+          column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
+          column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
+          column.fixed && column.width === undefined)
+        throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
+      if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
+      if (column.aggregatable !== undefined && (typeof column.aggregatable !== "boolean" || column.aggregatable && column.kind !== "number") ||
+          column.section !== undefined && (typeof column.section !== "string" || !column.section.trim() || column.section.length > 256))
+        throw new Error("CanopyX: invalid column aggregate or drawer section.");
     }
-    if (view.columns.every(column => column.hidden)) throw new Error("CanopyX: a grid needs a visible column.");
+    if (view.columns.every(column => column.hidden) || view.columns.filter(column => column.rowHeader).length > 1)
+      throw new Error("CanopyX: a grid needs a visible column and one row header at most.");
+    if (view.density !== undefined && !["compact", "default", "comfortable"].includes(view.density) ||
+        ["zebra", "statusBar", "autoHeight", "rowAccents"].some(name => view[name] !== undefined && typeof view[name] !== "boolean") ||
+        view.rowAction !== undefined && !["none", "details", "link"].includes(view.rowAction) ||
+        view.noun !== undefined && (typeof view.noun !== "string" || !view.noun.trim() || view.noun.length > 256) ||
+        view.emptyReason !== undefined && (typeof view.emptyReason !== "string" || view.emptyReason.length > 4096)) throw new Error("CanopyX: invalid grid appearance or state text.");
+    validateGridHighlights(view);
     if (view.searchDelayMs !== undefined && (!Number.isInteger(view.searchDelayMs) || view.searchDelayMs < 0 || view.searchDelayMs > 5000))
       throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
     if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||
         new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
       throw new Error("CanopyX: search columns must identify unique declared columns.");
-    if (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64 ||
+    if (view.autoRowHeight !== undefined && typeof view.autoRowHeight !== "boolean" ||
+        view.rowHeight !== undefined && view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64) ||
+        view.estimatedRowHeight !== undefined && (!Number.isInteger(view.estimatedRowHeight) || view.estimatedRowHeight < 20 || view.estimatedRowHeight > 64) ||
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
     if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
@@ -80,7 +101,7 @@
     if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
-    return view;
+    return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 28 : view.density === "comfortable" ? 42 : 34) };
   }
 
   function gridQuery(view, input) {
@@ -90,7 +111,7 @@
         !["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit", "cursor"].includes(name)) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
         input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
-    const query = { protocol: PROTOCOL, type: type, view: view.id,
+    const query = { protocol: PROTOCOL, type, view: view.id,
       limit: input.limit === undefined ? cursor ? view.pageLength || 50 : view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
     if (cursor ? input.offset !== undefined && input.offset !== 0 : input.cursor !== undefined)
       throw new Error("CanopyX: cursor and offset navigation cannot be mixed.");

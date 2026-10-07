@@ -5,10 +5,43 @@ import type { HostOptions } from "./hosts.js";
 export * from "./index.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
-export interface GridRow { id: string; cells: Record<string, Cell>; }
+export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string; }
+/** First match wins separately for the row and each condition-column cell; raw filter semantics apply. */
+export type GridHighlightRule = GridFilter & { target?: "row" | "cell" } &
+  ({ tone: string; className?: string } | { tone?: string; className: string });
 /** An immutable record projected onto the declared export columns. */
-export interface GridExportRow { readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>; }
-export type GridColumn = Omit<CanopyColumn, "editable"> & { editable?: false };
+export interface GridExportRow {
+  readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>;
+  readonly tone?: string; readonly className?: string;
+}
+export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
+  editable?: false; wrap?: boolean;
+  /** Declarative presentation; explicit host renderers take precedence. */
+  presenter?: GridPresenter;
+  /** Include selected numeric values in the optional status bar. */
+  aggregatable?: boolean;
+  /** Record drawer section label. */
+  section?: string;
+  /** Preferred width; the column grows to its header and loaded content. Omit to use the content width. Saved user widths take precedence. */
+  width?: number;
+  /** Wire documents retain a numeric width and set this flag for initial content fitting. */
+  autoWidth?: boolean;
+  /** The width is hard: it neither grows nor shrinks. Requires width. */
+  fixed?: boolean;
+  minWidth?: number;
+  /** Widest width and the content measuring cap (default cap 420). */
+  maxWidth?: number;
+  /** Share of spare width (0..100), given before the identity column. */
+  flex?: number;
+  autoSize?: "content" | "header" | "none";
+  /** How the column gives way when narrow. Integers follow DataTables responsivePriority: 0-1 essential, 10000+ optional. */
+  priority?: GridColumnPriority;
+  /** Requested edge; null unpins. Omitted: the identity column pins left. */
+  pinned?: "left" | "right" | null;
+  /** Marks the identity column; defaults to the first column. */
+  rowHeader?: boolean;
+};
+export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
 export interface GridOrdering {
@@ -20,10 +53,23 @@ export interface GridOrdering {
 export type GridPresenter =
   | { readonly kind: "link"; readonly hrefColumn?: string; readonly newWindow?: boolean }
   | { readonly kind: "icon"; readonly glyph: string }
-  | { readonly kind: "progress"; readonly maximum: number }
-  | { readonly kind: "boolean" }
+  | { readonly kind: "progress"; readonly maximum: number; readonly thresholds?: readonly GridThreshold[] }
+  | { readonly kind: "boolean"; readonly inverted?: boolean }
   | { readonly kind: "list"; readonly separator: string; readonly limit: number }
-  | { readonly kind: "longText" };
+  | { readonly kind: "longText"; readonly mono?: boolean }
+  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain muted text. */ readonly quietTones?: readonly string[] }
+  | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
+  | { readonly kind: "statusStrip" | "missing" }
+  | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
+  | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
+  | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 };
+/** Ascending inclusive upper bounds; unmatched values use cell tones. */
+export interface GridThreshold { readonly upperBound: number; readonly tone: string; }
+/** Both shared scale bounds must be supplied together; otherwise each cell scales independently. */
+export interface GridHistoryPresentation {
+  readonly minimum?: number; readonly scaleMaximum?: number; readonly thresholds?: readonly GridThreshold[];
+  readonly higherIsGood?: boolean; readonly mark?: "worst" | "last";
+}
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
@@ -40,7 +86,7 @@ export interface GridReporting {
   readonly minimumCenterWidth?: number;
   readonly layout?: Readonly<Record<string, GridColumnLayout>>;
   readonly ordering?: Readonly<Record<string, GridOrdering>>;
-  /** Header buttons open the complete-query filter editor. */
+  /** Accepted for existing hosts: column menus offer Filter…, and a filter button appears only on a filtered column. */
   readonly headerFilters?: boolean;
   /** Offer a bounded nested AND/OR editor over the accepted query's filterGroup. */
   readonly filterGroups?: boolean;
@@ -62,8 +108,43 @@ export interface GridColumnLayout {
 /** Effective layout is distinct from saved intent; responsive fields retain query and explicit export meanings. */
 export interface GridColumnPlacement {
   readonly id: string; readonly requestedPin: GridColumnPin; readonly pin: GridColumnPin;
-  readonly visible: boolean; readonly responsiveHidden: boolean; readonly width: number;
+  /** False whenever the column is out of view; hiddenReason says why. */
+  readonly visible: boolean;
+  /** null when shown; "user" when hidden by the reader or host, "priority" when it gave way to the width or a responsive
+   * policy, "phone" when the phone layout (640 px and below) hid a normal column. */
+  readonly hiddenReason: GridColumnHiddenReason | null;
+  /** True only for the reporting.responsive policy; kept for existing hosts. */
+  readonly responsiveHidden: boolean; readonly width: number;
 }
+export type GridColumnHiddenReason = "user" | "priority" | "phone";
+/** Per-control toolbar switches; an absent switch keeps its control, and a control switched off is not built. */
+export interface GridToolbarControls {
+  /** Filters menu. */
+  filters?: boolean;
+  /** Columns menu. */
+  columns?: boolean;
+  /** Saved views menu with Reset view. */
+  views?: boolean;
+  /** Export menu. */
+  export?: boolean;
+  /** More menu: host actions, Record details and Print. */
+  more?: boolean;
+  /** Result count shown with the query chips. */
+  count?: boolean;
+}
+/** Runtime switches add the search box; documents keep it in the view's search property. */
+export interface GridToolbarOptions extends GridToolbarControls {
+  search?: boolean;
+}
+/** The reporting runtime's host slots in toolbar order; afterSearch follows start directly when there is no search box, and
+ * end starts the right-hand group before Export and the more menu. */
+export type GridToolbarSlot = "start" | "afterSearch" | "afterViews" | "end";
+/** A more-menu entry: a handler, or (reporting runtime) host content disclosed inside the menu. */
+export type GridAction<Q extends AcceptedGridQuery = GridQuery> =
+  | { label: string; run: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>; render?: never }
+  /** render fills container on the entry's first open (and again after a render that threw); close() closes the menu and
+   * focuses its button; signal aborts when the grid is destroyed. */
+  | { label: string; render: (container: HTMLElement, context: { close(): void; signal: AbortSignal }) => void; run?: never };
 export type GridFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
@@ -108,7 +189,32 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   id: string;
   label: string;
   columns: GridColumn[];
-  rowHeight: number;
+  /** Fixed CSS pixel height (20..64), or content measurement. Fixed is the default writer behavior. */
+  rowHeight?: number | "auto";
+  /** Graphite spacing; an explicit rowHeight remains authoritative. */
+  density?: "compact" | "default" | "comfortable";
+  /** Subtle alternate-row backgrounds. Off by default. */
+  zebra?: boolean;
+  /** Host-owned plural noun, such as "servers". */
+  noun?: string;
+  /** Host-owned explanation for an empty source. */
+  emptyReason?: string;
+  /** Optional result and selected-record counts. */
+  statusBar?: boolean;
+  /** Per-control toolbar switches (the search box is the search property). */
+  toolbar?: GridToolbarControls;
+  /** A grid whose rows fit is as tall as its rows (default true). */
+  autoHeight?: boolean;
+  /** What a plain row click does; it never selects (default "none"). */
+  rowAction?: "none" | "details" | "link";
+  /** Draw a row tone as a bar at the row start (default false). */
+  rowAccents?: boolean;
+  /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
+  autoRowHeight?: boolean;
+  /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
+  estimatedRowHeight?: number;
+  /** At most 64 ordered rules; a tone or className is required on each rule. */
+  highlightRules?: readonly GridHighlightRule[];
   pageSize: number;
   /** Presentation only; pageSize remains the source fetch size. */
   presentation?: "continuous" | "paged";
@@ -174,6 +280,8 @@ export interface GridAggregate {
 export interface GridGroup {
   readonly key: string; readonly value: CellValue; readonly offset: number; readonly count: number;
   readonly aggregates: Readonly<Record<string, number | null>>;
+  /** Host-owned complete-group display values; rendered with column presenters, excluded from record queries and exports. */
+  readonly cells?: Readonly<Record<string, Cell>>;
 }
 export interface GridSummary {
   readonly protocol: "canopyx/2"; readonly type: "gridSummary"; readonly view: string; readonly revision: string;
@@ -273,7 +381,7 @@ export interface GridCellContext { column: string; index: number; }
 export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   version: 1;
   view: string;
-  columns: { id: string; width: number; hidden: boolean; flex?: boolean; pin?: GridColumnPin }[];
+  columns: { id: string; width: number; hidden: boolean; flex?: boolean; pin?: GridColumnPin; sized?: boolean; priority?: GridColumnPriority }[];
   query: Q;
   timeZone: TimeZone;
   selection: string[];
@@ -281,7 +389,7 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   /** Reporting grouping only. At most 10000 bounded stable keys; omitted from shareable state. */
   collapsedGroups?: string[];
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
-  paging?: { pageLength: number; offset: number };
+  paging?: { pageLength: number; offset: number; allRows?: boolean };
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -292,7 +400,7 @@ export type GridPreferenceState<Q extends AcceptedGridQuery = GridQuery> = Reado
   readonly query: GridPreferenceQuery<Q>;
   readonly columns: readonly Readonly<GridState<Q>["columns"][number]>[];
   readonly selection: readonly string[];
-  readonly paging?: Readonly<{ pageLength: number; offset: number }>;
+  readonly paging?: Readonly<{ pageLength: number; offset: number; allRows?: boolean }>;
 };
 export interface GridViewSettings<Q extends AcceptedGridQuery = GridQuery> {
   readonly version: 1;
@@ -307,8 +415,9 @@ export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
   save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
 }
 interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
-  /** False lets a host compose controls around the same grid controller. */
-  toolbar?: boolean;
+  /** False hides the whole toolbar so a host can compose controls around the same grid controller; an object switches
+   * single controls off (overriding the view's toolbar switches). Switched-off controls are not built. */
+  toolbar?: boolean | GridToolbarOptions;
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
   searchDelayMs?: number;
   source?: Q extends GridCursorQuery ? GridCursorSource : GridSource;
@@ -319,6 +428,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onQuery?: (event: GridQueryEvent<Q>) => void;
   onSelect?: (event: { ids: string[]; selection?: GridSelection<Q> }) => void;
   onError?: (event: { error: Error }) => void;
+  onColumnResize?: (event: { column: string; width: number }) => void;
+  onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
   onExport?: (event: { format: string; request: GridExportRequest<Q>; signal: AbortSignal;
@@ -328,6 +439,13 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  /** Adds Chart to the selection bar. The host owns chart generation. */
+  onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
+  /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
+   * container on first open, focus moves to its first control, Escape folds it back, and close() closes the menu. */
+  actions?: readonly GridAction<Q>[];
+  /** Optional host-governed removal of the report's fixed grouping. */
+  onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
 }
 /** A host store binds to an explicit keyed reporting definition; ordinary grids have no store option. */
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (
@@ -353,12 +471,24 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   firstPage(): Promise<Q>;
   previousPage(): Promise<Q>;
   nextPage(): Promise<Q>;
-  setPageLength(length: number): Promise<Q>;
+  setPageLength(length: number | "all"): Promise<Q>;
   setColumnWidth(id: string, width: number): void;
-  /** Reporting runtime only: samples at most 200 cached accepted-query records and 2048 display code units per value, capped at 800 CSS pixels before declared constraints. No fetching or viewport scraping. */
-  autoFitColumn?(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
+  /** Samples at most 200 cached accepted-query records and 512 display code units per value, capped at 420 CSS pixels or maxWidth, and sets a sticky user width. No fetching or viewport scraping. */
+  autoFitColumn(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
+  /** Fits every declared column from the same bounded loaded sample, including hidden columns. */
+  autoFitColumns(): Readonly<Record<string, Readonly<{ width: number; sampled: number; scope: "loaded" }>>>;
   setColumnPinned?(id: string, pin: GridColumnPin): void;
+  /** Drops user widths so the columns return to automatic content sizing. */
+  autoSizeColumns(ids?: readonly string[]): void;
+  setColumnPriority(id: string, priority: GridColumnPriority): void;
+  pinColumn(id: string, side: "left" | "right" | null): void;
+  /** Restores the declared order, visibility, widths and pins; keeps the query. */
+  resetColumns(): void;
+  /** Reporting runtime only: effective layout for every declared column, with the reason a column is out of view. */
   getColumnLayout?(): readonly GridColumnPlacement[];
+  /** Reporting runtime only: the stable container of a toolbar slot for the grid's lifetime. Host children marked
+   * data-cx-slot move into their slot when the grid mounts and return to the host element on destroy. */
+  toolbarSlot?(name: GridToolbarSlot): HTMLElement;
   /** Reporting runtime only: revisioned, bounded full-query aggregation. Never reads the viewport cache for counts. */
   getFacets?(column: string, options?: GridFacetOptions): Promise<GridFacetPage>;
   setColumnVisible(id: string, visible: boolean): void;

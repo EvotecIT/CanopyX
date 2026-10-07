@@ -6,6 +6,7 @@
 //                                   [--pause-every 6 --pause-ms 700] [--host-columns status,changes,links,finding]
 //                                   [--host-api renderers|renderCell] [--host-share 0.2]
 //                                   [--view tree|grid] [--profile-dir path] (diagnostic runs; do not compare their timings)
+//                                   [--row-height fixed|auto] [--steps 300] (bounded scroll window for large grids)
 //
 // Method (same as the D21 spike): a fresh browser per run, viewport 1680 x 950, 500 px wheel steps 16 ms apart, each
 // step awaited. Frames over 50 ms and 33 ms, the 95th percentile and the maximum frame time come from a
@@ -39,6 +40,9 @@ const cpus = option("cpu", "1,4").split(",").map(Number);
 const rows = Number(option("rows", "5000"));
 const viewKind = option("view", "tree");
 if (!["tree", "grid"].includes(viewKind)) throw new Error("--view must be tree or grid.");
+const rowHeight = option("row-height", "fixed"), stepLimit = Number(option("steps", "0"));
+if (!["fixed", "auto"].includes(rowHeight) || rowHeight === "auto" && viewKind !== "grid" || !Number.isInteger(stepLimit) || stepLimit < 0)
+  throw new Error("--row-height is fixed or auto (grid only); --steps is a non-negative integer.");
 const runtime = path.resolve(option("runtime", path.join(repo, "CanopyX.Html/Assets/canopyx.js")));
 const stylesheet = path.resolve(option("style", path.join(repo, "CanopyX.Html/Assets/canopyx.css")));
 const channel = option("channel", process.env.CANOPYX_BROWSER_CHANNEL || undefined);
@@ -144,7 +148,7 @@ async function scrollOnce(pageUrl, cpu, run) {
         await page.waitForTimeout(pauseMs);
       }
       const done = await page.evaluate(() => { const g = document.querySelector(".cx-grid"); return g.scrollTop + g.clientHeight >= g.scrollHeight - 2; });
-      if (done) {
+      if (done || stepLimit && steps >= stepLimit) {
         break;
       }
       if (Date.now() - started > 180000) {
@@ -199,11 +203,17 @@ const pageFile = path.join(path.dirname(out), "scroll-" + label + ".html");
 const runtimeBytes = fs.readFileSync(runtime);
 const stylesheetBytes = fs.readFileSync(stylesheet);
 const fixtureView = viewKind === "grid" ? scrollGridView : scrollView;
-const pageSource = pageHtml(runtimeBytes.toString("utf8"), stylesheetBytes.toString("utf8"), fixtureView(5, Math.ceil(rows / 5)), host);
+const definition = fixtureView(5, Math.ceil(rows / 5));
+if (rowHeight === "auto") {
+  definition.rowHeight = "auto";
+  definition.columns.find(column => column.id === "finding").wrap = true;
+  definition.rows.forEach((row, index) => { row.cells.finding = "A measured observation with wrapped text. ".repeat(index % 6 + 1); });
+}
+const pageSource = pageHtml(runtimeBytes.toString("utf8"), stylesheetBytes.toString("utf8"), definition, host);
 fs.writeFileSync(pageFile, pageSource);
 const pageUrl = pathToFileURL(pageFile).href;
 const report = {
-  label: label, host: host, view: viewKind, pauseEvery: pauseEvery, pauseMs: pauseEvery ? pauseMs : 0,
+  label: label, host: host, view: viewKind, rowHeight, stepLimit, pauseEvery: pauseEvery, pauseMs: pauseEvery ? pauseMs : 0,
   runtime: runtime, stylesheet: stylesheet, channel: channel || "chromium", at: new Date().toISOString(),
   assets: { runtimeSha256: sha256(runtimeBytes), stylesheetSha256: sha256(stylesheetBytes) },
   fixture: { path: pageFile, sha256: sha256(pageSource), viewport: viewport, deviceScaleFactor: deviceScaleFactor, requestedRows: rows },

@@ -25,10 +25,21 @@
       "import": "./CanopyX.Html/Assets/canopyx-reporting-module.mjs"
     },
     "./reporting.css": "./CanopyX.Html/Assets/canopyx-reporting.css",
-    "./reporting.js": "./CanopyX.Html/Assets/canopyx-reporting.js"
+    "./reporting.js": "./CanopyX.Html/Assets/canopyx-reporting.js",
+    "./filter-editor.js": "./CanopyX.Html/Assets/canopyx-filter-editor.js",
+    "./filter-editor.css": "./CanopyX.Html/Assets/canopyx-filter-editor.css",
+    "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
+    "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
+    "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
+    "./locales/pl.js": "./CanopyX.Html/Assets/canopyx-labels-pl.js",
+    "./locales/de.js": "./CanopyX.Html/Assets/canopyx-labels-de.js",
+    "./locales/es.js": "./CanopyX.Html/Assets/canopyx-labels-es.js"
   },
   "files": [
     "JavaScript/*.d.ts",
+    "JavaScript/locales/*.d.ts",
+    "JavaScript/locales/*.mjs",
+    "CanopyX.Html/Assets/canopyx-labels-*.js",
     "CanopyX.Html/Assets/canopyx-module.mjs",
     "CanopyX.Html/Assets/canopyx-interactive.js",
     "CanopyX.Html/Assets/canopyx-interactive.css",
@@ -39,7 +50,9 @@
     "CanopyX.Html/Assets/canopyx-grid.css",
     "CanopyX.Html/Assets/canopyx-reporting-module.mjs",
     "CanopyX.Html/Assets/canopyx-reporting.js",
-    "CanopyX.Html/Assets/canopyx-reporting.css"
+    "CanopyX.Html/Assets/canopyx-reporting.css",
+    "CanopyX.Html/Assets/canopyx-filter-editor.js",
+    "CanopyX.Html/Assets/canopyx-filter-editor.css"
   ],
   "keywords": ["treegrid", "treeview", "virtualization", "accessibility", "lazy-loading"],
   "engines": { "node": ">=18" }

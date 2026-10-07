@@ -24,6 +24,27 @@ The images come from the pages `CanopyX.Examples` generates; `tests/browser/tool
 
 Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 
+### Wrapped grid rows
+
+Set a grid column's `wrap: true` and the grid's `rowHeight: "auto"` to display complete multiline notes. Fixed rows remain the default. In .NET, set `CanopyColumn.Wrap = true` and `CanopyGridView.AutoRowHeight = true`; `RowHeight` supplies the minimum and initial estimate. Rendered records are measured as they enter the viewport, with stable scroll anchoring and pixel-based keyboard paging. The generated `wrapped-grid.html` examples demonstrate continuous, paged and grouped views. Grids created inside hidden tabs, accordions and details render automatically when shown; see `contained-grids.html`.
+
+### Highlight records by raw values
+
+Grid rows accept optional `tone` and `className`. Declare ordered `highlightRules` to decorate records without a callback:
+
+```javascript
+highlightRules: [
+  { column: "status", operator: "eq", values: ["Failed"], tone: "danger" },
+  { column: "size", operator: "gt", values: [1000000], target: "cell", className: "large-value" }
+]
+```
+
+In .NET, add `new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Failed"), CanopyTone.Danger)` to `view.HighlightRules`. The default target is the row; `CanopyGridHighlightTarget.Cell` decorates the condition column's cell. The first match wins separately for the row and each cell. Rules use typed raw values and the existing filter semantics; display text is independent. Row tones use the existing theme palette, and script-free fallback tables retain the rules and classes. The content-sized example demonstrates these rules.
+
+### Shipped languages
+
+Polish, German and Spanish packs cover all browser controls and static-fallback labels. Set `view.Labels = CanopyLabels.Polish()` (or `German()` / `Spanish()`) in .NET. JavaScript hosts import labels from `@evotecit/canopyx/locales/pl`, `/de` or `/es` and pass them as `labels` on the definition or host options. Individual host overrides still take precedence. The packs are optional assets; the runtime bundles retain their English defaults and existing size budgets. See [label packs](docs/labels.md) for offline classic scripts, placeholders and page language, and the generated `localized-grid-pl.html`, `localized-grid-de.html` and `localized-grid-es.html` examples.
+
 ### JavaScript Hosts
 
 The optional `@evotecit/canopyx` package contains the complete interactive runtime, CSS, and TypeScript declarations. It has no runtime dependencies. The module and classic scripts are assembled from the same JavaScript source; .NET consumers keep their existing build with no JavaScript compiler or bundler.
@@ -79,6 +100,10 @@ A consumer with a solution or build list of its own adds the two CanopyX project
 
 ## Flat Data Grid
 
+Flat grids use the [Graphite design](docs/design/data-grid-spec.html). Choose `density: "compact"`, `"default"`, or `"comfortable"` in JavaScript, or `CanopyGridView.Density` in .NET, for 28, 34 or 42 pixel rows. An explicit row height takes precedence. `zebra: true` / `Zebra = true` enables alternate-row backgrounds. Hosts can set the existing colour tokens and the typography, spacing and radius inputs documented in [architecture](docs/architecture.md#theming).
+
+Columns size to their header and content and fill the grid width; the identity column (the row header, or the first column) takes spare width and stays pinned left when the grid scrolls sideways. When space is short, normal columns shrink, `Optional` columns hide, and only then the grid scrolls; `Essential` columns are never trimmed. `Width` is preferred unless `Fixed`, and `MinimumWidth`, `MaximumWidth`, `Flex`, `AutoSize`, `Priority`/`ResponsivePriority`, `Pinned` and `RowHeader` map to the options DataTables and AG Grid users know; see [column sizing, priority and pinning](docs/column-layout.md). A grid whose rows fit is as tall as its rows. A plain row click never selects (`RowAction` can open details or follow the row link), row tones stay quiet unless `RowAccents` is set, enum and state presenters render the tones in `WithQuietTones(...)` as plain muted text, and scrollbars follow the theme.
+
 Define typed columns and complete inline records with `CanopyGridView`, then write a page or host fragment:
 
 ```csharp
@@ -104,7 +129,9 @@ The toolbar shows the accepted matching and total row counts, removable search/f
 
 JavaScript hosts import `createDataGrid` from `@evotecit/canopyx/grid` and the matching `@evotecit/canopyx/grid.css`. A host source receives a frozen query and cancellation signal and returns a complete requested `gridPage` window. The host owns data access and authorization; CanopyX keeps accepted rows during a replacement request, rejects stale responses and bounds its page cache. See [the grid protocol](docs/data-protocol.md) for query operators and revision semantics.
 
-The grid toolbar provides typed filters, column visibility and ordering, and named saved views. Text/category membership accepts one raw value per line; date operands use ISO timestamps in UTC or with an explicit offset. Columns resize by dragging their separators or using Left/Right when a separator has focus. Headers stay visible while rows scroll.
+The grid toolbar provides typed filters, column visibility and ordering, and named saved views. A column's menu sorts, filters, pins, fits or hides it; arrow keys move through the menu. Its filter popover applies changes after 200 ms, with full-query value counts or typed number/date conditions and calendar presets in the grid's time zone. The Filters button opens a sentence builder with All/Any groups. The UI allows two nesting levels; deeper saved expressions remain intact and can be edited as text. Builder values are single-line typed fields: text, number, and date/time, whose condition list also offers Today, Yesterday, Last 7 days, Last 30 days and This month (stored as an inclusive `ge` and exclusive `lt` pair). "Is any of" opens a checkable list of full-query values with counts; Enter in its search adds a typed value for sources without facets. Date operands use ISO timestamps in UTC or with an explicit offset. A tall builder scrolls its conditions between a fixed header and footer within the viewport, and becomes a full-screen sheet on phones. Paged grids show the range on the left, with rows per page and the pager grouped on the right. Reset view lives in Views. Columns resize by dragging their separators or using Left/Right when a separator has focus. Headers stay visible while rows scroll.
+
+Column menus and filter editing load `canopyx-filter-editor.js` and `.css` on first use. The .NET page and asset writers include matching companions automatically. JavaScript hosts serve those files beside the grid script or module; the package also exports `@evotecit/canopyx/filter-editor.js` and `filter-editor.css`. Query execution and export work without opening the editor. See [asset loading](docs/architecture.md#browser-runtime) for single-file embedding and content-hashed output.
 
 Enable reporting selection after defining the inventory above, before writing the page:
 
@@ -118,6 +145,8 @@ This adds row checkboxes, whole-page selection, Shift ranges and a selected-reco
 Reporting grids also offer direct header moves with `inventory.Reporting.ColumnReorder = true`. Drag a header's move handle or use Left/Right while that handle has focus. Hidden columns, sorting, saved state and export order follow stable column IDs. `inventory.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 600, flex: 1)` constrains its width and allocates spare viewport space. A manual resize disables that column's flex sizing; resetting or restoring a saved view restores its sizing intent.
 
 Press Enter on a reporting-grid resize separator, double-click it, or call `api.autoFitColumn("name")` to fit loaded values. The method measures at most 200 cached records from the accepted query, limits each measured display value to 2,048 code units, and caps its estimate at 800 pixels before applying declared width constraints. It does not fetch unseen records or inspect a custom renderer's DOM. The result states the sampled count and `scope: "loaded"`.
+
+Omit a grid column's JavaScript `width`, or leave its .NET `Width` unassigned, to fit the header and the first loaded sample automatically. Declared widths and saved views take precedence. Initial fitting keeps flex sizing; an explicit auto-fit counts as a manual width choice. Use the per-column fit buttons or **Fit all columns** in Columns, or call `api.autoFitColumns()`, to fit every declared column, including hidden ones. This uses the same bounded sample and constraints as `autoFitColumn`. See `content-grid.html` for an example without configured widths.
 
 Reporting layouts can retain important fields at the edges and adapt the rest to the available width:
 
@@ -135,7 +164,7 @@ Grid pages choose the entry point required by their definition, which also hosts
 
 Reporting grids add natural or case-folded text ordering, category order and typed filter controls without enlarging the ordinary grid entry point:
 
-The reporting filter editor provides inclusive number/date ranges, category suggestions from declared ordering policies, and translated boolean choices. `HeaderFilters` adds a filter button beside each column title; Escape returns focus to that header. Ranges remain two ordinary typed predicates, so hosted queries and exports keep their existing meaning. Category suggestions leave free-text filtering available for values outside the declared list. Active-condition chips and counts describe the accepted full query, including predicates on hidden columns. `Labels.GridBetween`, `GridTrue`, `GridFalse` and `GridHeaderFilter` customize the new controls.
+The reporting filter editor provides inclusive number/date ranges, category suggestions from declared ordering policies, and translated boolean choices. A filled accent filter button appears beside the title of each filtered column and reopens its filter; unfiltered headers show only the column menu, which offers Filter…. Escape returns focus to the button that opened the filter. `HeaderFilters` remains accepted for existing hosts. Ranges remain two ordinary typed predicates, so hosted queries and exports keep their existing meaning. Category suggestions leave free-text filtering available for values outside the declared list. Active-condition chips and counts describe the accepted full query, including predicates on hidden columns. `Labels.GridBetween`, `GridTrue`, `GridFalse` and `GridHeaderFilter` customize the new controls.
 
 ```csharp
 view.Reporting = new CanopyGridReporting { HeaderFilters = true };
@@ -148,13 +177,13 @@ The columns identify declared sortable text fields. Complete-page writers select
 
 The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
 
-Configure `onDetails` to open a host-owned drawer for a record. The hook receives its immutable row, accepted query, cancellation signal and a focus-return callback. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](docs/data-protocol.md#export-clipboard-and-record-details) for revision checks, limits, column selection and keyboard behavior.
+Enter on a row, double-click or Record details opens a drawer with every field, including hidden columns. The drawer uses the column presenters and optional `CanopyColumn.Section` labels, with previous/next records, Escape and focus return. F2 enters the row's cells. On phones, tapping a row opens the full-screen drawer; a +N indicator shows how many fields are hidden. Configure `onDetails` to use a host-owned record view instead. The hook retains its immutable row, accepted query, cancellation signal and return-focus element. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](docs/data-protocol.md#export-clipboard-and-record-details) for revision checks and limits.
 
 The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](TODO.md).
 
-Set `Reporting.FilterGroups = true` (JavaScript `reporting: { filterGroups: true }`) to compose nested “all” and “any” condition groups in the filter editor. The existing flat conditions remain an outer conjunction. Groups use the same typed predicates, saved query state and whole-result export semantics as API-authored queries. Inclusive ranges inside an “any” group stay one condition, represented by an inner AND group. Apply validates the complete expression before requesting data; empty groups and queries beyond eight levels, 64 groups or 64 total predicates retain the previously accepted results. The add/remove controls keep focus within the editor. This option does not enable whole-dataset facet counts.
+The sentence builder composes All/Any condition groups in ordinary and reporting grids. `Reporting.FilterGroups` remains accepted for existing hosts. Flat conditions remain an outer conjunction. Groups use the same typed predicates, saved query state and whole-result export semantics as API-authored queries. Inclusive ranges inside an Any group stay one condition, represented by an inner AND group. Live editing validates the complete expression before requesting data; invalid input retains the accepted results. The engine still supports eight levels, 64 groups and 64 total predicates. Saved expressions deeper than the UI's two levels open read-only until Edit as text is chosen. Group editing does not enable hosted facet counts.
 
-Declare `Reporting.FacetColumns.Add("status")` to add values and counts to that column's filter editor. Inline grids count the entire accepted query; hosted grids supply `source.facet(request, { signal })`. The control searches available values, preserves raw types and lets users include or exclude that column's applied conditions from the counts. Choosing a value edits the draft until Apply. Counts never come from just the visible page, and changing the accepted query retires stale choices. `api.getFacets("status", { search: "review", limit: 100, includeCurrentFilter: false })` exposes the same bounded source contract; see the [facet protocol](docs/data-protocol.md#flat-grid-documents) for projection and snapshot rules.
+Inline text columns offer a value list with full-query counts in their column filter popover. Declare `Reporting.FacetColumns.Add("status")` and supply `source.facet(request, { signal })` for hosted facets. The control searches available values and preserves raw types; counts exclude the current column's predicates and include the other accepted conditions. Changes apply after 200 ms. Counts never come from just the visible page. `api.getFacets("status", { search: "review", limit: 100, includeCurrentFilter: false })` retains the explicit projection option; see the [facet protocol](docs/data-protocol.md#flat-grid-documents) for snapshot rules.
 
 Saved reporting views can survive browser sessions with `inventory.StateKey = "inventory-reader"` and `inventory.Reporting.ViewStorage = CanopyGridViewStorage.Local`. The Saved views menu offers rename and default choices; Reset view restores the definition while keeping named views. JavaScript hosts can supply `viewStore.load/save` hooks for governed preference storage instead. Use `api.flushViewSettings()` before disposal when the host must acknowledge a save. `api.getShareState()` keeps layout and sorting while removing searches, filters, selected IDs and dataset positions. See the [preference contract](docs/data-protocol.md#flat-grid-documents) for bounds, schema evolution, cancellation and privacy.
 
@@ -170,9 +199,13 @@ inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
     "total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
 ```
 
-The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts and totals; collapsing a group hides its rows without removing records from selections or exports. The toolbar totals follow the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](docs/data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
+The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts, column-aligned totals and the worst declared state tone; collapsing a group hides its rows without removing records from selections or exports. Hosted summaries supply optional `CanopyGridGroup.Cells` / `groups[].cells` for group display facts. The pinned summary row follows the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](docs/data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
 
-Safe cell presenters are optional reporting configuration:
+Set `CanopyGridView.StatusBar = true` / `statusBar: true` for matching and selected counts. Numeric columns marked `Aggregatable` / `aggregatable` show selected sums and a tooltip with count, average, minimum and maximum. These use complete selected records rather than visible rows. Hosted aggregates read through the accepted export contract, cancel when selection or query changes, and stop at 50,000 records; unavailable values display the translated no-data message. Inline All in the paging footer uses the complete dataset; `api.setPageLength("all")` selects it programmatically and saved paging state retains that choice.
+
+Safe cell presenters can be declared on any flat-grid column. For example, `new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.State() }` uses each cell's host-supplied tone. JavaScript uses `presenter: { kind: "state" }`. The existing reporting configuration remains supported:
+
+Graphite adds enum pills, quiet healthy states, directional deltas, period strips, bar and line sparklines, identifiers with secondary text, tags and missing-value dashes. History metadata lives in `CanopyCell.Series` / `cell.series`; the cell's raw value retains its search, sorting and export meaning. [The protocol reference](docs/data-protocol.md#safe-cell-presenters) describes thresholds and shared scales. The generated `graphite-grid.html` and dark variant show the presenters together, including 90 daily periods and clamped text.
 
 ```csharp
 view.Reporting.Presenters.Add("name", CanopyGridPresenter.Link("address", newWindow: true));
@@ -184,6 +217,42 @@ view.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText());
 ```
 
 The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
+
+### Toolbar controls, slots and menu entries
+
+Every toolbar control can be switched off; a control switched off is removed from the page (it is not built, or is taken out before the grid appears), and the methods behind it stay available. C# views set `Toolbar` switches (the search box keeps its `Search` switch); browser hosts pass `toolbar` to `createDataGrid` or `CanopyX.configure`, which overrides the definition and also accepts `search`:
+
+```csharp
+inventory.Toolbar.Export = false; // the host offers its own export
+inventory.Toolbar.Count = false;  // the host shows its own count
+```
+
+```js
+createDataGrid(host, { view, toolbar: { views: false, more: true } }); // search, filters, columns, views, export, more, count
+```
+
+The reporting runtime (`@evotecit/canopyx/reporting`) adds host slots and content entries. Four slots hold host elements in the toolbar: `start`, `afterSearch`, `afterViews` and `end` (the start of the right-hand group, before Export and ⋯). `afterSearch` follows `start` directly when the grid has no search box. `api.toolbarSlot(name)` returns the slot's element (it carries `data-cx-toolbar-slot`), the same one for the grid's lifetime whatever the phone layout moves. Children of the host element marked `data-cx-slot` move into their slot when the grid mounts and return to the host element when it is destroyed, so a remount picks them up again; a misspelt slot name fails the mount and leaves them in place. A replacement grid on another host takes host elements with `next.toolbarSlot("end").append(count)`. Slots add no box of their own; host elements that use the `cx-button` and `cx-grid-field` classes match the grid's controls.
+
+```html
+<div data-canopyx-host>
+  <span data-cx-slot="end" class="my-count">1,204 devices</span>
+  <script type="application/json" class="cx-config">…</script>
+</div>
+```
+
+`actions` entries run a handler (`{ label, run }`) or, in the reporting runtime, disclose host content inside the more menu (`{ label, render }`). `render(container, { close, signal })` fills the container on first open (again after a render that threw); focus moves to its first control, Escape folds the entry back to its label, closing the menu folds it, and `close()` closes the menu and returns focus to ⋯. `signal` aborts when the grid is destroyed:
+
+```js
+actions: [{ label: "Save view…", render(container, { close }) {
+  const field = document.createElement("label"), name = document.createElement("input"), save = document.createElement("button");
+  field.className = "cx-grid-field"; field.append("View name", name);
+  save.type = "button"; save.className = "cx-button"; save.textContent = "Save";
+  save.onclick = () => { grid.saveView(name.value); close(); };
+  container.append(field, save);
+} }]
+```
+
+Toolbar menus (Filters, Columns, Views, Export, ⋯ and the header selection menu) open in the browser's top layer as popovers, so a short grid or a host with `overflow: hidden` no longer clips them. They stay inside the grid's DOM, so themes, focus order and events are unchanged, and list menus keep their 320-pixel height cap. Browsers without the popover API give them viewport-fixed positioning instead, which escapes `overflow: hidden` but not an ancestor with a `transform`, `filter` or `contain` that captures fixed positioning.
 
 ## Tree Grid Features
 

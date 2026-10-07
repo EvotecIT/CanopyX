@@ -44,7 +44,7 @@ internal sealed class CanopySearchIndexWriter {
     private readonly List<int> _entryPacks = new List<int>();
     private readonly List<string> _shardPacks = new List<string>();
     /// <summary>The shard documents of a packed index, held until the last so they go into packs in ordinal key order; about the size of the shards.</summary>
-    private readonly SortedDictionary<string, string>? _packedShards;
+    private readonly SortedDictionary<string, CanopyBundleDocument>? _packedShards;
 
     /// <summary>
     /// The bytes a document costs more inside a pack than as a file of its own: the pack's envelope and the template
@@ -52,6 +52,8 @@ internal sealed class CanopySearchIndexWriter {
     /// fits the file budget.
     /// </summary>
     private readonly int _packOverhead;
+    /// <summary>The writer entries are serialized with, one after another, reusing its buffer.</summary>
+    private readonly CanopyJsonWriter _scratch = new CanopyJsonWriter(256);
     private Level? _last;
     private int _numbered;
     private int _topPlaced;
@@ -67,7 +69,7 @@ internal sealed class CanopySearchIndexWriter {
         _kinds = kinds != null && kinds.Count > 0 ? new HashSet<string>(kinds, StringComparer.Ordinal) : null;
         if (context.Options.SearchPackBytes > 0) {
             _packs = new CanopyBundlePacks(context, CanopyBundleLayout.IndexPack, context.Options.SearchPackBytes);
-            _packedShards = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            _packedShards = new SortedDictionary<string, CanopyBundleDocument>(StringComparer.Ordinal);
             _packOverhead = (int)CanopyBundlePacks.SizeOf(string.Empty) + (context.Options.MaxFileBytes - _packs.FileBudget);
         }
     }
@@ -152,8 +154,8 @@ internal sealed class CanopySearchIndexWriter {
     /// the node's first children page when that is in another file than the page that holds the node.
     /// </summary>
     private static void Place(Entry entry, string holding, string first) {
-        entry.PageReference = CanopyBundleLayout.FileOf(holding) != CanopyBundleLayout.FileOf(first) ? holding : null;
-        if (entry.ChildrenReference != null && CanopyBundleLayout.FileOf(entry.ChildrenReference) == CanopyBundleLayout.FileOf(holding)) {
+        entry.PageReference = !CanopyBundleLayout.SameFile(holding, first) ? holding : null;
+        if (entry.ChildrenReference != null && CanopyBundleLayout.SameFile(entry.ChildrenReference, holding)) {
             entry.ChildrenReference = null;
         }
 
@@ -269,20 +271,21 @@ internal sealed class CanopySearchIndexWriter {
         // A file number and a first entry number no real file reaches, so the measured envelope is never too short.
         const int bound = int.MaxValue;
         var reference = CanopyBundleLayout.EntryFile(bound);
-        _budget = _context.RemainingBytes(reference, EntriesDocument(bound, _stem, _items)) - _packOverhead;
+        _budget = _context.RemainingBytes(reference, EntriesDocument(bound, _stem, _items).Text()) - _packOverhead;
         // An entry larger than the budget on its own still gets a file; a stem that crowds out an ordinary entry does not.
-        if (firstSize > _budget && firstSize <= _context.RemainingBytes(reference, EntriesDocument(bound, new List<string>(), _items)) - _packOverhead) {
+        if (firstSize > _budget && firstSize <= _context.RemainingBytes(reference, EntriesDocument(bound, new List<string>(), _items).Text()) - _packOverhead) {
             throw new InvalidOperationException("The search entries of view '" + _context.View.Id + "' need more than MaxFileBytes for the "
                 + _stem.Count.ToString(CultureInfo.InvariantCulture) + " ancestors of one node; increase the budget or write the bundle without search.");
         }
     }
 
     private void WriteEntryFile() {
-        var document = EntriesDocument(_first, _stem, _items);
+        // The stem and the entries are reused for the next file, while a packed document waits for its pack.
+        var document = EntriesDocument(_first, _stem.ToArray(), _items.ToArray());
         if (_packs != null) {
             AddToPack(document, _entryPacks, _entryFiles.Count);
         } else {
-            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.EntryFile(_entryFiles.Count), document);
+            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.EntryFile(_entryFiles.Count), document.Parts());
         }
 
         _entryFiles.Add(_first);
@@ -290,7 +293,7 @@ internal sealed class CanopySearchIndexWriter {
     }
 
     /// <summary>Adds an index document to the packs and records the first file or key of every pack it starts.</summary>
-    private void AddToPack<T>(string document, List<T> firsts, T name) {
+    private void AddToPack<T>(CanopyBundleDocument document, List<T> firsts, T name) {
         var before = _packs!.Count;
         var pending = _packs.Pending;
         _packs.Add(document);
@@ -300,19 +303,13 @@ internal sealed class CanopySearchIndexWriter {
         }
     }
 
-    private static string EntriesDocument(int first, List<string> stem, List<string> entries) {
-        var json = new CanopyJsonWriter(16384);
+    private static CanopyBundleDocument EntriesDocument(int first, IReadOnlyList<string> stem, IReadOnlyList<string> entries) {
+        var json = new CanopyJsonWriter(128);
         json.BeginObject().Envelope("searchEntries").Property("first", first).Name("stem").BeginArray();
-        foreach (var item in stem) {
-            json.Raw(item);
-        }
-
+        var stemStart = json.Length;
         json.EndArray().Name("entries").BeginArray();
-        foreach (var item in entries) {
-            json.Raw(item);
-        }
-
-        return json.EndArray().EndObject().ToString();
+        var entriesStart = json.Length;
+        return new CanopyBundleDocument(json.EndArray().EndObject(), new[] { stemStart, entriesStart }, new[] { stem, entries });
     }
 
     /// <summary>
@@ -321,12 +318,12 @@ internal sealed class CanopySearchIndexWriter {
     /// only the part between them is written. Path-style ids share a prefix with their parent and distinguished names
     /// share a suffix, so neither repeats on every level.
     /// </summary>
-    private static string Body(Entry entry, Level node, string parentId) {
+    private string Body(Entry entry, Level node, string parentId) {
         SharedAffixes(parentId, node.Id, out var head, out var tail);
-        var json = new CanopyJsonWriter(96);
+        var json = _scratch.Reset();
         json.BeginArray().Number(entry.Parent?.Number ?? -1).Number(head).String(node.Id.Substring(head, node.Id.Length - head - tail)).Number(tail).String(node.Label);
-        var body = json.EndArray().ToString();
-        return body.Substring(1, body.Length - 2);
+        json.EndArray();
+        return json.ToString(1, json.Length - 2);
     }
 
     /// <summary>
@@ -335,8 +332,8 @@ internal sealed class CanopySearchIndexWriter {
     /// <c>page</c> the reference of the page that holds the node, each only when it is in another file (see <see cref="Place"/>). A field
     /// without a value is null, and trailing nulls are left out.
     /// </summary>
-    private static string Serialize(Entry entry, bool withNumber) {
-        var json = new CanopyJsonWriter(entry.Body.Length + 48);
+    private string Serialize(Entry entry, bool withNumber) {
+        var json = _scratch.Reset();
         json.BeginArray();
         if (withNumber) {
             json.Number(entry.Number);
@@ -391,7 +388,7 @@ internal sealed class CanopySearchIndexWriter {
     /// </summary>
     private void WriteShard(string key, List<string> words) {
         var bound = key + "." + int.MaxValue.ToString(CultureInfo.InvariantCulture);
-        var budget = _context.ItemBudget(CanopyBundleLayout.Shard(bound), ShardDocument(bound, new ShardPart())) - _packOverhead;
+        var budget = _context.ItemBudget(CanopyBundleLayout.Shard(bound), ShardDocument(bound, new ShardPart()).Text()) - _packOverhead;
         var part = new ShardPart();
         var partNumber = 1;
         foreach (var word in words) {
@@ -449,25 +446,19 @@ internal sealed class CanopySearchIndexWriter {
         if (_packedShards != null) {
             _packedShards[partKey] = ShardDocument(partKey, part);
         } else {
-            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.Shard(partKey), ShardDocument(partKey, part));
+            _context.Result.SearchIndexBytes += _context.WriteFile(CanopyBundleLayout.Shard(partKey), ShardDocument(partKey, part).Parts());
         }
 
         _shards[partKey] = part.Postings;
     }
 
-    private static string ShardDocument(string key, ShardPart part) {
-        var json = new CanopyJsonWriter(16384);
+    private static CanopyBundleDocument ShardDocument(string key, ShardPart part) {
+        var json = new CanopyJsonWriter(128);
         json.BeginObject().Envelope("searchShard").Property("key", key).Name("words").BeginArray();
-        foreach (var word in part.Words) {
-            json.Raw(word);
-        }
-
+        var wordsStart = json.Length;
         json.EndArray().Name("postings").BeginArray();
-        foreach (var list in part.Lists) {
-            json.Raw(list);
-        }
-
-        return json.EndArray().EndObject().ToString();
+        var postingsStart = json.Length;
+        return new CanopyBundleDocument(json.EndArray().EndObject(), new[] { wordsStart, postingsStart }, new IReadOnlyList<string>[] { part.Words, part.Lists });
     }
 
     /// <summary>

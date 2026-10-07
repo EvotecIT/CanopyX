@@ -1,6 +1,10 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the column auto-fit action name, including <c>{column}</c>.</summary>
+    public string GridFitColumn { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the action that fits all declared columns to loaded content.</summary>
+    public string GridFitAllColumns { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the inclusive range operator label. Default "between (inclusive)".</summary>
     public string GridBetween { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the upper range operand label. Default "Upper value (UTC for dates)".</summary>
@@ -92,5 +96,7 @@ public sealed partial class CanopyLabels {
         _values.ContainsKey(nameof(GridGroupHeading)) || _values.ContainsKey(nameof(GridGroupMissing)) || _values.ContainsKey(nameof(GridGroupExpand)) ||
         _values.ContainsKey(nameof(GridGroupCollapse)) || _values.ContainsKey(nameof(GridSummary)) || _values.ContainsKey(nameof(GridGroupOrder)) ||
         _values.ContainsKey(nameof(GridExportProgress)) || _values.ContainsKey(nameof(GridExportReading)) || _values.ContainsKey(nameof(GridExportCancelled)) ||
-        _values.ContainsKey(nameof(GridCancelExport)) || _values.ContainsKey(nameof(GridPrint));
+        _values.ContainsKey(nameof(GridCancelExport)) || _values.ContainsKey(nameof(GridPrint)) ||
+        _values.ContainsKey(nameof(GridHealthy)) || _values.ContainsKey(nameof(GridValue)) || _values.ContainsKey(nameof(GridAddFilter)) ||
+        _values.ContainsKey(nameof(GridMoveEarlier)) || _values.ContainsKey(nameof(GridMoveLater)) || _values.ContainsKey(nameof(GridFitColumn));
 }

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CanopyX grids in containers</title><style>{{style}}</style><script>{{script}}</script></head>
+<body class="cx-page" data-cx-theme="{{theme}}"><main>
+<a href="index.html">CanopyX examples</a><h1>Grids in containers</h1>
+<p>These grids load inside closed containers. Opening or resizing a container updates its grid automatically.</p>
+<div role="tablist" aria-label="Report sections">
+<button id="intro-tab" role="tab" aria-selected="true" aria-controls="intro-panel">Introduction</button>
+<button id="records-tab" role="tab" aria-selected="false" aria-controls="records-panel" tabindex="-1">Records</button>
+</div>
+<section id="intro-panel" role="tabpanel" aria-labelledby="intro-tab"><p>Open Records to show the first grid.</p></section>
+<section id="records-panel" role="tabpanel" aria-labelledby="records-tab" style="display:none">{{tab-grid}}</section>
+<h2><button id="accordion-toggle" aria-expanded="false" aria-controls="accordion-panel">Accordion records</button></h2>
+<section id="accordion-panel" aria-labelledby="accordion-toggle" hidden>{{accordion-grid}}</section>
+<details id="record-details"><summary>More records</summary>{{details-grid}}</details>
+</main><script>
+const tabs = [...document.querySelectorAll('[role=tab]')];
+function showTab(tab) {
+  for (const item of tabs) {
+    const selected = item === tab; item.setAttribute('aria-selected', String(selected)); item.tabIndex = selected ? 0 : -1;
+    document.getElementById(item.getAttribute('aria-controls')).style.display = selected ? '' : 'none';
+  }
+}
+for (const tab of tabs) {
+  tab.addEventListener('click', () => showTab(tab));
+  tab.addEventListener('keydown', event => {
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault(); const index = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : 1 - tabs.indexOf(tab);
+    showTab(tabs[index]); tabs[index].focus();
+  });
+}
+document.getElementById('accordion-toggle').addEventListener('click', event => {
+  const button = event.currentTarget, panel = document.getElementById('accordion-panel');
+  panel.hidden = !panel.hidden; button.setAttribute('aria-expanded', String(!panel.hidden));
+});
+</script></body></html>

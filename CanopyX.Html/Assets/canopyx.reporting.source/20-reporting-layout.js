@@ -19,7 +19,7 @@
           !Number.isInteger(policy.minimum) || policy.minimum < 40 || !Number.isInteger(policy.maximum) ||
           policy.maximum < policy.minimum || policy.maximum > MAX_COLUMN_WIDTH ||
           policy.flex !== undefined && (!Number.isFinite(policy.flex) || policy.flex < 0 || policy.flex > 100) ||
-          column.width < policy.minimum || column.width > policy.maximum)
+          column.width !== undefined && (column.width < policy.minimum || column.width > policy.maximum))
         throw new Error("CanopyX: invalid column layout or initial width.");
     }
   };

@@ -67,31 +67,28 @@ internal static class CanopySearchFolding {
     internal static bool IsSeparator(char unit) =>
         unit < 128 && !((unit >= '0' && unit <= '9') || (unit >= 'A' && unit <= 'Z') || (unit >= 'a' && unit <= 'z'));
 
-    /// <summary>Returns the distinct folded words of a label, in order of first appearance.</summary>
-    internal static List<string> Words(string text) {
-        var words = new List<string>();
-        var seen = new HashSet<string>(System.StringComparer.Ordinal);
-        var current = new StringBuilder();
+    /// <summary>
+    /// Fills <paramref name="words"/> with the folded words of a label in order, a word that appears again included
+    /// again; <paramref name="buffer"/> is scratch space, so a caller that splits many labels reuses both.
+    /// </summary>
+    internal static void Words(string text, List<string> words, StringBuilder buffer) {
+        words.Clear();
+        buffer.Clear();
         foreach (var unit in text ?? string.Empty) {
             if (IsSeparator(unit)) {
-                Flush();
+                Flush(words, buffer);
             } else {
-                current.Append(Fold(unit));
+                buffer.Append(Fold(unit));
             }
         }
 
-        Flush();
-        return words;
+        Flush(words, buffer);
+    }
 
-        void Flush() {
-            if (current.Length > 0) {
-                var word = current.ToString();
-                if (seen.Add(word)) {
-                    words.Add(word);
-                }
-
-                current.Clear();
-            }
+    private static void Flush(List<string> words, StringBuilder buffer) {
+        if (buffer.Length > 0) {
+            words.Add(buffer.ToString());
+            buffer.Clear();
         }
     }
 

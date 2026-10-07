@@ -62,8 +62,12 @@
       if (!this.view.reporting) return VIEW_STATE_BASE.writeStoredState.call(this, state);
       if (!this.storageKey || this.destroyed || this.loadingViewSettings || this.viewStorageRejected) return;
       try {
+        const stateKey = JSON.stringify(state), unchanged = !this.opts.viewStore && this.viewBrowserSyncedState === stateKey &&
+          this.viewSettingsIntent === (this.viewBrowserSyncedIntent || 0);
         if (this.viewSettingsIntent === (this.viewBrowserSyncedIntent || 0)) this.pullBrowserViewMetadata();
         if (this.viewStorageRejected) return;
+        // An unchanged autosave must not overwrite newer settings from another tab.
+        if (unchanged) return;
         const settings = this.getViewSettings();
         if (this.opts.viewStore) {
           this.viewPersistenceError = null;
@@ -71,6 +75,7 @@
         }
         global[this.view.reporting.viewStorage === "local" ? "localStorage" : "sessionStorage"].setItem(this.storageKey, JSON.stringify(settings));
         this.viewBrowserSyncedIntent = this.viewSettingsIntent;
+        this.viewBrowserSyncedState = stateKey;
         this.viewPersistenceError = null; this.setViewPreferenceError("");
       } catch (error) { this.viewPersistenceError = error; this.setViewPreferenceError(error.message); }
     },

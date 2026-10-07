@@ -44,13 +44,37 @@ test('full-query totals and contiguous group ranges precede paging; missing valu
   expect(ids).toEqual(['r14','r13','r12','r11','r23','r22','r21','r19','r18','r17','r16']);
 });
 
+test('group state uses the worst complete-group semantic tone while paging and exports retain raw records',async({page})=>{
+  const view=definition({statusBar:true});
+  view.columns.push({id:'state',title:'State',kind:'text',width:140,presenter:{kind:'state',tones:{Healthy:'success',Late:'warning',Failed:'danger'}}});
+  view.rows.forEach((row,index)=>row.cells.state=index===7?{value:'Failed',text:'Needs attention'}:index===14?'Late':'Healthy');
+  await open(page,view);
+  await expect(page.locator('.cx-grid-group').first().locator('.p-state')).toHaveText('Needs attention');
+  await expect(page.locator('.cx-grid-status')).toContainText('3 groups');
+  expect((await page.evaluate(api+'.getSummary().groups'))[0].cells.state).toEqual({value:'Failed',text:'Needs attention'});
+  await page.evaluate(api+".setQuery({filters:[{column:'state',operator:'ne',values:['Failed']}]})");
+  await expect(page.locator('.cx-grid-group').first().locator('.p-state')).toHaveText('Healthy');
+  const exported=await page.evaluate(`(async()=>{const rows=[];for await(const row of ${api}.prepareExport({scope:'filtered'}).rows())rows.push(row);return rows;})()`);
+  expect(exported).toHaveLength(23);expect(exported.every(row=>row.cells.state.value!=='Failed')).toBe(true);
+});
+
+test('host group display cells render presenters and reject invalid column bindings before accepting a query',async({page})=>{
+  const view=definition({source:{kind:'host'},rows:undefined,reporting:{grouping:{column:'category',direction:'asc'},aggregates:[]}});
+  view.columns.push({id:'state',title:'State',kind:'text',width:140,presenter:{kind:'state'}});
+  const setup=`window.badGroup=false;CanopyX.configure('groups',{source:{query(q){return {protocol:'canopyx/2',type:'gridPage',view:q.view,revision:'one',offset:q.offset,total:2,matched:2,items:[{id:'one',cells:{name:'One',category:'A',amount:1,state:'Healthy'}},{id:'two',cells:{name:'Two',category:'A',amount:2,state:'Healthy'}}]};},summary(q){return {protocol:'canopyx/2',type:'gridSummary',view:q.view,revision:'one',query:q,matched:2,aggregates:{},groups:[{key:'a',value:'A',offset:0,count:2,aggregates:{},cells:badGroup?{unknown:'Bad'}:{state:{value:'Failed',tone:'danger'}}}]};}}});`;
+  await open(page,view,setup);await expect(page.locator('.cx-grid-group .p-state')).toHaveText('Failed');
+  expect((await page.evaluate(api+'.getSummary().groups[0].cells')).state.tone).toBe('danger');
+  await page.evaluate('badGroup=true');const failure=await page.evaluate(api+".setQuery({search:'Bad'}).then(()=>null,error=>error.message)");
+  expect(failure).toContain('undeclared grid column');await expect(page.locator('.cx-grid-group .p-state')).toHaveText('Failed');
+});
+
 test('collapse is presentation only, preserves record selection/export/paging, and restores through named state',async({page})=>{
   const view=definition();view.reporting.layout={name:{minimum:40,maximum:400,pin:'left'},amount:{minimum:40,maximum:400,pin:'right'}};
   await open(page,view);const key=await page.evaluate(api+'.getSummary().groups[0].key');
   await page.evaluate(api+'.selectPage()');await page.evaluate(api+`.setGroupCollapsed(${JSON.stringify(key)},true)`);
   const heading=await page.locator('.cx-grid-group').first().evaluate(row=>({width:row.closest('.cx-grid').querySelector('.cx-hrow').getBoundingClientRect().width,
     cell:row.firstElementChild.getBoundingClientRect().width,pin:row.firstElementChild.getAttribute('data-cx-pin')}));
-  expect(heading.cell).toBeCloseTo(heading.width,0);expect(heading.pin).toBe(null);
+  expect(heading.cell).toBeLessThan(heading.width);expect(heading.pin).toBe("left");
   expect(await page.locator('.cx-row[data-cx-id]').count()).toBe(0);
   expect((await page.evaluate(api+'.getSelection()')).length).toBe(5);
   const ids=await page.evaluate(`(async()=>{const ids=[];for await(const r of ${api}.prepareExport({scope:'filtered'}).rows())ids.push(r.id);return ids;})()`);
@@ -116,7 +140,7 @@ test(`grouped held-page ${direction} navigation retains later ${action} intent`,
   if(direction==='up')await page.evaluate(api+'.goToPage(1)');
   await page.evaluate(api+'.scrollToRow('+start+')');
   if(direction==='up')await page.locator('[data-cx-group="a"]').focus();
-  else {await page.locator('[data-cx-id="r'+start+'"]').focus();await page.keyboard.press('Enter');await page.keyboard.press('ArrowRight');}
+  else {await page.locator('[data-cx-id="r'+start+'"]').focus();await page.keyboard.press('F2');await page.keyboard.press('ArrowRight');}
   await page.evaluate('hold=true');
   const key=direction==='down'?'ArrowDown':'ArrowUp';await page.keyboard.press(key);
   await expect.poll(()=>page.evaluate('pending.length')).toBe(1);

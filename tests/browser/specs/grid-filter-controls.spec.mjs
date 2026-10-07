@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { viewPage } from "./support.mjs";
+import { viewPage, openGridControl, flushGridFilters } from "./support.mjs";
 
 const columns = [
   { id: "name", title: "Name", kind: "text", width: 170, sortable: true },
@@ -22,144 +22,51 @@ async function open(page, patch = {}) {
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready);
 }
 
-test("custom-toolbar grids do not offer header filters whose editor is hidden", async ({ page }) => {
-  await open(page);
-  await page.evaluate(() => {
-    const host = document.querySelector('[data-canopyx-host]'), view = host.canopyx.view;
-    host.canopyx.destroy(); host.replaceChildren();
-    host.canopyx = CanopyX.createDataGrid(host, { view, toolbar: false });
-    return host.canopyx.ready;
-  });
-  await expect(page.locator("[data-cx-filter-column]")).toHaveCount(0);
-  await expect(page.locator(".cx-sort").first()).toBeVisible();
-  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setQuery({
-    filters: [{ column: "amount", operator: "ge", values: [15] }], sort: [{ column: "amount", direction: "desc" }]
-  }));
-  expect(await exported(page)).toEqual(["row-17", "row-16", "row-15"]);
-});
-const panel = page => page.locator(".cx-grid-filters");
-const filters = page => panel(page).locator("fieldset.cx-grid-filter");
-const query = page => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery());
-async function exported(page) {
-  return page.evaluate(async () => {
-    const rows = []; for await (const row of document.querySelector('[data-canopyx-host]').canopyx.prepareExport({ scope: "filtered" }).rows()) rows.push(row.id);
-    return rows;
-  });
+
+const query=page=>page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery());
+const panel=page=>page.locator('.cx-grid-filters');
+async function builder(page,column){
+ await openGridControl(page,'filters');
+ const existing=panel(page).locator('fieldset.cx-grid-filter').filter({has:page.locator('select option[value="'+column+'"]:checked')});
+ if(await existing.count())return existing.first();
+ await panel(page).getByRole('button',{name:'+ Condition',exact:true}).first().click();
+ const row=panel(page).locator('fieldset.cx-grid-filter').last();await row.getByRole('combobox',{name:'Column',exact:true}).selectOption(column);return row;
 }
-
-test("inclusive number ranges query the full dataset before visible paging and scoped export", async ({ page }) => {
-  await open(page); await page.getByRole("button", { name: "Filter Amount", exact: true }).click();
-  const row = filters(page).first(); await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("between");
-  await row.getByRole("spinbutton", { name: "Value (UTC for dates)", exact: true }).fill("3");
-  await row.getByRole("spinbutton", { name: "Upper value (UTC for dates)", exact: true }).fill("6");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "5");
-  expect((await query(page)).filters).toEqual([{ column: "amount", operator: "ge", values: [3] }, { column: "amount", operator: "le", values: [6] }]);
-  expect(await exported(page)).toEqual(["row-03", "row-04", "row-05", "row-06"]);
-  await expect(page.locator('.cx-row[data-cx-id]')).toHaveCount(2);
-  await expect(page.getByRole("button", { name: "Filter Amount", exact: true })).toHaveAttribute("data-cx-filtered", "true");
-  await row.getByRole("spinbutton", { name: "Value (UTC for dates)", exact: true }).press("Escape");
-  await expect(page.getByRole("button", { name: "Filter Amount", exact: true })).toBeFocused();
-  await page.getByRole("button", { name: "Filter Amount", exact: true }).press("Enter");
-  await expect(filters(page)).toHaveCount(1); await expect(filters(page).getByRole("combobox", { name: "Condition", exact: true })).toHaveValue("between");
+async function exported(page){return page.evaluate(async()=>{const rows=[];for await(const row of document.querySelector('[data-canopyx-host]').canopyx.prepareExport({scope:'filtered'}).rows())rows.push(row.id);return rows;});}
+test('custom-toolbar grids retain API filtering and hide toolbar entry points',async({page})=>{
+ await open(page);await page.evaluate(async()=>{const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();host.canopyx=CanopyX.createDataGrid(host,{view,toolbar:false});await host.canopyx.ready;await host.canopyx.setQuery({filters:[{column:'amount',operator:'ge',values:[15]}],sort:[{column:'amount',direction:'desc'}]});});
+ await expect(page.locator('.cx-toolbar')).toBeHidden();expect(await exported(page)).toEqual(['row-17','row-16','row-15']);
 });
-
-test("UTC date ranges preserve original offsets and fractional operands when reapplied", async ({ page }) => {
-  const values = ["2026-01-03T00:00:00.123456+02:00", "2026-01-05T00:00:00.987654+02:00"];
-  const predicates = [{ column: "date", operator: "ge", values: [values[0]] }, { column: "date", operator: "le", values: [values[1]] }];
-  await open(page, { query: { filters: predicates } });
-  await page.getByRole("button", { name: "Filter Date", exact: true }).click();
-  await expect(filters(page)).toHaveCount(1);
-  await expect(filters(page).getByRole("combobox", { name: "Condition", exact: true })).toHaveValue("between");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect.poll(async () => (await query(page)).filters).toEqual(predicates);
-  expect(await exported(page)).toEqual(["row-02", "row-03"]);
+test('inclusive number ranges query the full dataset before visible paging and export',async({page})=>{
+ await open(page);const row=await builder(page,'amount');await row.getByRole('combobox',{name:'Condition',exact:true}).selectOption('between');await row.getByRole('spinbutton',{name:'Value',exact:true}).fill('3');await row.getByRole('spinbutton',{name:'Upper value',exact:true}).fill('6');await flushGridFilters(page);
+ await expect(page.getByRole('grid')).toHaveAttribute('aria-rowcount','5');expect((await query(page)).filters).toEqual([{column:'amount',operator:'ge',values:[3]},{column:'amount',operator:'le',values:[6]}]);expect(await exported(page)).toEqual(['row-03','row-04','row-05','row-06']);await expect(page.locator('.cx-row[data-cx-id]')).toHaveCount(2);
+ await expect(page.getByRole('button',{name:'Filter Amount',exact:true})).toHaveAttribute('data-cx-filtered','true');await expect(panel(page).locator('fieldset.cx-grid-filter')).toHaveCount(1);
 });
-
-test("reversed ranges keep the accepted results and report an actionable error", async ({ page }) => {
-  await open(page); await page.getByRole("button", { name: "Filter Amount", exact: true }).click();
-  const row = filters(page).first(); await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("between");
-  await row.getByRole("spinbutton", { name: "Value (UTC for dates)", exact: true }).fill("9");
-  await row.getByRole("spinbutton", { name: "Upper value (UTC for dates)", exact: true }).fill("2");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(panel(page).getByRole("status")).toHaveText("Enter an upper value greater than or equal to the lower value.");
-  expect((await query(page)).filters).toEqual([]); await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "19");
+test('date ranges retain original offsets and fractional operands when Done leaves them unchanged',async({page})=>{
+ const values=['2026-01-03T00:00:00.123456+02:00','2026-01-05T00:00:00.987654+02:00'],predicates=values.map((value,i)=>({column:'date',operator:i?'le':'ge',values:[value]}));
+ await open(page,{query:{filters:predicates}});const row=await builder(page,'date');await expect(row.getByRole('combobox',{name:'Condition',exact:true})).toHaveValue('between');await flushGridFilters(page);expect((await query(page)).filters).toEqual(predicates);expect(await exported(page)).toEqual(['row-02','row-03']);
 });
-
-test("editing one date bound retains the untouched bound's original precision and offset", async ({ page }) => {
-  const upper = "2026-01-05T00:00:00.987654+02:00";
-  await open(page, { query: { filters: [
-    { column: "date", operator: "ge", values: ["2026-01-03T00:00:00.123456+02:00"] },
-    { column: "date", operator: "le", values: [upper] }
-  ] } });
-  await page.getByRole("button", { name: "Filter Date", exact: true }).click();
-  await filters(page).first().getByLabel("Value (UTC for dates)", { exact: true }).and(page.locator('input[type="datetime-local"]')).fill("2026-01-04T00:00");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect.poll(async () => (await query(page)).filters).toEqual([
-    { column: "date", operator: "ge", values: ["2026-01-04T00:00Z"] },
-    { column: "date", operator: "le", values: [upper] }
-  ]);
-  expect(await exported(page)).toEqual(["row-03"]);
+test('reversed range drafts keep accepted results and report a value error',async({page})=>{
+ await open(page);const row=await builder(page,'amount');await row.getByRole('combobox',{name:'Condition',exact:true}).selectOption('between');await row.getByRole('spinbutton',{name:'Value',exact:true}).fill('9');await row.getByRole('spinbutton',{name:'Upper value',exact:true}).fill('2');
+ await expect(panel(page).getByRole('status')).toHaveText('Enter a valid filter value.');expect((await query(page)).filters).toEqual([]);await expect(page.getByRole('grid')).toHaveAttribute('aria-rowcount','19');
 });
-
-test("category suggestions and translated boolean choices preserve typed raw predicates", async ({ page }) => {
-  await open(page, { labels: { gridTrue: "Tak", gridFalse: "Nie" } });
-  await page.getByRole("button", { name: "Filter Category", exact: true }).click();
-  await filters(page).first().getByRole("combobox", { name: "Suggested category", exact: true }).selectOption("B");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect.poll(async () => (await query(page)).filters).toEqual([{ column: "category", operator: "eq", values: ["B"] }]);
-  await page.getByRole("button", { name: "Filter Flag", exact: true }).click();
-  const flag = filters(page).filter({ has: page.locator('select option[value="flag"]:checked') });
-  await flag.getByRole("combobox", { name: "Raw value type", exact: true }).selectOption("boolean");
-  await flag.getByRole("combobox", { name: "Boolean value", exact: true }).selectOption({ label: "Nie" });
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect.poll(async () => (await query(page)).filters).toEqual([
-    { column: "category", operator: "eq", values: ["B"] }, { column: "flag", operator: "eq", values: [false] }
-  ]);
-  expect(await exported(page)).toEqual(["row-01", "row-07", "row-13"]);
+test('editing one date bound retains the untouched original precision and offset',async({page})=>{
+ const upper='2026-01-05T00:00:00.987654+02:00';await open(page,{query:{filters:[{column:'date',operator:'ge',values:['2026-01-03T00:00:00.123456+02:00']},{column:'date',operator:'le',values:[upper]}]}});
+ const row=await builder(page,'date');await row.getByLabel('Value',{exact:true}).and(page.locator('input[type="datetime-local"]')).fill('2026-01-04T00:00');await flushGridFilters(page);
+ expect((await query(page)).filters).toEqual([{column:'date',operator:'ge',values:['2026-01-04T00:00Z']},{column:'date',operator:'le',values:[upper]}]);expect(await exported(page)).toEqual(['row-03']);
 });
-
-test("missing operators and membership disable inactive range controls", async ({ page }) => {
-  await open(page); await page.getByRole("button", { name: "Filter Amount", exact: true }).click();
-  const row = filters(page).first(); await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("between");
-  await row.getByRole("spinbutton", { name: "Upper value (UTC for dates)", exact: true }).press("-");
-  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("in");
-  await row.getByRole("textbox", { name: "Value (UTC for dates)", exact: true }).fill("2\n8");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect.poll(async () => (await query(page)).filters).toEqual([{ column: "amount", operator: "in", values: [2, 8] }]);
-  expect(await exported(page)).toEqual(["row-02", "row-08"]);
-  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("isNull");
-  await panel(page).getByRole("button", { name: "Apply", exact: true }).click();
-  await expect.poll(async () => (await query(page)).filters).toEqual([{ column: "amount", operator: "isNull", values: [] }]);
-  expect(await exported(page)).toEqual([]);
+test('category suggestions and translated boolean choices preserve raw predicates',async({page})=>{
+ await open(page,{labels:{gridTrue:'Tak',gridFalse:'Nie'},columns:base.columns.map(c=>c.id==='flag'?{...c,presenter:{kind:'boolean'}}:c)});
+ const category=await builder(page,'category');await category.getByRole('combobox',{name:'Suggested category',exact:true}).selectOption('B');await flushGridFilters(page);
+ const flag=await builder(page,'flag');await flag.getByRole('combobox',{name:'Boolean value',exact:true}).selectOption({label:'Nie'});await flushGridFilters(page);
+ expect((await query(page)).filters).toEqual([{column:'category',operator:'eq',values:['B']},{column:'flag',operator:'eq',values:[false]}]);expect(await exported(page)).toEqual(['row-01','row-07','row-13']);
 });
-
-test("header controls track stable column identities after reordering and reset", async ({ page }) => {
-  await open(page);
-  await page.evaluate(async () => {
-    const grid = document.querySelector('[data-canopyx-host]').canopyx;
-    grid.setColumnOrder(["flag", "date", "amount", "category", "name"]);
-    await grid.setQuery({ filters: [{ column: "amount", operator: "gt", values: [9] }] });
-  });
-  const button = page.getByRole("button", { name: "Filter Amount", exact: true }); await button.focus();
-  await page.evaluate(async () => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ search: "Item" }));
-  await expect(button).toBeFocused(); await button.press("Enter");
-  await expect(filters(page).first().getByRole("combobox", { name: "Column", exact: true })).toHaveValue("amount");
-  await filters(page).first().getByRole("spinbutton", { name: "Value (UTC for dates)", exact: true }).press("Escape");
-  await expect(button).toBeFocused(); await page.getByRole("button", { name: "Reset view", exact: true }).click();
-  await expect(button).toHaveAttribute("data-cx-filtered", "false"); expect((await query(page)).filters).toEqual([]);
+test('missing and membership operators disable inactive number controls',async({page})=>{
+ await open(page);let row=await builder(page,'amount');await row.getByRole('combobox',{name:'Condition',exact:true}).selectOption('between');await row.getByRole('spinbutton',{name:'Upper value',exact:true}).press('-');await row.getByRole('combobox',{name:'Condition',exact:true}).selectOption('in');await row.locator('.cx-ms > summary').click();for(const value of ['2','8']){await row.getByRole('searchbox',{name:'Search values',exact:true}).fill(value);await row.getByRole('searchbox',{name:'Search values',exact:true}).press('Enter');}await flushGridFilters(page);
+ expect((await query(page)).filters).toEqual([{column:'amount',operator:'in',values:[2,8]}]);expect(await exported(page)).toEqual(['row-02','row-08']);row=panel(page).locator('fieldset.cx-grid-filter').first();await row.getByRole('combobox',{name:'Condition',exact:true}).selectOption('isNull');await flushGridFilters(page);expect((await query(page)).filters).toEqual([{column:'amount',operator:'isNull',values:[]}]);expect(await exported(page)).toEqual([]);
 });
-
-test("header entry brings the editable control into view and focuses typed boolean choices", async ({ page }) => {
-  await open(page, { query: { filters: [
-    { column: "amount", operator: "ge", values: [1] }, { column: "amount", operator: "le", values: [15] }
-  ] } });
-  await page.getByRole("button", { name: "Filter Category", exact: true }).click();
-  const value = filters(page).last().getByRole("textbox", { name: "Value (UTC for dates)", exact: true });
-  await expect(value).toBeFocused(); await expect(value).toBeInViewport();
-  await page.evaluate(async () => document.querySelector('[data-canopyx-host]').canopyx.setQuery({
-    filters: [{ column: "flag", operator: "eq", values: [false] }]
-  }));
-  await page.getByRole("button", { name: "Filter Flag", exact: true }).click();
-  await expect(filters(page).first().getByRole("combobox", { name: "Boolean value", exact: true })).toBeFocused();
+test('header filters stay bound to their column after reordering and return focus on Escape',async({page})=>{
+ await open(page);await page.evaluate(async()=>{const grid=document.querySelector('[data-canopyx-host]').canopyx;grid.setColumnOrder(['flag','date','amount','category','name']);await grid.setQuery({filters:[{column:'amount',operator:'gt',values:[9]}]});});
+ const button=page.getByRole('button',{name:'Filter Amount',exact:true});await button.click();const pop=page.getByRole('dialog',{name:'Amount: Filter…'});await expect(pop.getByRole('combobox',{name:'Condition',exact:true})).toHaveValue('gt');await expect(panel(page)).not.toHaveAttribute('open','');await pop.getByRole('spinbutton',{name:'Value',exact:true}).press('Escape');await expect(button).toBeFocused();
+ await openGridControl(page,'views');await page.getByRole('button',{name:'Reset view',exact:true}).click();await expect(page.locator('[data-cx-filter-column="amount"]')).toBeHidden();expect((await query(page)).filters).toEqual([]);
 });

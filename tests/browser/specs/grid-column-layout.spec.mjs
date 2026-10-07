@@ -51,7 +51,7 @@ test("keyboard moves preserve hidden columns, sort priority, focus and export co
 });
 
 test("API reordering returns focus to the same record and column", async ({ page }) => {
-  await open(page); await page.locator('.cx-row[data-cx-id="r0"]').press("Enter"); await page.keyboard.press("ArrowRight");
+  await open(page); await page.locator('.cx-row[data-cx-id="r0"]').press("F2"); await page.keyboard.press("ArrowRight");
   await expect(page.locator('.cx-row[data-cx-id="r0"] [role=gridcell]').nth(1)).toBeFocused();
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["notes", "amount", "name", "hidden"])); await nextFrames(page);
   expect(await page.evaluate(() => ({ text: document.activeElement.textContent, row: document.activeElement.closest('[data-cx-id]')?.getAttribute('data-cx-id') })))
@@ -101,7 +101,7 @@ async function expectHeaderFocusVisible(page) {
 
 test("moving a non-sortable header reveals its focused move control without moving the page", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  await open(page, { columns: ["a", "b", "c"].map(id => ({ id, title: id, kind: "text", width: 160 })),
+  await open(page, { columns: ["a", "b", "c"].map(id => ({ id, title: id, kind: "text", width: 160, fixed: true, priority: "essential" })),
     reporting: { columnReorder: true }, rows: [{ id: "r0", cells: { a: "A", b: "B", c: "C" } }] });
   await header(page, "a").locator(".cx-column-move").press("ArrowRight");
   await page.keyboard.press("ArrowRight"); await nextFrames(page);
@@ -114,10 +114,10 @@ test("moving a non-sortable header reveals its focused move control without movi
 
 test("auto-fit keeps a widened column's focused resize control visible", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 });
-  await open(page, { rows: [{ id: "r0", cells: { name: "Name", notes: "Long report notes ".repeat(60) } }] });
+  await open(page, { columns: view.columns.map(column => column.id === "notes" ? { ...column, priority: "essential" } : column), rows: [{ id: "r0", cells: { name: "Name", notes: "Long report notes ".repeat(60) } }] });
   const grip = header(page, "notes").getByRole("separator"); await grip.press("Enter"); await nextFrames(page);
   await expect(grip).toBeFocused(); await expectHeaderFocusVisible(page);
-  expect(await grip.getAttribute("aria-valuenow")).toBe("800");
+  expect(await grip.getAttribute("aria-valuenow")).toBe("420");
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["notes", "name", "hidden", "amount"]));
   await nextFrames(page); await expect(grip).toBeFocused(); await expectHeaderFocusVisible(page);
 });

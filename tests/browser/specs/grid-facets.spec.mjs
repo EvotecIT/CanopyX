@@ -122,90 +122,60 @@ test("host facet counts must respect known accepted matched/total counts while u
   expect((await facets(page)).matched).toBe(7);
 });
 
-test("numeric facet choices preserve distinct raw binary64 values instead of rounding them to identical labels", async ({ page }) => {
-  await open(page);
-  await page.evaluate(async () => { const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();
-    view.reporting.facetColumns=['amount'];view.rows=[{id:'a',cells:{amount:0.0001}},{id:'b',cells:{amount:0.0002}}];
-    await CanopyX.createDataGrid(host,{view}).ready; });
-  await page.locator('.cx-grid-filters > summary').click(); await page.getByRole('button',{name:'Add filter',exact:true}).click();
-  const row=page.locator('.cx-grid-filter').first();await row.getByRole('combobox',{name:'Column',exact:true}).selectOption('amount');
-  await row.locator('.cx-grid-facet > summary').click();const choice=row.getByRole('combobox',{name:'Choose a value',exact:true});
-  await expect(choice.locator('option')).toHaveText(['Choose a value','0.0001 (1)','0.0002 (1)']);
-  await choice.selectOption({label:'0.0002 (1)'});await page.getByRole('button',{name:'Apply',exact:true}).click();
-  expect((await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filters).toEqual([filter('amount','eq',0.0002)]);
+
+test('numeric facet API retains distinct binary64 values without rounding labels',async({page})=>{
+ await open(page);await page.evaluate(async()=>{const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();view.reporting.facetColumns=['amount'];view.rows=[{id:'a',cells:{amount:0.0001}},{id:'b',cells:{amount:0.0002}}];await CanopyX.createDataGrid(host,{view}).ready;});
+ expect(buckets(await facets(page,'amount'))).toEqual([[0.0001,1],[0.0002,1]]);
+});
+async function editor(page){await page.getByRole('button',{name:'Menu for Category',exact:true}).click();await page.getByRole('menuitem',{name:'Filter…',exact:true}).click();return page.getByRole('dialog',{name:'Category: Filter…'});}
+test('column value counts cover the whole query and distinguish raw boolean, string and missing choices',async({page})=>{
+ await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);
+ expect(await pop.locator('.cx-val').evaluateAll(rows=>rows.map(row=>[row.querySelector('.cx-facet-value').textContent,row.querySelector('.cx-val-n').textContent])))
+   .toEqual([['No','1'],['Yes','1'],['ALPHA','3'],['Beta','2'],['true','1'],['—','2']]);
+ await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();const bool=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^Yes$/})});await bool.locator('input').check();await pop.getByRole('button',{name:'Done',exact:true}).click();
+ await expect(page.locator('.cx-grid-result-count')).toHaveText('1 of 10 rows');expect((await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filterGroup.filters).toEqual([filter('category','in',true)]);
+ const next=await editor(page);await expect(next.locator('.cx-val')).toHaveCount(6);await next.getByRole('checkbox',{name:'Select all values',exact:true}).check();await next.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await next.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input').check();await next.getByRole('button',{name:'Done',exact:true}).click();
+ expect((await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filterGroup.filters).toEqual([filter('category','in','true')]);
+});
+test('phone missing-value filter keeps raw null semantics and accessible typed choices',async({page})=>{
+ await page.setViewportSize({width:390,height:700});await open(page);await page.locator('[data-canopyx-host]').evaluate(host=>host.setAttribute('data-cx-theme','dark'));const pop=await editor(page);
+ await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await pop.locator('.cx-val').filter({hasText:'—'}).locator('input').check();
+ expect(await page.evaluate(()=>document.body.scrollWidth<=innerWidth)).toBe(true);expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).disableRules(['region']).analyze()).violations).toEqual([]);await pop.getByRole('button',{name:'Done',exact:true}).click();await expect(page.locator('.cx-grid-result-count')).toHaveText('2 of 10 rows');
+});
+test('facet search aborts superseded work and closing the popover retires its outstanding request',async({page})=>{
+ await open(page,{},hostSetup,true);const pop=await editor(page);await expect.poll(()=>page.evaluate(()=>facetRequests.length)).toBe(1);await pop.getByRole('searchbox',{name:'Search values',exact:true}).fill('fresh');await expect.poll(()=>page.evaluate(()=>facetRequests.length)).toBe(2);expect(await page.evaluate(()=>facetRequests[0].signal.aborted)).toBe(true);
+ const fresh=await page.evaluate(()=>facetRequests[1].request);await page.evaluate(value=>facetResolvers[1](value),response(fresh,{items:[{value:'Fresh',count:100}]}));await expect(pop.locator('.cx-facet-value')).toHaveText('Fresh');
+ const stale=await page.evaluate(()=>facetRequests[0].request);await page.evaluate(value=>facetResolvers[0](value),response(stale));await expect(pop.locator('.cx-facet-value')).toHaveText('Fresh');await pop.getByRole('searchbox',{name:'Search values',exact:true}).fill('pending');await expect.poll(()=>page.evaluate(()=>facetRequests.length)).toBe(3);await pop.press('Escape');expect(await page.evaluate(()=>facetRequests[2].signal.aborted)).toBe(true);
+});
+test('accepted criteria changes close outdated value lists; unsupported facets keep a typed text editor',async({page})=>{
+ await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.setQuery({search:'Beta'}));await expect(pop).toHaveCount(0);const next=await editor(page);await expect(next.locator('.cx-facet-value')).toHaveText('Beta');
+ await open(page,{},hostSetup.replace('facet(request,{signal})','unsupported(request,{signal})'),true);const fallback=await editor(page);await expect(fallback.getByRole('textbox',{name:'Value',exact:true})).toBeVisible();await expect(fallback.locator('.cx-val')).toHaveCount(0);
 });
 
-async function editor(page) {
-  await page.locator(".cx-grid-filters > summary").click();
-  if (!(await page.locator(".cx-grid-filter").count())) await page.getByRole("button", { name: "Add filter", exact: true }).click();
-  const row = page.locator(".cx-grid-filter").first();
-  await row.locator(".cx-grid-facet > summary").click(); return row;
-}
-
-test("facet choices show whole-query counts and edit raw typed drafts until Apply", async ({ page }) => {
-  await open(page); const row = await editor(page), choice = row.getByRole("combobox", { name: "Choose a value" });
-  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
-  await expect(choice.locator("option")).toHaveText(["Choose a value", "Boolean: False (1)", "Boolean: True (1)",
-    "Text: ALPHA (3)", "Text: Beta (2)", "Text: true (1)", "is missing (2)"]);
-  await choice.selectOption({ label: "Boolean: True (1)" });
-  expect((await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).filters).toEqual([]);
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 10 rows");
-  expect((await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).filters).toEqual([filter("category", "eq", true)]);
-  await row.locator(".cx-grid-facet > summary").click(); await row.locator(".cx-grid-facet > summary").click();
-  await expect(row.getByRole("status")).toHaveText("1 matching rows; 1 of 1 values.");
-  await row.getByRole("checkbox", { name: "Include this column's applied filters" }).uncheck();
-  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
-  await choice.selectOption({ label: "Text: true (1)" }); await page.getByRole("button", { name: "Apply", exact: true }).click();
-  expect((await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery())).filters).toEqual([filter("category", "eq", "true")]);
-});
-
-test("facet value search and missing choices preserve applied query counts and compact keyboard accessibility", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 700 }); await open(page);
-  await page.evaluate(() => document.documentElement.setAttribute("data-cx-theme", "dark"));
-  const row = await editor(page), choice = row.getByRole("combobox", { name: "Choose a value" });
-  await row.getByRole("searchbox", { name: "Search values" }).fill("alp");
-  await row.getByRole("searchbox", { name: "Search values" }).press("Enter");
-  await expect(row.getByRole("status")).toHaveText("10 matching rows; 1 of 1 values.");
-  await expect(choice.locator("option")).toHaveText(["Choose a value", "Text: ALPHA (3)"]);
-  await row.getByRole("searchbox", { name: "Search values" }).fill("");
-  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
-  await choice.selectOption({ label: "is missing (2)" }); await choice.focus(); await choice.press("Tab");
-  expect(await page.evaluate(() => document.body.scrollWidth <= innerWidth)).toBe(true);
-  const a11y = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).disableRules(["region"]).analyze();
-  expect(a11y.violations).toEqual([]);
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 10 rows");
-});
-
-test("facet controls abort superseded value search and removal without accepting stale host choices", async ({ page }) => {
-  await open(page, {}, hostSetup, true); const row = await editor(page);
-  await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(1);
-  await row.getByRole("searchbox", { name: "Search values" }).fill("fresh");
-  await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(2);
-  expect(await page.evaluate(() => facetRequests[0].signal.aborted)).toBe(true);
-  const fresh = await page.evaluate(() => facetRequests[1].request);
-  await page.evaluate(value => facetResolvers[1](value), response(fresh, { items: [{ value: "Fresh", count: 100 }] }));
-  await expect(row.getByRole("combobox", { name: "Choose a value" }).locator("option")).toHaveText(["Choose a value", "Text: Fresh (100)"]);
-  const old = await page.evaluate(() => facetRequests[0].request);
-  await page.evaluate(value => facetResolvers[0](value), response(old));
-  await expect(row.getByRole("combobox", { name: "Choose a value" }).locator("option")).toHaveText(["Choose a value", "Text: Fresh (100)"]);
-  await row.getByRole("button", { name: "Load values" }).click();
-  await expect.poll(() => page.evaluate(() => facetRequests.length)).toBe(3);
-  await row.getByRole("button", { name: "Remove Category filter" }).click();
-  expect(await page.evaluate(() => facetRequests[2].signal.aborted)).toBe(true);
-});
-
-test("accepted search retires previously completed facet choices and missing host facets show a recoverable error", async ({ page }) => {
-  await open(page); const row = await editor(page);
-  await expect(row.getByRole("status")).toHaveText("10 matching rows; 6 of 6 values.");
-  await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setQuery({ search: "Beta" }));
-  await expect(row.getByRole("combobox", { name: "Choose a value" })).toBeDisabled();
-  await expect(row.getByRole("status")).toContainText("Load values again");
-  await row.getByRole("button", { name: "Load values" }).click();
-  await expect(row.getByRole("status")).toHaveText("2 matching rows; 1 of 1 values.");
-  await open(page, {}, hostSetup.replace("facet(request,{signal})", "unsupported(request,{signal})"), true);
-  const unsupported = await editor(page);
-  await expect(unsupported.getByRole("status")).toContainText("explicit source capability");
-  await expect(unsupported.getByRole("button", { name: "Load values" })).toBeEnabled();
+for (const condition of [filter('category','ne','item-005'),filter('category','contains','item-2'),
+  group('or',[filter('category','startsWith','item-0'),filter('category','startsWith','item-2')])])
+test('editing a bounded facet preserves unseen values of '+(condition.operator),async({page})=>{
+ const rows=Array.from({length:250},(_,i)=>({id:'v'+i,cells:{category:'item-'+String(i).padStart(3,'0'),amount:i}}));
+ await open(page);await page.evaluate(async({rows,condition})=>{
+  const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();
+  view.rows=rows;view.query=condition.groups?{filterGroup:condition}:condition.operator==='ne'?
+   {filterGroup:{operator:'and',filters:[condition,{column:'amount',operator:'ge',values:[0]}],groups:[]}}:{filters:[condition]};await CanopyX.createDataGrid(host,{view}).ready;
+ },{rows,condition});
+ const ids=()=>page.evaluate(async()=>{const rows=[];for await(const row of document.querySelector('[data-canopyx-host]').canopyx.prepareExport({scope:'filtered'}).rows())rows.push(row.id);return rows;});
+ const before=await ids(),pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(200);
+ const remove=condition.operator==='contains'?'item-200':'item-010';
+ if(condition.operator==='contains')await pop.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
+ const choice=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
+ await choice.uncheck();await pop.getByRole('button',{name:'Done',exact:true}).click();
+ expect(await ids()).toEqual(before.filter(id=>id!=='v'+Number(remove.slice(5))));
+ expect(await ids()).toContain('v249');
+ const reopened=await editor(page);await reopened.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
+ const restore=reopened.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
+ await restore.check();await reopened.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
+ if(condition.operator==='ne')for(let i=0;i<9;i++){
+  const current=await editor(page),check=current.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input');
+  await check.uncheck();await current.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before.filter(id=>id!=='v10'));
+  const again=await editor(page);await again.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input').check();
+  await again.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
+ }
 });

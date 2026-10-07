@@ -34,6 +34,26 @@ export function nextFrames(page) {
   return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 
+/** Opens a toolbar control through its desktop button or the phone overflow. */
+export async function openGridControl(page, kind) {
+  const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');
+  if (!await summary.isVisible()) await page.locator('.cx-grid-overflow > summary').click();
+  if (!await control.evaluate(element => element.open)) await summary.click();
+  if (kind === 'filters') {
+    // Native details toggles are queued. Wait for the newly opened panel before editing its form from a prior open.
+    await control.locator(':scope > .cx-grid-panel:popover-open').waitFor();
+    await control.getByRole('button', { name: 'Done', exact: true }).waitFor();
+  }
+}
+
+/** Done flushes the live editor immediately; optionally reopen it for the next edit. */
+export async function flushGridFilters(page, reopen = true) {
+  await page.locator('.cx-grid-filters').getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('grid').and(page.locator('.cx-data-grid .cx-grid')).waitFor();
+  await page.waitForFunction(() => document.querySelector('.cx-data-grid .cx-grid').getAttribute('aria-busy') === 'false');
+  if (reopen) await openGridControl(page, 'filters');
+}
+
 /** Opens an example page and waits until the view has mounted, loaded its first page, and painted. */
 export async function openExample(page, name, hash) {
   await page.goto(exampleUrl(name) + (hash || ""));
@@ -60,8 +80,10 @@ export function focusedId(page) {
 export function runtimeAssets(runtime = "tree") {
   const stem = runtime === "reporting" ? "canopyx-reporting" : runtime === "grid" ? "canopyx-grid" : runtime === "interactive" ? "canopyx-interactive" : "canopyx";
   return {
-    script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8"),
-    style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8")
+    script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8") +
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") : ""),
+    style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") : "")
   };
 }
 
@@ -70,7 +92,7 @@ export function viewPage(view) {
   const interactive = view.checkboxes || view.dragDrop || view.contextActions && view.contextActions.length || view.columns.some(column => column.editable);
   const { script, style } = runtimeAssets(view.type === "grid" ? view.reporting ? "reporting" : "grid" : interactive ? "interactive" : "tree");
   const json = JSON.stringify(view).replace(/</g, "\\" + "u003c");
-  return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
+  return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>CanopyX test</title><style>" + style + "</style><script>" + script
     + "</script></head><body class=\"cx-page\"><div class=\"cx-host\" data-canopyx-host data-cx-theme=\"light\"><script type=\"application/json\" class=\"cx-config\">"
     + json + "</script></div></body></html>";
 }

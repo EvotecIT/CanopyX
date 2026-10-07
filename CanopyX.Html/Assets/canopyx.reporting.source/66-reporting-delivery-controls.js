@@ -1,13 +1,19 @@
   // ---------- scoped delivery with progress and an explicit cancellation action ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
-    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridPrint: "Print report"
+    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export"
   }));
   const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls;
   DataGrid.prototype.buildExportControls = function () {
     DELIVERY_CONTROLS.call(this);
     if (!this.view.reporting) return;
     const panel = this.toolbar.querySelector(".cx-grid-export .cx-grid-panel");
+    // Without the Export menu, a print hook still runs from the more menu, for the filtered result.
+    if (!panel) {
+      if (typeof this.opts.onPrint === "function") this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridPrint, () =>
+        Promise.resolve().then(() => this.print({ scope: "filtered" })).catch(error => this.emit("error", { error }))), { className: "cx-button cx-grid-print" }));
+      return;
+    }
     panel.replaceChildren();
     const scope = h("select"); scope.setAttribute("aria-label", this.labels.gridExport);
     for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
@@ -25,6 +31,9 @@
     };
     const run = action => {
       if (operation) return;
+      // Print lives in the overflow; expose the shared progress and cancellation controls.
+      panel.parentElement.open = true;
+      if (!this.phone && this.overflow) this.overflow.details.open = false;
       const controller = operation = new AbortController();
       scope.disabled = true; buttons.forEach(button => button.disabled = true);
       cancel.hidden = false; meter.hidden = false; meter.removeAttribute("value"); setText(status, this.labels.loading);
@@ -51,6 +60,6 @@
       } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
     }));
     const copy = gridButton(this.labels.gridCopy, () => run(options => this.copy(options))), buttons = [csv, copy];
-    if (typeof this.opts.onPrint === "function") buttons.push(gridButton(this.labels.gridPrint, () => run(options => this.print(options))));
+    if (typeof this.opts.onPrint === "function") {const print=gridButton(this.labels.gridPrint,()=>run(options=>this.print(options)));print.classList.add("cx-grid-print");this.toolbar.appendChild(print);buttons.push(print);}
     panel.append(scope, ...buttons, cancel, meter, status);
   };

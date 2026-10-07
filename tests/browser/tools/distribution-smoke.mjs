@@ -24,7 +24,9 @@ try {
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
-    "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css"];
+    "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css",
+    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css",
+    ...['pl','de','es'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
   const version = await fs.readFile(path.join(repo, "Directory.Build.props"), "utf8");
@@ -42,6 +44,12 @@ try {
     import CanopyX, * as runtime from '@evotecit/canopyx';
     import GridRuntime, { createDataGrid } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
+    import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
+    import german from '@evotecit/canopyx/locales/de';
+    import spanish from '@evotecit/canopyx/locales/es';
+    assert.equal(polish.columns, 'Kolumny'); assert.equal(german.columns, 'Spalten'); assert.equal(spanish.columns, 'Columnas');
+    assert.equal(staticLabels.fullReport, 'Otwórz pełny raport');
+    assert.equal(Object.hasOwn(globalThis, 'CanopyXLocales'), false);
     assert.equal(runtime.protocol, 'canopyx/2');
     assert.equal(runtime.createTreeGrid, CanopyX.createTreeGrid);
     assert.equal(createDataGrid, GridRuntime.createDataGrid);
@@ -51,7 +59,7 @@ try {
     const view = { pageSize: 2, roots: [{id:'a',label:'Atlas'}] };
     const page = await runtime.sources.inline(view).page(null, null);
     assert.deepEqual(page.items, view.roots);
-    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js']) {
+    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','locales/pl.js','locales/de.js','locales/es.js']) {
       assert.ok(import.meta.resolve('@evotecit/canopyx/' + name).startsWith('file:'));
     }`;
   await fs.writeFile(path.join(consumer, "import-check.mjs"), importCheck);

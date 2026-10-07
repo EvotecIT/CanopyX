@@ -44,6 +44,21 @@ public sealed class GridSummaryContractTests {
         result = Summary(view); result.Aggregates["sum"] = double.PositiveInfinity; Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
     }
     [Fact]
+    public void GroupDisplayCells_PreservePresenterMetadataAndRejectUndeclaredOrMistypedValues() {
+        var view = View(); var result = Summary(view);
+        result.Groups[0].Cells["category"] = new CanopyCell("Failing") { Tone = CanopyTone.Danger, Text = "Needs attention" };
+        var json = result.ToJson(view); ProtocolSchema.AssertValid(json, "group display cells");
+        using var document = JsonDocument.Parse(json);
+        var cell = document.RootElement.GetProperty("groups")[0].GetProperty("cells").GetProperty("category");
+        Assert.Equal("Failing", cell.GetProperty("value").GetString());
+        Assert.Equal("danger", cell.GetProperty("tone").GetString());
+        Assert.Equal("Needs attention", cell.GetProperty("text").GetString());
+        result.Groups[0].Cells["amount"] = "wrong";
+        Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
+        result.Groups[0].Cells.Remove("amount"); result.Groups[0].Cells["unknown"] = "value";
+        Assert.Throws<InvalidOperationException>(() => result.ToJson(view));
+    }
+    [Fact]
     public void Summary_PoliciesRejectWrongKindsDuplicateIdentitiesAndCursorGrouping() {
         var view = View(); view.Reporting!.Aggregates.Add(new CanopyGridAggregate("sum", "category", CanopyGridAggregateOperation.Sum, "Invalid"));
         Assert.Throws<InvalidOperationException>(() => view.ToJson());

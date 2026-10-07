@@ -4,15 +4,18 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'Sync-Labels.ps1') -Check:$Check
 $foldSource = [System.IO.File]::ReadAllText((Join-Path $root 'CanopyX/Search/CanopySearchFoldingTable.cs'))
 $foldAssignment = [regex]::Match($foldSource, 'internal const string LowercasePairs\s*=\s*(?<parts>(?:"[A-Za-z0-9+/=]+"\s*\+\s*)*"[A-Za-z0-9+/=]+")\s*;')
 if (-not $foldAssignment.Success) { throw 'The canonical search folding table is missing.' }
 $foldPieces = [regex]::Matches($foldAssignment.Groups['parts'].Value, '"([A-Za-z0-9+/=]+)"')
 $foldPairs = -join @($foldPieces | ForEach-Object { $_.Groups[1].Value })
 
-# Keep the frozen C# table as the canonical input. Consecutive pairs with a stride of one or two use a range
-# record instead of repeating both words. All words are little-endian; U+FFFF is the range marker, not a mapped
-# character. This changes only the browser representation, never the protocol's lowercase mapping.
+# Keep the frozen C# table as the canonical input. The browser copy is text: comma-separated records of base-36
+# numbers, "gap.delta" for one pair or "gap.delta.count.step" for three or more pairs with the same delta at a
+# fixed stride. The gap counts from the previous record's last code unit and the delta is lowercase minus
+# uppercase, so the repeated high bytes of absolute code units drop out. This changes only the browser
+# representation, never the protocol's lowercase mapping.
 $foldBytes = [Convert]::FromBase64String($foldPairs)
 $foldEntries = for ($foldOffset = 0; $foldOffset -lt $foldBytes.Length; $foldOffset += 4) {
     [pscustomobject]@{
@@ -20,26 +23,34 @@ $foldEntries = for ($foldOffset = 0; $foldOffset -lt $foldBytes.Length; $foldOff
         To = [int]$foldBytes[$foldOffset + 2] -bor ([int]$foldBytes[$foldOffset + 3] -shl 8)
     }
 }
-$foldCompact = [System.Collections.Generic.List[byte]]::new()
+function ConvertTo-Base36([int] $Value) {
+    $digits = '0123456789abcdefghijklmnopqrstuvwxyz'
+    $magnitude = [Math]::Abs($Value)
+    $text = ''
+    do { $text = [string]$digits[$magnitude % 36] + $text; $magnitude = [int][Math]::Floor($magnitude / 36) } while ($magnitude -gt 0)
+    if ($Value -lt 0) { '-' + $text } else { $text }
+}
+for ($foldOffset = 1; $foldOffset -lt $foldEntries.Count; $foldOffset++) {
+    if ($foldEntries[$foldOffset].From -le $foldEntries[$foldOffset - 1].From) { throw 'The canonical folding table must list code units in ascending order.' }
+}
+$foldRecords = [System.Collections.Generic.List[string]]::new()
+$foldLast = 0
 for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
     $foldEntry = $foldEntries[$foldOffset]
-    if ($foldEntry.From -eq 65535) { throw 'The folding range marker must not be a mapped character.' }
+    $foldDelta = $foldEntry.To - $foldEntry.From
     $foldCount = 1
     $foldStep = if ($foldOffset + 1 -lt $foldEntries.Count) { $foldEntries[$foldOffset + 1].From - $foldEntry.From } else { 0 }
-    if ($foldStep -in @(1, 2)) {
-        while ($foldOffset + $foldCount -lt $foldEntries.Count -and
-            $foldEntries[$foldOffset + $foldCount].From -eq $foldEntry.From + $foldCount * $foldStep -and
-            $foldEntries[$foldOffset + $foldCount].To -eq $foldEntry.To + $foldCount * $foldStep) { $foldCount++ }
-    }
-    $foldWords = if ($foldCount -ge 3) { @(65535, $foldEntry.From, $foldEntry.To, $foldCount, $foldStep) }
-        else { @($foldEntry.From, $foldEntry.To) }
-    foreach ($foldWord in $foldWords) {
-        $foldCompact.Add([byte]($foldWord -band 255))
-        $foldCompact.Add([byte]($foldWord -shr 8))
-    }
-    $foldOffset += $(if ($foldCount -ge 3) { $foldCount } else { 1 })
+    while ($foldOffset + $foldCount -lt $foldEntries.Count -and
+        $foldEntries[$foldOffset + $foldCount].From -eq $foldEntry.From + $foldCount * $foldStep -and
+        $foldEntries[$foldOffset + $foldCount].To - $foldEntries[$foldOffset + $foldCount].From -eq $foldDelta) { $foldCount++ }
+    if ($foldCount -lt 3) { $foldCount = 1 }
+    $foldFields = @((ConvertTo-Base36 ($foldEntry.From - $foldLast)), (ConvertTo-Base36 $foldDelta))
+    if ($foldCount -ge 3) { $foldFields += @((ConvertTo-Base36 $foldCount), (ConvertTo-Base36 $foldStep)) }
+    $foldRecords.Add($foldFields -join '.')
+    $foldLast = $foldEntry.From + ($foldCount - 1) * $(if ($foldCount -ge 3) { $foldStep } else { 0 })
+    $foldOffset += $foldCount
 }
-$foldPairs = [Convert]::ToBase64String($foldCompact.ToArray())
+$foldPairs = $foldRecords -join ','
 
 $assets = @(
     @{
@@ -109,8 +120,11 @@ $assets = @(
     }
 )
 
+$filterEditorParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'filter-editor-parts.json') -Raw | ConvertFrom-Json)
+$filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+
 function Join-AssetSource {
-    param([string] $SourcePath, [string[]] $ExtensionPath)
+    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
@@ -124,6 +138,7 @@ function Join-AssetSource {
         else { $parts = @($parts | Where-Object Name -LT '90-') + @($extra) + @($parts | Where-Object Name -GE '90-') }
     }
 
+    if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -206,6 +221,7 @@ export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge
 export default CanopyX;
 '@
     if ($Grid) {
+        $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
         $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
@@ -213,16 +229,100 @@ export default CanopyX;
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
 
+function Compress-ScriptSpacing {
+    param([string] $Content)
+
+    # Preserve ASI boundaries and quoted literals. A slash may start a regex, comment or division: keep its suffix
+    # and the following newline. Join only after delimiters that cannot end an ASI statement, or before a closer.
+    $literal = '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|/.*)'
+    $output = [System.Text.StringBuilder]::new()
+    $previous = ''
+    $slash = $false
+    foreach ($line in $Content.Split("`n")) {
+        $pieces = [regex]::Split($line, $literal)
+        for ($i = 0; $i -lt $pieces.Length; $i += 2) {
+            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]<>!&|?:%*^])\s*', '$1')
+            # A spaced + or - joins its operands unless a neighbour is another + or -, which would form ++ or --.
+            $pieces[$i] = [regex]::Replace($pieces[$i], '(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])', '$1')
+            # A closing brace ends the statement before it; dropping a needed empty statement would not parse.
+            $pieces[$i] = $pieces[$i].Replace(';}', '}')
+        }
+        $compact = $pieces -join ''
+        if ($output.Length -and ($slash -or ($previous -notmatch '[;,{(\[]$' -and $compact -notmatch '^[)}\]]'))) {
+            [void]$output.Append("`n")
+        } elseif ($output.Length -and $compact.StartsWith('}', [StringComparison]::Ordinal) -and $previous.EndsWith(';', [StringComparison]::Ordinal)) {
+            [void]$output.Remove($output.Length - 1, 1)
+        }
+        [void]$output.Append($compact)
+        $previous = $compact
+        $slash = @($pieces | Where-Object { $_.StartsWith('/') }).Count -gt 0
+    }
+    $output.ToString()
+}
+
+function Compress-StyleSpacing {
+    param([string] $Content)
+
+    # Whitespace around braces and after semicolons, commas and declaration colons carries no meaning in CSS.
+    # Quoted text stays as written; spaces inside values and between selector parts are kept.
+    $lines = foreach ($line in $Content.Split("`n")) {
+        $pieces = [regex]::Split($line, '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*'')')
+        for ($i = 0; $i -lt $pieces.Length; $i += 2) {
+            $piece = [regex]::Replace($pieces[$i], '\s*([{}])\s*', '$1')
+            $piece = [regex]::Replace($piece, '([;,])\s+', '$1')
+            $pieces[$i] = [regex]::Replace($piece, '((?:^|[{;])-*[A-Za-z][\w-]*):\s+', '$1:')
+        }
+        $pieces -join ''
+    }
+    $lines -join "`n"
+}
+
+function Get-AssetHash([string] $Content) {
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Content)))).Replace('-', '').ToLowerInvariant().Substring(0, 16) }
+    finally { $sha.Dispose() }
+}
+
+$editorBody = Join-AssetSource -SourcePath $filterEditorPaths[0] -ExtensionPath $filterEditorPaths[1..($filterEditorPaths.Count - 1)] -IncludeFilterEditor
+$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css'))
+$editorVersion = Get-AssetHash ($editorBody + $editorStyle)
+$editorHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
+if (installed.has(context.DataGrid.prototype)) return;
+const {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
+GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
+reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,reportingRangeRows} = context;
+const buildFilters = DataGrid.prototype.buildGridFilters;
+'@
+$editorFooter = @'
+DataGrid.prototype.buildGridFilters = buildFilters;
+context.GRID_REPORTING?.installFilters?.({gridDateInput});
+installed.add(DataGrid.prototype);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$editorScript = Compress-ScriptSpacing (($editorHeader.Replace('__VERSION__', $editorVersion).Replace("`r`n", "`n")) + "`n" + $editorBody + $editorFooter.Replace("`r`n", "`n") + "`n")
+$editorScriptName = 'canopyx-filter-editor.' + (Get-AssetHash $editorScript) + '.js'
+$editorStyleName = 'canopyx-filter-editor.' + (Get-AssetHash $editorStyle) + '.css'
+$assets += @(@{ Generated = $editorScript; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.js' },
+    @{ Generated = $editorStyle; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.css' })
+
 foreach ($asset in $assets) {
-    $sourcePath = Join-Path $root $asset.Source
+    $sourcePath = if ($asset.Source) { Join-Path $root $asset.Source } else { $null }
     $targetPath = Join-Path $root $asset.Target
     $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
-    $generated = Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath
+    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath }
+    $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
     if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) }
+    if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
+    if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) { $generated = Compress-StyleSpacing -Content $generated }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

@@ -2,15 +2,18 @@
   Object.assign(DataGrid.prototype, {
     build() {
       const host = this.host, style = host.style, signal = this.lifetime.signal;
-      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h");
-      this.restoreHeight = () => style.setProperty("--cx-min-h", minimum, priority);
+      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h"),rowHeight=style.getPropertyValue("--cx-row-h"),rowPriority=style.getPropertyPriority("--cx-row-h"),density=host.getAttribute("data-cx-density"),maximum=style.maxHeight;
+      this.restoreHeight = () => {style.maxHeight=maximum;style.setProperty("--cx-min-h",minimum,priority);style.setProperty("--cx-row-h",rowHeight,rowPriority);if(density===null)host.removeAttribute("data-cx-density");else host.setAttribute("data-cx-density",density);};
       style.removeProperty("--cx-min-h");
       host.classList.add("cx-host", "cx-data-grid");
+      host.classList.toggle("cx-row-accents", !!this.view.rowAccents);
+      host.setAttribute("data-cx-density", this.view.density || "default");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
-      if (this.view.search) this.buildGridSearch();
+      if (this.view.search && this.tools.search !== false) this.buildGridSearch();
       this.buildGridControls();
+      this.buildGridChrome();
       this.buildQuerySummary();
       const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
       grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
@@ -21,17 +24,20 @@
       grid.appendChild(this.head); grid.appendChild(this.canvas);
       this.notice = h("div", "cx-grid-notice"); this.notice.hidden = true;
       this.live = h("div", "cx-live cx-sr-only"); this.live.setAttribute("aria-live", "polite");
-      host.appendChild(this.toolbar); host.appendChild(grid); host.appendChild(this.notice); host.appendChild(this.live);
+      host.append(this.toolbar, this.querySummary);
+      if (this.groupBar) host.appendChild(this.groupBar);
+      host.append(this.notice, grid, this.live);
       this.buildPager();
+      this.buildGridStatus();
       this.buildHeader();
-      grid.addEventListener("scroll", () => { this.scheduleRender(); this.stateChanged(); }, { passive: true, signal: signal });
-      grid.addEventListener("click", event => this.onClick(event), { signal: signal });
+      grid.addEventListener("scroll", () => { this.scheduleRender(); this.syncPinnedShadows(); this.stateChanged(); }, { passive: true, signal });
+      grid.addEventListener("click", event => this.onClick(event), { signal });
       grid.addEventListener("dblclick", event => {
         const element = event.target.closest(".cx-row"), row = element && element._w;
-        if (row && !row.status && typeof this.opts.onDetails === "function" && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
-          Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error }));
-      }, { signal: signal });
-      grid.addEventListener("keydown", event => this.onKey(event), { signal: signal });
+        if (row && !row.status && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
+          Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
+      }, { signal });
+      grid.addEventListener("keydown", event => this.onKey(event), { signal });
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");
         if (element && element._w && this.pendingNavigation && this.pendingQuery && element._w._ri !== this.pendingNavigation.index)
@@ -39,27 +45,41 @@
         if (element && element._w && this.focused !== element._w) {
           this.pendingNavigation = null; this.focused = element._w; this.scheduleRender();
         }
-      }, { signal: signal });
+      }, { signal });
       document.addEventListener("focusin", event => {
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
-      }, { signal: signal });
-      this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal: signal });
-      this.resizeObserver = new ResizeObserver(() => {
+      }, { signal });
+      this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
+      // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
+      this.sized = this.hasGridSize();
+      // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
+      this.resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => {
+        if (this.destroyed) return;
+        if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
-          height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
-        this.applyWidths(); this.scheduleRender();
-      });
+          height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+        if (!(this.sized = this.hasGridSize())) return;
+        this.applyWidths();
+        this.updateGridPhone();
+        this.fitHeight();
+        this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
+        if (this.hiddenScrollTop !== undefined) {
+          const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
+        }
+        this.scheduleRender();
+      }));
       this.resizeObserver.observe(grid);
+      this.resizeObserver.observe(this.head);
     },
 
-    setNotice(text, error) {
-      this.notice.textContent = ""; this.notice.hidden = !text;
-      this.notice.setAttribute("role", error ? "alert" : "status");
-      if (error) {
-        const retry = h("button", "cx-button cx-grid-retry"); retry.type = "button"; setText(retry, text);
-        retry.addEventListener("click", () => this.retry().catch(() => {}), { signal: this.lifetime.signal }); this.notice.appendChild(retry);
-      } else setText(this.notice, text);
+    setLogicalTop(top) {
+      if (!this.hasGridSize()) { this.hiddenScrollTop = top; return; }
+      return ROW_SCROLLING.setLogicalTop.call(this, top);
     },
+
+    logicalTop() { return this.hiddenScrollTop ?? ROW_SCROLLING.logicalTop.call(this); },
+
+    hasGridSize() { return !!(this.grid.clientWidth && this.grid.clientHeight && this.grid.checkVisibility()); },
 
     buildHeader() {
       const sorts = this.acceptedQuery ? this.acceptedQuery.sort : [];
@@ -71,9 +91,12 @@
           cell.setAttribute("data-cx-sort", sorts[index].direction); cell.setAttribute("data-cx-sort-priority", String(index + 1));
           const button = cell.querySelector(".cx-sort");
           button.setAttribute("data-cx-sort-priority", String(index + 1));
+          if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.appendChild(priority); }
           button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + ", " + (index + 1));
         }
       }
+      this.buildHeaderSelection?.();
+      this.buildColumnMenus?.();
     },
 
     cellOf(row, column) { return row.cells[column.id]; },
@@ -88,16 +111,31 @@
         element._cells = (row.status ? [null] : this.cols).map((column, index) => {
           const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
           if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
-          const slot = { cell: cell, content: cell, base: cell.className, cls: null, title: null, badges: [], mode: "default" };
+          const slot = { cell, content: cell, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
           slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }
-      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : ""));
+      setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : this.autoRows ? " cx-auto-row" : ""));
+      if (this.autoRows) {
+        element.style.height = row.status ? this.rowH + "px" : "auto";
+        this.observeDetail(element, !row.status);
+        this.measureNeeded = true;
+      }
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {
         error: ((this.pages.get(Math.floor(row._ri / this.pageSize) * this.pageSize) || {}).error || {}).message || ""
       }) : this.labels.loading;
-      else for (let i = 0; i < this.cols.length; i++) this.paintSlot(element._cells[i], row.h, this.cols[i], this.columnIndex[i], row);
+      else for (let i = 0; i < this.cols.length; i++) {
+        const slot = element._cells[i];
+        if (slot.highlighted) { slot.cls = null; slot.highlighted = false; }
+        const column=this.cols[i];
+        this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
+        if(!column.render&&!slot.text.data){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
+        else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
+        if(this.phone||slot.hiddenFields)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
+      }
+      this.paintGridHighlights(element, row);
+      if(row.status)this.paintGridSkeleton(element,row);
     }
   });

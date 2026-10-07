@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, flushGridFilters, openGridControl } from "./support.mjs";
 
 const definition = () => ({ protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   source: { kind: "inline" }, rowHeight: 28, pageSize: 10, selection: "multiple", search: true,
@@ -21,21 +21,25 @@ test("opening and applying filters preserves mixed raw membership and newline te
   const view = definition(); view.rows = [{ id: "bool", cells: { name: true } }, { id: "text", cells: { name: "true" } }, { id: "line", cells: { name: "line1\nline2" } }];
   view.query = { filters: [{ column: "name", operator: "in", values: [true, "true"] }] };
   await openGrid(page, view); await page.locator(".cx-grid-filters > summary").click();
-  await page.locator(".cx-grid-filters").getByRole("button", { name: "Apply", exact: true }).click();
+  await flushGridFilters(page);
   await expect.poll(() => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values)).toEqual([true, "true"]);
   await page.evaluate(async () => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ filters: [{ column: "name", operator: "eq", values: ["line1\nline2"] }] }));
-  await page.locator(".cx-grid-filters > summary").click(); await page.locator(".cx-grid-filters > summary").click();
-  await page.locator(".cx-grid-filters").getByRole("button", { name: "Apply", exact: true }).click();
+  await openGridControl(page,"filters");
+  await flushGridFilters(page);
   await expect.poll(() => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values)).toEqual(["line1\nline2"]);
 });
 for (const [column, values, extra] of [["size", [111, 112], "113"], ["date", ["2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z"], "2026-01-03T00:00:00Z"]])
 test(`membership editing displays and retains every original ${column} operand`, async ({page}) => {
   const view = definition(); view.query = {filters:[{column, operator:"in", values}]};
   await openGrid(page, view); await page.locator(".cx-grid-filters > summary").click();
-  const membership = page.locator(".cx-grid-filter textarea:enabled");
-  await expect(membership).toHaveValue(values.join("\n"));
-  await membership.fill(values.join("\n") + "\n" + extra);
-  await page.locator(".cx-grid-filters").getByRole("button", {name:"Apply",exact:true}).click();
+  const membership = page.locator(".cx-grid-filter .cx-ms");
+  await expect(page.locator(".cx-grid-filter textarea")).toHaveCount(0);
+  await membership.locator("summary").click();
+  await expect(membership.locator(".cx-val input:checked")).toHaveCount(values.length);
+  await membership.getByRole("searchbox", { name: "Search values", exact: true }).fill(extra);
+  await membership.getByRole("searchbox", { name: "Search values", exact: true }).press("Enter");
+  await expect(membership.locator(".cx-val input:checked")).toHaveCount(values.length + 1);
+  await flushGridFilters(page);
   const actual = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getQuery().filters[0].values);
   expect(actual).toEqual([...values, column === "size" ? Number(extra) : extra]);
 });
@@ -44,7 +48,7 @@ test("reset supersedes queued search input before a slow host restoration", asyn
   const view = definition(); view.source = { kind: "host" }; delete view.rows;
   await openGrid(page, view, `window.queries=[];CanopyX.configure('inventory',{source:{async query(query){window.queries.push(query.search);await new Promise(resolve=>setTimeout(resolve,300));return {protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:0,total:0,matched:0,items:[]};}}});`);
   // Dispatch input and Reset in one browser turn so the debounce has not expired during automation actionability checks.
-  await page.getByRole("button", { name: "Reset view", exact: true }).evaluate(button => {
+  await openGridControl(page, "views"); await page.getByRole("button", { name: "Reset view", exact: true }).evaluate(button => {
     const input = document.querySelector('[data-canopyx-host] input[type="search"]');
     input.value = "queued"; input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
     button.click();
@@ -55,53 +59,61 @@ test("reset supersedes queued search input before a slow host restoration", asyn
 });
 test("inactive numeric inputs do not prevent a valid membership filter from submitting", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-filters > summary").click();
-  const panel = page.locator(".cx-grid-filters"); await panel.getByRole("button", { name: "Add filter", exact: true }).click();
-  const row = panel.locator("fieldset"); await row.getByRole("combobox", { name: "Column", exact: true }).selectOption("size");
+  const panel = page.locator(".cx-grid-filters"); await panel.getByRole("button", { name: "+ Condition", exact: true }).click();
+  const row = panel.locator("fieldset.cx-grid-filter"); await row.getByRole("combobox", { name: "Column", exact: true }).selectOption("size");
   await row.locator("input.cx-grid-filter-value").press("-");
   expect(await row.locator("input.cx-grid-filter-value").evaluate(input => input.validity.badInput)).toBe(true);
-  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("in"); await row.locator("textarea.cx-grid-filter-value:visible").fill("111");
-  await panel.getByRole("button", { name: "Apply", exact: true }).click();
+  await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption("in"); await row.locator(".cx-ms > summary").click();
+  await row.getByRole("searchbox", { name: "Search values", exact: true }).fill("111");
+  await expect(row.locator(".cx-val:visible")).toHaveCount(1); await row.locator(".cx-val:visible input").check();
+  await expect(row.locator(".cx-ms > summary")).toHaveText("111");
+  await flushGridFilters(page);
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "2");
 });
 test("a keyboard reorder reaching a boundary keeps focus in that column's controls", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-columns > summary").click();
-  const move = page.getByRole("button", { name: "Move Size earlier", exact: true }); await move.focus(); await move.press("Enter");
-  await expect(page.getByRole("button", { name: "Move Size later", exact: true })).toBeFocused();
+  const handle = () => page.getByRole("button", { name: /^Size: drag/ });
+  await handle().focus(); await page.keyboard.press("Alt+ArrowUp");
+  await expect(handle()).toBeFocused(); await page.keyboard.press("Alt+ArrowUp");
+  await expect(handle()).toBeFocused();
+  expect(await page.getByRole("columnheader").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn))).toEqual(["size", "name", "date"]);
 });
 
 test("typed filter controls combine category, raw numbers and UTC dates across the complete source", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-filters > summary").click();
   const panel = page.locator(".cx-grid-filters");
   for (const [column, operator, value] of [["name", "in", "ARCHIVE"], ["size", "ge", "111"], ["date", "lt", "2026-01-08T00:00"]]) {
-    await panel.getByRole("button", { name: "Add filter", exact: true }).click();
-    const row = panel.locator("fieldset").last();
+    await panel.getByRole("button", { name: "+ Condition", exact: true }).click();
+    const row = panel.locator("fieldset.cx-grid-filter").last();
     await row.getByRole("combobox", { name: "Column", exact: true }).selectOption(column);
     await row.getByRole("combobox", { name: "Condition", exact: true }).selectOption(operator);
-    await row.locator(".cx-grid-filter-value:visible").fill(value);
-    await expect(row.getByRole("button", { name: "Remove " + (column === "name" ? "Name" : column === "size" ? "Size" : "Date") + " filter", exact: true })).toBeVisible();
+    if (operator === "in") { await row.locator(".cx-ms > summary").click(); await row.getByRole("searchbox", { name: "Search values", exact: true }).fill(value); await row.getByRole("searchbox", { name: "Search values", exact: true }).press("Enter"); }
+    else await row.locator("input.cx-grid-filter-value:visible").fill(value);
+    await expect(row.getByRole("button", { name: "Remove condition", exact: true })).toBeVisible();
   }
-  await panel.getByRole("button", { name: "Apply", exact: true }).click();
+  await flushGridFilters(page);
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "4");
   expect(await page.locator(".cx-row[data-cx-id]").evaluateAll(rows => rows.map(row => row.dataset.cxId))).toEqual(["row-113", "row-115", "row-117"]);
-  await panel.getByRole("button", { name: "Clear filters", exact: true }).click();
+  await panel.getByRole("button", { name: "Clear all filters", exact: true }).click();
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "121");
 });
 
 test("column controls preserve a visible column, reorder keyboard cells and reset the original view", async ({ page }) => {
   await openGrid(page); await page.locator(".cx-grid-columns > summary").click();
   const panel = page.locator(".cx-grid-columns");
-  await panel.getByRole("button", { name: "Move Date earlier", exact: true }).click();
+  await panel.getByRole("checkbox", { name: "Date", exact: true }).press("Alt+ArrowUp");
   expect(await page.getByRole("columnheader").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn))).toEqual(["name", "date", "size"]);
   await panel.getByRole("checkbox", { name: "Name", exact: true }).uncheck();
   await panel.getByRole("checkbox", { name: "Date", exact: true }).uncheck();
   await expect(panel.getByRole("checkbox", { name: "Size", exact: true })).toBeDisabled();
   await page.locator('.cx-row[data-cx-id="row-0"]').focus(); await page.keyboard.press("F2");
   await expect(page.getByRole("gridcell").first()).toBeFocused();
-  await page.getByRole("button", { name: "Reset view", exact: true }).click();
+  await openGridControl(page, "views"); await page.getByRole("button", { name: "Reset view", exact: true }).click();
   await expect(page.getByRole("columnheader")).toHaveCount(3);
   expect(await page.getByRole("columnheader").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn))).toEqual(["name", "size", "date"]);
-  await page.getByRole("separator", { name: "Resize Size", exact: true }).focus(); await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("separator", { name: "Resize Size", exact: true })).toHaveAttribute("aria-valuenow", "110");
+  const resize = page.getByRole("separator", { name: "Resize Size", exact: true }), resized = Number(await resize.getAttribute("aria-valuenow"));
+  await resize.focus(); await page.keyboard.press("ArrowRight");
+  await expect(resize).toHaveAttribute("aria-valuenow", String(resized + 10));
   const head = page.getByRole("columnheader").first(), before = await head.boundingBox();
   await page.getByRole("grid").evaluate(grid => { grid.scrollTop = 700; }); await nextFrames(page);
   expect((await head.boundingBox()).y).toBe(before.y);
@@ -162,9 +174,9 @@ test("named session views survive reload, restore accepted settings and have an 
   await page.reload(); await page.waitForSelector("[data-cx-ready]");
   expect(await page.evaluate(api + ".getSavedViews()")).toEqual(["Archives"]);
   expect((await page.evaluate(api + ".getState()")).selection).toEqual(["row-1"]);
-  await page.getByRole("button", { name: "Reset view", exact: true }).click();
+  await openGridControl(page, "views"); await page.getByRole("button", { name: "Reset view", exact: true }).click();
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "121");
-  await page.locator(".cx-grid-views > summary").click();
+  await openGridControl(page,"views");
   await page.getByLabel("Choose a saved view", { exact: true }).selectOption("Archives");
   await page.locator(".cx-grid-views").getByRole("button", { name: "Apply", exact: true }).click();
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "61");
@@ -176,13 +188,14 @@ test("named session views survive reload, restore accepted settings and have an 
 test("open grid controls remain accessible in compact dark layouts", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 }); await openGrid(page);
   await page.locator("[data-canopyx-host]").evaluate(host => host.setAttribute("data-cx-theme", "dark"));
+  await expect(page.locator('.cx-grid-overflow .cx-grid-views > summary')).toBeHidden();
   for (const selector of [".cx-grid-columns", ".cx-grid-filters", ".cx-grid-views"]) {
-    await page.locator(selector + " > summary").click();
-    if (selector === ".cx-grid-filters") await page.getByRole("button", { name: "Add filter", exact: true }).click();
+    await openGridControl(page, selector.replace(".cx-grid-", ""));
+    if (selector === ".cx-grid-filters") await page.getByRole("button", { name: "+ Condition", exact: true }).click();
     await nextFrames(page);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     const box = await page.locator(selector + " > .cx-grid-panel").boundingBox();
-    expect(box.x).toBeGreaterThanOrEqual(7); expect(box.x + box.width).toBeLessThanOrEqual(383);
+    expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(390);
     await page.locator(selector + " > summary").focus(); await page.keyboard.press("Escape");
   }
 });

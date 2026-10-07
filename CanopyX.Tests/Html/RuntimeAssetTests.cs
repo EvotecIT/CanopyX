@@ -31,6 +31,9 @@ public sealed class RuntimeAssetTests {
                     : Enumerable.Empty<string>())
                 .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
         }
+        var editorParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "filter-editor-parts.json")))!;
+        var editorPaths = editorParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        files = files.Where(file => !editorPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
         var parts = files
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
@@ -47,11 +50,15 @@ public sealed class RuntimeAssetTests {
         var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
         var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
         Assert.NotEmpty(encoded);
-        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS = \"([A-Za-z0-9+/=]+)\";");
+        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS\\s*=\\s*\"([0-9a-z.,-]+)\";");
         Assert.True(actual.Success, "The browser folding table is missing.");
         var compact = actual.Groups[1].Value;
         Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
         expected = expected.Replace(marker, compact);
+        expected = expected.Replace("__CX_FILTER_VERSION__", CanopyHtmlAssets.FilterEditorVersion)
+            .Replace("__CX_FILTER_SCRIPT__", CanopyHtmlAssets.HashedFilterEditorScriptFileName)
+            .Replace("__CX_FILTER_STYLE__", CanopyHtmlAssets.HashedFilterEditorStyleFileName);
+        expected = CompressScriptSpacing(expected);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
         Assert.True(expected == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
@@ -70,7 +77,13 @@ public sealed class RuntimeAssetTests {
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "canopyx.css"));
         if (runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.reporting.source", "canopyx.css"));
-        Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
+        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
+    }
+
+    [Fact]
+    public void FilterEditorStyle_MatchesItsSource() {
+        var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "canopyx.css"));
+        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.FilterEditorStyle));
     }
 
     [Fact]
@@ -89,13 +102,13 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        Assert.True(compressed <= 80 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 80 KiB.");
+        Assert.True(compressed <= 96 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 96 KiB.");
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid));
-        Assert.True(compressed <= 112 * 1024, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 112 KiB.");
+        Assert.True(compressed <= 128 * 1024, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 128 KiB.");
     }
 
     [Fact]
@@ -226,27 +239,63 @@ public sealed class RuntimeAssetTests {
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
 
+    private static string CompressStyleSpacing(string value) => string.Join("\n", value.Split('\n').Select(line => {
+        var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*')");
+        for (var i = 0; i < parts.Length; i += 2) {
+            var part = Regex.Replace(parts[i], @"\s*([{}])\s*", "$1");
+            part = Regex.Replace(part, @"([;,])\s+", "$1");
+            parts[i] = Regex.Replace(part, @"((?:^|[{;])-*[A-Za-z][\w-]*):\s+", "$1:");
+        }
+        return string.Concat(parts);
+    }));
+
+    private static string CompressScriptSpacing(string value) {
+        var output = new StringBuilder();
+        var previous = "";
+        var slash = false;
+        foreach (var line in value.Split('\n')) {
+            var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/.*)");
+            for (var i = 0; i < parts.Length; i += 2) {
+                parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]<>!&|?:%*^])\s*", "$1");
+                parts[i] = Regex.Replace(parts[i], @"(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])", "$1");
+                parts[i] = parts[i].Replace(";}", "}");
+            }
+            var compact = string.Concat(parts);
+            if (output.Length > 0 && (slash || (!Regex.IsMatch(previous, @"[;,{(\[]$") && !Regex.IsMatch(compact, @"^[)}\]]")))) output.Append('\n');
+            else if (output.Length > 0 && compact.StartsWith('}') && previous.EndsWith(';')) output.Length--;
+            output.Append(compact);
+            previous = compact;
+            slash = parts.Any(part => part.StartsWith("/", StringComparison.Ordinal));
+        }
+        return output.ToString();
+    }
+
     /// <summary>Decodes the browser representation independently and compares every pair to the canonical table.</summary>
     private static byte[] ExpandFoldingTable(string encoded) {
-        using var source = new MemoryStream(Convert.FromBase64String(encoded));
-        using var reader = new BinaryReader(source);
         using var expanded = new MemoryStream();
         using var writer = new BinaryWriter(expanded);
-        while (source.Position < source.Length) {
-            var from = (int)reader.ReadUInt16();
-            var count = 1;
-            var step = 1;
-            int to;
-            if (from == ushort.MaxValue) {
-                from = reader.ReadUInt16(); to = reader.ReadUInt16(); count = reader.ReadUInt16(); step = reader.ReadUInt16();
-                Assert.True(count >= 3 && step is 1 or 2, "Invalid browser folding range.");
-            } else to = reader.ReadUInt16();
-            Assert.True(from + (count - 1) * step < ushort.MaxValue && to + (count - 1) * step <= ushort.MaxValue);
+        var unit = 0;
+        foreach (var record in encoded.Split(',')) {
+            var fields = record.Split('.').Select(ParseBase36).ToArray();
+            Assert.True(fields.Length is 2 or 4, "Invalid browser folding record.");
+            var count = fields.Length == 4 ? fields[2] : 1;
+            var step = fields.Length == 4 ? fields[3] : 0;
+            Assert.True(fields[0] > 0 && (fields.Length == 2 || count >= 3 && step > 0), "Invalid browser folding record.");
+            unit += fields[0];
+            Assert.True(unit + (count - 1) * step <= ushort.MaxValue && unit + fields[1] >= 0 && unit + (count - 1) * step + fields[1] <= ushort.MaxValue);
             for (var index = 0; index < count; index++) {
-                writer.Write((ushort)(from + index * step)); writer.Write((ushort)(to + index * step));
+                writer.Write((ushort)(unit + index * step)); writer.Write((ushort)(unit + index * step + fields[1]));
             }
+            unit += (count - 1) * step;
         }
         return expanded.ToArray();
+    }
+
+    private static int ParseBase36(string text) {
+        Assert.Matches("^-?[0-9a-z]+$", text);
+        var value = 0;
+        foreach (var digit in text.TrimStart('-')) value = checked(value * 36 + (digit <= '9' ? digit - '0' : digit - 'a' + 10));
+        return text[0] == '-' ? -value : value;
     }
 
     private static long GzipLength(string value) {

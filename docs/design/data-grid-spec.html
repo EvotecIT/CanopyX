@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX Grid Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ===== Page chrome (spec document, not part of the grid) ===== */
+:root {
+  --page: #f2f3f4; --doc-text: #16181c; --doc-muted: #4d525b; --doc-line: #cdd0d5;
+  --chrome: #16181c; --chrome-text: #f2f3f5; --chrome-muted: #a3a8b1; --chrome-accent: #37c9b8;
+  --font: Calibri, Carlito, "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --page: #0c0d10; --doc-text: #f2f3f5; --doc-muted: #b0b4bc; --doc-line: #363a42; --chrome: #07080a; } }
+:root[data-theme="dark"] { color-scheme: dark; --page: #0c0d10; --doc-text: #f2f3f5; --doc-muted: #b0b4bc; --doc-line: #363a42; --chrome: #07080a; }
+
+/* ===== CanopyX grid tokens: the proposal ===== */
+:root {
+  /* Inputs a host may set (existing names kept) */
+  --cx-surface: #ffffff;
+  --cx-text: #16181c;
+  --cx-accent: #11776f;
+  --cx-line: #e2e4e7;
+  --cx-tone-info: #0a728b;
+  --cx-tone-success: #177345;
+  --cx-tone-warning: #8c5c05;
+  --cx-tone-danger: #b8292a;
+  /* New inputs */
+  --cx-font: var(--font);
+  --cx-font-mono: var(--mono);
+  --cx-font-size: 14px;
+  --cx-radius: 6px;
+  --cx-radius-sm: 4px;
+  --cx-control-h: 32px;
+  --cx-row-h: 34px;
+  --cx-head-h: 36px;
+  --cx-cell-px: 12px;
+  /* Derived (runtime computes these; hosts normally leave them) */
+  --cx-text-2: color-mix(in srgb, var(--cx-text) 78%, var(--cx-surface));
+  --cx-muted: color-mix(in srgb, var(--cx-text) 66%, var(--cx-surface));
+  --cx-control-border: color-mix(in srgb, var(--cx-text) 54%, var(--cx-surface));
+  --cx-head-bg: color-mix(in srgb, var(--cx-text) 3.5%, var(--cx-surface));
+  --cx-group-bg: color-mix(in srgb, var(--cx-text) 2.5%, var(--cx-surface));
+  --cx-hover-bg: color-mix(in srgb, var(--cx-text) 4%, var(--cx-surface));
+  --cx-selected-bg: color-mix(in srgb, var(--cx-accent) 11%, var(--cx-surface));
+  --cx-accent-soft: color-mix(in srgb, var(--cx-accent) 13%, var(--cx-surface));
+  --cx-line-strong: color-mix(in srgb, var(--cx-text) 22%, var(--cx-surface));
+  --cx-row-line: var(--cx-line);
+  --cx-on-accent: #ffffff;
+  --cx-panel-shadow: 0 8px 28px color-mix(in srgb, #000 14%, transparent), 0 1px 3px color-mix(in srgb, #000 8%, transparent);
+  --cx-tone-danger-bg: color-mix(in srgb, var(--cx-tone-danger) 11%, var(--cx-surface));
+  --cx-tone-warning-bg: color-mix(in srgb, var(--cx-tone-warning) 13%, var(--cx-surface));
+  --cx-tone-success-bg: color-mix(in srgb, var(--cx-tone-success) 11%, var(--cx-surface));
+  --cx-tone-info-bg: color-mix(in srgb, var(--cx-tone-info) 11%, var(--cx-surface));
+  --cx-quiet: color-mix(in srgb, var(--cx-tone-success) 55%, var(--cx-surface));
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --cx-surface: #16181c; --cx-text: #f2f3f5; --cx-accent: #37c9b8; --cx-line: #272a30;
+  --cx-tone-info: #3ec3dd; --cx-tone-success: #4cc78a; --cx-tone-warning: #eeb640; --cx-tone-danger: #f47171;
+  --cx-on-accent: #0c0d10; --cx-head-bg: color-mix(in srgb, var(--cx-text) 4.5%, var(--cx-surface));
+  --cx-panel-shadow: 0 10px 32px rgba(0,0,0,.55), 0 0 0 1px var(--cx-line);
+} }
+:root[data-theme="dark"] {
+  --cx-surface: #16181c; --cx-text: #f2f3f5; --cx-accent: #37c9b8; --cx-line: #272a30;
+  --cx-tone-info: #3ec3dd; --cx-tone-success: #4cc78a; --cx-tone-warning: #eeb640; --cx-tone-danger: #f47171;
+  --cx-on-accent: #0c0d10; --cx-head-bg: color-mix(in srgb, var(--cx-text) 4.5%, var(--cx-surface));
+  --cx-panel-shadow: 0 10px 32px rgba(0,0,0,.55), 0 0 0 1px var(--cx-line);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--doc-text); font: 16px/1.5 var(--font); }
+h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+p { margin: 0; }
+code { font-family: var(--mono); font-size: .85em; }
+.top { background: var(--chrome); color: var(--chrome-text); padding-inline: 16px; }
+.top-in { max-width: 1160px; margin: 0 auto; padding-block: 26px 28px; display: grid; gap: 10px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--chrome-accent); font-weight: 700; }
+.top h1 { font-size: clamp(26px, 4vw, 38px); }
+.top p { color: var(--chrome-muted); max-width: 82ch; }
+.theme-switch { justify-self: start; display: inline-flex; gap: 4px; background: rgba(255,255,255,.08); border-radius: 8px; padding: 3px; }
+.theme-switch button { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--chrome-muted); padding: 4px 12px; border-radius: 6px; cursor: pointer; }
+.theme-switch button[aria-pressed="true"] { background: rgba(255,255,255,.16); color: var(--chrome-text); }
+main { max-width: 1160px; margin: 0 auto; padding: 8px 16px 64px; display: grid; gap: 44px; }
+section.spec { display: grid; gap: 14px; }
+.sh { border-top: 1px solid var(--doc-line); padding-top: 20px; display: grid; gap: 6px; }
+.sh h2 { font-size: 23px; }
+.sh .n { font-family: var(--mono); font-size: 13px; color: var(--doc-muted); }
+.sh p, .rules { color: var(--doc-muted); max-width: 86ch; font-size: 15px; }
+.rules { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.rules b { color: var(--doc-text); }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+.label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--doc-muted); font-weight: 700; margin-bottom: 6px; }
+table.tok { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--cx-surface); border: 1px solid var(--cx-line); border-radius: 8px; overflow: hidden; }
+.tok th, .tok td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--cx-line); vertical-align: top; }
+.tok th { font-size: 12px; color: var(--cx-muted); background: var(--cx-head-bg); }
+.tok td:first-child { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.tok td.hx { white-space: nowrap; font-family: var(--mono); font-size: 12.5px; }
+.note { color: var(--doc-muted); font-size: 14px; max-width: 92ch; }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--cx-line-strong); }
+.scroll-x { overflow-x: auto; }
+
+/* ===== CanopyX components (reference CSS) ===== */
+.cx { font: var(--cx-font-size)/1.4 var(--cx-font); color: var(--cx-text); background: var(--cx-surface); border: 1px solid var(--cx-line); border-radius: calc(var(--cx-radius) + 2px); overflow: hidden; }
+.cx :focus-visible { outline: 2px solid var(--cx-accent); outline-offset: 2px; }
+.cx-ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Toolbar */
+.cx-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--cx-line); flex-wrap: wrap; }
+.cx-search { flex: 1 1 240px; max-width: 360px; height: var(--cx-control-h); display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--cx-control-border); border-radius: var(--cx-radius); color: var(--cx-muted); background: var(--cx-surface); min-width: 0; }
+.cx-search input { all: unset; flex: 1; min-width: 0; color: var(--cx-text); font-size: 14px; }
+.cx-search kbd { font: 11px var(--cx-font-mono); color: var(--cx-muted); border: 1px solid var(--cx-line); border-radius: 4px; padding: 0 5px; }
+.cx-btn { height: var(--cx-control-h); display: inline-flex; align-items: center; gap: 6px; padding: 0 11px; border: 1px solid var(--cx-line-strong); border-radius: var(--cx-radius); background: var(--cx-surface); color: var(--cx-text); font: 500 14px var(--cx-font); cursor: pointer; white-space: nowrap; }
+.cx-btn:hover { background: var(--cx-hover-bg); }
+.cx-btn.ghost { border-color: transparent; color: var(--cx-text-2); }
+.cx-btn.ghost:hover { background: var(--cx-hover-bg); color: var(--cx-text); }
+.cx-btn.icon { width: var(--cx-control-h); padding: 0; justify-content: center; }
+.cx-btn.primary { background: var(--cx-accent); border-color: var(--cx-accent); color: var(--cx-on-accent); font-weight: 700; }
+.cx-btn.active { border-color: var(--cx-accent); color: var(--cx-accent); background: var(--cx-accent-soft); }
+.cx-btn .badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--cx-accent); color: var(--cx-on-accent); font-size: 11.5px; font-weight: 700; display: inline-grid; place-items: center; }
+.cx-btn.sm { height: 28px; font-size: 13px; padding: 0 9px; }
+.cx-spacer { flex: 1; }
+.cx-sep { width: 1px; height: 20px; background: var(--cx-line); }
+.cx-selbar { display: flex; align-items: center; gap: 6px; padding: 0 4px 0 10px; height: var(--cx-control-h); border-radius: var(--cx-radius); background: var(--cx-accent-soft); color: var(--cx-text); font-size: 13.5px; }
+.cx-selbar b { color: var(--cx-accent); }
+
+/* Result line */
+.cx-result { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; padding: 8px 12px; border-bottom: 1px solid var(--cx-line); font-size: 13px; color: var(--cx-muted); }
+.cx-result strong { color: var(--cx-text); font-weight: 700; }
+.cx-chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 4px 0 9px; border-radius: 12px; background: var(--cx-accent-soft); color: var(--cx-text); font-size: 13px; }
+.cx-chip .k { color: var(--cx-muted); }
+.cx-chip button { all: unset; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: var(--cx-muted); cursor: pointer; }
+.cx-chip button:hover { background: color-mix(in srgb, var(--cx-text) 10%, transparent); color: var(--cx-text); }
+.cx-link { all: unset; color: var(--cx-accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+.cx-link:hover { text-decoration: underline; }
+
+/* Grouping bar */
+.cx-groupbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--cx-line); background: var(--cx-group-bg); font-size: 13px; color: var(--cx-muted); min-height: 38px; }
+.cx-groupbar .drop { border: 1px dashed var(--cx-line-strong); border-radius: var(--cx-radius); padding: 2px 10px; }
+.cx-gchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 6px; border: 1px solid var(--cx-line-strong); border-radius: var(--cx-radius); background: var(--cx-surface); color: var(--cx-text); font-size: 13px; }
+.cx-gchip .grip { color: var(--cx-muted); letter-spacing: -2px; }
+.cx-gchip button { all: unset; width: 18px; height: 18px; display: grid; place-items: center; color: var(--cx-muted); border-radius: 4px; cursor: pointer; }
+
+/* Grid */
+table.cx-grid { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
+.cx-grid th { height: var(--cx-head-h); padding: 0 var(--cx-cell-px); text-align: left; font-size: 13px; font-weight: 700; color: var(--cx-text-2); background: var(--cx-head-bg); border-bottom: 1px solid var(--cx-line-strong); white-space: nowrap; position: relative; }
+.cx-grid th .h { display: flex; align-items: center; gap: 4px; }
+.cx-grid th.num .h { justify-content: flex-end; }
+.cx-grid th .sort { color: var(--cx-accent); display: inline-flex; align-items: center; gap: 1px; }
+.cx-grid th .sort sup { font-size: 10px; font-weight: 700; }
+.cx-grid th .fx { color: var(--cx-accent); }
+.cx-grid th .menu { all: unset; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 4px; color: var(--cx-muted); opacity: 0; cursor: pointer; }
+.cx-grid th:hover .menu, .cx-grid th .menu:focus-visible, .cx-grid th .menu.open { opacity: 1; }
+.cx-grid th .menu:hover, .cx-grid th .menu.open { background: color-mix(in srgb, var(--cx-text) 8%, transparent); color: var(--cx-text); }
+.cx-grid th::after { content: ""; position: absolute; right: 0; top: 9px; bottom: 9px; width: 1px; background: var(--cx-line); }
+.cx-grid th:last-child::after { display: none; }
+.cx-grid td { height: var(--cx-row-h); padding: 0 var(--cx-cell-px); border-bottom: 1px solid var(--cx-row-line); white-space: nowrap; vertical-align: middle; }
+.cx-grid td.num { text-align: right; }
+.cx-grid td.wrap { white-space: normal; padding-block: 7px; line-height: 1.4; }
+.cx-grid tbody tr:hover td { background: var(--cx-hover-bg); }
+.cx-grid tr.sel td { background: var(--cx-selected-bg); }
+.cx-grid tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--cx-accent); }
+.cx-grid td.focus { outline: 2px solid var(--cx-accent); outline-offset: -2px; }
+.cx-grid tr.grp td { background: var(--cx-group-bg); font-weight: 700; height: calc(var(--cx-row-h) + 2px); }
+.cx-grid tr.grp .cnt { color: var(--cx-muted); font-weight: 400; margin-left: 4px; }
+.cx-grid tr.grp .chev { display: inline-block; width: 16px; color: var(--cx-muted); }
+.cx-grid tr.grp td.num { font-weight: 700; }
+.cx-grid tr.tone-danger td:first-child { box-shadow: inset 3px 0 0 var(--cx-tone-danger); }
+.cx-grid tr.tone-warning td:first-child { box-shadow: inset 3px 0 0 var(--cx-tone-warning); }
+.cx-grid tfoot td { background: var(--cx-head-bg); font-weight: 700; border-top: 1px solid var(--cx-line-strong); border-bottom: 0; }
+.cx-grid .pin { position: sticky; left: 0; z-index: 1; background: var(--cx-surface); box-shadow: 1px 0 0 var(--cx-line-strong), 6px 0 8px -6px color-mix(in srgb, #000 22%, transparent); }
+.cx-grid th.pin { background: var(--cx-head-bg); z-index: 2; }
+.cx-check { width: 16px; height: 16px; border: 1.5px solid var(--cx-control-border); border-radius: 4px; display: inline-grid; place-items: center; vertical-align: middle; background: var(--cx-surface); }
+.cx-check.on { background: var(--cx-accent); border-color: var(--cx-accent); color: var(--cx-on-accent); }
+.cx-check.mixed { background: var(--cx-accent); border-color: var(--cx-accent); }
+.cx-check.mixed::before { content: ""; width: 8px; height: 2px; background: var(--cx-on-accent); border-radius: 1px; }
+.cx-grid .cb { width: 40px; padding-right: 0; }
+
+/* Presenters */
+.p-muted { color: var(--cx-muted); }
+.p-missing { color: var(--cx-muted); }
+.p-bool-yes { color: var(--cx-tone-success); display: inline-flex; }
+.p-bool-no { color: var(--cx-muted); }
+.p-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--cx-radius-sm); font-size: 12.5px; font-weight: 700; }
+.p-pill.danger { background: var(--cx-tone-danger-bg); color: var(--cx-tone-danger); }
+.p-pill.warning { background: var(--cx-tone-warning-bg); color: var(--cx-tone-warning); }
+.p-pill.success { background: var(--cx-tone-success-bg); color: var(--cx-tone-success); }
+.p-pill.info { background: var(--cx-tone-info-bg); color: var(--cx-tone-info); }
+.p-pill.neutral { background: color-mix(in srgb, var(--cx-text) 7%, var(--cx-surface)); color: var(--cx-text-2); }
+.p-state { display: inline-flex; align-items: center; gap: 7px; }
+.p-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.p-dot.quiet { width: 6px; height: 6px; background: var(--cx-quiet); }
+.p-dot.danger { background: var(--cx-tone-danger); }
+.p-dot.warning { background: var(--cx-tone-warning); }
+.p-dot.info { background: var(--cx-tone-info); }
+.p-state.quiet { color: var(--cx-text-2); }
+.p-delta { font-size: 12.5px; font-weight: 700; margin-right: 6px; }
+.p-delta.bad { color: var(--cx-tone-danger); }
+.p-delta.good { color: var(--cx-tone-success); }
+.p-delta.flat { color: var(--cx-muted); font-weight: 400; }
+.p-progress { display: inline-flex; align-items: center; gap: 8px; }
+.p-progress .track { width: 72px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--cx-text) 9%, var(--cx-surface)); overflow: hidden; }
+.p-progress .fill { display: block; height: 100%; border-radius: 3px; background: var(--cx-accent); }
+.p-progress .fill.danger { background: var(--cx-tone-danger); }
+.p-progress .fill.warning { background: var(--cx-tone-warning); }
+.p-spark { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; vertical-align: middle; }
+.p-spark i { width: 4px; border-radius: 1px; background: var(--cx-quiet); }
+.p-spark i.danger { background: var(--cx-tone-danger); }
+.p-spark i.warning { background: var(--cx-tone-warning); }
+.p-strip { display: inline-flex; gap: 1px; height: 14px; vertical-align: middle; border-radius: 2px; overflow: hidden; }
+.p-strip i { width: 6px; background: var(--cx-quiet); opacity: .55; }
+.p-strip i.danger { background: var(--cx-tone-danger); opacity: 1; }
+.p-strip i.warning { background: var(--cx-tone-warning); opacity: 1; }
+.p-strip i.none { background: color-mix(in srgb, var(--cx-text) 10%, var(--cx-surface)); opacity: 1; }
+.p-line { vertical-align: middle; }
+.p-line polyline { fill: none; stroke: var(--cx-muted); stroke-width: 1.5; }
+.p-line circle { fill: var(--cx-tone-danger); }
+.p-link { color: var(--cx-accent); text-decoration: none; }
+.p-link:hover { text-decoration: underline; }
+.p-mono { font-family: var(--cx-font-mono); font-size: 12.5px; }
+.p-sub { color: var(--cx-muted); font-size: 12.5px; margin-left: 6px; }
+.p-tag { display: inline-flex; height: 20px; align-items: center; padding: 0 7px; border: 1px solid var(--cx-line-strong); border-radius: 10px; font-size: 12px; color: var(--cx-text-2); margin-right: 4px; }
+
+/* Popovers, menus */
+.cx-pop { width: 280px; background: var(--cx-surface); color: var(--cx-text); border: 1px solid var(--cx-line); border-radius: var(--cx-radius); box-shadow: var(--cx-panel-shadow); font: 14px/1.4 var(--cx-font); overflow: hidden; }
+.cx-pop-h { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--cx-line); font-weight: 700; }
+.cx-pop-h span { color: var(--cx-muted); font-weight: 400; }
+.cx-pop-b { padding: 10px 12px; display: grid; gap: 8px; }
+.cx-pop-f { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-top: 1px solid var(--cx-line); }
+.cx-menu { padding: 4px; }
+.cx-mi { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--cx-radius-sm); color: var(--cx-text); cursor: pointer; }
+.cx-mi:hover, .cx-mi.hl { background: var(--cx-hover-bg); }
+.cx-mi .ico { width: 16px; color: var(--cx-muted); display: inline-grid; place-items: center; }
+.cx-mi .kb { margin-left: auto; color: var(--cx-muted); font-size: 12px; }
+.cx-mi.on .ico { color: var(--cx-accent); }
+.cx-msep { height: 1px; background: var(--cx-line); margin: 4px 6px; }
+.cx-mlabel { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--cx-muted); font-weight: 700; padding: 6px 10px 2px; }
+.cx-input { height: var(--cx-control-h); width: 100%; border: 1px solid var(--cx-control-border); border-radius: var(--cx-radius); padding: 0 10px; background: var(--cx-surface); color: var(--cx-text); font: 14px var(--cx-font); display: flex; align-items: center; gap: 8px; }
+.cx-input.sel::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-right: 1.5px solid var(--cx-muted); border-bottom: 1.5px solid var(--cx-muted); transform: rotate(45deg) translateY(-2px); }
+.cx-input .ph { color: var(--cx-muted); }
+.cx-facets { max-height: 210px; overflow: auto; display: grid; gap: 1px; margin-inline: -4px; }
+.cx-facet { display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 4px; border-radius: var(--cx-radius-sm); }
+.cx-facet:hover { background: var(--cx-hover-bg); }
+.cx-facet .c { margin-left: auto; color: var(--cx-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.cx-facet.all { border-bottom: 1px solid var(--cx-line); border-radius: 0; margin-bottom: 2px; }
+.cx-seg { display: inline-flex; border: 1px solid var(--cx-line-strong); border-radius: var(--cx-radius); overflow: hidden; }
+.cx-seg span { padding: 3px 10px; font-size: 12.5px; font-weight: 700; color: var(--cx-text-2); }
+.cx-seg span.on { background: var(--cx-accent-soft); color: var(--cx-accent); }
+.cx-seg span + span { border-left: 1px solid var(--cx-line-strong); }
+
+/* Filter builder */
+.cx-fb { width: 100%; max-width: 640px; }
+.cx-fb .cx-pop-b { gap: 10px; padding: 14px 16px; }
+.cx-cond { display: grid; grid-template-columns: 56px 1.2fr 1fr 1.2fr 32px; gap: 8px; align-items: center; }
+.cx-cond .w { font-size: 13px; color: var(--cx-muted); text-align: right; }
+.cx-group { border-left: 2px solid var(--cx-line-strong); padding: 8px 0 8px 12px; margin-left: 20px; display: grid; gap: 8px; }
+.cx-group-h { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--cx-muted); }
+.cx-adds { display: flex; gap: 14px; padding-left: 64px; }
+
+/* States */
+.cx-state { display: grid; justify-items: center; gap: 6px; padding: 44px 16px; text-align: center; }
+.cx-state h4 { margin: 0; font-size: 16px; }
+.cx-state p { color: var(--cx-muted); font-size: 14px; max-width: 46ch; }
+.cx-state .acts { display: flex; gap: 8px; margin-top: 8px; }
+.cx-skel td { height: var(--cx-row-h); }
+.cx-skel i { display: block; height: 10px; border-radius: 5px; background: linear-gradient(90deg, color-mix(in srgb, var(--cx-text) 7%, var(--cx-surface)) 0%, color-mix(in srgb, var(--cx-text) 12%, var(--cx-surface)) 50%, color-mix(in srgb, var(--cx-text) 7%, var(--cx-surface)) 100%); background-size: 200% 100%; animation: cx-shimmer 1.4s linear infinite; }
+@keyframes cx-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .cx-skel i { animation: none; } }
+.cx-banner { display: flex; align-items: center; gap: 12px; margin: 12px; padding: 10px 12px; border-radius: var(--cx-radius); background: var(--cx-tone-danger-bg); box-shadow: inset 3px 0 0 var(--cx-tone-danger); font-size: 14px; }
+.cx-banner b { color: var(--cx-tone-danger); }
+.cx-banner .d { color: var(--cx-text-2); }
+.cx-banner .cx-btn { margin-left: auto; }
+
+/* Footer and status bar */
+.cx-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 8px 12px; border-top: 1px solid var(--cx-line); font-size: 13.5px; color: var(--cx-muted); }
+.cx-footer strong { color: var(--cx-text); }
+.cx-pager { display: flex; align-items: center; gap: 4px; }
+.cx-pager .cx-btn { height: 30px; }
+.cx-pager .cx-btn.icon { width: 30px; }
+.cx-pager .cx-btn[disabled] { opacity: .4; cursor: default; }
+.cx-pager .pg { display: inline-flex; align-items: center; gap: 6px; margin-inline: 6px; color: var(--cx-text-2); }
+.cx-pager .pg .cx-input { width: 52px; height: 30px; padding: 0 8px; justify-content: center; }
+.cx-rpp { display: inline-flex; align-items: center; gap: 8px; }
+.cx-rpp .cx-input { width: 72px; height: 30px; }
+.cx-status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 20px; padding: 7px 12px; border-top: 1px solid var(--cx-line); font-size: 13px; color: var(--cx-muted); background: var(--cx-head-bg); }
+.cx-status strong { color: var(--cx-text); }
+.cx-status .agg { display: flex; gap: 16px; }
+
+/* Drawer */
+.cx-drawer { width: 100%; max-width: 440px; background: var(--cx-surface); border: 1px solid var(--cx-line); border-radius: var(--cx-radius); box-shadow: var(--cx-panel-shadow); font: 14px/1.45 var(--cx-font); color: var(--cx-text); overflow: hidden; }
+.cx-drawer-h { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--cx-line); }
+.cx-drawer-h h4 { margin: 0; font-size: 17px; }
+.cx-drawer-h p { color: var(--cx-muted); font-size: 13px; }
+.cx-drawer-h .cx-btn { margin-left: auto; }
+.cx-dl { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; padding: 14px 16px; margin: 0; }
+.cx-dl dt { color: var(--cx-muted); font-size: 13px; padding-top: 1px; }
+.cx-dl dd { margin: 0; }
+.cx-drawer-s { padding: 4px 16px 0; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--cx-muted); font-weight: 700; }
+
+/* Phone frame */
+.phone { width: 375px; max-width: 100%; border: 1px solid var(--doc-line); border-radius: 14px; padding: 10px; background: var(--page); }
+.phone .cx-toolbar { gap: 6px; }
+.phone .cx-search { max-width: none; flex-basis: 100%; }
+.phone table.cx-grid { min-width: 0; }
+.phone .cx-footer { justify-content: center; }
+
+.dens { display: grid; gap: 12px; }
+main > *, section.spec > *, .split > * { min-width: 0; }
+.cx-groupbar, .cx-result { flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .cx-cond, .cx-group .cx-cond { grid-template-columns: 1fr 1fr 32px !important; }
+  .cx-cond .w { grid-column: 1 / -1; text-align: left; }
+  .cx-cond > .cx-input:nth-of-type(3) { grid-column: 1 / 3; }
+  .cx-group { margin-left: 4px; }
+  .cx-adds { padding-left: 0 !important; }
+  .cx-dl { grid-template-columns: 1fr; gap: 2px 0; }
+  .cx-dl dd { margin-bottom: 8px; }
+}
+.dens .cx { --cx-row-h: var(--rh); }
+.callouts { display: grid; gap: 6px; font-size: 14px; color: var(--doc-muted); counter-reset: c; padding: 0; margin: 0; list-style: none; }
+.callouts li { counter-increment: c; display: grid; grid-template-columns: 24px 1fr; gap: 8px; }
+.callouts li::before { content: counter(c); width: 20px; height: 20px; border-radius: 50%; background: var(--doc-text); color: var(--page); font-size: 12px; font-weight: 700; display: grid; place-items: center; margin-top: 2px; }
+.callouts b { color: var(--doc-text); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.5 4.5v15M14.5 4.5v15"/></symbol>
+  <symbol id="i-views" viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4-6 4z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-vmore" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-up-arrow" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down-arrow" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9 6-.3.8-1.2 2.3-2.6 3.6M6.4 7.6C4.6 8.9 3.4 10.8 3 12c.5 1.5 4 6 9 6 1.6 0 3-.4 4.3-1.1"/></symbol>
+  <symbol id="i-width" viewBox="0 0 24 24"><path d="M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3M4 5v14M20 5v14"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><path d="M4 6h10M8 12h12M8 18h12M4 6v12"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m10 7 5 5-5 5"/></symbol>
+  <symbol id="i-first" viewBox="0 0 24 24"><path d="m13 7-5 5 5 5M17 7l-5 5 5 5"/></symbol>
+  <symbol id="i-last" viewBox="0 0 24 24"><path d="m11 7 5 5-5 5M7 7l5 5-5 5"/></symbol>
+  <symbol id="i-retry" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19h16M7 16V10M12 16V6M17 16v-4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="top-in">
+    <span class="eyebrow">CanopyX · design spec · draft 2 · 5 October 2026</span>
+    <h1>The data grid's face</h1>
+    <p>The visual and interaction spec for the CanopyX flat grid in the Graphite look: tokens, toolbar, headers, rows, groups, cell presenters, column menu, filters, states, paging, status bar and the record drawer. Everything below is live HTML and CSS drawn from the proposed tokens; Codex ports it into the runtime and the reviewer compares the result against this page in both themes, at 1440 and 390 px.</p>
+    <div class="theme-switch" role="group" aria-label="Theme">
+      <button type="button" data-t="auto" aria-pressed="true">Auto</button>
+      <button type="button" data-t="light" aria-pressed="false">Light</button>
+      <button type="button" data-t="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="spec">
+  <div class="sh"><span class="n">01</span><h2>Principles</h2></div>
+  <ul class="rules">
+    <li><b>Quiet chrome, loud data.</b> Controls are outlined or ghost and secondary; colour is reserved for state, selection and the one primary action a host adds.</li>
+    <li><b>Healthy is quiet.</b> Success never shouts: a small muted dot, muted bars. Danger and warning get full colour and weight (TestimoX D24).</li>
+    <li><b>One way to do each thing.</b> Filter a column from its header; build complex filters in one builder; reset lives in Views; selection actions appear only while something is selected.</li>
+    <li><b>Numbers line up.</b> Tabular figures, right-aligned numeric cells and their headers, units in the header not in every cell where possible.</li>
+    <li><b>Everything from tokens.</b> No literal colours or sizes in the runtime CSS other than the token defaults; hosts theme by setting the inputs in 02.</li>
+  </ul>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">02</span><h2>Tokens</h2><p>Existing input names are kept, so current hosts keep working; their default values change to Graphite. New inputs cover type, shape and density. Derived tokens are computed by the runtime with <code>color-mix()</code> and normally left alone.</p></div>
+  <div class="split">
+    <div class="scroll-x"><table class="tok">
+      <thead><tr><th>Input</th><th>Light</th><th>Dark</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td>--cx-surface</td><td class="hx"><span class="sw" style="background:#ffffff"></span>#ffffff</td><td class="hx"><span class="sw" style="background:#16181c"></span>#16181c</td><td>Grid, popovers, inputs</td></tr>
+        <tr><td>--cx-text</td><td class="hx"><span class="sw" style="background:#16181c"></span>#16181c</td><td class="hx"><span class="sw" style="background:#f2f3f5"></span>#f2f3f5</td><td>Body text; base of all greys</td></tr>
+        <tr><td>--cx-accent</td><td class="hx"><span class="sw" style="background:#11776f"></span>#11776f</td><td class="hx"><span class="sw" style="background:#37c9b8"></span>#37c9b8</td><td>Focus, selection, sort, active filters, primary</td></tr>
+        <tr><td>--cx-line</td><td class="hx"><span class="sw" style="background:#e2e4e7"></span>#e2e4e7</td><td class="hx"><span class="sw" style="background:#272a30"></span>#272a30</td><td>Row lines, borders</td></tr>
+        <tr><td>--cx-tone-danger</td><td class="hx"><span class="sw" style="background:#b8292a"></span>#b8292a</td><td class="hx"><span class="sw" style="background:#f47171"></span>#f47171</td><td>Failed, critical</td></tr>
+        <tr><td>--cx-tone-warning</td><td class="hx"><span class="sw" style="background:#8c5c05"></span>#8c5c05</td><td class="hx"><span class="sw" style="background:#eeb640"></span>#eeb640</td><td>Degraded, delayed</td></tr>
+        <tr><td>--cx-tone-success</td><td class="hx"><span class="sw" style="background:#177345"></span>#177345</td><td class="hx"><span class="sw" style="background:#4cc78a"></span>#4cc78a</td><td>Healthy (used muted)</td></tr>
+        <tr><td>--cx-tone-info</td><td class="hx"><span class="sw" style="background:#0a728b"></span>#0a728b</td><td class="hx"><span class="sw" style="background:#3ec3dd"></span>#3ec3dd</td><td>Informational</td></tr>
+      </tbody>
+    </table></div>
+    <div class="scroll-x"><table class="tok">
+      <thead><tr><th>New input</th><th>Default</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td>--cx-font</td><td>Calibri, Carlito, Segoe UI, system-ui</td><td>All grid text</td></tr>
+        <tr><td>--cx-font-mono</td><td>IBM Plex Mono, Cascadia Mono, Consolas</td><td>Identifiers, hashes, paths</td></tr>
+        <tr><td>--cx-font-size</td><td>14px (compact 13px)</td><td>Cell text</td></tr>
+        <tr><td>--cx-radius / -sm</td><td>6px / 4px</td><td>Controls, popovers / pills, menu items</td></tr>
+        <tr><td>--cx-control-h</td><td>32px</td><td>Buttons, inputs, search</td></tr>
+        <tr><td>--cx-row-h</td><td>34px (28 / 42)</td><td>Row height per density</td></tr>
+        <tr><td>--cx-head-h</td><td>36px</td><td>Header row</td></tr>
+        <tr><td>--cx-cell-px</td><td>12px (8 / 14)</td><td>Cell horizontal padding</td></tr>
+        <tr><td>--cx-on-accent</td><td>#ffffff / #0c0d10</td><td>Text on accent fills</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <p class="note"><b>Derived:</b> text-2 (78 % text), muted (66 %), control-border (54 %, checkbox and input borders, ≥ 3:1 on every background), head-bg (3.5 %), group-bg (2.5 %), hover-bg (4 %), selected-bg (accent 11 %), accent-soft (accent 13 %), line-strong (22 %), tone-*-bg (tone 11–13 %), quiet (success 55 %), panel-shadow. Contrast: muted text must stay ≥ 4.5:1 on surface and head-bg in both themes; the runtime test checks it.</p>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">03</span><h2>The grid at rest and in use</h2><p>Toolbar, result line, grouping bar, header, rows, group rows, presenters, summary row and status bar together. The second row is selected, a cell has keyboard focus, and the first column is pinned.</p></div>
+  <div class="cx">
+    <div class="cx-toolbar">
+      <label class="cx-search"><svg class="cx-ico"><use href="#i-search"/></svg><input value="" placeholder="Search domain controllers" aria-label="Search"><kbd>/</kbd></label>
+      <button class="cx-btn active" type="button"><svg class="cx-ico"><use href="#i-filter"/></svg>Filters<span class="badge">2</span></button>
+      <button class="cx-btn ghost" type="button"><svg class="cx-ico"><use href="#i-columns"/></svg>Columns</button>
+      <button class="cx-btn ghost" type="button"><svg class="cx-ico"><use href="#i-views"/></svg>Views<svg class="cx-ico"><use href="#i-down"/></svg></button>
+      <span class="cx-spacer"></span>
+      <span class="cx-selbar"><b>2</b> selected <button class="cx-btn ghost sm" type="button"><svg class="cx-ico"><use href="#i-chart"/></svg>Chart</button><button class="cx-btn ghost sm" type="button"><svg class="cx-ico"><use href="#i-copy"/></svg>Copy</button><button class="cx-btn ghost sm icon" type="button" aria-label="Clear selection"><svg class="cx-ico"><use href="#i-x"/></svg></button></span>
+      <span class="cx-sep"></span>
+      <button class="cx-btn ghost" type="button"><svg class="cx-ico"><use href="#i-export"/></svg>Export<svg class="cx-ico"><use href="#i-down"/></svg></button>
+      <button class="cx-btn ghost icon" type="button" aria-label="More"><svg class="cx-ico"><use href="#i-more"/></svg></button>
+    </div>
+    <div class="cx-result"><span><strong>9</strong> of 214 domain controllers</span><span class="cx-chip"><span class="k">Status</span>&nbsp;is Failing, Delayed<button type="button" aria-label="Remove filter"><svg class="cx-ico" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span><span class="cx-chip"><span class="k">Region</span>&nbsp;= EMEA<button type="button" aria-label="Remove filter"><svg class="cx-ico" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span><button class="cx-link" type="button">Clear all</button></div>
+    <div class="cx-groupbar">Grouped by <span class="cx-gchip"><span class="grip">⋮⋮</span>Site<button type="button" aria-label="Remove grouping"><svg class="cx-ico" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span><span class="drop">Drag a column here to group</span></div>
+    <div class="scroll-x">
+      <table class="cx-grid" style="min-width:980px">
+        <thead><tr>
+          <th class="cb pin"><span class="cx-check mixed" role="checkbox" aria-checked="mixed" aria-label="Select all"></span></th>
+          <th class="pin" style="left:40px"><span class="h">Domain controller<span class="sort"><svg class="cx-ico" style="width:13px;height:13px"><use href="#i-up-arrow"/></svg><sup>2</sup></span><span class="cx-spacer"></span><button class="menu" aria-label="Column menu"><svg class="cx-ico"><use href="#i-vmore"/></svg></button></span></th>
+          <th><span class="h">Status<svg class="cx-ico fx" style="width:13px;height:13px"><use href="#i-filter"/></svg><span class="cx-spacer"></span><button class="menu" aria-label="Column menu"><svg class="cx-ico"><use href="#i-vmore"/></svg></button></span></th>
+          <th><span class="h">Last 24 h</span></th>
+          <th class="num"><span class="h">Latency p95 (ms)<span class="sort"><svg class="cx-ico" style="width:13px;height:13px"><use href="#i-down-arrow"/></svg><sup>1</sup></span><button class="menu open" aria-label="Column menu"><svg class="cx-ico"><use href="#i-vmore"/></svg></button></span></th>
+          <th class="num"><span class="h">Availability</span></th>
+          <th><span class="h">Disk free</span></th>
+          <th><span class="h">GC</span></th>
+          <th><span class="h">OS</span></th>
+        </tr></thead>
+        <tbody>
+          <tr class="grp"><td class="cb pin"><span class="cx-check mixed"></span></td><td class="pin" style="left:40px"><span class="chev">▾</span>EMEA-Cairo<span class="cnt">3</span></td><td><span class="p-state"><span class="p-dot danger"></span>1 failing</span></td><td></td><td class="num">318</td><td class="num">97.2 %</td><td></td><td></td><td></td></tr>
+          <tr class="tone-danger"><td class="cb pin"><span class="cx-check"></span></td><td class="pin" style="left:40px">emea-dc011<span class="p-sub">cairo.ad.evotec.xyz</span></td><td><span class="p-pill danger">Failing</span></td><td><span class="p-strip"><i></i><i></i><i></i><i class="danger"></i><i class="danger"></i><i class="warning"></i><i></i><i></i><i></i><i></i><i class="danger"></i><i></i><i></i><i></i><i></i><i></i></span></td><td class="num"><span class="p-delta bad">↑ 84</span>318</td><td class="num">91.9 %</td><td><span class="p-progress"><span class="track"><span class="fill danger" style="width:8%"></span></span>8 %</span></td><td><span class="p-bool-yes"><svg class="cx-ico"><use href="#i-check"/></svg></span></td><td>Windows Server 2022</td></tr>
+          <tr class="sel"><td class="cb pin"><span class="cx-check on"><svg class="cx-ico" style="width:12px;height:12px;stroke-width:2.5"><use href="#i-check"/></svg></span></td><td class="pin" style="left:40px">emea-dc012<span class="p-sub">cairo.ad.evotec.xyz</span></td><td><span class="p-state quiet"><span class="p-dot quiet"></span>Healthy</span></td><td><span class="p-strip"><i></i><i></i><i class="warning"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></td><td class="num focus"><span class="p-delta good">↓ 6</span>142</td><td class="num">99.6 %</td><td><span class="p-progress"><span class="track"><span class="fill" style="width:46%"></span></span>46 %</span></td><td><span class="p-missing">—</span></td><td>Windows Server 2022</td></tr>
+          <tr><td class="cb pin"><span class="cx-check"></span></td><td class="pin" style="left:40px">emea-dc013<span class="p-sub">cairo.ad.evotec.xyz</span></td><td><span class="p-state quiet"><span class="p-dot quiet"></span>Healthy</span></td><td><span class="p-strip"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="none"></i><i class="none"></i><i></i><i></i></span></td><td class="num"><span class="p-delta flat">0</span>64</td><td class="num">100 %</td><td><span class="p-progress"><span class="track"><span class="fill" style="width:71%"></span></span>71 %</span></td><td><span class="p-bool-yes"><svg class="cx-ico"><use href="#i-check"/></svg></span></td><td>Windows Server 2025</td></tr>
+          <tr class="grp"><td class="cb pin"><span class="cx-check"></span></td><td class="pin" style="left:40px"><span class="chev">▸</span>AMER-Toronto<span class="cnt">2</span></td><td><span class="p-state"><span class="p-dot warning"></span>1 delayed</span></td><td></td><td class="num">71</td><td class="num">96.3 %</td><td></td><td></td><td></td></tr>
+          <tr class="grp"><td class="cb pin"><span class="cx-check"></span></td><td class="pin" style="left:40px"><span class="chev">▸</span>EMEA-Prague<span class="cnt">4</span></td><td><span class="p-state"><span class="p-dot danger"></span>1 failing</span></td><td></td><td class="num">96</td><td class="num">99.1 %</td><td></td><td></td><td></td></tr>
+        </tbody>
+        <tfoot><tr><td class="cb pin"></td><td class="pin" style="left:40px">All sites</td><td>2 failing, 1 delayed</td><td></td><td class="num">318</td><td class="num">97.6 %</td><td></td><td></td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="cx-status"><span><strong>9</strong> rows · 3 groups · <strong>1</strong> selected</span><span class="agg"><span>Latency p95: <strong>142 ms</strong></span><span>Availability: <strong>99.6 %</strong></span></span></div>
+  </div>
+  <ol class="callouts">
+    <li><span><b>Toolbar order:</b> search (flex, 240–360 px, <code>/</code> focuses it), Filters (outlined; accent-soft with a count badge when filters are active), Columns and Views as ghost buttons; spacer; selection bar (only while rows are selected); separator; Export (ghost); overflow <code>⋯</code> for host actions, Record details, Print and Reset view. "Reset view" and "Saved views" both live in Views. Select page / select all matching move into the header checkbox menu.</span></li>
+    <li><span><b>Result line:</b> "<b>9</b> of 214 domain controllers" using the host's noun (default "rows"), then removable chips, then "Clear all". Hidden when there is no search and no filter, so an untouched grid starts with the header.</span></li>
+    <li><span><b>Grouping bar:</b> only when grouping is enabled. Chips are draggable to reorder levels; the dashed target accepts a header drag and a keyboard "Group by this column" from the column menu.</span></li>
+    <li><span><b>Header:</b> 13 px bold in text-2, sentence case (long translated labels stay readable), numeric headers right-aligned with their cells. Sort arrow in accent after the label, with a superscript priority only when more than one column is sorted. A filled accent filter icon marks an active column filter. The column menu button appears on hover or focus (always visible on touch) and stays highlighted while its menu is open. Column separators are short 1 px lines inset 9 px.</span></li>
+    <li><span><b>Rows:</b> no zebra by default; 1 px row lines. Hover is a 4 % tint. Selection is accent 11 % plus a 2 px accent bar on the left. Row tone rules draw a 3 px tone bar on the left instead of tinting the whole row, so selection and tone can coexist. Keyboard focus is a 2 px accent outline inset in the cell.</span></li>
+    <li><span><b>Group rows:</b> group-bg, bold, chevron, label, muted count, aggregates in their own columns, worst state in the state column. Summary (pinned) row uses head-bg with a strong top line.</span></li>
+    <li><span><b>Status bar:</b> optional, 32 px, head-bg. Left: counts. Right: aggregates of the selected rows or cell range for numeric columns the host marks as aggregatable.</span></li>
+    <li><span><b>Pinned columns:</b> a strong 1 px edge and a soft 6 px shadow that appears only while the centre is scrolled.</span></li>
+  </ol>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">04</span><h2>Cell presenters</h2><p>Built-in presenters a column opts into by kind. All of them read tokens, render as text plus inline SVG or spans (no images), and print in the static outline.</p></div>
+  <div class="cx scroll-x">
+    <table class="cx-grid" style="min-width:860px">
+      <thead><tr><th>Presenter</th><th>Example</th><th>Rules</th></tr></thead>
+      <tbody>
+        <tr><td>Boolean</td><td><span class="p-bool-yes"><svg class="cx-ico"><use href="#i-check"/></svg></span>&nbsp;&nbsp;&nbsp;<span class="p-missing">—</span></td><td class="wrap p-muted">True is a check in success tone; false is a muted dash. Never "True/False" text. Optional inverted meaning (true = bad) uses danger. Accessible name "Yes"/"No" from labels.</td></tr>
+        <tr><td>Enum pill</td><td><span class="p-pill danger">Failing</span> <span class="p-pill warning">Delayed</span> <span class="p-pill info">Pending</span> <span class="p-pill neutral">Unknown</span></td><td class="wrap p-muted">Tone tint background and tone text, 22 px, radius-sm, 12.5 px bold. Healthy values do not use a pill: use the state presenter so they stay quiet.</td></tr>
+        <tr><td>State</td><td><span class="p-state quiet"><span class="p-dot quiet"></span>Healthy</span>&nbsp;&nbsp;<span class="p-state"><span class="p-dot danger"></span>Failing</span>&nbsp;&nbsp;<span class="p-state"><span class="p-dot warning"></span>Delayed</span></td><td class="wrap p-muted">Dot plus text. Healthy: 6 px muted dot, text-2. Problems: 8 px tone dot, normal text.</td></tr>
+        <tr><td>Change</td><td><span class="p-delta bad">↑ 84</span>318&nbsp;&nbsp;&nbsp;<span class="p-delta good">↓ 6</span>142&nbsp;&nbsp;&nbsp;<span class="p-delta flat">0</span>64</td><td class="wrap p-muted">Delta before the value, arrow plus magnitude. The column declares which direction is good, so "up" is red for latency and green for availability. Zero is muted and arrowless.</td></tr>
+        <tr><td>Progress</td><td><span class="p-progress"><span class="track"><span class="fill" style="width:46%"></span></span>46 %</span>&nbsp;&nbsp;<span class="p-progress"><span class="track"><span class="fill danger" style="width:8%"></span></span>8 %</span></td><td class="wrap p-muted">72 × 6 px track plus value. Fill is accent, or a tone when the column's thresholds say so.</td></tr>
+        <tr><td>Status strip</td><td><span class="p-strip"><i></i><i></i><i></i><i class="danger"></i><i class="danger"></i><i class="warning"></i><i></i><i></i><i></i><i></i><i class="danger"></i><i></i><i class="none"></i><i></i><i></i><i></i></span></td><td class="wrap p-muted">One segment per period (hour, day). Healthy muted at 55 %, problems full tone, no data a light grey. Up to 48 segments; tooltip names the period and state.</td></tr>
+        <tr><td>Sparkline bars</td><td><span class="p-spark"><i style="height:9px"></i><i style="height:12px"></i><i style="height:10px"></i><i style="height:14px"></i><i class="warning" style="height:16px"></i><i style="height:11px"></i><i style="height:9px"></i><i class="danger" style="height:20px"></i><i style="height:12px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:11px"></i></span></td><td class="wrap p-muted">Values scaled per cell (or per column when the host asks for a shared scale). Bars over the column's thresholds take the tone.</td></tr>
+        <tr><td>Sparkline line</td><td><svg class="p-line" width="96" height="22" viewBox="0 0 96 22" aria-hidden="true"><polyline points="1,15 9,14 17,15 25,12 33,13 41,11 49,13 57,4 65,12 73,13 81,11 89,12 95,12"/><circle cx="57" cy="4" r="2.2"/></svg></td><td class="wrap p-muted">1.5 px muted line; only the worst or last point is marked, in tone. No axes, no fill.</td></tr>
+        <tr><td>Identifier</td><td>emea-dc011<span class="p-sub">cairo.ad.evotec.xyz</span>&nbsp;&nbsp;<span class="p-mono">S-1-5-21-3623811015</span></td><td class="wrap p-muted">Primary text with an optional muted secondary line or suffix; mono for SIDs, GUIDs, hashes, paths.</td></tr>
+        <tr><td>Tags and links</td><td><span class="p-tag">GC</span><span class="p-tag">RODC</span>&nbsp;<a class="p-link" href="#">Open in explorer</a></td><td class="wrap p-muted">Outlined tags, at most three then "+N". Links in accent, underline on hover.</td></tr>
+        <tr><td>Missing</td><td><span class="p-missing">—</span></td><td class="wrap p-muted">Em dash in muted for null or empty, never blank and never "N/A" unless the host says so.</td></tr>
+        <tr><td>Wrapped text</td><td class="wrap" style="max-width:300px">Replication from emea-dc014 failed: the RPC server is unavailable (1722). Last success 6 hours ago.</td><td class="wrap p-muted">With variable-height rows: 7 px vertical padding, 1.4 line height, max 4 lines then fade and "Show more" opens the long-text dialog.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">05</span><h2>Column menu and column filter</h2><p>The header menu button opens the column menu; "Filter…" in it, or the filter icon, opens a popover anchored to that header for that column only. Filters apply live (debounced 200 ms); there is no Apply button.</p></div>
+  <div class="split">
+    <div>
+      <p class="label">Column menu</p>
+      <div class="cx-pop" style="width:244px">
+        <div class="cx-menu">
+          <div class="cx-mi"><span class="ico"><svg class="cx-ico"><use href="#i-up-arrow"/></svg></span>Sort ascending</div>
+          <div class="cx-mi on"><span class="ico"><svg class="cx-ico"><use href="#i-down-arrow"/></svg></span>Sort descending<span class="kb">1</span></div>
+          <div class="cx-mi"><span class="ico"></span>Clear sort</div>
+          <div class="cx-msep"></div>
+          <div class="cx-mi hl"><span class="ico"><svg class="cx-ico"><use href="#i-filter"/></svg></span>Filter…</div>
+          <div class="cx-mi"><span class="ico"><svg class="cx-ico"><use href="#i-group"/></svg></span>Group by this column</div>
+          <div class="cx-msep"></div>
+          <div class="cx-mi"><span class="ico"><svg class="cx-ico"><use href="#i-pin"/></svg></span>Pin left</div>
+          <div class="cx-mi"><span class="ico"><svg class="cx-ico"><use href="#i-width"/></svg></span>Fit to content</div>
+          <div class="cx-mi"><span class="ico"></span>Fit all columns</div>
+          <div class="cx-mi"><span class="ico"><svg class="cx-ico"><use href="#i-eyeoff"/></svg></span>Hide column</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="label">Filter: value list (enum, text with few values)</p>
+      <div class="cx-pop">
+        <div class="cx-pop-h">Status <span>214 rows</span></div>
+        <div class="cx-pop-b">
+          <div class="cx-input"><svg class="cx-ico" style="color:var(--cx-muted)"><use href="#i-search"/></svg><span class="ph">Search values</span></div>
+          <div class="cx-facets">
+            <label class="cx-facet all"><span class="cx-check mixed"></span>Select all<span class="c">4</span></label>
+            <label class="cx-facet"><span class="cx-check on"><svg class="cx-ico" style="width:12px;height:12px;stroke-width:2.5"><use href="#i-check"/></svg></span><span class="p-state"><span class="p-dot danger"></span>Failing</span><span class="c">6</span></label>
+            <label class="cx-facet"><span class="cx-check on"><svg class="cx-ico" style="width:12px;height:12px;stroke-width:2.5"><use href="#i-check"/></svg></span><span class="p-state"><span class="p-dot warning"></span>Delayed</span><span class="c">3</span></label>
+            <label class="cx-facet"><span class="cx-check"></span><span class="p-state quiet"><span class="p-dot quiet"></span>Healthy</span><span class="c">201</span></label>
+            <label class="cx-facet"><span class="cx-check"></span><span class="p-missing">— (empty)</span><span class="c">4</span></label>
+          </div>
+        </div>
+        <div class="cx-pop-f"><button class="cx-link" type="button">Clear filter</button><button class="cx-btn sm" type="button">Done</button></div>
+      </div>
+    </div>
+    <div>
+      <p class="label">Filter: number or date</p>
+      <div class="cx-pop">
+        <div class="cx-pop-h">Latency p95 (ms)</div>
+        <div class="cx-pop-b">
+          <div class="cx-input sel">Greater than</div>
+          <div class="cx-input">200</div>
+          <div><span class="cx-seg"><span class="on">And</span><span>Or</span></span></div>
+          <div class="cx-input sel"><span class="ph">Choose a condition</span></div>
+          <p style="font-size:12.5px;color:var(--cx-muted)">Dates: Today, Yesterday, Last 7 days, Last 30 days, This month, or a range. Shown in the grid's time zone, with the zone named.</p>
+        </div>
+        <div class="cx-pop-f"><button class="cx-link" type="button">Clear filter</button><button class="cx-btn sm" type="button">Done</button></div>
+      </div>
+    </div>
+  </div>
+  <ul class="rules">
+    <li><b>Popovers:</b> 280 px (menu 244 px), radius 6, panel shadow, header with the column name and a muted count. On phones they become bottom sheets with a drag handle.</li>
+    <li><b>Value list:</b> counts come from the full query (existing facets), right-aligned and tabular; values render with the column's presenter so states look like they do in cells. More than 12 values shows the search field.</li>
+    <li><b>Keyboard:</b> the menu is a roving list (arrows, Home/End, type-ahead, Escape returns focus to the header button).</li>
+  </ul>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">06</span><h2>Filter builder</h2><p>Opened from Filters in the toolbar. One flat list of conditions with an And/Or switch; a group is an indented block with a left rule, never a nested box with its own title. Applies live like column filters.</p></div>
+  <div class="cx-pop cx-fb">
+    <div class="cx-pop-h">Filters <span>9 of 214 rows match</span></div>
+    <div class="cx-pop-b">
+      <div class="cx-group-h" style="padding-left:2px">Show rows where <span class="cx-seg"><span class="on">all</span><span>any</span></span> of these are true</div>
+      <div class="cx-cond"><span class="w">Where</span><div class="cx-input sel">Status</div><div class="cx-input sel">is any of</div><div class="cx-input">Failing, Delayed</div><button class="cx-btn ghost icon sm" aria-label="Remove condition"><svg class="cx-ico"><use href="#i-x"/></svg></button></div>
+      <div class="cx-cond"><span class="w">and</span><div class="cx-input sel">Region</div><div class="cx-input sel">equals</div><div class="cx-input">EMEA</div><button class="cx-btn ghost icon sm" aria-label="Remove condition"><svg class="cx-ico"><use href="#i-x"/></svg></button></div>
+      <div class="cx-group">
+        <div class="cx-group-h"><span class="cx-seg"><span>all</span><span class="on">any</span></span> of these<span class="cx-spacer"></span><button class="cx-btn ghost sm" type="button">Remove group</button></div>
+        <div class="cx-cond" style="grid-template-columns:36px 1.2fr 1fr 1.2fr 32px"><span class="w">Where</span><div class="cx-input sel">Latency p95</div><div class="cx-input sel">greater than</div><div class="cx-input">200</div><button class="cx-btn ghost icon sm" aria-label="Remove condition"><svg class="cx-ico"><use href="#i-x"/></svg></button></div>
+        <div class="cx-cond" style="grid-template-columns:36px 1.2fr 1fr 1.2fr 32px"><span class="w">or</span><div class="cx-input sel">Availability</div><div class="cx-input sel">less than</div><div class="cx-input">99 %</div><button class="cx-btn ghost icon sm" aria-label="Remove condition"><svg class="cx-ico"><use href="#i-x"/></svg></button></div>
+        <div class="cx-adds" style="padding-left:44px"><button class="cx-link" type="button">+ Condition</button></div>
+      </div>
+      <div class="cx-adds"><button class="cx-link" type="button">+ Condition</button><button class="cx-link" type="button">+ Group</button></div>
+    </div>
+    <div class="cx-pop-f"><button class="cx-link" type="button">Clear all filters</button><button class="cx-btn sm" type="button">Done</button></div>
+  </div>
+  <ul class="rules">
+    <li><b>Joiner words</b> ("and"/"or") sit in the left gutter of each condition after the first, so the logic reads as a sentence. Groups nest at most two levels in the UI (the engine allows eight; deeper saved filters display read-only with "Edit as text").</li>
+    <li><b>Value inputs</b> match the column type: multi-select with facets for enums, number with unit, date with presets, text with "contains/starts with/equals".</li>
+    <li><b>Width:</b> 640 px popover on desktop; full-screen sheet on phones with one condition per card.</li>
+  </ul>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">07</span><h2>States</h2><p>Loading, empty, no matches, and error, all inside the grid body so the toolbar and header stay put.</p></div>
+  <div class="split">
+    <div class="cx">
+      <table class="cx-grid"><thead><tr><th>Domain controller</th><th>Status</th><th class="num"><span class="h">Latency</span></th></tr></thead>
+        <tbody class="cx-skel">
+          <tr><td><i style="width:70%"></i></td><td><i style="width:45%"></i></td><td><i style="width:40%;margin-left:auto"></i></td></tr>
+          <tr><td><i style="width:55%"></i></td><td><i style="width:60%"></i></td><td><i style="width:30%;margin-left:auto"></i></td></tr>
+          <tr><td><i style="width:64%"></i></td><td><i style="width:40%"></i></td><td><i style="width:45%;margin-left:auto"></i></td></tr>
+          <tr><td><i style="width:48%"></i></td><td><i style="width:52%"></i></td><td><i style="width:35%;margin-left:auto"></i></td></tr>
+        </tbody></table>
+    </div>
+    <div class="cx">
+      <table class="cx-grid"><thead><tr><th>Domain controller</th><th>Status</th><th class="num"><span class="h">Latency</span></th></tr></thead></table>
+      <div class="cx-state"><h4>No rows match “cairo-dc9”</h4><p>The search and 2 filters hide all 214 domain controllers.</p><div class="acts"><button class="cx-btn" type="button">Clear search and filters</button></div></div>
+    </div>
+    <div class="cx">
+      <table class="cx-grid"><thead><tr><th>Domain controller</th><th>Status</th><th class="num"><span class="h">Latency</span></th></tr></thead></table>
+      <div class="cx-state"><h4>No domain controllers yet</h4><p>Nothing has been collected for this view. Rows appear after the next run.</p></div>
+    </div>
+    <div class="cx">
+      <table class="cx-grid"><thead><tr><th>Domain controller</th><th>Status</th><th class="num"><span class="h">Latency</span></th></tr></thead></table>
+      <div class="cx-banner"><span><b>Couldn't load rows.</b> <span class="d">The server returned 503. Rows already loaded stay visible.</span></span><button class="cx-btn sm" type="button"><svg class="cx-ico"><use href="#i-retry"/></svg>Retry</button></div>
+    </div>
+  </div>
+  <ul class="rules">
+    <li><b>Loading:</b> skeleton rows at the current row height, bar widths varied per column and right-aligned for numeric columns; shimmer stops under reduced motion. Appears after 150 ms so fast loads never flash. Loading more while scrolling shows skeletons only for the missing rows.</li>
+    <li><b>No matches vs empty</b> are different messages: no matches names the search and filter count and offers the clear action; empty explains why with the host's noun. No illustrations.</li>
+    <li><b>Error:</b> an inline danger banner with a 3 px tone bar and Retry, above any rows already loaded. Errors are announced through the live region.</li>
+  </ul>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">08</span><h2>Paging footer and densities</h2></div>
+  <div class="cx">
+    <div class="cx-footer">
+      <span><strong>1–25</strong> of 137 rows</span>
+      <span style="display:flex;align-items:center;gap:20px;flex-wrap:wrap"><span class="cx-rpp">Rows per page <span class="cx-input sel">25</span></span>
+      <span class="cx-pager">
+        <button class="cx-btn icon" type="button" disabled aria-label="First page"><svg class="cx-ico"><use href="#i-first"/></svg></button>
+        <button class="cx-btn icon" type="button" disabled aria-label="Previous page"><svg class="cx-ico"><use href="#i-chev-l"/></svg></button>
+        <span class="pg">Page <span class="cx-input">1</span> of 6</span>
+        <button class="cx-btn icon" type="button" aria-label="Next page"><svg class="cx-ico"><use href="#i-chev-r"/></svg></button>
+        <button class="cx-btn icon" type="button" aria-label="Last page"><svg class="cx-ico"><use href="#i-last"/></svg></button>
+      </span></span>
+    </div>
+  </div>
+  <ul class="rules">
+    <li>One line, everything on the same baseline: range on the left, rows-per-page with an inline label, then icon buttons with accessible names around a compact page field. Page sizes: 10, 25, 50, 100, All (All only for inline data).</li>
+    <li>Continuous (virtual scrolling) grids show no footer; the status bar or result line carries the count.</li>
+  </ul>
+  <div class="dens split">
+    <div class="cx" style="--rh:28px;--cx-font-size:13px;--cx-cell-px:8px"><table class="cx-grid"><thead><tr><th>Compact · 28</th><th class="num"><span class="h">ms</span></th></tr></thead><tbody><tr><td>emea-dc011</td><td class="num">318</td></tr><tr><td>emea-dc012</td><td class="num">142</td></tr></tbody></table></div>
+    <div class="cx" style="--rh:34px"><table class="cx-grid"><thead><tr><th>Default · 34</th><th class="num"><span class="h">ms</span></th></tr></thead><tbody><tr><td>emea-dc011</td><td class="num">318</td></tr><tr><td>emea-dc012</td><td class="num">142</td></tr></tbody></table></div>
+    <div class="cx" style="--rh:42px;--cx-cell-px:14px"><table class="cx-grid"><thead><tr><th>Comfortable · 42</th><th class="num"><span class="h">ms</span></th></tr></thead><tbody><tr><td>emea-dc011</td><td class="num">318</td></tr><tr><td>emea-dc012</td><td class="num">142</td></tr></tbody></table></div>
+  </div>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">09</span><h2>Record drawer</h2><p>Opened by Enter on a row, double-click, or the row action. One drawer per page (D24), docked right at 440 px; a full-screen sheet on phones.</p></div>
+  <div class="split">
+    <div class="cx-drawer">
+      <div class="cx-drawer-h"><div><h4>emea-dc011</h4><p>Domain controller · EMEA-Cairo</p></div><button class="cx-btn ghost icon" type="button" aria-label="Close"><svg class="cx-ico"><use href="#i-x"/></svg></button></div>
+      <div class="cx-drawer-s">Status</div>
+      <dl class="cx-dl">
+        <dt>State</dt><dd><span class="p-pill danger">Failing</span></dd>
+        <dt>Last 24 h</dt><dd><span class="p-strip"><i></i><i></i><i></i><i class="danger"></i><i class="danger"></i><i class="warning"></i><i></i><i></i><i></i><i></i><i class="danger"></i><i></i></span></dd>
+        <dt>Latency p95</dt><dd><span class="p-delta bad">↑ 84</span>318 ms</dd>
+      </dl>
+      <div class="cx-drawer-s">Details</div>
+      <dl class="cx-dl">
+        <dt>Host name</dt><dd class="p-mono">emea-dc011.cairo.ad.evotec.xyz</dd>
+        <dt>Global catalog</dt><dd><span class="p-bool-yes"><svg class="cx-ico"><use href="#i-check"/></svg></span></dd>
+        <dt>Last error</dt><dd>The RPC server is unavailable (1722)</dd>
+      </dl>
+    </div>
+    <ul class="rules">
+      <li><b>Header:</b> record title (the row's primary column), a muted subtitle, close button. Previous/next record buttons (↑/↓ keys) when opened from a grid.</li>
+      <li><b>Body:</b> sections with small uppercase labels; a two-column definition list using the same presenters as the cells, so values look identical.</li>
+      <li><b>Behaviour:</b> focus moves into the drawer and returns to the row on close; Escape closes; the grid stays interactive beside it on wide screens.</li>
+      <li><b>Long text dialog:</b> 640 px max, mono option, copy button, same header pattern.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">10</span><h2>Phone, 390 px</h2></div>
+  <div class="split">
+    <div class="phone">
+      <div class="cx">
+        <div class="cx-toolbar">
+          <label class="cx-search"><svg class="cx-ico"><use href="#i-search"/></svg><input placeholder="Search" aria-label="Search"></label>
+          <button class="cx-btn active" type="button"><svg class="cx-ico"><use href="#i-filter"/></svg>Filters<span class="badge">2</span></button>
+          <span class="cx-spacer"></span>
+          <button class="cx-btn ghost icon" type="button" aria-label="Columns"><svg class="cx-ico"><use href="#i-columns"/></svg></button>
+          <button class="cx-btn ghost icon" type="button" aria-label="More"><svg class="cx-ico"><use href="#i-more"/></svg></button>
+        </div>
+        <div class="cx-result"><span><strong>9</strong> of 214</span><button class="cx-link" type="button">Clear all</button></div>
+        <table class="cx-grid">
+          <thead><tr><th>Domain controller</th><th>Status</th><th class="num"><span class="h">ms</span></th></tr></thead>
+          <tbody>
+            <tr class="tone-danger"><td>emea-dc011 <span class="p-sub">+3</span></td><td><span class="p-pill danger">Failing</span></td><td class="num">318</td></tr>
+            <tr><td>emea-dc012 <span class="p-sub">+3</span></td><td><span class="p-state quiet"><span class="p-dot quiet"></span>Healthy</span></td><td class="num">142</td></tr>
+            <tr><td>emea-dc013 <span class="p-sub">+3</span></td><td><span class="p-state quiet"><span class="p-dot quiet"></span>Healthy</span></td><td class="num">64</td></tr>
+          </tbody>
+        </table>
+        <div class="cx-footer"><span class="cx-pager"><button class="cx-btn icon" type="button" disabled aria-label="Previous page"><svg class="cx-ico"><use href="#i-chev-l"/></svg></button><span class="pg">1 of 6</span><button class="cx-btn icon" type="button" aria-label="Next page"><svg class="cx-ico"><use href="#i-chev-r"/></svg></button></span></div>
+      </div>
+    </div>
+    <ul class="rules">
+      <li><b>Toolbar:</b> search takes the first row; the second row keeps Filters and turns Columns into an icon; Views, Export and host actions move into <code>⋯</code>. Selection bar replaces the second row while selecting.</li>
+      <li><b>Hidden columns:</b> priority hiding as today, plus a muted "+3" after the primary cell; tapping the row opens the drawer with every field (no inline child rows on phones).</li>
+      <li><b>Footer:</b> range and rows-per-page collapse to "1 of 6" with previous and next.</li>
+      <li><b>Touch targets:</b> 32 px controls with 44 px hit areas; header menu button always visible; popovers become bottom sheets.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="spec">
+  <div class="sh"><span class="n">11</span><h2>Acceptance for the implementation</h2></div>
+  <ul class="rules">
+    <li>Every example page in the CanopyX gallery matches this spec in light and dark at 1440 and 390 px; screenshots sit beside this page for review.</li>
+    <li>No literal colours in runtime CSS outside token defaults; existing <code>--cx-*</code> inputs keep working; host tones still map through <code>--cx-tone-&lt;name&gt;</code>.</li>
+    <li>Muted text and icons ≥ 4.5:1 (text) and ≥ 3:1 (icons, focus ring, checkbox borders) against surface, head-bg and selected-bg in both themes; axe passes; forced-colours keeps focus, selection and tone bars visible.</li>
+    <li>Runtime size budgets in <code>docs/architecture.md</code> still hold; the scroll benchmark at 4x CPU does not regress.</li>
+    <li>The static outline (print, email, Word) uses the same presenters' text forms: check and dash, pill text, state text, strip as a compact text summary.</li>
+  </ul>
+</section>
+
+</main>
+<script>
+(function () {
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll('.theme-switch button');
+  function apply(t) {
+    if (t === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.t === t)); });
+    try { localStorage.setItem('cx-spec-theme', t); } catch (e) {}
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { apply(b.dataset.t); }); });
+  var saved = null; try { saved = localStorage.getItem('cx-spec-theme'); } catch (e) {}
+  var h = location.hash.replace('#', ''); if (h === 'light' || h === 'dark') saved = h;
+  if (saved) apply(saved);
+})();
+</script>
+</body>
+</html>

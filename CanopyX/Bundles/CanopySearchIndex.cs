@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace CanopyX.Bundles;
 
@@ -29,7 +30,9 @@ internal sealed class CanopySearchIndex {
     private readonly List<string> _kinds = new List<string>();
     private readonly Dictionary<string, int> _kindNumbers = new Dictionary<string, int>(StringComparer.Ordinal);
     private readonly Dictionary<string, List<int>> _postings = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-
+    /// <summary>The words of the label being filed, and the buffer they are folded in; reused for every label.</summary>
+    private readonly List<string> _words = new List<string>();
+    private readonly StringBuilder _word = new StringBuilder();
 
     /// <summary>Gets the distinct node kinds in order of first appearance; entries refer to them by position.</summary>
     internal IReadOnlyList<string> Kinds => _kinds;
@@ -41,21 +44,26 @@ internal sealed class CanopySearchIndex {
     /// <param name="number">The entry number.</param>
     /// <param name="label">The node label.</param>
     internal void File(int number, string label) {
-        // The words of one label are distinct, so every posting list stays strictly ascending.
-        var words = CanopySearchFolding.Words(label);
-        foreach (var word in words) {
+        CanopySearchFolding.Words(label, _words, _word);
+        foreach (var word in _words) {
             Post(word, number);
         }
 
-        if (words.Count > 0) {
+        if (_words.Count > 0) {
             Post(CanopySearchFolding.LabelToken(label), number);
         }
     }
 
+    /// <summary>
+    /// Adds an entry number to a word's postings once. Numbers arrive in ascending order, so a word that appears again
+    /// in the same label already ends its list with the number, and every posting list stays strictly ascending.
+    /// </summary>
     private void Post(string word, int number) {
         if (!_postings.TryGetValue(word, out var postings)) {
             postings = new List<int>();
             _postings.Add(word, postings);
+        } else if (postings[postings.Count - 1] == number) {
+            return;
         }
 
         postings.Add(number);

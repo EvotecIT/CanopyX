@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json.Nodes;
 
 namespace CanopyX.Tests.Protocol;
@@ -94,5 +95,85 @@ public sealed class JsonEncodingTests {
         } finally {
             CultureInfo.CurrentCulture = previous;
         }
+    }
+
+    [Fact]
+    public void ToJson_EveryCodeUnit_IsEscapedAsTheProtocolSpecifies() {
+        // Every UTF-16 code unit alone, before "{" (which changes how "$" is written) and around a surrogate pair. The
+        // writer copies runs of characters that need no escape; the reference escapes one code unit at a time.
+        var view = new CanopyView("v", "View");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var labels = new List<string>();
+        for (var unit = 0; unit <= 0xFFFF; unit++) {
+            var ch = (char)unit;
+            labels.Add(ch.ToString());
+            labels.Add(ch + "{");
+            labels.Add("a" + ch + "\uD83D\uDE00" + ch);
+        }
+
+        labels.Add("\uD83D\uDE00\uD83D");
+        labels.Add("\uDE00\uD83D\uDE00");
+        labels.Add("$");
+        labels.Add("$${");
+        for (var index = 0; index < labels.Count; index++) {
+            view.Roots.Add(new CanopyNode("n" + index, labels[index]));
+        }
+
+        var expected = new StringBuilder();
+        foreach (var label in labels) {
+            expected.Append(ReferenceString(label));
+        }
+
+        var json = view.ToJson();
+        var written = new StringBuilder();
+        var at = 0;
+        for (var index = 0; index < labels.Count; index++) {
+            var marker = "\"id\":\"n" + index + "\",\"label\":";
+            at = json.IndexOf(marker, at, StringComparison.Ordinal) + marker.Length;
+            var end = index + 1 < labels.Count ? json.IndexOf("},{\"id\":\"n" + (index + 1) + "\",", at, StringComparison.Ordinal) : json.LastIndexOf("}]}", StringComparison.Ordinal);
+            written.Append(json, at, end - at);
+        }
+
+        Assert.Equal(expected.ToString(), written.ToString());
+    }
+
+    /// <summary>The escaping the protocol specifies, one code unit at a time.</summary>
+    private static string ReferenceString(string value) {
+        var builder = new StringBuilder("\"");
+        for (var index = 0; index < value.Length; index++) {
+            var ch = value[index];
+            if (char.IsSurrogate(ch)) {
+                if (char.IsHighSurrogate(ch) && index + 1 < value.Length && char.IsLowSurrogate(value[index + 1])) {
+                    builder.Append(ch).Append(value[index + 1]);
+                    index++;
+                } else {
+                    builder.Append("\\u").Append(((int)ch).ToString("x4"));
+                }
+
+                continue;
+            }
+
+            switch (ch) {
+                case '"': builder.Append("\\\""); break;
+                case '\\': builder.Append("\\\\"); break;
+                case '\b': builder.Append("\\b"); break;
+                case '\f': builder.Append("\\f"); break;
+                case '\n': builder.Append("\\n"); break;
+                case '\r': builder.Append("\\r"); break;
+                case '\t': builder.Append("\\t"); break;
+                case '<' or '>' or '&' or (char)0x2028 or (char)0x2029 or '`':
+                    builder.Append("\\u").Append(((int)ch).ToString("x4"));
+                    break;
+                case '$':
+                    builder.Append(index + 1 < value.Length && value[index + 1] == '{' ? "\\u0024" : "$");
+                    break;
+                default:
+                    if (ch < ' ') builder.Append("\\u").Append(((int)ch).ToString("x4"));
+                    else builder.Append(ch);
+                    break;
+            }
+        }
+
+        return builder.Append('"').ToString();
     }
 }

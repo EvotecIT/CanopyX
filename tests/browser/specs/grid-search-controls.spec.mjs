@@ -137,10 +137,11 @@ test("incremental controls include queued search text while explicit reset repla
   expect(await page.evaluate(controller + ".getQuery().filters")).toEqual([]);
   await page.locator(".cx-grid-filters > summary").click();
   await page.getByRole("searchbox").fill("Beta");
-  await page.locator(".cx-grid-filters").getByRole("button", { name: "Apply", exact: true }).click();
+  await page.locator(".cx-grid-filters").getByRole("button", { name: "Done", exact: true }).click();
   expect(await page.evaluate(controller + ".getQuery().search")).toBe("Beta");
   await page.getByRole("searchbox").fill("Alpha");
-  await page.locator(".cx-grid-filters").getByRole("button", { name: "Clear filters", exact: true }).click();
+  await page.locator(".cx-grid-filters > summary").click();
+  await page.locator(".cx-grid-filters").getByRole("button", { name: "Clear all filters", exact: true }).click();
   expect(await page.evaluate(controller + ".getQuery().search")).toBe("Alpha");
   await page.getByRole("searchbox").fill("Beta");
   await page.evaluate(controller + ".resetView()");

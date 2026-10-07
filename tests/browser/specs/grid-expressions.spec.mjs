@@ -63,7 +63,7 @@ test("nested AND/OR predicates evaluate the whole dataset before windows, sortin
   expect(result.selectedIds).toEqual(["row-499", "row-100"]);
   expect(result.allGroup).toBeNull(); expect(result.restored).toEqual(expression); expect(result.immutable).toBe(true);
   await page.locator(".cx-grid-filters summary").click();
-  await page.getByRole("button", { name: "Clear filters", exact: true }).click();
+  await page.getByRole("button", { name: "Clear all filters", exact: true }).click();
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "501");
 });
 

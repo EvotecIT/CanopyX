@@ -51,7 +51,7 @@
       this.setSlotContent(slot, fresh, tree);
       let drawn;
       try {
-        drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index: index }) === true;
+        drawn = column.render(node, fresh, { column: column.id, level: w.level, expanded: w.expanded, index }) === true;
       } catch (e) {
         // The cell keeps what it showed, so a renderer that fails once does not leave it empty for later nodes.
         if (fresh.parentNode) fresh.replaceWith(previous);

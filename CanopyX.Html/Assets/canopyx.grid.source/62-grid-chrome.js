@@ -1,0 +1,70 @@
+  Object.assign(DataGrid.prototype, {
+    buildGridChrome() {
+      const signal = this.lifetime.signal;
+      this.noun = this.view.noun || this.labels.gridRows;
+      if (this.searchInput && this.view.noun) {
+        this.searchInput.placeholder = fill(this.labels.gridSearchNoun, { noun: this.noun });
+        this.searchInput.setAttribute("aria-label", this.searchInput.placeholder);
+      }
+      this.spacer = h("span", "cx-spacer");
+      this.selectionBar = h("div", "cx-selbar"); this.selectionBar.hidden = true;
+      this.selectedCount = h("span"); this.selectedCount.setAttribute("role", "status"); this.selectionBar.appendChild(this.selectedCount);
+      const act = action => Promise.resolve().then(action).catch(error => this.emit("error", {error}));
+      this.selectionBar.appendChild(gridDecorateButton(gridButton(this.labels.gridCopy, () => act(() => this.copy({scope:"selected"}))), "copy", true));
+      if (typeof this.opts.onChart === "function") this.selectionBar.appendChild(gridDecorateButton(gridButton(this.labels.gridChart, () => act(() =>
+        this.runGridHook(signal => this.opts.onChart({query:this.getQuery(),selection:this.getSelectionDescriptor?.() ||
+          {kind:"ids",ids:[...this.selected],revision:this.snapshot?.revision},signal}), this.dataLifetime.signal))), "chart", true));
+      const clear = gridDecorateButton(gridButton("", () => this.setSelection([])), "close", true);
+      clear.classList.add("icon"); clear.setAttribute("aria-label", this.labels.gridClearSelection); this.selectionBar.appendChild(clear);
+      this.toolbarSeparator = h("span", "cx-sep");
+      const overflow = this.overflow = this.controlPanel(this.labels.gridMore, "cx-grid-overflow");
+      const summary = overflow.details.firstChild; summary.replaceChildren(gridIcon("more"));
+      summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
+      for (const action of this.opts.actions || []) overflow.panel.appendChild(this.gridAction(action, act));
+      overflow.panel.append(this.toolbar.querySelector(".cx-grid-details"), this.toolbar.querySelector(".cx-grid-print") ||
+        Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
+      (this.toolbar.querySelector(".cx-grid-export") || overflow.details).before(this.spacer, this.selectionBar, this.toolbarSeparator);
+      if (this.tools.more === false) { overflow.details.remove(); this.overflow = null; }
+      this.host.addEventListener("canopyx:select", () => this.syncGridChrome(), { signal });
+      this.syncGridChrome();
+      signal.addEventListener("abort",()=>{this.headerSelectionFlyout?.dispose();this.headerMenusLifetime?.abort();this.closeGridPopover(false);},{once:true});
+    },
+    syncGridChrome() {
+      if (!this.selectionBar) return;
+      const count = this.querySelection ? this.querySelection.matched === null ? null : Math.max(0,this.querySelection.matched - this.selectionExcluded.size) : this.selected.size;
+      const selected = count === null || count > 0;
+      this.selectionBar.hidden = !selected; this.toolbarSeparator.hidden = !selected;
+      this.host.classList.toggle("cx-has-selection", selected);
+      gridCountLabel(this.selectedCount,count===null?this.labels.gridSelectionQueryUnknown:this.labels.gridSelectionCount,{count:numberFormat(this.lang).format(count),excluded:String(this.selectionExcluded?.size||0)});
+      const filterSummary = this.toolbar.querySelector(".cx-grid-filters > summary"), active = gridFilterCount(this.acceptedQuery);
+      if (filterSummary) {
+        filterSummary.classList.toggle("active", !!active); filterSummary.querySelector(".badge")?.remove();
+        if (active) { const badge = h("span", "badge"); setText(badge,String(active)); filterSummary.appendChild(badge); }
+      }
+      for (const button of this.selectionBar.querySelectorAll("button")) button.disabled = !!this.pendingQuery || !this.acceptedQuery;
+      this.syncGridStatus?.();
+    },
+    updateGridPhone() {
+      const phone = this.host.clientWidth <= 640;
+      this.host.classList.toggle("cx-phone", phone);
+      if (phone === this.phone) return;
+      this.phone = phone;this.version++;this.scheduleRender();
+      if (this.overflow) for (const selector of [".cx-grid-views", ".cx-grid-export"]) {
+        // A moved menu closes first: moving a shown popover takes it out of the top layer while it stays open.
+        const item = this.toolbar.querySelector(selector); if (!item) continue; item.open = false;
+        if (phone) this.overflow.panel.appendChild(item);
+        else this.toolbar.insertBefore(item, selector === ".cx-grid-views" ? this.slots?.afterViews || this.spacer : this.overflow.details);
+      }
+      this.syncPinnedShadows();
+    },
+    syncPinnedShadows() {
+      if(!this.pinnedLeftWidth&&!this.pinnedRightWidth)return;
+      this.host.classList.toggle("cx-scroll-left", this.grid.scrollLeft > 0);
+      this.host.classList.toggle("cx-scroll-right", this.grid.scrollLeft + this.grid.clientWidth < this.grid.scrollWidth - 1);
+    },
+    // The reporting runtime adds content entries (render) to these handler entries.
+    gridAction(action, act) {
+      if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
+      return gridButton(action.label, () => act(() => this.runGridHook(signal => action.run({query:this.getQuery(),signal}), this.dataLifetime.signal)));
+    }
+  });

@@ -220,10 +220,21 @@ test('keyboard moving proposes a drop without altering selection or row data',as
   await expect(row(page,'a0')).toBeVisible();
 });
 
-test('native internal drag sends a host proposal and external drag has no authority',async({page})=>{
+test('internal drag sends a host proposal and external drag has no authority',async({page,browserName})=>{
   await mount(page,`{onDrop(p){window.drop=p;return true}}`);
   await expect(row(page,'a0')).toHaveAttribute('draggable','true');
-  await row(page,'a0').dragTo(row(page,'b'));
+  if(browserName==='webkit'&&process.platform==='win32') {
+    // The Windows WebKit automation port replaces custom transfer types with text/html before delivery.
+    // Exercise the same handlers with an intact transfer; Chromium and Firefox retain real pointer coverage.
+    const transfer=await page.evaluateHandle(()=>new DataTransfer()),box=await row(page,'b').boundingBox();
+    const drop={dataTransfer:transfer,clientX:box.x+box.width/2,clientY:box.y+box.height/2};
+    await row(page,'a0').dispatchEvent('dragstart',{dataTransfer:transfer});
+    await row(page,'b').dispatchEvent('dragover',drop);
+    await expect(row(page,'b')).toHaveClass(/cx-drop-target/);
+    await row(page,'b').dispatchEvent('drop',drop);
+    await row(page,'a0').dispatchEvent('dragend',{dataTransfer:transfer});
+    await transfer.dispose();
+  } else await row(page,'a0').dragTo(row(page,'b'));
   await expect.poll(()=>page.evaluate(()=>window.drop?.nodes[0].nodeId)).toBe('a0');
   await page.evaluate(()=>{window.drop=null;const row=document.querySelector('[data-cx-id="b"]'),transfer=new DataTransfer();
     transfer.setData('text/plain','a');row.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}))});

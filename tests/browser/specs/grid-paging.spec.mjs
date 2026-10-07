@@ -82,6 +82,7 @@ test("controls handle page length, direct jumps, queued search, reset and empty 
   await page.evaluate(controller + ".setQuery({search:'missing'})");
   await expect(page.locator(".cx-grid-page-range")).toHaveText("0–0 of 0 rows");
   await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeDisabled();
+  await page.locator('.cx-grid-views > summary').click();
   await page.getByRole("button", { name: "Reset view", exact: true }).click();
   expect(await page.evaluate(controller + ".getPaging().pageLength")).toBe(25);
   await expect(page.locator(".cx-grid-page-range")).toHaveText("1–25 of 137 rows");
@@ -170,7 +171,7 @@ test(`rapid ${direction} page navigation preserves later ${action} intent withou
   if (direction === "up") await page.evaluate(controller + ".goToPage(1)");
   await page.evaluate(controller + ".scrollToRow(" + start + ")");
   await page.locator('.cx-row[data-cx-id="row-' + start + '"]').focus();
-  await page.keyboard.press("Enter"); await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("F2"); await page.keyboard.press("ArrowRight");
   await page.evaluate(() => { window.hold = true; });
   const key = direction === "down" ? "ArrowDown" : "ArrowUp", step = direction === "down" ? 1 : -1;
   await page.keyboard.press(key);
@@ -201,7 +202,7 @@ for (const action of ["continue", "escape", "column", "last", "outside", "row"])
   if (presentation === "paged") await page.evaluate(controller + ".goToPage(1)");
   const start = presentation === "paged" ? 25 : 0;
   await page.locator('.cx-row[data-cx-id="row-' + start + '"]').focus();
-  await page.keyboard.press("Enter"); await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("F2"); await page.keyboard.press("ArrowRight");
   await page.keyboard.press(presentation === "paged" ? "ArrowUp" : "Control+End");
   const loading = page.locator('.cx-row[data-cx-status="loading"][aria-rowindex="' + (destination + 2) + '"]');
   await expect(loading).toBeFocused();
@@ -224,7 +225,7 @@ test(`cell navigation retains its column when the destination needs another sour
   await open(page, definition({ presentation }));
   await page.evaluate(controller + (presentation === "paged" ? ".goToPage(1)" : ".scrollToRow(25)"));
   await page.locator('.cx-row[data-cx-id="row-25"]').focus();
-  await page.keyboard.press("Enter"); await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("F2"); await page.keyboard.press("ArrowRight");
   await expect(page.locator('.cx-row[data-cx-id="row-25"]').getByRole("gridcell").nth(1)).toBeFocused();
   await page.keyboard.press("ArrowUp");
   await expect(page.locator('.cx-row[data-cx-id="row-24"]').getByRole("gridcell").nth(1)).toBeFocused();

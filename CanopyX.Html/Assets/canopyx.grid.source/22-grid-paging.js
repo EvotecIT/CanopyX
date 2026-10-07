@@ -33,17 +33,18 @@
       const key = JSON.stringify(request);
       const pending = this.pendingPageNavigation;
       if (pending && pending.epoch === this.queryEpoch && pending.key === key) return pending.promise;
-      const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key: key };
+      const operation = this.setQuery(request, paging), navigation = { epoch: this.queryEpoch, key };
       navigation.promise = operation.finally(() => { if (this.pendingPageNavigation === navigation) this.pendingPageNavigation = null; });
       this.pendingPageNavigation = navigation; return navigation.promise;
     },
     setPageLength(length) {
-      if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > 10000)
+      const all=length==="all";if(all){if(this.view.source.kind!=="inline")throw new Error("CanopyX: All rows needs inline data.");length=Math.max(1,this.view.rows.length);}
+      if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > Math.max(10000,this.view.source.kind==="inline"?this.view.rows.length:0))
         throw new Error("CanopyX: visible page length is an integer from 1 to 10000 for an accepted paged result.");
       const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
-      if (this.cursor) return this.setQuery(gridQueryStart(query), { pageLength: length });
+      if (this.cursor) return this.setQuery(gridQueryStart(query), { pageLength: length, allRows: all });
       return this.setQuery(Object.assign({}, query, { offset: queuedSearch ? 0 : Math.floor(this.pageOffset / length) * length,
-        limit: this.pageSize, revision: queuedSearch ? undefined : query.revision }), { pageLength: length });
+        limit: this.pageSize, revision: queuedSearch ? undefined : query.revision }), { pageLength: length, allRows: all });
     },
     validateCursorTransition(page, paging) {
       const end = page.offset + page.items.length;
@@ -67,7 +68,7 @@
       }
       const request = gridQuery(this.view, { ...query, cursor, limit: this.pageLength,
         revision: changed ? undefined : this.snapshot.revision });
-      const paging = { pageLength: this.pageLength, direction: direction,
+      const paging = { pageLength: this.pageLength, direction,
         edge: direction === "next" ? this.cursorWindow.end : this.pageOffset };
       return this.navigatePageQuery(request, paging);
     },
@@ -79,43 +80,47 @@
       const pager = this.pager = h("form", "cx-grid-pager"), signal = this.lifetime.signal;
       pager.hidden = this.opts.toolbar === false;
       pager.setAttribute("aria-label", this.labels.gridPaging);
-      this.pageRange = h("span", "cx-grid-page-range"); this.pageRange.setAttribute("role", "status"); pager.appendChild(this.pageRange);
-      const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error: error }); } };
+      this.pageRange = h("span", "cx-grid-page-range"); this.pageRange.setAttribute("role", "status");
+      const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error }); } };
       this.pageButtons = [
         gridButton(this.labels.gridFirstPage, () => run(() => this.firstPage())),
         gridButton(this.labels.gridPreviousPage, () => run(() => this.previousPage())),
         gridButton(this.labels.gridNextPage, () => run(() => this.nextPage()))
       ];
       if (!this.cursor) this.pageButtons.push(gridButton(this.labels.gridLastPage, () => run(() => this.goToPage(Math.max(0, this.getPaging().pageCount - 1)))));
-      pager.append(this.pageButtons[0], this.pageButtons[1]);
+      const navigation=h("span","cx-pager");navigation.append(this.pageButtons[0],this.pageButtons[1]);
+      this.pageButtons.forEach((button,index)=>{const label=button.textContent;button.replaceChildren(gridIcon(["first","previous","next","last"][index]));button.setAttribute("aria-label",label);button.title=label;});
       if (!this.cursor) {
         const number = this.pageNumber = h("input"); number.type = "number"; number.min = "1"; number.step = "1"; number.required = true;
-        pager.appendChild(gridInputLabel(this.labels.gridPageNumber, number));
+        number.setAttribute("aria-label",this.labels.gridPageNumber);
+        const field=gridInputLabel(this.labels.gridPageNumber,number);field.classList.add("pg");this.pageOf=h("span");field.appendChild(this.pageOf);navigation.appendChild(field);
       }
-      pager.append(...this.pageButtons.slice(2));
+      navigation.append(...this.pageButtons.slice(2));
       const length = this.pageLengthChoice = h("select");
-      pager.appendChild(gridInputLabel(this.labels.gridPageLength, length));
-      length.addEventListener("change", () => run(() => this.setPageLength(Number(length.value))), { signal: signal });
+      const rpp=gridInputLabel(this.labels.gridPageLength,length);rpp.classList.add("cx-rpp");pager.append(this.pageRange,rpp,navigation);
+      length.addEventListener("change", () => run(() => this.setPageLength(length.value==="all"?"all":Number(length.value))), { signal });
       pager.addEventListener("submit", event => { event.preventDefault();
-        if (this.pageNumber && this.pageNumber.checkValidity()) run(() => this.goToPage(Number(this.pageNumber.value) - 1)); }, { signal: signal });
+        if (this.pageNumber && this.pageNumber.checkValidity()) run(() => this.goToPage(Number(this.pageNumber.value) - 1)); }, { signal });
       this.host.appendChild(pager); this.syncPager();
     },
     syncPager() {
       if (!this.pager) return;
       const paging = this.getPaging(), busy = !this.acceptedQuery || !!this.pendingQuery;
       const numbers = numberFormat(this.lang);
-      setText(this.pageRange, fill(paging.matched === null ? this.labels.gridCursorRange : this.labels.gridPageRange,
-        { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }));
+      gridCountLabel(this.pageRange, paging.matched === null ? this.labels.gridCursorRange : this.labels.gridPageRange,
+        { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }, /(\{first\}.*?\{last\})/);
       if (this.pageNumber) {
         this.pageNumber.value = String(paging.pageCount ? paging.pageIndex + 1 : 1);
+        setText(this.pageOf,fill(this.labels.gridPageOf,{page:"",pages:numbers.format(Math.max(1,paging.pageCount))}).trim());
         this.pageNumber.max = String(Math.max(1, paging.pageCount)); this.pageNumber.disabled = busy || !paging.pageCount;
       }
       this.pageButtons.forEach((button, index) => { button.disabled = busy || (this.cursor ? index === 0 ? this.pageOffset === 0 :
         index === 1 ? !paging.hasPrevious : !paging.hasNext : !paging.pageCount || (index < 2 ? paging.pageIndex === 0 : paging.pageIndex >= paging.pageCount - 1)); });
       this.pageLengthChoice.replaceChildren();
-      [...new Set([25, 50, 100, 250, this.pageLength])].sort((a, b) => a - b)
+      [...new Set([10,25,50,100,...this.pageAll?[]:[this.pageLength]])].sort((a, b) => a - b)
         .forEach(value => this.pageLengthChoice.appendChild(gridOption(value, numbers.format(value))));
-      this.pageLengthChoice.value = String(this.pageLength); this.pageLengthChoice.disabled = busy;
+      if(this.view.source.kind==="inline")this.pageLengthChoice.appendChild(gridOption("all",this.labels.gridAll));
+      this.pageLengthChoice.value = this.pageAll?"all":String(this.pageLength); this.pageLengthChoice.disabled = busy;
       const active = document.activeElement;
       const fallback = this.pageNumber || this.pageLengthChoice;
       if (!busy && this.pageButtons.includes(active) && active.disabled && !fallback.disabled) fallback.focus({ preventScroll: true });
@@ -123,7 +128,7 @@
     async focusResult(index, focus, column, control) {
       const columnId = column >= 0 && this.visibleColumns()[column] ? this.visibleColumns()[column].id : null;
       // Loading rows have no cell DOM. Keep the latest column intent until arrival or an explicit focus change.
-      const navigation = { index: index, columnId: columnId, epoch: this.queryEpoch, focus: focus };
+      const navigation = { index, columnId, epoch: this.queryEpoch, focus };
       this.pendingNavigation = navigation;
       try {
         const pendingPage = this.pendingPageNavigation;

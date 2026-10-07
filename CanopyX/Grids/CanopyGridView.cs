@@ -9,8 +9,8 @@ namespace CanopyX;
 /// Inline sources carry the complete dataset. Host sources obtain query result pages from a host hook;
 /// the host owns transport, query execution, and authorization. Both use the same column and cell definitions.
 /// </remarks>
-public sealed class CanopyGridView {
-    private int _rowHeight = 28;
+public sealed partial class CanopyGridView {
+    private int? _rowHeight;
     private int _pageSize = 100;
     private int _pageLength = 50;
     private int? _searchDelayMilliseconds;
@@ -41,6 +41,9 @@ public sealed class CanopyGridView {
     /// <summary>Gets all rows of an inline source. Host sources must leave this collection empty.</summary>
     public IList<CanopyGridRow> Rows { get; } = new List<CanopyGridRow>();
 
+    /// <summary>Gets at most 64 ordered raw-value highlight rules. The first match wins independently for the row and each condition cell.</summary>
+    public IList<CanopyGridHighlightRule> HighlightRules { get; } = new List<CanopyGridHighlightRule>();
+
     /// <summary>Gets or sets whether rows come from the complete inline dataset or a host query hook.</summary>
     public CanopyGridSourceKind Source { get; set; }
 
@@ -60,14 +63,32 @@ public sealed class CanopyGridView {
         }
     }
 
-    /// <summary>Gets or sets the fixed row height in CSS pixels, between 20 and 64.</summary>
+    /// <summary>Gets or sets the fixed height, or the minimum and estimate for automatic rows, in CSS pixels between 20 and 64.</summary>
     public int RowHeight {
-        get => _rowHeight;
+        get => _rowHeight ?? (Density == CanopyGridDensity.Compact ? 28 : Density == CanopyGridDensity.Comfortable ? 42 : 34);
         set {
             if (value < 20 || value > 64) throw new ArgumentOutOfRangeException(nameof(value), value, "Row height must be between 20 and 64 pixels.");
             _rowHeight = value;
         }
     }
+
+    /// <summary>Gets or sets the row density. Explicit <see cref="RowHeight"/> values take precedence over density.</summary>
+    public CanopyGridDensity Density { get; set; }
+
+    /// <summary>Gets or sets whether alternate records have a subtle background. Defaults to false.</summary>
+    public bool Zebra { get; set; }
+
+    /// <summary>Gets or sets the host's plural record noun for search, result and empty-state text. Null uses translated rows.</summary>
+    public string? Noun { get; set; }
+
+    /// <summary>Gets or sets the host's explanation when the dataset is empty. Null uses the translated default.</summary>
+    public string? EmptyReason { get; set; }
+
+    /// <summary>Gets or sets whether to show result and selected-record counts in a status bar.</summary>
+    public bool StatusBar { get; set; }
+
+    /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
+    public bool AutoRowHeight { get; set; }
 
     /// <summary>Gets or sets the requested result-page size, between 1 and 10,000.</summary>
     /// <remarks>Paging follows full-dataset filtering and sorting; it is not a limit on the inline dataset.</remarks>
@@ -81,6 +102,9 @@ public sealed class CanopyGridView {
 
     /// <summary>Gets or sets row-selection behavior, independently of keyboard focus.</summary>
     public CanopySelectionMode Selection { get; set; }
+
+    /// <summary>Gets the per-control toolbar switches: Filters, Columns, Views, Export, the more menu and the result count. All default to on.</summary>
+    public CanopyGridToolbar Toolbar { get; } = new CanopyGridToolbar();
 
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;
@@ -119,12 +143,30 @@ public sealed class CanopyGridView {
     public string ToJson() {
         Validate();
         var writer = new CanopyJsonWriter(4096);
-        writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label)
-            .Property("rowHeight", RowHeight).Property("pageSize", PageSize)
+        writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
+        writer.Property("rowHeight", RowHeight);
+        if (Density != CanopyGridDensity.Default) writer.Property("density", Density == CanopyGridDensity.Compact ? "compact" : "comfortable");
+        if (Zebra) writer.Property("zebra", true);
+        writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
+        if (StatusBar) writer.Property("statusBar", true);
+        if (!Toolbar.IsDefault) { writer.Name("toolbar"); Toolbar.WriteJson(writer); }
+        if (AutoRowHeight) writer.Property("autoRowHeight", true);
+        WriteRowPresentationJson(writer);
+        writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
-        foreach (var column in Columns) column.WriteJson(writer);
+        foreach (var column in Columns) {
+            var width = column.Width;
+            if (!column.HasExplicitWidth && Reporting != null && Reporting.Layout.TryGetValue(column.Id, out var layout))
+                width = Math.Max(layout.Minimum, Math.Min(layout.Maximum, width));
+            column.WriteJson(writer, grid: true, width: width);
+        }
         writer.EndArray();
+        if (HighlightRules.Count > 0) {
+            writer.Name("highlightRules").BeginArray();
+            foreach (var rule in HighlightRules) rule.WriteJson(writer);
+            writer.EndArray();
+        }
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
@@ -157,6 +199,10 @@ public sealed class CanopyGridView {
             throw new ArgumentOutOfRangeException(nameof(Source), Source, "Unknown grid source.");
         }
         CanopyJsonNames.Selection(Selection);
+        if (Noun != null && (string.IsNullOrWhiteSpace(Noun) || Noun.Length > 256) || EmptyReason?.Length > 4096)
+            throw new InvalidOperationException("Grid noun and empty reason must fit their text bounds.");
+        if (Density != CanopyGridDensity.Default && Density != CanopyGridDensity.Compact && Density != CanopyGridDensity.Comfortable)
+            throw new ArgumentOutOfRangeException(nameof(Density), Density, "Unknown grid density.");
         if (Presentation != CanopyGridPresentation.Continuous && Presentation != CanopyGridPresentation.Paged)
             throw new ArgumentOutOfRangeException(nameof(Presentation), Presentation, "Unknown grid presentation.");
         if (Navigation != CanopyGridNavigation.Offset && Navigation != CanopyGridNavigation.Cursor)
@@ -164,15 +210,28 @@ public sealed class CanopyGridView {
         if (Navigation == CanopyGridNavigation.Cursor && (Source != CanopyGridSourceKind.Host || Presentation != CanopyGridPresentation.Paged))
             throw new InvalidOperationException("Cursor navigation requires a hosted, paged grid.");
         CanopyJsonNames.TimeZone(TimeZone);
+        ValidateRowPresentation();
         var columnIds = new HashSet<string>(StringComparer.Ordinal);
-        var visible = 0;
+        var visible = 0; var rowHeaders = 0;
         foreach (var column in Columns) {
             if (column == null || !columnIds.Add(column.Id)) throw new InvalidOperationException("Grid columns must have unique identities and cannot be null.");
             CanopyJsonNames.ColumnKind(column.Kind);
             if (column.Editable) throw new InvalidOperationException("Flat-grid editing is host composition; grid definitions do not expose edit proposals.");
+            column.Presenter?.Validate(column, Columns);
+            if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
+            if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
+            column.ValidateLayout();
+            if (column.RowHeader && ++rowHeaders > 1) throw new InvalidOperationException("A grid has at most one row header column.");
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        if (HighlightRules.Count > 64) throw new InvalidOperationException("A grid supports at most 64 highlight rules.");
+        foreach (var rule in HighlightRules) {
+            CanopyColumn? conditionColumn = null;
+            foreach (var column in Columns) if (column.Id == rule?.Condition.Column) conditionColumn = column;
+            if (rule == null || conditionColumn == null) throw new InvalidOperationException("Highlight rules require a declared condition column.");
+            rule.Condition.Validate(conditionColumn);
+        }
         Reporting?.Validate(Columns);
         if ((Reporting?.Grouping != null || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");

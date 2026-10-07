@@ -4,10 +4,8 @@
       this.pendingNavigation = null;
       if (!row || this.indexOf(row) < 0 || this.destroyed) return;
       this.focused = row;
-      const top = this.rowTop(row._ri), viewport = this.grid.clientHeight - this.head.offsetHeight;
-      if (top < this.logicalTop()) this.setLogicalTop(top);
-      else if (top + this.rowH > this.logicalTop() + viewport) this.setLogicalTop(top + this.rowH - viewport);
-      this.render();
+      this.revealGridRow(row, row._ri);
+      if (this.render()) { this.revealGridRow(row, row._ri); this.render(); }
       if (focus) { const element = this.rendered.get(row); if (element) element.focus({ preventScroll: true }); }
     },
 
@@ -16,10 +14,10 @@
       if (!row || event.defaultPrevented || event.target.closest("a,button,input,select,textarea,[contenteditable]")) return;
       this.setFocus(row, true);
       if (row.status) { if (row.status === "error") this.retry().catch(() => {}); return; }
-      if (this.view.selection === "none") return;
-      const next = this.multi && (event.ctrlKey || event.metaKey) ? new Set(this.selected) : new Set();
-      if (next.has(row.key)) next.delete(row.key); else next.add(row.key);
-      this.setSelection([...next]);
+      // A plain click never selects; selection comes from Space, row checkboxes or the API. The row's primary action runs.
+      const link = this.view.rowAction === "link" && element.querySelector("a[href]");
+      if (link) link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey }));
+      else if (this.phone || this.view.rowAction === "details") Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
     },
 
     onKey(event) {
@@ -33,12 +31,13 @@
         column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
       const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
+      if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();Promise.resolve().then(()=>this.openDetails(row.key)).catch(error=>this.emit("error",{error}));return;}
       if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
         if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
-          event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error: error })); return;
+          event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error })); return;
         }
-        if (event.key === "Enter" && typeof this.opts.onDetails === "function") {
-          event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error: error })); return;
+        if (event.key === "Enter") {
+          event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error })); return;
         }
       }
       const controls = cell ? cellControls(cell) : [];
@@ -52,8 +51,8 @@
       switch (event.key) {
         case "ArrowUp": index--; break;
         case "ArrowDown": index++; break;
-        case "PageUp": index -= Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
-        case "PageDown": index += Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH)); break;
+        case "PageUp": index = this.gridPageStep({ ...row, _ri: index }, -1); break;
+        case "PageDown": index = this.gridPageStep({ ...row, _ri: index }, 1); break;
         case "Home": if (event.ctrlKey || event.metaKey) index = this.cursor ? this.rowBounds().first : 0; else nextColumn = 0; break;
         case "End": if (event.ctrlKey || event.metaKey) index = this.rowCount() - 1; else nextColumn = columnCount - 1; break;
         case "ArrowLeft":
@@ -68,7 +67,7 @@
         case "Escape": this.setFocus(row, true); event.preventDefault(); return;
         case "F2":
           if (column >= 0) { this.setFocus(row, true); event.preventDefault(); return; }
-          // Row focus enters its first cell, as Enter does.
+          // F2 enters the first cell from row focus.
         case "Enter":
           if (row.status) { if (row.status === "error") this.retry().catch(() => {}); }
           else if (!control) this.focusCell(row, Math.max(0, column), Math.max(0, at), true);
@@ -82,7 +81,7 @@
         default: return;
       }
       index = Math.max(this.cursor ? this.rowBounds().first : 0, Math.min(this.rowCount() - 1, index));
-      this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error: error }); });
+      this.focusResult(index, true, nextColumn, nextControl).catch(error => { if (error.name !== "AbortError") this.emit("error", { error }); });
       event.preventDefault(); event.stopPropagation();
     }
   });

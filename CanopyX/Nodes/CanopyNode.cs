@@ -145,14 +145,15 @@ public sealed class CanopyNode {
     /// <summary>Gets whether <see cref="Data"/> holds at least one item, without creating the collection.</summary>
     public bool HasData => _data != null && _data.Count > 0;
 
-    internal IEnumerable<KeyValuePair<string, CanopyCell>> CellEntries => _cells ?? (IEnumerable<KeyValuePair<string, CanopyCell>>)Array.Empty<KeyValuePair<string, CanopyCell>>();
+    /// <summary>The cells, or null when there are none yet, for walking them without an enumerator object.</summary>
+    internal Dictionary<string, CanopyCell>? CellMap => _cells;
 
     internal IReadOnlyList<CanopyNode> ChildNodes => _children ?? (IReadOnlyList<CanopyNode>)Array.Empty<CanopyNode>();
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
     internal void ValidateShape(bool replacingInlineRef = false) {
-        // Detail collections are public; use their canonical writer validation for every renderer.
-        if (Detail != null) Detail.WriteJson(new CanopyJsonWriter());
+        // Detail collections are public; use their canonical writer validation for every renderer, without the text.
+        if (Detail != null) Detail.WriteJson(CanopyJsonWriter.Discarding());
         if (_ref != null && HasInlineChildren && !replacingInlineRef) {
             throw new InvalidOperationException("Node '" + Id + "' has both inline children and a load reference; inline children must be complete.");
         }
@@ -181,7 +182,7 @@ public sealed class CanopyNode {
 
     /// <summary>Checks the cells, badges, and flags, which do not depend on how the node's children are delivered.</summary>
     internal void ValidateContent() {
-        CanopyCell.ValidateEntries(CellEntries);
+        CanopyCell.ValidateEntries(_cells);
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) {
@@ -232,7 +233,11 @@ public sealed class CanopyNode {
         writer.EndObject();
     }
 
-    /// <summary>Writes the node with its inline children, iteratively, or with its declaration of children that load later.</summary>
+    /// <summary>
+    /// Writes the node with its inline children, iteratively, or with its declaration of children that load later.
+    /// Callers check the whole tree with <see cref="CanopyTreeValidator"/> first (the view and page documents do), so
+    /// the nodes are not checked a second time here.
+    /// </summary>
     internal void WriteJson(CanopyJsonWriter writer) {
         if (!WriteStart(writer)) {
             writer.EndObject();
@@ -255,7 +260,6 @@ public sealed class CanopyNode {
 
     /// <summary>Writes the node up to its inline children; returns whether the children array was opened.</summary>
     private bool WriteStart(CanopyJsonWriter writer) {
-        ValidateShape();
         WriteHead(writer);
         var inline = HasInlineChildren;
         if (inline || HasChildren) {

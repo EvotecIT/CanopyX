@@ -13,13 +13,13 @@
     const offset = cursor ? Number(cursor) || 0 : 0;
     const items = all.slice(offset, offset + pageSize);
     const end = offset + items.length;
-    return { items: items, total: all.length, next: end < all.length ? String(end) : null, offset: offset };
+    return { items, total: all.length, next: end < all.length ? String(end) : null, offset };
   }
 
   /** Orders hits as the protocol ranks them. Each label is folded once, not once per comparison. */
   function rankHits(hits, query, limit) {
     const folded = trimSeparators(foldText(query));
-    const ranked = hits.map((hit) => ({ hit: hit, rank: rankLabel(hit.label, folded) }));
+    const ranked = hits.map((hit) => ({ hit, rank: rankLabel(hit.label, folded) }));
     ranked.sort((a, b) => a.rank - b.rank || collator.compare(a.hit.label, b.hit.label));
     return { hits: ranked.slice(0, limit).map((item) => item.hit), total: hits.length, truncated: hits.length > limit };
   }
@@ -119,7 +119,7 @@
     return {
       kind: "sidecar",
       canSearch: true,
-      manifest: manifest,
+      manifest,
       /**
        * Loads at once the files a path will read: the first children page of each node in opens, and the page that
        * holds each node in finds, as far as the last search told where they are. Never rejects; what fails here fails
@@ -184,7 +184,7 @@
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2147483647) {
       throw new Error("CanopyX: request timeout must be an integer from 1 to 2147483647 milliseconds.");
     }
-    const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match));
+    const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(values, name) ? values[name] : match));
     const getJson = (url, type, request) => remoteJson(url, type, timeoutMs, settings.signal, request && request.signal);
     const queryValues = request => {
       if (!source.queryAware) return {};
@@ -223,7 +223,7 @@
           if (source.queryAware) revision = snapshotRevision(doc, revision);
           items.push.apply(items, doc.items);
         }
-        return Object.assign({ protocol: PROTOCOL, type: "counts", items: items }, source.queryAware ? { revision } : {});
+        return Object.assign({ protocol: PROTOCOL, type: "counts", items }, source.queryAware ? { revision } : {});
       } : null
     };
   }

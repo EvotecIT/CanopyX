@@ -101,7 +101,12 @@ internal static class CanopyViewValidator {
             throw new InvalidOperationException("Node '" + node.Id + "' uses icon '" + node.Icon + "', which view '" + view.Id + "' does not declare.");
         }
 
-        foreach (var cell in node.CellEntries) {
+        var cells = node.CellMap;
+        if (cells == null) {
+            return;
+        }
+
+        foreach (var cell in cells) {
             if (!columns.Contains(cell.Key)) {
                 throw new InvalidOperationException("Node '" + node.Id + "' has a cell for column '" + cell.Key + "', which view '" + view.Id + "' does not have.");
             }

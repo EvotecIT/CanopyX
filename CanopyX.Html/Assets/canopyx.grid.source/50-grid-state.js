@@ -34,7 +34,7 @@
         columns: this.columns.map(gridStateColumn),
         query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
-      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset };
+      if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset, ...this.pageAll?{allRows:true}:{} };
       return state;
     },
 
@@ -50,15 +50,15 @@
       const known = id => this.columns.some(column => column.id === id);
       const query = gridQuery(this.view, gridQueryStart(input, {
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
-      const parsed = { version: 1, view: this.view.id, columns: columns, query: query,
-        timeZone: state.timeZone, selection: selection, scrollTop: state.scrollTop };
+      const parsed = { version: 1, view: this.view.id, columns, query,
+        timeZone: state.timeZone, selection, scrollTop: state.scrollTop };
       if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
-        if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > 10000 ||
+        if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > Math.max(10000,this.view.source.kind==="inline"?this.view.rows.length:0) || paging.allRows!==undefined&&(typeof paging.allRows!=="boolean"||paging.allRows&&this.view.source.kind!=="inline") ||
             !Number.isInteger(paging.offset) || paging.offset < 0 || paging.offset > MAX_PROTOCOL_INTEGER || this.cursor && paging.offset !== 0)
           throw new Error("CanopyX: invalid paged view state.");
         if (this.paged) {
-          parsed.paging = { pageLength: paging.pageLength, offset: paging.offset };
+          parsed.paging = { pageLength: paging.pageLength, offset: paging.offset, ...paging.allRows?{allRows:true}:{} };
           if (!state.paging) parsed.scrollTop = 0;
         } else parsed.scrollTop = Math.min(MAX_PROTOCOL_INTEGER * this.rowH, paging.offset * this.rowH + state.scrollTop);
       }
@@ -83,7 +83,7 @@
     applyStatePresentation(state) {
       if (this.cancelResize) this.cancelResize();
       const current = new Map(this.columns.map(column => [column.id, column]));
-      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved));
+      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { sized: false, priority: current.get(saved.id).basePriority }, saved));
       this.setTimeZone(state.timeZone); this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
     },
@@ -93,7 +93,12 @@
           ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: name each column once.");
       if (this.cancelResize) this.cancelResize();
       const columns = new Map(this.columns.map(column => [column.id, column]));
-      this.columns = ids.map(id => columns.get(id)); this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
+      this.columns = ids.map(id => columns.get(id));
+      // An order is honoured as given: a pinned column moved into the scrolling centre stops being pinned.
+      this.columns.forEach((column, index, all) => {
+        if (column.pin === "left" && all.slice(0, index).some(item => item.pin !== "left") || column.pin === "right" && all.slice(index + 1).some(item => item.pin !== "right")) column.pin = "none";
+      });
+      this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
     },
 
     viewName(name) {
@@ -121,7 +126,7 @@
     },
     writeStoredState(state) {
       if (!this.storageKey || this.destroyed) return;
-      try { global.sessionStorage.setItem(this.storageKey, JSON.stringify({ current: state, views: [...this.savedViews].map(([name, value]) => ({ name: name, state: value })) })); }
+      try { global.sessionStorage.setItem(this.storageKey, JSON.stringify({ current: state, views: [...this.savedViews].map(([name, value]) => ({ name, state: value })) })); }
       catch (_) { /* A disabled or full storage leaves the current session usable. */ }
     }
   });
