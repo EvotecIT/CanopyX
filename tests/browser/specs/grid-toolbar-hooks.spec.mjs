@@ -69,6 +69,39 @@ test("a malformed toolbar switch fails the mount with a clear error", async ({ p
   await expect(page.locator(".cx-mount-error")).toContainText("toolbar options are booleans by control name");
 });
 
+test("with the more menu off, phone layouts keep Views and Export usable in the toolbar", async ({ page }) => {
+  await openGrid(page, reporting(), { size: sizes[1], setup: `CanopyX.configure("inventory", { toolbar: { more: false } });` });
+  for (const kind of ["views", "export"]) {
+    const control = page.locator(".cx-toolbar > .cx-grid-" + kind);
+    await expect(control.locator(":scope > summary")).toBeVisible();
+    await control.locator(":scope > summary").click();
+    await expect.poll(() => control.locator(":scope > .cx-grid-panel").evaluate(element => element.matches(":popover-open"))).toBe(true);
+    await page.keyboard.press("Escape"); await expect(control).not.toHaveAttribute("open", "");
+  }
+});
+
+test("a menu open across the phone breakpoint closes instead of leaving the top layer", async ({ page }) => {
+  await openGrid(page, reporting());
+  await page.locator(".cx-grid-views > summary").click();
+  await expect.poll(() => page.locator(".cx-grid-views > .cx-grid-panel").evaluate(element => element.matches(":popover-open"))).toBe(true);
+  await page.setViewportSize(sizes[1]); await nextFrames(page);
+  await expect(page.locator(".cx-grid-views")).not.toHaveAttribute("open", "");
+  await expect(page.locator(".cx-grid-panel:popover-open")).toHaveCount(0);
+  await expect(page.locator(".cx-grid-overflow .cx-grid-views")).toHaveCount(1);
+});
+
+test("list menus keep their height cap; the filter builder uses the room beside it", async ({ page }) => {
+  const columns = Array.from({ length: 30 }, (_, i) => ({ id: "c" + i, title: "Column " + i, kind: "text" }));
+  await openGrid(page, reporting({ columns, rows: [{ id: "a", cells: { c0: "x" } }] }));
+  await page.locator(".cx-grid-columns > summary").click();
+  await expect(page.locator(".cx-grid-column-choice").first()).toBeVisible();
+  expect(await page.locator(".cx-grid-columns > .cx-grid-panel").evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(320);
+  await page.keyboard.press("Escape");
+  await page.locator(".cx-grid-filters > summary").click();
+  await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible();
+  expect(await page.locator(".cx-grid-filters > .cx-grid-panel").evaluate(element => parseFloat(element.style.maxHeight))).toBeGreaterThan(320);
+});
+
 test("with the Filters menu off, a complex column condition offers no dead Edit as text button", async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await openGrid(page, reporting({ query: { filterGroup: { operator: "or", filters: [{ column: "owner", operator: "eq", values: ["Finance"] },
@@ -95,4 +128,49 @@ test("with the Export menu off, a reporting print hook still runs from the more 
   await page.locator(".cx-grid-overflow > summary").click();
   await page.locator(".cx-grid-overflow").getByRole("button", { name: "Print", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.printed)).toEqual(["filtered:40"]);
+});
+for (const size of sizes)
+for (const theme of ["light", "dark"])
+test(`toolbar menus of a two-row grid escape an overflow-hidden host (${theme}, ${size.width})`, async ({ page }) => {
+  const view = reporting({ rows: definition().rows.slice(0, 2), selection: "multiple", reporting: { headerFilters: true, selectionControls: true } });
+  await openGrid(page, view, { size, theme, wrap: "overflow:hidden;border-radius:8px;margin:24px" });
+  const frame = await page.locator(".frame").boundingBox();
+  for (const kind of ["columns", "export", "overflow", "filters", "views"]) {
+    const control = page.locator(".cx-grid-" + kind), summary = control.locator(":scope > summary");
+    if (!await summary.isVisible()) await page.locator(".cx-grid-overflow > summary").click();
+    await summary.click(); await expect(control).toHaveAttribute("open", "");
+    const panel = control.locator(":scope > .cx-grid-panel");
+    // The toggle event that layers the panel follows the open attribute by one task.
+    await expect.poll(() => panel.evaluate(element => element.matches(":popover-open"))).toBe(true);
+    if (kind === "columns" || kind === "filters") await expect(panel.locator("button").first()).toBeVisible();
+    const state = await panel.evaluate(element => {
+      const box = element.getBoundingClientRect(), radius = parseFloat(getComputedStyle(element).borderTopLeftRadius);
+      const inside = (x, y) => element.contains(document.elementFromPoint(x, y));
+      const host = getComputedStyle(element.closest(".cx-host"));
+      return { box: { top: box.top, bottom: box.bottom, left: box.left, right: box.right }, radius, layer: element.matches(":popover-open"),
+        visible: inside(box.left + box.width / 2, box.bottom - radius - 2) && inside(box.left + radius + 2, box.top + radius + 2) && inside(box.right - radius - 2, box.bottom - radius - 2),
+        background: getComputedStyle(element).backgroundColor, surface: host.getPropertyValue("--cx-surface").trim(), color: getComputedStyle(element).color, text: host.color };
+    });
+    expect(state.layer, kind + " is in the top layer").toBe(true);
+    expect(state.visible, kind + " is drawn whole").toBe(true);
+    // The phone filter builder is a full-screen sheet without corners; every other menu keeps them.
+    if (kind !== "filters" || size.width > 640) expect(state.radius, kind + " keeps its rounded corners").toBeGreaterThan(0);
+    expect(state.color, kind + " keeps the grid's text colour").toBe(state.text);
+    if (kind === "columns" && size.width > 640) expect(state.box.bottom, "the Columns menu reaches past the clipping host").toBeGreaterThan(frame.y + frame.height);
+    await page.keyboard.press("Escape");
+    if (await control.evaluate(element => element.open)) await page.keyboard.press("Escape");
+    await page.mouse.click(2, 2);
+    await expect(page.locator(".cx-grid-panel:popover-open")).toHaveCount(0);
+  }
+});
+
+test("the header selection menu is layered above a short grid as well", async ({ page }) => {
+  const view = reporting({ rows: definition().rows.slice(0, 2), reporting: { selectionControls: true } });
+  await openGrid(page, view, { wrap: "overflow:hidden" });
+  await page.locator(".cx-header-selection > summary").click();
+  const panel = page.locator(".cx-header-selection > .cx-grid-panel");
+  await expect(panel).toBeVisible();
+  expect(await panel.evaluate(element => element.matches(":popover-open") && element.contains(document.elementFromPoint(
+    element.getBoundingClientRect().left + 20, element.getBoundingClientRect().bottom - 10)))).toBe(true);
+  await page.keyboard.press("Escape"); await expect(page.locator(".cx-grid-panel:popover-open")).toHaveCount(0);
 });

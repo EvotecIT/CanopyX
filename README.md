@@ -231,6 +231,8 @@ inventory.Toolbar.Count = false;  // the host shows its own count
 createDataGrid(host, { view, toolbar: { views: false, more: true } }); // search, filters, columns, views, export, more, count
 ```
 
+Toolbar menus (Filters, Columns, Views, Export, ⋯ and the header selection menu) open in the browser's top layer as popovers, so a short grid or a host with `overflow: hidden` no longer clips them. They stay inside the grid's DOM, so themes, focus order and events are unchanged, and list menus keep their 320-pixel height cap. Browsers without the popover API give them viewport-fixed positioning instead, which escapes `overflow: hidden` but not an ancestor with a `transform`, `filter` or `contain` that captures fixed positioning.
+
 ## Tree Grid Features
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.

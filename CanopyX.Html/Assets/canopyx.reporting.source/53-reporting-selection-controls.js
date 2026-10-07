@@ -42,7 +42,8 @@
       summary.setAttribute("aria-haspopup", "menu"); summary.appendChild(gridIcon("check")); panel.appendChild(this.selectionControls); menu.append(summary, panel);
       this.headCells[0].prepend(menu);
       const flyout = this.headerSelectionFlyout = watchFlyout(menu, panel, () => menu.open);
-      menu.addEventListener("toggle", () => { if (menu.open) flyout.position(); });
+      panel.popover = "manual";
+      menu.addEventListener("toggle", () => { if (menu.open) { if (panel.isConnected) panel.showPopover?.(); flyout.position(); } else panel.hidePopover?.(); });
       menu.addEventListener("keydown", event => { if (event.key === "Escape") { menu.open = false; summary.focus(); event.preventDefault(); } });
       this.syncSelectionControls();
     },    runReportingSelection(action) {

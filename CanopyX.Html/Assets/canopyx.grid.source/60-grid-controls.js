@@ -48,8 +48,13 @@
       setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);
       // The icon is named by the control: filter, columns, views or export (the more menu's summary is its own icon).
       summary.prepend(gridIcon(className.slice(8).replace("rs", "r")));
+      // The open panel is a manual popover in the top layer, so no overflow or stacking context of the grid or its host
+      // clips it; it stays in the grid's DOM and keeps its theme, events and focus order. Without the popover API the
+      // panel is viewport-fixed (CSS), which escapes overflow clipping as well. Closing a menu closes the menus and entries
+      // inside it (the phone layout moves Views and Export into the more menu).
+      panel.popover = "manual";
       const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
-      details.addEventListener("toggle", () => { if (details.open) { if (onOpen) onOpen(panel); flyout.position(); } });
+      details.addEventListener("toggle", () => { if (details.open) { if (panel.isConnected) panel.showPopover?.(); if (onOpen) onOpen(panel); flyout.position(); } else { panel.hidePopover?.(); for (const inner of panel.querySelectorAll("details[open]")) inner.open = false; } });
       details.addEventListener("keydown", event => {
         if (event.key === "Escape" && details.open) { details.open = false; summary.focus(); event.preventDefault(); event.stopPropagation(); }
       });
