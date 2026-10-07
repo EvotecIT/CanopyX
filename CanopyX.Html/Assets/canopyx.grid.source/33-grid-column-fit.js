@@ -147,9 +147,10 @@
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
           (kind === "progress" ? 80 : kind === "enum" && !quiet ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
+      // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
       const cap = Math.min(column.maxW, Math.max(column.minW, 420));
       const need = none ? column.pref || column.width : Math.min(cap, Math.max(head,
-        Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 22 : 0) : 0))));
+        Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0) : 0))));
       return Object.freeze({ width: Math.max(column.minW, need), head: Math.min(head, cap), sampled, scope: "loaded" });
     },
     autoFitColumn(id) {

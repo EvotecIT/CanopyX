@@ -129,6 +129,24 @@ test("with the Export menu off, a reporting print hook still runs from the more 
   await page.locator(".cx-grid-overflow").getByRole("button", { name: "Print", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.printed)).toEqual(["filtered:40"]);
 });
+for (const density of ["compact", "default", "comfortable"])
+test(`row checkboxes reserve exactly the width they draw (${density})`, async ({ page }) => {
+  const view = definition({ density, selection: "multiple", search: false, reporting: { selectionControls: true },
+    columns: [{ id: "name", title: "Id", kind: "text", rowHeader: true },
+      ...Array.from({ length: 9 }, (_, i) => ({ id: "c" + i, title: "Column " + i, kind: "text", priority: "essential" }))],
+    rows: Array.from({ length: 6 }, (_, i) => ({ id: "r" + i, cells: { name: "WORKSTATION-" + String(i).repeat(6),
+      ...Object.fromEntries(Array.from({ length: 9 }, (_, c) => ["c" + c, "Value " + c + " " + "x".repeat(18)])) } })) });
+  await openGrid(page, view, { size: { width: 900, height: 600 } });
+  const geometry = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id] .cx-cell:first-child")].map(cell => {
+    const check = cell.querySelector(".cx-grid-row-select").getBoundingClientRect(), text = cell.querySelector(".cx-text"), style = getComputedStyle(cell);
+    return { drawn: text.getBoundingClientRect().left - check.left, cut: text.scrollWidth - text.clientWidth,
+      overflow: text.getBoundingClientRect().right - (cell.getBoundingClientRect().right - parseFloat(style.paddingRight)) };
+  }));
+  // The grid is narrower than its essential columns, so the identity column gets exactly its measured need.
+  expect(await page.evaluate(() => document.querySelector(".cx-grid").scrollWidth > document.querySelector(".cx-grid").clientWidth)).toBe(true);
+  for (const cell of geometry) { expect(cell.drawn).toBe(28); expect(cell.cut).toBeLessThanOrEqual(0); expect(cell.overflow).toBeLessThanOrEqual(0.5); }
+});
+
 for (const size of sizes)
 for (const theme of ["light", "dark"])
 test(`toolbar menus of a two-row grid escape an overflow-hidden host (${theme}, ${size.width})`, async ({ page }) => {
