@@ -232,7 +232,11 @@ public sealed class CanopyNode {
         writer.EndObject();
     }
 
-    /// <summary>Writes the node with its inline children, iteratively, or with its declaration of children that load later.</summary>
+    /// <summary>
+    /// Writes the node with its inline children, iteratively, or with its declaration of children that load later.
+    /// Callers check the whole tree with <see cref="CanopyTreeValidator"/> first (the view and page documents do), so
+    /// the nodes are not checked a second time here.
+    /// </summary>
     internal void WriteJson(CanopyJsonWriter writer) {
         if (!WriteStart(writer)) {
             writer.EndObject();
@@ -255,7 +259,6 @@ public sealed class CanopyNode {
 
     /// <summary>Writes the node up to its inline children; returns whether the children array was opened.</summary>
     private bool WriteStart(CanopyJsonWriter writer) {
-        ValidateShape();
         WriteHead(writer);
         var inline = HasInlineChildren;
         if (inline || HasChildren) {
