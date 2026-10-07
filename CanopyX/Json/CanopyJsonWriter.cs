@@ -65,6 +65,9 @@ internal sealed class CanopyJsonWriter {
 
     internal int Length => _builder?.Length ?? 0;
 
+    /// <summary>Gets whether the writer writes nothing (<see cref="Discarding"/>), so a caller can skip formatting text no check needs.</summary>
+    internal bool IsDiscarding => _builder == null;
+
     internal CanopyJsonWriter BeginObject() {
         BeforeValue();
         _builder?.Append('{');

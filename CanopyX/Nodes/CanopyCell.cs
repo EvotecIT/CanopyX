@@ -248,7 +248,8 @@ public sealed class CanopyCell {
                 writer.Number(exact);
                 break;
             case DateTime date:
-                writer.String(FormatIso(date));
+                // Formatting a date checks nothing, so a validating writer is not given the text.
+                writer.String(writer.IsDiscarding ? string.Empty : FormatIso(date));
                 break;
             default:
                 throw new InvalidOperationException("Unsupported cell value type: " + _value.GetType().FullName);
