@@ -319,6 +319,44 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     }
 
     [Fact]
+    public void Write_FileThatCannotBeWritten_FailsWithoutAManifest() {
+        // Packs after the first few are written on a background thread; its failure still fails the write, and the
+        // manifest, which makes a bundle readable, is never written after a failure.
+        var view = TestTrees.FileShares(shares: 6, foldersPerShare: 10, filesPerFolder: 40, bigFolder: 2000);
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-failed-" + Guid.NewGuid().ToString("N"));
+        try {
+            var blocked = Path.Combine(directory, "data", "p", "9.js");
+            Directory.CreateDirectory(blocked);
+            var options = new CanopyBundleOptions { DataPath = "data", ChildPackBytes = 16 * 1024 };
+
+            Assert.ThrowsAny<Exception>(() => new CanopyBundleWriter(options).Write(view, directory));
+            Assert.False(File.Exists(Path.Combine(directory, "data", "manifest.js")));
+            Assert.True(File.Exists(Path.Combine(directory, "data", "p", "8.js")), "The packs before the failure are written.");
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Write_ManyFiles_CountsEveryFileWhicheverThreadWroteIt() {
+        // Packs after the first few are written on a background thread; the totals still describe the files on disk.
+        var view = TestTrees.FileShares(shares: 8, foldersPerShare: 12, filesPerFolder: 50, bigFolder: 4000);
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-totals-" + Guid.NewGuid().ToString("N"));
+        try {
+            var options = new CanopyBundleOptions { DataPath = "data", ChildPackBytes = 16 * 1024, SearchPackBytes = 16 * 1024 };
+            var result = new CanopyBundleWriter(options).Write(view, directory);
+            var files = Directory.GetFiles(result.DataDirectory, "*", SearchOption.AllDirectories).Select(path => new FileInfo(path)).ToList();
+
+            Assert.True(files.Count > 20, "The bundle has " + files.Count + " files.");
+            Assert.Equal(files.Count, result.FileCount);
+            Assert.Equal(files.Sum(file => file.Length), result.TotalBytes);
+            Assert.Equal(files.Max(file => file.Length), result.LargestFileBytes);
+            Assert.Equal(files.Count(file => file.DirectoryName!.EndsWith(Path.DirectorySeparatorChar + "p", StringComparison.Ordinal)), result.PackCount);
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+    [Fact]
     public void Write_Search_LabelWithARepeatedWord_IsFiledUnderItOnce() {
         // A posting list names each node once and stays strictly ascending, also when a label repeats a word in
         // another case or a word repeats across consecutive nodes.

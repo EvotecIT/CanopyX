@@ -104,17 +104,18 @@ internal sealed class CanopyBundlePacks {
             return;
         }
 
-        _context.WriteFile(_fileOf(_pack), Parts());
+        // The pack may be written on another thread after the list is reused, so it takes the pages as they are now.
+        _context.WriteFileLater(_fileOf(_pack), Parts(_pages.ToArray()));
         _pages.Clear();
         _bytes = 0;
         _pack++;
     }
 
-    private IEnumerable<string> Parts() {
+    private IEnumerable<string> Parts(IEnumerable<string>[] pages) {
         yield return _documentStart;
-        for (var index = 0; index < _pages.Count; index++) {
+        for (var index = 0; index < pages.Length; index++) {
             yield return index == 0 ? PageStart : NextPageStart;
-            foreach (var part in _pages[index]) {
+            foreach (var part in pages[index]) {
                 yield return part;
             }
 

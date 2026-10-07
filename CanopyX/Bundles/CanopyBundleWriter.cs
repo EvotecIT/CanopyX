@@ -18,8 +18,9 @@ namespace CanopyX.Bundles;
 /// "Sidecar" in docs/data-protocol.md. Children packs are filled to <see cref="CanopyBundleOptions.ChildPackBytes"/>.
 /// Every file stays within <see cref="CanopyBundleOptions.MaxFileBytes"/>, apart
 /// from a file that holds a single node or search entry larger than the budget. Files are written into the data folder
-/// and existing files are not removed, so write each bundle into an empty folder. <c>CanopyX.Html</c> adds
-/// <c>SaveHtmlBundle</c>, which also writes the page and the runtime assets.
+/// and existing files are not removed, so write each bundle into an empty folder. Pack files are written by a
+/// background thread while the tree is walked; a write returns once every file is written, and the manifest is the
+/// last. <c>CanopyX.Html</c> adds <c>SaveHtmlBundle</c>, which also writes the page and the runtime assets.
 /// </remarks>
 public sealed class CanopyBundleWriter {
     /// <summary>Creates a writer.</summary>
@@ -115,14 +116,18 @@ public sealed class CanopyBundleWriter {
         var dataPath = BundlePaths.DataPath(view.Id, Options.DataPath);
         var dataDirectory = Path.GetFullPath(Path.Combine(outputDirectory, dataPath.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar)));
         var result = new CanopyBundleResult(CanopySource.Sidecar(dataPath), dataDirectory);
-        var context = new CanopyBundleContext(view, Options, dataDirectory, result);
-        var index = view.Search != null ? new CanopySearchIndexWriter(context, new CanopySearchIndex()) : null;
-        var packs = new CanopyBundlePacks(context, CanopyBundleLayout.Pack, Options.ChildPackBytes);
-        WriteTree(context, packs, index, roots, incoming);
-        packs.Flush();
-        result.PackCount = packs.Count;
-        index?.Write();
-        WriteManifest(context, index);
+        using (var context = new CanopyBundleContext(view, Options, dataDirectory, result)) {
+            var index = view.Search != null ? new CanopySearchIndexWriter(context, new CanopySearchIndex()) : null;
+            var packs = new CanopyBundlePacks(context, CanopyBundleLayout.Pack, Options.ChildPackBytes);
+            WriteTree(context, packs, index, roots, incoming);
+            packs.Flush();
+            result.PackCount = packs.Count;
+            index?.Write();
+            // Every other file is written before the manifest, which is what makes the bundle readable.
+            context.Complete();
+            WriteManifest(context, index);
+        }
+
         return result;
     }
 
@@ -211,7 +216,7 @@ public sealed class CanopyBundleWriter {
         var offset = 0;
         for (var page = 0; page < pages.Count; page++) {
             var next = page + 1 < pages.Count ? CanopyBundleLayout.RootPage(page + 1) : null;
-            context.WriteFile(CanopyBundleLayout.RootPage(page), CanopyBundleDocument.Page(null, offset, total, pages[page], top.PageBytes(page), next).Parts());
+            context.WriteFileLater(CanopyBundleLayout.RootPage(page), CanopyBundleDocument.Page(null, offset, total, pages[page], top.PageBytes(page), next).Parts());
             context.Result.PageCount++;
             offset += pages[page].Count;
         }
