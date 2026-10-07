@@ -1,9 +1,10 @@
   const GRID_FILTER_LABELS = { eq: "=", ne: "≠", contains: "gridContains", startsWith: "gridStartsWith", in: "gridIn",
     gt: ">", ge: "≥", lt: "<", le: "≤", isNull: "gridIsNull", isNotNull: "gridIsNotNull" };
-  function gridCountLabel(element,label,values){
-    element.replaceChildren(...label.split(/(\{count\}|\{selected\})/).map(part=>{
-      if(!/^\{(?:count|selected)\}$/.test(part))return document.createTextNode(fill(part,values));
-      const bold=h("b");setText(bold,values[part.slice(1,-1)]);return bold;
+  // The marked parts (counts by default, or a page range) are bold in the text colour; the rest of the label stays muted.
+  function gridCountLabel(element,label,values,marks=/(\{count\}|\{selected\})/){
+    element.replaceChildren(...label.split(marks).map((part,index)=>{
+      if(index%2===0)return document.createTextNode(fill(part,values));
+      const bold=h("b");setText(bold,fill(part,values));return bold;
     }));
   }
   // ---------- search input and the accepted query's visible conditions ----------

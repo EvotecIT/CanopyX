@@ -107,8 +107,8 @@
       if (!this.pager) return;
       const paging = this.getPaging(), busy = !this.acceptedQuery || !!this.pendingQuery;
       const numbers = numberFormat(this.lang);
-      setText(this.pageRange, fill(paging.matched === null ? this.labels.gridCursorRange : this.labels.gridPageRange,
-        { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }));
+      gridCountLabel(this.pageRange, paging.matched === null ? this.labels.gridCursorRange : this.labels.gridPageRange,
+        { first: numbers.format(paging.first), last: numbers.format(paging.last), count: numbers.format(paging.matched) }, /(\{first\}.*?\{last\})/);
       if (this.pageNumber) {
         this.pageNumber.value = String(paging.pageCount ? paging.pageIndex + 1 : 1);
         setText(this.pageOf,fill(this.labels.gridPageOf,{page:"",pages:numbers.format(Math.max(1,paging.pageCount))}).trim());
