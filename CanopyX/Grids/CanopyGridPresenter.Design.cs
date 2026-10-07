@@ -24,7 +24,20 @@ public sealed partial class CanopyGridPresenter {
     public bool MarkLast { get; private set; }
     /// <summary>Gets exact raw text values mapped to semantic tones.</summary>
     public IReadOnlyDictionary<string, CanopyTone> Tones { get; private set; } = new ReadOnlyDictionary<string, CanopyTone>(new Dictionary<string, CanopyTone>());
-    /// <summary>Gets ordered inclusive upper bounds for progress and history tones.</summary>
+    /// <summary>Gets the tones an enum or state presenter shows as plain muted text instead of a chip or dot. Empty keeps every tone coloured.</summary>
+    public IReadOnlyList<CanopyTone> QuietTones { get; private set; } = Array.Empty<CanopyTone>();
+
+    /// <summary>Returns a copy of this enum or state presenter that shows the given tones as plain muted text, for example
+    /// <c>CanopyTone.Success</c> so healthy values read quietly while chips stay for values that need attention.</summary>
+    /// <param name="tones">At most 16 named tones. Hosts map their values to tones with the tone mapping or cell tones.</param>
+    /// <returns>A new immutable descriptor.</returns>
+    /// <exception cref="InvalidOperationException">The presenter is not an enum or state presenter.</exception>
+    /// <exception cref="ArgumentException">A tone is <see cref="CanopyTone.None"/> or more than 16 tones are given.</exception>
+    public CanopyGridPresenter WithQuietTones(params CanopyTone[] tones) {
+        if (Kind != CanopyGridPresenterKind.Enum && Kind != CanopyGridPresenterKind.State) throw new InvalidOperationException("Quiet tones apply to enum and state presenters.");
+        if (tones == null || tones.Length > 16 || Array.Exists(tones, tone => tone.Name == null)) throw new ArgumentException("Quiet tones need 1 to 16 named tones.", nameof(tones));
+        var copy = (CanopyGridPresenter)MemberwiseClone(); copy.QuietTones = Array.AsReadOnly((CanopyTone[])tones.Clone()); return copy;
+    }    /// <summary>Gets ordered inclusive upper bounds for progress and history tones.</summary>
     public IReadOnlyList<CanopyGridThreshold> Thresholds { get; private set; } = Array.Empty<CanopyGridThreshold>();
 
     /// <summary>Creates tone pills; success values render as quiet states.</summary>
@@ -124,6 +137,7 @@ public sealed partial class CanopyGridPresenter {
         writer.OptionalProperty("deltaColumn", DeltaColumn).OptionalProperty("secondaryColumn", SecondaryColumn);
         if (Minimum.HasValue) writer.Name("minimum").Number(Minimum.Value).Name("scaleMaximum").Number(ScaleMaximum!.Value);
         if (Tones.Count > 0) { writer.Name("tones").BeginObject(); foreach (var pair in Tones) writer.Property(pair.Key, pair.Value.Name ?? "neutral"); writer.EndObject(); }
+        if (QuietTones.Count > 0) { writer.Name("quietTones").BeginArray(); foreach (var tone in QuietTones) writer.String(tone.Name); writer.EndArray(); }
         if (Thresholds.Count > 0) { writer.Name("thresholds").BeginArray(); foreach (var threshold in Thresholds) threshold.WriteJson(writer); writer.EndArray(); }
     }
 }

@@ -7,7 +7,7 @@ namespace CanopyX;
 /// A typed column shared by tree and flat-grid views. The first column of a tree view shows the node label,
 /// indent, and expander; flat-grid columns all display cell values.
 /// </summary>
-public sealed class CanopyColumn {
+public sealed partial class CanopyColumn {
     /// <summary>The narrowest width a column can have, in CSS pixels.</summary>
     public const int MinWidth = 40;
 
@@ -35,7 +35,7 @@ public sealed class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets or sets the initial width in CSS pixels. Unassigned flat-grid widths fit loaded content; tree widths default to 160. Users can resize columns.</summary>
+    /// <summary>Gets or sets the width in CSS pixels. In a flat grid an assigned width is preferred, not a hard cap: the column grows to its content and gives way by <see cref="Priority"/>; set <see cref="Fixed"/> for a hard width. Unassigned flat-grid widths fit loaded content; tree widths default to 160. Users can resize columns.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below <see cref="MinWidth"/>.</exception>
     public int Width {
         get => _width;
@@ -88,6 +88,7 @@ public sealed class CanopyColumn {
         if (Wrap) writer.Property("wrap", true);
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);
+        if (grid) WriteLayoutJson(writer);
         if (grid) writer.OptionalProperty("section", Section);
 
         if (Hidden) {
