@@ -13,6 +13,9 @@ namespace CanopyX.Bundles;
 internal sealed class CanopyBundleContext {
     internal static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
+    /// <summary>The folders this write has created, so each is created once and not once per file.</summary>
+    private readonly HashSet<string> _directories = new HashSet<string>(StringComparer.Ordinal);
+
     internal CanopyBundleContext(CanopyView view, CanopyBundleOptions options, string dataDirectory, CanopyBundleResult result) {
         View = view;
         Options = options;
@@ -81,7 +84,11 @@ internal sealed class CanopyBundleContext {
 
     private string PathOf(string reference) {
         var path = Path.Combine(DataDirectory, reference.Replace('/', Path.DirectorySeparatorChar) + ".js");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var directory = Path.GetDirectoryName(path)!;
+        if (_directories.Add(directory)) {
+            Directory.CreateDirectory(directory);
+        }
+
         return path;
     }
 
