@@ -145,7 +145,8 @@ public sealed class CanopyNode {
     /// <summary>Gets whether <see cref="Data"/> holds at least one item, without creating the collection.</summary>
     public bool HasData => _data != null && _data.Count > 0;
 
-    internal IEnumerable<KeyValuePair<string, CanopyCell>> CellEntries => _cells ?? (IEnumerable<KeyValuePair<string, CanopyCell>>)Array.Empty<KeyValuePair<string, CanopyCell>>();
+    /// <summary>The cells, or null when there are none yet, for walking them without an enumerator object.</summary>
+    internal Dictionary<string, CanopyCell>? CellMap => _cells;
 
     internal IReadOnlyList<CanopyNode> ChildNodes => _children ?? (IReadOnlyList<CanopyNode>)Array.Empty<CanopyNode>();
 
@@ -181,7 +182,7 @@ public sealed class CanopyNode {
 
     /// <summary>Checks the cells, badges, and flags, which do not depend on how the node's children are delivered.</summary>
     internal void ValidateContent() {
-        CanopyCell.ValidateEntries(CellEntries);
+        CanopyCell.ValidateEntries(_cells);
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) {

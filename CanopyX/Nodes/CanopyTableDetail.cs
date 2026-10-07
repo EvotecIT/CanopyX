@@ -62,9 +62,11 @@ public sealed class CanopyTableDetail : CanopyDetail {
 
 
     internal override void WriteContent(CanopyJsonWriter writer) {
+        // Lists are walked by index: the tree's details are checked several times per document, and enumerating an
+        // IList allocates an enumerator for every row.
         writer.OptionalProperty("caption", Caption);
-        foreach (var column in Columns) {
-            if (column == null) {
+        for (var index = 0; index < Columns.Count; index++) {
+            if (Columns[index] == null) {
                 throw new InvalidOperationException("A table detail cannot have a null column header.");
             }
         }
@@ -76,7 +78,8 @@ public sealed class CanopyTableDetail : CanopyDetail {
             }
 
             writer.Name("widths").BeginArray();
-            foreach (var width in ColumnWidths) {
+            for (var index = 0; index < ColumnWidths.Count; index++) {
+                var width = ColumnWidths[index];
                 if (width < 1 || width > MaxColumnWidth) {
                     throw new InvalidOperationException("A table detail column width must be a share from 1 to " + MaxColumnWidth + ".");
                 }
@@ -88,14 +91,16 @@ public sealed class CanopyTableDetail : CanopyDetail {
         }
 
         writer.Name("rows").BeginArray();
-        foreach (var row in Rows) {
+        for (var rowIndex = 0; rowIndex < Rows.Count; rowIndex++) {
+            var row = Rows[rowIndex];
             if (row == null) throw new InvalidOperationException("A table detail cannot contain a null row.");
             if (row.Count != Columns.Count) {
                 throw new InvalidOperationException("A table detail row has " + row.Count + " cells but the table has " + Columns.Count + " columns.");
             }
 
             writer.BeginArray();
-            foreach (var cell in row) {
+            for (var cellIndex = 0; cellIndex < row.Count; cellIndex++) {
+                var cell = row[cellIndex];
                 if (cell == null) {
                     writer.Null();
                 } else {

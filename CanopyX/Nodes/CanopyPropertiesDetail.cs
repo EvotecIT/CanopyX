@@ -25,7 +25,8 @@ public sealed class CanopyPropertiesDetail : CanopyDetail {
 
     internal override void WriteContent(CanopyJsonWriter writer) {
         writer.Name("items").BeginArray();
-        foreach (var item in Items) {
+        for (var index = 0; index < Items.Count; index++) {
+            var item = Items[index];
             if (item == null) {
                 throw new InvalidOperationException("A properties detail cannot contain a null item.");
             }

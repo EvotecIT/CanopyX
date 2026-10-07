@@ -30,6 +30,9 @@ internal sealed class CanopyJsonWriter {
 
     private static readonly char[] Hex = "0123456789abcdef".ToCharArray();
 
+    [ThreadStatic]
+    private static CanopyJsonWriter? _discarding;
+
     /// <summary>The ASCII characters <see cref="AppendString"/> escapes; <c>$</c> only before <c>{</c>.</summary>
     private static readonly bool[] EscapedAscii = CreateEscapedAscii();
 
@@ -60,8 +63,12 @@ internal sealed class CanopyJsonWriter {
     /// </summary>
     internal static CanopyJsonWriter Streaming(TextWriter sink) => new CanopyJsonWriter(new StringBuilder(StreamChunk + 1024), sink ?? throw new ArgumentNullException(nameof(sink)));
 
-    /// <summary>A writer that checks what it is given and writes nothing, for validation that needs no text.</summary>
-    internal static CanopyJsonWriter Discarding() => new CanopyJsonWriter(null, null);
+    /// <summary>
+    /// A writer that checks what it is given and writes nothing, for validation that needs no text: the calling
+    /// thread's one discarding writer, reset, so the many checks of a tree allocate nothing. Use it for one document
+    /// at a time.
+    /// </summary>
+    internal static CanopyJsonWriter Discarding() => (_discarding ??= new CanopyJsonWriter(null, null)).Reset();
 
     internal int Length => _builder?.Length ?? 0;
 
@@ -207,6 +214,16 @@ internal sealed class CanopyJsonWriter {
         Name(name).BeginArray();
         foreach (var value in values) {
             String(value);
+        }
+
+        return EndArray();
+    }
+
+    /// <summary>Writes a list of strings by index, without an enumerator.</summary>
+    internal CanopyJsonWriter StringArray(string name, IList<string> values) {
+        Name(name).BeginArray();
+        for (var index = 0; index < values.Count; index++) {
+            String(values[index]);
         }
 
         return EndArray();

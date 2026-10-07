@@ -172,6 +172,18 @@ public sealed class CanopyCell {
     private static string FormatIso(DateTime date) =>
         date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
+    /// <summary>Checks a node's cells, walking the dictionary without an enumerator object.</summary>
+    internal static void ValidateEntries(Dictionary<string, CanopyCell>? cells) {
+        if (cells == null) {
+            return;
+        }
+
+        foreach (var cell in cells) {
+            if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
+            cell.Value?.ValidateShape();
+        }
+    }
+
     internal static void ValidateEntries(IEnumerable<KeyValuePair<string, CanopyCell>> cells) {
         foreach (var cell in cells) {
             if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
