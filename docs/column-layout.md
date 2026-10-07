@@ -68,6 +68,20 @@ bounds and flex feed the same layout, and its opt-in `reporting.responsive` mode
 | `setColumnPriority(id, priority)` | Change a column's priority (string or integer). |
 | `setColumnVisible(id, visible)`, `setColumnOrder(ids)`, `resetColumns()` | Visibility, order, and the declared layout. |
 
+The reporting runtime adds `getColumnLayout()`, one frozen entry per declared column in the current order:
+`{ id, requestedPin, pin, visible, hiddenReason, responsiveHidden, width }`. `visible` is false whenever the column is
+out of view, and `hiddenReason` says why:
+
+| `hiddenReason` | Cause |
+|---|---|
+| `null` | The column is shown. |
+| `"user"` | The reader or the host hid it (Columns menu, header menu, `setColumnVisible`, a saved view, `hidden` in the definition). |
+| `"priority"` | It gave way to the width: an optional column, or a column hidden by `reporting.responsive` and its layout `priority`. |
+| `"phone"` | A normal column hidden by the phone layout (640 pixels and below), which hides normal columns as well as optional ones. |
+
+Only `"user"` is saved in views; the other reasons follow the container width and clear when it grows again.
+`responsiveHidden` stays for existing hosts and is true only for the `reporting.responsive` policy.
+
 `canopyx:columnResize` (`onColumnResize`) reports `{ column, width }` after a pointer resize or a `setColumnWidth`/`autoFitColumn` call, and
 `canopyx:columnPin` (`onColumnPin`) reports `{ column, pin }`. Saved views (`getState()`, named views and durable
 storage) keep each column's order, visibility, width, `sized`, `pin` and `priority`.

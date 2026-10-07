@@ -108,8 +108,15 @@ export interface GridColumnLayout {
 /** Effective layout is distinct from saved intent; responsive fields retain query and explicit export meanings. */
 export interface GridColumnPlacement {
   readonly id: string; readonly requestedPin: GridColumnPin; readonly pin: GridColumnPin;
-  readonly visible: boolean; readonly responsiveHidden: boolean; readonly width: number;
+  /** False whenever the column is out of view; hiddenReason says why. */
+  readonly visible: boolean;
+  /** null when shown; "user" when hidden by the reader or host, "priority" when it gave way to the width or a responsive
+   * policy, "phone" when the phone layout (640 px and below) hid a normal column. */
+  readonly hiddenReason: GridColumnHiddenReason | null;
+  /** True only for the reporting.responsive policy; kept for existing hosts. */
+  readonly responsiveHidden: boolean; readonly width: number;
 }
+export type GridColumnHiddenReason = "user" | "priority" | "phone";
 /** Per-control toolbar switches; an absent switch keeps its control, and a control switched off is not built. */
 export interface GridToolbarControls {
   /** Filters menu. */
@@ -477,6 +484,7 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   pinColumn(id: string, side: "left" | "right" | null): void;
   /** Restores the declared order, visibility, widths and pins; keeps the query. */
   resetColumns(): void;
+  /** Reporting runtime only: effective layout for every declared column, with the reason a column is out of view. */
   getColumnLayout?(): readonly GridColumnPlacement[];
   /** Reporting runtime only: the stable container of a toolbar slot for the grid's lifetime. Host children marked
    * data-cx-slot move into their slot when the grid mounts and return to the host element on destroy. */

@@ -321,3 +321,38 @@ test("the header selection menu is layered above a short grid as well", async ({
     element.getBoundingClientRect().left + 20, element.getBoundingClientRect().bottom - 10)))).toBe(true);
   await page.keyboard.press("Escape"); await expect(page.locator(".cx-grid-panel:popover-open")).toHaveCount(0);
 });
+
+test("getColumnLayout reports why each column is out of view", async ({ page }) => {
+  const text = (id, priority) => ({ id, title: id[0].toUpperCase() + id.slice(1), kind: "text", ...priority === undefined ? {} : { priority } });
+  const columns = [{ ...text("name"), rowHeader: true }, { id: "size", title: "Size", kind: "number" }, text("owner"), text("site"), text("team"),
+    text("region", "optional"), text("model", "optional"), text("serial", "optional"), text("notes", 20000), { ...text("extra"), hidden: true }];
+  const view = reporting({ search: false, columns, rows: Array.from({ length: 8 }, (_, i) => ({ id: "r" + i,
+    cells: Object.fromEntries(columns.map(column => [column.id, column.kind === "number" ? i : column.id + " value for record " + i])) })) });
+  const layout = () => page.evaluate(`${api}.getColumnLayout().map(column => ({ id: column.id, visible: column.visible, reason: column.hiddenReason }))`);
+  const reasons = async () => Object.fromEntries((await layout()).map(column => [column.id, column.reason]));
+  const consistent = async () => { for (const column of await layout()) expect(column.visible, column.id).toBe(column.reason === null); };
+  await openGrid(page, view, { size: { width: 2400, height: 800 } });
+  expect(await reasons()).toEqual({ name: null, size: null, owner: null, site: null, team: null, region: null, model: null, serial: null, notes: null, extra: "user" });
+  await page.setViewportSize({ width: 760, height: 800 }); await nextFrames(page); await consistent();
+  const narrow = await reasons();
+  expect(narrow.notes).toBe("priority"); expect(narrow.name).toBeNull(); expect(narrow.owner).toBeNull();
+  expect(Object.values(narrow).filter(reason => reason === "phone")).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 800 }); await nextFrames(page); await consistent();
+  const phone = await reasons();
+  expect(phone.name).toBeNull(); expect(phone.extra).toBe("user");
+  for (const id of ["region", "model", "serial", "notes"]) expect(phone[id], id).toBe("priority");
+  const normal = ["size", "owner", "site", "team"].filter(id => phone[id] !== null);
+  expect(normal.length).toBeGreaterThan(0);
+  for (const id of normal) expect(phone[id], id).toBe("phone");
+  await page.evaluate(`${api}.setColumnVisible("name", false)`);
+  expect((await reasons()).name).toBe("user");
+  // A responsive reporting policy hides by its own priority: columns without one give way before notes (priority 9).
+  await page.unrouteAll();
+  await openGrid(page, reporting({ search: false, columns: columns.map(column => ({ ...column, priority: undefined, width: 260 })), rows: view.rows,
+    reporting: { responsive: true, layout: { notes: { minimum: 40, maximum: 2000, priority: 9 } } } }), { size: { width: 2400, height: 800 } });
+  expect(Object.values(await reasons()).filter(reason => reason === "priority")).toEqual([]);
+  await page.setViewportSize({ width: 1500, height: 800 }); await nextFrames(page); await consistent();
+  const responsive = await page.evaluate(`${api}.getColumnLayout().filter(column => column.responsiveHidden).map(column => column.hiddenReason)`);
+  expect(responsive.length).toBeGreaterThan(0); expect(new Set(responsive)).toEqual(new Set(["priority"]));
+  expect((await reasons()).notes).toBeNull();
+});

@@ -88,6 +88,7 @@ if (placement) {
   const requested: import("@evotecit/canopyx/grid").GridColumnPin = placement.requestedPin;
   // @ts-expect-error Effective layout snapshots are read-only.
   placement.responsiveHidden = false;
+  const reason: "user" | "priority" | "phone" | null = placement.hiddenReason;
 }
 const endSlot: HTMLElement | undefined = reportingApi.toolbarSlot?.("end");
 endSlot?.append(document.createElement("span"));
