@@ -77,7 +77,7 @@ public sealed class RuntimeAssetTests {
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "canopyx.css"));
         if (runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.reporting.source", "canopyx.css"));
-        Assert.Equal(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
+        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
     }
 
     [Fact]
@@ -232,6 +232,16 @@ public sealed class RuntimeAssetTests {
     }
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
+
+    private static string CompressStyleSpacing(string value) => string.Join("\n", value.Split('\n').Select(line => {
+        var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*')");
+        for (var i = 0; i < parts.Length; i += 2) {
+            var part = Regex.Replace(parts[i], @"\s*([{}])\s*", "$1");
+            part = Regex.Replace(part, @"([;,])\s+", "$1");
+            parts[i] = Regex.Replace(part, @"((?:^|[{;])-*[A-Za-z][\w-]*):\s+", "$1:");
+        }
+        return string.Concat(parts);
+    }));
 
     private static string CompressScriptSpacing(string value) {
         var output = new StringBuilder();

@@ -258,6 +258,23 @@ function Compress-ScriptSpacing {
     $output.ToString()
 }
 
+function Compress-StyleSpacing {
+    param([string] $Content)
+
+    # Whitespace around braces and after semicolons, commas and declaration colons carries no meaning in CSS.
+    # Quoted text stays as written; spaces inside values and between selector parts are kept.
+    $lines = foreach ($line in $Content.Split("`n")) {
+        $pieces = [regex]::Split($line, '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*'')')
+        for ($i = 0; $i -lt $pieces.Length; $i += 2) {
+            $piece = [regex]::Replace($pieces[$i], '\s*([{}])\s*', '$1')
+            $piece = [regex]::Replace($piece, '([;,])\s+', '$1')
+            $pieces[$i] = [regex]::Replace($piece, '((?:^|[{;])-*[A-Za-z][\w-]*):\s+', '$1:')
+        }
+        $pieces -join ''
+    }
+    $lines -join "`n"
+}
+
 function Get-AssetHash([string] $Content) {
     $sha = [Security.Cryptography.SHA256]::Create()
     try { ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Content)))).Replace('-', '').ToLowerInvariant().Substring(0, 16) }
@@ -265,7 +282,7 @@ function Get-AssetHash([string] $Content) {
 }
 
 $editorBody = Join-AssetSource -SourcePath $filterEditorPaths[0] -ExtensionPath $filterEditorPaths[1..($filterEditorPaths.Count - 1)] -IncludeFilterEditor
-$editorStyle = Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css')
+$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css'))
 $editorVersion = Get-AssetHash ($editorBody + $editorStyle)
 $editorHeader = @'
 (function(global) {
@@ -302,6 +319,7 @@ foreach ($asset in $assets) {
     }
     if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) }
     if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
+    if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) { $generated = Compress-StyleSpacing -Content $generated }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }
