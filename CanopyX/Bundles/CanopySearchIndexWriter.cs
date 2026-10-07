@@ -154,8 +154,8 @@ internal sealed class CanopySearchIndexWriter {
     /// the node's first children page when that is in another file than the page that holds the node.
     /// </summary>
     private static void Place(Entry entry, string holding, string first) {
-        entry.PageReference = CanopyBundleLayout.FileOf(holding) != CanopyBundleLayout.FileOf(first) ? holding : null;
-        if (entry.ChildrenReference != null && CanopyBundleLayout.FileOf(entry.ChildrenReference) == CanopyBundleLayout.FileOf(holding)) {
+        entry.PageReference = !CanopyBundleLayout.SameFile(holding, first) ? holding : null;
+        if (entry.ChildrenReference != null && CanopyBundleLayout.SameFile(entry.ChildrenReference, holding)) {
             entry.ChildrenReference = null;
         }
 

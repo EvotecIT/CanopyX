@@ -26,9 +26,15 @@ internal static class CanopyBundleLayout {
     /// <summary>The reference of one children page: its pack file and its position among that file's pages.</summary>
     internal static string PackedPage(int pack, int slot) => Pack(pack) + "#" + slot.ToString(CultureInfo.InvariantCulture);
 
-    /// <summary>The file a page reference is read from: the pack of a packed page, or the page's own file.</summary>
-    internal static string FileOf(string pageReference) {
+    /// <summary>Whether two page references are read from the same file: the pack of a packed page, or the page's own file.</summary>
+    internal static bool SameFile(string pageReference, string otherReference) {
+        var length = FileLength(pageReference);
+        return length == FileLength(otherReference) && string.CompareOrdinal(pageReference, 0, otherReference, 0, length) == 0;
+    }
+
+    /// <summary>The length of the file part of a page reference, before the slot of a packed page.</summary>
+    private static int FileLength(string pageReference) {
         var slot = pageReference.IndexOf('#');
-        return slot < 0 ? pageReference : pageReference.Substring(0, slot);
+        return slot < 0 ? pageReference.Length : slot;
     }
 }
