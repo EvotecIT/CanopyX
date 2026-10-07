@@ -30,11 +30,13 @@ function ConvertTo-Base36([int] $Value) {
     do { $text = [string]$digits[$magnitude % 36] + $text; $magnitude = [int][Math]::Floor($magnitude / 36) } while ($magnitude -gt 0)
     if ($Value -lt 0) { '-' + $text } else { $text }
 }
+for ($foldOffset = 1; $foldOffset -lt $foldEntries.Count; $foldOffset++) {
+    if ($foldEntries[$foldOffset].From -le $foldEntries[$foldOffset - 1].From) { throw 'The canonical folding table must list code units in ascending order.' }
+}
 $foldRecords = [System.Collections.Generic.List[string]]::new()
 $foldLast = 0
 for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
     $foldEntry = $foldEntries[$foldOffset]
-    if ($foldEntry.From -le $foldLast) { throw 'The canonical folding table must list code units in ascending order.' }
     $foldDelta = $foldEntry.To - $foldEntry.From
     $foldCount = 1
     $foldStep = if ($foldOffset + 1 -lt $foldEntries.Count) { $foldEntries[$foldOffset + 1].From - $foldEntry.From } else { 0 }
@@ -248,7 +250,7 @@ function Compress-ScriptSpacing {
         $compact = $pieces -join ''
         if ($output.Length -and ($slash -or ($previous -notmatch '[;,{(\[]$' -and $compact -notmatch '^[)}\]]'))) {
             [void]$output.Append("`n")
-        } elseif ($output.Length -and $compact.StartsWith('}') -and $previous.EndsWith(';')) {
+        } elseif ($output.Length -and $compact.StartsWith('}', [StringComparison]::Ordinal) -and $previous.EndsWith(';', [StringComparison]::Ordinal)) {
             [void]$output.Remove($output.Length - 1, 1)
         }
         [void]$output.Append($compact)

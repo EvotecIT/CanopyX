@@ -32,7 +32,9 @@ call refresh when opening a panel. Hidden state restoration retains the requeste
 the viewport is measurable. The `contained-grids.html` example exercises these layouts.
 
 The assembler removes optional JavaScript delimiter spacing while preserving quoted literals, slash-led suffixes
-and automatic-semicolon-insertion boundaries. It joins only delimiter boundaries; source parts remain readable.
+and automatic-semicolon-insertion boundaries. It joins only delimiter boundaries and the spaces around a + or -
+whose neighbours are not + or -, and drops a semicolon before a closing brace; source parts remain readable. Stylesheets lose
+the whitespace around braces and after semicolons, commas and declaration colons outside quoted text.
 No minifier dependency or npm build step is required.
 
 Complete Polish, German and Spanish label packs are generated from one translation table into .NET factories and
