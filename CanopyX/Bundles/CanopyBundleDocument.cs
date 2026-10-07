@@ -15,23 +15,24 @@ internal sealed class CanopyBundleDocument {
     private readonly string[] _texts;
     private readonly IReadOnlyList<string>[] _lists;
 
-    /// <param name="emptyDocument">The document written with every array empty.</param>
+    /// <param name="emptyDocument">A writer holding the document written with every array empty; it can be reused afterwards.</param>
     /// <param name="listStarts">For each array, the position in <paramref name="emptyDocument"/> right after its <c>[</c>.</param>
     /// <param name="lists">The serialized items of each array; they must not change while the document is pending.</param>
     /// <param name="itemBytes">
     /// The UTF-8 size of all items with a comma each, when the caller has counted it already; null to count it here.
     /// </param>
-    internal CanopyBundleDocument(string emptyDocument, int[] listStarts, IReadOnlyList<string>[] lists, long? itemBytes = null) {
+    internal CanopyBundleDocument(CanopyJsonWriter emptyDocument, int[] listStarts, IReadOnlyList<string>[] lists, long? itemBytes = null) {
         _texts = new string[listStarts.Length + 1];
+        long bytes = 0;
         var from = 0;
-        for (var index = 0; index < listStarts.Length; index++) {
-            _texts[index] = emptyDocument.Substring(from, listStarts[index] - from);
-            from = listStarts[index];
+        for (var index = 0; index <= listStarts.Length; index++) {
+            var to = index < listStarts.Length ? listStarts[index] : emptyDocument.Length;
+            _texts[index] = emptyDocument.ToString(from, to - from);
+            bytes += CanopyBundleContext.Utf8.GetByteCount(_texts[index]);
+            from = to;
         }
 
-        _texts[listStarts.Length] = emptyDocument.Substring(from);
         _lists = lists;
-        long bytes = CanopyBundleContext.Utf8.GetByteCount(emptyDocument);
         if (itemBytes.HasValue) {
             bytes += itemBytes.Value;
         }
@@ -62,17 +63,21 @@ internal sealed class CanopyBundleDocument {
     /// <param name="items">The serialized items of the page.</param>
     /// <param name="itemBytes">The UTF-8 size of the items with a comma each.</param>
     /// <param name="next">The reference of the next page of the list, or null for the last.</param>
-    internal static CanopyBundleDocument Page(string? parentId, int offset, int total, List<string> items, long itemBytes, string? next) {
-        var json = new CanopyJsonWriter(256);
-        PageStart(json, parentId, offset, total);
+    /// <param name="json">A writer to write the envelope with; it is reset first and can be reused afterwards.</param>
+    internal static CanopyBundleDocument Page(CanopyJsonWriter json, string? parentId, int offset, int total, List<string> items, long itemBytes, string? next) {
+        PageStart(json.Reset(), parentId, offset, total);
         var start = json.Length;
-        return new CanopyBundleDocument(PageEnd(json, next).ToString(), new[] { start }, new IReadOnlyList<string>[] { items }, itemBytes);
+        return new CanopyBundleDocument(PageEnd(json, next), new[] { start }, new IReadOnlyList<string>[] { items }, itemBytes);
     }
 
     /// <summary>The page document without items, for measuring the envelope a page can get.</summary>
-    internal static string PageEnvelope(string? parentId, int offset, int total, string? next) {
-        var json = new CanopyJsonWriter(256);
-        PageStart(json, parentId, offset, total);
+    /// <param name="json">A writer to write it with; it is reset first and can be reused afterwards.</param>
+    /// <param name="parentId">The id of the node whose children the page holds, or null for the top level.</param>
+    /// <param name="offset">The position of the first item in the whole list.</param>
+    /// <param name="total">The length of the whole list.</param>
+    /// <param name="next">The reference of the next page of the list, or null for the last.</param>
+    internal static string PageEnvelope(CanopyJsonWriter json, string? parentId, int offset, int total, string? next) {
+        PageStart(json.Reset(), parentId, offset, total);
         return PageEnd(json, next).ToString();
     }
 

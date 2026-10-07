@@ -60,6 +60,9 @@ internal sealed class CanopyBundleContext : IDisposable {
     /// <summary>The writer the bundle writer serializes nodes with, one after another, reusing its buffer.</summary>
     internal CanopyJsonWriter ItemWriter { get; } = new CanopyJsonWriter(1024);
 
+    /// <summary>The writer page envelopes are written with, one after another, reusing its buffer.</summary>
+    internal CanopyJsonWriter EnvelopeWriter { get; } = new CanopyJsonWriter(256);
+
     /// <summary>The bytes left for a file's items once its wrapper and its document without items are written.</summary>
     /// <param name="reference">A reference at least as long as any the file can get.</param>
     /// <param name="envelope">The document without items, with fields at least as long as any the file can get.</param>

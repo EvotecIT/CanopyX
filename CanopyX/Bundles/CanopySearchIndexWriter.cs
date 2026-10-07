@@ -309,7 +309,7 @@ internal sealed class CanopySearchIndexWriter {
         var stemStart = json.Length;
         json.EndArray().Name("entries").BeginArray();
         var entriesStart = json.Length;
-        return new CanopyBundleDocument(json.EndArray().EndObject().ToString(), new[] { stemStart, entriesStart }, new[] { stem, entries });
+        return new CanopyBundleDocument(json.EndArray().EndObject(), new[] { stemStart, entriesStart }, new[] { stem, entries });
     }
 
     /// <summary>
@@ -458,7 +458,7 @@ internal sealed class CanopySearchIndexWriter {
         var wordsStart = json.Length;
         json.EndArray().Name("postings").BeginArray();
         var postingsStart = json.Length;
-        return new CanopyBundleDocument(json.EndArray().EndObject().ToString(), new[] { wordsStart, postingsStart }, new IReadOnlyList<string>[] { part.Words, part.Lists });
+        return new CanopyBundleDocument(json.EndArray().EndObject(), new[] { wordsStart, postingsStart }, new IReadOnlyList<string>[] { part.Words, part.Lists });
     }
 
     /// <summary>
