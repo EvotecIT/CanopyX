@@ -39,7 +39,7 @@
         if (!entry.open) return;
         if (!body.drawn) {
           body.drawn = true;
-          try { render(body, { close: () => { menu.open = false; menu.firstChild.focus(); }, signal: this.lifetime.signal }); }
+          try { render(body, { close: () => { entry.open = false; menu.open = false; menu.firstChild.focus(); }, signal: this.lifetime.signal }); }
           catch (error) { body.drawn = false; body.replaceChildren(); this.emit("error", { error }); }
         }
         (body.querySelector(":is(input:not([type=hidden]),select,textarea,button):not(:disabled),[href],[tabindex]:not([tabindex=\"-1\"])") || summary).focus();

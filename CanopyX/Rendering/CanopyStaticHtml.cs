@@ -28,6 +28,16 @@ public static partial class CanopyStaticHtml {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule.</exception>
     public static string Render(CanopyView view, CanopyStaticHtmlOptions? options = null) {
+        return RenderWithResult(view, options).Html;
+    }
+
+    /// <summary>Renders an outline and captures the visible rows and pre-limit total from that same render pass.</summary>
+    /// <param name="view">The view; its inline tree is rendered whatever its source is.</param>
+    /// <param name="options">Row and depth limits, caption, overflow note, and theme.</param>
+    /// <returns>The outline markup, its rendered cell text, and the known tree row count before limits.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule.</exception>
+    public static CanopyStaticHtmlResult RenderWithResult(CanopyView view, CanopyStaticHtmlOptions? options = null) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
@@ -38,6 +48,7 @@ public static partial class CanopyStaticHtml {
         var rows = CollectRows(view, o, out var total, out var hiddenBelow, out var unknown);
         var styles = new CanopyStaticStyles(o);
         var html = new StringBuilder(256 + rows.Count * 160);
+        var printedRows = new List<IReadOnlyList<string>>(rows.Count);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
         var caption = o.Caption ?? view.Label;
         if (caption.Length > 0) {
@@ -58,9 +69,9 @@ public static partial class CanopyStaticHtml {
                 path.Add(node.Id);
             }
             if (node.Detail != null) {
-                AppendDetail(html, node, level, columns.Count, styles, view.Labels);
+                printedRows.Add(AppendDetail(html, node, level, columns.Count, styles, view.Labels));
             } else {
-                AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles, view.Labels, checks?.State(path));
+                printedRows.Add(AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles, view.Labels, checks?.State(path)));
             }
         }
 
@@ -79,7 +90,7 @@ public static partial class CanopyStaticHtml {
             html.Append("</td></tr></tbody>");
         }
 
-        return html.Append("</table>").ToString();
+        return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(), total, unknown);
     }
 
     /// <summary>
@@ -161,9 +172,11 @@ public static partial class CanopyStaticHtml {
         return count;
     }
 
-    private static void AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels, string? checkState) {
+    private static IReadOnlyList<string> AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels, string? checkState) {
+        var printedCells = new List<string>(columns.Count);
         html.Append("<tr>");
         for (var index = 0; index < columns.Count; index++) {
+            var text = new StringBuilder();
             var column = columns[index];
             CanopyCell? cell = null;
             var hasCell = node.HasCells && node.Cells.TryGetValue(column.Id, out cell);
@@ -183,50 +196,56 @@ public static partial class CanopyStaticHtml {
             html.Append('>');
             if (index == 0 && checkState != null) {
                 html.Append("<span role=\"checkbox\" aria-readonly=\"true\" aria-label=\"").Append(Encode(node.Label))
-                    .Append("\" aria-checked=\"").Append(checkState).Append("\" style=\"margin-right:6px;\">")
-                    .Append(checkState == "mixed" ? "▣" : checkState == "true" ? "☑" : "☐").Append("</span> ");
+                    .Append("\" aria-checked=\"").Append(checkState).Append("\" style=\"margin-right:6px;\">");
+                AppendVisibleText(html, checkState == "mixed" ? "▣" : checkState == "true" ? "☑" : "☐", text);
+                html.Append("</span> "); text.Append(' ');
             }
-            html.Append(Encode(index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty));
+            AppendVisibleText(html, index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty, text);
             if (index == 0 && node.HasBadges) {
-                AppendBadges(html, node.Badges, styles);
+                AppendBadges(html, node.Badges, styles, text);
             }
 
             if (index == 0 && hiddenBelow != 0) {
                 // -1 marks children a source would load without a declared count.
                 var count = hiddenBelow > 0 ? hiddenBelow.ToString("N0", options.Culture) : "?";
-                html.Append(" <span style=\"").Append(styles.Hidden).Append("\" title=\"").Append(Encode((options.HiddenRowsTitle ?? labels.HiddenRows).Replace("{count}", count))).Append("\">(+")
-                    .Append(hiddenBelow > 0 ? Encode(count) : string.Empty).Append(")</span>");
+                html.Append(" <span style=\"").Append(styles.Hidden).Append("\" title=\"").Append(Encode((options.HiddenRowsTitle ?? labels.HiddenRows).Replace("{count}", count))).Append("\">");
+                AppendVisibleText(html, "(+" + (hiddenBelow > 0 ? count : string.Empty) + ")", text, true);
+                html.Append("</span>");
             }
 
             if (cell != null && cell.HasBadges) {
-                AppendBadges(html, cell.Badges, styles);
+                AppendBadges(html, cell.Badges, styles, text);
             }
 
             html.Append("</td>");
+            printedCells.Add(text.ToString());
         }
 
         html.Append("</tr>");
+        return printedCells.AsReadOnly();
     }
 
-    private static void AppendBadges(StringBuilder html, IEnumerable<CanopyBadge> badges, CanopyStaticStyles styles) {
+    private static void AppendBadges(StringBuilder html, IEnumerable<CanopyBadge> badges, CanopyStaticStyles styles, StringBuilder? text = null) {
         foreach (var badge in badges) {
             html.Append("<span style=\"").Append(styles.Badge(badge.Tone)).Append('"');
             if (!string.IsNullOrEmpty(badge.Title)) {
                 html.Append(" title=\"").Append(Encode(badge.Title!)).Append('"');
             }
 
-            html.Append('>').Append(Encode(badge.Text)).Append("</span>");
+            html.Append('>'); AppendVisibleText(html, badge.Text, text, true); html.Append("</span>");
         }
     }
 
-    private static void AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount, CanopyStaticStyles styles, CanopyLabels labels) {
+    private static IReadOnlyList<string> AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount, CanopyStaticStyles styles, CanopyLabels labels) {
+        var text = new StringBuilder();
         html.Append("<tr><td colspan=\"").Append(columnCount).Append("\" style=\"").Append(styles.Detail)
             .Append("padding-left:").Append((level - 1) * IndentPixels + 8).Append("px;\">");
         switch (node.Detail) {
             case CanopyTableDetail table:
                 html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.InnerTable).Append("\">");
                 if (!string.IsNullOrEmpty(table.Caption)) {
-                    html.Append("<caption style=\"").Append(styles.DetailCaption).Append("\">").Append(Encode(table.Caption!)).Append("</caption>");
+                    html.Append("<caption style=\"").Append(styles.DetailCaption).Append("\">");
+                    AppendVisibleText(html, table.Caption!, text); html.Append("</caption>");
                 }
 
                 html.Append("<thead><tr>");
@@ -242,14 +261,14 @@ public static partial class CanopyStaticHtml {
                         html.Append("width:").Append((shares[column] * 100.0 / total).ToString("0.##", CultureInfo.InvariantCulture)).Append("%;");
                     }
 
-                    html.Append("\">").Append(Encode(table.Columns[column])).Append("</th>");
+                    html.Append("\">"); AppendVisibleText(html, table.Columns[column], text, true); html.Append("</th>");
                 }
 
                 html.Append("</tr></thead><tbody>");
                 foreach (var row in table.Rows) {
                     html.Append("<tr>");
                     foreach (var cell in row) {
-                        AppendInnerCell(html, cell, styles, labels);
+                        AppendInnerCell(html, cell, styles, labels, text);
                     }
 
                     html.Append("</tr>");
@@ -260,9 +279,9 @@ public static partial class CanopyStaticHtml {
             case CanopyPropertiesDetail properties:
                 html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.InnerTable).Append("\"><tbody>");
                 foreach (var item in properties.Items) {
-                    html.Append("<tr><th scope=\"row\" style=\"").Append(styles.PropertyName).Append("\">")
-                        .Append(Encode(item.Name)).Append("</th>");
-                    AppendInnerCell(html, item.Value, styles, labels);
+                    html.Append("<tr><th scope=\"row\" style=\"").Append(styles.PropertyName).Append("\">");
+                    AppendVisibleText(html, item.Name, text, true); html.Append("</th>");
+                    AppendInnerCell(html, item.Value, styles, labels, text);
                     html.Append("</tr>");
                 }
 
@@ -271,23 +290,30 @@ public static partial class CanopyStaticHtml {
             case CanopyHtmlDetail markup:
                 // Arbitrary host HTML can contain scripts, handlers, active URLs, or embedded frames. The fallback
                 // has no HTML parser dependency and preserves this payload as text to keep its script-free contract.
-                html.Append(Encode(markup.Html));
+                AppendVisibleText(html, markup.Html, text);
                 break;
         }
 
         html.Append("</td></tr>");
+        return Array.AsReadOnly(new[] { text.ToString() });
     }
 
-    private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticStyles styles, CanopyLabels labels) {
+    private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticStyles styles, CanopyLabels labels, StringBuilder text) {
         html.Append("<td style=\"").Append(styles.InnerCell).Append(styles.ToneColor(cell?.Tone ?? CanopyTone.None)).Append('"');
         if (!string.IsNullOrEmpty(cell?.Title)) {
             html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
         }
-        html.Append('>').Append(Encode(cell?.DisplayText(CanopyColumnKind.Text, labels) ?? string.Empty));
+        html.Append('>'); AppendVisibleText(html, cell?.DisplayText(CanopyColumnKind.Text, labels) ?? string.Empty, text, true);
         if (cell != null && cell.HasBadges) {
-            AppendBadges(html, cell.Badges, styles);
+            AppendBadges(html, cell.Badges, styles, text);
         }
         html.Append("</td>");
+    }
+
+    private static void AppendVisibleText(StringBuilder html, string value, StringBuilder? text, bool separate = false) {
+        html.Append(Encode(value));
+        if (separate && text != null && text.Length > 0 && value.Length > 0) text.Append(' ');
+        text?.Append(value);
     }
 
     private static string Align(CanopyColumn column) => column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty;

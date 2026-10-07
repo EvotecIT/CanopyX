@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {repo} from './support.mjs';
-const read=name=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',name),'utf8');
+// Shipped resources normalize checkout line endings before hashing and writing assets.
+const read=name=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',name),'utf8').replace(/\r\n/g,'\n');
 const script=read('canopyx-grid.js'),style=read('canopyx-grid.css'),editor=read('canopyx-filter-editor.js'),editorStyle=read('canopyx-filter-editor.css');
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex').slice(0,16);
 const version=editor.match(/version\s*:\s*"([a-f0-9]{16})"/)[1];

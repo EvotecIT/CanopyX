@@ -317,6 +317,7 @@ test("the header selection menu is layered above a short grid as well", async ({
   await page.locator(".cx-header-selection > summary").click();
   const panel = page.locator(".cx-header-selection > .cx-grid-panel");
   await expect(panel).toBeVisible();
+  await expect.poll(() => panel.evaluate(element => element.matches(":popover-open"))).toBe(true);
   expect(await panel.evaluate(element => element.matches(":popover-open") && element.contains(document.elementFromPoint(
     element.getBoundingClientRect().left + 20, element.getBoundingClientRect().bottom - 10)))).toBe(true);
   await page.keyboard.press("Escape"); await expect(page.locator(".cx-grid-panel:popover-open")).toHaveCount(0);

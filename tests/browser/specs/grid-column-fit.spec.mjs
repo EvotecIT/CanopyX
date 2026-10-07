@@ -120,6 +120,33 @@ test("long values keep their measured width before a short column keeps its pref
   expect(await domain()).toBeLessThan(200);
 });
 
+test("an automatic identity column gives up content width before forcing horizontal scrolling", async ({ page }) => {
+  const view = products(); view.rows[0].cells.name = "Workstation " + "branch-office-".repeat(12);
+  await mount(page, view, { width: 720 });
+  const geometry = await page.evaluate(() => {
+    const grid = document.querySelector(".cx-grid"), text = grid.querySelector('.cx-row[data-cx-id="p0"] .cx-text');
+    return { client: grid.clientWidth, scroll: grid.scrollWidth, clipped: text.scrollWidth > text.clientWidth,
+      headers: [...grid.querySelectorAll('.cx-sort,.cx-htext')].every(label => label.scrollWidth <= label.clientWidth + 1) };
+  });
+  expect(geometry.scroll).toBeLessThanOrEqual(geometry.client + 1);
+  expect(geometry.clipped).toBe(true); expect(geometry.headers).toBe(true);
+});
+
+test("maximum widths leave spare room and responsive hiding retains the last user-visible column", async ({ page }) => {
+  const view = products();
+  view.columns = ["name", "category"].map(id => ({ id, title: id, kind: "text", width: 80, autoSize: "none", maxWidth: 100 }));
+  for (const row of view.rows) row.cells = { name: row.cells.name, category: row.cells.category };
+  await mount(page, view, { width: 800 });
+  expect(await page.locator('.cx-hcell').evaluateAll(cells => cells.map(cell => cell.getBoundingClientRect().width))).toEqual([100, 100]);
+  await page.unrouteAll(); view.columns[1].width = 400; view.columns[1].minWidth = 400; view.columns[1].maxWidth = 500;
+  await mount(page, view, { width: 358, viewport: { width: 390, height: 844 } });
+  await page.evaluate(() => api().setColumnVisible('name', false)); await nextFrames(page);
+  await expect(page.locator('.cx-hcell')).toHaveCount(1);
+  expect(await headers(page)).toEqual(['category']);
+  expect(await page.locator('.cx-grid').evaluate(grid => grid.scrollWidth > grid.clientWidth)).toBe(true);
+  await expect(page.locator('.cx-row').first()).toBeVisible();
+});
+
 test("number headers align with their values and never truncate", async ({ page }) => {
   await mount(page, products(), { width: 1100 });
   const edges = await page.evaluate(() => {
@@ -246,7 +273,8 @@ test("scrollbars follow the theme through their custom properties", async ({ pag
   const colors = {};
   for (const theme of ["light", "dark"]) {
     await page.unrouteAll(); await mount(page, wide(), { width: 700, theme });
-    colors[theme] = await page.locator(".cx-grid").evaluate(grid => getComputedStyle(grid).scrollbarColor);
+    colors[theme] = await page.locator(".cx-grid").evaluate(grid => CSS.supports('scrollbar-color', 'red blue') ?
+      getComputedStyle(grid).scrollbarColor : getComputedStyle(grid, '::-webkit-scrollbar-thumb').backgroundColor);
     expect(colors[theme]).not.toBe("auto");
   }
   expect(colors.light).not.toBe(colors.dark);

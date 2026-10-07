@@ -13,7 +13,8 @@
 
   function gridButton(text, run) {
     const button = h("button", "cx-button"); button.type = "button"; setText(button, text);
-    button.addEventListener("click", run); return button;
+    // WebKit does not focus buttons on pointer activation. Keep subsequent menu keys with the clicked control.
+    button.onclick = event => { button.focus({ preventScroll: true }); run(event); }; return button;
   }
 
   function gridInputLabel(text, input) {
@@ -68,12 +69,6 @@
       setText(panel, this.labels.loading);
       try { await loadGridFilterEditor(); if (!this.destroyed && panel.parentElement.open) { this.renderGridColumns(panel); this.controlFlyouts.forEach(item => item.position()); } }
       catch (error) { if (!this.destroyed) { setText(panel, this.labels.gridLoadFailed); this.emit("error", { error }); } }
-    },
-    // A moved column joins the pinned group of the column it lands next to, as header moves do.
-    moveColumnChoice(column, target, after) {
-      column.pin = target.pin;
-      const ids = this.columns.map(item => item.id).filter(id => id !== column.id);
-      ids.splice(ids.indexOf(target.id) + after, 0, column.id); this.setColumnOrder(ids);
     },
     showAllColumns() {
       for (const column of this.columns) column.hidden = false;

@@ -2,9 +2,9 @@
   const FILTER_EDITOR_VERSION="__CX_FILTER_VERSION__",FILTER_EDITOR_SCRIPT="__CX_FILTER_SCRIPT__",FILTER_EDITOR_STYLE="__CX_FILTER_STYLE__";
   const FILTER_RUNTIME_URL=typeof document!=="undefined"&&document.currentScript?.src;
   let filterEditorReady;
-  function gridFilterEditorContext(){return {DataGrid,h,setText,setAttr,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
-    GRID_FILTER_LABELS,gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
-    reachable,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER,
+  function gridFilterEditorContext(){return {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
+    GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
+    reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,
     GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null};}
   function loadGridFilterEditor(){
     if(filterEditorReady)return filterEditorReady;
@@ -39,12 +39,8 @@
       catch(error){if(!this.destroyed&&panel.isConnected){setText(panel,this.labels.gridLoadFailed);panel.appendChild(gridButton(this.labels.gridRetry,()=>this.renderGridFilters(panel)));this.emit("error",{error});}}
     },
     async showReportingText(...args){const epoch=this.queryEpoch;try{await loadGridFilterEditor();if(!this.destroyed&&epoch===this.queryEpoch)this.showReportingText(...args);}catch(error){this.emit("error",{error});}},
-    async openColumnMenu(id,anchor){
-      try{await loadGridFilterEditor();if(!this.destroyed)this.openColumnMenu(id,anchor?.isConnected?anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]'));}
-      catch(error){this.setNotice(this.labels.gridLoadFailed,true);this.emit("error",{error});}
-    },
-    async openColumnFilter(id,anchor){
-      try{await loadGridFilterEditor();if(!this.destroyed)this.openColumnFilter(id,anchor?.isConnected?anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]'));}
-      catch(error){this.setNotice(this.labels.gridLoadFailed,true);this.emit("error",{error});}
-    }
   });
+  for(const method of ["openColumnMenu","openColumnFilter"])DataGrid.prototype[method]=async function(id,anchor){
+    try{await loadGridFilterEditor();if(!this.destroyed)this[method](id,anchor?.isConnected?anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]'));}
+    catch(error){this.setNotice(this.labels.gridLoadFailed,true);this.emit("error",{error});}
+  };

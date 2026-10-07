@@ -13,7 +13,7 @@
     const paint=(row,position)=>{
       record=row;index=position;setText(title,cellText(row.cells[primary.id],primary,this.fmt)||row.id);
       const options=primary.presenter||this.view.reporting?.presenters?.[primary.id];
-      setText(subtitle,isCellObject(row.cells[primary.id])&&row.cells[primary.id].secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||row.id);
+      setText(subtitle,row.cells[primary.id]?.secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||row.id);
       previous.disabled=index<=0||this.cursor&&index<=this.rowBounds().first;next.disabled=index>=this.rowCount()-1;
       body.replaceChildren();const sections=new Map();
       for(const column of this.columns){const name=column.section||this.labels.gridDetailsSection;

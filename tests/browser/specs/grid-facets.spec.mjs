@@ -151,3 +151,31 @@ test('accepted criteria changes close outdated value lists; unsupported facets k
  await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.setQuery({search:'Beta'}));await expect(pop).toHaveCount(0);const next=await editor(page);await expect(next.locator('.cx-facet-value')).toHaveText('Beta');
  await open(page,{},hostSetup.replace('facet(request,{signal})','unsupported(request,{signal})'),true);const fallback=await editor(page);await expect(fallback.getByRole('textbox',{name:'Value',exact:true})).toBeVisible();await expect(fallback.locator('.cx-val')).toHaveCount(0);
 });
+
+for (const condition of [filter('category','ne','item-005'),filter('category','contains','item-2'),
+  group('or',[filter('category','startsWith','item-0'),filter('category','startsWith','item-2')])])
+test('editing a bounded facet preserves unseen values of '+(condition.operator),async({page})=>{
+ const rows=Array.from({length:250},(_,i)=>({id:'v'+i,cells:{category:'item-'+String(i).padStart(3,'0'),amount:i}}));
+ await open(page);await page.evaluate(async({rows,condition})=>{
+  const host=document.querySelector('[data-canopyx-host]'),view=host.canopyx.view;host.canopyx.destroy();
+  view.rows=rows;view.query=condition.groups?{filterGroup:condition}:condition.operator==='ne'?
+   {filterGroup:{operator:'and',filters:[condition,{column:'amount',operator:'ge',values:[0]}],groups:[]}}:{filters:[condition]};await CanopyX.createDataGrid(host,{view}).ready;
+ },{rows,condition});
+ const ids=()=>page.evaluate(async()=>{const rows=[];for await(const row of document.querySelector('[data-canopyx-host]').canopyx.prepareExport({scope:'filtered'}).rows())rows.push(row.id);return rows;});
+ const before=await ids(),pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(200);
+ const remove=condition.operator==='contains'?'item-200':'item-010';
+ if(condition.operator==='contains')await pop.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
+ const choice=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
+ await choice.uncheck();await pop.getByRole('button',{name:'Done',exact:true}).click();
+ expect(await ids()).toEqual(before.filter(id=>id!=='v'+Number(remove.slice(5))));
+ expect(await ids()).toContain('v249');
+ const reopened=await editor(page);await reopened.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
+ const restore=reopened.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
+ await restore.check();await reopened.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
+ if(condition.operator==='ne')for(let i=0;i<9;i++){
+  const current=await editor(page),check=current.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input');
+  await check.uncheck();await current.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before.filter(id=>id!=='v10'));
+  const again=await editor(page);await again.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input').check();
+  await again.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
+ }
+});

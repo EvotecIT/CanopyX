@@ -66,16 +66,17 @@
       // short columns keep their declared one), then content slack down to the floors.
       let total = 0, target;
       for (const column of cols) total += column.renderWidth = this.fitSize(column);
-      for (const level of [2, 1]) if (width && total > width) {
+      for (const level of [2, 1, 0]) if (width && total > width) {
         let slack = 0;
         for (const column of cols) slack += column.renderWidth - this.fitSize(column, level);
+        if (!level && slack < total - width) continue;
         const share = Math.min(1, (total - width) / slack || 0); total = 0;
         for (const column of cols) total += column.renderWidth -= (column.renderWidth - this.fitSize(column, level)) * share;
       }
       if (width && total < width) target = this.fitSpare(cols.filter(column => !column.fixed && !column.sized), width - total);
       total = 0;
       for (const column of cols) total += column.renderWidth = Math.floor(column.renderWidth);
-      if (target && width > total) target.renderWidth += width - total;
+      if (target) target.renderWidth += Math.min(width - total, target.maxW - target.renderWidth);
       FIT.applyWidths.call(this, cols.map(column => column.renderWidth));
     },
     fitManual(column) { column.width = column.renderWidth ?? column.width; column.sized = true; },
@@ -83,6 +84,9 @@
     // (level 1): essential columns keep their content width.
     fitSize(column, level) {
       const need = column.need ?? column.width;
+      // The default identity yields last, only when that can avoid scrolling. Explicit or user-sized widths stay.
+      if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
+        Math.max(column.minW, column.headNeed || 0) : column.renderWidth;
       return Math.round(Math.min(column.maxW, Math.max(column.minW, column.fixed || column.sized ? column.width : !level ? Math.max(need, column.pref) : level > 1 || !gridLevel(column) ? need :
         Math.min(need, Math.max(column.headNeed || 0, gridTextual(this, column) ? this.fitCh || 88 : 0)))));
     },
@@ -115,12 +119,12 @@
       }
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
       for (const column of this.columns) if (!column.fixed && !column.sized) column.width = this.fitSize(column);
-      let total = 0;
+      let total = 0, remaining = shown.length;
       for (const column of this.columns) column.fitHidden = false;
       for (const column of shown) total += this.fitSize(column, 1);
       for (const column of shown.filter(column => column.pin === "none" && !column.sized && !this.columnLayouts?.get(column.id)?.alwaysVisible &&
           gridLevel(column) > !phone).sort((a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a)))
-        if (total > width) { column.fitHidden = true; total -= this.fitSize(column, 1); }
+        if (total > width && remaining > 1) { column.fitHidden = true; total -= this.fitSize(column, 1); remaining--; }
     },
     measureGridColumn(column) {
       const context = this.fitContext ||= document.createElement("canvas").getContext("2d"), query = this.acceptedQuery;

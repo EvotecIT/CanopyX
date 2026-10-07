@@ -39,7 +39,11 @@ export async function openGridControl(page, kind) {
   const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');
   if (!await summary.isVisible()) await page.locator('.cx-grid-overflow > summary').click();
   if (!await control.evaluate(element => element.open)) await summary.click();
-  if (kind === 'filters') await control.getByRole('button', { name: 'Done', exact: true }).waitFor();
+  if (kind === 'filters') {
+    // Native details toggles are queued. Wait for the newly opened panel before editing its form from a prior open.
+    await control.locator(':scope > .cx-grid-panel:popover-open').waitFor();
+    await control.getByRole('button', { name: 'Done', exact: true }).waitFor();
+  }
 }
 
 /** Done flushes the live editor immediately; optionally reopen it for the next edit. */

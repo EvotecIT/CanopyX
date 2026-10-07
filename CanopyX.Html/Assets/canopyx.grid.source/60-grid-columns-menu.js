@@ -1,6 +1,12 @@
   // ---------- Columns menu body (optional editor): find, show or hide, and reorder by handle or Alt+Up/Down ----------
   // Pinning, fitting and width live in each header's own menu, so a row here holds a handle, a checkbox and a label.
   Object.assign(DataGrid.prototype, {
+    // A moved column joins the pinned group of the column it lands next to, as header moves do.
+    moveColumnChoice(column, target, after) {
+      column.pin = target.pin;
+      const ids = this.columns.map(item => item.id).filter(id => id !== column.id);
+      ids.splice(ids.indexOf(target.id) + after, 0, column.id); this.setColumnOrder(ids);
+    },
     renderGridColumns(panel) {
       if (!this.columnList) {
         const find = this.columnFind = h("input", "cx-grid-column-find"), actions = h("div", "cx-grid-column-actions");
@@ -20,7 +26,8 @@
       for (const column of this.columns) {
         const row = h("div", "cx-grid-column-choice"), label = h("label"), input = h("input"), name = h("span", "cx-grid-column-name"), handle = h("button", "cx-grid-column-handle"),
           note = column.fitHidden || column.responsiveHidden ? this.labels.gridResponsiveHidden : column.pin === "left" ? this.labels.gridPinnedLeft : column.pin === "right" ? this.labels.gridPinnedRight : "";
-        input.type = "checkbox"; input.checked = !column.hidden; input.disabled = !column.hidden && last; input.onchange = () => this.setColumnVisible(column.id, input.checked);
+        input.type = "checkbox"; input.checked = !column.hidden; input.disabled = !column.hidden && last;
+        input.onchange = () => { input.focus({ preventScroll: true }); this.setColumnVisible(column.id, input.checked); };
         setText(name, name.title = column.title); handle.type = "button"; setText(handle, "⋮⋮");
         handle.setAttribute("aria-label", fill(this.labels.gridReorderColumn, { column: column.title }));
         label.append(input, name); row.append(handle, label); row.hidden = !!query && !foldText(column.title).includes(query);

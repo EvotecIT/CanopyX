@@ -292,9 +292,9 @@ $editorHeader = @'
 const installed = new WeakSet();
 global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
 if (installed.has(context.DataGrid.prototype)) return;
-const {DataGrid,h,setText,setAttr,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
-GRID_FILTER_LABELS,gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
-reachable,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER,reportingRangeRows} = context;
+const {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
+GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
+reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,reportingRangeRows} = context;
 const buildFilters = DataGrid.prototype.buildGridFilters;
 '@
 $editorFooter = @'

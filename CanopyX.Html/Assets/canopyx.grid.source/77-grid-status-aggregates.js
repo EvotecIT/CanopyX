@@ -4,8 +4,7 @@
       setText(this.statusAggregates,this.labels.loading);
       try{
         const totals=new Map(columns.map(column=>[column.id,{count:0,sum:0,min:Infinity,max:-Infinity}]));let read=0;
-        const inline=this.view.source.kind==="inline",rows=inline?(this.querySelection?gridQueryRows(this.view,this.querySelection.query,new Map(this.view.columns.map(column=>[column.id,column])),false).filter(row=>!this.selectionExcluded.has(row.id)):this.view.rows.filter(row=>this.selected.has(row.id))):null;
-        const selected=rows||this.prepareExport({scope:"selected",columns:columns.map(column=>column.id),values:"raw",signal}).rows();
+        const selected=this.prepareExport({scope:"selected",columns:columns.map(column=>column.id),signal}).rows();
         for await(const row of selected){
           if(++read>50000)throw new Error(this.labels.gridUnknownCount);
           for(const column of columns){const value=cellValue(row.cells[column.id]);if(typeof value!=="number")continue;

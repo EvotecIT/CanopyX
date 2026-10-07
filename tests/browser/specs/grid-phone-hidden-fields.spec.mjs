@@ -11,7 +11,7 @@ const columns = [
 ];
 const rows = Array.from({ length: 40 }, (_, i) => ({
   id: "r" + i,
-  cells: { name: i === 1 ? "server-01.branch-office.corp.example.com" : "server-" + String(i).padStart(2, "0"), state: i % 3 ? "Pass" : "Fail", amount: i % 5, note: "Note " + i }
+  cells: { name: i === 1 ? "server-01.branch-office.production-region.internal.corp.example.com" : "server-" + String(i).padStart(2, "0"), state: i % 3 ? "Pass" : "Fail", amount: i % 5, note: "Note " + i }
 }));
 
 // A host renderer draws the first cell into the fresh element it gets on every paint.

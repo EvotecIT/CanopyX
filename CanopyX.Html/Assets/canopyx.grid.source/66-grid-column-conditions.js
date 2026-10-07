@@ -1,12 +1,11 @@
   function gridDateInput(value,local){const date=new Date(value);return Number.isFinite(date.getTime())?new Date(date.getTime()-(local?date.getTimezoneOffset()*60000:0)).toISOString().slice(0,19):"";}
   const GRID_DATE_PRESETS=[["today","gridToday"],["yesterday","gridYesterday"],["last7","gridLastSevenDays"],["last30","gridLastThirtyDays"],["month","gridThisMonth"]];
   function gridDatePreset(local,preset){
-    const start=new Date(),end=new Date();
-    if(local){start.setHours(0,0,0,0);end.setHours(0,0,0,0);end.setDate(end.getDate()+1);}
-    else{start.setUTCHours(0,0,0,0);end.setUTCHours(0,0,0,0);end.setUTCDate(end.getUTCDate()+1);}
-    const shift=(date,days)=>local?date.setDate(date.getDate()+days):date.setUTCDate(date.getUTCDate()+days);
+    const start=new Date(),end=new Date(),zone=local?"":"UTC",
+      get=(date,part)=>date["get"+zone+part](),set=(date,part,...values)=>date["set"+zone+part](...values),shift=(date,days)=>set(date,"Date",get(date,"Date")+days);
+    set(start,"Hours",0,0,0,0);set(end,"Hours",0,0,0,0);shift(end,1);
     if(preset==="yesterday"){shift(start,-1);shift(end,-1);}else if(preset==="last7")shift(start,-6);else if(preset==="last30")shift(start,-29);
-    else if(preset==="month"){if(local){start.setDate(1);end.setTime(start.getTime());end.setMonth(start.getMonth()+1,1);}else{start.setUTCDate(1);end.setTime(start.getTime());end.setUTCMonth(start.getUTCMonth()+1,1);}}
+    else if(preset==="month"){set(start,"Date",1);end.setTime(start.getTime());set(end,"Month",get(end,"Month")+1,1);}
     return [start.toISOString(),end.toISOString()];
   }
   DataGrid.prototype.renderColumnConditions=function(column,body,clauses,apply,error){
