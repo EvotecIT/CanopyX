@@ -52,6 +52,8 @@ internal sealed class CanopySearchIndexWriter {
     /// fits the file budget.
     /// </summary>
     private readonly int _packOverhead;
+    /// <summary>The writer entries are serialized with, one after another, reusing its buffer.</summary>
+    private readonly CanopyJsonWriter _scratch = new CanopyJsonWriter(256);
     private Level? _last;
     private int _numbered;
     private int _topPlaced;
@@ -321,12 +323,12 @@ internal sealed class CanopySearchIndexWriter {
     /// only the part between them is written. Path-style ids share a prefix with their parent and distinguished names
     /// share a suffix, so neither repeats on every level.
     /// </summary>
-    private static string Body(Entry entry, Level node, string parentId) {
+    private string Body(Entry entry, Level node, string parentId) {
         SharedAffixes(parentId, node.Id, out var head, out var tail);
-        var json = new CanopyJsonWriter(96);
+        var json = _scratch.Reset();
         json.BeginArray().Number(entry.Parent?.Number ?? -1).Number(head).String(node.Id.Substring(head, node.Id.Length - head - tail)).Number(tail).String(node.Label);
-        var body = json.EndArray().ToString();
-        return body.Substring(1, body.Length - 2);
+        json.EndArray();
+        return json.ToString(1, json.Length - 2);
     }
 
     /// <summary>
@@ -335,8 +337,8 @@ internal sealed class CanopySearchIndexWriter {
     /// <c>page</c> the reference of the page that holds the node, each only when it is in another file (see <see cref="Place"/>). A field
     /// without a value is null, and trailing nulls are left out.
     /// </summary>
-    private static string Serialize(Entry entry, bool withNumber) {
-        var json = new CanopyJsonWriter(entry.Body.Length + 48);
+    private string Serialize(Entry entry, bool withNumber) {
+        var json = _scratch.Reset();
         json.BeginArray();
         if (withNumber) {
             json.Number(entry.Number);

@@ -136,7 +136,7 @@ public sealed class CanopyBundleWriter {
         // Top-level nodes are paged as they are finished, so the search index learns the page of each at once.
         var top = new Pager(Options.PageSize, RootPageBudget(context));
         try {
-            open.Push(new Level(null, roots.GetEnumerator()));
+            open.Push(new Level(null, roots.GetEnumerator(), 0));
             while (open.Count > 0) {
                 var level = open.Peek();
                 if (level.Nodes.MoveNext()) {
@@ -147,9 +147,9 @@ public sealed class CanopyBundleWriter {
                     var children = node.HasInlineChildren ? node.ChildNodes : incoming?.ChildrenOf(node);
                     if (children != null) {
                         index?.Open();
-                        open.Push(new Level(node, children.GetEnumerator()));
+                        open.Push(new Level(node, children.GetEnumerator(), node.HasInlineChildren ? node.ChildNodes.Count : 0));
                     } else {
-                        AddItem(level, Serialize(node, null, 0), top, index);
+                        AddItem(level, Serialize(context, node, null, 0), top, index);
                     }
 
                     continue;
@@ -163,7 +163,7 @@ public sealed class CanopyBundleWriter {
                     // A node whose children turned out to be an empty sequence is a leaf.
                     var pages = level.Items.Count > 0 ? WritePackedPages(context, packs, level.Node.Id, level.Items) : null;
                     index?.Close(pages);
-                    AddItem(open.Peek(), Serialize(level.Node, pages?[0].Reference, level.Items.Count), top, index);
+                    AddItem(open.Peek(), Serialize(context, level.Node, pages?[0].Reference, level.Items.Count), top, index);
                 }
             }
         } finally {
@@ -179,8 +179,8 @@ public sealed class CanopyBundleWriter {
         }
     }
 
-    private static string Serialize(CanopyNode node, string? childrenReference, int childCount) {
-        var item = new CanopyJsonWriter(256);
+    private static string Serialize(CanopyBundleContext context, CanopyNode node, string? childrenReference, int childCount) {
+        var item = context.ItemWriter.Reset();
         node.WriteBundleItem(item, childrenReference, childCount);
         return item.ToString();
     }
@@ -318,9 +318,13 @@ public sealed class CanopyBundleWriter {
 
     /// <summary>The children of one open node (or the top level) while their subtrees are written.</summary>
     private sealed class Level {
-        internal Level(CanopyNode? node, IEnumerator<CanopyNode> nodes) {
+        /// <param name="node">The node whose children these are, or null for the top level.</param>
+        /// <param name="nodes">The children.</param>
+        /// <param name="count">How many children there are, when that is known; zero otherwise.</param>
+        internal Level(CanopyNode? node, IEnumerator<CanopyNode> nodes, int count) {
             Node = node;
             Nodes = nodes;
+            Items = new List<string>(count);
         }
 
         /// <summary>Gets the node whose children these are, or null for the top level.</summary>
@@ -329,7 +333,7 @@ public sealed class CanopyBundleWriter {
         internal IEnumerator<CanopyNode> Nodes { get; }
 
         /// <summary>Gets the serialized children finished so far.</summary>
-        internal List<string> Items { get; } = new List<string>();
+        internal List<string> Items { get; }
     }
 
     /// <summary>

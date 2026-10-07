@@ -18,7 +18,7 @@ namespace CanopyX.Json;
 /// <c>$</c> before <c>{</c>, so a document can sit inside a JavaScript template literal unchanged (bundle packs).
 /// </para>
 /// <para>
-/// A writer either collects the document as text (<see cref="ToString"/>), passes it on to a
+/// A writer either collects the document as text (<see cref="ToString()"/>), passes it on to a
 /// <see cref="TextWriter"/> in pieces (<see cref="Streaming"/>), so a large document is never held whole, or
 /// writes nothing at all (<see cref="Discarding"/>), which runs every check of a document's writer without building
 /// its text. All three produce, or would produce, the same characters.
@@ -220,6 +220,21 @@ internal sealed class CanopyJsonWriter {
     }
 
     public override string ToString() => _builder?.ToString() ?? string.Empty;
+
+    /// <summary>Returns part of the text written so far, without the rest.</summary>
+    internal string ToString(int start, int length) => _builder?.ToString(start, length) ?? string.Empty;
+
+    /// <summary>
+    /// Empties a writer that collects text so it can write the next document, keeping its buffer: a writer that
+    /// serializes many small documents one after another then allocates only their strings.
+    /// </summary>
+    internal CanopyJsonWriter Reset() {
+        _builder?.Clear();
+        _depth = 0;
+        _afterPropertyName = false;
+        _hasRoot = false;
+        return this;
+    }
 
     private void Push() {
         if (_depth == _hasItems.Length) {
