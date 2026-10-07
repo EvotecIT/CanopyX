@@ -175,6 +175,7 @@ public sealed class CanopyView {
     /// the same bytes as <see cref="Encoding.UTF8"/> gives for <see cref="ToJson()"/>, written in pieces, so the
     /// document of a large tree is never held whole. Use it to hash or store the document.
     /// </summary>
+    /// <remarks>The view is checked before anything is written; a stream that fails while it is written keeps what it received.</remarks>
     /// <param name="stream">The stream to write to. It is left open.</param>
     /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
@@ -201,6 +202,7 @@ public sealed class CanopyView {
     /// Writes the <c>view</c> document of the <c>canopyx/2</c> protocol to a text writer: the characters of
     /// <see cref="ToJson()"/>, written in pieces, so the document of a large tree is never held whole.
     /// </summary>
+    /// <remarks>The view is checked before anything is written; a writer that fails while it is written keeps what it received.</remarks>
     /// <param name="writer">The writer. It is not flushed or closed.</param>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>

@@ -95,8 +95,11 @@ internal sealed class CanopyBundleContext : IDisposable {
     /// pieces that never split a surrogate pair, and parts are whole JSON values or ASCII, so the bytes are those of
     /// <see cref="Utf8"/> for the whole file.
     /// </summary>
-    internal long WriteFile(string reference, IEnumerable<string> documentParts) =>
-        Write(PathOf(reference), WrapperStart(reference), documentParts, _encoded ??= NewBuffer());
+    /// <exception cref="IOException">An earlier file of the background thread could not be written.</exception>
+    internal long WriteFile(string reference, IEnumerable<string> documentParts) {
+        _failure?.Throw();
+        return Write(PathOf(reference), WrapperStart(reference), documentParts, _encoded ??= NewBuffer());
+    }
 
     /// <summary>
     /// Writes one sidecar script whose parts no longer change, on the background thread once a few files have been
@@ -223,8 +226,9 @@ internal sealed class CanopyBundleContext : IDisposable {
     private string PathOf(string reference) {
         var path = Path.Combine(DataDirectory, reference.Replace('/', Path.DirectorySeparatorChar) + ".js");
         var directory = Path.GetDirectoryName(path)!;
-        if (_directories.Add(directory)) {
+        if (!_directories.Contains(directory)) {
             Directory.CreateDirectory(directory);
+            _directories.Add(directory);
         }
 
         return path;

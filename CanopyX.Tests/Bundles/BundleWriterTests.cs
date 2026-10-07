@@ -329,7 +329,8 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
             Directory.CreateDirectory(blocked);
             var options = new CanopyBundleOptions { DataPath = "data", ChildPackBytes = 16 * 1024 };
 
-            Assert.ThrowsAny<Exception>(() => new CanopyBundleWriter(options).Write(view, directory));
+            var error = Assert.ThrowsAny<Exception>(() => new CanopyBundleWriter(options).Write(view, directory));
+            Assert.True(error is UnauthorizedAccessException || error is IOException, "The file system error is reported: " + error);
             Assert.False(File.Exists(Path.Combine(directory, "data", "manifest.js")));
             Assert.True(File.Exists(Path.Combine(directory, "data", "p", "8.js")), "The packs before the failure are written.");
         } finally {

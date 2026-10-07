@@ -117,15 +117,22 @@ public sealed class CanopyBundleWriter {
         var dataDirectory = Path.GetFullPath(Path.Combine(outputDirectory, dataPath.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar)));
         var result = new CanopyBundleResult(CanopySource.Sidecar(dataPath), dataDirectory);
         using (var context = new CanopyBundleContext(view, Options, dataDirectory, result)) {
-            var index = view.Search != null ? new CanopySearchIndexWriter(context, new CanopySearchIndex()) : null;
-            var packs = new CanopyBundlePacks(context, CanopyBundleLayout.Pack, Options.ChildPackBytes);
-            WriteTree(context, packs, index, roots, incoming);
-            packs.Flush();
-            result.PackCount = packs.Count;
-            index?.Write();
-            // Every other file is written before the manifest, which is what makes the bundle readable.
-            context.Complete();
-            WriteManifest(context, index);
+            try {
+                var index = view.Search != null ? new CanopySearchIndexWriter(context, new CanopySearchIndex()) : null;
+                var packs = new CanopyBundlePacks(context, CanopyBundleLayout.Pack, Options.ChildPackBytes);
+                WriteTree(context, packs, index, roots, incoming);
+                packs.Flush();
+                result.PackCount = packs.Count;
+                index?.Write();
+                // Every other file is written before the manifest, which is what makes the bundle readable.
+                context.Complete();
+                WriteManifest(context, index);
+            } catch {
+                // A file the background thread failed to write was handed over before this failure, so writing it
+                // in turn would have failed first: report that failure.
+                context.Complete();
+                throw;
+            }
         }
 
         return result;
