@@ -318,6 +318,34 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
         }
     }
 
+    [Fact]
+    public void Write_Search_LabelWithARepeatedWord_IsFiledUnderItOnce() {
+        // A posting list names each node once and stays strictly ascending, also when a label repeats a word in
+        // another case or a word repeats across consecutive nodes.
+        var view = new CanopyView("repeat", "Repeat") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var labels = new[] { "File file FILE", "file", "Other", "file-file 7 7", "Ölfile öLFILE ölfile" };
+        for (var index = 0; index < labels.Length; index++) {
+            view.Roots.Add(new CanopyNode("n" + index, labels[index]));
+        }
+
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-repeat-" + Guid.NewGuid().ToString("N"));
+        try {
+            var result = new CanopyBundleWriter().Write(view, directory);
+            var reader = new SearchIndexReader(new SidecarFiles(result.DataDirectory, view.Id));
+            Assert.Equal(new[] { 0, 1, 3 }, reader.Find("file"));
+            Assert.Equal(new[] { 3 }, reader.Find("7"));
+            Assert.Equal(new[] { 4 }, reader.Find("\u00f6lfile"));
+            foreach (var key in reader.Shards.Keys) {
+                foreach (var list in reader.Shard(key)["postings"]!.AsArray()) {
+                    var postings = SearchIndexReader.Decode(list!.AsArray());
+                    Assert.Equal(postings.Distinct().OrderBy(number => number), postings);
+                }
+            }
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
     [Theory]
     [InlineData("Budget 2026", "\0108bf3fa")]
     [InlineData("  (Budget 2026). ", "\0108bf3fa")]
