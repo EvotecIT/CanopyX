@@ -23,7 +23,7 @@ Version 2 introduces packed child pages and the word/posting search index with s
 
 | `type` | Written by | Read when |
 | --- | --- | --- |
-| `view` | `CanopyView.ToJson()` | The page loads; it defines columns, behavior, the data source, and inline nodes |
+| `view` | `CanopyView.ToJson()`, or `CanopyView.WriteJson(stream)` for the same bytes without the whole string | The page loads; it defines columns, behavior, the data source, and inline nodes |
 | `grid` | `CanopyGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |

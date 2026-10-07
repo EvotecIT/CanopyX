@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace CanopyX.Json;
@@ -17,33 +18,50 @@ namespace CanopyX.Json;
 /// <c>$</c> before <c>{</c>, so a document can sit inside a JavaScript template literal unchanged (bundle packs).
 /// </para>
 /// <para>
-/// A writer either collects the document as text (<see cref="ToString"/>) or writes nothing at all
-/// (<see cref="Discarding"/>), which runs every check of a document's writer without building its text.
+/// A writer either collects the document as text (<see cref="ToString"/>), passes it on to a
+/// <see cref="TextWriter"/> in pieces (<see cref="Streaming"/>), so a large document is never held whole, or
+/// writes nothing at all (<see cref="Discarding"/>), which runs every check of a document's writer without building
+/// its text. All three produce, or would produce, the same characters.
 /// </para>
 /// </remarks>
 internal sealed class CanopyJsonWriter {
+    /// <summary>The text collected before a streaming writer passes it on.</summary>
+    private const int StreamChunk = 16 * 1024;
+
     private static readonly char[] Hex = "0123456789abcdef".ToCharArray();
 
     /// <summary>The ASCII characters <see cref="AppendString"/> escapes; <c>$</c> only before <c>{</c>.</summary>
     private static readonly bool[] EscapedAscii = CreateEscapedAscii();
 
     private readonly StringBuilder? _builder;
+    private readonly TextWriter? _sink;
     /// <summary>Whether each open array or object, innermost last, holds an item yet.</summary>
     private bool[] _hasItems = new bool[16];
     private int _depth;
     private bool _afterPropertyName;
     private bool _hasRoot;
+#if !NETCOREAPP3_0_OR_GREATER
+    /// <summary>The buffer a streaming writer copies its text through on frameworks without span writes.</summary>
+    private char[]? _copy;
+#endif
 
     internal CanopyJsonWriter(int capacity = 256) {
         _builder = new StringBuilder(capacity);
     }
 
-    private CanopyJsonWriter(StringBuilder? builder) {
+    private CanopyJsonWriter(StringBuilder? builder, TextWriter? sink) {
         _builder = builder;
+        _sink = sink;
     }
 
+    /// <summary>
+    /// A writer that passes its text to <paramref name="sink"/> in pieces of about 16K characters. Call
+    /// <see cref="Complete"/> after the last value.
+    /// </summary>
+    internal static CanopyJsonWriter Streaming(TextWriter sink) => new CanopyJsonWriter(new StringBuilder(StreamChunk + 1024), sink ?? throw new ArgumentNullException(nameof(sink)));
+
     /// <summary>A writer that checks what it is given and writes nothing, for validation that needs no text.</summary>
-    internal static CanopyJsonWriter Discarding() => new CanopyJsonWriter(null);
+    internal static CanopyJsonWriter Discarding() => new CanopyJsonWriter(null, null);
 
     internal int Length => _builder?.Length ?? 0;
 
@@ -57,6 +75,7 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter EndObject() {
         Pop();
         _builder?.Append('}');
+        PassOn();
         return this;
     }
 
@@ -70,6 +89,7 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter EndArray() {
         Pop();
         _builder?.Append(']');
+        PassOn();
         return this;
     }
 
@@ -192,6 +212,13 @@ internal sealed class CanopyJsonWriter {
     /// <summary>Writes the protocol envelope shared by every top-level document.</summary>
     internal CanopyJsonWriter Envelope(string type) => Property("protocol", CanopyProtocol.Version).Property("type", type);
 
+    /// <summary>Passes the text a streaming writer still holds on to its sink.</summary>
+    internal void Complete() {
+        if (_sink != null && _builder!.Length > 0) {
+            Flush();
+        }
+    }
+
     public override string ToString() => _builder?.ToString() ?? string.Empty;
 
     private void Push() {
@@ -230,6 +257,28 @@ internal sealed class CanopyJsonWriter {
         } else {
             _hasItems[_depth - 1] = true;
         }
+    }
+
+    /// <summary>Hands a streaming writer's text to its sink once a piece is full; called where a value ends.</summary>
+    private void PassOn() {
+        if (_sink != null && _builder!.Length >= StreamChunk) {
+            Flush();
+        }
+    }
+
+    private void Flush() {
+#if NETCOREAPP3_0_OR_GREATER
+        _sink!.Write(_builder!);
+#else
+        var builder = _builder!;
+        _copy ??= new char[StreamChunk + 1024];
+        for (var start = 0; start < builder.Length; start += _copy.Length) {
+            var count = Math.Min(_copy.Length, builder.Length - start);
+            builder.CopyTo(start, _copy, 0, count);
+            _sink!.Write(_copy, 0, count);
+        }
+#endif
+        _builder!.Clear();
     }
 
     /// <summary>

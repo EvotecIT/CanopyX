@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -14,6 +16,8 @@ namespace CanopyX;
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
 public sealed class CanopyView {
+    private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
+
     private int _rowHeight = 28;
     private int _pageSize = 100;
     private CanopySource _source = CanopySource.Inline();
@@ -164,6 +168,60 @@ public sealed class CanopyView {
         var writer = new CanopyJsonWriter(4096);
         WriteJson(writer, hiddenFilterIds);
         return writer.ToString();
+    }
+
+    /// <summary>
+    /// Writes the <c>view</c> document of the <c>canopyx/2</c> protocol to a stream as UTF-8 without a byte order mark:
+    /// the same bytes as <see cref="Encoding.UTF8"/> gives for <see cref="ToJson()"/>, written in pieces, so the
+    /// document of a large tree is never held whole. Use it to hash or store the document.
+    /// </summary>
+    /// <param name="stream">The stream to write to. It is left open.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
+    public void WriteJson(Stream stream) => WriteJson(stream, null);
+
+    /// <summary>
+    /// Writes the view document to a stream as UTF-8 without a byte order mark, with the switches of the named filters
+    /// left out of the toolbar: the bytes of <see cref="ToJson(ICollection{string})"/>, written in pieces.
+    /// </summary>
+    /// <param name="stream">The stream to write to. It is left open.</param>
+    /// <param name="hiddenFilterIds">Ids of the view's filters to write as hidden; null for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or an id is not one of its filters.</exception>
+    public void WriteJson(Stream stream, ICollection<string>? hiddenFilterIds) {
+        if (stream == null) {
+            throw new ArgumentNullException(nameof(stream));
+        }
+
+        using var text = new StreamWriter(stream, Utf8, 16 * 1024, leaveOpen: true);
+        WriteJson(text, hiddenFilterIds);
+    }
+
+    /// <summary>
+    /// Writes the <c>view</c> document of the <c>canopyx/2</c> protocol to a text writer: the characters of
+    /// <see cref="ToJson()"/>, written in pieces, so the document of a large tree is never held whole.
+    /// </summary>
+    /// <param name="writer">The writer. It is not flushed or closed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
+    public void WriteJson(TextWriter writer) => WriteJson(writer, null);
+
+    /// <summary>
+    /// Writes the view document to a text writer with the switches of the named filters left out of the toolbar: the
+    /// characters of <see cref="ToJson(ICollection{string})"/>, written in pieces.
+    /// </summary>
+    /// <param name="writer">The writer. It is not flushed or closed.</param>
+    /// <param name="hiddenFilterIds">Ids of the view's filters to write as hidden; null for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or an id is not one of its filters.</exception>
+    public void WriteJson(TextWriter writer, ICollection<string>? hiddenFilterIds) {
+        if (writer == null) {
+            throw new ArgumentNullException(nameof(writer));
+        }
+
+        var json = CanopyJsonWriter.Streaming(writer);
+        WriteJson(json, hiddenFilterIds);
+        json.Complete();
     }
 
     internal void WriteJson(CanopyJsonWriter writer, ICollection<string>? hiddenFilterIds = null) {
