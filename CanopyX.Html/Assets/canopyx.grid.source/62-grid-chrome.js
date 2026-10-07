@@ -53,7 +53,7 @@
         // A moved menu closes first: moving a shown popover takes it out of the top layer while it stays open.
         const item = this.toolbar.querySelector(selector); if (!item) continue; item.open = false;
         if (phone) this.overflow.panel.appendChild(item);
-        else this.toolbar.insertBefore(item, selector === ".cx-grid-views" ? this.spacer : this.overflow.details);
+        else this.toolbar.insertBefore(item, selector === ".cx-grid-views" ? this.slots?.afterViews || this.spacer : this.overflow.details);
       }
       this.syncPinnedShadows();
     },

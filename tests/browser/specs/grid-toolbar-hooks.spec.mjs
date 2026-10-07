@@ -69,6 +69,57 @@ test("a malformed toolbar switch fails the mount with a clear error", async ({ p
   await expect(page.locator(".cx-mount-error")).toContainText("toolbar options are booleans by control name");
 });
 
+for (const size of sizes)
+test(`host slots keep their place and content through re-renders, phone moves and remounts (${size.width})`, async ({ page }) => {
+  await openGrid(page, reporting(), { size,
+    markup: '<span data-cx-slot="start" class="host-start">Start</span><span data-cx-slot="end" class="host-count">40 items</span>' });
+  const order = await toolbarOrder(page);
+  expect(order.slice(0, 3)).toEqual(["slot:start", "search", "slot:afterSearch"]);
+  expect(order.indexOf("slot:afterViews") + 1).toBe(order.indexOf("spacer"));
+  expect(order.indexOf("slot:end")).toBe(order.indexOf("spacer") + 1);
+  if (size.width > 640) expect(order[order.indexOf("slot:afterViews") - 1]).toBe("views");
+  await page.evaluate(`(() => { const chip = document.createElement("button"); chip.className = "cx-button host-chip"; chip.textContent = "Owner: Finance";
+    ${api}.toolbarSlot("afterSearch").append(chip); window.slots = ["start", "afterSearch", "afterViews", "end"].map(name => ${api}.toolbarSlot(name)); })()`);
+  await expect(page.locator(".cx-toolbar > [data-cx-toolbar-slot=start] > .host-start")).toHaveText("Start");
+  await expect(page.locator(".cx-toolbar > [data-cx-toolbar-slot=end] > .host-count")).toBeVisible();
+  // Queries, column changes, saved views and layout changes rebuild rows and headers; the slots are the same elements.
+  await page.evaluate(`${api}.setQuery({ search: "1" })`);
+  await page.evaluate(`${api}.setColumnVisible("owner", false)`);
+  await page.evaluate(`${api}.resetView()`);
+  await page.setViewportSize({ width: size.width > 640 ? 390 : 1440, height: 800 }); await nextFrames(page);
+  await page.setViewportSize(size); await nextFrames(page);
+  expect(await page.evaluate(`window.slots.every((slot, index) => slot === ${api}.toolbarSlot(["start", "afterSearch", "afterViews", "end"][index]) && slot.isConnected)`)).toBe(true);
+  expect(await toolbarOrder(page)).toEqual(order);
+  await expect(page.locator("[data-cx-toolbar-slot=afterSearch] > .host-chip")).toHaveText("Owner: Finance");
+  expect(await page.evaluate(`(() => { try { ${api}.toolbarSlot("middle"); return "accepted"; } catch (error) { return error.message; } })()`)).toContain("toolbar slots are");
+  // Declarative content returns to the host element on destroy and joins the next grid mounted there.
+  await page.evaluate(`${api}.destroy()`);
+  expect(await page.evaluate(() => [...document.querySelector("[data-canopyx-host]").children].filter(node => node.dataset.cxSlot).map(node => node.dataset.cxSlot))).toEqual(["start", "end"]);
+  await page.evaluate(() => { const host = document.querySelector("[data-canopyx-host]"); CanopyX.createDataGrid(host, { view: JSON.parse(host.querySelector(".cx-config").textContent) }); });
+  await page.waitForSelector("[data-cx-ready]");
+  await expect(page.locator(".cx-toolbar > [data-cx-toolbar-slot=end] > .host-count")).toHaveText("40 items");
+  // A replacement grid on another host takes host content through its own slot.
+  await page.evaluate(async () => {
+    const old = document.querySelector("[data-canopyx-host]"), next = document.createElement("div"), count = old.querySelector(".host-count");
+    next.className = "cx-host"; next.style.height = "400px"; old.after(next);
+    const grid = CanopyX.createDataGrid(next, { view: { ...JSON.parse(old.querySelector(".cx-config").textContent), id: "replacement" } });
+    await grid.ready; grid.toolbarSlot("end").append(count); old.canopyx.destroy(); old.remove();
+  });
+  await expect(page.locator(".cx-toolbar > [data-cx-toolbar-slot=end] > .host-count")).toHaveCount(1);
+  await expect(page.locator(".cx-toolbar > [data-cx-toolbar-slot=end] > .host-count")).toBeVisible();
+});
+
+test("a misspelt declarative slot fails the mount and leaves the host content in place", async ({ page }) => {
+  await page.setViewportSize(sizes[0]);
+  const html = viewPage(reporting()).replace('<script type="application/json" class="cx-config">',
+    '<span data-cx-slot="end" class="host-count">40 items</span><span data-cx-slot="middle" class="host-odd">Odd</span><script type="application/json" class="cx-config">');
+  await page.route("http://canopyx.test/toolbar", route => route.fulfill({ contentType: "text/html", body: html }));
+  await page.goto("http://canopyx.test/toolbar");
+  await expect(page.locator(".cx-mount-error")).toContainText("toolbar slots are");
+  expect(await page.evaluate(() => [...document.querySelector("[data-canopyx-host]").children].map(node => node.className))).toEqual(
+    expect.arrayContaining(["host-count", "host-odd"]));
+});
+
 test("with the more menu off, phone layouts keep Views and Export usable in the toolbar", async ({ page }) => {
   await openGrid(page, reporting(), { size: sizes[1], setup: `CanopyX.configure("inventory", { toolbar: { more: false } });` });
   for (const kind of ["views", "export"]) {
@@ -129,6 +180,84 @@ test("with the Export menu off, a reporting print hook still runs from the more 
   await page.locator(".cx-grid-overflow").getByRole("button", { name: "Print", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.printed)).toEqual(["filtered:40"]);
 });
+const saveViewSetup = `window.rendered = 0; window.ran = 0;
+CanopyX.configure("inventory", { actions: [
+  { label: "Save view…", render(container, context) {
+    window.rendered++;
+    const label = document.createElement("label"), name = document.createElement("input"), save = document.createElement("button");
+    label.className = "cx-grid-field"; label.append("View name", name); save.type = "button"; save.className = "cx-button"; save.textContent = "Save";
+    save.addEventListener("click", () => { document.querySelector("[data-canopyx-host]").canopyx.saveView(name.value); context.close(); });
+    container.append(label, save);
+  } },
+  { label: "Reset", run() { window.ran++; } }
+] });`;
+
+for (const size of sizes)
+for (const theme of ["light", "dark"])
+test(`a more-menu content entry keeps focus, keyboard and Escape correct (${theme}, ${size.width})`, async ({ page }) => {
+  await openGrid(page, reporting(), { size, theme, setup: saveViewSetup });
+  const menu = page.locator(".cx-grid-overflow"), more = menu.locator(":scope > summary"), entry = menu.locator(".cx-grid-action");
+  const summary = entry.locator(":scope > summary"), name = page.getByRole("textbox", { name: "View name", exact: true });
+  await more.focus(); await page.keyboard.press("Enter"); await expect(menu).toHaveAttribute("open", "");
+  await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeVisible();
+  await expect(entry).not.toHaveAttribute("open", ""); expect(await page.evaluate(() => window.rendered)).toBe(0);
+  await summary.focus(); await page.keyboard.press("Enter");
+  await expect(entry).toHaveAttribute("open", ""); await expect(name).toBeFocused();
+  await page.keyboard.type("Finance only");
+  // Escape folds the entry back to its summary; the menu stays open. A second Escape closes the menu.
+  await page.keyboard.press("Escape"); await expect(entry).not.toHaveAttribute("open", ""); await expect(summary).toBeFocused();
+  await expect(menu).toHaveAttribute("open", "");
+  await page.keyboard.press("Enter"); await expect(name).toBeFocused(); await expect(name).toHaveValue("Finance only");
+  expect(await page.evaluate(() => window.rendered)).toBe(1);
+  const results = await new AxeBuilder({ page }).include(".cx-grid-overflow").analyze();
+  expect(results.violations).toEqual([]);
+  await page.keyboard.press("Tab"); await expect(page.getByRole("button", { name: "Save", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(`${api}.getSavedViews()`)).toEqual(["Finance only"]);
+  await expect(menu).not.toHaveAttribute("open", ""); await expect(more).toBeFocused();
+  // Reopening shows the folded entry; a handler entry still runs.
+  await page.keyboard.press("Enter"); await expect(entry).not.toHaveAttribute("open", "");
+  await page.getByRole("button", { name: "Reset", exact: true }).click(); expect(await page.evaluate(() => window.ran)).toBe(1);
+  await page.keyboard.press("Escape"); await page.keyboard.press("Escape");
+  await expect(menu).not.toHaveAttribute("open", "");
+});
+
+test("a content entry whose render throws reports the error and renders again on the next open", async ({ page }) => {
+  await openGrid(page, reporting(), { setup: `window.calls = 0; window.errors = []; CanopyX.configure("inventory", { onError: event => window.errors.push(event.error.message),
+    actions: [{ label: "Flaky", render(container) { window.calls++; container.append(document.createElement("input")); if (window.calls === 1) throw new Error("first draw failed"); } }] });` });
+  const entry = page.locator(".cx-grid-action"), summary = entry.locator(":scope > summary");
+  await page.locator(".cx-grid-overflow > summary").click();
+  await summary.click();
+  await expect.poll(() => page.evaluate(() => window.errors)).toEqual(["first draw failed"]); await expect(summary).toBeFocused();
+  await expect(entry.locator("input")).toHaveCount(0);
+  await summary.click(); await summary.click();
+  await expect(entry.locator("input")).toBeFocused(); expect(await page.evaluate(() => window.calls)).toBe(2);
+});
+test("content entries validate like handler entries and need the reporting runtime", async ({ page }) => {
+  await page.setViewportSize(sizes[0]);
+  await page.route("http://canopyx.test/toolbar", route => route.fulfill({ contentType: "text/html", body: viewPage(definition()) }));
+  await page.goto("http://canopyx.test/toolbar"); await page.waitForSelector("[data-cx-ready]");
+  const attempt = actions => page.evaluate(actions => {
+    const host = document.createElement("div"); document.body.append(host);
+    try { CanopyX.createDataGrid(host, { view: { ...JSON.parse(document.querySelector(".cx-config").textContent), id: "attempt" }, actions: eval(actions) }); return "mounted"; }
+    catch (error) { return error.message; } finally { host.canopyx?.destroy(); host.remove(); }
+  }, actions);
+  expect(await attempt('[{ label: "Save", render() {} }]')).toContain("actions need a label and handler");
+  expect(await attempt('[{ label: "Run", run() {} }]')).toBe("mounted");
+});
+
+test("the reporting runtime rejects an action that both runs and renders", async ({ page }) => {
+  await openGrid(page, reporting());
+  const attempt = actions => page.evaluate(actions => {
+    const host = document.createElement("div"); document.body.append(host);
+    try { CanopyX.createDataGrid(host, { view: { ...JSON.parse(document.querySelector(".cx-config").textContent), id: "attempt" }, actions: eval(actions) }); return "mounted"; }
+    catch (error) { return error.message; } finally { host.canopyx?.destroy(); host.remove(); }
+  }, actions);
+  expect(await attempt('[{ label: "Both", run() {}, render() {} }]')).toContain("either a run or a render function");
+  expect(await attempt('[{ render() {} }]')).toContain("either a run or a render function");
+  expect(await attempt('[{ label: "Save", render() {} }, { label: "Run", run() {} }]')).toBe("mounted");
+});
+
 for (const density of ["compact", "default", "comfortable"])
 test(`row checkboxes reserve exactly the width they draw (${density})`, async ({ page }) => {
   const view = definition({ density, selection: "multiple", search: false, reporting: { selectionControls: true },

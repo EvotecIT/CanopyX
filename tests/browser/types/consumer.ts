@@ -89,7 +89,10 @@ if (placement) {
   // @ts-expect-error Effective layout snapshots are read-only.
   placement.responsiveHidden = false;
 }
-
+const endSlot: HTMLElement | undefined = reportingApi.toolbarSlot?.("end");
+endSlot?.append(document.createElement("span"));
+// @ts-expect-error Toolbar slots are start, afterSearch, afterViews and end.
+reportingApi.toolbarSlot?.("middle");
 
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
@@ -181,10 +184,13 @@ await reportingApi.materializeExport?.({ scope: "filtered", maxRows: 500, fileNa
 await reportingApi.print?.({ scope: "selected", columns: ["name"], values: "raw" });
 // @ts-expect-error Delivery phases have a fixed read/generate/ready vocabulary.
 const invalidDeliveryPhase: import("@evotecit/canopyx/grid").GridExportProgress["phase"] = "downloaded";
-createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { search: false, export: false, count: false } });
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { search: false, export: false, count: false },
+  actions: [{ label: "Reset", run: ({ query }) => void query },
+    { label: "Save view…", render: (container, { close, signal }) => { container.append("Name"); if (!signal.aborted) close(); } }] });
 // @ts-expect-error Toolbar switches are booleans by control name.
 createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { chips: false } });
-
+// @ts-expect-error An action runs a handler or renders content, not both.
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, actions: [{ label: "Both", run: () => {}, render: () => {} }] });
 const documentToolbar: HostGridView = { ...gridView, toolbar: { export: false, more: false } };
 // @ts-expect-error The document keeps the search box in its search property.
 documentToolbar.toolbar = { search: false };

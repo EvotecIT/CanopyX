@@ -218,7 +218,7 @@ view.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText());
 
 The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
 
-### Toolbar controls
+### Toolbar controls, slots and menu entries
 
 Every toolbar control can be switched off; a control switched off is removed from the page (it is not built, or is taken out before the grid appears), and the methods behind it stay available. C# views set `Toolbar` switches (the search box keeps its `Search` switch); browser hosts pass `toolbar` to `createDataGrid` or `CanopyX.configure`, which overrides the definition and also accepts `search`:
 
@@ -229,6 +229,27 @@ inventory.Toolbar.Count = false;  // the host shows its own count
 
 ```js
 createDataGrid(host, { view, toolbar: { views: false, more: true } }); // search, filters, columns, views, export, more, count
+```
+
+The reporting runtime (`@evotecit/canopyx/reporting`) adds host slots and content entries. Four slots hold host elements in the toolbar: `start`, `afterSearch`, `afterViews` and `end` (the start of the right-hand group, before Export and ⋯). `afterSearch` follows `start` directly when the grid has no search box. `api.toolbarSlot(name)` returns the slot's element (it carries `data-cx-toolbar-slot`), the same one for the grid's lifetime whatever the phone layout moves. Children of the host element marked `data-cx-slot` move into their slot when the grid mounts and return to the host element when it is destroyed, so a remount picks them up again; a misspelt slot name fails the mount and leaves them in place. A replacement grid on another host takes host elements with `next.toolbarSlot("end").append(count)`. Slots add no box of their own; host elements that use the `cx-button` and `cx-grid-field` classes match the grid's controls.
+
+```html
+<div data-canopyx-host>
+  <span data-cx-slot="end" class="my-count">1,204 devices</span>
+  <script type="application/json" class="cx-config">…</script>
+</div>
+```
+
+`actions` entries run a handler (`{ label, run }`) or, in the reporting runtime, disclose host content inside the more menu (`{ label, render }`). `render(container, { close, signal })` fills the container on first open (again after a render that threw); focus moves to its first control, Escape folds the entry back to its label, closing the menu folds it, and `close()` closes the menu and returns focus to ⋯. `signal` aborts when the grid is destroyed:
+
+```js
+actions: [{ label: "Save view…", render(container, { close }) {
+  const field = document.createElement("label"), name = document.createElement("input"), save = document.createElement("button");
+  field.className = "cx-grid-field"; field.append("View name", name);
+  save.type = "button"; save.className = "cx-button"; save.textContent = "Save";
+  save.onclick = () => { grid.saveView(name.value); close(); };
+  container.append(field, save);
+} }]
 ```
 
 Toolbar menus (Filters, Columns, Views, Export, ⋯ and the header selection menu) open in the browser's top layer as popovers, so a short grid or a host with `overflow: hidden` no longer clips them. They stay inside the grid's DOM, so themes, focus order and events are unchanged, and list menus keep their 320-pixel height cap. Browsers without the popover API give them viewport-fixed positioning instead, which escapes `overflow: hidden` but not an ancestor with a `transform`, `filter` or `contain` that captures fixed positioning.

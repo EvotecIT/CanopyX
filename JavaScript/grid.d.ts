@@ -129,6 +129,15 @@ export interface GridToolbarControls {
 export interface GridToolbarOptions extends GridToolbarControls {
   search?: boolean;
 }
+/** The reporting runtime's host slots in toolbar order; afterSearch follows start directly when there is no search box, and
+ * end starts the right-hand group before Export and the more menu. */
+export type GridToolbarSlot = "start" | "afterSearch" | "afterViews" | "end";
+/** A more-menu entry: a handler, or (reporting runtime) host content disclosed inside the menu. */
+export type GridAction<Q extends AcceptedGridQuery = GridQuery> =
+  | { label: string; run: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>; render?: never }
+  /** render fills container on the entry's first open (and again after a render that threw); close() closes the menu and
+   * focuses its button; signal aborts when the grid is destroyed. */
+  | { label: string; render: (container: HTMLElement, context: { close(): void; signal: AbortSignal }) => void; run?: never };
 export type GridFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
@@ -425,8 +434,9 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
   /** Adds Chart to the selection bar. The host owns chart generation. */
   onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
-  /** Host-owned secondary actions in overflow. */
-  actions?: readonly { label: string; run: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void> }[];
+  /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
+   * container on first open, focus moves to its first control, Escape folds it back, and close() closes the menu. */
+  actions?: readonly GridAction<Q>[];
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
 }
@@ -468,6 +478,9 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   /** Restores the declared order, visibility, widths and pins; keeps the query. */
   resetColumns(): void;
   getColumnLayout?(): readonly GridColumnPlacement[];
+  /** Reporting runtime only: the stable container of a toolbar slot for the grid's lifetime. Host children marked
+   * data-cx-slot move into their slot when the grid mounts and return to the host element on destroy. */
+  toolbarSlot?(name: GridToolbarSlot): HTMLElement;
   /** Reporting runtime only: revisioned, bounded full-query aggregation. Never reads the viewport cache for counts. */
   getFacets?(column: string, options?: GridFacetOptions): Promise<GridFacetPage>;
   setColumnVisible(id: string, visible: boolean): void;

@@ -43,3 +43,10 @@
 .cx-phone .cx-header-selection { width:var(--cx-size-44px);padding:var(--cx-size-14px); }
 .cx-phone .cx-header-check { position:relative; }
 .cx-phone .cx-header-check::after { content:"";position:absolute;inset:calc(-1 * var(--cx-size-14px)); }
+/* Host toolbar slots add no box of their own; more-menu content entries read as menu items. */
+.cx-toolbar-slot { display:contents; }
+.cx-grid-action { width:100%; }
+.cx-data-grid .cx-grid-action > .cx-button { width:100%;justify-content:start;border:0;border-radius:var(--cx-radius-sm); }
+.cx-data-grid .cx-grid-action[open] > .cx-button { background:var(--cx-hover-bg); }
+.cx-grid-action > summary::-webkit-details-marker { display:none; }
+.cx-grid-action-body { display:grid;gap:var(--cx-size-8px);padding:var(--cx-size-6px) var(--cx-size-8px); }
