@@ -198,7 +198,7 @@ public sealed class CanopyBundleWriter {
 
     /// <summary>The bytes a top-level page has for its items, with an envelope as long as any top-level page can get.</summary>
     private static int RootPageBudget(CanopyBundleContext context) =>
-        context.ItemBudget(CanopyBundleLayout.RootPage(int.MaxValue), CanopyBundlePage.Document(null, int.MaxValue, int.MaxValue, CanopyBundleLayout.RootPage(int.MaxValue)));
+        context.ItemBudget(CanopyBundleLayout.RootPage(int.MaxValue), CanopyBundleDocument.PageEnvelope(null, int.MaxValue, int.MaxValue, CanopyBundleLayout.RootPage(int.MaxValue)));
 
     /// <summary>Writes the top-level nodes as the files <c>r/0</c>, <c>r/1</c>, and so on.</summary>
     private void WriteRootPages(CanopyBundleContext context, Pager top) {
@@ -211,7 +211,7 @@ public sealed class CanopyBundleWriter {
         var offset = 0;
         for (var page = 0; page < pages.Count; page++) {
             var next = page + 1 < pages.Count ? CanopyBundleLayout.RootPage(page + 1) : null;
-            context.WriteFile(CanopyBundleLayout.RootPage(page), new CanopyBundlePage(null, offset, total, pages[page], top.PageBytes(page), next).Parts());
+            context.WriteFile(CanopyBundleLayout.RootPage(page), CanopyBundleDocument.Page(null, offset, total, pages[page], top.PageBytes(page), next).Parts());
             context.Result.PageCount++;
             offset += pages[page].Count;
         }
@@ -225,7 +225,7 @@ public sealed class CanopyBundleWriter {
     /// </summary>
     private List<(string Reference, int Count)> WritePackedPages(CanopyBundleContext context, CanopyBundlePacks packs, string parentId, List<string> items) {
         // A continuation no bundle reaches, so the measured envelope is never too short.
-        var envelope = CanopyBundlePage.Document(parentId, items.Count, items.Count, CanopyBundleLayout.PackedPage(int.MaxValue, int.MaxValue));
+        var envelope = CanopyBundleDocument.PageEnvelope(parentId, items.Count, items.Count, CanopyBundleLayout.PackedPage(int.MaxValue, int.MaxValue));
         var budget = packs.FileBudget - CanopyBundlePacks.SizeOf(envelope);
         if (budget <= 0) {
             throw new InvalidOperationException("The children page of '" + parentId + "' has a fixed envelope that exceeds MaxFileBytes; shorten identifiers or increase the budget.");
@@ -239,7 +239,7 @@ public sealed class CanopyBundleWriter {
         string? next = null;
         for (var page = pages.Count - 1; page >= 0; page--) {
             offset -= pages[page].Count;
-            next = packs.AddListPage(new CanopyBundlePage(parentId, offset, items.Count, pages[page], pager.PageBytes(page), next));
+            next = packs.AddListPage(CanopyBundleDocument.Page(parentId, offset, items.Count, pages[page], pager.PageBytes(page), next));
             written[page] = (next, pages[page].Count);
             context.Result.PageCount++;
         }

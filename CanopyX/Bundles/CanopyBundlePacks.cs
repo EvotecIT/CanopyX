@@ -47,7 +47,7 @@ internal sealed class CanopyBundlePacks {
         Budget = Math.Max(1, Math.Min(budget, targetBytes - (context.Options.MaxFileBytes - budget)));
     }
 
-    /// <summary>Gets the bytes a pack has for its pages, each with the overhead <see cref="SizeOf"/> counts.</summary>
+    /// <summary>Gets the bytes a pack has for its pages, each with the overhead <see cref="SizeOf(string)"/> counts.</summary>
     internal int Budget { get; }
 
     /// <summary>Gets the number of pack files written so far.</summary>
@@ -62,14 +62,17 @@ internal sealed class CanopyBundlePacks {
     /// <summary>The bytes a page takes in a pack: its JSON text, the template around it, and a comma.</summary>
     internal static long SizeOf(string pageJson) => CanopyBundleContext.Utf8.GetByteCount(pageJson) + PageStart.Length + PageEnd.Length + 1;
 
+    /// <summary>The bytes a document takes in a pack, as <see cref="SizeOf(string)"/> counts them.</summary>
+    internal static long SizeOf(CanopyBundleDocument document) => document.Bytes + PageStart.Length + PageEnd.Length + 1;
+
     /// <summary>Adds a page and returns its reference. A page that does not fit the current pack starts the next one.</summary>
-    internal string Add(string pageJson) => Add(new[] { pageJson }, SizeOf(pageJson), Budget);
+    internal string Add(CanopyBundleDocument page) => Add(page.Parts(), SizeOf(page), Budget);
 
     /// <summary>
     /// Starts the pages of one child list: closes the open pack unless the whole list fits what is left of the pack
     /// size, so a list that does not share a pack with the lists before it starts a pack of its own.
     /// </summary>
-    /// <param name="bytes">The size of the list's pages as <see cref="SizeOf"/> counts them, or more.</param>
+    /// <param name="bytes">The size of the list's pages as <see cref="SizeOf(string)"/> counts them, or more.</param>
     internal void StartList(long bytes) {
         if (_pages.Count > 0 && _bytes + bytes > Budget) {
             Flush();
@@ -80,10 +83,10 @@ internal sealed class CanopyBundlePacks {
     /// Adds a page of the list started last and returns its reference. The pages of one list fill a pack up to the
     /// file budget, not the pack size, so reaching a node far down a long list reads few files one after another.
     /// </summary>
-    internal string AddListPage(CanopyBundlePage page) => Add(page.Parts(), page.Bytes + PageStart.Length + PageEnd.Length + 1, FileBudget);
+    internal string AddListPage(CanopyBundleDocument page) => Add(page.Parts(), SizeOf(page), FileBudget);
 
     /// <param name="parts">The parts of the document's text.</param>
-    /// <param name="size">The bytes the document takes in a pack, as <see cref="SizeOf"/> counts them.</param>
+    /// <param name="size">The bytes the document takes in a pack, as <see cref="SizeOf(string)"/> counts them.</param>
     /// <param name="limit">The bytes a pack holds for its pages.</param>
     private string Add(IEnumerable<string> parts, long size, long limit) {
         if (_pages.Count > 0 && _bytes + size > limit) {
