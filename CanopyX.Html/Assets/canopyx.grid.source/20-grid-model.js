@@ -32,6 +32,10 @@
         render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;
+      // Per-control toolbar switches: the document's toolbar object, then the host's options; a missing switch keeps its control.
+      this.tools = Object.assign({}, this.view.toolbar, options.toolbar);
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|count)$/.test(name) || typeof value !== "boolean"))
+        throw new Error("CanopyX: toolbar options are booleans by control name.");
       this.labels = labelsFor(this.view.labels, options.labels); this.local = this.view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels); this.multi = this.view.selection === "multiple";
       this.queryAware = true; this.queryEpoch = 0; this.version = 1; this.total = 0;

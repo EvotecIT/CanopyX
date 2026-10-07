@@ -110,6 +110,25 @@ export interface GridColumnPlacement {
   readonly id: string; readonly requestedPin: GridColumnPin; readonly pin: GridColumnPin;
   readonly visible: boolean; readonly responsiveHidden: boolean; readonly width: number;
 }
+/** Per-control toolbar switches; an absent switch keeps its control, and a control switched off is not built. */
+export interface GridToolbarControls {
+  /** Filters menu. */
+  filters?: boolean;
+  /** Columns menu. */
+  columns?: boolean;
+  /** Saved views menu with Reset view. */
+  views?: boolean;
+  /** Export menu. */
+  export?: boolean;
+  /** More menu: host actions, Record details and Print. */
+  more?: boolean;
+  /** Result count shown with the query chips. */
+  count?: boolean;
+}
+/** Runtime switches add the search box; documents keep it in the view's search property. */
+export interface GridToolbarOptions extends GridToolbarControls {
+  search?: boolean;
+}
 export type GridFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
@@ -166,6 +185,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   emptyReason?: string;
   /** Optional result and selected-record counts. */
   statusBar?: boolean;
+  /** Per-control toolbar switches (the search box is the search property). */
+  toolbar?: GridToolbarControls;
   /** A grid whose rows fit is as tall as its rows (default true). */
   autoHeight?: boolean;
   /** What a plain row click does; it never selects (default "none"). */
@@ -378,8 +399,9 @@ export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
   save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
 }
 interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
-  /** False lets a host compose controls around the same grid controller. */
-  toolbar?: boolean;
+  /** False hides the whole toolbar so a host can compose controls around the same grid controller; an object switches
+   * single controls off (overriding the view's toolbar switches). Switched-off controls are not built. */
+  toolbar?: boolean | GridToolbarOptions;
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
   searchDelayMs?: number;
   source?: Q extends GridCursorQuery ? GridCursorSource : GridSource;

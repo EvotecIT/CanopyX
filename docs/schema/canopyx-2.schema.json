@@ -63,6 +63,7 @@
         "noun": { "type": "string", "minLength": 1, "maxLength": 256 },
         "emptyReason": { "type": "string", "maxLength": 4096 },
         "statusBar": { "type": "boolean" },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" } } },
         "rowAction": { "enum": ["none", "details", "link"], "description": "What a plain row click does; a plain click never selects. Default none." },
         "autoHeight": { "type": "boolean", "description": "A grid whose rows fit is as tall as its rows; false keeps the host height. Default true." },
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },

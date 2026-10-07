@@ -25,11 +25,16 @@
   }
 
   Object.assign(DataGrid.prototype, {
+    // A control switched off in the toolbar options is never built; its API methods stay available.
     buildGridControls() {
       this.controlFlyouts = [];
-      this.buildGridFilters(); this.buildGridColumns(); this.buildSavedViews();
+      this.buildGridFilters();
+      if (this.tools.columns !== false) this.buildGridColumns();
+      if (this.tools.views !== false) {
+        this.buildSavedViews();
+        this.toolbar.querySelector(".cx-grid-views .cx-grid-panel").appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
+      }
       this.buildExportControls();
-      this.toolbar.querySelector(".cx-grid-views .cx-grid-panel").appendChild(gridButton(this.labels.gridResetView, () => this.resetView().catch(() => {})));
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
       document.addEventListener("pointerdown", event => {
         for (const details of this.toolbar.children) if (details.open && !details.contains(event.target)) details.open = false;

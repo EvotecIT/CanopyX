@@ -8,6 +8,12 @@
     DELIVERY_CONTROLS.call(this);
     if (!this.view.reporting) return;
     const panel = this.toolbar.querySelector(".cx-grid-export .cx-grid-panel");
+    // Without the Export menu, a print hook still runs from the more menu, for the filtered result.
+    if (!panel) {
+      if (typeof this.opts.onPrint === "function") this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridPrint, () =>
+        Promise.resolve().then(() => this.print({ scope: "filtered" })).catch(error => this.emit("error", { error }))), { className: "cx-button cx-grid-print" }));
+      return;
+    }
     panel.replaceChildren();
     const scope = h("select"); scope.setAttribute("aria-label", this.labels.gridExport);
     for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])

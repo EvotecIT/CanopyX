@@ -24,6 +24,7 @@
       overflow.panel.append(this.toolbar.querySelector(".cx-grid-details"), this.toolbar.querySelector(".cx-grid-print") ||
         Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
       (this.toolbar.querySelector(".cx-grid-export") || overflow.details).before(this.spacer, this.selectionBar, this.toolbarSeparator);
+      if (this.tools.more === false) { overflow.details.remove(); this.overflow = null; }
       this.host.addEventListener("canopyx:select", () => this.syncGridChrome(), { signal });
       this.syncGridChrome();
       signal.addEventListener("abort",()=>{this.headerSelectionFlyout?.dispose();this.headerMenusLifetime?.abort();this.closeGridPopover(false);},{once:true});
@@ -46,10 +47,10 @@
     updateGridPhone() {
       const phone = this.host.clientWidth <= 640;
       this.host.classList.toggle("cx-phone", phone);
-      if (!this.overflow || phone === this.phone) return;
+      if (phone === this.phone) return;
       this.phone = phone;this.version++;this.scheduleRender();
-      for (const selector of [".cx-grid-views", ".cx-grid-export"]) {
-        const item = this.host.querySelector(selector); if (!item) continue;
+      if (this.overflow) for (const selector of [".cx-grid-views", ".cx-grid-export"]) {
+        const item = this.toolbar.querySelector(selector); if (!item) continue;
         if (phone) this.overflow.panel.appendChild(item);
         else this.toolbar.insertBefore(item, selector === ".cx-grid-views" ? this.spacer : this.overflow.details);
       }

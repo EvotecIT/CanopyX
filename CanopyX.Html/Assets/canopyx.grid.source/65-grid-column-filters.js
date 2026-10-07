@@ -29,9 +29,10 @@
       const column=this.columns.find(item=>item.id===id),panel=this.openGridPopover(anchor,"cx-column-filter",column.title+": "+this.labels.gridFilterColumn,id);
       const head=h("div","cx-pop-h"),body=h("div","cx-pop-b"),footer=h("div","cx-pop-f"),error=h("p","cx-grid-control-error");
       setText(head,column.title);error.setAttribute("role","status");panel.append(head,body,error,footer);
-      let timer,clauses,base,draft;const signal=this.gridPopover.controller.signal;
-      try{({clauses,query:base}=gridColumnClauses(this.queryForChange(),id));}catch(_){setText(body,this.labels.gridComplexFilter);
-        body.appendChild(gridButton(this.labels.gridEditAsText,()=>{this.closeGridPopover(false);this.toolbar.querySelector('.cx-grid-filters').open=true;}));return;}
+      let timer,clauses,base,draft;const signal=this.gridPopover.controller.signal,filters=this.reportingFilters;
+      // Edit as text opens the Filters menu; without that menu (toolbar filters off) the chips still remove the condition.
+      const complex=()=>{setText(body,this.labels.gridComplexFilter);if(filters)body.appendChild(gridButton(this.labels.gridEditAsText,()=>{this.closeGridPopover(false);filters.details.open=true;}));};
+      try{({clauses,query:base}=gridColumnClauses(this.queryForChange(),id));}catch(_){complex();return;}
       const flush=()=>{clearTimeout(timer);timer=null;if(signal.aborted||draft===undefined)return;
         try{const promise=this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,draft));draft=undefined;this.reportingFilterSubmitEpoch=this.queryEpoch;
           promise.then(()=>setText(error,""),failure=>setText(error,failure.message));}catch(failure){setText(error,failure.message);}};
@@ -41,7 +42,7 @@
       footer.append(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),
         gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}));
       const faceted=column.kind==="text"&&(this.view.source.kind==="inline"||this.view.reporting?.facetColumns?.includes(id)&&typeof this.source.facet==="function");
-      if(!faceted&&clauses.some(item=>item.groups&&(item.groups.length||item.filters.length>2))||!faceted&&clauses.length>2){setText(body,this.labels.gridComplexFilter);body.appendChild(gridButton(this.labels.gridEditAsText,()=>{this.closeGridPopover(false);this.toolbar.querySelector('.cx-grid-filters').open=true;}));}
+      if(!faceted&&clauses.some(item=>item.groups&&(item.groups.length||item.filters.length>2))||!faceted&&clauses.length>2)complex();
       else if(faceted)this.renderColumnValues(column,body,clauses,apply,error,signal);else this.renderColumnConditions(column,body,clauses,apply,error);
       this.gridPopover.position();
     },

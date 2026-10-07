@@ -49,6 +49,8 @@
       this.resultCount = h("span", "cx-grid-result-count"); this.resultCount.setAttribute("role", "status");
       this.queryChips = h("div", "cx-grid-query-chips");
       this.querySummary.append(this.resultCount, this.queryChips); this.querySummary.hidden = true;
+      // Without the count control the line keeps its query chips; the detached count still updates harmlessly.
+      if (this.tools.count === false) this.resultCount.remove();
     },
 
     syncQuerySummary() {

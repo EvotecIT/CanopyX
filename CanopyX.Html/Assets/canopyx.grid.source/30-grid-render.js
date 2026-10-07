@@ -11,7 +11,7 @@
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
-      if (this.view.search) this.buildGridSearch();
+      if (this.view.search && this.tools.search !== false) this.buildGridSearch();
       this.buildGridControls();
       this.buildGridChrome();
       this.buildQuerySummary();

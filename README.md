@@ -218,6 +218,19 @@ view.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText());
 
 The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
 
+### Toolbar controls
+
+Every toolbar control can be switched off; a control switched off is removed from the page (it is not built, or is taken out before the grid appears), and the methods behind it stay available. C# views set `Toolbar` switches (the search box keeps its `Search` switch); browser hosts pass `toolbar` to `createDataGrid` or `CanopyX.configure`, which overrides the definition and also accepts `search`:
+
+```csharp
+inventory.Toolbar.Export = false; // the host offers its own export
+inventory.Toolbar.Count = false;  // the host shows its own count
+```
+
+```js
+createDataGrid(host, { view, toolbar: { views: false, more: true } }); // search, filters, columns, views, export, more, count
+```
+
 ## Tree Grid Features
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.

@@ -90,6 +90,7 @@ if (placement) {
   placement.responsiveHidden = false;
 }
 
+
 const gridView: HostGridView = { protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], source: { kind: "host" }, rowHeight: 28,
   pageSize: 100, selection: "multiple", search: true };
@@ -180,6 +181,13 @@ await reportingApi.materializeExport?.({ scope: "filtered", maxRows: 500, fileNa
 await reportingApi.print?.({ scope: "selected", columns: ["name"], values: "raw" });
 // @ts-expect-error Delivery phases have a fixed read/generate/ready vocabulary.
 const invalidDeliveryPhase: import("@evotecit/canopyx/grid").GridExportProgress["phase"] = "downloaded";
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { search: false, export: false, count: false } });
+// @ts-expect-error Toolbar switches are booleans by control name.
+createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { chips: false } });
+
+const documentToolbar: HostGridView = { ...gridView, toolbar: { export: false, more: false } };
+// @ts-expect-error The document keeps the search box in its search property.
+documentToolbar.toolbar = { search: false };
 // @ts-expect-error Host views require a query source.
 createDataGrid(document.createElement("div"), { view: gridView });
 const inlineGrid: InlineGridView = { ...gridView, source: { kind: "inline" }, rows: [{ id: "row-1", cells: { name: "Atlas" } }] };

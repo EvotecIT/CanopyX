@@ -103,6 +103,9 @@ public sealed partial class CanopyGridView {
     /// <summary>Gets or sets row-selection behavior, independently of keyboard focus.</summary>
     public CanopySelectionMode Selection { get; set; }
 
+    /// <summary>Gets the per-control toolbar switches: Filters, Columns, Views, Export, the more menu and the result count. All default to on.</summary>
+    public CanopyGridToolbar Toolbar { get; } = new CanopyGridToolbar();
+
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;
 
@@ -146,6 +149,7 @@ public sealed partial class CanopyGridView {
         if (Zebra) writer.Property("zebra", true);
         writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
         if (StatusBar) writer.Property("statusBar", true);
+        if (!Toolbar.IsDefault) { writer.Name("toolbar"); Toolbar.WriteJson(writer); }
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
         WriteRowPresentationJson(writer);
         writer.Property("pageSize", PageSize)
