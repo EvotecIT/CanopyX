@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CanopyX column sizing, priority and pinning</title><style>{{style}}</style><script>{{script}}</script>
+<style>.layout-frame { margin:0 0 28px; resize:horizontal; overflow:auto; max-width:100%; } .layout-frame > .cx-host { height:420px; }</style></head>
+<body class="cx-page" data-cx-theme="{{theme}}"><main>
+<a href="index.html">CanopyX examples</a><h1>Column sizing, priority and pinning</h1>
+<p>Columns take the width of their header and content. Spare width goes to flex columns, then the identity column, then the widest text column.
+When space runs short, normal columns shrink to their minimum, optional columns hide, and only then the grid scrolls with its pinned columns in place.
+Drag the lower-right corner of a frame to resize it.</p>
+<h2>Wide container: a products table fills the width</h2>
+<div class="layout-frame" style="width:1100px">{{products}}</div>
+<h2>Narrow container: optional columns hide before the grid scrolls</h2>
+<div class="layout-frame" style="width:720px">{{rules}}</div>
+<h2>Pinned left and right: a 30-column table scrolls between its pinned edges</h2>
+<div class="layout-frame" style="width:900px">{{wide}}</div>
+<h2>Long values: a log table keeps messages readable</h2>
+<div class="layout-frame" style="width:900px">{{log}}</div>
+<h2>Phone width: essential columns stay, the rest collapse into “+N”</h2>
+<div class="layout-frame" style="width:380px">{{phone}}</div>
+</main></body></html>

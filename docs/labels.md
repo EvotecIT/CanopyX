@@ -27,7 +27,7 @@ const grid = createDataGrid(host, {
 });
 ```
 
-Use `/locales/de` for German and `/locales/es` for Spanish. The default export and named `labels` export contain every browser key, including the optional interaction/reporting strings. They are frozen. The named `staticLabels` export contains the four static-only keys (`overflowNote`, `unknownTotal`, `hiddenRows`, `fullReport`); a host rendering its own fallback can consume these separately. Static-only keys are not browser view fields.
+Use `/locales/de` for German and `/locales/es` for Spanish. The default export and named `labels` export contain every browser key, including the optional interaction/reporting strings. They are frozen. The ordinary `@evotecit/canopyx/grid` entry only knows the labels of the controls it draws: pass a complete pack to the reporting entry, or pick the keys you need. In .NET, setting a reporting-only label (`CanopyLabels.RequiresReportingRuntime`) selects the reporting entry automatically. The named `staticLabels` export contains the four static-only keys (`overflowNote`, `unknownTotal`, `hiddenRows`, `fullReport`); a host rendering its own fallback can consume these separately. Static-only keys are not browser view fields.
 
 ## Offline classic scripts
 

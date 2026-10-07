@@ -81,6 +81,7 @@ CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
 GroupedGridExample.Write(output);
 ContainedGridsExample.Write(output);
+ColumnLayoutExample.Write(output);
 WrappedGridExample.Write(output);
 ContentGridExample.Write(output);
 LocalizedGridsExample.Write(output);

@@ -23,5 +23,6 @@
     <EmbeddedResource Include="Templates\checkboxes.html" LogicalName="CanopyX.Examples.Templates.checkboxes.html" />
     <EmbeddedResource Include="Templates\interactions.html" LogicalName="CanopyX.Examples.Templates.interactions.html" />
     <EmbeddedResource Include="Templates\contained-grids.html" LogicalName="CanopyX.Examples.Templates.contained-grids.html" />
+    <EmbeddedResource Include="Templates\column-layout.html" LogicalName="CanopyX.Examples.Templates.column-layout.html" />
   </ItemGroup>
 </Project>
