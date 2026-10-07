@@ -16,9 +16,17 @@ namespace CanopyX.Json;
 /// <c>$</c> before <c>{</c>, so a document can sit inside a JavaScript template literal unchanged (bundle packs).
 /// </remarks>
 internal sealed class CanopyJsonWriter {
+    private static readonly char[] Hex = "0123456789abcdef".ToCharArray();
+
+    /// <summary>The ASCII characters <see cref="AppendString"/> escapes; <c>$</c> only before <c>{</c>.</summary>
+    private static readonly bool[] EscapedAscii = CreateEscapedAscii();
+
     private readonly StringBuilder _builder;
-    private readonly Stack<bool> _hasItems = new Stack<bool>();
+    /// <summary>Whether each open array or object, innermost last, holds an item yet.</summary>
+    private bool[] _hasItems = new bool[16];
+    private int _depth;
     private bool _afterPropertyName;
+    private bool _hasRoot;
 
     internal CanopyJsonWriter(int capacity = 256) {
         _builder = new StringBuilder(capacity);
@@ -29,12 +37,12 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter BeginObject() {
         BeforeValue();
         _builder.Append('{');
-        _hasItems.Push(false);
+        Push();
         return this;
     }
 
     internal CanopyJsonWriter EndObject() {
-        _hasItems.Pop();
+        Pop();
         _builder.Append('}');
         return this;
     }
@@ -42,26 +50,25 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter BeginArray() {
         BeforeValue();
         _builder.Append('[');
-        _hasItems.Push(false);
+        Push();
         return this;
     }
 
     internal CanopyJsonWriter EndArray() {
-        _hasItems.Pop();
+        Pop();
         _builder.Append(']');
         return this;
     }
 
     internal CanopyJsonWriter Name(string name) {
-        if (_hasItems.Count == 0) {
+        if (_depth == 0) {
             throw new InvalidOperationException("A property name must be written inside an object.");
         }
 
-        if (_hasItems.Peek()) {
+        if (_hasItems[_depth - 1]) {
             _builder.Append(',');
         } else {
-            _hasItems.Pop();
-            _hasItems.Push(true);
+            _hasItems[_depth - 1] = true;
         }
 
         AppendString(name);
@@ -83,7 +90,13 @@ internal sealed class CanopyJsonWriter {
     internal CanopyJsonWriter Number(long value) {
         RequireSafeMagnitude((decimal)value);
         BeforeValue();
+#if NETCOREAPP3_0_OR_GREATER
+        Span<char> digits = stackalloc char[20];
+        value.TryFormat(digits, out var written, default, CultureInfo.InvariantCulture);
+        _builder.Append(digits.Slice(0, written));
+#else
         _builder.Append(value.ToString(CultureInfo.InvariantCulture));
+#endif
         return this;
     }
 
@@ -165,97 +178,121 @@ internal sealed class CanopyJsonWriter {
 
     public override string ToString() => _builder.ToString();
 
+    private void Push() {
+        if (_depth == _hasItems.Length) {
+            Array.Resize(ref _hasItems, _depth * 2);
+        }
+
+        _hasItems[_depth++] = false;
+    }
+
+    private void Pop() {
+        if (_depth == 0) {
+            throw new InvalidOperationException("Stack empty.");
+        }
+
+        _depth--;
+    }
+
     private void BeforeValue() {
         if (_afterPropertyName) {
             _afterPropertyName = false;
             return;
         }
 
-        if (_hasItems.Count == 0) {
-            if (_builder.Length > 0) {
+        if (_depth == 0) {
+            if (_hasRoot) {
                 throw new InvalidOperationException("A JSON document can hold only one root value.");
             }
 
+            _hasRoot = true;
             return;
         }
 
-        if (_hasItems.Peek()) {
+        if (_hasItems[_depth - 1]) {
             _builder.Append(',');
         } else {
-            _hasItems.Pop();
-            _hasItems.Push(true);
+            _hasItems[_depth - 1] = true;
         }
     }
 
+    /// <summary>
+    /// Writes a JSON string. Runs of characters that need no escape are copied in one piece; a valid surrogate pair
+    /// is copied as is and a lone surrogate is escaped, so the text survives UTF-8 encoding.
+    /// </summary>
     private void AppendString(string value) {
-        _builder.Append('"');
+        var builder = _builder;
+        builder.Append('"');
+        var start = 0;
         for (var index = 0; index < value.Length; index++) {
             var ch = value[index];
-            if (char.IsSurrogate(ch)) {
-                // A valid pair is copied as is; a lone surrogate is escaped so it survives UTF-8 encoding.
-                if (char.IsHighSurrogate(ch) && index + 1 < value.Length && char.IsLowSurrogate(value[index + 1])) {
-                    _builder.Append(ch).Append(value[index + 1]);
-                    index++;
-                } else {
-                    AppendUnicodeEscape(ch);
+            if (ch < 128) {
+                if (!EscapedAscii[ch] || (ch == '$' && (index + 1 >= value.Length || value[index + 1] != '{'))) {
+                    continue;
                 }
-
+            } else if (char.IsSurrogate(ch)) {
+                if (char.IsHighSurrogate(ch) && index + 1 < value.Length && char.IsLowSurrogate(value[index + 1])) {
+                    index++;
+                    continue;
+                }
+            } else if (ch != (char)0x2028 && ch != (char)0x2029) {
                 continue;
             }
 
-            switch (ch) {
-                case '"':
-                    _builder.Append("\\\"");
-                    break;
-                case '\\':
-                    _builder.Append("\\\\");
-                    break;
-                case '\b':
-                    _builder.Append("\\b");
-                    break;
-                case '\f':
-                    _builder.Append("\\f");
-                    break;
-                case '\n':
-                    _builder.Append("\\n");
-                    break;
-                case '\r':
-                    _builder.Append("\\r");
-                    break;
-                case '\t':
-                    _builder.Append("\\t");
-                    break;
-                case '<':
-                case '>':
-                case '&':
-                case (char)0x2028:
-                case (char)0x2029:
-                case '`':
-                    AppendUnicodeEscape(ch);
-                    break;
-                case '$':
-                    if (index + 1 < value.Length && value[index + 1] == '{') {
-                        AppendUnicodeEscape(ch);
-                    } else {
-                        _builder.Append(ch);
-                    }
-
-                    break;
-                default:
-                    if (ch < ' ') {
-                        AppendUnicodeEscape(ch);
-                    } else {
-                        _builder.Append(ch);
-                    }
-
-                    break;
+            if (index > start) {
+                builder.Append(value, start, index - start);
             }
+
+            AppendEscape(builder, ch);
+            start = index + 1;
         }
 
-        _builder.Append('"');
+        if (start < value.Length) {
+            builder.Append(value, start, value.Length - start);
+        }
+
+        builder.Append('"');
     }
 
-    private void AppendUnicodeEscape(char ch) {
-        _builder.Append("\\u").Append(((int)ch).ToString("x4", CultureInfo.InvariantCulture));
+    private static void AppendEscape(StringBuilder builder, char ch) {
+        switch (ch) {
+            case '"':
+                builder.Append("\\\"");
+                break;
+            case '\\':
+                builder.Append("\\\\");
+                break;
+            case '\b':
+                builder.Append("\\b");
+                break;
+            case '\f':
+                builder.Append("\\f");
+                break;
+            case '\n':
+                builder.Append("\\n");
+                break;
+            case '\r':
+                builder.Append("\\r");
+                break;
+            case '\t':
+                builder.Append("\\t");
+                break;
+            default:
+                builder.Append('\\').Append('u').Append(Hex[(ch >> 12) & 0xF]).Append(Hex[(ch >> 8) & 0xF]).Append(Hex[(ch >> 4) & 0xF]).Append(Hex[ch & 0xF]);
+                break;
+        }
+    }
+
+    private static bool[] CreateEscapedAscii() {
+        var escaped = new bool[128];
+        for (var ch = 0; ch < ' '; ch++) {
+            escaped[ch] = true;
+        }
+
+        foreach (var ch in "\"\\<>&`$") {
+            escaped[ch] = true;
+        }
+
+        return escaped;
     }
 }
