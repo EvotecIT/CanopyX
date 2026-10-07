@@ -265,9 +265,11 @@ test("restoring an acknowledged envelope clears a recoverable size error without
 
 test("keyboard resizing during preference loading and presentation edits during query restoration win", async ({ page }) => {
   await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
+  // Keyboard resizing starts from the rendered width, which includes the identity column's share of spare width.
+  const rendered = await page.locator('.cx-hcell[data-cx-column="name"]').evaluate(cell => Math.floor(cell.getBoundingClientRect().width));
   await page.locator('[data-cx-column="name"] .cx-resize').press('ArrowRight');
   await page.evaluate(input => loadResolve(input),settings()); await page.evaluate(api+'.ready');
-  expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(190);
+  expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(rendered + 10);
   const input=settings(), rows=definition().rows.filter(row=>row.cells.name==='Archive').slice(0,10);
   await open(page, definition(), `CanopyX.configure('prefs',{viewStore:{load(){return ${JSON.stringify(input)};},save(){}},
     source:{query(query){window.requested=query;return new Promise(r=>window.queryResolve=r);}}});`, false);

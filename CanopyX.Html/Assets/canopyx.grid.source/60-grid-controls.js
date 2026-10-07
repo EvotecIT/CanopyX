@@ -1,13 +1,14 @@
   // ---------- grid toolbar, column layout and named views ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridFilters: "Filters", gridColumn: "Column", gridOperator: "Condition", gridValue: "Value (UTC for dates)",
-    gridValueType: "Raw value type", gridText: "Text", gridBoolean: "Boolean", gridAddFilter: "Add filter",
+    gridFilters: "Filters", gridColumn: "Column", gridOperator: "Condition",
+    gridValueType: "Raw value type", gridText: "Text", gridBoolean: "Boolean",
     gridRemoveFilter: "Remove {column} filter", gridApply: "Apply", gridClearFilters: "Clear all filters",
-    gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later",
-    gridFitColumn: "Fit {column}", gridFitAllColumns: "Fit all columns",
+    gridFitAllColumns: "Fit all columns",
     gridViews: "Views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view",
     gridResetView: "Reset view", gridChooseView: "Choose a saved view", gridInvalidFilter: "Enter a valid filter value.",
-    gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of", gridIsNull: "is missing", gridIsNotNull: "is present"
+    gridContains: "contains", gridStartsWith: "starts with", gridIn: "is any of", gridIsNull: "is missing", gridIsNotNull: "is present",
+    gridFindColumn: "Find a column…", gridShowAllColumns: "Show all", gridResetColumns: "Reset columns",
+    gridReorderColumn: "{column}: drag, or press Alt+Up or Alt+Down to move", gridPinnedLeft: "Pinned left", gridPinnedRight: "Pinned right"
   }));
 
   function gridButton(text, run) {
@@ -51,45 +52,28 @@
       return { details: details, panel: panel };
     },
 
-    buildGridColumns() {
-      this.columnPanel = this.controlPanel(this.labels.columns, "cx-grid-columns", () => this.syncColumnControls()).panel;
-      this.syncColumnControls();
+    // The Columns menu body ships with the optional editor and renders on first open.
+    buildGridColumns() { this.columnPanel = this.controlPanel(this.labels.columns, "cx-grid-columns", panel => this.renderGridColumns(panel)).panel; },
+    syncColumnControls() {},
+    async renderGridColumns(panel) {
+      setText(panel, this.labels.loading);
+      try { await loadGridFilterEditor(); if (!this.destroyed && panel.parentElement.open) { this.renderGridColumns(panel); this.controlFlyouts.forEach(item => item.position()); } }
+      catch (error) { if (!this.destroyed) { setText(panel, this.labels.gridLoadFailed); this.emit("error", { error }); } }
     },
-    syncColumnControls() {
-      if (!this.columnPanel) return;
-      const active = document.activeElement, columnId = active && active.getAttribute("data-cx-layout-column"), action = active && active.getAttribute("data-cx-layout-action");
-      this.columnPanel.textContent = "";
-      this.columns.forEach((column, index) => {
-        const row = h("div", "cx-grid-column-choice"), input = h("input"); input.type = "checkbox"; input.checked = !column.hidden;
-        input.disabled = !column.hidden && this.visibleColumns().length === 1;
-        input.setAttribute("data-cx-layout-column", column.id); input.setAttribute("data-cx-layout-action", "visible");
-        input.addEventListener("change", () => this.setColumnVisible(column.id, input.checked));
-        row.appendChild(gridInputLabel(column.title, input));
-        for (const [delta, label] of [[-1, "gridMoveEarlier"], [1, "gridMoveLater"]]) {
-          const move = gridButton(delta < 0 ? "↑" : "↓", () => {
-            const ids = this.columns.map(item => item.id), at = ids.indexOf(column.id), next = at + delta;
-            if (next >= 0 && next < ids.length) { [ids[at], ids[next]] = [ids[next], ids[at]]; this.setColumnOrder(ids); }
-          });
-          move.disabled = index + delta < 0 || index + delta >= this.columns.length;
-          move.setAttribute("aria-label", fill(this.labels[label], { column: column.title }));
-          move.setAttribute("data-cx-layout-column", column.id); move.setAttribute("data-cx-layout-action", delta < 0 ? "earlier" : "later"); row.appendChild(move);
-        }
-        this.columnPanel.appendChild(row);
-        const fit = gridButton("↔", () => { if (!this.pendingQuery && this.acceptedQuery) this.autoFitColumn(column.id); });
-        fit.disabled = !!this.pendingQuery || !this.acceptedQuery;
-        fit.setAttribute("aria-label", fill(this.labels.gridFitColumn, { column: column.title })); fit.title = fit.getAttribute("aria-label");
-        fit.setAttribute("data-cx-layout-column", column.id); fit.setAttribute("data-cx-layout-action", "fit"); row.appendChild(fit);
-      });
-      const fitAll = gridButton(this.labels.gridFitAllColumns, () => { if (!this.pendingQuery && this.acceptedQuery) this.autoFitColumns(); });
-      fitAll.disabled = !!this.pendingQuery || !this.acceptedQuery; this.columnPanel.appendChild(fitAll);
-      if (columnId) {
-        const target = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].find(input =>
-          input.getAttribute("data-cx-layout-column") === columnId && input.getAttribute("data-cx-layout-action") === action && !input.disabled);
-        const available = [...this.columnPanel.querySelectorAll("[data-cx-layout-column]")].filter(input =>
-          input.getAttribute("data-cx-layout-column") === columnId && !input.disabled);
-        const fallback = available.find(input => input.getAttribute("data-cx-layout-action") !== "visible") || available[0];
-        (target || fallback || this.columnPanel.parentNode.querySelector("summary")).focus({ preventScroll: true });
-      }
+    // A moved column joins the pinned group of the column it lands next to, as header moves do.
+    moveColumnChoice(column, target, after) {
+      column.pin = target.pin;
+      const ids = this.columns.map(item => item.id).filter(id => id !== column.id);
+      ids.splice(ids.indexOf(target.id) + after, 0, column.id); this.setColumnOrder(ids);
+    },
+    showAllColumns() {
+      for (const column of this.columns) column.hidden = false;
+      this.buildHeader(); this.syncColumnControls(); this.render(); this.noteViewPreferenceIntent?.(); this.stateChanged();
+    },
+    resetColumns() {
+      const state = this.getState(); this.restorePreferenceIntent = this.viewPreferenceIntent;
+      this.applyStatePresentation({ ...state, columns: this.readGridState({ ...state, columns: this.defaultState.columns }).columns });
+      this.noteViewPreferenceIntent?.(); this.stateChanged();
     },
 
     buildSavedViews() {

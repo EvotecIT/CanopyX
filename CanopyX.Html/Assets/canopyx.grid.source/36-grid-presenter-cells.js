@@ -21,7 +21,8 @@
         value.setAttribute("role","img");value.setAttribute("aria-label",raw?grid.labels.yes:grid.labels.no);
         if(raw)value.appendChild(gridIcon("check"));
       } else if(options.kind==="state"||options.kind==="enum") {
-        if(options.kind==="state"||tone==="success") {
+        if(options.quietTones?.includes(tone)) add(text,"p-muted");
+        else if(options.kind==="state"||tone==="success") {
           const state=add("","p-state"+(tone==="success"?" quiet":""));const dot=h("span","p-dot "+(tone==="success"?"quiet":tone));
           toneColors(dot,toneOf(tone));state.append(dot,document.createTextNode(text));
         } else {const pill=add(text,"p-pill "+tone);applyTone(pill,pill.className,toneOf(tone));}

@@ -5,7 +5,7 @@
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
     const fields = {link:["hrefColumn","newWindow"],icon:["glyph"],progress:["maximum","thresholds"],boolean:["inverted"],
-      list:["separator","limit"],longText:["mono"],enum:["tones"],state:["tones"],change:["deltaColumn","higherIsGood"],
+      list:["separator","limit"],longText:["mono"],enum:["tones","quietTones"],state:["tones","quietTones"],change:["deltaColumn","higherIsGood"],
       statusStrip:[],sparklineBars:["thresholds","minimum","scaleMaximum","higherIsGood","mark"],
       sparklineLine:["thresholds","minimum","scaleMaximum","higherIsGood","mark"],identifier:["secondaryColumn","mono"],tags:["separator","limit"],missing:[]};
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
@@ -25,6 +25,7 @@
     if ((options.minimum===undefined)!==(options.scaleMaximum===undefined)||options.minimum!==undefined&&
         (![options.minimum,options.scaleMaximum].every(value=>Number.isFinite(value)&&Math.abs(value)<=Number.MAX_SAFE_INTEGER)||options.minimum>=options.scaleMaximum)) invalid();
     if (options.mark!==undefined&&!['last','worst'].includes(options.mark)) invalid();
+    if (options.quietTones!==undefined&&(!Array.isArray(options.quietTones)||options.quietTones.length>16||options.quietTones.some(tone=>typeof tone!=="string"||!/^[a-z][a-z0-9-]{0,31}$/.test(tone)))) invalid();
     if (options.tones!==undefined&&(!options.tones||typeof options.tones!=="object"||Array.isArray(options.tones)||Object.keys(options.tones).length>512||
         Object.entries(options.tones).some(([key,value])=>key.length>4096||typeof value!=="string"))) invalid();
     if (options.thresholds!==undefined&&(!Array.isArray(options.thresholds)||options.thresholds.length>32||options.thresholds.some((point,index)=>

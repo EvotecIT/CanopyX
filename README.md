@@ -102,6 +102,8 @@ A consumer with a solution or build list of its own adds the two CanopyX project
 
 Flat grids use the [Graphite design](docs/design/data-grid-spec.html). Choose `density: "compact"`, `"default"`, or `"comfortable"` in JavaScript, or `CanopyGridView.Density` in .NET, for 28, 34 or 42 pixel rows. An explicit row height takes precedence. `zebra: true` / `Zebra = true` enables alternate-row backgrounds. Hosts can set the existing colour tokens and the typography, spacing and radius inputs documented in [architecture](docs/architecture.md#theming).
 
+Columns size to their header and content and fill the grid width; the identity column (the row header, or the first column) takes spare width and stays pinned left when the grid scrolls sideways. When space is short, normal columns shrink, `Optional` columns hide, and only then the grid scrolls; `Essential` columns are never trimmed. `Width` is preferred unless `Fixed`, and `MinimumWidth`, `MaximumWidth`, `Flex`, `AutoSize`, `Priority`/`ResponsivePriority`, `Pinned` and `RowHeader` map to the options DataTables and AG Grid users know; see [column sizing, priority and pinning](docs/column-layout.md). A grid whose rows fit is as tall as its rows. A plain row click never selects (`RowAction` can open details or follow the row link), row tones stay quiet unless `RowAccents` is set, enum and state presenters render the tones in `WithQuietTones(...)` as plain muted text, and scrollbars follow the theme.
+
 Define typed columns and complete inline records with `CanopyGridView`, then write a page or host fragment:
 
 ```csharp

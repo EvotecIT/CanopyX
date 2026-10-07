@@ -9,7 +9,7 @@ const rows = count => Array.from({ length: count }, (_, i) => ({ id: "r" + Strin
 async function open(page, count = 400, patch = {}, setup = "") {
   const view = { protocol: "canopyx/2", type: "grid", id: "heights", label: "Measured records", rowHeight: "auto", pageSize: 100,
     selection: "multiple", search: false, columns: [{ id: "name", title: "Record", kind: "text", width: 160 },
-      { id: "notes", title: "Notes", kind: "text", width: 220, wrap: true }], source: { kind: "inline" }, rows: rows(count), ...patch };
+      { id: "notes", title: "Notes", kind: "text", width: 220, wrap: true, fixed: true }], source: { kind: "inline" }, rows: rows(count), ...patch };
   await page.route("http://canopyx.test/heights", route => route.fulfill({ contentType: "text/html", body: viewPage(view)
     .replace("</head>", "<script>" + setup + "</script></head>").replace('<body class="cx-page">', '<body class="cx-page"><main><h1>Records</h1>')
     .replace("</body>", "</main></body>") }));

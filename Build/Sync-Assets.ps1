@@ -294,11 +294,12 @@ global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
 if (installed.has(context.DataGrid.prototype)) return;
 const {DataGrid,h,setText,setAttr,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
 GRID_FILTER_LABELS,gridResultShape,gridOperationActive,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,isCellObject,foldText,
-gridOverlayTheme,gridRestoreFocus,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER} = context;
+reachable,gridColumnFiltered,gridMatches,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,PROTOCOL,MAX_PROTOCOL_INTEGER,reportingRangeRows} = context;
 const buildFilters = DataGrid.prototype.buildGridFilters;
 '@
 $editorFooter = @'
 DataGrid.prototype.buildGridFilters = buildFilters;
+context.GRID_REPORTING?.installFilters?.({gridDateInput});
 installed.add(DataGrid.prototype);
 }};
 })(typeof window !== "undefined" ? window : globalThis);

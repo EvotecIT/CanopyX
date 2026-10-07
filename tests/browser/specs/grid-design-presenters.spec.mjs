@@ -27,7 +27,7 @@ async function open(page,theme='light',view=base) {
 
 test('long bar histories preserve an early worst period and the last-period marker within the available width',async({page})=>{
   for(const mark of ['worst','last']){
-    const column={id:'history',title:'Daily history',kind:'text',width:120,presenter:{kind:'sparklineBars',mark,thresholds:[{upperBound:10,tone:'success'},{upperBound:100,tone:'danger'}]}};
+    const column={id:'history',title:'Daily history',kind:'text',width:120,fixed:true,presenter:{kind:'sparklineBars',mark,thresholds:[{upperBound:10,tone:'success'},{upperBound:100,tone:'danger'}]}};
     const series=periods.map((point,index)=>({period:point.period,value:index===2?75:5}));
     await open(page,'light',{...base,columns:[column],rows:[{id:'one',cells:{history:{value:'90 daily samples',series}}}]});
     const bars=page.locator('.p-spark');expect(await bars.locator('i').count()).toBeLessThan(90);

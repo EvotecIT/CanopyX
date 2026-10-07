@@ -1,12 +1,16 @@
-  // ---------- reporting filter controls over the existing typed query owner ----------
-
-  const REPORT_FILTER_BASE = {};
-  for (const method of ["buildGridFilters", "addGridFilter", "readGridFilter"])
-    REPORT_FILTER_BASE[method] = DataGrid.prototype[method];
-  REPORT_FILTER_BASE.syncQuerySummary = DataGrid.prototype.syncQuerySummary;
-
-  function reportingFilterShape(query) { return JSON.stringify([query?.filters || [], query?.filterGroup || null]); }
-
+  // ---------- reporting range and category conditions; installed with the optional filter editor ----------
+  // Reporting-only and retired control labels; hosts that translate them get the reporting runtime from CanopyLabels.
+  DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+    gridPinColumn: "{column}: pinned region", gridPinNone: "Scroll", gridFilterGroupTitle: "Additional grouped conditions",
+    gridAddFilterGroup: "Add condition group", gridFacetValues: "Values and counts from applied filters",
+    gridFacetIncludeCurrent: "Include this column's applied filters", gridFacetLoad: "Load values",
+    gridFacetReload: "Values changed or the request was cancelled. Load values again.",
+    gridBetween: "between (inclusive)", gridRangeEnd: "Upper value (UTC for dates)",
+    gridInvalidRange: "Enter an upper value greater than or equal to the lower value.",
+    gridSuggestedCategory: "Suggested category", gridChooseCategory: "Choose a category", gridBooleanValue: "Boolean value",
+    gridHealthy: "Healthy", gridValue: "Value (UTC for dates)", gridAddFilter: "Add filter",
+    gridMoveEarlier: "Move {column} earlier", gridMoveLater: "Move {column} later", gridFitColumn: "Fit {column}"
+  }));
   function reportingRangeRows(filters) {
     const rows = [];
     for (let index = 0; index < filters.length; index++) {
@@ -27,35 +31,10 @@
     gridScalar(value, column); return value;
   }
 
-
+  // The editor calls this after installing, so these overrides wrap its condition rows; gridDateInput is an editor helper.
+  GRID_REPORTING.installFilters = ({ gridDateInput }) => {
+  const REPORT_FILTER_BASE = { addGridFilter: DataGrid.prototype.addGridFilter, readGridFilter: DataGrid.prototype.readGridFilter };
   Object.assign(DataGrid.prototype, {
-    syncQuerySummary() {
-      REPORT_FILTER_BASE.syncQuerySummary.call(this);
-      const controls = this.reportingFilters, shape = reportingFilterShape(this.getQuery());
-      if (!controls?.details.open || shape === this.reportingFilterDraftBase) return;
-      if (this.reportingFilterSubmitEpoch === this.queryEpoch) this.reportingFilterDraftBase = shape;
-      else {
-        // An accepted chip/API/restore change retires the old draft, rather than silently reinstalling it on Apply.
-        const hadFocus = controls.panel.contains(document.activeElement);
-        controls.details.open = false;
-        if (hadFocus) controls.details.querySelector("summary").focus({ preventScroll: true });
-      }
-    },
-
-
-    buildGridFilters() {
-      if (!this.view.reporting) return REPORT_FILTER_BASE.buildGridFilters.call(this);
-      this.reportingFilters = this.controlPanel(this.labels.gridFilters, "cx-grid-filters", panel => this.renderGridFilters(panel));
-      this.reportingFilters.panel.id = this.id + "-filters";
-      this.reportingFilters.details.addEventListener("keydown", event => {
-        if (event.key === "Escape" && this.reportingFilterReturn) {
-          this.focusReportingFilterHeader(); this.reportingFilterReturn = null;
-        }
-      });
-      this.reportingFilters.details.addEventListener("toggle", () => this.syncReportingFilterHeaders());
-    },
-
-
     addGridFilter(parent, predicate) {
       if (!this.view.reporting) return REPORT_FILTER_BASE.addGridFilter.call(this, parent, predicate);
       const count = parent.children.length, range = predicate && predicate.operator === "between";
@@ -108,3 +87,4 @@
       return [{ column: column.id, operator: "ge", values: [values[0]] }, { column: column.id, operator: "le", values: [values[1]] }];
     }
   });
+  };

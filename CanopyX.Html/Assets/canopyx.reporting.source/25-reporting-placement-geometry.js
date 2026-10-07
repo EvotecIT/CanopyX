@@ -13,13 +13,15 @@
         column.responsiveHidden = true; total -= reportingWidth(this, column, column.width); remaining--;
       }
     }
-    const visible = requested.filter(column => !column.responsiveHidden);
+    const visible = requested.filter(column => !column.responsiveHidden && !column.fitHidden);
     return ["left", "none", "right"].flatMap(pin => visible.filter(column => column.pin === pin));
   };
   DataGrid.prototype.applyWidths = function () {
-    this.fitInitialColumns();
+    this.fitLayout();
     const visible = this.visibleColumns();
-    if (this.cols && (visible.length !== this.cols.length || visible.some((column, index) => column !== this.cols[index]))) {
+    if (this.fitBuilding && this.cols && (visible.length !== this.cols.length || visible.some((column, index) => column !== this.cols[index])))
+      queueMicrotask(() => this.destroyed || this.applyWidths());
+    else if (this.cols && (visible.length !== this.cols.length || visible.some((column, index) => column !== this.cols[index]))) {
       const held = this.heldCell(), columnId = held && this.cols[held.index] && this.cols[held.index].id;
       const heldHeader = this.headRow.contains(document.activeElement);
       this.buildHeader(); this.syncColumnControls(); this.render(); this.restoreReportingFocus(held, columnId);

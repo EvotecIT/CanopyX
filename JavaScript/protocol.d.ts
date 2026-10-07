@@ -115,6 +115,7 @@ export type LabelName =
   | "gridBetween" | "gridRangeEnd" | "gridInvalidRange" | "gridSuggestedCategory" | "gridChooseCategory" | "gridBooleanValue" | "gridTrue" | "gridFalse" | "gridHeaderFilter"
   | "gridExpandCell" | "gridCloseCell" | "gridCloseRecord" | "gridMoveColumn" | "gridResizeHelp" | "gridColumnMoved" | "gridFitColumn" | "gridFitAllColumns"
   | "gridPinColumn" | "gridPinNone" | "gridPinLeft" | "gridPinRight" | "gridResponsiveHidden"
+  | "gridFindColumn" | "gridShowAllColumns" | "gridResetColumns" | "gridReorderColumn" | "gridPinnedLeft" | "gridPinnedRight"
   | "gridFilterGroupTitle" | "gridFilterMatch" | "gridFilterAll" | "gridFilterAny" | "gridAddFilterGroup" | "gridDeleteFilterGroup"
   | "gridFacetValues" | "gridFacetSearch" | "gridFacetIncludeCurrent" | "gridFacetLoad" | "gridFacetChoose" | "gridFacetCounts" | "gridFacetReload"
   | "gridRenameView" | "gridDefaultView" | "gridClearDefaultView" | "gridDefaultViewName" | "gridNoDefaultView" | "gridDefaultViewOption"

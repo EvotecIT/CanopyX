@@ -83,7 +83,7 @@
     applyStatePresentation(state) {
       if (this.cancelResize) this.cancelResize();
       const current = new Map(this.columns.map(column => [column.id, column]));
-      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), saved, { autoWidth: false }));
+      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { sized: false, priority: current.get(saved.id).basePriority }, saved));
       this.setTimeZone(state.timeZone); this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
     },
@@ -93,7 +93,12 @@
           ids.some(id => !this.columns.some(column => column.id === id))) throw new Error("CanopyX: name each column once.");
       if (this.cancelResize) this.cancelResize();
       const columns = new Map(this.columns.map(column => [column.id, column]));
-      this.columns = ids.map(id => columns.get(id)); this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
+      this.columns = ids.map(id => columns.get(id));
+      // An order is honoured as given: a pinned column moved into the scrolling centre stops being pinned.
+      this.columns.forEach((column, index, all) => {
+        if (column.pin === "left" && all.slice(0, index).some(item => item.pin !== "left") || column.pin === "right" && all.slice(index + 1).some(item => item.pin !== "right")) column.pin = "none";
+      });
+      this.buildHeader(); this.syncColumnControls(); this.scheduleRender(); this.stateChanged();
     },
 
     viewName(name) {

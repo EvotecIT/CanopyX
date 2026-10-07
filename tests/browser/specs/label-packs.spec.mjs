@@ -28,11 +28,11 @@ for (const [language,labels,staticLabels] of packs) {
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
     expect(Object.keys(labels).sort()).toEqual(await page.evaluate(()=>Object.keys(CanopyX.labels).sort()));
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});
-    await expect(page.getByPlaceholder(labels.searchPlaceholder)).toBeVisible();
+    await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await expect(page.locator('.cx-grid-columns > summary')).toHaveText(labels.columns);
     await expect(page.getByRole('button',{name:labels.gridNextPage,exact:true})).toBeVisible();
     await page.locator('.cx-grid-columns > summary').click();
-    await expect(page.getByRole('button',{name:labels.gridFitAllColumns,exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:labels.gridResetColumns,exact:true})).toBeVisible();
     await page.locator('.cx-grid-columns > summary').click();
     await page.locator('.cx-grid-export > summary').click();
     await expect(page.getByRole('button',{name:'Host copy',exact:true})).toBeVisible();
@@ -43,7 +43,7 @@ for (const [language,labels,staticLabels] of packs) {
   test(`${language} .NET example uses the complete pack in a compact portable page`,async({page})=>{
     await page.setViewportSize({width:390,height:844});
     await openExample(page,`localized-grid-${language}.html`);
-    await expect(page.getByPlaceholder(labels.searchPlaceholder)).toBeVisible();
+    await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await page.locator('.cx-header-check').click();await expect(page.getByRole('button',{name:labels.gridSelectPage,exact:true})).toBeVisible();
     await page.getByRole('button',{name:labels.gridSelectPage,exact:true}).click();
     await page.keyboard.press('Escape');

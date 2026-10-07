@@ -2,10 +2,11 @@
   Object.assign(DataGrid.prototype, {
     build() {
       const host = this.host, style = host.style, signal = this.lifetime.signal;
-      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h"),rowHeight=style.getPropertyValue("--cx-row-h"),rowPriority=style.getPropertyPriority("--cx-row-h"),density=host.getAttribute("data-cx-density");
-      this.restoreHeight = () => {style.setProperty("--cx-min-h",minimum,priority);style.setProperty("--cx-row-h",rowHeight,rowPriority);if(density===null)host.removeAttribute("data-cx-density");else host.setAttribute("data-cx-density",density);};
+      const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h"),rowHeight=style.getPropertyValue("--cx-row-h"),rowPriority=style.getPropertyPriority("--cx-row-h"),density=host.getAttribute("data-cx-density"),maximum=style.maxHeight;
+      this.restoreHeight = () => {style.maxHeight=maximum;style.setProperty("--cx-min-h",minimum,priority);style.setProperty("--cx-row-h",rowHeight,rowPriority);if(density===null)host.removeAttribute("data-cx-density");else host.setAttribute("data-cx-density",density);};
       style.removeProperty("--cx-min-h");
       host.classList.add("cx-host", "cx-data-grid");
+      host.classList.toggle("cx-row-accents", !!this.view.rowAccents);
       host.setAttribute("data-cx-density", this.view.density || "default");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
       style.setProperty("--cx-row-h", this.rowH + "px");
@@ -56,10 +57,11 @@
         if (this.destroyed) return;
         if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
-          height + (child === grid ? 0 : child.offsetHeight), this.rowH * 4 + 2)) + "px");
+          height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
         if (!(this.sized = this.hasGridSize())) return;
         this.applyWidths();
         this.updateGridPhone();
+        this.fitHeight();
         this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
         if (this.hiddenScrollTop !== undefined) {
           const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);

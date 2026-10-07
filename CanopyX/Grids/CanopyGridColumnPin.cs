@@ -1,6 +1,6 @@
 namespace CanopyX;
 
-/// <summary>Requested placement of a reporting column while the center scrolls horizontally.</summary>
+/// <summary>Requested placement of a flat-grid column while the center scrolls horizontally.</summary>
 public enum CanopyGridColumnPin {
     /// <summary>The column scrolls with the center.</summary>
     None,

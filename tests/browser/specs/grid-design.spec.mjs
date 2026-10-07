@@ -38,7 +38,7 @@ test("Graphite rows are unstriped by default and preserve explicit zebra styling
 });
 
 test("numeric headers align their control group and selected pinned cells remain opaque",async({page})=>{
-  await page.setViewportSize({width:650,height:900});await mount(page,{...base,columns:[...base.columns,{id:'amount',title:'Amount',kind:'number',width:180,sortable:true},{id:'note',title:'Note',kind:'text',width:600}],rows:[{id:'r1',tone:'warning',cells:{name:'First record',amount:20,note:'Wide scrolling content'}}]});
+  await page.setViewportSize({width:650,height:900});await mount(page,{...base,rowAccents:true,columns:[{...base.columns[0],fixed:true},{id:'amount',title:'Amount',kind:'number',width:180,fixed:true,sortable:true},{id:'note',title:'Note',kind:'text',width:600}],rows:[{id:'r1',tone:'warning',cells:{name:'First record',amount:20,note:'Wide scrolling content'}}]});
   const header=page.locator('.cx-hcell[data-cx-column="amount"]');
   expect(await header.evaluate(cell=>cell.querySelector('.cx-sort').getBoundingClientRect().left-cell.getBoundingClientRect().left)).toBeGreaterThan(40);
   await page.evaluate(()=>{grid.setColumnPinned('name','left');grid.setSelection(['r1']);});
@@ -53,7 +53,7 @@ test("numeric headers align their control group and selected pinned cells remain
   expect(await pinned.evaluate(element=>getComputedStyle(element,'::after').left)).toBe('2px');
   await page.evaluate(()=>grid.setColumnPinned('amount','left'));
   const cells=row.locator('[data-cx-pin="left"]');await expect(cells).toHaveCount(2);
-  expect((await cells.nth(1).boundingBox()).x).toBeCloseTo((await cells.nth(0).boundingBox()).x+220,0);
+  const first=await cells.nth(0).boundingBox();expect((await cells.nth(1).boundingBox()).x).toBeCloseTo(first.x+first.width,0);
   await page.setViewportSize({width:390,height:900});
   await expect(row.locator('[data-cx-pin="left"]')).toHaveCount(1);
 });

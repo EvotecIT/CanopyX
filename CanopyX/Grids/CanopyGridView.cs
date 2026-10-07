@@ -9,7 +9,7 @@ namespace CanopyX;
 /// Inline sources carry the complete dataset. Host sources obtain query result pages from a host hook;
 /// the host owns transport, query execution, and authorization. Both use the same column and cell definitions.
 /// </remarks>
-public sealed class CanopyGridView {
+public sealed partial class CanopyGridView {
     private int? _rowHeight;
     private int _pageSize = 100;
     private int _pageLength = 50;
@@ -147,6 +147,7 @@ public sealed class CanopyGridView {
         writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
         if (StatusBar) writer.Property("statusBar", true);
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
+        WriteRowPresentationJson(writer);
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
@@ -205,8 +206,9 @@ public sealed class CanopyGridView {
         if (Navigation == CanopyGridNavigation.Cursor && (Source != CanopyGridSourceKind.Host || Presentation != CanopyGridPresentation.Paged))
             throw new InvalidOperationException("Cursor navigation requires a hosted, paged grid.");
         CanopyJsonNames.TimeZone(TimeZone);
+        ValidateRowPresentation();
         var columnIds = new HashSet<string>(StringComparer.Ordinal);
-        var visible = 0;
+        var visible = 0; var rowHeaders = 0;
         foreach (var column in Columns) {
             if (column == null || !columnIds.Add(column.Id)) throw new InvalidOperationException("Grid columns must have unique identities and cannot be null.");
             CanopyJsonNames.ColumnKind(column.Kind);
@@ -214,6 +216,8 @@ public sealed class CanopyGridView {
             column.Presenter?.Validate(column, Columns);
             if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
             if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
+            column.ValidateLayout();
+            if (column.RowHeader && ++rowHeaders > 1) throw new InvalidOperationException("A grid has at most one row header column.");
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
