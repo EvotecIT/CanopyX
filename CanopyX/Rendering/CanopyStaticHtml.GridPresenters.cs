@@ -5,9 +5,8 @@ using System.Linq;
 namespace CanopyX.Rendering;
 
 public static partial class CanopyStaticHtml {
-    private static string GridPresenterText(CanopyGridView view, CanopyGridRow row, CanopyColumn column, CanopyCell? cell) {
+    private static string GridPresenterText(CanopyDataGridView view, CanopyGridRow row, CanopyColumn column, CanopyCell? cell) {
         var presenter = column.Presenter;
-        if (presenter == null && view.Reporting != null) view.Reporting.Presenters.TryGetValue(column.Id, out presenter);
         var text = cell?.DisplayText(column.Kind, view.Labels) ?? string.Empty;
         if (presenter?.Kind == CanopyGridPresenterKind.StatusStrip && cell != null && cell.Series.Count > 0) {
             return string.Join("; ", cell.Series.GroupBy(point => point.State ?? (point.Value.HasValue ? point.Value.Value.ToString("G", CultureInfo.InvariantCulture) : view.Labels.GridNoData))

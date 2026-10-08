@@ -31,7 +31,7 @@ public sealed class CanopyGridSummary {
     /// <summary>Writes validated HTML-safe <c>gridSummary</c> metadata, bounded to four million UTF-16 code units.</summary>
     /// <param name="view">The matching reporting definition.</param>
     /// <returns>Full-query summary metadata. Host code owns query evaluation and domain facts.</returns>
-    public string ToJson(CanopyGridView view) {
+    public string ToJson(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         Query.Validate(view);
@@ -68,7 +68,7 @@ public sealed class CanopyGridSummary {
         if (json.Length > 4194304) throw new InvalidOperationException("Summary metadata exceeds four million UTF-16 code units.");
         return json;
     }
-    internal static void WriteAggregates(CanopyJsonWriter writer, IDictionary<string, double?> values, CanopyGridView view, int count) {
+    internal static void WriteAggregates(CanopyJsonWriter writer, IDictionary<string, double?> values, CanopyDataGridView view, int count) {
         var declarations = view.Reporting!.Aggregates;
         if (values.Count != declarations.Count) throw new InvalidOperationException("Summary values must match every declared aggregate.");
         writer.Name("aggregates").BeginObject();

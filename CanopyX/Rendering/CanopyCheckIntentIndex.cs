@@ -13,7 +13,7 @@ internal sealed class CanopyCheckIntentIndex {
     private readonly Branch _root = new();
     private readonly CanopyCheckboxMode _mode;
 
-    internal CanopyCheckIntentIndex(CanopyView view) {
+    internal CanopyCheckIntentIndex(CanopyTreeView view) {
         _mode = view.Checkboxes;
         foreach (var intent in view.CheckIntents) {
             var branch = _root;

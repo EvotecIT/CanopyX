@@ -6,7 +6,7 @@ using CanopyX.Rendering;
 
 var output = Path.Combine(AppContext.BaseDirectory, "smoke-output");
 
-var view = new CanopyView("smoke", "Package smoke");
+var view = new CanopyTreeView("smoke", "Package smoke");
 view.Columns.Add(new CanopyColumn("name", "Name"));
 view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
 var root = new CanopyNode("root", "Root");
@@ -56,13 +56,20 @@ var interactionPage = view.ToHtmlPage();
 Require(interactionPage.Contains("\"editable\":true", StringComparison.Ordinal) && interactionPage.Contains("\"contextActions\"", StringComparison.Ordinal), "interaction definitions are missing");
 Require(interactionPage.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid), StringComparison.Ordinal), "interaction definitions chose the wrong runtime");
 
-var reporting = new CanopyGridView("reporting", "Ordered report") { Reporting = new CanopyGridReporting() };
+var reporting = new CanopyDataGridView("reporting", "Ordered report") { Reporting = new CanopyGridReporting() };
 reporting.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
-reporting.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
+reporting.GetColumn("name").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural);
 var reportingRow = new CanopyGridRow("item-2"); reportingRow.Cells["name"] = "Item 2"; reporting.Rows.Add(reportingRow);
 Require(CanopyHtmlAssets.GetRuntime(reporting) == CanopyRuntime.ReportingGrid, "reporting definitions chose the wrong runtime");
 Require(reporting.ToHtmlPage().Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid), StringComparison.Ordinal), "the package lost the embedded reporting script");
 Require(CanopyStaticHtml.RenderGrid(reporting).Contains("Item 2", StringComparison.Ordinal), "the reporting static fallback lost its record");
+var mapper = new CanopyGridMapper<string>(value => value).AddColumn(new CanopyColumn("name", "Name") {
+    Sizing = CanopyColumnSizing.Flex(1, 100, 320), Presenter = CanopyGridPresenter.State()
+}, value => value);
+var cursor = mapper.CreateView("cursor", "Cursor records", configure: grid => grid.Source = CanopyGridSource.HostedCursor());
+cursor.Validate();
+var cursorPage = new CanopyGridCursorPage(cursor.Id, "snapshot", 0); cursorPage.Rows.Add(mapper.MapRow("Accepted"));
+Require(CanopyStaticHtml.RenderGrid(cursor, cursorPage).Contains("Accepted", StringComparison.Ordinal), "the package lost cursor snapshot rendering or typed mapping");
 Console.WriteLine("CanopyX package smoke passed.");
 
 static void Require(bool condition, string failure) {

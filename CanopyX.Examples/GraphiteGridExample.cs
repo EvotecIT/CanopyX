@@ -6,25 +6,30 @@ namespace CanopyX.Examples;
 /// <summary>The Graphite cell presentation gallery, with raw values and long histories.</summary>
 internal static class GraphiteGridExample {
     internal static void Write(string output) {
-        var view = new CanopyGridView("graphite", "Graphite inventory") {
+        var view = new CanopyDataGridView("graphite", "Graphite inventory") {
             Noun = "records", StatusBar = true, AutoRowHeight = true,
             Selection = CanopySelectionMode.Multiple, Presentation = CanopyGridPresentation.Paged, PageLength = 10
         };
         view.Reporting = new CanopyGridReporting { Responsive = true };
-        view.Reporting.Layout.Add("name", new CanopyGridColumnLayout(priority: 0, alwaysVisible: true));
-        view.Reporting.Layout.Add("state", new CanopyGridColumnLayout(priority: 1, alwaysVisible: true));
-        view.Reporting.Layout.Add("latency", new CanopyGridColumnLayout(minimum: 80, priority: 2));
-        view.Columns.Add(new CanopyColumn("name", "Record") { Width = 180, Sortable = true, Presenter = CanopyGridPresenter.Identifier(mono: true), Section = "Identity" });
-        view.Columns.Add(new CanopyColumn("state", "State") { Width = 120, Sortable = true, Presenter = CanopyGridPresenter.Enum(), Section = "Status" });
-        view.Columns.Add(new CanopyColumn("flag", "Enabled") { Width = 80, Presenter = CanopyGridPresenter.Boolean(), Section = "Status" });
-        view.Columns.Add(new CanopyColumn("latency", "Latency (ms)") { Width = 130, Kind = CanopyColumnKind.Number, Sortable = true, Presenter = CanopyGridPresenter.Change("delta"), Aggregatable = true, Section = "Status" });
+        view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(180), Sortable = true, Presenter = CanopyGridPresenter.Identifier(mono: true), Section = "Identity" });
+        view.Columns.Add(new CanopyColumn("state", "State") { Sizing = CanopyColumnSizing.Preferred(120), Sortable = true, Presenter = CanopyGridPresenter.Enum(), Section = "Status" });
+        view.Columns.Add(new CanopyColumn("flag", "Enabled") { Sizing = CanopyColumnSizing.Preferred(80), Presenter = CanopyGridPresenter.Boolean(), Section = "Status" });
+        view.Columns.Add(new CanopyColumn("latency", "Latency (ms)") { Sizing = CanopyColumnSizing.Preferred(130), Kind = CanopyColumnKind.Number, Sortable = true, Presenter = CanopyGridPresenter.Change("delta"), Aggregatable = true, Section = "Status" });
         view.Columns.Add(new CanopyColumn("delta", "Change") { Kind = CanopyColumnKind.Number, Hidden = true });
-        view.Columns.Add(new CanopyColumn("progress", "Completion") { Width = 140, Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.Progress(100, new[] { new CanopyGridThreshold(10, CanopyTone.Danger), new CanopyGridThreshold(25, CanopyTone.Warning) }) });
-        view.Columns.Add(new CanopyColumn("history", "Last 90 days") { Width = 150, Presenter = CanopyGridPresenter.StatusStrip(), Section = "Status" });
-        view.Columns.Add(new CanopyColumn("bars", "History bars") { Width = 100, Presenter = CanopyGridPresenter.SparklineBars() });
-        view.Columns.Add(new CanopyColumn("line", "Trend") { Width = 120, Presenter = CanopyGridPresenter.SparklineLine() });
-        view.Columns.Add(new CanopyColumn("tags", "Tags") { Width = 160, Presenter = CanopyGridPresenter.Tags() });
-        view.Columns.Add(new CanopyColumn("notes", "Notes") { Width = 240, Wrap = true });
+        view.Columns.Add(new CanopyColumn("progress", "Completion") { Sizing = CanopyColumnSizing.Preferred(140), Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.Progress(100, new[] { new CanopyGridThreshold(10, CanopyTone.Danger), new CanopyGridThreshold(25, CanopyTone.Warning) }) });
+        view.Columns.Add(new CanopyColumn("history", "Last 90 days") { Sizing = CanopyColumnSizing.Preferred(150), Presenter = CanopyGridPresenter.StatusStrip(), Section = "Status" });
+        view.Columns.Add(new CanopyColumn("bars", "History bars") { Sizing = CanopyColumnSizing.Preferred(100), Presenter = CanopyGridPresenter.SparklineBars() });
+        view.Columns.Add(new CanopyColumn("line", "Trend") { Sizing = CanopyColumnSizing.Preferred(120), Presenter = CanopyGridPresenter.SparklineLine() });
+        view.Columns.Add(new CanopyColumn("tags", "Tags") { Sizing = CanopyColumnSizing.Preferred(160), Presenter = CanopyGridPresenter.Tags() });
+        view.Columns.Add(new CanopyColumn("notes", "Notes") { Sizing = CanopyColumnSizing.Preferred(240), Wrap = true });
+        view.GetColumn("name").Sizing = CanopyColumnSizing.Preferred(180, 40, int.MaxValue);
+        view.GetColumn("name").ResponsivePriority = 0;
+        view.GetColumn("name").AlwaysVisible = true;
+        view.GetColumn("state").Sizing = CanopyColumnSizing.Preferred(120, 40, int.MaxValue);
+        view.GetColumn("state").ResponsivePriority = 1;
+        view.GetColumn("state").AlwaysVisible = true;
+        view.GetColumn("latency").Sizing = CanopyColumnSizing.Preferred(130, 80, int.MaxValue);
+        view.GetColumn("latency").ResponsivePriority = 2;
         for (var i = 0; i < 23; i++) {
             var row = new CanopyGridRow("r" + i); var problem = i % 7 == 0;
             row.Cells["name"] = new CanopyCell("record-" + i.ToString("D3", CultureInfo.InvariantCulture)) { Secondary = "example.test" };

@@ -61,7 +61,7 @@ public sealed class ChildPackTests {
         .Select(page => JsonNode.Parse(page!.GetValue<string>())!["parent"]!.GetValue<string>())
         .ToHashSet(StringComparer.Ordinal);
 
-    private static (string Directory, CanopyBundleResult Result) Write(CanopyView view, CanopyBundleOptions options) {
+    private static (string Directory, CanopyBundleResult Result) Write(CanopyTreeView view, CanopyBundleOptions options) {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-cpack-" + Guid.NewGuid().ToString("N"));
         return (directory, new CanopyBundleWriter(options).Write(view, directory));
     }

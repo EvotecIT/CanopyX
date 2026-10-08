@@ -34,7 +34,7 @@ public sealed class GridViewStorageTests {
 
     [Fact]
     public void DurablePreferences_AreExplicitlyKeyedAndStayInTheReportingRuntime() {
-        var view = new CanopyGridView("preferences", "Preferences") { Reporting = new CanopyGridReporting() };
+        var view = new CanopyDataGridView("preferences", "Preferences") { Reporting = new CanopyGridReporting() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.DoesNotContain("viewStorage", view.ToJson());
         view.Reporting.ViewStorage = CanopyGridViewStorage.Local;
@@ -51,7 +51,7 @@ public sealed class GridViewStorageTests {
 
     [Fact]
     public void SavedViewLabels_SelectAndTravelWithTheReportingRuntime() {
-        var view = new CanopyGridView("preferences", "Preferences");
+        var view = new CanopyDataGridView("preferences", "Preferences");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Labels.GridDefaultView = "Use by default";
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(view));

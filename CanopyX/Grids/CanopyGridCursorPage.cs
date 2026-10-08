@@ -51,7 +51,7 @@ public sealed class CanopyGridCursorPage {
     /// <summary>Writes the HTML-safe <c>gridCursorPage</c> document without inventing unknown counts.</summary>
     /// <param name="view">Optional owning grid definition for column and source validation.</param>
     /// <returns>The cursor-page document.</returns>
-    public string ToJson(CanopyGridView? view = null) {
+    public string ToJson(CanopyDataGridView? view = null) {
         if (view != null && (view.Id != View || view.Navigation != CanopyGridNavigation.Cursor))
             throw new InvalidOperationException("A cursor page must target its owning cursor grid.");
         if (Total < 0 || Matched < 0 || Total.HasValue && Matched.HasValue && Matched > Total ||
@@ -65,7 +65,7 @@ public sealed class CanopyGridCursorPage {
         CanopyGridCursors.Validate(PreviousCursor, nameof(PreviousCursor));
         if (NextCursor != null && NextCursor == PreviousCursor)
             throw new InvalidOperationException("Next and previous cursors must identify different pages.");
-        CanopyGridRows.Validate(Rows, view?.Validate(), view?.Columns);
+        CanopyGridRows.Validate(Rows, view?.ValidateColumns(), view?.Columns);
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("gridCursorPage").Property("view", View).Property("revision", Revision).Property("offset", Offset);
         writer.Name("total"); if (Total.HasValue) writer.Number(Total.Value); else writer.Null();

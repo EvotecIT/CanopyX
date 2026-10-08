@@ -27,9 +27,9 @@ internal static class SearchBenchTrees {
     /// The adversarial tree: about 121,000 nodes on eight levels, with long path-style ids and labels that share a few
     /// common words. An index that copies each entry into one shard per word grows to many times the pages here.
     /// </summary>
-    internal static CanopyView DeepTree() {
-        var view = new CanopyView("deep", "Deep tree") { Search = new CanopySearchOptions() };
-        view.Columns.Add(new CanopyColumn("name", "Name") { Width = 400 });
+    internal static CanopyTreeView DeepTree() {
+        var view = new CanopyTreeView("deep", "Deep tree") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(400) });
         var root = new CanopyNode("projects", "projects");
         var level = new List<CanopyNode> { root };
         for (var depth = 1; depth <= 6; depth++) {
@@ -60,10 +60,10 @@ internal static class SearchBenchTrees {
     /// "CORP Firewall Policy 0022", GUID ids) and a nested tree of 10,105 organizational units (distinguished-name
     /// ids). 5,000 policies and 50,525 units in all.
     /// </summary>
-    internal static CanopyView DirectoryTree() {
-        var view = new CanopyView("directory", "Directory") { Search = new CanopySearchOptions { Placeholder = "Search policies and units" } };
-        view.Columns.Add(new CanopyColumn("name", "Name") { Width = 400 });
-        view.Columns.Add(new CanopyColumn("type", "Type") { Width = 160 });
+    internal static CanopyTreeView DirectoryTree() {
+        var view = new CanopyTreeView("directory", "Directory") { Search = new CanopySearchOptions { Placeholder = "Search policies and units" } };
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(400) });
+        view.Columns.Add(new CanopyColumn("type", "Type") { Sizing = CanopyColumnSizing.Preferred(160) });
         var policy = 0;
         for (var d = 1; d <= 5; d++) {
             var dc = "DC=corp" + d + ",DC=example,DC=com";

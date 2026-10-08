@@ -13,7 +13,7 @@ public sealed class JsonEncodingTests {
         var separator = ((char)0x2028).ToString() + (char)0x2029;
         var loneSurrogate = ((char)0xD800).ToString();
         var label = "</script><!-- & \"quoted\" \\ " + separator + " tab\t";
-        var view = new CanopyView("v", "View");
+        var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("id-1", label));
         view.Roots.Add(new CanopyNode("id-2", "broken " + loneSurrogate));
@@ -33,9 +33,9 @@ public sealed class JsonEncodingTests {
 
     [Fact]
     public void ToJson_SmallView_MatchesTheDocumentedWireFormat() {
-        var view = new CanopyView("v", "Files") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("v", "Files") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
-        view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Width = 90 });
+        view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(90) });
         var folder = new CanopyNode("a", "Folder") { Expanded = true };
         folder.Cells["size"] = 1536;
         var file = new CanopyNode("a/b", "File");
@@ -101,7 +101,7 @@ public sealed class JsonEncodingTests {
     public void ToJson_EveryCodeUnit_IsEscapedAsTheProtocolSpecifies() {
         // Every UTF-16 code unit alone, before "{" (which changes how "$" is written) and around a surrogate pair. The
         // writer copies runs of characters that need no escape; the reference escapes one code unit at a time.
-        var view = new CanopyView("v", "View");
+        var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var labels = new List<string>();
         for (var unit = 0; unit <= 0xFFFF; unit++) {

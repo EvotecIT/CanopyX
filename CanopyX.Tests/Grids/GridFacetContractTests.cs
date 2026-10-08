@@ -5,8 +5,8 @@ using System.Text.Json;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridFacetContractTests {
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("inventory", "Inventory") { Reporting = new CanopyGridReporting() };
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("inventory", "Inventory") { Reporting = new CanopyGridReporting() };
         view.Columns.Add(new CanopyColumn("value", "Value"));
         view.Reporting!.FacetColumns.Add("value");
         return view;
@@ -73,7 +73,7 @@ public sealed class GridFacetContractTests {
 
     [Fact]
     public void Facets_CarryCursorRevisionsAndRejectDuplicateUtcMillisecondBuckets() {
-        var view = View(); view.Source = CanopyGridSourceKind.Host; view.Navigation = CanopyGridNavigation.Cursor;
+        var view = View(); view.Source = CanopyGridSource.HostedCursor();
         view.Presentation = CanopyGridPresentation.Paged;
         view.Columns[0].Kind = CanopyColumnKind.DateTime;
         var query = new CanopyGridQuery(view.Id) { Revision = "snapshot", Cursor = "next" };

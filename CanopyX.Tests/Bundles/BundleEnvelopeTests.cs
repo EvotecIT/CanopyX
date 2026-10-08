@@ -9,7 +9,7 @@ public sealed class BundleEnvelopeTests {
     public void OversizedFixedEnvelopesFail(bool longParent) {
         var dir = Path.Combine(Path.GetTempPath(), "canopyx-envelope-" + Guid.NewGuid().ToString("N"));
         try {
-            var view = new CanopyView(longParent ? "view" : new string('v', 20000), "View");
+            var view = new CanopyTreeView(longParent ? "view" : new string('v', 20000), "View");
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var parent = new CanopyNode(longParent ? new string('p', 20000) : "parent", "Parent");
             parent.Children.Add(new CanopyNode("child", "Child")); view.Roots.Add(parent);
@@ -22,7 +22,7 @@ public sealed class BundleEnvelopeTests {
     public void SearchableDescendantKeepsAllUnsearchableAncestors() {
         var dir = Path.Combine(Path.GetTempPath(), "canopyx-linked-" + Guid.NewGuid().ToString("N"));
         try {
-            var view = new CanopyView("view", "View") { Search = new CanopySearchOptions() };
+            var view = new CanopyTreeView("view", "View") { Search = new CanopySearchOptions() };
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var node = new CanopyNode("n0", "x"); view.Roots.Add(node);
             for (var i = 1; i <= 600; i++) { var child = new CanopyNode("n" + i, i == 600 ? "Target" : "x"); node.Children.Add(child); node = child; }
@@ -40,7 +40,7 @@ public sealed class BundleEnvelopeTests {
     public void AncestorsThatCannotFitOneSearchEntryFileFailWithTheBudget() {
         var dir = Path.Combine(Path.GetTempPath(), "canopyx-stem-" + Guid.NewGuid().ToString("N"));
         try {
-            var view = new CanopyView("view", "View") { Search = new CanopySearchOptions() };
+            var view = new CanopyTreeView("view", "View") { Search = new CanopySearchOptions() };
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var node = new CanopyNode("n0", "Level"); view.Roots.Add(node);
             for (var i = 1; i <= 3000; i++) { var child = new CanopyNode("n" + i, "Level"); node.Children.Add(child); node = child; }

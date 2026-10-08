@@ -132,7 +132,7 @@ WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 
-void WriteBundle(CanopyX.CanopyView view, string folder, string title) {
+void WriteBundle(CanopyX.CanopyTreeView view, string folder, string title) {
     ReportBundle(folder, view.SaveHtmlBundle(Path.Combine(output, folder), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = title }, bundleOptions));
 }
 

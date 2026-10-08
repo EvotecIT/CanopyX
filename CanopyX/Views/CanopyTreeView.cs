@@ -15,7 +15,7 @@ namespace CanopyX;
 /// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/2</c> protocol. <c>CanopyX.Html</c> embeds
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
-public sealed class CanopyView {
+public sealed class CanopyTreeView {
     private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
     private int _rowHeight = 28;
@@ -27,7 +27,7 @@ public sealed class CanopyView {
     /// <param name="id">The view id, unique within a page. It scopes element ids, remembered state, and deep links.</param>
     /// <param name="label">The accessible name of the tree grid.</param>
     /// <exception cref="ArgumentException">An argument is null or empty, or the accessible label is whitespace.</exception>
-    public CanopyView(string id, string label) {
+    public CanopyTreeView(string id, string label) {
         CanopyIdentifiers.Require(id, nameof(id));
 
         if (string.IsNullOrWhiteSpace(label)) {
@@ -157,6 +157,11 @@ public sealed class CanopyView {
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, for example duplicate column ids.</exception>
     public string ToJson() => ToJson(null);
 
+    /// <summary>Validates the current tree definition, node identities and data bindings before output.</summary>
+    /// <remarks>Definitions remain editable; output validates again so later changes cannot bypass the contract.</remarks>
+    /// <exception cref="InvalidOperationException">The tree or its definition contains incompatible data.</exception>
+    public void Validate() => CanopyTreeViewValidator.Validate(this);
+
     /// <summary>
     /// Writes the view document with the switches of the named filters left out of the toolbar, as if they were
     /// <see cref="CanopyFilter.Hidden"/>, without changing the view.
@@ -227,7 +232,7 @@ public sealed class CanopyView {
     }
 
     internal void WriteJson(CanopyJsonWriter writer, ICollection<string>? hiddenFilterIds = null) {
-        CanopyViewValidator.Validate(this);
+        CanopyTreeViewValidator.Validate(this);
         if (hiddenFilterIds != null) {
             foreach (var id in hiddenFilterIds) {
                 if (!Filters.Any(filter => filter.Id == id)) {

@@ -6,10 +6,10 @@ namespace CanopyX.Examples;
 /// <summary>Measured row heights for report text, in continuous, paged and grouped views.</summary>
 internal static class WrappedGridExample {
     internal static void Write(string output) {
-        var view = new CanopyGridView("wrapped-grid", "Detailed records") { AutoRowHeight = true, PageSize = 100 };
-        view.Columns.Add(new CanopyColumn("name", "Record") { Width = 180, Sortable = true });
-        view.Columns.Add(new CanopyColumn("category", "Category") { Width = 140, Sortable = true });
-        view.Columns.Add(new CanopyColumn("notes", "Notes") { Width = 320, Wrap = true });
+        var view = new CanopyDataGridView("wrapped-grid", "Detailed records") { AutoRowHeight = true, PageSize = 100 };
+        view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(180), Sortable = true });
+        view.Columns.Add(new CanopyColumn("category", "Category") { Sizing = CanopyColumnSizing.Preferred(140), Sortable = true });
+        view.Columns.Add(new CanopyColumn("notes", "Notes") { Sizing = CanopyColumnSizing.Preferred(320), Wrap = true });
         for (var i = 0; i < 2000; i++) {
             var row = new CanopyGridRow("record-" + i.ToString("D4", CultureInfo.InvariantCulture));
             row.Cells["name"] = "Record " + i; row.Cells["category"] = i % 2 == 0 ? "Complete" : "Needs review";

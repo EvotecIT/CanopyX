@@ -8,7 +8,7 @@ namespace CanopyX;
 
 /// <summary>Raw predicate semantics for script-free highlight rendering; mirrors the shared browser filter evaluator.</summary>
 internal static class CanopyGridHighlights {
-    internal static CanopyGridHighlightRule? Find(CanopyGridView view, CanopyGridRow row, string? cellColumn) {
+    internal static CanopyGridHighlightRule? Find(CanopyDataGridView view, CanopyGridRow row, string? cellColumn) {
         foreach (var rule in view.HighlightRules) {
             if (cellColumn == null ? rule.Target != CanopyGridHighlightTarget.Row :
                 rule.Target != CanopyGridHighlightTarget.Cell || rule.Condition.Column != cellColumn) continue;

@@ -12,7 +12,7 @@ public sealed class FilterEditorAssetsTests {
         Assert.DoesNotContain("</script", CanopyHtmlAssets.FilterEditorScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.FilterEditorStyle, StringComparison.OrdinalIgnoreCase);
         Assert.True(Gzip(CanopyHtmlAssets.FilterEditorScript) + Gzip(CanopyHtmlAssets.FilterEditorStyle) <= 16 * 1024);
-        var view = new CanopyGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
+        var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
         var fragment = view.ToHtmlFragment(); Assert.Contains("application/x-canopyx-filter-editor", fragment); Assert.Contains(CanopyHtmlAssets.FilterEditorVersion, fragment);
     }
     [Fact]

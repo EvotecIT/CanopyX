@@ -68,7 +68,7 @@ public sealed class DetailDocumentTests {
 
     [Fact]
     public void Render_TableDetailWithColumnWidths_GivesTheHeadersTheirShare() {
-        var view = new CanopyView("v", "View");
+        var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var table = new CanopyTableDetail().AddColumns("Setting", "Value").AddRow("Retention", "90 days");
         table.ColumnWidths.Add(3);
@@ -99,7 +99,7 @@ public sealed class DetailDocumentTests {
             default: var properties = new CanopyPropertiesDetail(); properties.Items.Add(null!); detail = properties; break;
         }
 
-        var view = new CanopyView("v", "View") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("v", "View") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var parent = new CanopyNode("p", "Parent");
         parent.Children.Add(new CanopyNode("p/d", "Detail") { Detail = detail });

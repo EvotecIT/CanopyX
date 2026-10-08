@@ -70,9 +70,9 @@ test('invalid file metadata is rejected before host generation and date/number r
   });
   expect(result.errors).toHaveLength(7);expect(result.errors.every(e=>e.includes('safe basename'))).toBe(true);
   expect(result.exports).toHaveLength(1);expect(result.exports[0]).toMatchObject({fileName:'Inventory 2026',locale:'pl-PL',values:'raw'});
-  expect(result.first.cells.amount).toBe(0.5);expect(result.first.cells.when).toBe('2026-10-04T12:30:00Z');
-  expect(result.snapshot.rows).toHaveLength(137);expect(result.first.cells.name).toBe(view.rows[0].cells.name);
-  expect(result.snapshot.rows[1].cells.name).toBe('https://example.org/record');
+  expect(result.first.cells.amount.value).toBe(0.5);expect(result.first.cells.when.value).toBe('2026-10-04T12:30:00Z');
+  expect(result.snapshot.rows).toHaveLength(137);expect(result.first.cells.name.value).toBe(view.rows[0].cells.name);
+  expect(result.snapshot.rows[1].cells.name.value).toBe('https://example.org/record');
   fs.writeFileSync(test.info().outputPath('accepted-export-snapshot.json'),JSON.stringify(result.snapshot,null,2));
 });
 

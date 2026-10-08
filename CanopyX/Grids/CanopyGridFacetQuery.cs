@@ -37,7 +37,7 @@ public sealed class CanopyGridFacetQuery {
     /// <summary>Writes an HTML-safe <c>gridFacetQuery</c> after validating its owning view and accepted query.</summary>
     /// <param name="view">The owning grid definition.</param>
     /// <returns>The bounded facet request.</returns>
-    public string ToJson(CanopyGridView view) {
+    public string ToJson(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         CanopyGridFacets.Column(view, Column);

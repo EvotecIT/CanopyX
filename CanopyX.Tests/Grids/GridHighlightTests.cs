@@ -7,7 +7,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridHighlightTests {
     [Fact]
     public void RowDefaultsAndOrderedTypedRulesRoundTripAndRenderWithoutScripts() {
-        var view = new CanopyGridView("highlights", "Highlighted records");
+        var view = new CanopyDataGridView("highlights", "Highlighted records");
         view.Columns.Add(new CanopyColumn("status", "Status") { Wrap = true });
         view.Columns.Add(new CanopyColumn("score", "Score") { Kind = CanopyColumnKind.Number });
         var row = new CanopyGridRow("one") { Tone = CanopyTone.Info, ClassName = "host-row" };
@@ -34,7 +34,7 @@ public sealed class GridHighlightTests {
     [InlineData(false, CanopyGridFilterOperator.StartsWith, "fa", true)]
     [InlineData(true, CanopyGridFilterOperator.StartsWith, "fa", false)]
     public void StaticTextRulesOnBooleanCellsMatchBrowserRawText(bool value, CanopyGridFilterOperator op, string operand, bool match) {
-        var view = new CanopyGridView("boolean", "Boolean record"); view.Columns.Add(new CanopyColumn("flag", "Flag"));
+        var view = new CanopyDataGridView("boolean", "Boolean record"); view.Columns.Add(new CanopyColumn("flag", "Flag"));
         var row = new CanopyGridRow("one"); row.Cells["flag"] = new CanopyCell(value) { Text = "Unrelated display" }; view.Rows.Add(row);
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("flag", op, operand), className: "matched"));
         var html = CanopyStaticHtml.RenderGrid(view);
@@ -46,7 +46,7 @@ public sealed class GridHighlightTests {
         var filter = new CanopyGridFilter("name", CanopyGridFilterOperator.Equal, "A");
         Assert.Throws<ArgumentException>(() => new CanopyGridHighlightRule(filter));
         Assert.Throws<ArgumentException>(() => new CanopyGridHighlightRule(filter, className: "bad\nclass"));
-        var view = new CanopyGridView("rules", "Rules"); view.Columns.Add(new CanopyColumn("name", "Name"));
+        var view = new CanopyDataGridView("rules", "Rules"); view.Columns.Add(new CanopyColumn("name", "Name"));
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("missing", CanopyGridFilterOperator.IsNull), CanopyTone.Warning));
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         view.HighlightRules.Clear();

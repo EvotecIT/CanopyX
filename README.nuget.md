@@ -21,8 +21,8 @@ Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
 using CanopyX;
 using CanopyX.Html;
 
-var view = new CanopyView("files", "File shares");
-view.Columns.Add(new CanopyColumn("name", "Name") { Width = 320, Sortable = true });
+var view = new CanopyTreeView("files", "File shares");
+view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(320), Sortable = true });
 view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
 
 var projects = new CanopyNode("projects", @"\\files\projects");
@@ -39,7 +39,7 @@ view.SaveHtmlBundle("report");            // sidecar bundle for large trees
 ## Flat Data Grid
 
 ```csharp
-var inventory = new CanopyGridView("inventory", "Inventory");
+var inventory = new CanopyDataGridView("inventory", "Inventory");
 inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
 inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
 var record = new CanopyGridRow("record-17");
@@ -51,11 +51,11 @@ inventory.SaveHtmlPage("inventory.html");
 
 Raw values drive filtering and sorting; display text remains presentation. The toolbar provides column visibility and ordering, resizing, typed filters and resettable saved views. CSV exports and row copying distinguish filtered results, selected records and all results, independently of rows on screen. Large Office exports and record drawers call host hooks. `CanopyStaticHtml.RenderGrid(inventory)` supplies a script-free fallback.
 
-Optional `CanopyGridView.Reporting` policies add deterministic ordinal, folded and natural text ordering, plus host-defined category order. `CanopyGridOrdering` supplies the same comparer to host queries, and the page writer selects the reporting runtime. Represent exact large identifiers and decimals as text; JSON numbers use binary64 precision and numeric magnitudes are limited to the safe-integer range.
+A sortable text column's `Ordering` policy adds deterministic ordinal, folded and natural text ordering, plus host-defined category order; enable `CanopyDataGridView.Reporting` for these capabilities. `CanopyGridOrdering` supplies the same comparer to host queries, and the page writer selects the reporting runtime. Represent exact large identifiers and decimals as text; JSON numbers use binary64 precision and numeric magnitudes are limited to the safe-integer range.
 
 The reporting filter editor provides inclusive numeric/date ranges, category suggestions and translated boolean choices. Set `Reporting.HeaderFilters = true` to open the editor from a column header. Ranges use the existing typed predicates; filtering and exports apply to all accepted results before visible paging. `Reporting.FilterGroups = true` adds nested AND/OR condition groups over those predicates, with atomic Apply validation and saved-query restoration. Inclusive ranges within OR remain a conjunction. Expressions are bounded to eight levels, 64 groups and 64 total predicates. Add declared column IDs to `Reporting.FacetColumns` for bounded raw values and counts from the complete accepted query. Inline sources compute them; hosted sources provide an explicit facet hook. Choosing a value edits the draft until Apply, with an option to exclude that column's current conditions from the counts.
 
-`Reporting.Presenters` adds safe links, decorative icons with text alternatives, native progress, translated boolean values, compact lists and complete-text dialogs. For example, `inventory.Reporting.Presenters.Add("notes", CanopyGridPresenter.LongText())` expands notes without changing virtual row height. Query and export values remain independent of the display; explicit host renderers take precedence.
+`CanopyColumn.Presenter` adds safe links, decorative icons with text alternatives, native progress, translated boolean values, compact lists and complete-text dialogs. For example, `inventory.GetColumn("notes").Presenter = CanopyGridPresenter.LongText()` expands notes without changing virtual row height. Query and export values remain independent of the display; explicit host renderers take precedence.
 
 Reporting grids support direct pointer/keyboard header moves, per-column minimum/maximum widths and optional flex sizing. Auto-fit explicitly samples up to 200 loaded accepted-query records and applies a bounded width estimate. Manual sizing disables flex until reset or saved-state restoration; column identities continue to govern sorting, visibility and export order.
 
@@ -65,7 +65,9 @@ Set an explicit `StateKey` and `Reporting.ViewStorage = CanopyGridViewStorage.Lo
 
 Reporting grids group records by a declared column and show complete-query aggregates. Group keys lead sorting, followed by user sorts and stable row IDs. Collapsing a group changes presentation; paging, selection and exports still count records. Inline sources calculate summaries, while hosted sources return revisioned summary metadata through an explicit hook.
 
-Exports capture the accepted query, revision, scope and column order with filename, locale and time-zone metadata. Progress and cancellation belong to that operation. `materializeExport` returns a bounded immutable snapshot without truncation; `print` passes the complete snapshot to a host renderer. Hosts supply large Office and print generation through the export hook. Standalone CSV/copy remains available without an HTTP host, and Office generation adds no dependency to CanopyX.
+Exports capture the accepted query, revision, scope and column order with filename, locale and time-zone metadata. Captured cells contain both raw `value` and display `text`; reporting captures also resolve semantic tones and links and identify unsupported presentation. The export hook receives the prepared `capture`, whose `rows({ signal })` enumerates independent serial windows. Progress and cancellation belong to that operation. `materializeExport` returns a bounded immutable snapshot without truncation; `print` passes the complete snapshot to a host renderer. Hosts supply large Office and print generation through the export hook. Standalone CSV/copy remains available without an HTTP host, and Office generation adds no dependency to CanopyX.
+
+The pre-1.0 C# API uses `CanopyTreeView`, `CanopyDataGridView`, `CanopyGridSource` factories and `CanopyColumnSizing`. Presenters and ordering belong to the column. `CanopyGridMapper<T>` maps host records through typed selectors, and `CanopyStaticHtml.RenderGrid(view, cursorPage)` renders an accepted cursor snapshot even when totals are unknown. See the repository README for the breaking migration notes.
 
 ## Links
 

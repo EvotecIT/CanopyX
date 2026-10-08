@@ -14,12 +14,12 @@ internal static class ContainedGridsExample {
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
                 .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light");
             foreach (var id in new[] { "tab-grid", "accordion-grid", "details-grid" }) {
-                var view = new CanopyGridView(id, id.Replace('-', ' ')) {
+                var view = new CanopyDataGridView(id, id.Replace('-', ' ')) {
                     Reporting = new CanopyGridReporting { Responsive = true }, PageSize = 100
                 };
-                view.Columns.Add(new CanopyColumn("name", "Record") { Width = 180, Sortable = true });
-                view.Columns.Add(new CanopyColumn("notes", "Notes") { Width = 220 });
-                view.Reporting.Layout.Add("notes", new CanopyGridColumnLayout(80, 900, flex: 1));
+                view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(180), Sortable = true });
+                view.Columns.Add(new CanopyColumn("notes", "Notes") { Sizing = CanopyColumnSizing.Preferred(220) });
+                view.GetColumn("notes").Sizing = CanopyColumnSizing.Flex(1, 80, 900, preferredWidth: 220);
                 for (var i = 0; i < 500; i++) {
                     var row = new CanopyGridRow("record-" + i);
                     row.Cells["name"] = "Record " + i; row.Cells["notes"] = "Container sizing follows the visible space.";

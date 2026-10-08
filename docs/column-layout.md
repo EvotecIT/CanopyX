@@ -43,19 +43,19 @@ centre.
 
 | Option (wire / C#) | Values | Meaning |
 |---|---|---|
-| `width` / `Width` | pixels ≥ 40 | Preferred width; grows to content. |
-| `fixed` / `Fixed` | boolean | `width` is hard. Requires `width`. |
-| `minWidth` / `MinimumWidth` | pixels ≥ 40 | Narrowest width. |
-| `maxWidth` / `MaximumWidth` | pixels | Widest width and the measuring cap. |
-| `flex` / `Flex` | 0 to 100 | Share of spare width, before the identity column. |
-| `autoSize` / `AutoSize` | `content`, `header`, `none` | What measuring reads. `none` uses `width` as the need. |
-| `priority` / `Priority` | `essential`, `normal`, `optional` | How the column gives way. Default `normal`; the identity column defaults to `essential`. |
-| `priority` / `ResponsivePriority` | integer ≥ 0 | DataTables-style: 0 and 1 are essential, 10000 and above optional, normal between; larger values hide first. |
+| `width` / `Sizing.Width` | pixels ≥ 40 | Preferred width; grows to content. `Content()` leaves it unspecified. |
+| `fixed` / `Sizing.IsFixed` | boolean | `CanopyColumnSizing.Fixed(width)` keeps a hard automatic width. Users can resize it. |
+| `minWidth`, `maxWidth` / `Sizing.Minimum`, `Maximum` | CSS pixels | Immutable validated bounds; the preferred width must lie within them. |
+| `flex` / `Sizing.FlexWeight` | greater than 0, at most 100 | `CanopyColumnSizing.Flex(weight, minimum, maximum, preferredWidth)` shares spare width. |
+| `autoSize` / `Sizing.Measure` | `content`, `header`, `none` | The sizing factory's `measure` argument chooses what measuring reads. |
+| `priority` / `ResponsivePriority` | integer ≥ 0 | 0 and 1 are essential; 10000 and above optional; larger values hide first. Wire string priorities remain readable. |
 | `pinned` / `Pinned` | `left`, `right`, `null` | Requested edge. Omitted: the identity column pins left. |
 | `rowHeader` / `RowHeader` | boolean | Marks the identity column (at most one). |
+| `alwaysVisible` / `AlwaysVisible` | boolean | Responsive fitting retains the column; explicit user hiding still applies. |
 
-Reporting views keep `reporting.layout` (`minimum`, `maximum`, `flex`, `pin`, `priority`, `alwaysVisible`); its
-bounds and flex feed the same layout, and its opt-in `reporting.responsive` mode still hides by numeric priority.
+The C# authoring API has one policy owner per column. Assign `Sizing`, `Pinned`, `ResponsivePriority`, `AlwaysVisible`, `Presenter` and `Ordering` on that column. `CanopyColumnSizing.Content`, `Preferred`, `Fixed` and `Flex` reject contradictory bounds at construction. `view.GetColumn(id)` finds an existing declaration. Reporting remains the home for view-wide capabilities such as grouping, aggregates, filtering and responsive mode.
+
+Readers retain the existing `reporting.layout` map (`minimum`, `maximum`, `flex`, `pin`, `priority`, `alwaysVisible`) for `canopyx/2` documents. The C# writer emits canonical column fields rather than this second authoring map.
 
 ## API and events
 
@@ -64,7 +64,7 @@ bounds and flex feed the same layout, and its opt-in `reporting.responsive` mode
 | `autoFitColumn(id)`, `autoFitColumns()` | Set columns to their measured content width as a sticky user width (like AG Grid `autoSizeColumns`). |
 | `autoSizeColumns(ids?)` | Drop user widths so the columns return to automatic sizing that fills the width (like AG Grid `sizeColumnsToFit`, kept live). |
 | `setColumnWidth(id, px)` | Sticky user width. |
-| `pinColumn(id, "left" \| "right" \| null)`, `setColumnPinned(id, "left" \| "right" \| "none")` | Pin or unpin. |
+| `setColumnPinned(id, "left" \| "right" \| "none")` | Pin or unpin. |
 | `setColumnPriority(id, priority)` | Change a column's priority (string or integer). |
 | `setColumnVisible(id, visible)`, `setColumnOrder(ids)`, `resetColumns()` | Visibility, order, and the declared layout. |
 

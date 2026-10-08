@@ -12,7 +12,7 @@ internal static class LocalizedGridsExample {
         var complete = new[] { "Zakończony", "Abgeschlossen", "Completado" };
         var review = new[] { "Do sprawdzenia", "Zu prüfen", "Pendiente de revisión" };
         for (var language = 0; language < languages.Length; language++) {
-            var view = new CanopyGridView("localized-" + languages[language], titles[language]) {
+            var view = new CanopyDataGridView("localized-" + languages[language], titles[language]) {
                 Labels = packs[language], AutoRowHeight = true, Selection = CanopySelectionMode.Multiple,
                 Presentation = CanopyGridPresentation.Paged, PageLength = 10,
                 Reporting = new CanopyGridReporting { HeaderFilters = true, SelectionControls = true, FilterGroups = true }

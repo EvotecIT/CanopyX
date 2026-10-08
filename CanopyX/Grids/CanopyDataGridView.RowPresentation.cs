@@ -3,7 +3,7 @@ using CanopyX.Json;
 
 namespace CanopyX;
 
-public sealed partial class CanopyGridView {
+public sealed partial class CanopyDataGridView {
     /// <summary>Gets or sets what a plain row click does. A plain click never selects. Defaults to <see cref="CanopyGridRowAction.None"/>.</summary>
     public CanopyGridRowAction RowAction { get; set; }
 

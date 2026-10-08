@@ -23,14 +23,13 @@ public sealed class CanopyGridGrouping {
     /// <param name="view">Owning definition containing this grouping column and optional text order.</param>
     /// <returns>A comparer with missing values last and exact raw-value ties separating groups.</returns>
     /// <remarks>Use this key before secondary row sorts and stable record identity. Display text is ignored.</remarks>
-    public IComparer<CanopyCell> CreateComparer(CanopyGridView view) {
+    public IComparer<CanopyCell> CreateComparer(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         CanopyColumn? column = null;
         foreach (var declared in view.Columns) if (declared.Id == Column) column = declared;
         if (column == null || !column.Sortable) throw new InvalidOperationException("Grouping needs its declared sortable column.");
-        CanopyGridOrdering? order = null;
-        view.Reporting?.Ordering.TryGetValue(Column, out order);
+        var order = column.Ordering;
         return Comparer<CanopyCell>.Create((left, right) => Compare(left?.Value, right?.Value, column, order));
     }
     private int Compare(object? left, object? right, CanopyColumn column, CanopyGridOrdering? order) {

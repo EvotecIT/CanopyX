@@ -143,8 +143,8 @@ public sealed class LabelsTests {
         Assert.Contains(">Więcej</a>", once);
     }
 
-    private static CanopyView View() {
-        var view = new CanopyView("labelled", "Labelled") { Search = new CanopySearchOptions() };
+    private static CanopyTreeView View() {
+        var view = new CanopyTreeView("labelled", "Labelled") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("done", "Done"));
         view.Columns.Add(new CanopyColumn("when", "When") { Kind = CanopyColumnKind.DateTime });

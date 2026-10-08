@@ -545,7 +545,7 @@ body .cx-host.cx-data-grid{padding:0;}
 .cx-data-grid .cx-grid-pager .pg{display:inline-flex;align-items:center;gap:var(--cx-size-6px);margin-inline:var(--cx-size-6px);color:var(--cx-text-2);}
 .cx-phone .cx-grid-pager .cx-rpp{display:none;}
 .cx-phone .cx-grid-pager{justify-content:center;gap:var(--cx-size-6px);}
-.cx-phone .cx-grid-pager .cx-pager > button:first-child,.cx-phone .cx-grid-pager .cx-pager > button:last-child{display:none;}
+.cx-phone .cx-pager > button:nth-of-type(3n+1){display:none;}
 .cx-phone .cx-grid-pager .cx-button{min-height:var(--cx-size-44px);width:var(--cx-size-44px);}
 .cx-phone .cx-grid-page-range{flex:none;}
 .cx-data-grid .cx-hidden-fields{color:var(--cx-muted);font:var(--cx-size-12d5px) var(--cx-font);border:0;background:transparent;padding:0;flex:none;}

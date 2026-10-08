@@ -9,7 +9,7 @@ public sealed class CanopyBundleResult {
         DataDirectory = dataDirectory;
     }
 
-    /// <summary>Gets the sidecar source that points at the written files. Assign it to <see cref="CanopyView.Source"/>.</summary>
+    /// <summary>Gets the sidecar source that points at the written files. Assign it to <see cref="CanopyTreeView.Source"/>.</summary>
     public CanopySource Source { get; }
 
     /// <summary>Gets the full path of the folder that holds the sidecar files.</summary>

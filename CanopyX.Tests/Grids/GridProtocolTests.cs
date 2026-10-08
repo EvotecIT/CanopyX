@@ -71,7 +71,7 @@ public sealed class GridProtocolTests {
     [Fact]
     public void HostGrid_UsesHostSourceAndCannotSilentlyDiscardInlineRows() {
         var view = View();
-        view.Source = CanopyGridSourceKind.Host;
+        view.Source = CanopyGridSource.HostedOffset();
         ProtocolSchema.AssertValid(view.ToJson(), "host flat grid");
         using var doc = JsonDocument.Parse(view.ToJson());
         Assert.Equal("host", doc.RootElement.GetProperty("source").GetProperty("kind").GetString());
@@ -146,8 +146,8 @@ public sealed class GridProtocolTests {
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(page, doc => doc["offset"] = 0.5)).IsValid);
     }
 
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("inventory", "Inventory");
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("inventory", "Inventory");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number, Sortable = true });
         view.Columns.Add(new CanopyColumn("date", "Date") { Kind = CanopyColumnKind.DateTime });

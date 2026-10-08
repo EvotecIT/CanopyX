@@ -42,14 +42,14 @@ internal sealed class CanopyBundleContext : IDisposable {
     private bool _completed;
     private bool _noThreads;
 
-    internal CanopyBundleContext(CanopyView view, CanopyBundleOptions options, string dataDirectory, CanopyBundleResult result) {
+    internal CanopyBundleContext(CanopyTreeView view, CanopyBundleOptions options, string dataDirectory, CanopyBundleResult result) {
         View = view;
         Options = options;
         DataDirectory = dataDirectory;
         Result = result;
     }
 
-    internal CanopyView View { get; }
+    internal CanopyTreeView View { get; }
 
     internal CanopyBundleOptions Options { get; }
 

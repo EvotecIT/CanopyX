@@ -33,6 +33,7 @@
       for (const [w, rowEl] of this.rendered) {
         if (!want.has(w)) {
           this.rendered.delete(w);
+          disposeRowHostCells(rowEl);
           // Departing rows are detached before repainting or pooling; contains still uses the captured active node.
           rowEl.remove();
           if (rowEl.contains(active)) {

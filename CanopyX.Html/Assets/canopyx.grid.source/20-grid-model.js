@@ -23,10 +23,7 @@
       if (!Number.isInteger(this.cachePageLimit) || this.cachePageLimit < 2 || this.cachePageLimit > 1000 ||
           !Number.isInteger(this.requestTimeoutMs) || this.requestTimeoutMs < 1 || this.requestTimeoutMs > 2147483647)
         throw new Error("CanopyX: invalid grid cache or request timeout.");
-      const renderers = options.renderers || {};
-      if (!renderers || typeof renderers !== "object" || Array.isArray(renderers) || Object.keys(renderers).some(id =>
-          !this.view.columns.some(column => column.id === id) || typeof renderers[id] !== "function"))
-        throw new Error("CanopyX: grid renderers are functions by declared column ID.");
+      const renderers = hostRenderers(options.renderers || {}, this.view.columns);
       this.columns = this.view.columns.map(column => Object.assign({}, column, {
         width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.autoWidth || column.width === undefined,
         render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
@@ -204,6 +201,7 @@
       if (this.destroyed) return;
       this.writeStoredState(this.getState());
       this.destroyed = true; this.queryEpoch++; this.lifetime.abort(); this.dataLifetime.abort();
+      for (const row of [...this.rendered.values(), ...this.pool]) disposeRowHostCells(row);
       if (this.rafId) cancelAnimationFrame(this.rafId);
       clearTimeout(this.searchTimer); this.searchTimer = null;
       clearTimeout(this.stateTimer);

@@ -21,7 +21,7 @@ public sealed class SearchFoldingParityTests {
     [Fact]
     public void Write_EveryCodeUnit_FoldsLikeTheSharedTable() {
         var expected = LoadTable();
-        var view = new CanopyView("fold", "Folding") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("fold", "Folding") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         // Each word is a five-digit code unit number followed by that code unit, so the folded word says which code
         // unit it came from. Lone surrogates cannot be written as UTF-8, and ASCII separators split words.
@@ -63,7 +63,7 @@ public sealed class SearchFoldingParityTests {
         }
     }
 
-    private static void AddNode(CanopyView view, StringBuilder label) {
+    private static void AddNode(CanopyTreeView view, StringBuilder label) {
         if (label.Length > 0) {
             view.Roots.Add(new CanopyNode("n" + view.Roots.Count.ToString(CultureInfo.InvariantCulture), label.ToString()));
             label.Clear();

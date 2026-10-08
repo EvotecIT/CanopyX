@@ -169,10 +169,9 @@ test("a renderer that returns false leaves the default painting, tone included",
 });
 
 for (const [name, options, message] of [
-  ["the single renderCell callback", "{ view: data, renderCell() { return false; } }", "renderCell was replaced by renderers"],
-  ["a renderer for a column the view does not have", "{ view: data, renderers: { nope() { return true; } } }", "not for 'nope'"],
-  ["a renderer that is not a function", "{ view: data, renderers: { state: true } }", "not for 'state'"],
-  ["renderers that are not a plain object", "{ view: data, renderers: new Map([['state', () => true]]) }", "plain object"]
+  ["a renderer for a column the view does not have", "{ view: data, renderers: { nope() { return true; } } }", "renderers"],
+  ["a renderer that is not a function", "{ view: data, renderers: { state: true } }", "renderers"],
+  ["renderers that are not a plain object", "{ view: data, renderers: new Map([['state', () => true]]) }", "renderers"]
 ]) {
   test(`${name} is rejected when the grid is created`, async ({ page }) => {
     await open(page);

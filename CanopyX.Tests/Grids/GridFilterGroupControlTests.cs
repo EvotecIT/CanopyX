@@ -7,7 +7,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridFilterGroupControlTests {
     [Fact]
     public void GroupEditor_SerializesItsPolicyAndTranslatedControlsInTheReportingDocument() {
-        var view = new CanopyGridView("inventory", "Inventory") {
+        var view = new CanopyDataGridView("inventory", "Inventory") {
             Reporting = new CanopyGridReporting { FilterGroups = true, HeaderFilters = true }
         };
         view.Columns.Add(new CanopyColumn("name", "Name"));

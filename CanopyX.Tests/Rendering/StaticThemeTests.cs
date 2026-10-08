@@ -145,8 +145,8 @@ public sealed class StaticThemeTests {
         }
     }
 
-    private static CanopyView View() {
-        var view = new CanopyView("themed", "Themed");
+    private static CanopyTreeView View() {
+        var view = new CanopyTreeView("themed", "Themed");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("state", "State"));
         var first = new CanopyNode("a", "First") { Expanded = true };

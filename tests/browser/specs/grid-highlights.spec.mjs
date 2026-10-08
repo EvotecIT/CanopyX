@@ -37,7 +37,8 @@ test("raw rules win in order per target, preserve host classes, and use the exis
   expect(await row.locator('.cx-cell').nth(1).evaluate(cell => getComputedStyle(cell).color)).toBe("rgb(140, 92, 5)");
   const exported = await page.evaluate(async () => { const api = document.querySelector('[data-canopyx-host]').canopyx;
     const iterator = api.prepareExport({ scope: "all", values: "raw" }).rows()[Symbol.asyncIterator](); return (await iterator.next()).value; });
-  expect(exported.tone).toBe("info"); expect(exported.className).toBe("host-row");
+  expect(exported.cells.status).toMatchObject({ value: "FaIlEd", text: "Passed display" });
+  expect(exported.cells.score.value).toBe(5);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

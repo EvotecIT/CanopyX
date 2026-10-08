@@ -10,7 +10,7 @@ public sealed class GridDesignPresenterTests {
     [InlineData(double.PositiveInfinity)]
     [InlineData(double.NegativeInfinity)]
     public void ChangePresenter_NonfiniteDeltaIsMissingInBothWireAndStaticOutput(double delta) {
-        var view = new CanopyGridView("finite", "Finite changes");
+        var view = new CanopyDataGridView("finite", "Finite changes");
         view.Columns.Add(new CanopyColumn("value", "Value") { Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.Change("delta") });
         view.Columns.Add(new CanopyColumn("delta", "Delta") { Kind = CanopyColumnKind.Number });
         var row = new CanopyGridRow("record");
@@ -38,7 +38,7 @@ public sealed class GridDesignPresenterTests {
 
     [Fact]
     public void ColumnPresentersAndHistory_PreserveRawValuesAndStaticTextForms() {
-        var view = new CanopyGridView("visual", "Visual history") { StatusBar = true, Noun = "records" };
+        var view = new CanopyDataGridView("visual", "Visual history") { StatusBar = true, Noun = "records" };
         view.Columns.Add(new CanopyColumn("id", "Name") { Presenter = CanopyGridPresenter.Identifier(mono: true) });
         view.Columns.Add(new CanopyColumn("flag", "Enabled") { Presenter = CanopyGridPresenter.Boolean() });
         view.Columns.Add(new CanopyColumn("state", "History") { Presenter = CanopyGridPresenter.StatusStrip(), Section = "Status" });
@@ -60,7 +60,7 @@ public sealed class GridDesignPresenterTests {
         Assert.Throws<ArgumentException>(() => CanopyGridPresenter.SparklineLine(minimum: 1));
         Assert.Throws<ArgumentException>(() => CanopyGridPresenter.SparklineBars(new[] { new CanopyGridThreshold(20, CanopyTone.Warning), new CanopyGridThreshold(10, CanopyTone.Danger) }));
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyCellPeriod("Today", double.NaN));
-        var view = new CanopyGridView("bad", "Bad"); view.Columns.Add(new CanopyColumn("name", "Name") { Presenter = CanopyGridPresenter.Change("missing") });
+        var view = new CanopyDataGridView("bad", "Bad"); view.Columns.Add(new CanopyColumn("name", "Name") { Presenter = CanopyGridPresenter.Change("missing") });
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
     }
 }

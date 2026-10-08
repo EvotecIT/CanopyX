@@ -89,7 +89,7 @@ public sealed class GridExpressionTests {
     }
 
     private static CanopyGridFilter Predicate() => new("name", CanopyGridFilterOperator.IsNotNull);
-    private static CanopyGridView View() => new("inventory", "Inventory") {
+    private static CanopyDataGridView View() => new("inventory", "Inventory") {
         Columns = { new CanopyColumn("name", "Name"), new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number } }
     };
 }

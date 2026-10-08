@@ -1,16 +1,22 @@
 using CanopyX.Html;
+using CanopyX.Rendering;
 
 namespace CanopyX.Examples;
 
 /// <summary>A standalone host fixture demonstrating sequential navigation without a total count.</summary>
 internal static class CursorGridExample {
     internal static void Write(string output) {
-        var view = new CanopyGridView("cursor-grid", "Sequential records") {
-            Source = CanopyGridSourceKind.Host, Navigation = CanopyGridNavigation.Cursor,
-            Presentation = CanopyGridPresentation.Paged, PageLength = 25, PageSize = 100,
+        var view = new CanopyDataGridView("cursor-grid", "Sequential records") {
+            Source = CanopyGridSource.HostedCursor(), PageLength = 25, PageSize = 100,
             Search = false, Selection = CanopySelectionMode.Multiple
         };
-        view.Columns.Add(new CanopyColumn("position", "Record number") { Kind = CanopyColumnKind.Number, Width = 280, Sortable = true });
+        view.Columns.Add(new CanopyColumn("position", "Record number") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(280), Sortable = true });
+        var snapshot = new CanopyGridCursorPage(view.Id, "fixture-1", 0);
+        for (var i = 0; i < 5; i++) {
+            var row = new CanopyGridRow("record-" + i); row.Cells["position"] = i + 1; snapshot.Rows.Add(row);
+        }
+        File.WriteAllText(Path.Combine(output, "cursor-grid-static.html"), "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Cursor snapshot</title><body>" +
+            CanopyStaticHtml.RenderGrid(view, snapshot) + "</body></html>");
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var html = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX cursor navigation", Theme = theme });
             File.WriteAllText(Path.Combine(output, theme == CanopyTheme.Light ? "cursor-grid.html" : "cursor-grid-dark.html"),

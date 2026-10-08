@@ -67,7 +67,7 @@ public sealed class CanopyGridQuery {
     /// <summary>Writes the HTML-safe <c>gridQuery</c> or <c>gridCursorQuery</c> document after checking its column bindings.</summary>
     /// <param name="view">The grid definition that owns these columns.</param>
     /// <returns>The query request.</returns>
-    public string ToJson(CanopyGridView view) {
+    public string ToJson(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         var writer = new CanopyJsonWriter();
@@ -75,7 +75,7 @@ public sealed class CanopyGridQuery {
         return writer.ToString();
     }
 
-    internal void Validate(CanopyGridView view) {
+    internal void Validate(CanopyDataGridView view) {
         if (SearchMode != CanopyGridSearchMode.Substring && SearchMode != CanopyGridSearchMode.Words) throw new ArgumentOutOfRangeException(nameof(SearchMode));
         if (view.Id != View) throw new InvalidOperationException("A grid query must target its owning view.");
         if (Revision != null) CanopyIdentifiers.Require(Revision, nameof(Revision));
@@ -101,7 +101,7 @@ public sealed class CanopyGridQuery {
         FilterGroup?.Validate(columns, 1, ref predicates, ref groups);
     }
 
-    internal void WriteJson(CanopyJsonWriter writer, CanopyGridView view) {
+    internal void WriteJson(CanopyJsonWriter writer, CanopyDataGridView view) {
         Validate(view);
         var cursor = view.Navigation == CanopyGridNavigation.Cursor;
         writer.BeginObject().Envelope(cursor ? "gridCursorQuery" : "gridQuery").Property("view", View);

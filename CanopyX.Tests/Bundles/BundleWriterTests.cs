@@ -17,7 +17,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     [InlineData("Ար", "_0561_0580")]
     [InlineData("\u1C89\u1C89", "_1c8a_1c8a")]
     public void SearchIndexFoldsCapitalsIntoTheMatchingShard(string label, string key) {
-        var view = new CanopyView("folding", "Folding") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("folding", "Folding") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("one", label));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-folding-" + Guid.NewGuid().ToString("N"));
@@ -35,7 +35,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void InvalidColumnKindFailsBeforeBundleOutput() {
-        var view = new CanopyView("bad-kind", "View");
+        var view = new CanopyTreeView("bad-kind", "View");
         view.Columns.Add(new CanopyColumn("name", "Name") { Kind = (CanopyColumnKind)999 });
         view.Roots.Add(new CanopyNode("one", "One"));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-bad-kind-" + Guid.NewGuid().ToString("N"));
@@ -51,7 +51,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void InvalidSelectionFailsBeforeBundleOutput() {
-        var view = new CanopyView("bad-selection", "View") { Selection = (CanopySelectionMode)999 };
+        var view = new CanopyTreeView("bad-selection", "View") { Selection = (CanopySelectionMode)999 };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("one", "One"));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-bad-selection-" + Guid.NewGuid().ToString("N"));
@@ -67,7 +67,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_CompleteRemoteTree_ReplacesAnOriginalLoadReference() {
-        var view = new CanopyView("complete-ref", "Complete tree") { Source = CanopySource.Remote("children?ref={ref}&cursor={cursor}") };
+        var view = new CanopyTreeView("complete-ref", "Complete tree") { Source = CanopySource.Remote("children?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var parent = new CanopyNode("parent", "Parent") { Ref = "old-host-reference", HasChildren = true };
         parent.Children.Add(new CanopyNode("child", "Child"));
@@ -95,7 +95,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     [InlineData("COM1")]
     [InlineData("lpt9")]
     public void Write_ReservedViewId_UsesAPortableDataFolder(string id) {
-        var view = new CanopyView(id, "View");
+        var view = new CanopyTreeView(id, "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-bundle-" + Guid.NewGuid().ToString("N"));
         try {
@@ -111,7 +111,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     public void DeepTreeWithoutSearchWritesEveryChildPage() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-deep-" + Guid.NewGuid().ToString("N"));
         try {
-            var view = new CanopyView("deep", "Deep tree");
+            var view = new CanopyTreeView("deep", "Deep tree");
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var node = new CanopyNode("n0", "Node 0");
             view.Roots.Add(node);
@@ -139,7 +139,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_ManifestOverBudget_FailsWithTheReferenceAndBudget() {
-        var view = new CanopyView("large-index", "Index") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("large-index", "Index") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         for (var i = 0; i < 1600; i++) {
             view.Roots.Add(new CanopyNode(i.ToString(CultureInfo.InvariantCulture), "字" + (char)(0x4e00 + i)));
@@ -201,7 +201,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_NodeLargerThanTheBudget_GetsAPackOfItsOwn() {
-        var view = new CanopyView("oversized", "Oversized");
+        var view = new CanopyTreeView("oversized", "Oversized");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var parent = new CanopyNode("parent", "Parent");
         for (var index = 0; index < 40; index++) {
@@ -225,7 +225,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_LabelsWithTemplateSyntax_SurviveInsideAPack() {
-        var view = new CanopyView("templates", "Templates");
+        var view = new CanopyTreeView("templates", "Templates");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var parent = new CanopyNode("parent", "Parent");
         var labels = new[] { "a `quoted` name", "cost ${amount} and $ {x} and $", "back\\slash \\` \\${ end\\", "line\nbreak \r\n tab\t", "`", "${", "$" };
@@ -361,7 +361,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     public void Write_Search_LabelWithARepeatedWord_IsFiledUnderItOnce() {
         // A posting list names each node once and stays strictly ascending, also when a label repeats a word in
         // another case or a word repeats across consecutive nodes.
-        var view = new CanopyView("repeat", "Repeat") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("repeat", "Repeat") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var labels = new[] { "File file FILE", "file", "Other", "file-file 7 7", "Ölfile öLFILE ölfile" };
         for (var index = 0; index < labels.Length; index++) {
@@ -391,7 +391,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
     [InlineData("\u0141\u00d3D\u0179 office", "\07b6f5428")]
     public void Write_Search_FilesEachLabelUnderItsToken(string label, string token) {
         // The same vectors are pinned for the browser runtime in tests/browser/specs/search-index-contracts.spec.mjs.
-        var view = new CanopyView("token", "Token") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("token", "Token") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("one", label));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-token-" + Guid.NewGuid().ToString("N"));
@@ -408,7 +408,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_SearchWithoutNodes_DescribesAnEmptyIndex() {
-        var view = new CanopyView("empty", "Empty") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("empty", "Empty") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-empty-" + Guid.NewGuid().ToString("N"));
         try {
@@ -482,7 +482,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_IdsThatShareEndsWithTheirParent_RoundTripThroughTheEntryTable() {
-        var view = new CanopyView("ids", "Ids") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("ids", "Ids") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         // Path-style ids share a prefix, distinguished names a suffix; the emoji ids differ inside a surrogate pair.
         var domain = new CanopyNode("DC=corp,DC=example", "Domain one") { Kind = "domain" };
@@ -538,7 +538,7 @@ public sealed class BundleWriterTests : IClassFixture<BundleFixture> {
 
     [Fact]
     public void Write_NodeWithChildrenNotInTheTree_Throws() {
-        var view = new CanopyView("v", "View");
+        var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("lazy", "Lazy") { HasChildren = true });
 

@@ -7,7 +7,7 @@ namespace CanopyX;
 /// Every control is on by default. A control switched off is removed: it is not built, or is taken out before the grid
 /// appears, so no hidden element, focus stop or listener of it stays in the page. The matching API methods (for example
 /// <c>saveView</c> or <c>toCsv</c>) stay available to hosts.
-/// The search box keeps its own switch, <see cref="CanopyGridView.Search"/>. JavaScript hosts can override any switch at
+/// The search box keeps its own switch, <see cref="CanopyDataGridView.Search"/>. JavaScript hosts can override any switch at
 /// runtime with the <c>toolbar</c> option of <c>createDataGrid</c>, which also accepts <c>search</c>.
 /// </remarks>
 public sealed class CanopyGridToolbar {

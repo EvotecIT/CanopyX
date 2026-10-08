@@ -11,10 +11,11 @@
       getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
       focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
       refresh: () => { grid.version++; grid.scheduleRender(); },
+      reload: () => grid.setQuery(gridQueryStart(grid.acceptedQuery || grid.view.query, {})),
       destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
     };
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
-      "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "pinColumn", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
+      "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "openDetails", "scrollToRow", "retry"])
       api[name] = grid[name].bind(grid);
     GRID_REPORTING.api?.(api, grid);

@@ -8,7 +8,7 @@ namespace CanopyX;
 /// The texts CanopyX writes itself, in the browser and in the static outline: the search box, "show more" and error
 /// rows, the column chooser, screen-reader announcements, date suffixes, and the notes of the outline. They are
 /// English by default; a host that shows its pages in another language sets them once on
-/// <see cref="CanopyView.Labels"/>, and the view document carries them to the browser.
+/// <see cref="CanopyTreeView.Labels"/>, and the view document carries them to the browser.
 /// </summary>
 /// <remarks>
 /// <para>

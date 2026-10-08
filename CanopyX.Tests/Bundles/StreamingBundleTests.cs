@@ -8,7 +8,7 @@ public sealed class StreamingBundleTests {
     public void CommonWordPartsEntryFilesAndContinuationPagesStayWithinTheBudget() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-stream-" + Guid.NewGuid().ToString("N"));
         try {
-            var view = new CanopyView("stream", "Stream") { Search = new CanopySearchOptions() };
+            var view = new CanopyTreeView("stream", "Stream") { Search = new CanopySearchOptions() };
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var parent = new CanopyNode("parent", "Parent"); view.Roots.Add(parent);
             // Every second child has the word, so its posting list is 9,000 gaps that no run shortens; the last 3,000

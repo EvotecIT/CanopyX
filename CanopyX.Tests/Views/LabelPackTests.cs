@@ -23,7 +23,7 @@ public sealed class LabelPackTests {
             string[] Placeholders(string value) => Regex.Matches(value, @"\{\w+\}").Select(match => match.Value).Distinct().OrderBy(value => value).ToArray();
             Assert.Equal(Placeholders((string)property.GetValue(english)!), Placeholders(text));
         }
-        var view = new CanopyView("translated", "Host data") { Labels = labels, Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("translated", "Host data") { Labels = labels, Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("done", "Host column"));
         var node = new CanopyNode("record", "Host record"); node.Cells["done"] = true; view.Roots.Add(node);
         view.Roots.Add(new CanopyNode("omitted", "Another host record"));

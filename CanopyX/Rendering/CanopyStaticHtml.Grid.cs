@@ -18,11 +18,11 @@ public static partial class CanopyStaticHtml {
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The definition or page is invalid, or a host source has no snapshot.</exception>
-    public static string RenderGrid(CanopyGridView view, CanopyGridPage? page = null, CanopyStaticHtmlOptions? options = null) {
+    public static string RenderGrid(CanopyDataGridView view, CanopyGridPage? page = null, CanopyStaticHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         if (page != null) _ = page.ToJson(view);
-        else if (view.Source == CanopyGridSourceKind.Host) throw new InvalidOperationException("A host grid fallback requires an explicit result page.");
+        else if (view.Source.Kind == CanopyGridSourceKind.Host) throw new InvalidOperationException("A host grid fallback requires an explicit result page.");
         return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, options);
     }
 
@@ -33,7 +33,7 @@ public static partial class CanopyStaticHtml {
     /// <returns>A script-free fallback table with an explicit unknown total when the host omitted it.</returns>
     /// <exception cref="ArgumentNullException">The view or page is null.</exception>
     /// <exception cref="InvalidOperationException">The page does not belong to this cursor grid or is inconsistent.</exception>
-    public static string RenderGrid(CanopyGridView view, CanopyGridCursorPage page, CanopyStaticHtmlOptions? options = null) {
+    public static string RenderGrid(CanopyDataGridView view, CanopyGridCursorPage page, CanopyStaticHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (page == null) throw new ArgumentNullException(nameof(page));
         view.Validate();
@@ -41,7 +41,7 @@ public static partial class CanopyStaticHtml {
         return RenderGridRows(view, page.Rows, page.Matched, options);
     }
 
-    private static string RenderGridRows(CanopyGridView view, IList<CanopyGridRow> supplied, int? matching, CanopyStaticHtmlOptions? options) {
+    private static string RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, CanopyStaticHtmlOptions? options) {
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();

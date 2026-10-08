@@ -1,7 +1,14 @@
   // ---------- optional width policies and saved flex intent ----------
   const LAYOUT_VALIDATE = GRID_REPORTING.validate, LAYOUT_PREPARE = DataGrid.prototype.prepareState;
   GRID_REPORTING.api = (api, grid) => { api.autoFitColumn = id => GRID_REPORTING.fitColumn(grid, id); };
-  function reportingLayout(grid, column) { return grid.columnLayouts.get(column.id) || { minimum: 40, maximum: MAX_COLUMN_WIDTH, flex: 0 }; }
+  function reportingLayout(grid, column) {
+    const declared = column.kind ? column : grid.columns.find(item => item.id === column.id) || column, policy = grid.columnLayouts.get(column.id) || {};
+    return { minimum: declared.minWidth ?? policy.minimum ?? 40, maximum: declared.maxWidth ?? policy.maximum ?? MAX_COLUMN_WIDTH,
+      flex: declared.flexWeight ?? (typeof declared.flex === "number" ? declared.flex : policy.flex || 0),
+      priority: declared.priority === undefined ? policy.priority : gridRank(declared),
+      alwaysVisible: declared.alwaysVisible ?? policy.alwaysVisible,
+      pin: declared.pinned === undefined ? policy.pin : declared.pinned || "none" };
+  }
   function reportingWidth(grid, column, width) {
     const policy = reportingLayout(grid, column); return Math.min(policy.maximum, Math.max(policy.minimum, width));
   }
@@ -26,7 +33,14 @@
   DataGrid.prototype.prepareState = function () {
     this.columnLayouts = new Map(Object.entries(this.view.reporting && this.view.reporting.layout || {}).map(([id, policy]) =>
       [id, Object.assign({ flex: 0 }, policy)]));
-    for (const column of this.columns) if (reportingLayout(this, column).flex > 0) column.flex = true;
+    for (const column of this.columns) {
+      column.presenter ??= this.view.reporting?.presenters?.[column.id];
+      const policy = this.columnLayouts.get(column.id);
+      if (policy) {
+        column.minWidth ??= policy.minimum; column.maxWidth ??= policy.maximum;
+        column.flex ??= policy.flex; column.alwaysVisible ??= policy.alwaysVisible;
+      }
+    }
     return LAYOUT_PREPARE.call(this);
   };
   const LAYOUT_STATE_COLUMN = gridStateColumn, LAYOUT_STATE_COLUMNS = gridStateColumns;

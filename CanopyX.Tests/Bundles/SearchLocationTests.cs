@@ -11,7 +11,7 @@ namespace CanopyX.Tests.Bundles;
 public sealed class SearchLocationTests {
     [Fact]
     public void Write_ListsOverSeveralFiles_EntriesNameTheFilesAReaderNeeds() {
-        var view = new CanopyView("places", "Places") { Search = new CanopySearchOptions() };
+        var view = new CanopyTreeView("places", "Places") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         for (var t = 0; t < 450; t++) {
             var top = new CanopyNode("t" + t, "Top " + t);

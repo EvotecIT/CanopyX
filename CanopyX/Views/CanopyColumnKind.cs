@@ -12,7 +12,7 @@ public enum CanopyColumnKind {
 
     /// <summary>
     /// Date and time values written as ISO 8601 UTC, shown as <c>yyyy-MM-dd HH:mm</c> in UTC or in the reader's
-    /// time zone (see <see cref="CanopyView.TimeZone"/>).
+    /// time zone (see <see cref="CanopyTreeView.TimeZone"/>).
     /// </summary>
     DateTime
 }

@@ -8,7 +8,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridSelectionControlTests {
     [Fact]
     public void SelectionControls_AreExplicitAndUseTheReportingRuntime() {
-        var view = new CanopyGridView("records", "Records") {
+        var view = new CanopyDataGridView("records", "Records") {
             Selection = CanopySelectionMode.Multiple, Reporting = new CanopyGridReporting { SelectionControls = true }
         };
         view.Columns.Add(new CanopyColumn("name", "Name"));
@@ -21,7 +21,7 @@ public sealed class GridSelectionControlTests {
 
     [Fact]
     public void SelectionLabels_AreTranslatedAndChooseTheReportingRuntime() {
-        var view = new CanopyGridView("records", "Records");
+        var view = new CanopyDataGridView("records", "Records");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Labels.GridSelectMatching = "Select matching inventory";
         view.Labels.GridSelectionQueryCount = "{count} records, {excluded} exclusions";

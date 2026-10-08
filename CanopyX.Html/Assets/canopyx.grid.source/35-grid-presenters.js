@@ -4,12 +4,9 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const fields = {link:["hrefColumn","newWindow"],icon:["glyph"],progress:["maximum","thresholds"],boolean:["inverted"],
-      list:["separator","limit"],longText:["mono"],enum:["tones","quietTones"],state:["tones","quietTones"],change:["deltaColumn","higherIsGood"],
-      statusStrip:[],sparklineBars:["thresholds","minimum","scaleMaximum","higherIsGood","mark"],
-      sparklineLine:["thresholds","minimum","scaleMaximum","higherIsGood","mark"],identifier:["secondaryColumn","mono"],tags:["separator","limit"],missing:[]};
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
-    if (!options || typeof options !== "object" || Array.isArray(options) || !Object.hasOwn(fields,options.kind)) invalid();
+    if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
     if (["progress","change"].includes(options.kind) && column.kind!=="number" ||
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
     for (const name of ["newWindow","inverted","mono","higherIsGood"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
@@ -53,8 +50,8 @@
   }
   DataGrid.prototype.build = function () {
     for (const column of this.columns) {
-      const options=column.presenter || this.view.reporting?.presenters?.[column.id] || (column.wrap?{kind:"longText"}:null);
-      if (options&&!column.render) column.render=gridCellRenderer(this,column,options);
+      const options=column.presenter || (column.wrap?{kind:"longText"}:null);
+      if (options&&!column.render) { column.render=gridCellRenderer(this,column,options); column.hostRenderer=false; }
     }
     return GRID_PRESENTERS_BUILD.call(this);
   };

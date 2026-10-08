@@ -68,7 +68,7 @@ public sealed class StaticHtmlTests {
 
     [Fact]
     public void HiddenCountEncodesCustomCultureSeparators() {
-        var view = new CanopyView("culture", "Culture") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
+        var view = new CanopyTreeView("culture", "Culture") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("root", "Root") { HasChildren = true, ChildCount = 1000 });
         var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.InvariantCulture.Clone();
@@ -92,7 +92,7 @@ public sealed class StaticHtmlTests {
     [InlineData(true, 64)]
     [InlineData(false, 1)]
     public void Render_CollapsedOrDepthLimitedLazyNode_CountsChildrenOnce(bool onlyExpanded, int maxDepth) {
-        var view = new CanopyView("lazy", "Lazy") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
+        var view = new CanopyTreeView("lazy", "Lazy") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Roots.Add(new CanopyNode("root", "Root") { HasChildren = true, ChildCount = 5 });
         var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions { OnlyExpanded = onlyExpanded, MaxDepth = maxDepth });
@@ -135,7 +135,7 @@ public sealed class StaticHtmlTests {
 
     [Fact]
     public void Render_RowLimitAttributesHiddenDescendantsToTheirVisibleAncestor() {
-        var view = new CanopyView("limited", "Limited");
+        var view = new CanopyTreeView("limited", "Limited");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var first = new CanopyNode("first", "First");
         first.Children.Add(new CanopyNode("a", "A"));
@@ -183,8 +183,8 @@ public sealed class StaticHtmlTests {
     /// <summary>The rows of the outline, without the note in its last row.</summary>
     private static string Body(string html) => html.Substring(0, html.LastIndexOf("</tbody><tbody>", StringComparison.Ordinal));
 
-    private static CanopyView SmallView() {
-        var view = new CanopyView("files", "File shares");
+    private static CanopyTreeView SmallView() {
+        var view = new CanopyTreeView("files", "File shares");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });

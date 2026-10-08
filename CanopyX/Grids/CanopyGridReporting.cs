@@ -43,15 +43,6 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets or sets the minimum center width left by effective pinned groups, from 40 to 4096 CSS pixels.</summary>
     public int MinimumCenterWidth { get; set; } = 128;
 
-    /// <summary>Gets immutable width, flex, pin and responsive retention policies keyed by declared column identities.</summary>
-    public IDictionary<string, CanopyGridColumnLayout> Layout { get; } = new Dictionary<string, CanopyGridColumnLayout>(StringComparer.Ordinal);
-
-    /// <summary>Gets immutable text ordering policies keyed by declared sortable text-column identities.</summary>
-    public IDictionary<string, CanopyGridOrdering> Ordering { get; } = new Dictionary<string, CanopyGridOrdering>(StringComparer.Ordinal);
-
-    /// <summary>Gets immutable safe presenters keyed by declared column identities.</summary>
-    public IDictionary<string, CanopyGridPresenter> Presenters { get; } = new Dictionary<string, CanopyGridPresenter>(StringComparer.Ordinal);
-
     internal void Validate(IList<CanopyColumn> columns) {
         CanopyColumn? groupColumn = null;
         foreach (var column in columns) if (column.Id == Grouping?.Column) groupColumn = column;
@@ -76,27 +67,10 @@ public sealed class CanopyGridReporting {
         }
         if (MinimumCenterWidth < 40 || MinimumCenterWidth > 4096)
             throw new InvalidOperationException("MinimumCenterWidth must be from 40 to 4096 CSS pixels.");
-        foreach (var pair in Layout) {
-            CanopyColumn? declared = null;
-            foreach (var column in columns) if (column.Id == pair.Key) declared = column;
-            if (declared == null || pair.Value == null || declared.HasExplicitWidth && (declared.Width < pair.Value.Minimum || declared.Width > pair.Value.Maximum))
-                throw new InvalidOperationException("A layout needs a declared column whose initial width is within its non-null policy bounds.");
-        }
-        foreach (var pair in Ordering) {
-            CanopyColumn? declared = null;
-            foreach (var column in columns) if (column.Id == pair.Key) declared = column;
-            if (declared == null || declared.Kind != CanopyColumnKind.Text || !declared.Sortable || pair.Value == null)
-                throw new InvalidOperationException("Reporting ordering must identify a sortable text column and a non-null policy.");
-        }
-        foreach (var pair in Presenters) {
-            CanopyColumn? declared = null;
-            foreach (var column in columns) if (column.Id == pair.Key) declared = column;
-            if (declared == null || pair.Value == null) throw new InvalidOperationException("A presenter needs a declared column and a non-null descriptor.");
-            pair.Value.Validate(declared, columns);
-        }
+
     }
 
-    internal void WriteJson(CanopyJsonWriter writer) {
+    internal void WriteJson(CanopyJsonWriter writer, IList<CanopyColumn> columns) {
         writer.BeginObject();
         if (Grouping != null) { writer.Name("grouping"); Grouping.WriteJson(writer); }
         if (Aggregates.Count != 0) {
@@ -114,19 +88,11 @@ public sealed class CanopyGridReporting {
         if (ColumnReorder) writer.Property("columnReorder", true);
         if (Responsive) writer.Property("responsive", true);
         if (MinimumCenterWidth != 128) writer.Property("minimumCenterWidth", MinimumCenterWidth);
-        if (Layout.Count != 0) {
-            writer.Name("layout").BeginObject();
-            foreach (var pair in Layout) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }
-            writer.EndObject();
-        }
-        if (Ordering.Count != 0) {
+        var hasOrdering = false;
+        foreach (var column in columns) if (column.Ordering != null) hasOrdering = true;
+        if (hasOrdering) {
             writer.Name("ordering").BeginObject();
-            foreach (var pair in Ordering) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }
-            writer.EndObject();
-        }
-        if (Presenters.Count != 0) {
-            writer.Name("presenters").BeginObject();
-            foreach (var pair in Presenters) { writer.Name(pair.Key); pair.Value.WriteJson(writer); }
+            foreach (var column in columns) if (column.Ordering != null) { writer.Name(column.Id); column.Ordering.WriteJson(writer); }
             writer.EndObject();
         }
         writer.EndObject();

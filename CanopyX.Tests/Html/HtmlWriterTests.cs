@@ -24,7 +24,7 @@ public sealed class HtmlWriterTests {
 
     [Fact]
     public void HiddenFilterIds_HideTheSwitchesOnThePage_WithoutChangingTheView() {
-        var view = new CanopyView("v", "Files");
+        var view = new CanopyTreeView("v", "Files");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Filters.Add(new CanopyFilter("week", "Changed this week", "changed-7d"));
         view.Filters.Add(new CanopyFilter("month", "Changed this month", "changed-30d"));
@@ -62,7 +62,7 @@ public sealed class HtmlWriterTests {
 
     [Fact]
     public void ToHtmlPage_InlineAssets_IsSelfContained() {
-        var view = new CanopyView("v", "Files & <folders>");
+        var view = new CanopyTreeView("v", "Files & <folders>");
         view.Columns.Add(new CanopyColumn("name", "Name"));
 
         var html = view.ToHtmlPage(new CanopyHtmlOptions { Language = "pl" });
@@ -77,7 +77,7 @@ public sealed class HtmlWriterTests {
 
     [Fact]
     public void ToHtmlPage_ExternalAssets_ReferencesTheAssetFiles() {
-        var view = new CanopyView("v", "Files");
+        var view = new CanopyTreeView("v", "Files");
         view.Columns.Add(new CanopyColumn("name", "Name"));
 
         var html = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "../shared" });
@@ -91,7 +91,7 @@ public sealed class HtmlWriterTests {
     [InlineData("600px;background:red")]
     [InlineData("1px\" onload=\"x")]
     public void ToHtmlFragment_HeightThatIsNotALength_Throws(string height) {
-        var view = new CanopyView("v", "Files");
+        var view = new CanopyTreeView("v", "Files");
         view.Columns.Add(new CanopyColumn("name", "Name"));
 
         Assert.Throws<ArgumentException>(() => view.ToHtmlFragment(new CanopyHtmlOptions { Height = height }));

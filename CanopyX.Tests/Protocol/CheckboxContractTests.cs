@@ -5,8 +5,8 @@ using CanopyX.Rendering;
 namespace CanopyX.Tests.Protocol;
 
 public sealed class CheckboxContractTests {
-    private static CanopyView View(CanopyCheckboxMode mode) {
-        var view = new CanopyView("checking", "Projects") { Checkboxes = mode };
+    private static CanopyTreeView View(CanopyCheckboxMode mode) {
+        var view = new CanopyTreeView("checking", "Projects") { Checkboxes = mode };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var atlas = new CanopyNode("a", "Atlas");
         atlas.Children.Add(new CanopyNode("a0", "Planning"));

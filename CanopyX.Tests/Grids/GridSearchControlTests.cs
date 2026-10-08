@@ -6,7 +6,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridSearchControlTests {
     [Fact]
     public void SearchDelayAndSummaryLabels_SerializeWithBoundedOptionalTiming() {
-        var view = new CanopyGridView("inventory", "Inventory");
+        var view = new CanopyDataGridView("inventory", "Inventory");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         using (var defaults = JsonDocument.Parse(view.ToJson())) {
             Assert.False(defaults.RootElement.TryGetProperty("searchDelayMs", out _));

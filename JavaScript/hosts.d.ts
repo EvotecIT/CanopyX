@@ -53,7 +53,13 @@ export interface InteractionContext {
 export interface InteractionOptions { signal?: AbortSignal; reason?: string; }
 export interface SelectionContext { previous: CanopyNode[]; reason: string; }
 export interface CheckContext { readonly previous: readonly CheckIntent[]; readonly reason: string; }
-export interface CellContext { column: string; level: number; expanded: boolean; index: number; }
+export interface CellContext {
+  column: string; level: number; expanded: boolean; index: number;
+  /** Aborts before replacement, recycling, failed rendering or destruction. */
+  readonly signal: AbortSignal;
+  /** Registers cleanup for this cell paint. Called once in reverse registration order. */
+  onDispose(cleanup: () => void): void;
+}
 export interface LoadInfo { node: CanopyNode | null; count: number; total: number | null; ms: number; }
 
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */

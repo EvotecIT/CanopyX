@@ -65,6 +65,15 @@ for (const known of [false, true]) test(`cursor controls preserve actual positio
   if (!known) expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+for (const known of [false, true]) test(`phone cursor pager retains next/previous navigation with ${known ? "known" : "unknown"} counts`, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 }); await open(page, known);
+  const next = page.getByRole("button", { name: "Next page", exact: true }), previous = page.getByRole("button", { name: "Previous page", exact: true });
+  await expect(next).toBeVisible(); await expect(previous).toBeDisabled();
+  await next.click(); await expect(page.locator('.cx-row[data-cx-id="row-5"]')).toBeVisible();
+  await expect(previous).toBeEnabled(); await previous.focus(); await previous.press("Enter");
+  await expect(page.locator('.cx-row[data-cx-id="row-0"]')).toBeVisible();
+});
+
 test("cursor record keys and position API stay inside the accepted page without pretending random access", async ({ page }) => {
   await open(page); await page.evaluate(controller + ".nextPage()");
   await page.locator('.cx-row[data-cx-id="row-5"]').focus();

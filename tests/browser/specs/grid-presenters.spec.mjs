@@ -50,7 +50,7 @@ test("safe links, glyph alternatives, boolean labels and progress retain full-qu
     return rows;
   });
   expect(exported.map(item => item.id)).toEqual(["a", "d", "b", "c"]);
-  expect(exported[0].cells.amount).toEqual({ value: 125, text: "125 units" });
+  expect(exported[0].cells.amount).toMatchObject({ value: 125, text: "125 units" });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

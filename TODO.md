@@ -12,6 +12,20 @@ References to "the TestimoX plan" mean `docs/roadmaps/Reporting-Platform-EndToEn
 - CanopyX never performs writes. Context actions (0.5), edits, and drops (1.0) are raised to hooks that the host provides and governs; CanopyX applies nothing on its own.
 - Packages: stay with `CanopyX` and `CanopyX.Html` until size or dependency evidence says otherwise (see [Package Split Policy](#package-split-policy)).
 
+## Contract And Authoring Consolidation
+
+Consumers: standalone .NET authors, the HtmlForgeX tree/grid bridge, and OfficeIMO hosts consuming accepted grid captures. The authoring changes share the existing protocol and runtime rather than adding a new dependency or view engine.
+
+- [x] Preserve dictionary keys in sidecar document scripts, normalize non-finite numeric fallback values, and accept unknown optional grid-document fields while validating known fields.
+- [x] Use explicit tree/data-grid view types, source factories, one column sizing policy, column-owned presenters and ordering, and a selector-based typed record mapper.
+- [x] Dispose host cell resources on repaint, recycling, layout changes, outline capture and destruction.
+- [x] Reload grid data against a fresh revision with accepted criteria, restarting navigation; preserve the accepted query and records when reload fails.
+- [x] Capture normalized raw/text cells and optional semantic presentation before Office delivery, with scope counts, independent cancellable enumeration and explicit unsupported-presentation diagnostics. Render cursor snapshots as script-free fallback tables.
+- [x] Validate the consolidated candidate through all supported .NET targets, native/browser/package contracts and rendered examples. Scrolling qualification follows the existing performance gates below.
+- [ ] Qualify a real HtmlForgeX migration and OfficeIMO consumer against the accepted source/package boundary. Public package availability remains a separate release gate.
+
+Gate: the local source and packed artifacts agree on the public API and runtime; representative hosts retain identities, query scope, cancellation and presentation without rebuilding those contracts. The existing 4x performance and manual reader gates remain open until measured qualification passes.
+
 ## 0.1 Tree Grid, Read-Only
 
 ### Tree Explorer Completion
@@ -88,7 +102,7 @@ Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-3
 
 Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
 
-- [x] Labels: every text CanopyX writes itself comes from `CanopyView.Labels` (English by default), carried to the browser in the view's `labels`; `createTreeGrid` and `configure` take `labels` too.
+- [x] Labels: every text CanopyX writes itself comes from `CanopyTreeView.Labels` (English by default), carried to the browser in the view's `labels`; `createTreeGrid` and `configure` take `labels` too.
 - [x] Deep links are written onto the page's own address, so a `<base href>` (SharePoint viewers) does not move them.
 - [x] The static outline in light, dark, or the host's colours (`CanopyStaticTheme`), and with `UseThemeVariables` following the page's theme without script.
 - [x] `CanopyNode.HasInlineChildren`, `HasCells`, `HasBadges`, `HasFlags`, `HasData` ask what a node holds without creating its collections.
