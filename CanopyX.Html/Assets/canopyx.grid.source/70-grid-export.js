@@ -1,11 +1,5 @@
   // ---------- immutable export requests, independent of viewport pages ----------
   const gridExportSignal = (signal, options) => AbortSignal.any([signal, options?.signal].filter(Boolean));
-  function gridFreeze(value) {
-    if (value && typeof value === "object" && !Object.isFrozen(value)) {
-      Object.values(value).forEach(gridFreeze); Object.freeze(value);
-    }
-    return value;
-  }
 
   function gridExportField(value, delimiter) {
     if (value == null) return "";

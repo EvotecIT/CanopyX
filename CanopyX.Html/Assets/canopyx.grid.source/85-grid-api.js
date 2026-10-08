@@ -11,7 +11,7 @@
       getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
       focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
       refresh: () => { grid.version++; grid.scheduleRender(); },
-      reload: () => grid.setQuery(gridQueryStart(grid.acceptedQuery || grid.view.query, {})),
+      reload: () => grid.setQuery(gridQueryStart(grid.acceptedQuery || grid.view.query)),
       destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
     };
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",

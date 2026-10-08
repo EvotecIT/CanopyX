@@ -15,7 +15,7 @@
   function gridLevel(column) { const rank = gridRank(column); return rank < 2 ? 0 : rank < 10000 ? 1 : 2; }
   function gridOptions(column) { return column.presenter || {}; }
   // Text columns drawn as graphics keep their measured width and never take spare width.
-  function gridTextual(grid, column) {
+  function gridTextual(column) {
     return column.kind === "text" && !["statusStrip", "sparklineBars", "sparklineLine", "boolean", "progress"].includes(gridOptions(column).kind);
   }
   // Normalizes declared sizing, priority and pins before state preparation (64-grid-column-pins wraps prepareState).
@@ -87,7 +87,7 @@
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
         Math.max(column.minW, column.headNeed || 0) : column.renderWidth;
       return Math.round(Math.min(column.maxW, Math.max(column.minW, column.fixed || column.sized ? column.width : !level ? Math.max(need, column.pref) : level > 1 || !gridLevel(column) ? need :
-        Math.min(need, Math.max(column.headNeed || 0, gridTextual(this, column) ? this.fitCh || 88 : 0)))));
+        Math.min(need, Math.max(column.headNeed || 0, gridTextual(column) ? this.fitCh || 88 : 0)))));
     },
     fitSpare(columns, spare) {
       let target, flex = columns.filter(column => column.flex && column.flexWeight);
@@ -101,7 +101,7 @@
         flex = flex.filter(column => column.maxW - column.renderWidth > 0.5);
       }
       const identity = columns.find(column => column.identity), widest = columns.filter(column => !column.identity &&
-        gridTextual(this, column) && gridLevel(column) === 1).sort((a, b) => b.need - a.need)[0];
+        gridTextual(column) && gridLevel(column) === 1).sort((a, b) => b.need - a.need)[0];
       grow(identity, 420);
       if (identity && widest) grow(widest, widest.renderWidth + spare * widest.need / (widest.need + identity.need));
       grow(identity, Infinity); grow(widest, Infinity);

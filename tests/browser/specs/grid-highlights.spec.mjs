@@ -62,13 +62,14 @@ test("invalid decorations and rules fail at the same typed filter boundary", asy
     return [{ column: "missing", operator: "eq", values: ["x"], tone: "danger" },
       { column: "score", operator: "eq", values: ["5"], tone: "warning" },
       { column: "status", operator: "eq", values: [], tone: "danger" },
+      { column: "status", operator: ["eq"], values: ["Failed"], tone: "danger" },
       { column: "status", operator: "isNull", values: [], className: "bad\nclass" },
       { column: "status", operator: "isNull", values: [] }].map(rule => {
         try { CanopyX.createDataGrid(document.createElement("div"), { view: { ...base, highlightRules: [rule] } }); return false; }
         catch (_) { return true; }
       });
   });
-  expect(rejected).toEqual([true, true, true, true, true]);
+  expect(rejected).toEqual([true, true, true, true, true, true]);
 });
 
 test("recycled group headings retain their own tone and collapse behavior", async ({ page }) => {

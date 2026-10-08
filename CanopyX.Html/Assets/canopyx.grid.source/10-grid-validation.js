@@ -104,28 +104,25 @@
     return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 28 : view.density === "comfortable" ? 42 : 34) };
   }
 
-  function gridQuery(view, input) {
+  function gridQuery(view, input, strict) {
     input = input || {};
     const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
     if (typeof input !== "object" || Array.isArray(input) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
-        input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
+        input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: invalid grid query identity.");
     const query = { protocol: PROTOCOL, type, view: view.id,
-      limit: input.limit === undefined ? cursor ? view.pageLength || 50 : view.pageSize : input.limit, search: input.search === undefined ? "" : input.search };
+      limit: input.limit === undefined ? cursor ? view.pageLength || 50 : view.pageSize : input.limit, search: input.search === undefined ? "" : input.search,
+      cursor: input.cursor, revision: input.revision, searchMode: input.searchMode, filterGroup: undefined };
     if (cursor ? input.offset !== undefined && input.offset !== 0 : input.cursor !== undefined)
       throw new Error("CanopyX: cursor and offset navigation cannot be mixed.");
     if (!cursor) query.offset = input.offset === undefined ? 0 : input.offset;
     if (!cursor && !validStructuralCount(query.offset) || !Number.isInteger(query.limit) || query.limit < 1 || query.limit > 10000 || typeof query.search !== "string")
       throw new Error("CanopyX: invalid grid query window or search.");
-    if (input.revision !== undefined) { requireIdentifier(input.revision, "grid revision"); query.revision = input.revision; }
+    if (input.revision !== undefined) requireIdentifier(input.revision, "grid revision");
     if (input.cursor !== undefined) {
       gridCursor(input.cursor); if (!query.revision) throw new Error("CanopyX: a cursor requires its dataset revision.");
-      query.cursor = input.cursor;
     }
-    if (input.searchMode !== undefined) {
-      if (!["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
-      query.searchMode = input.searchMode;
-    }
+    if (input.searchMode !== undefined && !["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
     const columns = new Map(view.columns.map(column => [column.id, column])), sorts = new Set();
     if (input.sort !== undefined && !Array.isArray(input.sort) || input.filters !== undefined && !Array.isArray(input.filters))
       throw new Error("CanopyX: grid sort and filters must be arrays.");
@@ -133,12 +130,12 @@
       if (!sort || !columns.has(sort.column) || !columns.get(sort.column).sortable || sorts.has(sort.column) ||
           !["asc", "desc"].includes(sort.direction))
         throw new Error("CanopyX: invalid grid sort column or direction.");
-      sorts.add(sort.column); return Object.freeze({ column: sort.column, direction: sort.direction });
+      sorts.add(sort.column); return gridQueryRecord(sort, { column: sort.column, direction: sort.direction }, strict);
     });
-    const budget = { predicates: 0, groups: 0 };
+    const budget = { predicates: 0, groups: 0, strict };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
-    Object.freeze(query.sort); Object.freeze(query.filters); return Object.freeze(query);
+    return gridQueryRecord(input, query, strict, cursor);
   }
 
   function validateGridPage(page, view, query, accepted) {

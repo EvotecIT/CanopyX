@@ -25,8 +25,8 @@
       ids.add(aggregate.id);
     }
   };
-  gridQuery = (view, input) => {
-    const query = SUMMARY_QUERY(view, input), grouping = view.reporting?.grouping;
+  gridQuery = (view, input, strict) => {
+    const query = SUMMARY_QUERY(view, input, strict), grouping = view.reporting?.grouping;
     return !grouping ? query : gridFreeze({ ...query, sort: [grouping, ...query.sort.filter(sort => sort.column !== grouping.column)] });
   };
   GRID_REPORTING.compare = view => {

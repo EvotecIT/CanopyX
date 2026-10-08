@@ -1,5 +1,3 @@
-  const GRID_FILTER_LABELS = { eq: "=", ne: "≠", contains: "gridContains", startsWith: "gridStartsWith", in: "gridIn",
-    gt: ">", ge: "≥", lt: "<", le: "≤", isNull: "gridIsNull", isNotNull: "gridIsNotNull" };
   // The marked parts (counts by default, or a page range) are bold in the text colour; the rest of the label stays muted.
   function gridCountLabel(element,label,values,marks=/(\{count\}|\{selected\})/){
     element.replaceChildren(...label.split(marks).map((part,index)=>{

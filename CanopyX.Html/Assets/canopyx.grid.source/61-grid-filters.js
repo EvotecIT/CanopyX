@@ -76,7 +76,7 @@
       multipleField.appendChild(multiple); multipleField.hidden = true; row.append(columnField, conditionField, typeField, valueField, multipleField);
       const change = () => {
         const definition = this.columns.find(item => item.id === column.value), previous = operator.value;
-        const declaredBoolean=(definition.presenter||this.view.reporting?.presenters?.[definition.id])?.kind==="boolean";
+        const declaredBoolean=definition.presenter?.kind==="boolean";
         if(declaredBoolean)type.value="boolean";
         if (current !== column.value) { if (current !== undefined) multiple._reset(); current = column.value; }
         const operators = definition.kind === "text" ? ["eq", "ne", "contains", "startsWith", "in", "isNull", "isNotNull"] :
