@@ -79,6 +79,7 @@ Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
 CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
+SidecarKeysExample.Write(output);
 GroupedGridExample.Write(output);
 ContainedGridsExample.Write(output);
 ColumnLayoutExample.Write(output);

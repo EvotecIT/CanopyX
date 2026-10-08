@@ -67,7 +67,7 @@ test("nested AND/OR predicates evaluate the whole dataset before windows, sortin
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "501");
 });
 
-test("nested limits and unknown fields reject queries before replacing the accepted snapshot", async ({ page }) => {
+test("nested limits and invalid known values reject queries before replacing the accepted snapshot", async ({ page }) => {
   await open(page, definition([{ id: "original", cells: { name: "Original", amount: 1 } }]));
   const results = await page.evaluate(async () => {
     const grid = document.querySelector("[data-canopyx-host]").canopyx, leaf = { column: "name", operator: "isNotNull", values: [] };

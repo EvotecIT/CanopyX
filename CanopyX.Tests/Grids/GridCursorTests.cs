@@ -4,6 +4,19 @@ using CanopyX.Tests.Protocol;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridCursorTests {
+    [Fact]
+    public void NativeCursorFallback_PreservesUnknownCountsAndRejectsAnOffsetOwner() {
+        var view = View();
+        var page = new CanopyGridCursorPage(view.Id, "r1", 25) { PreviousCursor = "previous", NextCursor = "next" };
+        var row = new CanopyGridRow("r25"); row.Cells["name"] = "<Record 25>"; page.Rows.Add(row);
+        var html = CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view, page);
+        Assert.Contains("&lt;Record 25&gt;", html);
+        Assert.Contains("Showing 1 of unknown rows.", html);
+        Assert.DoesNotContain("<script", html);
+        view.Navigation = CanopyGridNavigation.Offset;
+        Assert.Throws<InvalidOperationException>(() => CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view, page));
+    }
+
     private static CanopyGridView View() {
         var view = new CanopyGridView("inventory", "Inventory") {
             Source = CanopyGridSourceKind.Host, Navigation = CanopyGridNavigation.Cursor,

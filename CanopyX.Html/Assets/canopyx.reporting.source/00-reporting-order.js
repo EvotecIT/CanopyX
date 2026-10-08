@@ -1,7 +1,6 @@
   // ---------- deterministic reporting text order, shared with CanopyGridOrdering ----------
   function reportingTextOrder(policy) {
     if (!policy || typeof policy !== "object" || Array.isArray(policy) ||
-        Object.keys(policy).some(key => !["text", "categories"].includes(key)) ||
         !["ordinal", "foldedOrdinal", "natural", "foldedNatural"].includes(policy.text) ||
         policy.categories !== undefined && (!Array.isArray(policy.categories) || policy.categories.length > 512 ||
           policy.categories.some(value => typeof value !== "string" || value.length > 4096)))
@@ -47,7 +46,7 @@
 
   GRID_REPORTING.validate = view => {
     const options = view.reporting;
-    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["ordering", "headerFilters", "filterGroups", "facetColumns", "presenters", "layout", "columnReorder", "responsive", "minimumCenterWidth", "viewStorage", "selectionControls", "grouping", "aggregates"].includes(key)) ||
+    if (!options || typeof options !== "object" || Array.isArray(options) ||
         ["headerFilters", "filterGroups"].some(key => options[key] !== undefined && typeof options[key] !== "boolean"))
       throw new Error("CanopyX: invalid reporting options.");
     if (options.selectionControls !== undefined && typeof options.selectionControls !== "boolean" || options.selectionControls && view.selection === "none")

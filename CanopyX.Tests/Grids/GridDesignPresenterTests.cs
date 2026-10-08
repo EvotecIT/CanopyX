@@ -5,6 +5,28 @@ using System.Text.Json;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridDesignPresenterTests {
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void ChangePresenter_NonfiniteDeltaIsMissingInBothWireAndStaticOutput(double delta) {
+        var view = new CanopyGridView("finite", "Finite changes");
+        view.Columns.Add(new CanopyColumn("value", "Value") { Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.Change("delta") });
+        view.Columns.Add(new CanopyColumn("delta", "Delta") { Kind = CanopyColumnKind.Number });
+        var row = new CanopyGridRow("record");
+        row.Cells["value"] = 10;
+        row.Cells["delta"] = delta;
+        view.Rows.Add(row);
+        using var document = JsonDocument.Parse(view.ToJson());
+        Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("rows")[0].GetProperty("cells").GetProperty("delta").ValueKind);
+        var html = System.Net.WebUtility.HtmlDecode(CanopyStaticHtml.RenderGrid(view));
+        Assert.Contains(">10</td>", html);
+        Assert.DoesNotContain("NaN", html);
+        Assert.DoesNotContain("Infinity", html);
+        Assert.DoesNotContain("↑", html);
+        Assert.DoesNotContain("↓", html);
+    }
+
     [Fact]
     public void BooleanFactory_RetainsTheParameterlessPublicMethod() {
         Func<CanopyGridPresenter> existingFactory = CanopyGridPresenter.Boolean;

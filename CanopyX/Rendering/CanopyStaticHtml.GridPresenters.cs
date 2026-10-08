@@ -24,8 +24,8 @@ public static partial class CanopyStaticHtml {
             }
             return string.IsNullOrEmpty(secondary) ? text : text + " · " + secondary;
         }
-        if (presenter?.Kind == CanopyGridPresenterKind.Change && presenter.DeltaColumn != null && row.Cells.TryGetValue(presenter.DeltaColumn, out var delta) && delta?.Value != null) {
-            var value = Convert.ToDouble(delta.Value, CultureInfo.InvariantCulture);
+        if (presenter?.Kind == CanopyGridPresenterKind.Change && presenter.DeltaColumn != null && row.Cells.TryGetValue(presenter.DeltaColumn, out var delta) && CanopyGridValues.Normalize(delta?.Value) is object rawDelta) {
+            var value = Convert.ToDouble(rawDelta, CultureInfo.InvariantCulture);
             return (value == 0 ? "0" : (value > 0 ? "↑ " : "↓ ") + Math.Abs(value).ToString("G", CultureInfo.InvariantCulture)) + " " + text;
         }
         return text;

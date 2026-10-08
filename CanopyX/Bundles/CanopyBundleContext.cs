@@ -101,7 +101,7 @@ internal sealed class CanopyBundleContext : IDisposable {
     /// <exception cref="IOException">An earlier file of the background thread could not be written.</exception>
     internal long WriteFile(string reference, IEnumerable<string> documentParts) {
         _failure?.Throw();
-        return Write(PathOf(reference), WrapperStart(reference), documentParts, _encoded ??= NewBuffer());
+        return Write(PathOf(reference), WrapperStart(reference), ParsedDocumentParts(reference, documentParts), _encoded ??= NewBuffer());
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ internal sealed class CanopyBundleContext : IDisposable {
     internal void WriteFileLater(string reference, IEnumerable<string> documentParts) {
         _failure?.Throw();
         if (_handedOver++ >= FilesBeforeBackground && !_completed && StartBackground()) {
-            _pending!.Add(new PendingFile(PathOf(reference), WrapperStart(reference), documentParts));
+            _pending!.Add(new PendingFile(PathOf(reference), WrapperStart(reference), ParsedDocumentParts(reference, documentParts)));
             return;
         }
 
@@ -246,7 +246,23 @@ internal sealed class CanopyBundleContext : IDisposable {
     }
 
     /// <summary>The sidecar script: it pushes the view id, the file's own reference, and the document onto the queue.</summary>
-    private string Wrap(string reference, string document) => WrapperStart(reference) + document + WrapperEnd;
+    private string Wrap(string reference, string document) => WrapperStart(reference) +
+        (IsPack(reference) ? document : "JSON.parse(String.raw`" + document + "`)") + WrapperEnd;
+
+    /// <summary>
+    /// Parses data as JSON so dictionary keys retain JSON semantics. Pack envelopes have fixed keys and already
+    /// carry their data documents as raw JSON strings; parsing the envelope would also parse every packed page early.
+    /// The JSON writer escapes backticks and template substitutions before any part reaches this boundary.
+    /// </summary>
+    private static IEnumerable<string> ParsedDocumentParts(string reference, IEnumerable<string> parts) {
+        var packed = IsPack(reference);
+        if (!packed) yield return "JSON.parse(String.raw`";
+        foreach (var part in parts) yield return part;
+        if (!packed) yield return "`)";
+    }
+
+    private static bool IsPack(string reference) => reference.StartsWith("p/", StringComparison.Ordinal) ||
+        reference.StartsWith("q/", StringComparison.Ordinal);
 
     private string WrapperStart(string reference) {
         var header = new CanopyJsonWriter(128);

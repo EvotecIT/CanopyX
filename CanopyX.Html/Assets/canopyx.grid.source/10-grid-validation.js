@@ -26,14 +26,14 @@
       requireIdentifier(row && row.id, "grid row ID");
       if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
       ids.add(row.id);
-      if (Object.keys(row).some(name => !["id", "cells", "tone", "className"].includes(name)) || !row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
+      if (!row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
         throw new Error("CanopyX: invalid flat row fields.");
       gridDecoration(row.tone, row.className);
       for (const id of Object.keys(row.cells)) {
         if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
         const cell = row.cells[id];
         if (isCellObject(cell)) {
-          if (Array.isArray(cell) || Object.keys(cell).some(name => !["value", "text", "searchText", "title", "tone", "badges", "secondary", "series"].includes(name)) ||
+          if (Array.isArray(cell) ||
               ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
               cell.secondary !== undefined && cell.secondary.length > 4096 || cell.series !== undefined && !gridSeriesValid(cell.series) ||
               cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
@@ -107,8 +107,7 @@
   function gridQuery(view, input) {
     input = input || {};
     const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
-    if (typeof input !== "object" || Array.isArray(input) || Object.keys(input).some(name =>
-        !["protocol", "type", "view", "revision", "search", "searchMode", "sort", "filters", "filterGroup", "offset", "limit", "cursor"].includes(name)) ||
+    if (typeof input !== "object" || Array.isArray(input) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
         input.view !== undefined && input.view !== view.id) throw new Error("CanopyX: query belongs to a different grid or protocol.");
     const query = { protocol: PROTOCOL, type, view: view.id,
@@ -132,7 +131,7 @@
       throw new Error("CanopyX: grid sort and filters must be arrays.");
     query.sort = (input.sort || []).map(sort => {
       if (!sort || !columns.has(sort.column) || !columns.get(sort.column).sortable || sorts.has(sort.column) ||
-          !["asc", "desc"].includes(sort.direction) || Object.keys(sort).some(name => !["column", "direction"].includes(name)))
+          !["asc", "desc"].includes(sort.direction))
         throw new Error("CanopyX: invalid grid sort column or direction.");
       sorts.add(sort.column); return Object.freeze({ column: sort.column, direction: sort.direction });
     });

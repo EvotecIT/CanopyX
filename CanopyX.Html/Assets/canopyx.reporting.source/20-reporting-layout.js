@@ -15,7 +15,6 @@
     for (const [id, policy] of Object.entries(options.layout)) {
       const column = view.columns.find(item => item && item.id === id);
       if (!column || !policy || typeof policy !== "object" || Array.isArray(policy) ||
-          Object.keys(policy).some(key => !["minimum", "maximum", "flex", "pin", "priority", "alwaysVisible"].includes(key)) ||
           !Number.isInteger(policy.minimum) || policy.minimum < 40 || !Number.isInteger(policy.maximum) ||
           policy.maximum < policy.minimum || policy.maximum > MAX_COLUMN_WIDTH ||
           policy.flex !== undefined && (!Number.isFinite(policy.flex) || policy.flex < 0 || policy.flex > 100) ||

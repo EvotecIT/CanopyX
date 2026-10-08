@@ -3,7 +3,7 @@
     if (++budget.predicates > 64) throw new Error("CanopyX: at most 64 grid predicates are supported across all groups.");
     const column = filter && columns.get(filter.column), values = filter && filter.values;
     if (!column || !["eq", "ne", "contains", "startsWith", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"].includes(filter.operator) ||
-        !Array.isArray(values) || Object.keys(filter).some(name => !["column", "operator", "values"].includes(name)))
+        !Array.isArray(values))
       throw new Error("CanopyX: invalid grid predicate.");
     const nullTest = filter.operator === "isNull" || filter.operator === "isNotNull";
     if (nullTest ? values.length !== 0 : filter.operator === "in" ? values.length < 1 || values.length > 1000 : values.length !== 1)
@@ -18,7 +18,7 @@
   function gridFilterGroup(group, columns, budget, depth) {
     if (depth > 8 || ++budget.groups > 64) throw new Error("CanopyX: grid filter groups exceed their depth or count limit.");
     if (!group || !["and", "or"].includes(group.operator) || !Array.isArray(group.filters) || !Array.isArray(group.groups) ||
-        !group.filters.length && !group.groups.length || Object.keys(group).some(name => !["operator", "filters", "groups"].includes(name)))
+        !group.filters.length && !group.groups.length)
       throw new Error("CanopyX: invalid or empty grid filter group.");
     const filters = group.filters.map(filter => gridPredicate(filter, columns, budget));
     const groups = group.groups.map(child => gridFilterGroup(child, columns, budget, depth + 1));
