@@ -22,7 +22,8 @@ Consumers: standalone .NET authors, the HtmlForgeX tree/grid bridge, and OfficeI
 - [x] Reload grid data against a fresh revision with accepted criteria, restarting navigation; preserve the accepted query and records when reload fails.
 - [x] Capture normalized raw/text cells and optional semantic presentation before Office delivery, with scope counts, independent cancellable enumeration and explicit unsupported-presentation diagnostics. Render cursor snapshots as script-free fallback tables.
 - [x] Validate the consolidated candidate through all supported .NET targets, native/browser/package contracts and rendered examples. Scrolling qualification follows the existing performance gates below.
-- [ ] Qualify a real HtmlForgeX migration and OfficeIMO consumer against the accepted source/package boundary. Public package availability remains a separate release gate.
+- [x] Qualify a real HtmlForgeX migration and OfficeIMO consumer against the accepted source and packed-artifact boundary. The installed HtmlForgeX tree, report grid and static outline pass across three browser engines.
+- [ ] Publish and verify the CanopyX packages, then qualify the HtmlForgeX migration through its normal public-package restore and CI. The full public dependency graph remains a separate release gate.
 
 Gate: the local source and packed artifacts agree on the public API and runtime; representative hosts retain identities, query scope, cancellation and presentation without rebuilding those contracts. The final tree-scrolling measurements pass the existing 4x budget. NVDA and Narrator are omitted from this release qualification by maintainer decision; spoken announcements remain unverified.
 
@@ -46,7 +47,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
 - [x] JavaScript module and classic distribution with typed host contracts, an isolated package-consumer check, and server-safe imports.
 - [x] Firefox and WebKit browser contracts, alongside Chromium, with engine-specific coverage in CI.
-- [ ] Complete representative HtmlForgeX migration proof against the accepted package boundary. Automated accessibility checks remain required; NVDA and Narrator are omitted from this release qualification.
+- [x] Complete representative HtmlForgeX migration proof against the accepted source and packed artifacts. Normal public-package restore and CI remain held on package availability. Automated accessibility checks pass; NVDA and Narrator are omitted from this release qualification.
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 

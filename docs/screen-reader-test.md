@@ -2,6 +2,9 @@
 
 The browser tests check roles, states, focus, and DOM order; they cannot hear what a screen reader says. This script is the manual pass that closes that gap for the tree grid. Run it with NVDA on Firefox or Chrome, and with Narrator on Edge, before a release or after a change to the keyboard model, the ARIA attributes, or the labels. It takes about 20 minutes per reader.
 
+For the 0.1.0 release qualification, NVDA and Narrator are omitted by maintainer decision. Automated role, state,
+focus and DOM-order checks still apply; spoken announcements remain unverified.
+
 ## Setup
 
 1. Build the examples: `./Build.ps1 -Configuration Release -SkipPack`.
