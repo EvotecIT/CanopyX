@@ -43,6 +43,8 @@ custom deployment policy allowing only the `main` branch. Store the bootstrap
 credential in this environment, not in repository-level secrets. The same
 environment must be selected in npm's trusted-publisher settings. The shared
 publisher verifies the exact branch policy before processing an archive.
+The caller forwards the secret by name; GitHub supplies its environment value
+to the shared publication job. An ordinary OIDC release needs no bootstrap value.
 
 Keep updates to `main` within a trusted maintainer boundary. This private
 repository's GitHub Team plan does not support environment-required reviewers;
