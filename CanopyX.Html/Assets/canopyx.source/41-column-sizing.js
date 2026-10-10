@@ -1,7 +1,14 @@
 
   // ---------- tree grid: column sizing ----------
   function columnWidth(column, width) {
-    return Math.min(column.maxW ?? MAX_COLUMN_WIDTH, Math.max(column.minW ?? 40, width));
+    return Math.min(column.maxW, Math.max(column.minW, width));
+  }
+  function prepareWidth(column) {
+    column.minW = column.minWidth === undefined ? 40 : column.minWidth;
+    column.maxW = column.maxWidth === undefined ? MAX_COLUMN_WIDTH : column.maxWidth;
+    if (!Number.isInteger(column.minW) || !Number.isInteger(column.maxW) || column.minW < 40 ||
+        column.maxW < column.minW || column.maxW > MAX_COLUMN_WIDTH) throw new Error("CanopyX: invalid bounds.");
+    column.width = columnWidth(column, column.width ?? 160);
   }
   Object.assign(TreeGrid.prototype, {
     applyWidths(widths = this.cols.map(column => column.width)) {

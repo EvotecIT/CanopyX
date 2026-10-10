@@ -1,14 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { viewPage, nextFrames } from "./support.mjs";
 
-for (const reporting of [false, true]) for (const fixed of [false, true]) {
-  test(`${reporting ? "reporting" : "ordinary"} grid keeps ${fixed ? "fixed" : "preferred"} resize bounds in controls and saved state`, async ({ page }, testInfo) => {
-    const view = { protocol: "canopyx/2", type: "grid", id: "bounded", label: "Bounded columns", stateKey: "resize-contract",
+for (const [runtime, fixed] of [["tree", true], ["interactive", true], ["ordinary", false], ["ordinary", true], ["reporting", false], ["reporting", true]]) {
+  test(`${runtime} keeps ${fixed ? "fixed" : "preferred"} resize bounds in controls and saved state`, async ({ page }, testInfo) => {
+    const tree = runtime === "tree" || runtime === "interactive", reporting = runtime === "reporting";
+    const view = { protocol: "canopyx/2", type: tree ? "view" : "grid", id: "bounded", label: "Bounded columns", stateKey: "resize-contract",
       source: { kind: "inline" }, rowHeight: 28, pageSize: 20, selection: "single", ...(reporting ? { reporting: {} } : {}),
-      columns: [{ id: "name", title: "Name", kind: "text", width: 180, minWidth: 120, maxWidth: 240, ...(fixed ? { fixed: true, autoSize: "none" } : {}) },
+      columns: [{ id: "name", title: "Name", kind: "text", width: 180, minWidth: 120, maxWidth: 240,
+        ...(tree ? { editable: runtime === "interactive" } : fixed ? { fixed: true, autoSize: "none" } : {}) },
         { id: "amount", title: "Amount", kind: "number", width: 100 },
-        { id: "automatic", title: "Content width", kind: "text", minWidth: 200, maxWidth: 240 }],
-      rows: [{ id: "record", cells: { name: "Record", amount: 10, automatic: "Content" } }] };
+        { id: "automatic", title: "Content width", kind: "text", ...(tree ? { width: 160 } : {}), minWidth: 200, maxWidth: 240 }],
+      ...(tree ? { roots: [{ id: "record", label: "Record", cells: { amount: 10, automatic: "Content" } }] }
+        : { rows: [{ id: "record", cells: { name: "Record", amount: 10, automatic: "Content" } }] }) };
     await page.route("http://canopyx.test/bounded", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
     await page.goto("http://canopyx.test/bounded");
     await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready);
@@ -37,11 +40,26 @@ for (const reporting of [false, true]) for (const fixed of [false, true]) {
     state.columns.find(column => column.id === "name").width = 500;
     await page.evaluate(state => document.querySelector('[data-canopyx-host]').canopyx.setState(state), state);
     expect(await width()).toBe(240);
-    await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.saveView("Bounded"));
-    expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem("cx:grid:resize-contract:bounded")).views[0].state.columns.find(column => column.id === "name").width)).toBe(240);
+    if (tree) {
+      await expect.poll(() => page.evaluate(() => JSON.parse(sessionStorage.getItem("canopyx:resize-contract") || "null")?.columns.find(column => column.id === "name").width)).toBe(240);
+    } else {
+      await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.saveView("Bounded"));
+      expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem("cx:grid:resize-contract:bounded")).views[0].state.columns.find(column => column.id === "name").width)).toBe(240);
+    }
     await page.reload(); await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await nextFrames(page);
     expect(await width()).toBe(240);
     await expect(grip).toHaveAttribute("aria-valuenow", "240");
     await page.screenshot({ path: testInfo.outputPath("bounded-resize.png") });
+    if (fixed) {
+      expect(await page.evaluate(({ view, tree }) => {
+        const invalid = [{ minWidth: null }, { maxWidth: null }, { minWidth: 241 }, { minWidth: 120.5 },
+          { minWidth: 2147483648, maxWidth: undefined }];
+        return invalid.map(bounds => {
+          const definition = structuredClone(view); Object.assign(definition.columns[0], bounds);
+          try { (tree ? CanopyX.createTreeGrid : CanopyX.createDataGrid)(document.createElement("div"), { view: definition }); return false; }
+          catch { return true; }
+        });
+      }, { view, tree })).toEqual(Array(5).fill(true));
+    }
   });
 }

@@ -256,6 +256,11 @@ Effective pins leave `reporting.minimumCenterWidth` CSS pixels (default 128, ran
 
 ## View
 
+Tree columns declare their initial `width` and may include `minWidth` and `maxWidth` in CSS pixels. The bounds are
+integers from 40 through 2,147,483,647, with the minimum no greater than the maximum; absent bounds use that full
+range. The runtime clamps the initial width, pointer and keyboard resizing, `setColumnWidth()` and restored widths
+to the declared range. Resize separators expose the same range through `aria-valuemin` and `aria-valuemax`.
+
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | string | Unique within a page. Scopes element ids, remembered state, sidecar files, and deep links. |

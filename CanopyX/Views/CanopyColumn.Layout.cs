@@ -26,8 +26,6 @@ public sealed partial class CanopyColumn {
     }
 
     private void WriteLayoutJson(CanopyJsonWriter writer) {
-        if (Sizing.Minimum != MinWidth) writer.Property("minWidth", Sizing.Minimum);
-        if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);
         if (Sizing.IsFixed) writer.Property("fixed", true);
         if (Sizing.FlexWeight > 0) writer.Name("flex").Number(Sizing.FlexWeight);
         if (Sizing.Measure != CanopyColumnAutoSize.Content) writer.Property("autoSize", Sizing.Measure == CanopyColumnAutoSize.Header ? "header" : "none");

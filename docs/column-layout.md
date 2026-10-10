@@ -6,6 +6,11 @@ runtime turns it into widths for the current container, recomputes when the cont
 hidden, or a new query result arrives, and never recomputes while scrolling. The generated examples include
 `column-layout.html` (and `column-layout-dark.html`) with wide, narrow, pinned and phone-sized containers.
 
+Tree columns use the same `CanopyColumnSizing` bounds. Their initial width is the assigned width, or 160 pixels
+clamped to those bounds. Pointer and keyboard resizing, `setColumnWidth()` and restored state all honour the bounds;
+the resize separator exposes them through ARIA. Automatic content fitting, flex and responsive priorities apply to
+flat grids.
+
 ## How a width is chosen
 
 1. **Need.** Each column measures its header and up to 200 loaded values with the grid font (canvas `measureText`, no

@@ -22,8 +22,7 @@
   function gridFitPrepare(grid) {
     const identity = grid.columns.find(column => column.rowHeader) || grid.columns[0];
     for (const column of grid.columns) {
-      column.minW = column.minWidth ?? 40; column.maxW = column.maxWidth ?? MAX_COLUMN_WIDTH;
-      column.width = columnWidth(column, column.width);
+      prepareWidth(column);
       column.identity = column === identity; column.pref = column.autoWidth ? 0 : column.width; column.basePriority = column.priority; column.declared = column.width;
       column.flexWeight = typeof column.flex === "number" ? column.flex : 0;
       if (column.flexWeight) column.flex = true; else if (typeof column.flex === "number") delete column.flex;

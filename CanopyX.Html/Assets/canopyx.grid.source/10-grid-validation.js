@@ -60,8 +60,6 @@
       if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
           column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) ||
           ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
-          column.minWidth !== undefined && (!Number.isInteger(column.minWidth) || column.minWidth < 40) || column.maxWidth !== undefined &&
-          (!Number.isInteger(column.maxWidth) || column.maxWidth < (column.minWidth ?? 40) || column.maxWidth > MAX_COLUMN_WIDTH) ||
           column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
           column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
           column.fixed && column.width === undefined)

@@ -38,8 +38,9 @@
       if (!options.formatLink !== !options.parseLink) {
         throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
       }
-      const rendererOf = (id) => (Object.hasOwn(renderers, id) ? renderers[id] : null);
-      this.columns = view.columns.map((column, index) => Object.assign({}, column, { hidden: index > 0 && !!column.hidden, render: rendererOf(column.id) }));
+      this.columns = view.columns.map((column, index) => ({ ...column, hidden: index > 0 && !!column.hidden,
+        render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null }));
+      this.columns.forEach(prepareWidth);
       this.keyMap = new Map();
       this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {

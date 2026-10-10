@@ -25,7 +25,7 @@
         throw new Error("CanopyX: invalid grid cache or request timeout.");
       const renderers = hostRenderers(options.renderers || {}, this.view.columns);
       this.columns = this.view.columns.map(column => ({ ...column,
-        width: column.width ?? 160, autoWidth: column.autoWidth || column.width === undefined,
+        autoWidth: column.autoWidth || column.width === undefined,
         render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;

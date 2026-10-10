@@ -63,7 +63,7 @@
       if (this.cancelResize) this.cancelResize();
       for (const saved of state.columns) {
         const column = this.columns.find(c => c.id === saved.id);
-        if (column) { column.width = saved.width; column.hidden = saved.hidden; }
+        if (column) { column.width = columnWidth(column, saved.width); column.hidden = saved.hidden; }
       }
       this.toolbar.querySelectorAll("[data-cx-column]").forEach(input => {
         const column = this.columns.find(c => c.id === input.getAttribute("data-cx-column"));

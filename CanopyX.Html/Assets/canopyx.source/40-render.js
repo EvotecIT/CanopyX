@@ -121,8 +121,8 @@
         grip.tabIndex = 0;
         grip.setAttribute("role", "separator");
         grip.setAttribute("aria-orientation", "vertical");
-        grip.setAttribute("aria-valuemin", column.minW ?? 40);
-        grip.setAttribute("aria-valuemax", column.maxW ?? MAX_COLUMN_WIDTH);
+        grip.setAttribute("aria-valuemin", column.minW);
+        grip.setAttribute("aria-valuemax", column.maxW);
         grip.addEventListener("keydown", (e) => {
           if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
           e.preventDefault();

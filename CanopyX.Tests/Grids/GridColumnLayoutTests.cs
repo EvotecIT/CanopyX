@@ -34,18 +34,35 @@ public sealed class GridColumnLayoutTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyColumnSizing.Fixed(260, 180, 240));
     }
 
-    [Fact]
-    public void FixedSizingRetainsUserResizeBoundsOnTheWire() {
-        var view = new CanopyDataGridView("bounded", "Bounded fixed column");
-        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Fixed(180, 120, 240) });
-        var json = view.ToJson();
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FixedSizingRetainsUserResizeBoundsOnTheWire(bool tree) {
+        var bounded = new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Fixed(180, 120, 240) };
+        var json = tree ? new CanopyTreeView("bounded", "Bounded fixed column") { Columns = { bounded } }.ToJson()
+            : new CanopyDataGridView("bounded", "Bounded fixed column") { Columns = { bounded } }.ToJson();
         ProtocolSchema.AssertValid(json, "bounded fixed sizing");
         using var document = JsonDocument.Parse(json);
         var column = document.RootElement.GetProperty("columns")[0];
         Assert.Equal(180, column.GetProperty("width").GetInt32());
         Assert.Equal(120, column.GetProperty("minWidth").GetInt32());
         Assert.Equal(240, column.GetProperty("maxWidth").GetInt32());
-        Assert.True(column.GetProperty("fixed").GetBoolean());
-        Assert.Equal("none", column.GetProperty("autoSize").GetString());
+        if (!tree) {
+            Assert.True(column.GetProperty("fixed").GetBoolean());
+            Assert.Equal("none", column.GetProperty("autoSize").GetString());
+        }
+    }
+
+    [Theory]
+    [InlineData(200, 240, 200)]
+    [InlineData(40, 100, 100)]
+    public void TreeContentSizingUsesAnInitialWidthInsideItsBounds(int minimum, int maximum, int expected) {
+        var view = new CanopyTreeView("bounded-content", "Bounded content") {
+            Columns = { new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Content(minimum, maximum) } }
+        };
+        var json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "bounded tree content sizing");
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expected, document.RootElement.GetProperty("columns")[0].GetProperty("width").GetInt32());
     }
 }
