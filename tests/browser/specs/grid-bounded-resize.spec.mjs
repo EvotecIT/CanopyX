@@ -56,6 +56,7 @@ for (const [runtime, fixed] of [["tree", true], ["interactive", true], ["ordinar
           { minWidth: 2147483648, maxWidth: undefined }];
         return invalid.map(bounds => {
           const definition = structuredClone(view); Object.assign(definition.columns[0], bounds);
+          if (definition.reporting) definition.reporting.layout = { name: { minimum: 120, maximum: 240 } };
           try { (tree ? CanopyX.createTreeGrid : CanopyX.createDataGrid)(document.createElement("div"), { view: definition }); return false; }
           catch { return true; }
         });

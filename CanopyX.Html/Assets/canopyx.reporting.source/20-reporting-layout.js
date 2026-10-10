@@ -37,7 +37,8 @@
       column.presenter ??= this.view.reporting?.presenters?.[column.id];
       const policy = this.columnLayouts.get(column.id);
       if (policy) {
-        column.minWidth ??= policy.minimum; column.maxWidth ??= policy.maximum;
+        if (column.minWidth === undefined) column.minWidth = policy.minimum;
+        if (column.maxWidth === undefined) column.maxWidth = policy.maximum;
         column.flex ??= policy.flex; column.alwaysVisible ??= policy.alwaysVisible;
       }
     }
