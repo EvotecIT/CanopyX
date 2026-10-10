@@ -57,7 +57,7 @@ public sealed class IdentifierContractTests {
         Assert.DoesNotMatch(pattern, broken);
         Assert.Matches(pattern, "node-\U0001f332");
         Assert.Throws<ArgumentException>(() => new CanopyNode(broken, "Node"));
-        Assert.Throws<ArgumentException>(() => new CanopyView(broken, "View"));
+        Assert.Throws<ArgumentException>(() => new CanopyTreeView(broken, "View"));
         Assert.Throws<ArgumentException>(() => new CanopySearchHit(new[] { broken }, "Hit"));
         Assert.Throws<ArgumentException>(() => new CanopyCountEntry(broken));
         Assert.Throws<ArgumentException>(() => new CanopyPage(broken));
@@ -67,14 +67,14 @@ public sealed class IdentifierContractTests {
 
     [Fact]
     public void SupplementaryUnicodeIdentifiersRemainUsable() {
-        var id = "node-\U0001f332"; var view = new CanopyView(id, "View");
+        var id = "node-\U0001f332"; var view = new CanopyTreeView(id, "View");
         view.Columns.Add(new CanopyColumn("name", "Name")); view.Roots.Add(new CanopyNode(id, "Node"));
         ProtocolSchema.AssertValid(view.ToJson(), "supplementary id");
         var page = new CanopyPage(id) { Next = id }; page.Items.Add(new CanopyNode("child", "Child") { Ref = id, HasChildren = true });
         ProtocolSchema.AssertValid(page.ToJson(), "supplementary references");
     }
 
-    private static CanopyView View() {
-        var view = new CanopyView("test", "Test"); view.Columns.Add(new CanopyColumn("name", "Name")); return view;
+    private static CanopyTreeView View() {
+        var view = new CanopyTreeView("test", "Test"); view.Columns.Add(new CanopyColumn("name", "Name")); return view;
     }
 }

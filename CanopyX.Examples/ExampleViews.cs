@@ -10,20 +10,20 @@ internal static class ExampleViews {
     private const string HistoryIcon = "<svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M8 1.5a6.5 6.5 0 1 1-6.1 8.7l1.4-.5A5 5 0 1 0 4.5 4.4L6 6H1.5V1.5l1.9 1.9A6.5 6.5 0 0 1 8 1.5Zm-.75 3h1.5v3.2l2.3 1.4-.8 1.3-3-1.8V4.5Z\"/></svg>";
 
     /// <summary>Creates the file shares view over the given roots.</summary>
-    internal static CanopyView FileShares(string id, IEnumerable<CanopyNode> roots) {
-        var view = new CanopyView(id, "File shares") {
+    internal static CanopyTreeView FileShares(string id, IEnumerable<CanopyNode> roots) {
+        var view = new CanopyTreeView(id, "File shares") {
             PageSize = 100,
             Selection = CanopySelectionMode.Multiple,
             Search = new CanopySearchOptions { Placeholder = "Search files and folders" },
             StateKey = id,
             DeepLink = true
         };
-        view.Columns.Add(new CanopyColumn("name", "Name") { Width = 380, Sortable = true });
-        view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Width = 110, Sortable = true });
-        view.Columns.Add(new CanopyColumn("items", "Items") { Kind = CanopyColumnKind.Number, Width = 80, Hidden = true });
-        view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime, Width = 170, Sortable = true });
-        view.Columns.Add(new CanopyColumn("owner", "Owner") { Width = 150, Sortable = true });
-        view.Columns.Add(new CanopyColumn("state", "State") { Width = 100 });
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(380), Sortable = true });
+        view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(110), Sortable = true });
+        view.Columns.Add(new CanopyColumn("items", "Items") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(80), Hidden = true });
+        view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime, Sizing = CanopyColumnSizing.Preferred(170), Sortable = true });
+        view.Columns.Add(new CanopyColumn("owner", "Owner") { Sizing = CanopyColumnSizing.Preferred(150), Sortable = true });
+        view.Columns.Add(new CanopyColumn("state", "State") { Sizing = CanopyColumnSizing.Preferred(100) });
         view.Icons["share"] = ShareIcon;
         view.Icons["folder"] = FolderIcon;
         view.Icons["file"] = FileIcon;

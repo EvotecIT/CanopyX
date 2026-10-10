@@ -158,7 +158,7 @@ public sealed class StreamedBundleTests {
     public void Write_Streamed_WithoutNodesOrSearch_WritesAnEmptyTopLevel() {
         var directory = NewDirectory();
         try {
-            var view = new CanopyView("empty", "Empty");
+            var view = new CanopyTreeView("empty", "Empty");
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var result = new CanopyBundleWriter().Write(view, directory, Array.Empty<CanopyNode>(), node => null);
             var files = new SidecarFiles(result.DataDirectory, view.Id);
@@ -204,8 +204,8 @@ public sealed class StreamedBundleTests {
     private static List<string> RelativeFiles(string directory) =>
         Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories).Select(file => Path.GetRelativePath(directory, file)).OrderBy(file => file, StringComparer.Ordinal).ToList();
 
-    private static CanopyView View() {
-        var view = new CanopyView("streamed", "Streamed") { Search = new CanopySearchOptions() };
+    private static CanopyTreeView View() {
+        var view = new CanopyTreeView("streamed", "Streamed") { Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
         return view;

@@ -19,12 +19,13 @@ internal sealed record PageLocation(string? Children, string Page, string First)
 }
 
 /// <summary>
-/// Reads every sidecar file of a bundle the way a browser does and checks each file's wrapper. A pack file holds its
-/// pages as <c>String.raw</c> templates; they are read as the strings the script produces.
+/// Checks sidecar wrappers and reads their JSON documents. Browser tests separately execute the scripts to check
+/// JavaScript semantics. Pack pages remain raw JSON strings until a page is read.
 /// </summary>
 internal sealed class SidecarFiles {
     private static readonly Regex Wrapper = new(@"^\(self\.CanopyXSidecar = self\.CanopyXSidecar \|\| \[\]\)\.push\((\[.*\])\);\n$", RegexOptions.Singleline);
     private static readonly Regex RawTemplate = new("String\\.raw`([^`]*)`");
+    private static readonly Regex ParsedTemplate = new(@"JSON\.parse\(String\.raw`([^`]*)`\)");
     private static readonly Regex PackedPage = new(@"^(p/\d+)#(\d+)$");
     private readonly Dictionary<string, string[]> _packs = new(StringComparer.Ordinal);
 
@@ -36,6 +37,10 @@ internal sealed class SidecarFiles {
             var match = Wrapper.Match(text);
             Assert.True(match.Success, "Sidecar file has an unexpected wrapper: " + reference);
             var body = match.Groups[1].Value;
+            body = ParsedTemplate.Replace(body, template => {
+                Assert.DoesNotContain("${", template.Groups[1].Value);
+                return template.Groups[1].Value;
+            });
             if (reference.StartsWith("p/", StringComparison.Ordinal) || reference.StartsWith("q/", StringComparison.Ordinal)) {
                 // String.raw keeps every character between the backticks, and ${ would start a substitution.
                 body = RawTemplate.Replace(body, template => {

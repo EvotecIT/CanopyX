@@ -5,14 +5,17 @@
     if (options?.scope !== "selected" || !this.querySelection) return SELECTION_EXPORT_PREPARE.call(this, options);
     const selection = this.getSelectionDescriptor(), exported = SELECTION_EXPORT_PREPARE.call(this, { ...options, scope: "filtered" });
     const request = gridFreeze({ ...exported.request, scope: "selected", query: selection.query,
-      revision: selection.revision, matched: selection.matched, selection: [], querySelection: selection });
+      revision: selection.revision, matched: selection.matched, recordCount: selection.matched === null ? null : selection.matched - selection.excludedIds.length,
+      selection: [], querySelection: selection });
     const signal = options.signal;
-    return Object.freeze({ request, rows: () => this.exportRows(request, signal) });
+    return Object.freeze({ request, rows: options => this.exportRows(request, gridExportSignal(signal, options)) });
   };
   DataGrid.prototype.exportRows = async function* (request, signal) {
     if (!request.querySelection) { yield* SELECTION_EXPORT_ROWS.call(this, request, signal); return; }
     const excluded = new Set(request.querySelection.excludedIds);
-    for await (const row of SELECTION_EXPORT_ROWS.call(this, { ...request, scope: "filtered" }, signal))
+    const filtered = { ...request, scope: "filtered" };
+    gridCopyExportPresentation(request, filtered);
+    for await (const row of SELECTION_EXPORT_ROWS.call(this, filtered, signal))
       if (!excluded.delete(row.id)) yield row;
     if (excluded.size) throw new Error("CanopyX: excluded records are absent from the accepted query revision.");
   };

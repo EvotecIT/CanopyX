@@ -10,7 +10,7 @@ namespace CanopyX.Tests.Bundles;
 public sealed class SearchKindsTests {
     [Fact]
     public void Write_SearchKinds_IndexesOnlyThoseKindsAndTheirAncestors() {
-        var view = new CanopyView("kinds", "Kinds") { Search = new CanopySearchOptions { Kinds = { "record", "release" } } };
+        var view = new CanopyTreeView("kinds", "Kinds") { Search = new CanopySearchOptions { Kinds = { "record", "release" } } };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         for (var g = 0; g < 3; g++) {
             var group = new CanopyNode("g" + g, "Group " + g) { Kind = "group" };
@@ -85,7 +85,7 @@ public sealed class SearchKindsTests {
 
     [Fact]
     public void ToJson_SearchKinds_AreWrittenOnTheViewAndChecked() {
-        var view = new CanopyView("v", "View") { Search = new CanopySearchOptions { Kinds = { "record" } } };
+        var view = new CanopyTreeView("v", "View") { Search = new CanopySearchOptions { Kinds = { "record" } } };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var json = view.ToJson();
 

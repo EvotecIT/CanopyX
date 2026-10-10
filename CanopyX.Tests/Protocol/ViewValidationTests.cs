@@ -22,7 +22,7 @@ public sealed class ViewValidationTests {
     [Theory]
     [MemberData(nameof(InvalidViews))]
     public void ToJson_InvalidView_ThrowsWithTheOffendingKey(string rule, string message) {
-        var view = new CanopyView("v", "View");
+        var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var node = new CanopyNode("n", "Node");
         view.Roots.Add(node);

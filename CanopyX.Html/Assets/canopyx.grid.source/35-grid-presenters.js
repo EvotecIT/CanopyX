@@ -4,13 +4,9 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const fields = {link:["hrefColumn","newWindow"],icon:["glyph"],progress:["maximum","thresholds"],boolean:["inverted"],
-      list:["separator","limit"],longText:["mono"],enum:["tones","quietTones"],state:["tones","quietTones"],change:["deltaColumn","higherIsGood"],
-      statusStrip:[],sparklineBars:["thresholds","minimum","scaleMaximum","higherIsGood","mark"],
-      sparklineLine:["thresholds","minimum","scaleMaximum","higherIsGood","mark"],identifier:["secondaryColumn","mono"],tags:["separator","limit"],missing:[]};
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
-    if (!options || typeof options !== "object" || Array.isArray(options) || !Object.hasOwn(fields,options.kind) ||
-        Object.keys(options).some(key=>key!=="kind"&&!fields[options.kind].includes(key))) invalid();
+    if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
     if (["progress","change"].includes(options.kind) && column.kind!=="number" ||
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
     for (const name of ["newWindow","inverted","mono","higherIsGood"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
@@ -29,13 +25,13 @@
     if (options.tones!==undefined&&(!options.tones||typeof options.tones!=="object"||Array.isArray(options.tones)||Object.keys(options.tones).length>512||
         Object.entries(options.tones).some(([key,value])=>key.length>4096||typeof value!=="string"))) invalid();
     if (options.thresholds!==undefined&&(!Array.isArray(options.thresholds)||options.thresholds.length>32||options.thresholds.some((point,index)=>
-        !point||Object.keys(point).some(key=>!["upperBound","tone"].includes(key))||!Number.isFinite(point.upperBound)||Math.abs(point.upperBound)>Number.MAX_SAFE_INTEGER||
+        !point||!Number.isFinite(point.upperBound)||Math.abs(point.upperBound)>Number.MAX_SAFE_INTEGER||
         typeof point.tone!=="string"||index>0&&options.thresholds[index-1].upperBound>=point.upperBound))) invalid();
   }
   function gridSeries(cell) { return isCellObject(cell)&&cell.series||[]; }
   function gridSeriesValid(points) {
     return Array.isArray(points)&&points.length<=4096&&points.every(point=>point&&typeof point==="object"&&!Array.isArray(point)&&
-      Object.keys(point).every(key=>["period","value","state","tone"].includes(key))&&typeof point.period==="string"&&!!point.period.trim()&&point.period.length<=256&&
+      typeof point.period==="string"&&!!point.period.trim()&&point.period.length<=256&&
       (point.value==null||Number.isFinite(point.value)&&Math.abs(point.value)<=Number.MAX_SAFE_INTEGER)&&
       (point.state==null||typeof point.state==="string"&&point.state.length<=4096)&&(point.tone===undefined||typeof point.tone==="string"));
   }
@@ -54,8 +50,8 @@
   }
   DataGrid.prototype.build = function () {
     for (const column of this.columns) {
-      const options=column.presenter || this.view.reporting?.presenters?.[column.id] || (column.wrap?{kind:"longText"}:null);
-      if (options&&!column.render) column.render=gridCellRenderer(this,column,options);
+      const options=column.presenter || (column.wrap?{kind:"longText"}:null);
+      if (options&&!column.render) { column.render=gridCellRenderer(this,column,options); column.hostRenderer=false; }
     }
     return GRID_PRESENTERS_BUILD.call(this);
   };

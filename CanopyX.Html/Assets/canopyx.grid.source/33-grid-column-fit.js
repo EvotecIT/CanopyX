@@ -13,19 +13,18 @@
     return typeof value === "number" ? value : value === "optional" ? 10000 : value === "essential" || value === undefined && column.identity ? 0 : 5000;
   }
   function gridLevel(column) { const rank = gridRank(column); return rank < 2 ? 0 : rank < 10000 ? 1 : 2; }
-  function gridOptions(grid, column) { return column.presenter || grid.view.reporting?.presenters?.[column.id] || {}; }
+  function gridOptions(column) { return column.presenter || {}; }
   // Text columns drawn as graphics keep their measured width and never take spare width.
-  function gridTextual(grid, column) {
-    return column.kind === "text" && !["statusStrip", "sparklineBars", "sparklineLine", "boolean", "progress"].includes(gridOptions(grid, column).kind);
+  function gridTextual(column) {
+    return column.kind === "text" && !["statusStrip", "sparklineBars", "sparklineLine", "boolean", "progress"].includes(gridOptions(column).kind);
   }
   // Normalizes declared sizing, priority and pins before state preparation (64-grid-column-pins wraps prepareState).
   function gridFitPrepare(grid) {
     const identity = grid.columns.find(column => column.rowHeader) || grid.columns[0];
     for (const column of grid.columns) {
-      const policy = grid.columnLayouts?.get(column.id) || {};
       column.identity = column === identity; column.pref = column.autoWidth ? 0 : column.width; column.basePriority = column.priority; column.declared = column.width;
-      column.minW = column.minWidth ?? policy.minimum ?? 40; column.maxW = column.maxWidth ?? policy.maximum ?? MAX_COLUMN_WIDTH;
-      column.flexWeight = typeof column.flex === "number" ? column.flex : policy.flex || 0;
+      column.minW = column.minWidth ?? 40; column.maxW = column.maxWidth ?? MAX_COLUMN_WIDTH;
+      column.flexWeight = typeof column.flex === "number" ? column.flex : 0;
       if (column.flexWeight) column.flex = true; else if (typeof column.flex === "number") delete column.flex;
       column.pin ??= column.pinned === undefined ? column.identity ? "left" : "none" : column.pinned || "none";
     }
@@ -88,7 +87,7 @@
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
         Math.max(column.minW, column.headNeed || 0) : column.renderWidth;
       return Math.round(Math.min(column.maxW, Math.max(column.minW, column.fixed || column.sized ? column.width : !level ? Math.max(need, column.pref) : level > 1 || !gridLevel(column) ? need :
-        Math.min(need, Math.max(column.headNeed || 0, gridTextual(this, column) ? this.fitCh || 88 : 0)))));
+        Math.min(need, Math.max(column.headNeed || 0, gridTextual(column) ? this.fitCh || 88 : 0)))));
     },
     fitSpare(columns, spare) {
       let target, flex = columns.filter(column => column.flex && column.flexWeight);
@@ -102,7 +101,7 @@
         flex = flex.filter(column => column.maxW - column.renderWidth > 0.5);
       }
       const identity = columns.find(column => column.identity), widest = columns.filter(column => !column.identity &&
-        gridTextual(this, column) && gridLevel(column) === 1).sort((a, b) => b.need - a.need)[0];
+        gridTextual(column) && gridLevel(column) === 1).sort((a, b) => b.need - a.need)[0];
       grow(identity, 420);
       if (identity && widest) grow(widest, widest.renderWidth + spare * widest.need / (widest.need + identity.need));
       grow(identity, Infinity); grow(widest, Infinity);
@@ -122,7 +121,7 @@
       let total = 0, remaining = shown.length;
       for (const column of this.columns) column.fitHidden = false;
       for (const column of shown) total += this.fitSize(column, 1);
-      for (const column of shown.filter(column => column.pin === "none" && !column.sized && !this.columnLayouts?.get(column.id)?.alwaysVisible &&
+      for (const column of shown.filter(column => column.pin === "none" && !column.sized && !column.alwaysVisible &&
           gridLevel(column) > !phone).sort((a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a)))
         if (total > width && remaining > 1) { column.fitHidden = true; total -= this.fitSize(column, 1); remaining--; }
     },
@@ -135,7 +134,7 @@
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
         context.font = this.fitFont[0]; this.fitCh = Math.ceil(context.measureText("00000000000").width);
       }
-      const [, small, headFont, pad] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(this, column), kind = options.kind;
+      const [, small, headFont, pad] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0]) => { context.font = font; return context.measureText(String(value).slice(0, 512)).width; };
       const head = Math.ceil(text(column.title, headFont) + 2 * pad + (this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 24 : 0) +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0));
@@ -173,8 +172,7 @@
       const column = this.columns.find(item => item.id === id);
       if (!column || !gridPriority(priority)) throw new Error("CanopyX: invalid column priority.");
       column.priority = priority; this.applyWidths(); this.syncColumnControls(); this.stateChanged();
-    },
-    pinColumn(id, side) { return this.setColumnPinned(id, side || "none"); }
+    }
   });
   const FIT_STATE_COLUMN = gridStateColumn, FIT_STATE_COLUMNS = gridStateColumns;
   // Saved views keep user and fixed widths; automatic columns save their declared width, so snapshots do not churn with data.

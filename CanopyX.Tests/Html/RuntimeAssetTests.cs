@@ -180,7 +180,7 @@ public sealed class RuntimeAssetTests {
     public void PlainNaming_WritesAndReferencesTheFixedNames() {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-assets-" + Guid.NewGuid().ToString("N"));
         try {
-            var view = new CanopyView("v", "Files");
+            var view = new CanopyTreeView("v", "Files");
             view.Columns.Add(new CanopyColumn("name", "Name"));
             var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain };
 

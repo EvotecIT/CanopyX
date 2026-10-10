@@ -12,13 +12,13 @@
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false;
     const paint=(row,position)=>{
       record=row;index=position;setText(title,cellText(row.cells[primary.id],primary,this.fmt)||row.id);
-      const options=primary.presenter||this.view.reporting?.presenters?.[primary.id];
+      const options=primary.presenter;
       setText(subtitle,row.cells[primary.id]?.secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||row.id);
       previous.disabled=index<=0||this.cursor&&index<=this.rowBounds().first;next.disabled=index>=this.rowCount()-1;
       body.replaceChildren();const sections=new Map();
       for(const column of this.columns){const name=column.section||this.labels.gridDetailsSection;
         if(!sections.has(name)){const heading=h("div","cx-drawer-s"),list=h("dl","cx-dl");setText(heading,name);sections.set(name,list);body.append(heading,list);}
-        const label=h("dt"),value=h("dd"),presenter=column.presenter||this.view.reporting?.presenters?.[column.id]||(column.wrap?{kind:"longText"}:null);setText(label,column.title);
+        const label=h("dt"),value=h("dd"),presenter=column.presenter||(column.wrap?{kind:"longText"}:null);setText(label,column.title);
         if(presenter)gridCellRenderer(this,{...column,renderWidth:260},presenter)(row,value);else setText(value,cellText(row.cells[column.id],column,this.fmt)||"—");
         sections.get(name).append(label,value);
       }

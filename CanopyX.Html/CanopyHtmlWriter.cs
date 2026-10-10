@@ -14,7 +14,7 @@ internal static class CanopyHtmlWriter {
     private static readonly Lazy<string> PageTemplate = new Lazy<string>(() => CanopyHtmlResources.Read("page.html"));
     private static readonly Regex Token = new Regex(@"\{\{(\w+)\}\}", RegexOptions.CultureInvariant);
 
-    internal static string Fragment(CanopyView view, CanopyHtmlOptions options) {
+    internal static string Fragment(CanopyTreeView view, CanopyHtmlOptions options) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
@@ -38,7 +38,7 @@ internal static class CanopyHtmlWriter {
         return builder.ToString();
     }
 
-    internal static string Page(CanopyView view, CanopyHtmlOptions options) {
+    internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
         var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
@@ -51,16 +51,16 @@ internal static class CanopyHtmlWriter {
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 
-    internal static CanopyRuntime RuntimeFor(CanopyView view, CanopyHtmlOptions options)
+    internal static CanopyRuntime RuntimeFor(CanopyTreeView view, CanopyHtmlOptions options)
         => CanopyHtmlAssets.GetRuntime(view, options.Runtime);
 
-    internal static string Fragment(CanopyGridView view, CanopyHtmlOptions options) {
+    internal static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         return FragmentDocument(view.ToJson(), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.FilterEditorMarkup : string.Empty);
     }
 
-    internal static string Page(CanopyGridView view, CanopyHtmlOptions options) {
+    internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),

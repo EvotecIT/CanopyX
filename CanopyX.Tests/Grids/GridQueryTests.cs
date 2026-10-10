@@ -43,7 +43,7 @@ public sealed class GridQueryTests {
         query.Sort.RemoveAt(1);
         view.Columns[1].Sortable = false;
         Assert.Throws<InvalidOperationException>(() => query.ToJson(view));
-        Assert.Throws<InvalidOperationException>(() => query.ToJson(new CanopyGridView("other", "Other") { Columns = { new CanopyColumn("a", "A") } }));
+        Assert.Throws<InvalidOperationException>(() => query.ToJson(new CanopyDataGridView("other", "Other") { Columns = { new CanopyColumn("a", "A") } }));
     }
 
     [Theory]
@@ -88,11 +88,11 @@ public sealed class GridQueryTests {
         Assert.Throws<InvalidOperationException>(() => page.ToJson(view));
         row.Cells.Remove("unknown");
         ProtocolSchema.AssertValid(page.ToJson(view), "page bound to declared columns");
-        Assert.Throws<InvalidOperationException>(() => page.ToJson(new CanopyGridView("other", "Other")));
+        Assert.Throws<InvalidOperationException>(() => page.ToJson(new CanopyDataGridView("other", "Other")));
     }
 
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("inventory", "Inventory");
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("inventory", "Inventory");
         view.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
         view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number, Sortable = true });
         view.Columns.Add(new CanopyColumn("date", "Date") { Kind = CanopyColumnKind.DateTime, Sortable = true });

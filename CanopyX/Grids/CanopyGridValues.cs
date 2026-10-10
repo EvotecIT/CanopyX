@@ -5,12 +5,12 @@ namespace CanopyX;
 /// <summary>Checks the raw value contract shared by grid rows and query operands.</summary>
 internal static class CanopyGridValues {
     internal static void ValidateCell(CanopyCell? cell, CanopyColumn column) {
-        var value = cell?.Value;
-        // Cell writers preserve the existing empty-value contract for nonfinite numbers.
-        // Query operands remain strict because an empty comparison operand is ambiguous.
-        if (value is double real && (double.IsNaN(real) || double.IsInfinity(real))) value = null;
-        Validate(value, column);
+        Validate(Normalize(cell?.Value), column);
     }
+
+    /// <summary>Uses the wire empty-value contract for native rendering as well as row validation.</summary>
+    internal static object? Normalize(object? value) => value is double real &&
+        (double.IsNaN(real) || double.IsInfinity(real)) ? null : value;
 
     internal static void Validate(object? value, CanopyColumn column) {
         if (value == null) return;

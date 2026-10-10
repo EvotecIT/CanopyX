@@ -4,10 +4,22 @@ using CanopyX.Tests.Protocol;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridCursorTests {
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("inventory", "Inventory") {
-            Source = CanopyGridSourceKind.Host, Navigation = CanopyGridNavigation.Cursor,
-            Presentation = CanopyGridPresentation.Paged, PageLength = 25
+    [Fact]
+    public void NativeCursorFallback_PreservesUnknownCountsAndRejectsAnOffsetOwner() {
+        var view = View();
+        var page = new CanopyGridCursorPage(view.Id, "r1", 25) { PreviousCursor = "previous", NextCursor = "next" };
+        var row = new CanopyGridRow("r25"); row.Cells["name"] = "<Record 25>"; page.Rows.Add(row);
+        var html = CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view, page);
+        Assert.Contains("&lt;Record 25&gt;", html);
+        Assert.Contains("Showing 1 of unknown rows.", html);
+        Assert.DoesNotContain("<script", html);
+        view.Source = CanopyGridSource.HostedOffset();
+        Assert.Throws<InvalidOperationException>(() => CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view, page));
+    }
+
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("inventory", "Inventory") {
+            Source = CanopyGridSource.HostedCursor(), PageLength = 25
         };
         view.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
         return view;
@@ -44,11 +56,11 @@ public sealed class GridCursorTests {
         Assert.Throws<InvalidOperationException>(() => new CanopyGridPage(view.Id, "r1", 0, 0, 0).ToJson(view));
         Assert.Throws<InvalidOperationException>(() => new CanopyGridQuery(view.Id) { Offset = 25 }.ToJson(view));
         Assert.Throws<InvalidOperationException>(() => new CanopyGridQuery(view.Id) { Cursor = "unbound" }.ToJson(view));
-        view.Presentation = CanopyGridPresentation.Continuous;
-        Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view.Presentation = CanopyGridPresentation.Paged; view.Source = CanopyGridSourceKind.Inline;
-        Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view.Source = CanopyGridSourceKind.Host; view.Navigation = CanopyGridNavigation.Offset;
+        Assert.Equal(CanopyGridPresentation.Paged, view.Presentation);
+        Assert.Throws<InvalidOperationException>(() => view.Presentation = CanopyGridPresentation.Continuous);
+        view.Source = CanopyGridSource.Inline();
+        view.Validate();
+        view.Source = CanopyGridSource.HostedOffset();
         Assert.Throws<InvalidOperationException>(() => new CanopyGridQuery(view.Id) { Cursor = "opaque" }.ToJson(view));
     }
 

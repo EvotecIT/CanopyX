@@ -6,17 +6,17 @@ namespace CanopyX.Examples;
 /// <summary>A standalone report with explicit text and category ordering policies.</summary>
 internal static class ReportingGridExample {
     internal static void Write(string output) {
-        var view = new CanopyGridView("reporting-grid", "Ordered inventory") {
+        var view = new CanopyDataGridView("reporting-grid", "Ordered inventory") {
             Reporting = new CanopyGridReporting { HeaderFilters = true }, Selection = CanopySelectionMode.Multiple,
             Presentation = CanopyGridPresentation.Paged, PageLength = 25, PageSize = 100
         };
-        view.Columns.Add(new CanopyColumn("name", "Record") { Width = 240, Sortable = true });
-        view.Columns.Add(new CanopyColumn("category", "Category") { Width = 150, Sortable = true });
-        view.Columns.Add(new CanopyColumn("reference", "Exact reference") { Width = 230 });
-        view.Columns.Add(new CanopyColumn("amount", "Amount") { Width = 120, Kind = CanopyColumnKind.Number, Sortable = true });
-        view.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
-        view.Reporting.Ordering.Add("category", new CanopyGridOrdering(CanopyGridTextOrder.FoldedOrdinal,
-            new[] { "Critical", "Warning", "Healthy" }));
+        view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(240), Sortable = true });
+        view.Columns.Add(new CanopyColumn("category", "Category") { Sizing = CanopyColumnSizing.Preferred(150), Sortable = true });
+        view.Columns.Add(new CanopyColumn("reference", "Exact reference") { Sizing = CanopyColumnSizing.Preferred(230) });
+        view.Columns.Add(new CanopyColumn("amount", "Amount") { Sizing = CanopyColumnSizing.Preferred(120), Kind = CanopyColumnKind.Number, Sortable = true });
+        view.GetColumn("name").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural);
+        view.GetColumn("category").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.FoldedOrdinal,
+            new[] { "Critical", "Warning", "Healthy" });
         var categories = new[] { "Healthy", "Warning", "Critical", "Other" };
         for (var i = 0; i < 137; i++) {
             var row = new CanopyGridRow("record-" + i.ToString("D3", CultureInfo.InvariantCulture));

@@ -7,13 +7,13 @@ namespace CanopyX.Examples;
 /// <summary>A complete inline inventory demonstrating raw values and full-dataset queries.</summary>
 internal static class InventoryGridExample {
     internal static void Write(string output) {
-        var view = new CanopyGridView("inventory-grid", "File inventory") {
+        var view = new CanopyDataGridView("inventory-grid", "File inventory") {
             Selection = CanopySelectionMode.Multiple, PageSize = 100, TimeZone = CanopyTimeZone.Utc, StateKey = "file-inventory"
         };
-        view.Columns.Add(new CanopyColumn("name", "Record") { Width = 300, Sortable = true });
-        view.Columns.Add(new CanopyColumn("category", "Category") { Width = 140, Sortable = true });
-        view.Columns.Add(new CanopyColumn("size", "Size") { Width = 130, Kind = CanopyColumnKind.Number, Sortable = true });
-        view.Columns.Add(new CanopyColumn("modified", "Modified") { Width = 200, Kind = CanopyColumnKind.DateTime, Sortable = true });
+        view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(300), Sortable = true });
+        view.Columns.Add(new CanopyColumn("category", "Category") { Sizing = CanopyColumnSizing.Preferred(140), Sortable = true });
+        view.Columns.Add(new CanopyColumn("size", "Size") { Sizing = CanopyColumnSizing.Preferred(130), Kind = CanopyColumnKind.Number, Sortable = true });
+        view.Columns.Add(new CanopyColumn("modified", "Modified") { Sizing = CanopyColumnSizing.Preferred(200), Kind = CanopyColumnKind.DateTime, Sortable = true });
         var categories = new[] { "Document", "Image", "Source", "Archive" };
         for (var index = 0; index < 5000; index++) {
             var row = new CanopyGridRow("file-" + index.ToString("D4", CultureInfo.InvariantCulture));
@@ -49,7 +49,7 @@ internal static class InventoryGridExample {
         WritePage(view, output, "inventory-grid-query-dark.html", CanopyTheme.Dark);
     }
 
-    internal static void WritePage(CanopyGridView view, string output, string name, CanopyTheme theme) {
+    internal static void WritePage(CanopyDataGridView view, string output, string name, CanopyTheme theme) {
         var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX " + view.Label, Theme = theme });
         const string details = """
 <dialog id="record-details" aria-labelledby="record-title" style="box-sizing:border-box;width:min(42rem,90vw);max-height:85vh;overflow:auto;padding:20px;border:1px solid var(--cx-line);border-radius:8px;background:var(--cx-surface);color:var(--cx-text)">

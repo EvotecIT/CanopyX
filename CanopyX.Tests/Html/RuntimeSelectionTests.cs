@@ -10,7 +10,7 @@ public sealed class RuntimeSelectionTests {
     [InlineData("action")]
     [InlineData("translation")]
     public void FragmentHosts_ChooseTheSameEntryPointAsPageWriters(string feature) {
-        var view = new CanopyView("records", "Records");
+        var view = new CanopyTreeView("records", "Records");
         view.Columns.Add(new CanopyColumn("name", "Name") { Editable = feature == "edit" });
         view.Checkboxes = feature == "checkbox" ? CanopyCheckboxMode.Independent : CanopyCheckboxMode.None;
         view.DragDrop = feature == "drop";
@@ -26,14 +26,14 @@ public sealed class RuntimeSelectionTests {
 
     [Fact]
     public void FragmentHosts_CanPreferTheCompleteRuntimeForReadOnlyViews() {
-        var view = new CanopyView("records", "Records");
+        var view = new CanopyTreeView("records", "Records");
         Assert.Equal(CanopyRuntime.TreeGrid, CanopyHtmlAssets.GetRuntime(view));
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(view, CanopyRuntime.InteractiveTreeGrid));
         view.Checkboxes = CanopyCheckboxMode.Independent;
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(view));
         view.Checkboxes = CanopyCheckboxMode.None;
         Assert.Equal(CanopyRuntime.TreeGrid, CanopyHtmlAssets.GetRuntime(view));
-        Assert.Throws<ArgumentNullException>(() => CanopyHtmlAssets.GetRuntime((CanopyView)null!));
+        Assert.Throws<ArgumentNullException>(() => CanopyHtmlAssets.GetRuntime((CanopyTreeView)null!));
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyHtmlAssets.GetRuntime(view, (CanopyRuntime)42));
     }
 }

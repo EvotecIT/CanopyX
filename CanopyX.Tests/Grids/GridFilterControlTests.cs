@@ -8,7 +8,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridFilterControlTests {
     [Fact]
     public void HeaderControlsAndTranslations_SelectTheRuntimeAndKeepTheProtocolTyped() {
-        var grid = new CanopyGridView("filters", "Filtered inventory") { Reporting = new CanopyGridReporting { HeaderFilters = true } };
+        var grid = new CanopyDataGridView("filters", "Filtered inventory") { Reporting = new CanopyGridReporting { HeaderFilters = true } };
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         grid.Labels.GridHeaderFilter = "Filtruj {column}";
         grid.Labels.GridBetween = "pomiędzy";
@@ -18,7 +18,7 @@ public sealed class GridFilterControlTests {
         Assert.True(document.RootElement.GetProperty("reporting").GetProperty("headerFilters").GetBoolean());
         Assert.Equal("Filtruj {column}", document.RootElement.GetProperty("labels").GetProperty("gridHeaderFilter").GetString());
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(grid));
-        var tree = new CanopyView("tree", "Tree");
+        var tree = new CanopyTreeView("tree", "Tree");
         tree.Labels.GridHeaderFilter = "Filtruj {column}";
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(tree, CanopyRuntime.DataGrid));
         grid.Reporting = null;

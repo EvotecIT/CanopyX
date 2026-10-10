@@ -40,7 +40,7 @@ public sealed class CanopyGridFacetPage {
     /// <summary>Writes the HTML-safe <c>gridFacetPage</c>, checking typed unique buckets and full-query counts.</summary>
     /// <param name="view">The owning grid definition.</param>
     /// <returns>The bounded response. Truncated is derived from the distinct and returned counts.</returns>
-    public string ToJson(CanopyGridView view) {
+    public string ToJson(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         if (view.Id != View) throw new InvalidOperationException("A facet response must target its owning grid.");

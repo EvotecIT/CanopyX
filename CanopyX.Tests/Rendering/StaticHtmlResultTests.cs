@@ -8,7 +8,7 @@ public sealed class StaticHtmlResultTests {
     [InlineData(10, 1, false)]
     [InlineData(10, 10, true)]
     public void RenderWithResult_LimitedOutline_RecordsEffectiveVisibleCellsAndPreLimitTotal(int maxRows, int maxDepth, bool onlyExpanded) {
-        var view = new CanopyView("print", "Outline caption") { Checkboxes = CanopyCheckboxMode.Independent };
+        var view = new CanopyTreeView("print", "Outline caption") { Checkboxes = CanopyCheckboxMode.Independent };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number });
         view.Columns.Add(new CanopyColumn("hidden", "Hidden") { Hidden = true });
@@ -39,7 +39,7 @@ public sealed class StaticHtmlResultTests {
 
     [Fact]
     public void RenderWithResult_DetailRows_RecordNestedVisibleTextOncePerOutlineRow() {
-        var view = new CanopyView("details", "Details");
+        var view = new CanopyTreeView("details", "Details");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var changed = new CanopyCell("raw") { Text = "Before & after" };
         changed.Badges.Add(new CanopyBadge("Changed"));
@@ -64,7 +64,7 @@ public sealed class StaticHtmlResultTests {
 
     [Fact]
     public void RenderWithResult_EmptyFirstCellAndLazyRows_PreserveRowIdentityAndUnknownCount() {
-        var view = new CanopyView("lazy", "Lazy outline") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
+        var view = new CanopyTreeView("lazy", "Lazy outline") { Source = CanopySource.Remote("c?ref={ref}&cursor={cursor}") };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("amount", "Amount"));
         var row = new CanopyNode("root", "Unprinted label") { HasChildren = true, ChildCount = 8 };

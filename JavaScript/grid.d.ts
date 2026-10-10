@@ -9,10 +9,28 @@ export interface GridRow { id: string; cells: Record<string, Cell>; tone?: strin
 /** First match wins separately for the row and each condition-column cell; raw filter semantics apply. */
 export type GridHighlightRule = GridFilter & { target?: "row" | "cell" } &
   ({ tone: string; className?: string } | { tone?: string; className: string });
-/** An immutable record projected onto the declared export columns. */
+/** Portable cell semantics, independent of DOM renderers and stylesheet rules. Datetime values retain the original ISO string and its explicit time zone and precision. */
+export interface GridExportCell {
+  readonly value: CellValue;
+  readonly text: string;
+  readonly tone?: string;
+  readonly link?: { readonly target: string; readonly tooltip?: string };
+  /** Unsupported presentation must be rejected by strict adapters or explicitly accepted as text-only. */
+  readonly diagnostics?: readonly string[];
+}
+/** An immutable record projected onto the declared export columns. Group headings and summaries are not records. */
 export interface GridExportRow {
-  readonly id: string; readonly cells: Readonly<Record<string, Readonly<Cell>>>;
-  readonly tone?: string; readonly className?: string;
+  readonly id: string; readonly cells: Readonly<Record<string, GridExportCell>>;
+  readonly tone?: string; readonly diagnostics?: readonly string[];
+}
+/** Captured column intent. Hosts map semantic tones and CSS pixel widths into their output format. */
+export interface GridExportColumn {
+  readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime";
+  /** Reporting runtime only. */
+  readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
+  readonly wrap?: boolean; readonly alignment?: "left" | "right";
+  readonly presenter?: GridPresenter;
+  readonly diagnostics?: readonly string[];
 }
 export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   editable?: false; wrap?: boolean;
@@ -40,6 +58,8 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   pinned?: "left" | "right" | null;
   /** Marks the identity column; defaults to the first column. */
   rowHeader?: boolean;
+  /** Retain this column during responsive fitting; explicit user hiding still applies. */
+  alwaysVisible?: boolean;
 };
 export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
@@ -328,15 +348,19 @@ export interface GridQuerySelection<Q extends AcceptedGridQuery = GridQuery> {
 }
 /** Exports retain the accepted revision, query ordering, columns and selected IDs at invocation. */
 export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
+  /** Ordinary grids capture text only; the reporting runtime resolves semantic presentation and diagnostics. */
+  readonly presentation: "text" | "semantic";
   readonly scope: "filtered" | "selected" | "all";
   readonly query: Q;
   readonly revision: string;
   readonly total: GridCount<Q>;
   readonly matched: GridCount<Q>;
   readonly selection: readonly string[];
+  /** Exact captured export count, including selected-query exclusions; null means unknown. */
+  readonly recordCount: number | null;
   /** All-matching selected exports keep these accepted criteria. Hosts validate them rather than treating an empty ID list as empty selection. */
   readonly querySelection?: GridQuerySelection<Q>;
-  readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];
+  readonly columns: readonly GridExportColumn[];
   readonly values: "raw" | "display";
   readonly timeZone: TimeZone;
   /** Reporting delivery captures the canonical locale and a safe suggested basename without a format extension. */
@@ -374,9 +398,15 @@ export interface GridExportSnapshot<Q extends AcceptedGridQuery = GridQuery> {
 export interface GridExport<Q extends AcceptedGridQuery = GridQuery> {
   readonly request: GridExportRequest<Q>;
   /** Each enumeration requests fresh serial windows from the captured revision, independently of the viewport. */
-  rows(): AsyncIterable<GridExportRow>;
+  rows(options?: { signal?: AbortSignal }): AsyncIterable<GridExportRow>;
 }
-export interface GridCellContext { column: string; index: number; }
+export interface GridCellContext {
+  column: string; index: number;
+  /** Aborts before replacement, recycling, failed rendering or destruction. */
+  readonly signal: AbortSignal;
+  /** Registers cleanup for this cell paint. Called once in reverse registration order. */
+  onDispose(cleanup: () => void): void;
+}
 /** Versioned view settings. Queries omit dataset revisions; restoration revalidates against the current source. */
 export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   version: 1;
@@ -432,13 +462,13 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
-  onExport?: (event: { format: string; request: GridExportRequest<Q>; signal: AbortSignal;
+  onExport?: (event: { format: string; request: GridExportRequest<Q>; capture: GridExport<Q>; signal: AbortSignal;
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
     reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
   /** Reporting runtime only. Render the complete snapshot through a host-owned renderer; honor cancellation before delivery. */
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
-  onDetails?: (event: { row: GridExportRow; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  onDetails?: (event: { row: Readonly<GridRow>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
   /** Adds Chart to the selection bar. The host owns chart generation. */
   onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
@@ -477,11 +507,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   autoFitColumn(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
   /** Fits every declared column from the same bounded loaded sample, including hidden columns. */
   autoFitColumns(): Readonly<Record<string, Readonly<{ width: number; sampled: number; scope: "loaded" }>>>;
-  setColumnPinned?(id: string, pin: GridColumnPin): void;
+  setColumnPinned(id: string, pin: GridColumnPin): void;
   /** Drops user widths so the columns return to automatic content sizing. */
   autoSizeColumns(ids?: readonly string[]): void;
   setColumnPriority(id: string, priority: GridColumnPriority): void;
-  pinColumn(id: string, side: "left" | "right" | null): void;
   /** Restores the declared order, visibility, widths and pins; keeps the query. */
   resetColumns(): void;
   /** Reporting runtime only: effective layout for every declared column, with the reason a column is out of view. */
@@ -544,7 +573,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
   scrollToRow(index: number): Promise<void>;
   retry(): Promise<Q | void>;
+  /** Repaints the accepted data without querying the source. */
   refresh(): void;
+  /** Requests a fresh source revision with accepted filters and ordering, or initial definition criteria before acceptance. Traversal restarts at the first page. */
+  reload(): Promise<Q>;
   destroy(): void;
 }
 /** Requires a browser DOM. The grid runtime also hosts both existing tree variants. */

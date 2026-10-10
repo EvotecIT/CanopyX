@@ -46,8 +46,8 @@ public sealed class GridToolbarTests {
         Assert.False(ProtocolSchema.Evaluate(json).IsValid);
     }
 
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("records", "Records");
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("records", "Records");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         return view;
     }

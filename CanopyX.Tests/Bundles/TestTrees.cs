@@ -6,9 +6,9 @@ internal static class TestTrees {
     /// A file-share-like view: top-level shares with nested folders, one folder with <paramref name="bigFolder"/>
     /// files (so its children span several pages), detail rows, badges, and some non-ASCII names.
     /// </summary>
-    internal static CanopyView FileShares(int shares, int foldersPerShare, int filesPerFolder, int bigFolder) {
-        var view = new CanopyView("shares", "File shares") { Search = new CanopySearchOptions() };
-        view.Columns.Add(new CanopyColumn("name", "Name") { Width = 300 });
+    internal static CanopyTreeView FileShares(int shares, int foldersPerShare, int filesPerFolder, int bigFolder) {
+        var view = new CanopyTreeView("shares", "File shares") { Search = new CanopySearchOptions() };
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(300) });
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
         var names = new[] { "Budget", "Plans", "Łódź office", "İstanbul", "Straße", "Reports", "Archive", "Αθήνα", "ΑΘΗΝΑ", "МОСКВА" };
         for (var s = 0; s < shares; s++) {

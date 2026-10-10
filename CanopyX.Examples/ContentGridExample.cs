@@ -5,7 +5,7 @@ namespace CanopyX.Examples;
 /// <summary>Columns that fit loaded values without explicit widths, with optional bounds and flex.</summary>
 internal static class ContentGridExample {
     internal static void Write(string output) {
-        var view = new CanopyGridView("content-grid", "Records with content-sized columns") { Reporting = new CanopyGridReporting() };
+        var view = new CanopyDataGridView("content-grid", "Records with content-sized columns") { Reporting = new CanopyGridReporting() };
         view.Columns.Add(new CanopyColumn("name", "Record") { Sortable = true });
         view.Columns.Add(new CanopyColumn("status", "Status") { Sortable = true });
         view.Columns.Add(new CanopyColumn("reference", "Reference") { Sortable = true });
@@ -15,8 +15,8 @@ internal static class ContentGridExample {
             CanopyTone.Warning, "needs-review"));
         view.HighlightRules.Add(new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyGridFilterOperator.Equal, "Complete"),
             CanopyTone.Success, target: CanopyGridHighlightTarget.Cell));
-        view.Reporting.Layout["name"] = new CanopyGridColumnLayout(120, 300);
-        view.Reporting.Layout["notes"] = new CanopyGridColumnLayout(200, 500, flex: 1);
+        view.GetColumn("name").Sizing = CanopyColumnSizing.Content(120, 300);
+        view.GetColumn("notes").Sizing = CanopyColumnSizing.Flex(1, 200, 500);
         for (var i = 0; i < 300; i++) {
             var row = new CanopyGridRow("record-" + i.ToString("D3", System.Globalization.CultureInfo.InvariantCulture));
             row.Cells["name"] = "Record " + i; row.Cells["status"] = i % 5 == 0 ? "Needs review" : "Complete";

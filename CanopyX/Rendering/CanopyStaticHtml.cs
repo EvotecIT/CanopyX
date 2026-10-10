@@ -21,13 +21,13 @@ namespace CanopyX.Rendering;
 public static partial class CanopyStaticHtml {
     private const int IndentPixels = 16;
 
-    /// <summary>Renders the outline of the view's <see cref="CanopyView.Roots"/>.</summary>
+    /// <summary>Renders the outline of the view's <see cref="CanopyTreeView.Roots"/>.</summary>
     /// <param name="view">The view; its inline tree is rendered whatever its source is.</param>
     /// <param name="options">Row and depth limits, caption, overflow note, and theme.</param>
     /// <returns>The outline markup: one table, whose last row is a note when rows were left out.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule.</exception>
-    public static string Render(CanopyView view, CanopyStaticHtmlOptions? options = null) {
+    public static string Render(CanopyTreeView view, CanopyStaticHtmlOptions? options = null) {
         return RenderWithResult(view, options).Html;
     }
 
@@ -37,13 +37,13 @@ public static partial class CanopyStaticHtml {
     /// <returns>The outline markup, its rendered cell text, and the known tree row count before limits.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule.</exception>
-    public static CanopyStaticHtmlResult RenderWithResult(CanopyView view, CanopyStaticHtmlOptions? options = null) {
+    public static CanopyStaticHtmlResult RenderWithResult(CanopyTreeView view, CanopyStaticHtmlOptions? options = null) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
 
         var o = options ?? new CanopyStaticHtmlOptions();
-        CanopyViewValidator.Validate(view);
+        CanopyTreeViewValidator.Validate(view);
         var columns = view.Columns.Where((column, index) => index == 0 || !column.Hidden).ToList();
         var rows = CollectRows(view, o, out var total, out var hiddenBelow, out var unknown);
         var styles = new CanopyStaticStyles(o);
@@ -98,7 +98,7 @@ public static partial class CanopyStaticHtml {
     /// MaxDepth, or under a collapsed node (with OnlyExpanded) are not shown, and the nodes cut below a shown row are
     /// recorded so the row can say so. Children a sidecar or remote source would load count by their declared number.
     /// </summary>
-    private static List<(CanopyNode Node, int Level)> CollectRows(CanopyView view, CanopyStaticHtmlOptions options, out long total, out Dictionary<CanopyNode, long> hiddenBelow, out bool unknown) {
+    private static List<(CanopyNode Node, int Level)> CollectRows(CanopyTreeView view, CanopyStaticHtmlOptions options, out long total, out Dictionary<CanopyNode, long> hiddenBelow, out bool unknown) {
         var rows = new List<(CanopyNode, int)>();
         hiddenBelow = new Dictionary<CanopyNode, long>();
         unknown = false;

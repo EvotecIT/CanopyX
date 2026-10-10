@@ -33,5 +33,5 @@ public sealed class SourceShapeTests {
         Assert.False(ProtocolSchema.Evaluate(json).IsValid);
     }
 
-    private static CanopyView View() { var view = new CanopyView("test", "Test"); view.Columns.Add(new CanopyColumn("name", "Name")); return view; }
+    private static CanopyTreeView View() { var view = new CanopyTreeView("test", "Test"); view.Columns.Add(new CanopyColumn("name", "Name")); return view; }
 }

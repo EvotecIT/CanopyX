@@ -50,7 +50,7 @@ public sealed class CanopyNode {
     /// </summary>
     public string? Kind { get; set; }
 
-    /// <summary>Gets or sets the key of an icon declared in <see cref="CanopyView.Icons"/>.</summary>
+    /// <summary>Gets or sets the key of an icon declared in <see cref="CanopyTreeView.Icons"/>.</summary>
     public string? Icon { get; set; }
 
     /// <summary>Gets or sets whether the row is a group header, for example a department above its teams.</summary>

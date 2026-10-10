@@ -80,7 +80,7 @@ public sealed class SearchPackTests {
         Assert.Equal(64 * 1024, new CanopyBundleOptions().SearchPackBytes);
     }
 
-    private static (string Directory, CanopyBundleResult Result) Write(CanopyView view, CanopyBundleOptions options) {
+    private static (string Directory, CanopyBundleResult Result) Write(CanopyTreeView view, CanopyBundleOptions options) {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-qpack-" + Guid.NewGuid().ToString("N"));
         return (directory, new CanopyBundleWriter(options).Write(view, directory));
     }

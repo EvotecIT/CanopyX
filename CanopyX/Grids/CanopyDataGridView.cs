@@ -9,17 +9,19 @@ namespace CanopyX;
 /// Inline sources carry the complete dataset. Host sources obtain query result pages from a host hook;
 /// the host owns transport, query execution, and authorization. Both use the same column and cell definitions.
 /// </remarks>
-public sealed partial class CanopyGridView {
+public sealed partial class CanopyDataGridView {
     private int? _rowHeight;
     private int _pageSize = 100;
     private int _pageLength = 50;
     private int? _searchDelayMilliseconds;
     private CanopyLabels _labels = new CanopyLabels();
+    private CanopyGridSource _source = CanopyGridSource.Inline();
+    private CanopyGridPresentation _presentation;
 
     /// <summary>Creates a flat-grid definition.</summary>
     /// <param name="id">The grid identity, unique within the page.</param>
     /// <param name="label">The accessible name.</param>
-    public CanopyGridView(string id, string label) {
+    public CanopyDataGridView(string id, string label) {
         CanopyIdentifiers.Require(id, nameof(id));
         if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Grid label is required.", nameof(label));
         Id = id;
@@ -35,6 +37,13 @@ public sealed partial class CanopyGridView {
     /// <summary>Gets the column definitions. No column has tree semantics.</summary>
     public IList<CanopyColumn> Columns { get; } = new List<CanopyColumn>();
 
+    /// <summary>Finds a declared column by its case-sensitive identity.</summary>
+    /// <exception cref="KeyNotFoundException">No column has the requested identity.</exception>
+    public CanopyColumn GetColumn(string id) {
+        foreach (var column in Columns) if (column != null && column.Id == id) return column;
+        throw new KeyNotFoundException("Unknown column: " + id);
+    }
+
     /// <summary>Gets or sets optional reporting capabilities. Null keeps the ordinary data-grid entry point.</summary>
     public CanopyGridReporting? Reporting { get; set; }
 
@@ -45,14 +54,28 @@ public sealed partial class CanopyGridView {
     public IList<CanopyGridHighlightRule> HighlightRules { get; } = new List<CanopyGridHighlightRule>();
 
     /// <summary>Gets or sets whether rows come from the complete inline dataset or a host query hook.</summary>
-    public CanopyGridSourceKind Source { get; set; }
+    public CanopyGridSource Source {
+        get => _source;
+        set {
+            _source = value ?? throw new ArgumentNullException(nameof(value));
+            if (_source.Navigation == CanopyGridNavigation.Cursor) _presentation = CanopyGridPresentation.Paged;
+        }
+    }
 
-    /// <summary>Gets or sets known-count offset access or host-governed cursor traversal.</summary>
+    /// <summary>Gets the navigation contract selected by Source.</summary>
     /// <remarks>Cursor traversal requires a hosted, paged view and does not expose random page jumps.</remarks>
-    public CanopyGridNavigation Navigation { get; set; }
+    public CanopyGridNavigation Navigation => Source.Navigation;
 
     /// <summary>Gets or sets continuous scrolling or paged presentation.</summary>
-    public CanopyGridPresentation Presentation { get; set; }
+    public CanopyGridPresentation Presentation {
+        get => _presentation;
+        set {
+            if (!Enum.IsDefined(typeof(CanopyGridPresentation), value)) throw new ArgumentOutOfRangeException(nameof(value));
+            if (Navigation == CanopyGridNavigation.Cursor && value != CanopyGridPresentation.Paged)
+                throw new InvalidOperationException("Cursor sources require paged presentation.");
+            _presentation = value;
+        }
+    }
 
     /// <summary>Gets or sets the visible page length, from 1 to 10,000. Defaults to 50 and is independent of <see cref="PageSize"/>.</summary>
     public int PageLength {
@@ -156,10 +179,7 @@ public sealed partial class CanopyGridView {
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
             .Name("columns").BeginArray();
         foreach (var column in Columns) {
-            var width = column.Width;
-            if (!column.HasExplicitWidth && Reporting != null && Reporting.Layout.TryGetValue(column.Id, out var layout))
-                width = Math.Max(layout.Minimum, Math.Min(layout.Maximum, width));
-            column.WriteJson(writer, grid: true, width: width);
+            column.WriteJson(writer, grid: true);
         }
         writer.EndArray();
         if (HighlightRules.Count > 0) {
@@ -167,7 +187,7 @@ public sealed partial class CanopyGridView {
             foreach (var rule in HighlightRules) rule.WriteJson(writer);
             writer.EndArray();
         }
-        if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer); }
+        if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
         if (SearchColumns.Count > 0) {
@@ -175,7 +195,7 @@ public sealed partial class CanopyGridView {
             foreach (var column in SearchColumns) writer.String(column);
             writer.EndArray();
         }
-        writer.Name("source").BeginObject().Property("kind", Source == CanopyGridSourceKind.Inline ? "inline" : "host")
+        writer.Name("source").BeginObject().Property("kind", Source.Kind == CanopyGridSourceKind.Inline ? "inline" : "host")
             .Property("navigation", Navigation == CanopyGridNavigation.Cursor ? "cursor" : "offset").EndObject();
         writer.OptionalProperty("stateKey", StateKey).OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         if (Query != null) {
@@ -186,7 +206,7 @@ public sealed partial class CanopyGridView {
             writer.Name("labels");
             Labels.WriteJson(writer);
         }
-        if (Source == CanopyGridSourceKind.Inline) {
+        if (Source.Kind == CanopyGridSourceKind.Inline) {
             writer.Name("rows").BeginArray();
             foreach (var row in Rows) row.WriteJson(writer);
             writer.EndArray();
@@ -194,8 +214,14 @@ public sealed partial class CanopyGridView {
         return writer.EndObject().ToString();
     }
 
-    internal HashSet<string> Validate() {
-        if (Source != CanopyGridSourceKind.Inline && Source != CanopyGridSourceKind.Host) {
+    /// <summary>Validates column identities, values, query bindings and supported capability combinations.</summary>
+    /// <remarks>Definitions remain editable. Call this after construction for early diagnostics; output validates again.</remarks>
+    /// <exception cref="InvalidOperationException">The definition contains incompatible policies or data.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">An enum or option is outside its supported values.</exception>
+    public void Validate() => ValidateColumns();
+
+    internal HashSet<string> ValidateColumns() {
+        if (Source.Kind != CanopyGridSourceKind.Inline && Source.Kind != CanopyGridSourceKind.Host) {
             throw new ArgumentOutOfRangeException(nameof(Source), Source, "Unknown grid source.");
         }
         CanopyJsonNames.Selection(Selection);
@@ -207,7 +233,7 @@ public sealed partial class CanopyGridView {
             throw new ArgumentOutOfRangeException(nameof(Presentation), Presentation, "Unknown grid presentation.");
         if (Navigation != CanopyGridNavigation.Offset && Navigation != CanopyGridNavigation.Cursor)
             throw new ArgumentOutOfRangeException(nameof(Navigation), Navigation, "Unknown grid navigation.");
-        if (Navigation == CanopyGridNavigation.Cursor && (Source != CanopyGridSourceKind.Host || Presentation != CanopyGridPresentation.Paged))
+        if (Navigation == CanopyGridNavigation.Cursor && (Source.Kind != CanopyGridSourceKind.Host || Presentation != CanopyGridPresentation.Paged))
             throw new InvalidOperationException("Cursor navigation requires a hosted, paged grid.");
         CanopyJsonNames.TimeZone(TimeZone);
         ValidateRowPresentation();
@@ -221,6 +247,8 @@ public sealed partial class CanopyGridView {
             if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
             if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
             column.ValidateLayout();
+            if (column.Ordering != null && (Reporting == null || !column.Sortable || column.Kind != CanopyColumnKind.Text))
+                throw new InvalidOperationException("Ordering requires reporting capabilities and a sortable text column.");
             if (column.RowHeader && ++rowHeaders > 1) throw new InvalidOperationException("A grid has at most one row header column.");
             if (!column.Hidden) visible++;
         }
@@ -241,7 +269,7 @@ public sealed partial class CanopyGridView {
         foreach (var id in SearchColumns) {
             if (id == null || !columnIds.Contains(id) || !searchable.Add(id)) throw new InvalidOperationException("Search columns must identify unique declared columns.");
         }
-        if (Source == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
+        if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
         CanopyGridRows.Validate(Rows, columnIds, Columns);
         Query?.Validate(this);
         return columnIds;

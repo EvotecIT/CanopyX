@@ -10,7 +10,7 @@ public sealed class GridDensityTests {
     [InlineData(CanopyGridDensity.Compact, 28)]
     [InlineData(CanopyGridDensity.Comfortable, 42)]
     public void DensityWritesTheEffectiveHeightAndPreservesExplicitSizes(CanopyGridDensity density, int height) {
-        var view = new CanopyGridView("density", "Records") { Density = density, Zebra = true };
+        var view = new CanopyDataGridView("density", "Records") { Density = density, Zebra = true };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         using (var json = JsonDocument.Parse(view.ToJson())) {
             Assert.Equal(height, json.RootElement.GetProperty("rowHeight").GetInt32());

@@ -13,12 +13,11 @@
     const grouping = view.reporting.grouping, aggregates = view.reporting.aggregates || [], ids = new Set();
     if (reportingSummaryEnabled(view) && view.source.navigation === "cursor") throw new Error("CanopyX: summaries require offset navigation.");
     if (grouping !== undefined && (!grouping || typeof grouping !== "object" || Array.isArray(grouping) ||
-        Object.keys(grouping).some(key => !["column", "direction"].includes(key)) || !["asc", "desc"].includes(grouping.direction) ||
+        !["asc", "desc"].includes(grouping.direction) ||
         !view.columns.some(column => column.id === grouping.column && column.sortable))) throw new Error("CanopyX: invalid grouping column or order.");
     if (!Array.isArray(aggregates) || aggregates.length > 32) throw new Error("CanopyX: at most 32 aggregates are supported.");
     for (const aggregate of aggregates) {
-      if (!aggregate || typeof aggregate !== "object" || Array.isArray(aggregate) ||
-          Object.keys(aggregate).some(key => !["id", "column", "operation", "label"].includes(key))) throw new Error("CanopyX: invalid aggregate.");
+      if (!aggregate || typeof aggregate !== "object" || Array.isArray(aggregate)) throw new Error("CanopyX: invalid aggregate.");
       requireIdentifier(aggregate.id, "aggregate ID"); const column = view.columns.find(item => item.id === aggregate.column);
       if (!column || ids.has(aggregate.id) || !["count", "sum", "average", "minimum", "maximum"].includes(aggregate.operation) ||
           aggregate.operation !== "count" && column.kind !== "number" || typeof aggregate.label !== "string" ||
@@ -26,8 +25,8 @@
       ids.add(aggregate.id);
     }
   };
-  gridQuery = (view, input) => {
-    const query = SUMMARY_QUERY(view, input), grouping = view.reporting?.grouping;
+  gridQuery = (view, input, strict) => {
+    const query = SUMMARY_QUERY(view, input, strict), grouping = view.reporting?.grouping;
     return !grouping ? query : gridFreeze({ ...query, sort: [grouping, ...query.sort.filter(sort => sort.column !== grouping.column)] });
   };
   GRID_REPORTING.compare = view => {
@@ -54,8 +53,7 @@
   }
   function reportingSummaryResult(view, query, page, summary) {
     checkDocument(summary, "gridSummary");
-    if (Object.keys(summary).some(key => !["protocol", "type", "view", "revision", "query", "matched", "groups", "aggregates"].includes(key)) ||
-        JSON.stringify(summary).length > 4194304 || summary.view !== view.id || summary.revision !== page.revision || summary.matched !== page.matched ||
+    if (JSON.stringify(summary).length > 4194304 || summary.view !== view.id || summary.revision !== page.revision || summary.matched !== page.matched ||
         !Array.isArray(summary.groups) || summary.groups.length > 10000 || !validStructuralCount(summary.matched + summary.groups.length) || !view.reporting.grouping && summary.groups.length ||
         !summary.query || !["protocol", "type", "view", "offset", "limit", "sort", "filters", "search", "revision"].every(key => Object.hasOwn(summary.query, key)) ||
         summary.query.type !== "gridQuery" || summary.query.protocol !== PROTOCOL || summary.query.revision !== page.revision || summary.query.offset !== 0 ||
@@ -64,7 +62,7 @@
     let offset = 0; const keys = new Set(), column = view.columns.find(item => item.id === view.reporting.grouping?.column), values = new Set();
     const compare = column ? GRID_REPORTING.compare(view) : null; let previous = null;
     for (const group of summary.groups) {
-      if (!group || !Object.hasOwn(group, "value") || Object.keys(group).some(key => !["key", "value", "offset", "count", "aggregates", "cells"].includes(key)) ||
+      if (!group || !Object.hasOwn(group, "value") ||
           group.value !== null && typeof group.value === "object") throw new Error("CanopyX: groups carry raw values.");
       requireIdentifier(group.key, "group key"); const value = gridScalar(group.value, column), key = reportingGroupKey(value);
       if (group.cells !== undefined) validateGridRows([{id:group.key,cells:group.cells}],view.columns);

@@ -14,7 +14,7 @@ public static partial class CanopyHtmlAssets {
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="preferred"/> is unknown.</exception>
-    public static CanopyRuntime GetRuntime(CanopyView view, CanopyRuntime preferred = CanopyRuntime.TreeGrid) {
+    public static CanopyRuntime GetRuntime(CanopyTreeView view, CanopyRuntime preferred = CanopyRuntime.TreeGrid) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (preferred != CanopyRuntime.TreeGrid && preferred != CanopyRuntime.InteractiveTreeGrid && preferred != CanopyRuntime.DataGrid && preferred != CanopyRuntime.ReportingGrid)
             throw new ArgumentOutOfRangeException(nameof(preferred), preferred, "Unknown browser runtime.");
@@ -31,7 +31,7 @@ public static partial class CanopyHtmlAssets {
     /// <param name="view">The flat-grid definition.</param>
     /// <returns>The data-grid entry point, which includes the tree runtimes.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
-    public static CanopyRuntime GetRuntime(CanopyGridView view) {
+    public static CanopyRuntime GetRuntime(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         return view.Reporting == null && !view.Labels.RequiresReportingRuntime ? CanopyRuntime.DataGrid : CanopyRuntime.ReportingGrid;
     }

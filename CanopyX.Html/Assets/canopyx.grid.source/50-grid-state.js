@@ -32,7 +32,7 @@
       const query = this.getQuery() || this.defaultState.query;
       const state = { version: 1, view: this.view.id,
         columns: this.columns.map(gridStateColumn),
-        query: JSON.parse(JSON.stringify(Object.assign({}, query, { offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined }))),
+        query: JSON.parse(JSON.stringify({ ...query, offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined })),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
       if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset, ...this.pageAll?{allRows:true}:{} };
       return state;
@@ -49,7 +49,7 @@
       if (!input || typeof input !== "object" || !Array.isArray(input.sort) || !Array.isArray(input.filters)) throw new Error("CanopyX: invalid state query.");
       const known = id => this.columns.some(column => column.id === id);
       const query = gridQuery(this.view, gridQueryStart(input, {
-        sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }));
+        sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }), true);
       const parsed = { version: 1, view: this.view.id, columns, query,
         timeZone: state.timeZone, selection, scrollTop: state.scrollTop };
       if (this.paged || state.paging) {
@@ -68,7 +68,7 @@
     async setState(input) {
       const state = this.readGridState(input);
       clearTimeout(this.searchTimer); this.searchTimer = null;
-      const pending = this.setQuery(Object.assign({}, state.query, { offset: state.paging ? state.paging.offset : 0 }), state.paging), epoch = this.queryEpoch;
+      const pending = this.setQuery({ ...state.query, offset: state.paging ? state.paging.offset : 0 }, state.paging), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
         await pending;

@@ -20,6 +20,44 @@ async function open(page, patch = {}) {
 const header = (page, id) => page.locator('.cx-hcell[data-cx-column="' + id + '"]');
 const ids = page => page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getState().columns.map(column => column.id));
 
+test("column-owned bounds and retention policies govern reporting without a separate layout map", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await open(page, { reporting: { responsive: true }, columns: [
+    { id: "name", title: "Name", kind: "text", width: 160, minWidth: 140, maxWidth: 220, priority: 0, alwaysVisible: true },
+    view.columns[1],
+    { id: "amount", title: "Amount", kind: "number", width: 140, priority: 1, pinned: "right" },
+    { id: "notes", title: "Notes", kind: "text", width: 180, minWidth: 120, maxWidth: 900, flex: 2, priority: 2 }
+  ] });
+  await expect(header(page, "name")).toBeVisible(); await expect(header(page, "amount")).toBeVisible();
+  await expect(header(page, "notes")).toHaveCount(0);
+  const widths = await page.evaluate(() => {
+    const api = document.querySelector('[data-canopyx-host]').canopyx, width = () => api.getState().columns.find(column => column.id === "name").width;
+    api.setColumnWidth("name", 500); const maximum = width(); api.setColumnWidth("name", 40);
+    return { maximum, minimum: width() };
+  });
+  expect(widths).toEqual({ maximum: 220, minimum: 140 });
+  await expect(header(page, "name").getByRole("separator")).toHaveAttribute("aria-valuemin", "140");
+  await expect(header(page, "name").getByRole("separator")).toHaveAttribute("aria-valuemax", "220");
+});
+
+test("column-owned flex weights share spare width and survive saved-state restoration", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 700 });
+  await open(page, { reporting: {}, columns: [
+    { ...view.columns[0], fixed: true, minWidth: 160, maxWidth: 160 }, view.columns[1],
+    { ...view.columns[2], width: 100, minWidth: 100, maxWidth: 900, flex: 1, autoSize: "none" },
+    { ...view.columns[3], width: 100, minWidth: 100, maxWidth: 900, flex: 3, autoSize: "none" }
+  ] });
+  const widths = async () => [(await header(page, "amount").boundingBox()).width, (await header(page, "notes").boundingBox()).width];
+  const initial = await widths(); expect(initial[0]).toBeGreaterThan(200);
+  expect((initial[1] - 100) / (initial[0] - 100)).toBeCloseTo(3, 1);
+  const state = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getState());
+  expect(state.columns.find(column => column.id === "amount")).toMatchObject({ width: 100, flex: true });
+  expect(state.columns.find(column => column.id === "notes")).toMatchObject({ width: 100, flex: true });
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnWidth("notes", 180));
+  await page.evaluate(state => document.querySelector('[data-canopyx-host]').canopyx.setState(state), state); await nextFrames(page);
+  const restored = await widths(); expect(restored[0]).toBeCloseTo(initial[0], 0); expect(restored[1]).toBeCloseTo(initial[1], 0);
+});
+
 test("width constraints apply to API and keyboard; flex sizing keeps base widths and survives state restoration", async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 700 }); await open(page);
   const notes = header(page, "notes"), initial = (await notes.boundingBox()).width; expect(initial).toBeGreaterThan(500);

@@ -56,7 +56,7 @@
         this.addGridFilter(rows,predicate);const row=rows.lastElementChild;if(!row)return;
         row._design=true;row.classList.add("cx-cond");row._filter.type.closest("label").hidden=row._filter.type.value==="string";const word=h("span","w");row.prepend(word);
         const typeLabel=row._filter.type.closest('label');
-        if((this.columns.find(column=>column.id===row._filter.column.value)?.presenter||this.view.reporting?.presenters?.[row._filter.column.value])?.kind==="boolean"){
+        if(this.columns.find(column=>column.id===row._filter.column.value)?.presenter?.kind==="boolean"){
           row._filter.type.value="boolean";row._filter.type.dispatchEvent(new Event("change"));typeLabel.hidden=true;
         }
         const remove=row.querySelector(':scope > button');if(remove){remove.replaceChildren(gridIcon("close"));remove.classList.add("icon");remove.setAttribute("aria-label",this.labels.gridDeleteCondition);remove.addEventListener("click",update);}

@@ -51,7 +51,7 @@ test('ordinary column presenters preserve raw exports, long strip periods and ac
   await expect(strip.locator('i.danger')).toHaveCount(1);await expect(strip.locator('i.danger')).toHaveAttribute('title',/Day .*Failing/);
   expect(await strip.evaluate(item=>item.getBoundingClientRect().width)).toBeLessThanOrEqual(126);
   const rows=await page.evaluate(async()=>{const records=[];for await(const row of grid.prepareExport({scope:'all',raw:true}).rows())records.push(row);return records;});
-  expect(rows[0].cells.change).toBe(142);expect(rows[0].cells.history.value).toBe('Healthy');
+  expect(rows[0].cells.change.value).toBe(142);expect(rows[0].cells.history.value).toBe('Healthy');
   if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'presenters-light-1440.png')});
   await first.getByRole('button',{name:'Notes: show complete text'}).click();await expect(page.getByRole('dialog').locator('pre')).toHaveText(base.rows[0].cells.notes);
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);

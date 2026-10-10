@@ -4,8 +4,8 @@ using System.Text.Json;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridSummaryContractTests {
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("inventory", "Inventory") { Source = CanopyGridSourceKind.Host,
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("inventory", "Inventory") { Source = CanopyGridSource.HostedOffset(),
             Reporting = new CanopyGridReporting { Grouping = new CanopyGridGrouping("category") } };
         view.Columns.Add(new CanopyColumn("category", "Category") { Sortable = true });
         view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number, Sortable = true });
@@ -13,7 +13,7 @@ public sealed class GridSummaryContractTests {
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("count", "amount", CanopyGridAggregateOperation.Count, "Amounts present"));
         return view;
     }
-    private static CanopyGridSummary Summary(CanopyGridView view) {
+    private static CanopyGridSummary Summary(CanopyDataGridView view) {
         var result = new CanopyGridSummary(new CanopyGridQuery(view.Id) { Revision = "revision" }, 3);
         result.Aggregates.Add("sum", 12); result.Aggregates.Add("count", 2);
         var group = new CanopyGridGroup("stable-a", new CanopyCell("<A>") { Text = "Ignored display" }, 0, 3);
@@ -64,7 +64,7 @@ public sealed class GridSummaryContractTests {
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         view = View(); view.Reporting!.Grouping = new CanopyGridGrouping("amount"); view.Columns[1].Sortable = false;
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view = View(); view.Navigation = CanopyGridNavigation.Cursor; view.Presentation = CanopyGridPresentation.Paged;
+        view = View(); view.Source = CanopyGridSource.HostedCursor();
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         view = View(); view.Reporting!.Grouping = null;
         var result = new CanopyGridSummary(new CanopyGridQuery(view.Id) { Revision = "snapshot" }, 0); result.Aggregates.Add("sum", null); result.Aggregates.Add("count", 0);
@@ -74,8 +74,8 @@ public sealed class GridSummaryContractTests {
     [Fact]
     public void GroupComparer_UsesRawTypedTiesMissingLastAndUtcMillisecondPrecision() {
         var view = View();
-        view.Reporting!.Ordering.Add("category", new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural));
-        var compare = view.Reporting.Grouping!.CreateComparer(view);
+        view.GetColumn("category").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural);
+        var compare = view.Reporting!.Grouping!.CreateComparer(view);
         var values = new[] { "item2", "Item02", "item02", "ITEM2", "item10" }.Select(value => new CanopyCell(value)).ToList();
         values.Sort(compare);
         Assert.Equal(new[] { "ITEM2", "Item02", "item02", "item2", "item10" }, values.Select(cell => cell.Value));

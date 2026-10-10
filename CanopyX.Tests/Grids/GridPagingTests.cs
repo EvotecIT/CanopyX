@@ -6,7 +6,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridPagingTests {
     [Fact]
     public void Presentation_IsOptionalAndIndependentOfSourceFetchSize() {
-        var view = new CanopyGridView("inventory", "Inventory");
+        var view = new CanopyDataGridView("inventory", "Inventory");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         using (var defaults = JsonDocument.Parse(view.ToJson())) {
             Assert.False(defaults.RootElement.TryGetProperty("presentation", out _));
@@ -25,7 +25,6 @@ public sealed class GridPagingTests {
         Assert.Equal("{first}–{last} / {count}", document.RootElement.GetProperty("labels").GetProperty("gridPageRange").GetString());
         Assert.Throws<ArgumentOutOfRangeException>(() => view.PageLength = 0);
         Assert.Throws<ArgumentOutOfRangeException>(() => view.PageLength = 10001);
-        view.Presentation = (CanopyGridPresentation)123;
-        Assert.Throws<ArgumentOutOfRangeException>(() => view.ToJson());
+        Assert.Throws<ArgumentOutOfRangeException>(() => view.Presentation = (CanopyGridPresentation)123);
     }
 }

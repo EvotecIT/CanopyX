@@ -11,9 +11,9 @@ namespace CanopyX.Bundles;
 /// index that holds every node once next to word shards that refer to it.
 /// </summary>
 /// <remarks>
-/// The tree comes either from the view's <see cref="CanopyView.Roots"/>, complete with inline children, or from the
+/// The tree comes either from the view's <see cref="CanopyTreeView.Roots"/>, complete with inline children, or from the
 /// host node by node while the writer walks it (see
-/// <see cref="Write(CanopyView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>), so a
+/// <see cref="Write(CanopyTreeView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>), so a
 /// tree that does not fit in memory can be written from a database or a file. The layout is specified under
 /// "Sidecar" in docs/data-protocol.md. Children packs are filled to <see cref="CanopyBundleOptions.ChildPackBytes"/>.
 /// Every file stays within <see cref="CanopyBundleOptions.MaxFileBytes"/>, apart
@@ -39,13 +39,13 @@ public sealed class CanopyBundleWriter {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="outputDirectory"/> is null or empty.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, a node declares children that are not in the tree, or the fixed part of a file exceeds the file budget.</exception>
-    public CanopyBundleResult Write(CanopyView view, string outputDirectory) {
+    public CanopyBundleResult Write(CanopyTreeView view, string outputDirectory) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
 
         // The whole tree is checked before the first file is written.
-        CanopyViewValidator.Validate(view, requireCompleteTree: true);
+        CanopyTreeViewValidator.Validate(view, requireCompleteTree: true);
         return WriteBundle(view, outputDirectory, view.Roots, null);
     }
 
@@ -76,7 +76,7 @@ public sealed class CanopyBundleWriter {
     /// manifest, so nothing can open it; delete the folder before writing again.
     /// </para>
     /// </remarks>
-    /// <param name="view">The view. Its <see cref="CanopyView.Roots"/> must be empty.</param>
+    /// <param name="view">The view. Its <see cref="CanopyTreeView.Roots"/> must be empty.</param>
     /// <param name="outputDirectory">The folder the page lives in; the data folder is created inside it.</param>
     /// <param name="roots">The top-level nodes in display order.</param>
     /// <param name="children">Returns the children of a node in display order, or null or an empty sequence for a leaf.</param>
@@ -84,7 +84,7 @@ public sealed class CanopyBundleWriter {
     /// <exception cref="ArgumentNullException"><paramref name="view"/>, <paramref name="roots"/>, or <paramref name="children"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="outputDirectory"/> is null or empty, or the view has roots of its own.</exception>
     /// <exception cref="InvalidOperationException">The view or a node breaks a protocol rule, two nodes have the same id, or the fixed part of a file exceeds the file budget.</exception>
-    public CanopyBundleResult Write(CanopyView view, string outputDirectory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children) {
+    public CanopyBundleResult Write(CanopyTreeView view, string outputDirectory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }
@@ -101,10 +101,10 @@ public sealed class CanopyBundleWriter {
             throw new ArgumentException("The view has roots of its own; pass the top-level nodes either on the view or as the roots argument, not both.", nameof(view));
         }
 
-        return WriteBundle(view, outputDirectory, roots, new Incoming(view, children, CanopyViewValidator.ValidateDefinition(view, bundle: true)));
+        return WriteBundle(view, outputDirectory, roots, new Incoming(view, children, CanopyTreeViewValidator.ValidateDefinition(view, bundle: true)));
     }
 
-    private CanopyBundleResult WriteBundle(CanopyView view, string outputDirectory, IEnumerable<CanopyNode> roots, Incoming? incoming) {
+    private CanopyBundleResult WriteBundle(CanopyTreeView view, string outputDirectory, IEnumerable<CanopyNode> roots, Incoming? incoming) {
         if (string.IsNullOrEmpty(outputDirectory)) {
             throw new ArgumentException("Output directory is required.", nameof(outputDirectory));
         }
@@ -350,15 +350,15 @@ public sealed class CanopyBundleWriter {
 
     /// <summary>
     /// The host's side of a streamed write: where children come from, and the checks a complete tree gets up front
-    /// from <see cref="CanopyViewValidator"/>, made here on each node as it arrives.
+    /// from <see cref="CanopyTreeViewValidator"/>, made here on each node as it arrives.
     /// </summary>
     private sealed class Incoming {
-        private readonly CanopyView _view;
+        private readonly CanopyTreeView _view;
         private readonly Func<CanopyNode, IEnumerable<CanopyNode>?> _children;
         private readonly HashSet<string> _columns;
         private readonly HashSet<string> _ids = new HashSet<string>(StringComparer.Ordinal);
 
-        internal Incoming(CanopyView view, Func<CanopyNode, IEnumerable<CanopyNode>?> children, HashSet<string> columns) {
+        internal Incoming(CanopyTreeView view, Func<CanopyNode, IEnumerable<CanopyNode>?> children, HashSet<string> columns) {
             _view = view;
             _children = children;
             _columns = columns;
@@ -373,7 +373,7 @@ public sealed class CanopyBundleWriter {
                 throw new InvalidOperationException("View '" + _view.Id + "' has more than one node with id '" + node.Id + "'.");
             }
 
-            CanopyViewValidator.ValidateNodeAgainstView(_view, _columns, node);
+            CanopyTreeViewValidator.ValidateNodeAgainstView(_view, _columns, node);
             node.ValidateContent();
         }
 

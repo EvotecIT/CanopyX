@@ -106,6 +106,7 @@
       const kind = row.status ? "status" : "node";
       element._w = row;
       if (element._kind !== kind || element._layout !== this.layout) {
+        disposeRowHostCells(element);
         element.textContent = ""; element._kind = kind; element._layout = this.layout; element._attrs = {}; element._cls = null;
         element.setAttribute("role", "row"); element.style.height = this.rowH + "px"; element.style.width = this.rowWidth + "px";
         element._cells = (row.status ? [null] : this.cols).map((column, index) => {

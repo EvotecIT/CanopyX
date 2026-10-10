@@ -11,7 +11,7 @@ public sealed class BundleFixture : IDisposable {
         Files = new SidecarFiles(Result.DataDirectory, View.Id);
     }
 
-    internal CanopyView View { get; }
+    internal CanopyTreeView View { get; }
 
     internal string Directory { get; }
 

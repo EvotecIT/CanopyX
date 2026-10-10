@@ -33,19 +33,8 @@
       // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels);
-      if (options.renderCell) {
-        throw new Error("CanopyX: renderCell was replaced by renderers, an object of functions (node, element, context) by column id.");
-      }
       // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
-      const renderers = options.renderers || {};
-      if (typeof renderers !== "object" || (Object.getPrototypeOf(renderers) !== Object.prototype && Object.getPrototypeOf(renderers) !== null)) {
-        throw new Error("CanopyX: renderers must be a plain object of functions by column id.");
-      }
-      Object.keys(renderers).forEach((id) => {
-        if (typeof renderers[id] !== "function" || !view.columns.some((column) => column.id === id)) {
-          throw new Error("CanopyX: renderers needs a function for a column of the view, not for '" + id + "'.");
-        }
-      });
+      const renderers = hostRenderers(options.renderers || {}, view.columns);
       if (!options.formatLink !== !options.parseLink) {
         throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
       }

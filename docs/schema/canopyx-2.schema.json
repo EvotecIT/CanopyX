@@ -961,6 +961,7 @@
         },
         "minWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "maxWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647, "description": "Widest width and the content measuring cap." },
+        "alwaysVisible": { "type": "boolean", "description": "Retain this column during responsive fitting. Explicit user hiding still applies." },
         "fixed": { "type": "boolean", "description": "The width is hard; requires width. Otherwise width is preferred." },
         "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Share of spare width, given before the identity column." },
         "autoSize": { "enum": ["content", "header", "none"], "description": "What content measuring reads. Default content." },

@@ -4,9 +4,9 @@ namespace CanopyX.Examples;
 
 /// <summary>Defines tall document sections whose loaded range exceeds native browser element heights.</summary>
 internal static class LongDocumentView {
-    internal static CanopyView Create() {
-        var view = new CanopyView("long-document", "Long document") { PageSize = 10000, RowHeight = 64 };
-        view.Columns.Add(new CanopyColumn("name", "Section") { Width = 600 });
+    internal static CanopyTreeView Create() {
+        var view = new CanopyTreeView("long-document", "Long document") { PageSize = 10000, RowHeight = 64 };
+        view.Columns.Add(new CanopyColumn("name", "Section") { Sizing = CanopyColumnSizing.Preferred(600) });
         for (var i = 0; i < 20000; i++) {
             var number = i.ToString(CultureInfo.InvariantCulture);
             view.Roots.Add(new CanopyNode("section-" + number, "Section " + number) {

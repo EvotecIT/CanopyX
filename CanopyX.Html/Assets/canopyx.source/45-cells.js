@@ -53,6 +53,7 @@
     },
 
     buildRow(rowEl, kind) {
+      disposeRowHostCells(rowEl);
       rowEl.textContent = "";
       // The attribute cache is reset with the skeleton, so drop what a node row of another kind left behind.
       ["aria-expanded", "aria-busy", "aria-setsize", "aria-posinset", "aria-selected", "data-cx-id", "data-cx-status", "data-kind"].forEach((name) => rowEl.removeAttribute(name));

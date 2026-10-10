@@ -11,8 +11,7 @@ public sealed partial class CanopyColumn {
     /// <summary>The narrowest width a column can have, in CSS pixels.</summary>
     public const int MinWidth = 40;
 
-    private int _width = 160;
-    internal bool HasExplicitWidth { get; private set; }
+    private CanopyColumnSizing _sizing = CanopyColumnSizing.Content();
 
     /// <summary>Creates a column.</summary>
     /// <param name="id">The id that node cells use as their key.</param>
@@ -35,19 +34,16 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets or sets the width in CSS pixels. In a flat grid an assigned width is preferred, not a hard cap: the column grows to its content and gives way by <see cref="Priority"/>; set <see cref="Fixed"/> for a hard width. Unassigned flat-grid widths fit loaded content; tree widths default to 160. Users can resize columns.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is below <see cref="MinWidth"/>.</exception>
-    public int Width {
-        get => _width;
-        set {
-            if (value < MinWidth) {
-                throw new ArgumentOutOfRangeException(nameof(value), value, "Column width must be at least " + MinWidth + " pixels.");
-            }
-
-            _width = value;
-            HasExplicitWidth = true;
-        }
+    /// <summary>Gets or sets the column's immutable sizing intent. The default fits content; tree widths start at 160 pixels within the bounds.</summary>
+    public CanopyColumnSizing Sizing {
+        get => _sizing;
+        set => _sizing = value ?? throw new ArgumentNullException(nameof(value));
     }
+
+    internal int InitialWidth => Sizing.Width ?? Math.Max(Sizing.Minimum, Math.Min(Sizing.Maximum, 160));
+
+    /// <summary>Gets or sets the deterministic text order for a sortable text grid column. Requires reporting capabilities.</summary>
+    public CanopyGridOrdering? Ordering { get; set; }
 
     /// <summary>Gets or sets how values are formatted, aligned, and sorted.</summary>
     public CanopyColumnKind Kind { get; set; }
@@ -74,12 +70,12 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets the record drawer section label. Null uses the default details section.</summary>
     public string? Section { get; set; }
 
-    internal void WriteJson(CanopyJsonWriter writer, bool grid = false, int? width = null) {
+    internal void WriteJson(CanopyJsonWriter writer, bool grid = false) {
         writer.BeginObject()
             .Property("id", Id)
             .Property("title", Title);
-        writer.Property("width", width ?? _width);
-        if (grid && !HasExplicitWidth) writer.Property("autoWidth", true);
+        writer.Property("width", InitialWidth);
+        if (grid && !Sizing.Width.HasValue) writer.Property("autoWidth", true);
         writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {
             writer.Property("sortable", true);

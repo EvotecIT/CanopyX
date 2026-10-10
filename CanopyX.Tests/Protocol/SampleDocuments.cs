@@ -6,8 +6,8 @@ namespace CanopyX.Tests.Protocol;
 internal static class SampleDocuments {
     internal const string FolderIcon = "<svg viewBox=\"0 0 16 16\"><path fill=\"currentColor\" d=\"M1 3h5l2 2h7v8H1z\"/></svg>";
 
-    internal static CanopyView FullView(CanopySource? source = null) {
-        var view = new CanopyView("files", "File shares") {
+    internal static CanopyTreeView FullView(CanopySource? source = null) {
+        var view = new CanopyTreeView("files", "File shares") {
             RowHeight = 30,
             PageSize = 50,
             Selection = CanopySelectionMode.Multiple,
@@ -21,7 +21,7 @@ internal static class SampleDocuments {
             view.Source = source;
         }
 
-        view.Columns.Add(new CanopyColumn("name", "Name") { Width = 320, Sortable = true });
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(320), Sortable = true });
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
         view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });

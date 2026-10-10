@@ -5,7 +5,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 internal static class CanopyCheckIntentValidator {
-    internal static void Validate(CanopyView view) {
+    internal static void Validate(CanopyTreeView view) {
         CanopyJsonNames.Checkboxes(view.Checkboxes);
         if (view.Checkboxes == CanopyCheckboxMode.None && view.CheckIntents.Count > 0)
             throw new InvalidOperationException("Checking intents require an enabled checkbox mode.");

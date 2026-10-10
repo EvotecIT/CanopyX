@@ -21,6 +21,37 @@ const state = (view = definition()) => ({ version: 1, view: view.id, columns: vi
   timeZone: "utc", selection: [], scrollTop: 0, paging: { pageLength: 5, offset: 0 } });
 const settings = () => ({ version: 1, view: "prefs", current: state(), views: [{ name: "Archives", state: state() }], defaultView: "Archives" });
 
+for (const host of [false, true]) for (const target of ['current', 'named'])
+  test(`incompatible saved query fields preserve ${target} ${host ? 'host' : 'browser'} preferences until reset`, async ({ page }) => {
+    for (const part of ['query', 'sort', 'predicate', 'group', 'nestedPredicate', 'operator']) {
+      const envelope = settings(); delete envelope.defaultView;
+      const incompatible = target === 'current' ? envelope.current : envelope.views[0].state;
+      const query = incompatible.query;
+      query.sort = [{ column: 'name', direction: 'asc' }];
+      query.filters = [{ column: 'amount', operator: 'ge', values: [1] }];
+      query.filterGroup = { operator: 'and', filters: [], groups: [
+        { operator: 'or', filters: [{ column: 'name', operator: 'eq', values: ['Archive'] }], groups: [] }] };
+      const item = part === 'query' ? query : part === 'sort' ? query.sort[0] : part === 'predicate' ? query.filters[0] :
+        part === 'group' ? query.filterGroup.groups[0] : query.filterGroup.groups[0].filters[0];
+      if (part === 'operator') item.operator = ['eq'];
+      else item.futurePolicy = { version: 2 };
+      const original = JSON.stringify(envelope), setup = host ?
+        `window.writes=[];CanopyX.configure('prefs',{viewStore:{load(){return ${original};},save(e){writes.push(e.settings);}}});` :
+        `localStorage.setItem('cx:grid:report-reader:prefs',${JSON.stringify(original)});`;
+      await open(page, definition(), setup);
+      await expect(page.locator('.cx-grid-view-storage')).toContainText('persistence is paused until reset');
+      expect(await page.evaluate(api + '.getSavedViews()')).toEqual(target === 'named' ? [] : ['Archives']);
+      await page.evaluate(api + ".setColumnWidth('name',220)");
+      expect(await page.evaluate(api + '.flushViewSettings().catch(e=>e.message)')).toContain('incompatible');
+      if (host) expect(await page.evaluate('writes.length')).toBe(0);
+      else expect(await page.evaluate("localStorage.getItem('cx:grid:report-reader:prefs')")).toBe(original);
+      await page.evaluate(`(async()=>{await ${api}.resetView();await ${api}.flushViewSettings();})()`);
+      await expect(page.locator('.cx-grid-view-storage')).toHaveText('');
+      if (host) expect(await page.evaluate('writes.length')).toBeGreaterThan(0);
+      else expect(await page.evaluate("localStorage.getItem('cx:grid:report-reader:prefs')")).not.toBe(original);
+    }
+  });
+
 test('a rejected named save leaves cross-tab metadata refresh available for the next autosave',async({page,context})=>{
   await open(page);await page.evaluate(api+".saveView('Original')");await page.evaluate(api+".setDefaultView('Original')");
   const other=await context.newPage();

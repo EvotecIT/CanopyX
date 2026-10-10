@@ -9,7 +9,7 @@
     if (!Array.isArray(view.highlightRules) || view.highlightRules.length > 64) throw new Error("CanopyX: at most 64 highlight rules.");
     const columns = new Map(view.columns.map(column => [column.id, column])), budget = { predicates: 0 };
     for (const rule of view.highlightRules) {
-      if (!rule || Object.keys(rule).some(key => !["column", "operator", "values", "target", "tone", "className"].includes(key)) ||
+      if (!rule ||
           rule.target !== undefined && !["row", "cell"].includes(rule.target) || rule.tone === undefined && rule.className === undefined)
         throw new Error("CanopyX: invalid highlight rule.");
       const { column, operator, values } = rule;

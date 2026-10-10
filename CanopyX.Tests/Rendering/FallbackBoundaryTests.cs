@@ -59,8 +59,8 @@ public sealed class FallbackBoundaryTests {
         Assert.Throws<ArgumentException>(() => new CanopyBundleOptions { DataPath = path });
     }
 
-    private static CanopyView View(string id = "test") {
-        var view = new CanopyView(id, "Test");
+    private static CanopyTreeView View(string id = "test") {
+        var view = new CanopyTreeView(id, "Test");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         return view;
     }

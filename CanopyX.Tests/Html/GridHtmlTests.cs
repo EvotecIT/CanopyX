@@ -18,7 +18,7 @@ public sealed class GridHtmlTests {
         Assert.Contains("height:560px", fragment);
         Assert.Contains("data-cx-mount=\"manual\"", fragment);
         Assert.DoesNotContain("<script src=", fragment);
-        var tree = new CanopyView("tree", "Tree") { Checkboxes = CanopyCheckboxMode.Independent };
+        var tree = new CanopyTreeView("tree", "Tree") { Checkboxes = CanopyCheckboxMode.Independent };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(tree, CanopyRuntime.DataGrid));
     }
@@ -51,7 +51,7 @@ public sealed class GridHtmlTests {
 
     [Fact]
     public void HostFallback_RequiresAnExplicitSnapshotAndDisclosesPartialResults() {
-        var view = View(); view.Source = CanopyGridSourceKind.Host;
+        var view = View(); view.Source = CanopyGridSource.HostedOffset();
         Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.RenderGrid(view));
         var page = new CanopyGridPage(view.Id, "snapshot", 3, 20, 10);
         page.Rows.Add(new CanopyGridRow("a") { Cells = { ["name"] = "Accepted", ["size"] = 2L } });
@@ -61,8 +61,8 @@ public sealed class GridHtmlTests {
         Assert.Throws<InvalidOperationException>(() => CanopyStaticHtml.RenderGrid(view, new CanopyGridPage("another", "snapshot", 0, 0, 0)));
     }
 
-    private static CanopyGridView View() {
-        var view = new CanopyGridView("grid", "Inventory");
+    private static CanopyDataGridView View() {
+        var view = new CanopyDataGridView("grid", "Inventory");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
         return view;

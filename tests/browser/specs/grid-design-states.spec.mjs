@@ -22,7 +22,9 @@ test('empty inventory and no matches have distinct reasons and a working clear a
  await page.locator('.cx-state').getByRole('button',{name:'Clear all',exact:true}).click();await expect(page.locator('.cx-state')).toHaveCount(0);await expect(page.locator('.cx-row[data-cx-id]')).not.toHaveCount(0);
 });
 test('initial skeletons wait 150ms, reduced motion is static, and failure keeps accepted rows',async({page})=>{
- await page.emulateMedia({reducedMotion:'reduce'});const time=new Date('2026-10-05T12:00:00Z');await page.clock.install({time});await page.clock.pauseAt(time);
+ await page.emulateMedia({reducedMotion:'reduce'});const time=new Date('2026-10-05T12:00:00Z');await page.clock.install({time});
+ // The clock advances during protocol round trips. Pause ahead while the page is empty, before starting any view timers.
+ await page.clock.pauseAt(new Date(time.getTime()+60000));
  const options='{source:{query(query){return new Promise((resolve,reject)=>{window.__reply=()=>resolve({protocol:"canopyx/2",type:"gridPage",view:"states",offset:query.offset,total:40,matched:40,revision:"one",items:Array.from({length:Math.min(query.limit,40-query.offset)},(_,i)=>({id:"r"+(i+query.offset),cells:{name:"Service "+(i+query.offset),state:"Healthy",amount:i+query.offset}}))});window.__fail=()=>reject(new Error("Connection interrupted"));});}}}';
  await open(page,{source:{kind:'host'},rows:undefined,presentation:'paged',pageLength:10},options);await expect(page.locator('.cx-skel')).toHaveCount(0);await page.clock.runFor(149);await expect(page.locator('.cx-skel')).toHaveCount(0);await page.clock.runFor(2);
  await expect(page.locator('.cx-initial-skeleton .cx-skel')).toHaveCount(6);expect(await page.locator('.cx-skel i').first().evaluate(bar=>getComputedStyle(bar).animationName)).toBe('none');await capture(page,'state-loading-light');

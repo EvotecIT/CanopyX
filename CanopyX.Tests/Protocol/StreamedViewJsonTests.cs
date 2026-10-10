@@ -6,7 +6,7 @@ namespace CanopyX.Tests.Protocol;
 
 /// <summary>
 /// Hosts hash and store the view document without building it as one string (a sidecar folder name, for example, is
-/// the hash of the document), so the streamed document must be exactly the text of <see cref="CanopyView.ToJson()"/>.
+/// the hash of the document), so the streamed document must be exactly the text of <see cref="CanopyTreeView.ToJson()"/>.
 /// The .NET Framework test project runs these too: the writer passes its text on differently there.
 /// </summary>
 public sealed class StreamedViewJsonTests {
@@ -77,7 +77,7 @@ public sealed class StreamedViewJsonTests {
 
     [Fact]
     public void WriteJson_InvalidView_ThrowsBeforeWritingAnything() {
-        var view = new CanopyView("v", "View");
+        var view = new CanopyTreeView("v", "View");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("name", "Again"));
         view.Roots.Add(new CanopyNode("a", "A"));
@@ -96,8 +96,8 @@ public sealed class StreamedViewJsonTests {
         Assert.Throws<ArgumentNullException>(() => view.WriteJson((TextWriter)null!));
     }
 
-    private static CanopyView Create(string name) {
-        var view = new CanopyView("view-" + name, "View " + name);
+    private static CanopyTreeView Create(string name) {
+        var view = new CanopyTreeView("view-" + name, "View " + name);
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
         view.Columns.Add(new CanopyColumn("when", "When") { Kind = CanopyColumnKind.DateTime });

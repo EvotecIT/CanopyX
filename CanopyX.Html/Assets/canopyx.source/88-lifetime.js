@@ -3,6 +3,7 @@
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
+      for (const row of [...this.rendered.values(), ...this.pool]) disposeRowHostCells(row);
       this.lifetime.abort();
       this.dataLifetime.abort();
       if (this.queryController) this.queryController.abort();

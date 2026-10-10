@@ -6,7 +6,7 @@ namespace CanopyX.Tests.Grids;
 public sealed class GridRowHeightTests {
     [Fact]
     public void AutomaticHeightsAndWrappingRoundTripThroughTheWriterAndSchema() {
-        var view = new CanopyGridView("notes", "Notes") { AutoRowHeight = true, RowHeight = 32 };
+        var view = new CanopyDataGridView("notes", "Notes") { AutoRowHeight = true, RowHeight = 32 };
         view.Columns.Add(new CanopyColumn("notes", "Notes") { Wrap = true });
         var row = new CanopyGridRow("a"); row.Cells["notes"] = "First line\nSecond line"; view.Rows.Add(row);
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "automatic row layout");

@@ -31,7 +31,7 @@ public sealed class CanopyGridGroup {
     /// <summary>Gets optional host-owned display cells keyed by declared column identity, such as the worst state of a complete group.</summary>
     /// <remarks>These cells use the column presenter and never participate in record queries, sorting or exports. Numeric aggregates take precedence.</remarks>
     public IDictionary<string, CanopyCell> Cells { get; } = new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
-    internal void WriteJson(CanopyJsonWriter writer, CanopyGridView view) {
+    internal void WriteJson(CanopyJsonWriter writer, CanopyDataGridView view) {
         CanopyCell.ValidateEntries(Cells);
         foreach (var entry in Cells) {
             CanopyColumn? column = null;

@@ -6,7 +6,7 @@ namespace CanopyX;
 
 /// <summary>Canonical typed facet identities and declared capability bindings.</summary>
 internal static class CanopyGridFacets {
-    internal static CanopyColumn Column(CanopyGridView view, string id) {
+    internal static CanopyColumn Column(CanopyDataGridView view, string id) {
         if (view.Reporting == null || !view.Reporting.FacetColumns.Contains(id))
             throw new InvalidOperationException("Facets require an opted-in declared column.");
         foreach (var column in view.Columns) if (column.Id == id) return column;

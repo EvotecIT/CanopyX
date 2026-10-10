@@ -5,8 +5,8 @@ using CanopyX.Rendering;
 namespace CanopyX.Tests.Protocol;
 
 public sealed class InteractionContractTests {
-    private static CanopyView View() {
-        var view = new CanopyView("actions", "Records") { DragDrop = true };
+    private static CanopyTreeView View() {
+        var view = new CanopyTreeView("actions", "Records") { DragDrop = true };
         view.Columns.Add(new CanopyColumn("name", "Name") { Editable = true });
         view.ContextActions.Add(new CanopyContextAction("inspect", "Inspect record"));
         view.Roots.Add(new CanopyNode("a", "Atlas"));

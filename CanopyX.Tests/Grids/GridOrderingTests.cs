@@ -52,15 +52,15 @@ public sealed class GridOrderingTests {
 
     [Fact]
     public void ReportingDefinition_BindsPoliciesAndSelectsTheOptionalRuntime() {
-        var view = new CanopyGridView("ordering", "Ordered inventory");
+        var view = new CanopyDataGridView("ordering", "Ordered inventory");
         view.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
         Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(view));
         view.Reporting = new CanopyGridReporting();
-        view.Reporting.Ordering.Add("name", new CanopyGridOrdering(CanopyGridTextOrder.Natural, new[] { "Pinned" }));
+        view.GetColumn("name").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.Natural, new[] { "Pinned" });
         ProtocolSchema.AssertValid(view.ToJson(), "reporting ordering");
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(view));
         Assert.Contains("canopyx-reporting.js", view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain }));
-        view.Reporting.Ordering.Add("unknown", new CanopyGridOrdering());
+        view.GetColumn("name").Sortable = false;
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
     }
 }

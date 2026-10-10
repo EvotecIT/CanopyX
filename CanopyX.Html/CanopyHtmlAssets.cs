@@ -13,7 +13,7 @@ namespace CanopyX.Html;
 /// <remarks>
 /// <para>
 /// Hosts that assemble their own pages (for example a report framework) select the entry point with
-/// <see cref="GetRuntime(CanopyView, CanopyRuntime)"/> and include its <see cref="GetStyle"/> and <see cref="GetScript"/> once per page.
+/// <see cref="GetRuntime(CanopyTreeView, CanopyRuntime)"/> and include its <see cref="GetStyle"/> and <see cref="GetScript"/> once per page.
 /// They can also write the assets as files and reference them.
 /// The script mounts every CanopyX fragment on the page when it loads.
 /// </para>

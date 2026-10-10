@@ -25,13 +25,13 @@ internal static class PackBenchTree {
     internal const int DefaultServicesPerRegion = 1000;
 
     /// <summary>Creates the view without nodes.</summary>
-    internal static CanopyView View() {
-        var view = new CanopyView("catalog", "Service catalog") { Search = new CanopySearchOptions { Placeholder = "Search services and releases" }, DeepLink = true };
-        view.Columns.Add(new CanopyColumn("name", "Name") { Width = 380, Sortable = true });
-        view.Columns.Add(new CanopyColumn("state", "State") { Width = 120 });
-        view.Columns.Add(new CanopyColumn("changed", "Changed") { Kind = CanopyColumnKind.DateTime, Width = 170, Sortable = true });
-        view.Columns.Add(new CanopyColumn("by", "Changed by") { Width = 150 });
-        view.Columns.Add(new CanopyColumn("items", "Items") { Kind = CanopyColumnKind.Number, Width = 90 });
+    internal static CanopyTreeView View() {
+        var view = new CanopyTreeView("catalog", "Service catalog") { Search = new CanopySearchOptions { Placeholder = "Search services and releases" }, DeepLink = true };
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(380), Sortable = true });
+        view.Columns.Add(new CanopyColumn("state", "State") { Sizing = CanopyColumnSizing.Preferred(120) });
+        view.Columns.Add(new CanopyColumn("changed", "Changed") { Kind = CanopyColumnKind.DateTime, Sizing = CanopyColumnSizing.Preferred(170), Sortable = true });
+        view.Columns.Add(new CanopyColumn("by", "Changed by") { Sizing = CanopyColumnSizing.Preferred(150) });
+        view.Columns.Add(new CanopyColumn("items", "Items") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(90) });
         return view;
     }
 

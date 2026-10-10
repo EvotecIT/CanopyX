@@ -8,9 +8,9 @@ using CanopyX.Bundles;
 namespace CanopyX.Html;
 
 /// <summary>
-/// Writes a <see cref="CanopyView"/> as HTML: a fragment for pages a host assembles, or a complete page.
+/// Writes a <see cref="CanopyTreeView"/> as HTML: a fragment for pages a host assembles, or a complete page.
 /// </summary>
-public static class CanopyViewHtmlExtensions {
+public static partial class CanopyHtmlExtensions {
     /// <summary>
     /// Writes the view as a fragment: a host element carrying the view document as a JSON configuration script.
     /// </summary>
@@ -23,7 +23,7 @@ public static class CanopyViewHtmlExtensions {
     /// <param name="options">Theme, height, automatic mounting, and the filters whose switches the page hides; other options apply to full pages only.</param>
     /// <returns>The fragment markup.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or <see cref="CanopyHtmlOptions.HiddenFilterIds"/> names a filter the view does not declare.</exception>
-    public static string ToHtmlFragment(this CanopyView view, CanopyHtmlOptions? options = null) =>
+    public static string ToHtmlFragment(this CanopyTreeView view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Fragment(view, options ?? new CanopyHtmlOptions());
 
     /// <summary>Writes the view as a complete HTML page that fills the browser window.</summary>
@@ -31,7 +31,7 @@ public static class CanopyViewHtmlExtensions {
     /// <param name="options">Asset mode, theme, title, language, and the filters whose switches the page hides.</param>
     /// <returns>The page markup.</returns>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or <see cref="CanopyHtmlOptions.HiddenFilterIds"/> names a filter the view does not declare.</exception>
-    public static string ToHtmlPage(this CanopyView view, CanopyHtmlOptions? options = null) =>
+    public static string ToHtmlPage(this CanopyTreeView view, CanopyHtmlOptions? options = null) =>
         CanopyHtmlWriter.Page(view ?? throw new ArgumentNullException(nameof(view)), options ?? new CanopyHtmlOptions());
 
     /// <summary>Saves the view as a complete HTML page, creating the folder when needed.</summary>
@@ -45,7 +45,7 @@ public static class CanopyViewHtmlExtensions {
     /// other views use <see cref="CanopyHtmlOptions.Runtime"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="path"/> is null or empty.</exception>
-    public static void SaveHtmlPage(this CanopyView view, string path, CanopyHtmlOptions? options = null) {
+    public static void SaveHtmlPage(this CanopyTreeView view, string path, CanopyHtmlOptions? options = null) {
         if (string.IsNullOrEmpty(path)) {
             throw new ArgumentException("Path is required.", nameof(path));
         }
@@ -64,8 +64,8 @@ public static class CanopyViewHtmlExtensions {
     /// page that loads the data on demand, also when opened from a file share.
     /// </summary>
     /// <remarks>
-    /// The view's <see cref="CanopyView.Roots"/> must carry the complete tree. The method points
-    /// <see cref="CanopyView.Source"/> at the written sidecar files before it writes the page. Without
+    /// The view's <see cref="CanopyTreeView.Roots"/> must carry the complete tree. The method points
+    /// <see cref="CanopyTreeView.Source"/> at the written sidecar files before it writes the page. Without
     /// <paramref name="options"/>, the page references the runtime script and stylesheet under <c>assets/</c> by their
     /// content-hashed names (<see cref="CanopyHtmlAssets.HashedScriptFileName"/>), so it loads the runtime it was written for; they are
     /// written next to it; with options, their asset mode applies, and assets are written when the base URL is a
@@ -80,16 +80,16 @@ public static class CanopyViewHtmlExtensions {
     /// <returns>What the bundle writer wrote, for checking sizes against budgets.</returns>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty.</exception>
     /// <exception cref="InvalidOperationException">The view breaks a protocol rule, or the tree is incomplete.</exception>
-    public static CanopyBundleResult SaveHtmlBundle(this CanopyView view, string directory, CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
+    public static CanopyBundleResult SaveHtmlBundle(this CanopyTreeView view, string directory, CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
         SaveBundle(view, directory, options, bundleOptions, writer => writer.Write(view, directory));
 
     /// <summary>
     /// Saves the view as a bundle from nodes the host supplies while the tree is written, so the tree never has to be
     /// in memory as a whole. The page, assets, and layout rules are those of
-    /// <see cref="SaveHtmlBundle(CanopyView, string, CanopyHtmlOptions, CanopyBundleOptions)"/>; how the nodes are read
-    /// is described at <see cref="CanopyBundleWriter.Write(CanopyView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>.
+    /// <see cref="SaveHtmlBundle(CanopyTreeView, string, CanopyHtmlOptions, CanopyBundleOptions)"/>; how the nodes are read
+    /// is described at <see cref="CanopyBundleWriter.Write(CanopyTreeView, string, IEnumerable{CanopyNode}, Func{CanopyNode, IEnumerable{CanopyNode}})"/>.
     /// </summary>
-    /// <param name="view">The view. Its <see cref="CanopyView.Roots"/> must be empty.</param>
+    /// <param name="view">The view. Its <see cref="CanopyTreeView.Roots"/> must be empty.</param>
     /// <param name="directory">The folder for the page, the <c>assets</c> folder, and the data folder.</param>
     /// <param name="roots">The top-level nodes in display order.</param>
     /// <param name="children">Returns the children of a node in display order, or null or an empty sequence for a leaf.</param>
@@ -99,11 +99,11 @@ public static class CanopyViewHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="view"/>, <paramref name="roots"/>, or <paramref name="children"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty, or the view has roots of its own.</exception>
     /// <exception cref="InvalidOperationException">The view or a node breaks a protocol rule.</exception>
-    public static CanopyBundleResult SaveHtmlBundle(this CanopyView view, string directory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children,
+    public static CanopyBundleResult SaveHtmlBundle(this CanopyTreeView view, string directory, IEnumerable<CanopyNode> roots, Func<CanopyNode, IEnumerable<CanopyNode>?> children,
         CanopyHtmlOptions? options = null, CanopyBundleOptions? bundleOptions = null) =>
         SaveBundle(view, directory, options, bundleOptions, writer => writer.Write(view, directory, roots, children));
 
-    private static CanopyBundleResult SaveBundle(CanopyView view, string directory, CanopyHtmlOptions? options, CanopyBundleOptions? bundleOptions, Func<CanopyBundleWriter, CanopyBundleResult> write) {
+    private static CanopyBundleResult SaveBundle(CanopyTreeView view, string directory, CanopyHtmlOptions? options, CanopyBundleOptions? bundleOptions, Func<CanopyBundleWriter, CanopyBundleResult> write) {
         if (view == null) {
             throw new ArgumentNullException(nameof(view));
         }

@@ -2,8 +2,7 @@
   const DELIVERY_PREPARE = DataGrid.prototype.prepareExport, DELIVERY_TEXT = DataGrid.prototype.exportText,
     DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap();
   function reportingExportTotal(request) {
-    if (request.querySelection) return request.querySelection.matched === null ? null : request.querySelection.matched - request.querySelection.excludedIds.length;
-    return request.scope === "selected" ? request.selection.length : request.scope === "all" ? request.total : request.matched;
+    return request.recordCount;
   }
   function reportingFileName(value) {
     if (typeof value !== "string" || !value || value.length > 100 || value !== value.trim() ||
@@ -58,12 +57,15 @@
       }
       if (options.timeZone !== undefined && !["utc", "local"].includes(options.timeZone)) throw new Error("CanopyX: export time zone is utc or local.");
       const fileName = reportingFileName(options.fileName ?? ("canopyx-" + this.view.id.replace(/[^a-z0-9_-]/gi, "_")).slice(0, 100));
-      const request = gridFreeze({ ...exported.request, locale, fileName, timeZone: options.timeZone || exported.request.timeZone }), grid = this,
+      const request = gridFreeze({ ...exported.request, locale, fileName, timeZone: options.timeZone || exported.request.timeZone,
+        columns: exported.request.columns.map(column => GRID_REPORTING.exportColumn(this, this.columns.find(item => item.id === column.id))) }), grid = this,
         signal = options.signal, callback = options.onProgress;
-      const result = Object.freeze({ request, rows: async function* () {
-        const progress = reportingExportProgress(grid, request, callback, signal); let count = 0;
+      GRID_REPORTING.captureExport(this, request);
+      const result = Object.freeze({ request, rows: async function* (options) {
+        const enumerationSignal = gridExportSignal(signal, options);
+        const progress = reportingExportProgress(grid, request, callback, enumerationSignal); let count = 0;
         progress("reading", 0);
-        for await (const row of grid.exportRows(request, signal)) { yield row; if (++count % 100 === 0) progress("reading", count); }
+        for await (const row of grid.exportRows(request, enumerationSignal)) { yield row; if (++count % 100 === 0) progress("reading", count); }
         progress("generating", count);
       } });
       DELIVERY_CALLBACKS.set(result, callback); return result;
@@ -97,7 +99,7 @@
       return this.runGridHook(async signal => {
         const progress = reportingExportProgress(this, request, callback, signal); progress("reading", 0);
         let completed = 0;
-        await this.opts.onExport({ format, request, signal, reportProgress: (phase, count) => { completed = progress(phase, count); } });
+        await this.opts.onExport({ format, request, capture: exported, signal, reportProgress: (phase, count) => { completed = progress(phase, count); } });
         gridOperationActive(this, signal); progress("ready", reportingExportTotal(request) ?? completed);
       }, options.signal);
     }

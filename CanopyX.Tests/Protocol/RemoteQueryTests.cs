@@ -8,7 +8,7 @@ public sealed class RemoteQueryTests {
     [Fact]
     public void QueryCapabilityIsExplicitAndEveryEndpointReceivesTheViewQuery() {
         var source = CanopySource.RemoteQuery(Children, "api/search?q={query}&limit={limit}&view={viewQuery}", "api/counts?ids={ids}&view={viewQuery}");
-        var view = new CanopyView("v", "View") { Source = source };
+        var view = new CanopyTreeView("v", "View") { Source = source };
         view.Columns.Add(new CanopyColumn("name", "Name"));
         var json = view.ToJson();
         Assert.True(source.QueryAware);
