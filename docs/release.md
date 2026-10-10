@@ -22,8 +22,11 @@ passes one archive and its SHA256 to PowerForge's shared npm publisher. Browser
 qualification comes from the supplied full Quality run.
 
 `publish: false` performs a dry run. `publish: true` publishes the same archive,
-then verifies its public integrity and provenance. The workflow does not bump
-versions, create tags or publish NuGet packages.
+then verifies its public integrity. Public source repositories also require npm
+provenance. npm does not support provenance from private source repositories;
+CanopyX's private-source route records that limit and disables provenance
+explicitly. The workflow does not bump versions, create tags or publish NuGet
+packages.
 
 Configure the npm trusted publisher for `@evotecit/canopyx` with:
 
@@ -32,16 +35,28 @@ Configure the npm trusted publisher for `@evotecit/canopyx` with:
 | GitHub organization | `EvotecIT` |
 | Repository | `CanopyX` |
 | Calling workflow | `publish-npm.yml` |
+| GitHub environment | `npm-release` |
 | Allowed action | Direct `npm publish` |
+
+Create `npm-release` in this repository's GitHub environment settings, with a
+custom deployment policy allowing only the `main` branch. Store the bootstrap
+credential in this environment, not in repository-level secrets. The same
+environment must be selected in npm's trusted-publisher settings. The shared
+publisher verifies the exact branch policy before processing an archive.
+
+Keep updates to `main` within a trusted maintainer boundary. This private
+repository's GitHub Team plan does not support environment-required reviewers;
+restricting `main` updates to release administrators supplies that boundary.
+Repository policy setup is a required release qualification step.
 
 npm requires the package to exist before configuring this relationship. For the
 first qualified release, a package owner creates a short-lived granular npm token
 with package-write permission for the `@evotecit` scope and bypass 2FA enabled for
-unattended publication, then adds it to this repository
-as the GitHub Actions secret `NPM_BOOTSTRAP_TOKEN`. Dispatch with `publish: true`
+unattended publication, then adds it as the `npm-release` environment secret
+`NPM_BOOTSTRAP_TOKEN`. Dispatch with `publish: true`
 and `bootstrap: true`. The shared publisher requires the package to be absent
 through an authenticated metadata check before uploading. The first upload runs
-in GitHub Actions and includes provenance.
+in GitHub Actions, with the private-source provenance limit described above.
 
 Remove the bootstrap secret after the first release. Later releases use
 `bootstrap: false` and GitHub OIDC without a stored npm token. Configure trust close

@@ -83,14 +83,13 @@ jobs:
       contents: read
       actions: read
       id-token: write
-    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@d3a66235ac58a41e5ded3451232fb82b0229c0d5
+    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@89ee9461605cf9900d04822a9fc128dc8fcc50b7
     with:
       artifact-name: canopyx-npm
       package-name: '@evotecit/canopyx'
       version: ${{ inputs.version }}
       sha256: ${{ needs.package.outputs.sha256 }}
       quality-run-id: ${{ inputs.quality-run-id }}
+      environment-name: npm-release
       publish: ${{ inputs.publish }}
       bootstrap: ${{ inputs.bootstrap }}
-    secrets:
-      bootstrap-token: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
