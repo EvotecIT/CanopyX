@@ -29,6 +29,7 @@ try {
     ...['pl','de','es'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
+  assert.equal(metadata.repository?.url, "git+https://github.com/EvotecIT/CanopyX.git", "npm provenance identifies the publishing repository.");
   const version = await fs.readFile(path.join(repo, "Directory.Build.props"), "utf8");
   assert.ok(version.includes(`<CanopyXProductVersion>${metadata.version}</CanopyXProductVersion>`), "npm and .NET share the product version.");
   assert.equal(metadata.dependencies, undefined, "The JavaScript runtime has no package dependencies.");

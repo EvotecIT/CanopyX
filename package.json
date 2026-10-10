@@ -4,6 +4,10 @@
   "description": "Dependency-free virtualized tree grid with lazy data, checking intent and host-governed interactions.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EvotecIT/CanopyX.git"
+  },
   "types": "./JavaScript/index.d.ts",
   "exports": {
     ".": {
