@@ -22,8 +22,8 @@
   function gridFitPrepare(grid) {
     const identity = grid.columns.find(column => column.rowHeader) || grid.columns[0];
     for (const column of grid.columns) {
+      prepareWidth(column);
       column.identity = column === identity; column.pref = column.autoWidth ? 0 : column.width; column.basePriority = column.priority; column.declared = column.width;
-      column.minW = column.minWidth ?? 40; column.maxW = column.maxWidth ?? MAX_COLUMN_WIDTH;
       column.flexWeight = typeof column.flex === "number" ? column.flex : 0;
       if (column.flexWeight) column.flex = true; else if (typeof column.flex === "number") delete column.flex;
       column.pin ??= column.pinned === undefined ? column.identity ? "left" : "none" : column.pinned || "none";
@@ -86,8 +86,8 @@
       // The default identity yields last, only when that can avoid scrolling. Explicit or user-sized widths stay.
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
         Math.max(column.minW, column.headNeed || 0) : column.renderWidth;
-      return Math.round(Math.min(column.maxW, Math.max(column.minW, column.fixed || column.sized ? column.width : !level ? Math.max(need, column.pref) : level > 1 || !gridLevel(column) ? need :
-        Math.min(need, Math.max(column.headNeed || 0, gridTextual(column) ? this.fitCh || 88 : 0)))));
+      return Math.round(columnWidth(column, column.fixed || column.sized ? column.width : !level ? Math.max(need, column.pref) : level > 1 || !gridLevel(column) ? need :
+        Math.min(need, Math.max(column.headNeed || 0, gridTextual(column) ? this.fitCh || 88 : 0))));
     },
     fitSpare(columns, spare) {
       let target, flex = columns.filter(column => column.flex && column.flexWeight);
@@ -151,7 +151,7 @@
           (kind === "progress" ? 80 : kind === "enum" && !quiet ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
       // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
-      const cap = Math.min(column.maxW, Math.max(column.minW, 420));
+      const cap = columnWidth(column, 420);
       const need = none ? column.pref || column.width : Math.min(cap, Math.max(head,
         Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0) : 0))));
       return Object.freeze({ width: Math.max(column.minW, need), head: Math.min(head, cap), sampled, scope: "loaded" });
@@ -176,7 +176,7 @@
   });
   const FIT_STATE_COLUMN = gridStateColumn, FIT_STATE_COLUMNS = gridStateColumns;
   // Saved views keep user and fixed widths; automatic columns save their declared width, so snapshots do not churn with data.
-  gridStateColumn = column => Object.assign(FIT_STATE_COLUMN(column), { width: column.sized || column.fixed ? column.width : column.declared ?? column.width }, column.sized && { sized: true }, column.priority !== undefined && { priority: column.priority });
+  gridStateColumn = column => Object.assign(FIT_STATE_COLUMN(column), { width: column.sized || column.fixed ? column.width : column.declared }, column.sized && { sized: true }, column.priority !== undefined && { priority: column.priority });
   gridStateColumns = (grid, input) => {
     const result = FIT_STATE_COLUMNS(grid, input), sources = new Map(input.map(column => [column?.id, column]));
     for (const saved of result) {

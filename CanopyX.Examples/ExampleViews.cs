@@ -22,7 +22,7 @@ internal static class ExampleViews {
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(110), Sortable = true });
         view.Columns.Add(new CanopyColumn("items", "Items") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(80), Hidden = true });
         view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime, Sizing = CanopyColumnSizing.Preferred(170), Sortable = true });
-        view.Columns.Add(new CanopyColumn("owner", "Owner") { Sizing = CanopyColumnSizing.Preferred(150), Sortable = true });
+        view.Columns.Add(new CanopyColumn("owner", "Owner") { Sizing = CanopyColumnSizing.Preferred(150, 100, 500), Sortable = true });
         view.Columns.Add(new CanopyColumn("state", "State") { Sizing = CanopyColumnSizing.Preferred(100) });
         view.Icons["share"] = ShareIcon;
         view.Icons["folder"] = FolderIcon;

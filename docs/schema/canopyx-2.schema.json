@@ -903,6 +903,8 @@
         "id": { "$ref": "#/$defs/identifier" },
         "title": { "$ref": "#/$defs/accessibleLabel" },
         "width": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
+        "minWidth": { "$ref": "#/$defs/column/properties/width" },
+        "maxWidth": { "$ref": "#/$defs/column/properties/width" },
         "kind": { "enum": ["text", "number", "datetime"] },
         "sortable": { "type": "boolean" },
         "editable": { "type": "boolean" },

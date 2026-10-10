@@ -59,6 +59,10 @@ export interface CanopyColumn {
   id: string;
   title: string;
   width: number;
+  /** Minimum manual width in CSS pixels; defaults to 40. */
+  minWidth?: number;
+  /** Maximum manual width in CSS pixels; defaults to 2147483647. */
+  maxWidth?: number;
   kind: "text" | "number" | "datetime";
   sortable?: boolean;
   hidden?: boolean;

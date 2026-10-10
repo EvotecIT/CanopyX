@@ -75,6 +75,8 @@ public sealed partial class CanopyColumn {
             .Property("id", Id)
             .Property("title", Title);
         writer.Property("width", InitialWidth);
+        if (Sizing.Minimum != MinWidth) writer.Property("minWidth", Sizing.Minimum);
+        if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);
         if (grid && !Sizing.Width.HasValue) writer.Property("autoWidth", true);
         writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {

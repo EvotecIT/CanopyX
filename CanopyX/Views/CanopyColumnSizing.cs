@@ -33,8 +33,13 @@ public sealed class CanopyColumnSizing {
     public static CanopyColumnSizing Preferred(int width, int minimum = 40, int maximum = int.MaxValue, CanopyColumnAutoSize measure = CanopyColumnAutoSize.Content) =>
         new CanopyColumnSizing(width, minimum, maximum, 0, false, measure);
 
-    /// <summary>Uses one fixed CSS pixel width during automatic fitting. Users can still resize the column.</summary>
-    public static CanopyColumnSizing Fixed(int width) => new CanopyColumnSizing(width, 40, int.MaxValue, 0, true, CanopyColumnAutoSize.None);
+    /// <summary>Uses one fixed CSS pixel width during automatic fitting. Users can still resize the column within the supplied bounds.</summary>
+    /// <param name="width">The initial fixed width, within the supplied bounds.</param>
+    /// <param name="minimum">The minimum user-resized width in CSS pixels, at least 40.</param>
+    /// <param name="maximum">The maximum user-resized width in CSS pixels.</param>
+    /// <returns>Fixed automatic sizing with bounded user resizing.</returns>
+    public static CanopyColumnSizing Fixed(int width, int minimum = 40, int maximum = int.MaxValue) =>
+        new CanopyColumnSizing(width, minimum, maximum, 0, true, CanopyColumnAutoSize.None);
 
     /// <summary>Shares spare grid width with other flex columns within the supplied CSS pixel bounds.</summary>
     public static CanopyColumnSizing Flex(double weight = 1, int minimum = 40, int maximum = int.MaxValue, int? preferredWidth = null, CanopyColumnAutoSize measure = CanopyColumnAutoSize.Content) {
