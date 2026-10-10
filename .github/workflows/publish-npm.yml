@@ -1,0 +1,97 @@
+name: Publish npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing three-part product version to publish.
+        required: true
+        type: string
+      quality-run-id:
+        description: Successful main-branch Quality run for this exact commit.
+        required: true
+        type: string
+      publish:
+        description: Publish the qualified archive; false performs a dry run.
+        type: boolean
+        default: false
+      bootstrap:
+        description: First publication only; requires the short-lived NPM_BOOTSTRAP_TOKEN secret.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      sha256: ${{ steps.archive.outputs.sha256 }}
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Build and qualify the product packages
+        shell: pwsh
+        run: |
+          & pwsh -NoProfile -File ./Build/Sync-Assets.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./Build.ps1 -Configuration Release -SkipBrowserTests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Qualify the JavaScript package consumer
+        working-directory: tests/browser
+        run: npm ci --no-audit --no-fund && npm run test:distribution
+      - name: Pack the qualified archive
+        id: archive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $metadata = Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json
+          if ($metadata.version -cne $env:RELEASE_VERSION) { throw 'Requested version differs from the qualified product.' }
+          $output = Join-Path $env:RUNNER_TEMP 'canopyx-npm'
+          New-Item -ItemType Directory -Path $output | Out-Null
+          $packJson = & npm pack --ignore-scripts --json --pack-destination $output
+          if ($LASTEXITCODE -ne 0) { throw 'npm pack failed.' }
+          $packed = @($packJson | ConvertFrom-Json)
+          if ($packed.Count -ne 1) { throw 'Expected one CanopyX package.' }
+          $sha256 = (Get-FileHash -LiteralPath (Join-Path $output $packed[0].filename) -Algorithm SHA256).Hash
+          "sha256=$sha256" >> $env:GITHUB_OUTPUT
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: canopyx-npm
+          path: ${{ runner.temp }}/canopyx-npm/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: package
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@ec1acca3398c9027ef27cf49aac8967d1407d213
+    with:
+      artifact-name: canopyx-npm
+      package-name: '@evotecit/canopyx'
+      version: ${{ inputs.version }}
+      sha256: ${{ needs.package.outputs.sha256 }}
+      quality-run-id: ${{ inputs.quality-run-id }}
+      environment-name: npm-release
+      publish: ${{ inputs.publish }}
+      bootstrap: ${{ inputs.bootstrap }}
+    secrets:
+      NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
