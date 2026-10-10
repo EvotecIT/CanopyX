@@ -1,5 +1,8 @@
 
   // ---------- tree grid: column sizing ----------
+  function columnWidth(column, width) {
+    return Math.min(column.maxW ?? MAX_COLUMN_WIDTH, Math.max(column.minW ?? 40, width));
+  }
   Object.assign(TreeGrid.prototype, {
     applyWidths(widths = this.cols.map(column => column.width)) {
       let sum = 0;
@@ -29,11 +32,11 @@
     setColumnWidth(columnId, width) {
       const column = this.columns.find((c) => c.id === columnId);
       if (!column || !Number.isFinite(width)) {
-        throw new Error("CanopyX: setColumnWidth needs a column of the view and a width in pixels.");
+        throw new Error("CanopyX: invalid width.");
       }
       // A drag in progress would put its own width back on the next pointer move.
       if (this.cancelResize) this.cancelResize();
-      column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, Math.round(width)));
+      column.width = columnWidth(column, Math.round(width));
       this.applyWidths();
       this.stateChanged();
     },
@@ -53,7 +56,7 @@
       const pointer = e.pointerId;
       const move = (ev) => {
         if (ev.pointerId !== pointer) return;
-        column.width = Math.min(MAX_COLUMN_WIDTH, Math.max(40, w0 + ev.clientX - x0));
+        column.width = columnWidth(column, w0 + ev.clientX - x0);
         this.applyWidths();
       };
       const stop = () => {

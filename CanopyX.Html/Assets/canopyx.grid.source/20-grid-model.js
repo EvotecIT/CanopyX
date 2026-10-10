@@ -24,8 +24,8 @@
           !Number.isInteger(this.requestTimeoutMs) || this.requestTimeoutMs < 1 || this.requestTimeoutMs > 2147483647)
         throw new Error("CanopyX: invalid grid cache or request timeout.");
       const renderers = hostRenderers(options.renderers || {}, this.view.columns);
-      this.columns = this.view.columns.map(column => Object.assign({}, column, {
-        width: Math.min(MAX_COLUMN_WIDTH, column.width ?? 160), autoWidth: column.autoWidth || column.width === undefined,
+      this.columns = this.view.columns.map(column => ({ ...column,
+        width: column.width ?? 160, autoWidth: column.autoWidth || column.width === undefined,
         render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
       }));
       this.lang = document.documentElement.lang || undefined;

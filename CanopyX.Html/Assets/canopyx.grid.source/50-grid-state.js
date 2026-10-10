@@ -1,9 +1,10 @@
   // ---------- flat-grid state: accepted queries and bounded session views ----------
   function gridStateColumn(column) { return { id: column.id, width: column.width, hidden: !!column.hidden }; }
   function gridStateColumns(grid, input) {
-    if (!Array.isArray(input)) throw new Error("CanopyX: state columns must be an array.");
-    const seen = new Set(), declared = new Set(grid.columns.map(column => column.id));
+    if (!Array.isArray(input)) throw new Error("CanopyX: invalid columns.");
+    const seen = new Set(), declared = new Map(grid.columns.map(column => [column.id, column]));
     const columns = input.map(column => readStateColumn(column, seen)).filter(column => declared.has(column.id));
+    for (const column of columns) column.width = columnWidth(declared.get(column.id), column.width);
     for (const column of grid.columns) if (!seen.has(column.id)) columns.push(gridStateColumn(column));
     if (!columns.some(column => !column.hidden)) throw new Error("CanopyX: keep at least one column visible.");
     return columns;
@@ -83,7 +84,10 @@
     applyStatePresentation(state) {
       if (this.cancelResize) this.cancelResize();
       const current = new Map(this.columns.map(column => [column.id, column]));
-      this.columns = state.columns.map(saved => Object.assign(current.get(saved.id), { sized: false, priority: current.get(saved.id).basePriority }, saved));
+      this.columns = state.columns.map(saved => {
+        const column = current.get(saved.id);
+        return Object.assign(column, { sized: false, priority: column.basePriority }, saved);
+      });
       this.setTimeZone(state.timeZone); this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
     },
