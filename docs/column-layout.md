@@ -55,6 +55,8 @@ centre.
 
 The C# authoring API has one policy owner per column. Assign `Sizing`, `Pinned`, `ResponsivePriority`, `AlwaysVisible`, `Presenter` and `Ordering` on that column. `CanopyColumnSizing.Content`, `Preferred`, `Fixed` and `Flex` reject contradictory bounds at construction. `view.GetColumn(id)` finds an existing declaration. Reporting remains the home for view-wide capabilities such as grouping, aggregates, filtering and responsive mode.
 
+`CanopyColumnSizing.Fixed(180, minimum: 120, maximum: 240)` keeps a column at 180 pixels during automatic fitting and permits user resizing from 120 to 240 pixels. The declared width must lie within those bounds.
+
 Readers retain the existing `reporting.layout` map (`minimum`, `maximum`, `flex`, `pin`, `priority`, `alwaysVisible`) for `canopyx/2` documents. The C# writer emits canonical column fields rather than this second authoring map.
 
 ## API and events

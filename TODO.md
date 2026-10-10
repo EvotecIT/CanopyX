@@ -24,7 +24,7 @@ Consumers: standalone .NET authors, the HtmlForgeX tree/grid bridge, and OfficeI
 - [x] Validate the consolidated candidate through all supported .NET targets, native/browser/package contracts and rendered examples. Scrolling qualification follows the existing performance gates below.
 - [ ] Qualify a real HtmlForgeX migration and OfficeIMO consumer against the accepted source/package boundary. Public package availability remains a separate release gate.
 
-Gate: the local source and packed artifacts agree on the public API and runtime; representative hosts retain identities, query scope, cancellation and presentation without rebuilding those contracts. The existing 4x performance and manual reader gates remain open until measured qualification passes.
+Gate: the local source and packed artifacts agree on the public API and runtime; representative hosts retain identities, query scope, cancellation and presentation without rebuilding those contracts. The final tree-scrolling measurements pass the existing 4x budget. NVDA and Narrator are omitted from this release qualification by maintainer decision; spoken announcements remain unverified.
 
 ## 0.1 Tree Grid, Read-Only
 
@@ -42,11 +42,11 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 - [x] Host-governed edit, drop, and context-action proposals with asynchronous rejection and keyboard alternatives.
 - [x] Bounded inactive subtree and sidecar pack retention, with navigation-owned prefetch pins.
 - [x] Large logical-height scrolling with reachable rows and preserved logical anchors.
-- [ ] Qualify the final runtime assets at normal speed and 4x CPU slowdown against the existing tree-scrolling budgets.
+- [x] Qualify the final tree runtime at normal speed and 4x CPU slowdown with five runs per browser and processor domain. On the Ryzen 9 9950X3D2, Edge 154's plain nine-column tree has 4x medians of 4.36% and 4.30% frames over 50 ms; Chromium 153's tree with host-rendered cells on 20% of rows has medians of 4.07% and 0.92%. Each is below the unchanged 6% target. All 40 runs have zero blank samples and runtime errors. Edge records roughly 144 Hz cadence, Chromium roughly 60 Hz; workloads and cadence differ, so these are separate qualifications. Individual runs above 6% remain in the evidence.
 - [x] Bounded unpinned identities retained by inline sorting; active and pinned tree data remain outside that retention limit.
 - [x] JavaScript module and classic distribution with typed host contracts, an isolated package-consumer check, and server-safe imports.
 - [x] Firefox and WebKit browser contracts, alongside Chromium, with engine-specific coverage in CI.
-- [ ] Manual reader qualification and representative HtmlForgeX migration proof.
+- [ ] Complete representative HtmlForgeX migration proof against the accepted package boundary. Automated accessibility checks remain required; NVDA and Narrator are omitted from this release qualification.
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 
@@ -76,7 +76,7 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
 - [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
 - [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
-- [ ] A screen-reader pass (NVDA and Narrator) over the tree grid, including DOM order during scrolling and cell navigation: run `docs/screen-reader-test.md`. Automated checks cover roles, states, focus, and order, not what a reader announces.
+- [ ] A screen-reader pass over the tree grid, including DOM order during scrolling and cell navigation: run `docs/screen-reader-test.md`. NVDA and Narrator are omitted from this release qualification by maintainer decision. Automated checks cover roles, states, focus, and order; spoken announcements remain unverified.
 
 Gate:
 
@@ -179,9 +179,9 @@ Consumers: HtmlForgeX documents that use `FancyTree` today, and TestimoX reports
 - [ ] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX): registers the CanopyX assets as a library, maps HtmlForgeX design tokens onto the CanopyX base colours, and emits the fragment.
 - [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) and host-specific hooks, so inventory those contracts before migration.
 - [ ] Delete the component and its jQuery and fancytree assets.
-- [ ] `HtmlForgeX.Email` renders tree content through the CanopyX static renderer, because email clients run no script.
+- [ ] Qualify the bridge's `StaticOutline.Only` output for email and Office delivery. HtmlForgeX has no separate `HtmlForgeX.Email` project; the bridge emits a script-free outline table through CanopyX's static renderer. Actual email-client rendering remains a separate consumer check.
 
-Gate: HtmlForgeX ships no fancytree asset, and a tree in an HtmlForgeX email renders as an outline table in the HtmlForgeX.Email client checks.
+Gate: HtmlForgeX ships no fancytree asset, and a tree authored through the bridge has a script-free outline table with literal colours and inline styles for email and Office delivery. Actual email-client rendering requires that consumer's checks.
 
 ## 0.3 Data Grid View
 

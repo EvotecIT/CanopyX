@@ -30,5 +30,22 @@ public sealed class GridColumnLayoutTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyColumnSizing.Flex(101));
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyColumnSizing.Preferred(160, 180));
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyColumnSizing.Fixed(39));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyColumnSizing.Fixed(160, 180, 240));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyColumnSizing.Fixed(260, 180, 240));
+    }
+
+    [Fact]
+    public void FixedSizingRetainsUserResizeBoundsOnTheWire() {
+        var view = new CanopyDataGridView("bounded", "Bounded fixed column");
+        view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Fixed(180, 120, 240) });
+        var json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "bounded fixed sizing");
+        using var document = JsonDocument.Parse(json);
+        var column = document.RootElement.GetProperty("columns")[0];
+        Assert.Equal(180, column.GetProperty("width").GetInt32());
+        Assert.Equal(120, column.GetProperty("minWidth").GetInt32());
+        Assert.Equal(240, column.GetProperty("maxWidth").GetInt32());
+        Assert.True(column.GetProperty("fixed").GetBoolean());
+        Assert.Equal("none", column.GetProperty("autoSize").GetString());
     }
 }
