@@ -4,7 +4,7 @@ import type {
 } from "./protocol.js";
 import type {
   TreeGridOptions, HostOptions, Sources, ExpandPathOptions, NodeFilter, FilterOptions,
-  InteractionOptions, DropPlacement
+  InteractionOptions, DropPlacement, ExportFormat, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions
 } from "./hosts.js";
 export * from "./protocol.js";
 export * from "./hosts.js";
@@ -41,6 +41,10 @@ export interface TreeGrid {
   focus(): void;
   visibleRows(): { node: CanopyNode; level: number; path: string[] }[];
   toOutline(): string;
+  /** Interactive and grid runtimes. Captures the visible rows (default) or the loaded selected nodes now, with level and id path. */
+  prepareExport(options?: TreeExportOptions): TreeExport;
+  /** Interactive and grid runtimes. Captures now, then runs a registered or configured export format and downloads its file. */
+  exportAs(format: string, options?: TreeExportOptions & ExportFormatOptions): Promise<ExportFormatResult>;
   getState(): ViewState;
   setState(state: ViewState | LegacyViewState): Promise<boolean>;
   search(query: string, limit?: number): Promise<SearchResult>;
@@ -71,6 +75,8 @@ export function mount(root?: ParentNode): TreeGrid[];
 export const sources: Readonly<Sources>;
 export function badge(value: CanopyBadge): HTMLElement;
 export const labels: Readonly<Record<LabelName, string>>;
+/** Registers an export format for every grid on the page that does not choose its own; returns a disposer. Not in the core-only classic script. */
+export function registerExportFormat(format: ExportFormat): () => void;
 
 declare const CanopyX: Readonly<{
   protocol: typeof protocol;
@@ -81,5 +87,6 @@ declare const CanopyX: Readonly<{
   sources: typeof sources;
   badge: typeof badge;
   labels: typeof labels;
+  registerExportFormat: typeof registerExportFormat;
 }>;
 export default CanopyX;
