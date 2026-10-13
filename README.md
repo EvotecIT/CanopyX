@@ -20,13 +20,13 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 - **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
 - **Email and print tables** rendered from the same .NET view without JavaScript.
 
-![File explorer in the light theme, with sizes, dates, owners and an expanded detail row](https://cdn.jsdelivr.net/npm/@evotecit/canopyx@0.1.1/docs/images/tree-grid-light.png)
+![File explorer in the light theme, with sizes, dates, owners and an expanded detail row](docs/images/tree-grid-light.png)
 
 The same explorer in the dark theme, alongside its script-free output for email and print:
 
 | Dark theme | Static outline |
 | --- | --- |
-| ![File explorer in the dark theme](https://cdn.jsdelivr.net/npm/@evotecit/canopyx@0.1.1/docs/images/tree-grid-dark.png) | ![Static outline table](https://cdn.jsdelivr.net/npm/@evotecit/canopyx@0.1.1/docs/images/static-outline.png) |
+| ![File explorer in the dark theme](docs/images/tree-grid-dark.png) | ![Static outline table](docs/images/static-outline.png) |
 
 ## Features
 

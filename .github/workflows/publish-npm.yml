@@ -54,7 +54,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - id: version
-        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@a045fa3a4e4104280f9cba0296d86f4cf719f3da
+        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@0d0705537a5cd9c4b565b449d338c52ec72e9860
         with:
           version: ${{ inputs.version }}
           quality-run-id: ${{ github.event.workflow_run.id || inputs.quality-run-id }}
@@ -97,8 +97,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Cannot set the npm release version.' }
           $readme = [IO.File]::ReadAllText('README.md')
           $prefix = 'https://cdn.jsdelivr.net/npm/@evotecit/canopyx@'
-          $pattern = [regex]::Escape($prefix) + '\d+\.\d+\.\d+(?=/docs/images/)'
-          [IO.File]::WriteAllText('README.md', [regex]::Replace($readme, $pattern, $prefix + $env:RELEASE_VERSION))
+          [IO.File]::WriteAllText('README.md', $readme.Replace('](docs/images/', '](' + $prefix + $env:RELEASE_VERSION + '/docs/images/'))
       - name: Qualify the JavaScript package consumer
         working-directory: tests/browser
         run: npm ci --no-audit --no-fund && npm run test:distribution
@@ -130,7 +129,7 @@ jobs:
       contents: read
       actions: read
       id-token: write
-    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@a045fa3a4e4104280f9cba0296d86f4cf719f3da
+    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@0d0705537a5cd9c4b565b449d338c52ec72e9860
     with:
       artifact-name: canopyx-npm
       package-name: '@evotecit/canopyx'
@@ -138,6 +137,7 @@ jobs:
       sha256: ${{ needs.package.outputs.sha256 }}
       quality-run-id: ${{ github.event.workflow_run.id || inputs.quality-run-id }}
       environment-name: npm-release
+      release-tag-prefix: npm-v
       publish: ${{ github.event_name == 'workflow_run' || inputs.publish }}
       bootstrap: false
     secrets:

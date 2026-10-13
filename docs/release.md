@@ -27,7 +27,8 @@ version. Raise that minimum in a PR to start a new minor or major version line.
 The selected version is written into the package in the release workspace;
 the workflow does not push a version-only commit or open another PR.
 README screenshots are included in the archive and served through public,
-versioned npm CDN URLs. Packaging updates those URLs to the selected npm version
+versioned npm CDN URLs. The source README uses the tracked image paths;
+packaging converts those paths to URLs for the selected npm version
 so the npm page does not rely on access to this repository.
 
 A tag reserves a version; it does not prove publication. Retries normally reuse
@@ -36,6 +37,8 @@ PowerForge checks source ancestry: changes already included are skipped; newer
 source receives a higher version while the original reservation stays intact.
 This keeps older code from becoming the latest package. If a package is already public, its integrity
 must match the qualified archive before the retry succeeds without another upload.
+A newer source reservation also suppresses an older run before publication.
+The publisher rechecks reservations after packaging, before uploading the archive.
 Network errors and conflicting bytes stop publication.
 
 The workflow also supports manual recovery or a dry run. Run it on `main` with
