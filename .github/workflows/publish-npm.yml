@@ -27,6 +27,7 @@ permissions:
 concurrency:
   group: canopyx-npm-release
   cancel-in-progress: false
+  queue: max
 
 jobs:
   version:
@@ -34,7 +35,6 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_sha == github.sha &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -44,15 +44,17 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      should-release: ${{ steps.version.outputs.should-release }}
     env:
       GH_TOKEN: ${{ github.token }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - id: version
-        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@0b801210976c8af32095c22bae053e739c5840a6
+        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@f8fa8e1a33d06ed2d024403de4fc6738d7736e3a
         with:
           version: ${{ inputs.version }}
           quality-run-id: ${{ github.event.workflow_run.id || inputs.quality-run-id }}
@@ -60,6 +62,7 @@ jobs:
 
   package:
     needs: version
+    if: needs.version.outputs.should-release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
@@ -69,6 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
@@ -126,7 +130,7 @@ jobs:
       contents: read
       actions: read
       id-token: write
-    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@0b801210976c8af32095c22bae053e739c5840a6
+    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@f8fa8e1a33d06ed2d024403de4fc6738d7736e3a
     with:
       artifact-name: canopyx-npm
       package-name: '@evotecit/canopyx'

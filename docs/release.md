@@ -30,8 +30,11 @@ README screenshots are included in the archive and served through public,
 versioned npm CDN URLs. Packaging updates those URLs to the selected npm version
 so the npm page does not rely on access to this repository.
 
-A tag reserves a version; it does not prove publication. Retrying the same source
-commit reuses its reservation. If the package is already public, its integrity
+A tag reserves a version; it does not prove publication. Retries normally reuse
+the reservation. If a newer public version overtakes an unpublished reservation,
+PowerForge checks source ancestry: changes already included are skipped; newer
+source receives a higher version while the original reservation stays intact.
+This keeps older code from becoming the latest package. If a package is already public, its integrity
 must match the qualified archive before the retry succeeds without another upload.
 Network errors and conflicting bytes stop publication.
 
