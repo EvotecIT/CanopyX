@@ -68,6 +68,14 @@ The C# authoring API has one policy owner per column. Assign `Sizing`, `Pinned`,
 
 `CanopyColumnSizing.Fixed(180, minimum: 120, maximum: 240)` keeps a column at 180 pixels during automatic fitting and permits user resizing from 120 to 240 pixels. The declared width must lie within those bounds.
 
+Sizings are immutable. `WithMaximum(px)` and `WithMinimum(px)` return a copy with one bound changed and every other setting (preferred width, flex weight, fixed flag, measuring) kept, so a shared policy can be tightened for one column. They validate like the factories: the minimum stays at least 40 pixels, the bounds stay ordered, and a preferred width stays inside them.
+
+```csharp
+var identifier = CanopyColumnSizing.Content(minimum: 120);
+view.GetColumn("sid").Sizing = identifier.WithMaximum(360);
+view.GetColumn("hash").Sizing = identifier.WithMaximum(520).WithMinimum(160);
+```
+
 Readers retain the existing `reporting.layout` map (`minimum`, `maximum`, `flex`, `pin`, `priority`, `alwaysVisible`) for `canopyx/2` documents. The C# writer emits canonical column fields rather than this second authoring map.
 
 ## Priorities

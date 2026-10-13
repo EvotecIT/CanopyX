@@ -41,6 +41,24 @@ public sealed class CanopyColumnSizing {
     public static CanopyColumnSizing Fixed(int width, int minimum = 40, int maximum = int.MaxValue) =>
         new CanopyColumnSizing(width, minimum, maximum, 0, true, CanopyColumnAutoSize.None);
 
+    /// <summary>Returns a copy of this sizing with a different maximum width. The preferred width, minimum, flex weight, fixed flag and measuring are kept.</summary>
+    /// <param name="maximum">The new maximum width in CSS pixels, at least the minimum and any preferred width.</param>
+    /// <returns>A new sizing; this instance is unchanged.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The maximum is below the minimum or the preferred width.</exception>
+    public CanopyColumnSizing WithMaximum(int maximum) {
+        if (maximum < Minimum || Width > maximum) throw new ArgumentOutOfRangeException(nameof(maximum), maximum, "The maximum must be at least the minimum and the preferred width.");
+        return new CanopyColumnSizing(Width, Minimum, maximum, FlexWeight, IsFixed, Measure);
+    }
+
+    /// <summary>Returns a copy of this sizing with a different minimum width. The preferred width, maximum, flex weight, fixed flag and measuring are kept.</summary>
+    /// <param name="minimum">The new minimum width in CSS pixels, at least 40 and at most the maximum and any preferred width.</param>
+    /// <returns>A new sizing; this instance is unchanged.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The minimum is below 40 pixels, or above the maximum or the preferred width.</exception>
+    public CanopyColumnSizing WithMinimum(int minimum) {
+        if (minimum < CanopyColumn.MinWidth || minimum > Maximum || Width < minimum) throw new ArgumentOutOfRangeException(nameof(minimum), minimum, "The minimum must be at least 40 pixels and at most the maximum and the preferred width.");
+        return new CanopyColumnSizing(Width, minimum, Maximum, FlexWeight, IsFixed, Measure);
+    }
+
     /// <summary>Shares spare grid width with other flex columns within the supplied CSS pixel bounds.</summary>
     public static CanopyColumnSizing Flex(double weight = 1, int minimum = 40, int maximum = int.MaxValue, int? preferredWidth = null, CanopyColumnAutoSize measure = CanopyColumnAutoSize.Content) {
         if (weight <= 0) throw new ArgumentOutOfRangeException(nameof(weight));
