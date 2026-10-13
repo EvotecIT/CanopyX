@@ -54,7 +54,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - id: version
-        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@f8fa8e1a33d06ed2d024403de4fc6738d7736e3a
+        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@a045fa3a4e4104280f9cba0296d86f4cf719f3da
         with:
           version: ${{ inputs.version }}
           quality-run-id: ${{ github.event.workflow_run.id || inputs.quality-run-id }}
@@ -130,7 +130,7 @@ jobs:
       contents: read
       actions: read
       id-token: write
-    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@f8fa8e1a33d06ed2d024403de4fc6738d7736e3a
+    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@a045fa3a4e4104280f9cba0296d86f4cf719f3da
     with:
       artifact-name: canopyx-npm
       package-name: '@evotecit/canopyx'
