@@ -22,6 +22,10 @@ Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`
 
 ## Browser Tests
 
+The [README](README.md) introduces the packages and runnable first examples. Keep
+detailed configuration and integration material in the [authoring reference](docs/authoring.md),
+with protocol details in [docs/data-protocol.md](docs/data-protocol.md).
+
 Browser tests live in `tests/browser` and run with Node and Playwright. They are not part of the library build.
 
 Install the test dependencies once, then let the quality loop generate the example pages and run the tests against them:
