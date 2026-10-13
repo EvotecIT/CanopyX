@@ -1,75 +1,131 @@
-# CanopyX - Large Interactive Data Views for .NET
+# CanopyX - Interactive Trees and Data Grids
 
-CanopyX renders large interactive data views from .NET without runtime dependencies. Its tree grid supports paged lazy children, path search and details. Its flat data grid queries typed records before paging, with stable identities, multi-column sorting, filters, saved views and bounded virtual rows. Both views provide keyboard navigation and stable-ID selection. Pages work as a single file or against a host data source; trees also support sidecar bundles opened from a file share.
+Turn application data into searchable trees, sortable tables and standalone HTML reports. Use C# to write a report you can open in a browser, or mount the JavaScript runtime in your own page.
 
-## Install
+📦 **.NET packages**
 
-```powershell
+[![CanopyX NuGet](https://img.shields.io/nuget/v/CanopyX?label=CanopyX)](https://www.nuget.org/packages/CanopyX)
+[![CanopyX.Html NuGet](https://img.shields.io/nuget/v/CanopyX.Html?label=CanopyX.Html)](https://www.nuget.org/packages/CanopyX.Html)
+
+
+## What you can build
+
+- **File and folder explorers** with expandable branches, lazy loading, search and multi-selection.
+- **Inventory and results tables** with typed sorting, filters, column resizing and saved views.
+- **HTML reports** that include their own runtime and data and can be opened from disk or a file share.
+- **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
+- **Email and print tables** rendered from the same .NET view without JavaScript.
+
+## Features
+
+| | Tree grid | Data grid |
+| --- | --- | --- |
+| Navigation | Expandable branches, path search and lazy children | Continuous or paged records, offset or cursor navigation |
+| Querying | Search, sibling sorting and named filters | Search, multi-column sorting, typed filters and condition groups |
+| Columns | Resize and hide | Resize, hide, reorder, pin and fit to content |
+| Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs |
+| Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting and light/dark themes |
+| Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
+
+Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German and Spanish packs are included.
+
+## Installation
+
+```shell
 dotnet add package CanopyX.Html
 ```
 
-Both packages target `net472`, `netstandard2.0`, `net8.0`, and `net10.0`.
+`CanopyX.Html` includes the browser assets and brings in `CanopyX` for the view definitions. Install `CanopyX` alone when you only need the model, tree bundle writer or script-free table renderer.
 
-| Package | Purpose |
+| Target | Support |
 | --- | --- |
-| `CanopyX` | View definitions, the `canopyx/2` data protocol, the bundle writer, and the static fallback renderer. No runtime dependencies. |
-| `CanopyX.Html` | The tree and flat-grid browser runtimes, data sources and theme CSS, plus the API that writes pages, fragments, tree bundles and asset files. |
+| .NET 8 and .NET 10 | Windows, Linux and macOS |
+| .NET Standard 2.0 | Compatible .NET applications |
+| .NET Framework 4.7.2 | Windows |
 
-## Quick Start
+Neither .NET package adds third-party runtime dependencies. Generating a report from C# needs no Node.js, npm or JavaScript build step.
+
+
+## Usage in .NET
+
+### Create a file explorer
 
 ```csharp
 using CanopyX;
 using CanopyX.Html;
 
-var view = new CanopyTreeView("files", "File shares");
-view.Columns.Add(new CanopyColumn("name", "Name") { Sizing = CanopyColumnSizing.Preferred(320), Sortable = true });
-view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
+var files = new CanopyTreeView("files", "Project files");
+files.Search = new CanopySearchOptions();
+files.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
+files.Columns.Add(new CanopyColumn("size", "Size")
+{
+    Kind = CanopyColumnKind.Number,
+    Sortable = true
+});
 
-var projects = new CanopyNode("projects", @"\\files\projects");
-projects.Cells["size"] = 5_368_709_120;
-projects.Children.Add(new CanopyNode("projects/plans", "plans"));
-view.Roots.Add(projects);
+var projects = new CanopyNode("projects", "Projects");
+var report = new CanopyNode("quarterly-report", "Quarterly report.pdf");
+report.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
+projects.Children.Add(report);
+files.Roots.Add(projects);
 
-view.SaveHtmlPage("files.html");          // single file with inline data
-view.SaveHtmlBundle("report");            // sidecar bundle for large trees
+files.SaveHtmlPage("files.html");
 ```
 
-`CanopyStaticHtml.Render(view)` in `CanopyX.Rendering` returns a script-free outline table for email, print, and Word.
+Open `files.html` in a browser and expand Projects. The first column displays the node label; the Size column displays the matching cell. Numeric values control sorting while `Text` controls the displayed value.
 
-## Flat Data Grid
+For a larger tree, write a bundle that loads branches on demand:
 
 ```csharp
+files.SaveHtmlBundle("file-report");
+```
+
+Keep the generated page, assets and data files together. The bundle can be opened directly from disk or a file share.
+
+### Create an inventory table
+
+```csharp
+using CanopyX;
+using CanopyX.Html;
+
 var inventory = new CanopyDataGridView("inventory", "Inventory");
 inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
-inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
-var record = new CanopyGridRow("record-17");
-record.Cells["name"] = "Archive";
-record.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
-inventory.Rows.Add(record);
+inventory.Columns.Add(new CanopyColumn("size", "Size")
+{
+    Kind = CanopyColumnKind.Number,
+    Sortable = true
+});
+
+foreach (var (name, bytes) in new[] { ("Archive", 2048L), ("Documents", 512L) })
+{
+    var row = new CanopyGridRow(name);
+    row.Cells["name"] = name;
+    row.Cells["size"] = new CanopyCell(bytes) { Text = $"{bytes:N0} bytes" };
+    inventory.Rows.Add(row);
+}
+
 inventory.SaveHtmlPage("inventory.html");
 ```
 
-Raw values drive filtering and sorting; display text remains presentation. The toolbar provides column visibility and ordering, resizing, typed filters and resettable saved views. CSV exports and row copying distinguish filtered results, selected records and all results, independently of rows on screen. Large Office exports and record drawers call host hooks. `CanopyStaticHtml.RenderGrid(inventory)` supplies a script-free fallback.
+Open `inventory.html` to search the records, sort by name or size, and adjust the columns. Record IDs stay stable when the order changes.
 
-A sortable text column's `Ordering` policy adds deterministic ordinal, folded and natural text ordering, plus host-defined category order; enable `CanopyDataGridView.Reporting` for these capabilities. `CanopyGridOrdering` supplies the same comparer to host queries, and the page writer selects the reporting runtime. Represent exact large identifiers and decimals as text; JSON numbers use binary64 precision and numeric magnitudes are limited to the safe-integer range.
+### Render a table for email or print
 
-The reporting filter editor provides inclusive numeric/date ranges, category suggestions and translated boolean choices. Set `Reporting.HeaderFilters = true` to open the editor from a column header. Ranges use the existing typed predicates; filtering and exports apply to all accepted results before visible paging. `Reporting.FilterGroups = true` adds nested AND/OR condition groups over those predicates, with atomic Apply validation and saved-query restoration. Inclusive ranges within OR remain a conjunction. Expressions are bounded to eight levels, 64 groups and 64 total predicates. Add declared column IDs to `Reporting.FacetColumns` for bounded raw values and counts from the complete accepted query. Inline sources compute them; hosted sources provide an explicit facet hook. Choosing a value edits the draft until Apply, with an option to exclude that column's current conditions from the counts.
+```csharp
+using CanopyX.Rendering;
 
-`CanopyColumn.Presenter` adds safe links, decorative icons with text alternatives, native progress, translated boolean values, compact lists and complete-text dialogs. For example, `inventory.GetColumn("notes").Presenter = CanopyGridPresenter.LongText()` expands notes without changing virtual row height. Query and export values remain independent of the display; explicit host renderers take precedence.
+string treeTable = CanopyStaticHtml.Render(files);
+string inventoryTable = CanopyStaticHtml.RenderGrid(inventory);
+```
 
-Reporting grids support direct pointer/keyboard header moves, per-column minimum/maximum widths and optional flex sizing. Auto-fit explicitly samples up to 200 loaded accepted-query records and applies a bounded width estimate. Manual sizing disables flex until reset or saved-state restoration; column identities continue to govern sorting, visibility and export order.
+These methods return HTML tables with no scripts. Insert the returned HTML into your email, print layout or document-generation workflow.
 
-Reporting layouts also support left/right pins and responsive retention priorities. Pins suspend when space is needed for the scrolling center. Temporary responsive hiding preserves saved visibility intent, full-record details, search and default export columns; the column chooser distinguishes these temporary decisions from explicit user hiding.
+## Working with larger datasets
 
-Set an explicit `StateKey` and `Reporting.ViewStorage = CanopyGridViewStorage.Local` for preferences that survive browser sessions. Saved views offer rename, delete and default choices; reset restores the definition and keeps named views. JavaScript host storage hooks govern remote preference delivery, and shareable state strips searches, filters, selected identities and dataset positions. Preferences never authorize record access.
+Virtual rows keep the rendered DOM small. Tree bundles split data into sidecar files, and hosted sources let your application fetch records as the reader navigates. Flat-grid queries filter and sort the complete dataset before paging; loading one page does not mean the rest of the results are available in the browser.
 
-Reporting grids group records by a declared column and show complete-query aggregates. Group keys lead sorting, followed by user sorts and stable row IDs. Collapsing a group changes presentation; paging, selection and exports still count records. Inline sources calculate summaries, while hosted sources return revisioned summary metadata through an explicit hook.
+CSV export and copying distinguish filtered results, selected records and all records. For Office files, large exports or application actions, connect your own callbacks to the view.
 
-Exports capture the accepted query, revision, scope and column order with filename, locale and time-zone metadata. Captured cells contain both raw `value` and display `text`; reporting captures also resolve semantic tones and links and identify unsupported presentation. The export hook receives the prepared `capture`, whose `rows({ signal })` enumerates independent serial windows. Progress and cancellation belong to that operation. `materializeExport` returns a bounded immutable snapshot without truncation; `print` passes the complete snapshot to a host renderer. Hosts supply large Office and print generation through the export hook. Standalone CSV/copy remains available without an HTTP host, and Office generation adds no dependency to CanopyX.
+## Community and license
 
-The pre-1.0 C# API uses `CanopyTreeView`, `CanopyDataGridView`, `CanopyGridSource` factories and `CanopyColumnSizing`. Presenters and ordering belong to the column. `CanopyGridMapper<T>` maps host records through typed selectors, and `CanopyStaticHtml.RenderGrid(view, cursorPage)` renders an accepted cursor snapshot even when totals are unknown. See the repository README for the breaking migration notes.
-
-## Links
-
-- Repository: https://github.com/EvotecIT/CanopyX
-- Issues: https://github.com/EvotecIT/CanopyX/issues
+CanopyX is an Evotec project, licensed under MIT. Questions and feedback are welcome in the [Evotec community on Discord](https://evo.yt/discord). You can find more Evotec projects and articles at [evotec.xyz](https://evotec.xyz/hub).

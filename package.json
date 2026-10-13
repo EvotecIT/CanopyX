@@ -1,7 +1,7 @@
 {
   "name": "@evotecit/canopyx",
-  "version": "0.1.0",
-  "description": "Dependency-free virtualized tree grid with lazy data, checking intent and host-governed interactions.",
+  "version": "0.1.1",
+  "description": "Interactive tree grids and data tables with virtual rows, search, filters and offline HTML reports.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -58,6 +58,6 @@
     "CanopyX.Html/Assets/canopyx-filter-editor.js",
     "CanopyX.Html/Assets/canopyx-filter-editor.css"
   ],
-  "keywords": ["treegrid", "treeview", "virtualization", "accessibility", "lazy-loading"],
+  "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }
 }
