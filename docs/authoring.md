@@ -228,6 +228,37 @@ view.GetColumn("notes").Presenter = CanopyGridPresenter.LongText();
 
 The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
 
+### Export formats
+
+Register extra export formats, such as an XLSX or PDF writer, and they appear in the grid's own Export menu after Download CSV, with the same scope picker (filtered, selected, all), progress meter, Cancel export action and error status:
+
+```js
+import { registerExportFormat } from "@evotecit/canopyx/reporting"; // also CanopyX.registerExportFormat for classic scripts
+
+registerExportFormat({
+  id: "xlsx",                       // 1–32 lowercase letters, digits and hyphens; "csv" is built in
+  label: "Download Excel",          // the button text
+  extension: "xlsx",
+  mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  async write(capture, { signal, progress, fileName }) {
+    const sheet = startWorkbook(capture.request.columns);
+    for await (const row of capture.rows({ signal })) sheet.add(row.cells); // typed value, display text, tone
+    progress(sheet.length);
+    return sheet.toBlob();          // a Blob, ArrayBuffer or typed array, or a promise of one
+  }
+});
+```
+
+The writer receives the same immutable capture as `prepareExport`: the accepted query and sort, the visible columns in their current order, typed `value`, formatted `text` and, on the reporting runtime, semantic tones, links and column intent. CanopyX names the file `fileName` plus the format's extension (a writer that returns a `File` names it itself) and starts the download; `await api.exportAs("xlsx", { scope: "selected", download: false })` returns `{ blob, fileName, format }` instead, for a host that delivers the file itself.
+
+A registered format is offered by every grid on the page that does not choose its own. A grid chooses with the `exportFormats` option (ids of registered formats or provider objects, in order; `[]` offers none) or, from C#, `inventory.ExportFormats.Add("xlsx")`; an id the page does not register is skipped. The browser option wins over the view's list. Formats registered after a grid mounted appear the next time its Export menu opens.
+
+Page reads keep their own `requestTimeoutMs` deadline. The writer runs under a separate safety timeout, `exportTimeoutMs` (10 minutes by default, also per call as `timeoutMs`; checked when an export runs), so long workbook or PDF generation is not cut off at 30 seconds; Cancel export, the timeout and grid destruction abort its `signal` and settle the menu even when a writer ignores it. A writer error is shown in the menu status and dispatched as the grid's `error` event. `onExport`/`exportToHost` use the same export timeout.
+
+Tree grids capture with `api.prepareExport({ scope: "visible" })` (the rows the reader can see) or `{ scope: "selected" }` (the loaded selected nodes in tree order, including collapsed branches). Each record carries `level` (1 for a root) and `path` (the id path ending with its own id) beside its cells, so a writer can indent or add Level and Path columns. `api.exportAs("xlsx", { scope: "visible" })` runs the same writers. Tree exports need the interactive tree runtime or a grid runtime; the core-only tree script has none.
+
+The Export menu body, CSV, copy and the writers ship in `canopyx-export.js`, loaded on first use (the menu, an export method, Ctrl/Command+C or reading a capture). The .NET page, fragment and asset writers include it automatically; JavaScript hosts serve it beside the grid runtime or module, as they do the filter editor, also when the Export menu is switched off.
+
 ### Toolbar controls, slots and menu entries
 
 Every toolbar control can be switched off; a control switched off is removed from the page (it is not built, or is taken out before the grid appears), and the methods behind it stay available. C# views set `Toolbar` switches (the search box keeps its `Search` switch); browser hosts pass `toolbar` to `createDataGrid` or `CanopyX.configure`, which overrides the definition and also accepts `search`:
@@ -241,7 +272,7 @@ inventory.Toolbar.Count = false;  // the host shows its own count
 createDataGrid(host, { view, toolbar: { views: false, more: true } }); // search, filters, columns, views, export, more, count
 ```
 
-The reporting runtime (`@evotecit/canopyx/reporting`) adds host slots and content entries. Four slots hold host elements in the toolbar: `start`, `afterSearch`, `afterViews` and `end` (the start of the right-hand group, before Export and ⋯). `afterSearch` follows `start` directly when the grid has no search box. `api.toolbarSlot(name)` returns the slot's element (it carries `data-cx-toolbar-slot`), the same one for the grid's lifetime whatever the phone layout moves. Children of the host element marked `data-cx-slot` move into their slot when the grid mounts and return to the host element when it is destroyed, so a remount picks them up again; a misspelt slot name fails the mount and leaves them in place. A replacement grid on another host takes host elements with `next.toolbarSlot("end").append(count)`. Slots add no box of their own; host elements that use the `cx-button` and `cx-grid-field` classes match the grid's controls.
+The reporting runtime (`@evotecit/canopyx/reporting`) adds host slots and content entries. Four slots hold host elements in the toolbar: `start`, `afterSearch`, `afterViews` and `end` (the start of the right-hand group, before Export and ⋯). `afterSearch` follows `start` directly when the grid has no search box. `api.toolbarSlot(name)` returns the slot's element (it carries `data-cx-toolbar-slot`), the same one for the grid's lifetime whatever the phone layout moves. Children of the host element marked `data-cx-slot` move into their slot when the grid mounts and return to the host element when it is destroyed, so a remount picks them up again; a misspelt slot name fails the mount and leaves them in place. A replacement grid on another host takes host elements with `next.toolbarSlot("end").append(count)`. Slots add no box of their own; host elements that use the `cx-button` and `cx-grid-field` classes match the grid's controls. The ordinary grid entry point has no slots, to stay within its budget; use the reporting runtime for slots, and [export formats](#export-formats) rather than extra toolbar buttons for additional file types.
 
 ```html
 <div data-canopyx-host>
