@@ -13,9 +13,15 @@ flat grids.
 
 ## How a width is chosen
 
-1. **Need.** Each column measures its header and up to 200 loaded values with the grid font (canvas `measureText`, no
-   DOM reads). Presenters count with their drawn size: status strips and sparklines by their periods, enum chips and
-   state dots with their padding, progress bars with their track, tags and lists capped like long text. The need is
+1. **Need.** Each column measures its header and up to 200 loaded values with canvas `measureText`, in the font the
+   column's cells render. The font is read once per column and fit from the first rendered value in that column, so a
+   monospace presenter (`identifier` or `longText` with `mono`), a class a highlight rule adds, or a host renderer's own
+   font is measured as drawn; there are no per-cell layout reads. One sample stands for the column: a class a rule
+   adds to only some rows counts only when the sampled row has it, so style whole columns for the best fit. Until a
+   column's cells have rendered (the first result, or a column shown later) its last read font, or else the grid
+   font, stands in, and the columns are measured again once a rendered cell shows a different font. Presenters count
+   with their drawn size: status strips and sparklines by their periods, enum chips and state dots with their padding,
+   progress bars with their track, tags and lists capped like long text. The need is
    capped at 420 pixels or `maxWidth`, and is never below the header, so a header is not truncated while any column
    has slack. Wrapping columns and long-text, tag and list presenters with an assigned width keep it: they show more
    lines or a "show more" control instead of growing.

@@ -3,7 +3,7 @@
   // the identity column up to the cap, then it is shared with the widest normal text column. A shortfall first takes
   // slack from normal and optional columns, then hides optional columns, and only then scrolls with pinned columns.
   const FIT = {};
-  for (const name of ["applyWidths", "newCell", "setColumnWidth", "startResize", "buildHeader", "visibleColumns"]) FIT[name] = DataGrid.prototype[name];
+  for (const name of ["applyWidths", "newCell", "setColumnWidth", "startResize", "buildHeader", "visibleColumns", "render"]) FIT[name] = DataGrid.prototype[name];
   function gridPriority(value) {
     return ["essential", "normal", "optional"].includes(value) || Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
@@ -14,6 +14,7 @@
   }
   function gridLevel(column) { const rank = gridRank(column); return rank < 2 ? 0 : rank < 10000 ? 1 : 2; }
   function gridOptions(column) { return column.presenter || {}; }
+  function gridFont(style) { return style.fontWeight + " " + style.fontSize + " " + style.fontFamily; }
   // Text columns drawn as graphics keep their measured width and never take spare width.
   function gridTextual(column) {
     return column.kind === "text" && !["statusStrip", "sparklineBars", "sparklineLine", "boolean", "progress"].includes(gridOptions(column).kind);
@@ -33,6 +34,30 @@
 
   Object.assign(DataGrid.prototype, {
     visibleColumns() { return FIT.visibleColumns.call(this).filter(column => !column.fitHidden); },
+    // A column measured before any of its cells rendered (the first result, or a column shown later) used the grid
+    // font; once a rendered cell shows a different font, the columns are measured again. Checked once per column
+    // layout and fit, never per scrolled frame.
+    render() {
+      const result = FIT.render.call(this), base = this.fitFont?.[0], key = this.layout + ":" + this.fitKey;
+      if (this.sized && !this.destroyed && this.fitChecked !== key && (this.fitChecked = key) &&
+          this.cols.some(column => column.faceless && (this.fitFace(column) || base) !== base)) { this.fitKey = null; this.applyWidths(); }
+      return result;
+    },
+    // The font a column's values render in (a monospace presenter, a host class or a host renderer), read once per
+    // column and fit from the first rendered value in that column and kept for when none is rendered (a column hidden
+    // for width). Undefined while no rendered cell has shown a value.
+    fitFace(column) {
+      const index = this.cols?.indexOf(column) ?? -1;
+      for (const row of index < 0 ? [] : this.canvas.children) {
+        const node = row._kind === "node" && row._layout === this.layout && document.createTreeWalker(row._cells[index].cell, 4,
+          { acceptNode: node => node.data.trim() && !node.parentNode.matches(".p-delta") ? 1 : 3 }).nextNode();
+        // The value comes first (after a change arrow); a missing value ("—") is followed only by badges or
+        // the phone "+N" button.
+        if (node && node.data !== "—") { column.faceless = false; return column.face = gridFont(getComputedStyle(node.parentNode)); }
+      }
+      column.faceless = !column.face;
+      return column.face;
+    },
     newCell(index, width, kind) { return FIT.newCell.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind); },
     // Hiding is decided before the header reads its columns; a later change rebuilds once, after this build.
     buildHeader() {
@@ -129,26 +154,27 @@
       const context = this.fitContext ||= document.createElement("canvas").getContext("2d"), query = this.acceptedQuery;
       if (!context) throw new Error("CanopyX: no canvas context.");
       if (!this.fitFont) {
-        const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
-        this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
+        const style = getComputedStyle(this.grid), head = this.headCells?.[0], family = " " + style.fontFamily;
+        this.fitFont = [gridFont(style), "700 12.5px" + family, head ? gridFont(getComputedStyle(head)) : "700 13px" + family,
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
         context.font = this.fitFont[0]; this.fitCh = Math.ceil(context.measureText("00000000000").width);
       }
       const [, small, headFont, pad] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
-      const text = (value, font = this.fitFont[0]) => { context.font = font; return context.measureText(String(value).slice(0, 512)).width; };
+      let face;
+      const text = (value, font = face ||= this.fitFace(column) || this.fitFont[0]) => { context.font = font; return context.measureText(String(value).slice(0, 512)).width; };
       const head = Math.ceil(text(column.title, headFont) + 2 * pad + (this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 24 : 0) +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0));
       let values = 0, sampled = 0;
-      // Presenter-aware estimates of rendered values, without touching the DOM.
+      // Presenter-aware estimates of rendered values in the font their cells use (fitFace), without per-cell layout.
       // Wrapping and complete-text columns keep a declared width: they show more lines or a "show more" control instead.
-      const none = column.autoSize === "none" || column.pref && (column.wrap || ["longText", "tags", "list"].includes(kind));
+      const long = column.wrap || ["longText", "tags", "list"].includes(kind), none = column.autoSize === "none" || column.pref && long;
       if (!none && column.autoSize !== "header") for (const row of this.rowCache.values()) {
         if (sampled === 200) break;
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
-        const quiet = options.quietTones?.includes(gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone));
+        const quiet = options.quietTones?.includes(gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone)), pill = kind === "enum" && !quiet;
         values = Math.max(values, kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
-          Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
-          (kind === "progress" ? 80 : kind === "enum" && !quiet ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
+          Math.min(long ? 320 : 420, text(value, pill ? small : undefined)) +
+          (kind === "progress" ? 80 : pill ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
       // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
       const cap = columnWidth(column, 420);
