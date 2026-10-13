@@ -1,34 +1,52 @@
 # Package publication
 
-CanopyX uses one product version for the .NET and JavaScript packages. Change
-`CanopyXProductVersion` in `Directory.Build.props` and `version` in `package.json`
-together. The quality loop validates both distributions and their isolated
-consumers before release.
+The JavaScript package publishes automatically after a pull request merges into
+`main` and that commit passes **Quality**. The .NET packages use a separate manual,
+signed deployment through PowerForge.
 
-## NuGet
+## Pull requests
 
-`Build/Build-Project.ps1` invokes the shared PowerForge project publisher with
-`Build/project.build.json`. Use its explicit `PublishNuget` option after the
-release qualification gates pass. Keep `UpdateVersions` false when publishing
-the already-qualified product version. The configuration owns the package IDs,
-signing settings and credential-file locations.
+Repository writers and maintainers can merge pull requests when Linux, Windows
+and macOS Quality checks pass and review conversations are resolved. Normal
+merges do not require an administrator or a bypass. Direct pushes to `main` are
+restricted by the pull-request requirement.
 
-## npm
+## Automatic npm releases
 
-Run the **Publish npm package** workflow on `main`, using the existing product
-version and the successful main-branch **Quality** run ID for that exact commit.
-The workflow rebuilds through `Build.ps1`, checks the JavaScript consumer, and
-passes one archive and its SHA256 to PowerForge's shared npm publisher. Browser
-qualification comes from the supplied full Quality run.
+**Publish npm package** runs after a successful main-branch Quality run. It:
 
-`publish: false` performs a dry run. `publish: true` publishes the same archive,
-then verifies its public integrity. Public source repositories also require npm
-provenance. npm does not support provenance from private source repositories;
-CanopyX's private-source route records that limit and disables provenance
-explicitly. The workflow does not bump versions, create tags or publish NuGet
-packages.
+1. Reserves one three-part npm version for the qualified source commit.
+2. Rebuilds the packages and checks the JavaScript distribution and its consumer.
+3. Publishes the qualified archive using GitHub OIDC and npm trusted publishing.
+4. Verifies the public archive's integrity and creates a GitHub release record.
 
-Configure the npm trusted publisher for `@evotecit/canopyx` with:
+The `npm-v` tags record npm versions independently of manual NuGet releases.
+The version in `package.json` is the minimum release version. If it is already
+published or reserved, PowerForge selects the next patch above the highest known
+version. Raise that minimum in a PR to start a new minor or major version line.
+The selected version is written into the package in the release workspace;
+the workflow does not push a version-only commit or open another PR.
+README screenshots are included in the archive and served through public,
+versioned npm CDN URLs. The source README uses the tracked image paths;
+packaging converts those paths to URLs for the selected npm version
+so the npm page does not rely on access to this repository.
+
+A tag reserves a version; it does not prove publication. Retries normally reuse
+the reservation. If a newer public version overtakes an unpublished reservation,
+PowerForge checks source ancestry: changes already included are skipped; newer
+source receives a higher version while the original reservation stays intact.
+This keeps older code from becoming the latest package. If a package is already public, its integrity
+must match the qualified archive before the retry succeeds without another upload.
+A newer source reservation also suppresses an older run before publication.
+The publisher rechecks reservations after packaging, before uploading the archive.
+Network errors and conflicting bytes stop publication.
+
+The workflow also supports manual recovery or a dry run. Run it on `main` with
+the successful main-branch Quality run ID for the same commit. Leave `version`
+blank to use automatic selection, or specify a new three-part version.
+`publish: false` checks the package without reserving a new tag or uploading.
+
+The trusted-publisher connection for `@evotecit/canopyx` uses:
 
 | Setting | Value |
 | --- | --- |
@@ -38,33 +56,31 @@ Configure the npm trusted publisher for `@evotecit/canopyx` with:
 | GitHub environment | `npm-release` |
 | Allowed action | Direct `npm publish` |
 
-Create `npm-release` in this repository's GitHub environment settings, with a
-custom deployment policy allowing only the `main` branch. Store the bootstrap
-credential in this environment, not in repository-level secrets. The same
-environment must be selected in npm's trusted-publisher settings. The shared
-publisher verifies the exact branch policy before processing an archive.
-The caller forwards the secret by name; GitHub supplies its environment value
-to the shared publication job. An ordinary OIDC release needs no bootstrap value.
+The environment allows only the exact `main` branch. The shared publisher verifies
+that policy, the successful Quality run, the source commit and the archive before
+uploading. No stored npm token or bootstrap secret is used.
 
-Keep updates to `main` within a trusted maintainer boundary. This private
-repository's GitHub Team plan does not support environment-required reviewers;
-restricting `main` updates to release administrators supplies that boundary.
-Repository policy setup is a required release qualification step.
+Public source repositories support npm provenance. npm does not support provenance
+from private source repositories, so this repository disables it explicitly while
+still verifying public archive integrity.
 
-npm requires the package to exist before configuring this relationship. For the
-first qualified release, a package owner creates a short-lived granular npm token
-with package-write permission for the `@evotecit` scope and bypass 2FA enabled for
-unattended publication, then adds it as the `npm-release` environment secret
-`NPM_BOOTSTRAP_TOKEN`. Dispatch with `publish: true`
-and `bootstrap: true`. The shared publisher requires the package to be absent
-through an authenticated metadata check before uploading. The first upload runs
-in GitHub Actions, with the private-source provenance limit described above.
+## Manual NuGet deployment
 
-Remove the bootstrap secret after the first release. Later releases use
-`bootstrap: false` and GitHub OIDC without a stored npm token. Configure trust close
-to a release because an unused new configuration expires after two days. See
-[npm's trust prerequisites](https://docs.npmjs.com/cli/v11/commands/npm-trust/) and
-[Trusted Publishing](https://docs.npmjs.com/trusted-publishers/).
+Set `CanopyXProductVersion` in `Directory.Build.props` for the .NET release and
+run the quality loop. Both .NET packages use this version; npm's automatic patch
+releases do not change it.
 
-If npm accepts an upload but registry verification fails, inspect the published
-version before retrying. A version cannot be replaced with different bytes.
+`Build/Build-Project.ps1` invokes PowerForge using `Build/project.build.json`.
+After qualification, publish the chosen version explicitly:
+
+```powershell
+./Build/Build-Project.ps1 -Build $true -PublishNuget $true -UpdateVersions $false -PublishGitHub $false -Plan $false
+```
+
+The configuration owns package IDs, signing and credential-file locations.
+Keep signing material on the approved publisher workstation. Do not copy a
+private signing key or NuGet credential to a general CI runner.
+
+After an accepted upload, wait for NuGet validation and indexing, then verify the
+public packages and a fresh consumer. Do not repeat uploads to address indexing
+delays. The automatic npm workflow never publishes NuGet packages.

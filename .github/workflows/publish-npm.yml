@@ -1,22 +1,22 @@
 name: Publish npm package
 
 on:
+  workflow_run:
+    workflows: [Quality]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
-        description: Existing three-part product version to publish.
-        required: true
+        description: Optional exact npm version; blank selects the next patch automatically.
+        required: false
         type: string
       quality-run-id:
         description: Successful main-branch Quality run for this exact commit.
-        required: true
+        required: false
         type: string
       publish:
         description: Publish the qualified archive; false performs a dry run.
-        type: boolean
-        default: false
-      bootstrap:
-        description: First publication only; requires the short-lived NPM_BOOTSTRAP_TOKEN secret.
         type: boolean
         default: false
 
@@ -24,17 +24,55 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: canopyx-npm-release
+  cancel-in-progress: false
+  queue: max
+
 jobs:
+  version:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      should-release: ${{ steps.version.outputs.should-release }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      - id: version
+        uses: EvotecIT/PSPublishModule/.github/actions/npm-release-version@0d0705537a5cd9c4b565b449d338c52ec72e9860
+        with:
+          version: ${{ inputs.version }}
+          quality-run-id: ${{ github.event.workflow_run.id || inputs.quality-run-id }}
+          reserve: ${{ github.event_name == 'workflow_run' || inputs.publish }}
+
   package:
+    needs: version
+    if: needs.version.outputs.should-release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
       sha256: ${{ steps.archive.outputs.sha256 }}
     env:
-      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_VERSION: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
@@ -52,6 +90,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --exit-code
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Set the reserved npm release version
+        shell: pwsh
+        run: |
+          & npm version $env:RELEASE_VERSION --no-git-tag-version --ignore-scripts --allow-same-version
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot set the npm release version.' }
+          $readme = [IO.File]::ReadAllText('README.md')
+          $prefix = 'https://cdn.jsdelivr.net/npm/@evotecit/canopyx@'
+          [IO.File]::WriteAllText('README.md', $readme.Replace('](docs/images/', '](' + $prefix + $env:RELEASE_VERSION + '/docs/images/'))
       - name: Qualify the JavaScript package consumer
         working-directory: tests/browser
         run: npm ci --no-audit --no-fund && npm run test:distribution
@@ -78,20 +124,42 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: package
+    needs: [version, package]
     permissions:
       contents: read
       actions: read
       id-token: write
-    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@ec1acca3398c9027ef27cf49aac8967d1407d213
+    uses: EvotecIT/PSPublishModule/.github/workflows/powerforge-npm-publish.yml@0d0705537a5cd9c4b565b449d338c52ec72e9860
     with:
       artifact-name: canopyx-npm
       package-name: '@evotecit/canopyx'
-      version: ${{ inputs.version }}
+      version: ${{ needs.version.outputs.version }}
       sha256: ${{ needs.package.outputs.sha256 }}
-      quality-run-id: ${{ inputs.quality-run-id }}
+      quality-run-id: ${{ github.event.workflow_run.id || inputs.quality-run-id }}
       environment-name: npm-release
-      publish: ${{ inputs.publish }}
-      bootstrap: ${{ inputs.bootstrap }}
+      release-tag-prefix: npm-v
+      publish: ${{ github.event_name == 'workflow_run' || inputs.publish }}
+      bootstrap: false
     secrets:
-      NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+      NPM_BOOTSTRAP_TOKEN: ''
+
+  release:
+    needs: [version, publish]
+    if: github.event_name == 'workflow_run' || inputs.publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_VERSION: ${{ needs.version.outputs.version }}
+      RELEASE_TAG: ${{ needs.version.outputs.tag }}
+    steps:
+      - name: Record the verified npm release
+        shell: pwsh
+        run: |
+          & gh release view $env:RELEASE_TAG
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          & gh release create $env:RELEASE_TAG --title "npm $env:RELEASE_VERSION" --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw 'npm is published, but the GitHub release record needs reconciliation. Do not upload again.' }

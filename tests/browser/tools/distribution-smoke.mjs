@@ -20,7 +20,7 @@ try {
   const run = (file, args, cwd) => execute(file, args, { cwd, timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
   const result = await run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", output], repo);
   const [packed] = JSON.parse(result.stdout);
-  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts",
+  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
@@ -30,8 +30,8 @@ try {
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
   assert.equal(metadata.repository?.url, "git+https://github.com/EvotecIT/CanopyX.git", "npm provenance identifies the publishing repository.");
-  const version = await fs.readFile(path.join(repo, "Directory.Build.props"), "utf8");
-  assert.ok(version.includes(`<CanopyXProductVersion>${metadata.version}</CanopyXProductVersion>`), "npm and .NET share the product version.");
+  assert.match(metadata.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, "npm uses a three-part release version.");
+  assert.equal(packed.version, metadata.version, "The packed archive has the selected npm release version.");
   assert.equal(metadata.dependencies, undefined, "The JavaScript runtime has no package dependencies.");
   const consumer = path.join(output, "consumer");
   await fs.mkdir(consumer);
