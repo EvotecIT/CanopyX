@@ -63,6 +63,9 @@ var reportingRow = new CanopyGridRow("item-2"); reportingRow.Cells["name"] = "It
 Require(CanopyHtmlAssets.GetRuntime(reporting) == CanopyRuntime.ReportingGrid, "reporting definitions chose the wrong runtime");
 Require(reporting.ToHtmlPage().Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid), StringComparison.Ordinal), "the package lost the embedded reporting script");
 Require(CanopyStaticHtml.RenderGrid(reporting).Contains("Item 2", StringComparison.Ordinal), "the reporting static fallback lost its record");
+var printedGrid = CanopyStaticHtml.RenderGridWithResult(reporting);
+Require(printedGrid.Rows.Count == 1 && printedGrid.Rows[0][0] == "Item 2" && printedGrid.TotalRows == 1 && !printedGrid.HasUnknownTotal,
+    "the package lost exact flat-grid print metadata");
 var mapper = new CanopyGridMapper<string>(value => value).AddColumn(new CanopyColumn("name", "Name") {
     Sizing = CanopyColumnSizing.Flex(1, 100, 320), Presenter = CanopyGridPresenter.State()
 }, value => value);
@@ -70,6 +73,9 @@ var cursor = mapper.CreateView("cursor", "Cursor records", configure: grid => gr
 cursor.Validate();
 var cursorPage = new CanopyGridCursorPage(cursor.Id, "snapshot", 0); cursorPage.Rows.Add(mapper.MapRow("Accepted"));
 Require(CanopyStaticHtml.RenderGrid(cursor, cursorPage).Contains("Accepted", StringComparison.Ordinal), "the package lost cursor snapshot rendering or typed mapping");
+var printedCursor = CanopyStaticHtml.RenderGridWithResult(cursor, cursorPage);
+Require(printedCursor.Rows[0][0] == "Accepted" && printedCursor.TotalRows == 1 && printedCursor.HasUnknownTotal,
+    "the package invented a cursor matching count or lost its visible text");
 Console.WriteLine("CanopyX package smoke passed.");
 
 static void Require(bool condition, string failure) {

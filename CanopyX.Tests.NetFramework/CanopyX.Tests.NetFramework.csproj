@@ -27,6 +27,7 @@
   <ItemGroup>
     <Compile Include="..\CanopyX.Tests\Bundles\SearchFoldingParityTests.cs" Link="Bundles\SearchFoldingParityTests.cs" />
     <Compile Include="..\CanopyX.Tests\Protocol\StreamedViewJsonTests.cs" Link="Protocol\StreamedViewJsonTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Rendering\StaticGridResultTests.cs" Link="Rendering\StaticGridResultTests.cs" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

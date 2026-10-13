@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <CanopyXProductVersion>0.1.1</CanopyXProductVersion>
+    <CanopyXProductVersion>0.1.2</CanopyXProductVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectName)' == 'CanopyX' Or '$(MSBuildProjectName)' == 'CanopyX.Html'">

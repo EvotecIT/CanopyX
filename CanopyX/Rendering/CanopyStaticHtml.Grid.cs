@@ -19,11 +19,23 @@ public static partial class CanopyStaticHtml {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The definition or page is invalid, or a host source has no snapshot.</exception>
     public static string RenderGrid(CanopyDataGridView view, CanopyGridPage? page = null, CanopyStaticHtmlOptions? options = null) {
+        return RenderGridWithResult(view, page, options).Html;
+    }
+
+    /// <summary>Renders a flat-grid fallback and captures its visible cell text in the same pass.</summary>
+    /// <param name="view">The grid definition and its typed columns.</param>
+    /// <param name="page">An optional accepted query window. Host sources require this explicit snapshot.</param>
+    /// <param name="options">Row limit, caption, theme and link to the full report.</param>
+    /// <returns>The table, displayed data rows and matching count before the static row limit.</returns>
+    /// <remarks>Inline rows retain source order. Supplied pages preserve their accepted filtering and ordering.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The definition or page is invalid, or a host source has no snapshot.</exception>
+    public static CanopyStaticHtmlResult RenderGridWithResult(CanopyDataGridView view, CanopyGridPage? page = null, CanopyStaticHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         if (page != null) _ = page.ToJson(view);
         else if (view.Source.Kind == CanopyGridSourceKind.Host) throw new InvalidOperationException("A host grid fallback requires an explicit result page.");
-        return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, options);
+        return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
     }
 
     /// <summary>Renders a supplied cursor window without inventing a complete matching count.</summary>
@@ -34,19 +46,31 @@ public static partial class CanopyStaticHtml {
     /// <exception cref="ArgumentNullException">The view or page is null.</exception>
     /// <exception cref="InvalidOperationException">The page does not belong to this cursor grid or is inconsistent.</exception>
     public static string RenderGrid(CanopyDataGridView view, CanopyGridCursorPage page, CanopyStaticHtmlOptions? options = null) {
+        return RenderGridWithResult(view, page, options).Html;
+    }
+
+    /// <summary>Renders an accepted cursor window and its visible cell text without inventing a matching count.</summary>
+    /// <param name="view">The owning cursor-grid definition.</param>
+    /// <param name="page">The accepted cursor page, including its actual offset and nullable counts.</param>
+    /// <param name="options">Row limit, caption, theme and link to the full report.</param>
+    /// <returns>The table and displayed data rows. An unknown matching total retains the accepted offset plus page size as a lower bound.</returns>
+    /// <exception cref="ArgumentNullException">The view or page is null.</exception>
+    /// <exception cref="InvalidOperationException">The page does not belong to this cursor grid or is inconsistent.</exception>
+    public static CanopyStaticHtmlResult RenderGridWithResult(CanopyDataGridView view, CanopyGridCursorPage page, CanopyStaticHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (page == null) throw new ArgumentNullException(nameof(page));
         view.Validate();
         _ = page.ToJson(view);
-        return RenderGridRows(view, page.Rows, page.Matched, options);
+        return RenderGridRows(view, page.Rows, page.Matched, page.Offset, options);
     }
 
-    private static string RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, CanopyStaticHtmlOptions? options) {
+    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options) {
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();
         var rows = supplied.Take(settings.MaxRows).ToArray();
         var html = new StringBuilder(256 + rows.Length * 160);
+        var printedRows = new List<IReadOnlyList<string>>(rows.Length);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
         var caption = settings.Caption ?? view.Label;
         if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
@@ -54,6 +78,7 @@ public static partial class CanopyStaticHtml {
         foreach (var column in columns) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append(Align(column)).Append("\">").Append(Encode(column.Title)).Append("</th>");
         html.Append("</tr></thead><tbody>");
         foreach (var row in rows) {
+            var printedCells = new List<string>(columns.Length);
             var rowRule = CanopyGridHighlights.Find(view, row, null);
             var rowTone = rowRule != null && rowRule.Tone != CanopyTone.None ? rowRule.Tone : row.Tone;
             var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
@@ -70,11 +95,15 @@ public static partial class CanopyStaticHtml {
                 html.Append('"');
                 if (rule?.ClassName != null) html.Append(" class=\"").Append(Encode(rule.ClassName)).Append('"');
                 if (!string.IsNullOrEmpty(cell?.Title)) html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
-                html.Append('>').Append(Encode(GridPresenterText(view, row, column, cell)));
-                if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles);
+                var text = new StringBuilder();
+                html.Append('>');
+                AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
+                if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
                 html.Append("</td>");
+                printedCells.Add(text.ToString());
             }
             html.Append("</tr>");
+            printedRows.Add(printedCells.AsReadOnly());
         }
         html.Append("</tbody>");
         if (!matching.HasValue || rows.Length < matching.Value) {
@@ -85,6 +114,7 @@ public static partial class CanopyStaticHtml {
                 .Append(styles.Link).Append("\">").Append(Encode(settings.FullReportText ?? view.Labels.FullReport)).Append("</a>");
             html.Append("</td></tr></tbody>");
         }
-        return html.Append("</table>").ToString();
+        return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
+            matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue);
     }
 }
