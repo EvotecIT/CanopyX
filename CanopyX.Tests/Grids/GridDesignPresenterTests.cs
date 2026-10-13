@@ -52,7 +52,9 @@ public sealed class GridDesignPresenterTests {
         var trend = new CanopyCell("10"); trend.Series.Add(new CanopyCellPeriod("Oct 1", 10)); row.Cells["trend"] = trend; view.Rows.Add(row);
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "column presenters and visual metadata");
         using var parsed = JsonDocument.Parse(json); Assert.Equal("Healthy", parsed.RootElement.GetProperty("rows")[0].GetProperty("cells").GetProperty("state").GetProperty("value").GetString());
-        var html = System.Net.WebUtility.HtmlDecode(CanopyStaticHtml.RenderGrid(view)); Assert.Contains("✓", html); Assert.Contains("Healthy: 1; Failing: 1", html); Assert.Contains("alpha · example.test", html); Assert.Contains("↓ 6 142", html);
+        var result = CanopyStaticHtml.RenderGridWithResult(view);
+        Assert.Equal(new[] { "alpha · example.test", "✓", "Healthy: 1; Failing: 1", "↓ 6 142", "Oct 1: 10" }, Assert.Single(result.Rows));
+        var html = System.Net.WebUtility.HtmlDecode(result.Html); Assert.Contains("✓", html); Assert.Contains("Healthy: 1; Failing: 1", html); Assert.Contains("alpha · example.test", html); Assert.Contains("↓ 6 142", html);
     }
 
     [Fact]

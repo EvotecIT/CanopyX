@@ -57,6 +57,8 @@ Grid height is a preferred size when the runtime renders its controls. When cont
 
 `CanopyStaticHtml.RenderGrid` renders a script-free fallback for the same definition. An inline definition retains source order; a host grid requires an explicit result page. Supply a query-result page when the fallback needs accepted filtering or sorting. A partial snapshot includes a note naming the number shown and the matching total.
 
+`RenderGridWithResult` returns that same markup together with the displayed cell text and matching count. Print and export hosts use those rows without duplicating presenter or badge formatting. Hidden columns, headers and the overflow note are excluded from the returned rows. Unknown cursor counts stay unknown; `TotalRows` then records a lower bound from the accepted offset and all supplied page rows, before the static row limit.
+
 The runtime and the data it reads come from the same build. A page, the runtime it loads, and its sidecar files are written by one version of CanopyX and published together; an older runtime cannot be expected to read newer data (a runtime from before packs cannot open a packed bundle), and nothing promises the reverse either.
 
 File names keep that rule when files are cached or shared:

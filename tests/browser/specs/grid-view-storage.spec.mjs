@@ -362,6 +362,13 @@ test("shareable layout strips query-sensitive values, positions and dataset iden
 });
 
 test("saved-view controls expose rename/default/reset and remain keyboard accessible in compact dark layouts", async ({ page }) => {
+  // Data can become ready before ResizeObserver delivers the compact toolbar layout.
+  await page.addInitScript(() => {
+    const NativeResizeObserver = ResizeObserver;
+    window.ResizeObserver = class extends NativeResizeObserver {
+      constructor(callback) { super((...args) => setTimeout(() => callback(...args), 150)); }
+    };
+  });
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   await page.locator("[data-canopyx-host]").evaluate(host=>host.dataset.cxTheme="dark");
   await openGridControl(page, "views"); const panel=page.locator(".cx-grid-views");

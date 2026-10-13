@@ -37,6 +37,11 @@ export function nextFrames(page) {
 /** Opens a toolbar control through its desktop button or the phone overflow. */
 export async function openGridControl(page, kind) {
   const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');
+  // Data readiness can precede the observer that moves phone controls into More.
+  await page.waitForFunction(kind => {
+    const host = document.querySelector('.cx-grid-' + kind)?.closest('[data-canopyx-host]');
+    return host && host.clientWidth > 0 && host.classList.contains('cx-phone') === (host.clientWidth <= 640);
+  }, kind);
   if (!await summary.isVisible()) await page.locator('.cx-grid-overflow > summary').click();
   if (!await control.evaluate(element => element.open)) await summary.click();
   if (kind === 'filters') {
