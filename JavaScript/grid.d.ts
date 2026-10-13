@@ -1,7 +1,7 @@
 import CanopyX from "./index.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
-import type { HostOptions } from "./hosts.js";
+import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
 export * from "./index.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -223,6 +223,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   statusBar?: boolean;
   /** Per-control toolbar switches (the search box is the search property). */
   toolbar?: GridToolbarControls;
+  /** Ids of browser-registered export formats the Export menu offers after CSV, in order; an id the page does not register is skipped. */
+  exportFormats?: string[];
   /** A grid whose rows fit is as tall as its rows (default true). */
   autoHeight?: boolean;
   /** What a plain row click does; it never selects (default "none"). */
@@ -455,13 +457,17 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   renderers?: Record<string, (row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void>;
   cachePageLimit?: number;
   requestTimeoutMs?: number;
+  /** Formats the Export menu lists after CSV: ids of registered formats or provider objects, in order. Wins over the view's exportFormats; absent offers every registered format. */
+  exportFormats?: readonly (string | ExportFormat<GridExport<Q>>)[];
+  /** Safety timeout for export format writers and onExport, 1..2147483647 ms (default 600000). Page reads keep requestTimeoutMs. */
+  exportTimeoutMs?: number;
   onQuery?: (event: GridQueryEvent<Q>) => void;
   onSelect?: (event: { ids: string[]; selection?: GridSelection<Q> }) => void;
   onError?: (event: { error: Error }) => void;
   onColumnResize?: (event: { column: string; width: number }) => void;
   onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
-  /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
+  /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. Runs under exportTimeoutMs. */
   onExport?: (event: { format: string; request: GridExportRequest<Q>; capture: GridExport<Q>; signal: AbortSignal;
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
     reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
@@ -562,7 +568,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   prepareExport(options: GridExportOptions): GridExport<Q>;
   toCsv(options: GridExportOptions): Promise<string>;
   copy(options: GridExportOptions): Promise<string>;
-  exportToHost(format: string, options: GridExportOptions): Promise<void>;
+  /** Runs onExport under the export safety timeout (timeoutMs, else exportTimeoutMs); page reads keep requestTimeoutMs. */
+  exportToHost(format: string, options: GridExportOptions & { timeoutMs?: number }): Promise<void>;
+  /** Captures now (invalid capture options throw synchronously), then runs a registered or configured export format (the same writers the Export menu lists) and downloads its file. */
+  exportAs(format: string, options: Omit<GridExportOptions, "onProgress" | "maxRows"> & ExportFormatOptions): Promise<ExportFormatResult>;
   /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
   materializeExport?(options: GridExportOptions): Promise<GridExportSnapshot<Q>>;
   /** Reporting runtime only. Passes the same bounded snapshot to onPrint; never prints viewport DOM. */

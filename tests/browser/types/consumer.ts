@@ -350,3 +350,26 @@ const lazySource: DataSource = { queryAware: true,
 };
 // Input action definitions remain editable; the runtime freezes its own descriptor snapshot.
 if (view.contextActions?.[0]) view.contextActions[0].label = "Inspect record";
+
+// Export format providers: one writer for tree and flat-grid captures, registered for the page or per grid.
+const workbook: import("@evotecit/canopyx").ExportFormat = { id: "xlsx", label: "Download Excel", extension: "xlsx",
+  mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  async write(capture, { signal, progress, fileName }) {
+    const lines: string[] = [fileName];
+    for await (const row of capture.rows({ signal })) lines.push(capture.request.columns.map(column => row.cells[column.id]?.text ?? "").join("\t"));
+    progress(lines.length - 1);
+    return new Blob(lines);
+  } };
+const disposeWorkbook: () => void = CanopyX.registerExportFormat(workbook);
+disposeWorkbook();
+const exportingTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "export-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "multiple",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], roots: [] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 120000 });
+const treeCapture = exportingTree.prepareExport({ scope: "selected" });
+const treeLevel: number = treeCapture.request.recordCount;
+void exportingTree.exportAs("xlsx", { onProgress: progress => progress.completed, download: false }).then(result => result.blob.size + treeLevel);
+const exportingGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "export-grid", label: "Grid",
+  source: { kind: "inline" }, rows: [], pageSize: 50, selection: "multiple", search: true, exportFormats: ["xlsx", "pdf"],
+  columns: [{ id: "name", title: "Name", kind: "text" }] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 600000 });
+void exportingGrid.exportAs("xlsx", { scope: "filtered", timeoutMs: 30000 }).then(result => result.fileName);
+// @ts-expect-error Format writers return a Blob or bytes.
+CanopyX.registerExportFormat({ id: "bad", label: "Bad", extension: "txt", write: () => 42 });
