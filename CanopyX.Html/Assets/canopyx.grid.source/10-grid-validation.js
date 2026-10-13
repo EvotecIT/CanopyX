@@ -83,6 +83,7 @@
     if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||
         new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
       throw new Error("CanopyX: search columns must identify unique declared columns.");
+    if (view.exportFormats !== undefined && !exportFormatIds(view.exportFormats)) throw new Error("CanopyX: exportFormats lists unique format IDs.");
     if (view.autoRowHeight !== undefined && typeof view.autoRowHeight !== "boolean" ||
         view.rowHeight !== undefined && view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64) ||
         view.estimatedRowHeight !== undefined && (!Number.isInteger(view.estimatedRowHeight) || view.estimatedRowHeight < 20 || view.estimatedRowHeight > 64) ||

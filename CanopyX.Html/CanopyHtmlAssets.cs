@@ -117,7 +117,7 @@ public static partial class CanopyHtmlAssets {
             WriteOnce(style, FileEncoding.GetBytes(styleText));
         }
 
-        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) WriteFilterEditor(directory, naming);
+        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) { WriteFilterEditor(directory, naming); WriteExportPart(directory, naming); }
         return new[] { script, style };
     }
 

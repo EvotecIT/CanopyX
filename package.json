@@ -32,6 +32,7 @@
     "./reporting.js": "./CanopyX.Html/Assets/canopyx-reporting.js",
     "./filter-editor.js": "./CanopyX.Html/Assets/canopyx-filter-editor.js",
     "./filter-editor.css": "./CanopyX.Html/Assets/canopyx-filter-editor.css",
+    "./export.js": "./CanopyX.Html/Assets/canopyx-export.js",
     "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
     "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
     "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
@@ -57,7 +58,8 @@
     "CanopyX.Html/Assets/canopyx-reporting.js",
     "CanopyX.Html/Assets/canopyx-reporting.css",
     "CanopyX.Html/Assets/canopyx-filter-editor.js",
-    "CanopyX.Html/Assets/canopyx-filter-editor.css"
+    "CanopyX.Html/Assets/canopyx-filter-editor.css",
+    "CanopyX.Html/Assets/canopyx-export.js"
   ],
   "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

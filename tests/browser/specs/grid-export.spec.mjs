@@ -77,7 +77,8 @@ test("large host exports receive frozen accepted metadata without client materia
   await open(page,hostView(),hostSetup.replace("CanopyX.configure('records',{source", "CanopyX.configure('records',{onExport:async event=>{window.exportEvent=event;window.exportFrozen=Object.isFrozen(event.request.query.filters);},source"));
   const result=await page.evaluate(async()=>{
     const grid=document.querySelector('[data-canopyx-host]').canopyx;await grid.setQuery({search:'accepted'});grid.setSelection(['079']);
-    const before=window.requests.length;await grid.exportToHost('xlsx',{scope:'selected',columns:['size']});
+    // Viewport pages of the accepted query finish loading first; the export itself must not read records.
+    await new Promise(resolve=>setTimeout(resolve,100));const before=window.requests.length;await grid.exportToHost('xlsx',{scope:'selected',columns:['size']});
     return {newRequests:window.requests.length-before,request:window.exportEvent.request,format:window.exportEvent.format,frozen:window.exportFrozen};
   });expect(result.newRequests).toBe(0);expect(result.request.selection).toEqual(['079']);expect(result.request.query.search).toBe('');expect(result.request.matched).toBe(40);expect(result.format).toBe('xlsx');expect(result.frozen).toBe(true);
 });

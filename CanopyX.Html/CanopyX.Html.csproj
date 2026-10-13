@@ -55,6 +55,7 @@
     <EmbeddedResource Include="Assets\canopyx-reporting.css" LogicalName="CanopyX.Html.Assets.canopyx-reporting.css" />
     <EmbeddedResource Include="Assets\canopyx-filter-editor.js" LogicalName="CanopyX.Html.Assets.canopyx-filter-editor.js" />
     <EmbeddedResource Include="Assets\canopyx-filter-editor.css" LogicalName="CanopyX.Html.Assets.canopyx-filter-editor.css" />
+    <EmbeddedResource Include="Assets\canopyx-export.js" LogicalName="CanopyX.Html.Assets.canopyx-export.js" />
     <EmbeddedResource Include="Assets\page.html" LogicalName="CanopyX.Html.Assets.page.html" />
   </ItemGroup>
 </Project>

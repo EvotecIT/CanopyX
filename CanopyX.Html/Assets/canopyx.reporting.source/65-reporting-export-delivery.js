@@ -101,6 +101,6 @@
         let completed = 0;
         await this.opts.onExport({ format, request, capture: exported, signal, reportProgress: (phase, count) => { completed = progress(phase, count); } });
         gridOperationActive(this, signal); progress("ready", reportingExportTotal(request) ?? completed);
-      }, options.signal);
+      }, options.signal, exportTimeout(this, options));
     }
   });
