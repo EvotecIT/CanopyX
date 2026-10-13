@@ -59,7 +59,7 @@ centre.
 | `minWidth`, `maxWidth` / `Sizing.Minimum`, `Maximum` | CSS pixels | Immutable validated bounds; the preferred width must lie within them. |
 | `flex` / `Sizing.FlexWeight` | greater than 0, at most 100 | `CanopyColumnSizing.Flex(weight, minimum, maximum, preferredWidth)` shares spare width. |
 | `autoSize` / `Sizing.Measure` | `content`, `header`, `none` | The sizing factory's `measure` argument chooses what measuring reads. |
-| `priority` / `ResponsivePriority` | integer ≥ 0 | 0 and 1 are essential; 10000 and above optional; larger values hide first. Wire string priorities remain readable. |
+| `priority` / `ResponsivePriority` | integer ≥ 0 | 0 and 1 are essential; 10000 and above optional; larger values hide first. Wire string priorities remain readable. Named values: see [Priorities](#priorities). |
 | `pinned` / `Pinned` | `left`, `right`, `null` | Requested edge. Omitted: the identity column pins left. |
 | `rowHeader` / `RowHeader` | boolean | Marks the identity column (at most one). |
 | `alwaysVisible` / `AlwaysVisible` | boolean | Responsive fitting retains the column; explicit user hiding still applies. |
@@ -69,6 +69,34 @@ The C# authoring API has one policy owner per column. Assign `Sizing`, `Pinned`,
 `CanopyColumnSizing.Fixed(180, minimum: 120, maximum: 240)` keeps a column at 180 pixels during automatic fitting and permits user resizing from 120 to 240 pixels. The declared width must lie within those bounds.
 
 Readers retain the existing `reporting.layout` map (`minimum`, `maximum`, `flex`, `pin`, `priority`, `alwaysVisible`) for `canopyx/2` documents. The C# writer emits canonical column fields rather than this second authoring map.
+
+## Priorities
+
+Priorities are integers, as in DataTables `responsivePriority`. Named constants carry the values the runtime uses for
+the string priorities:
+
+| Level | C# `CanopyColumnPriorities` | JavaScript `columnPriorities` | Value | Behaviour |
+|---|---|---|---|---|
+| Essential | `Essential` | `essential` | 0 | Keeps its content width and never hides for width (0 and 1). |
+| Normal | `Normal` | `normal` | 5000 | Gives up its slack when the width runs short, and hides on phones. The default for columns other than the identity column. |
+| Optional | `Optional` | `optional` | 10000 | Hides first when the width runs short (10000 and above). |
+
+Within a level, larger values give way first, so `CanopyColumnPriorities.Optional + 10` hides before `Optional`.
+The grid module exports `columnPriorities` (`import { columnPriorities } from "@evotecit/canopyx/grid"`), and the
+classic grid script exposes it as `CanopyX.columnPriorities`.
+
+```csharp
+view.GetColumn("name").ResponsivePriority = CanopyColumnPriorities.Essential;
+view.GetColumn("owner").ResponsivePriority = CanopyColumnPriorities.Optional;
+```
+
+```js
+import { columnPriorities } from "@evotecit/canopyx/grid";
+const columns = [
+  { id: "name", title: "Name", kind: "text", priority: columnPriorities.essential },
+  { id: "owner", title: "Owner", kind: "text", priority: columnPriorities.optional }
+];
+```
 
 ## API and events
 
@@ -116,7 +144,7 @@ column live in the header's own ⋮ menu.
 | — | `minWidth`, `maxWidth` | `minWidth`, `maxWidth`. |
 | — | `flex` | `flex`. |
 | — | `suppressAutoSize`, `resizable: false` | `autoSize: "none"`, `fixed: true`. |
-| Responsive `responsivePriority` | — | `priority` as an integer; or `essential` / `normal` / `optional`. |
+| Responsive `responsivePriority` | — | `priority` as an integer (`columnPriorities` / `CanopyColumnPriorities`); or `essential` / `normal` / `optional`. |
 | Responsive child rows | — | Record drawer and the phone "+N" button. |
 | FixedColumns `left` / `right` | `pinned: "left" \| "right"` | `pinned: "left" \| "right"`; the identity column pins left by default. |
 | `columns.adjust()` | `sizeColumnsToFit()` | Automatic on resize; `autoSizeColumns()` drops user widths. |

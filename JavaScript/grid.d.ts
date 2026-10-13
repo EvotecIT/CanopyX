@@ -52,7 +52,7 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   /** Share of spare width (0..100), given before the identity column. */
   flex?: number;
   autoSize?: "content" | "header" | "none";
-  /** How the column gives way when narrow. Integers follow DataTables responsivePriority: 0-1 essential, 10000+ optional. */
+  /** How the column gives way when narrow. Integers follow DataTables responsivePriority: 0-1 essential, 10000+ optional; `columnPriorities` names the usual values. */
   priority?: GridColumnPriority;
   /** Requested edge; null unpins. Omitted: the identity column pins left. */
   pinned?: "left" | "right" | null;
@@ -62,6 +62,8 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   alwaysVisible?: boolean;
 };
 export type GridColumnPriority = "essential" | "normal" | "optional" | number;
+/** Named numeric priorities (C# `CanopyColumnPriorities`): essential columns never hide for width, optional columns hide first. */
+export const columnPriorities: Readonly<{ essential: 0; normal: 5000; optional: 10000 }>;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
 export interface GridOrdering {
@@ -587,5 +589,5 @@ export function configure(viewId: string, options: HostOptions | GridHostOptions
 /** Mounts tree and flat-grid fragments below root. Narrow a controller before using view-specific methods. */
 export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
 
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; columnPriorities: typeof columnPriorities; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;

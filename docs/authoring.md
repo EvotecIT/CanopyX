@@ -156,7 +156,7 @@ inventory.Reporting.Responsive = true;
 var name = inventory.GetColumn("name");
 name.Sizing = CanopyColumnSizing.Flex(1, 120, 600);
 name.Pinned = CanopyGridColumnPin.Left;
-name.ResponsivePriority = 0;
+name.ResponsivePriority = CanopyColumnPriorities.Essential;
 name.AlwaysVisible = true;
 ```
 

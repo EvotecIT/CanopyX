@@ -43,7 +43,7 @@ try {
     "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--lib", "ES2022,DOM", "consumer.ts"], consumer);
   const importCheck = `import assert from 'node:assert/strict';
     import CanopyX, * as runtime from '@evotecit/canopyx';
-    import GridRuntime, { createDataGrid } from '@evotecit/canopyx/grid';
+    import GridRuntime, { createDataGrid, columnPriorities } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
@@ -54,7 +54,11 @@ try {
     assert.equal(runtime.protocol, 'canopyx/2');
     assert.equal(runtime.createTreeGrid, CanopyX.createTreeGrid);
     assert.equal(createDataGrid, GridRuntime.createDataGrid);
+    assert.equal(columnPriorities, GridRuntime.columnPriorities);
+    assert.deepEqual({ ...columnPriorities }, { essential: 0, normal: 5000, optional: 10000 });
+    assert.ok(Object.isFrozen(columnPriorities));
     assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
+    assert.deepEqual({ ...ReportingRuntime.columnPriorities }, { ...columnPriorities });
     assert.equal(Object.hasOwn(globalThis, 'CanopyX'), false);
     assert.equal(Object.hasOwn(globalThis, 'CanopyXSidecar'), false);
     const view = { pageSize: 2, roots: [{id:'a',label:'Atlas'}] };

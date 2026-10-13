@@ -8,9 +8,11 @@
     return ["essential", "normal", "optional"].includes(value) || Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
   // Numeric priorities follow DataTables' responsivePriority: 0-1 essential, 10000 and above optional, normal between.
+  // The named values are public as CanopyX.columnPriorities (and CanopyColumnPriorities in C#).
+  const COLUMN_PRIORITIES = Object.freeze({ essential: 0, normal: 5000, optional: 10000 });
   function gridRank(column) {
     const value = column.priority;
-    return typeof value === "number" ? value : value === "optional" ? 10000 : value === "essential" || value === undefined && column.identity ? 0 : 5000;
+    return typeof value === "number" ? value : COLUMN_PRIORITIES[value] ?? (column.identity ? 0 : 5000);
   }
   function gridLevel(column) { const rank = gridRank(column); return rank < 2 ? 0 : rank < 10000 ? 1 : 2; }
   function gridOptions(column) { return column.presenter || {}; }

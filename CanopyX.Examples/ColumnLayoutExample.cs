@@ -30,9 +30,9 @@ internal static class ColumnLayoutExample {
         var view = new CanopyDataGridView(id, "Products") { Noun = "products", RowAction = CanopyGridRowAction.Details };
         view.Columns.Add(new CanopyColumn("name", "Product") { Sortable = true });
         view.Columns.Add(new CanopyColumn("category", "Category") { Sortable = true });
-        view.Columns.Add(new CanopyColumn("sku", "SKU") { ResponsivePriority = 10000 });
+        view.Columns.Add(new CanopyColumn("sku", "SKU") { ResponsivePriority = CanopyColumnPriorities.Optional });
         view.Columns.Add(new CanopyColumn("stock", "In stock") { Kind = CanopyColumnKind.Number, Sortable = true });
-        view.Columns.Add(new CanopyColumn("price", "Price") { Kind = CanopyColumnKind.Number, Sortable = true, ResponsivePriority = 0 });
+        view.Columns.Add(new CanopyColumn("price", "Price") { Kind = CanopyColumnKind.Number, Sortable = true, ResponsivePriority = CanopyColumnPriorities.Essential });
         for (var i = 0; i < 6; i++) {
             var row = new CanopyGridRow("p" + i);
             row.Cells["name"] = "Product " + (char)('A' + i) + (i % 2 == 0 ? " with a longer catalogue name" : string.Empty);
@@ -47,13 +47,13 @@ internal static class ColumnLayoutExample {
         var view = new CanopyDataGridView("rules", "Rules") { Noun = "rules" };
         view.Columns.Add(new CanopyColumn("rule", "Rule") { Presenter = CanopyGridPresenter.Link() });
         view.Columns.Add(new CanopyColumn("category", "Category"));
-        view.Columns.Add(new CanopyColumn("owner", "Owner") { ResponsivePriority = 10000 });
+        view.Columns.Add(new CanopyColumn("owner", "Owner") { ResponsivePriority = CanopyColumnPriorities.Optional });
         view.Columns.Add(new CanopyColumn("failing", "Failing on") { Kind = CanopyColumnKind.Number });
         view.Columns.Add(new CanopyColumn("worst", "Worst") {
-            ResponsivePriority = 0,
+            ResponsivePriority = CanopyColumnPriorities.Essential,
             Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Severe"] = CanopyTone.Danger, ["Passed"] = CanopyTone.Success }).WithQuietTones(CanopyTone.Success)
         });
-        view.Columns.Add(new CanopyColumn("weight", "Weight") { Kind = CanopyColumnKind.Number, ResponsivePriority = 10000 });
+        view.Columns.Add(new CanopyColumn("weight", "Weight") { Kind = CanopyColumnKind.Number, ResponsivePriority = CanopyColumnPriorities.Optional });
         for (var i = 0; i < 12; i++) {
             var row = new CanopyGridRow("r" + i);
             row.Cells["rule"] = new CanopyCell("#rule-" + i) { Text = "Configuration rule " + (i + 1) + (i % 3 == 0 ? " with a descriptive name" : string.Empty) };
@@ -80,9 +80,9 @@ internal static class ColumnLayoutExample {
 
     private static CanopyDataGridView Log() {
         var view = new CanopyDataGridView("log", "Event log") { Noun = "events" };
-        view.Columns.Add(new CanopyColumn("time", "Time") { Kind = CanopyColumnKind.DateTime, ResponsivePriority = 0 });
+        view.Columns.Add(new CanopyColumn("time", "Time") { Kind = CanopyColumnKind.DateTime, ResponsivePriority = CanopyColumnPriorities.Essential });
         view.Columns.Add(new CanopyColumn("level", "Level") { Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Error"] = CanopyTone.Danger, ["Warning"] = CanopyTone.Warning }) });
-        view.Columns.Add(new CanopyColumn("source", "Source") { ResponsivePriority = 10000 });
+        view.Columns.Add(new CanopyColumn("source", "Source") { ResponsivePriority = CanopyColumnPriorities.Optional });
         view.Columns.Add(new CanopyColumn("message", "Message") { RowHeader = true, Pinned = CanopyGridColumnPin.None, Sizing = CanopyColumnSizing.Content(maximum: 640) });
         for (var i = 0; i < 30; i++) {
             var row = new CanopyGridRow("e" + i);

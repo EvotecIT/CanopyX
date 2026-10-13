@@ -6,7 +6,7 @@ namespace CanopyX;
 public sealed partial class CanopyColumn {
     private int? _responsivePriority;
 
-    /// <summary>Gets or sets responsive retention priority. Zero and one are essential; 10000 and above are optional. Larger values hide first. Null uses the identity-column default.</summary>
+    /// <summary>Gets or sets responsive retention priority. Zero and one are essential; 10000 and above are optional. Larger values hide first. Null uses the identity-column default. <see cref="CanopyColumnPriorities"/> names the usual values.</summary>
     public int? ResponsivePriority {
         get => _responsivePriority;
         set => _responsivePriority = value < 0 ? throw new ArgumentOutOfRangeException(nameof(value)) : value;

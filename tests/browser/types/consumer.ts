@@ -1,7 +1,7 @@
 import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
-import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
+import GridRuntime, { createDataGrid, columnPriorities, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
 import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
@@ -13,6 +13,10 @@ CanopyX.configure("german", { labels: { ...german, columns: "Host columns" } });
 CanopyX.configure("spanish", { labels: spanish });
 // @ts-expect-error Shipped packs are immutable; use a host override.
 polish.columns = translatedNote;
+const optionalPriority: 10000 = columnPriorities.optional;
+const essentialPriority: 0 = GridRuntime.columnPriorities.essential;
+// @ts-expect-error Named priorities are immutable.
+columnPriorities.normal = 5000;
 
 const reportingHost = document.createElement("div");
 const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { protocol: "canopyx/2", type: "grid", id: "ordered", label: "Ordered report",

@@ -224,7 +224,7 @@ export default CanopyX;
         $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, columnPriorities, configure')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }

@@ -180,7 +180,7 @@
     badge: hostBadge,
     // The English texts and their names, for a host that builds its translations from them.
     labels: DEFAULT_LABELS
-  }, typeof createDataGrid === "function" ? { createDataGrid } : {}));
+  }, typeof createDataGrid === "function" ? { createDataGrid, columnPriorities: COLUMN_PRIORITIES } : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it
