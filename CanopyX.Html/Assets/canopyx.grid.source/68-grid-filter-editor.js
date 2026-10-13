@@ -1,31 +1,32 @@
-  // Query parsing and matching stay in the core; the optional editor installs only when opened.
-  const FILTER_EDITOR_VERSION="__CX_FILTER_VERSION__",FILTER_EDITOR_SCRIPT="__CX_FILTER_SCRIPT__",FILTER_EDITOR_STYLE="__CX_FILTER_STYLE__";
-  const FILTER_RUNTIME_URL=typeof document!=="undefined"&&document.currentScript?.src;
-  let filterEditorReady;
-  function gridFilterEditorContext(){return {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
+  // Query parsing and matching stay in the core. Optional parts install on first use, from an inert payload in the page
+  // or from files beside the runtime: the editor (menus, editors, drawer, selected aggregates) and the export part.
+  const GRID_PART_URL=typeof document!=="undefined"&&document.currentScript?.src;
+  const FILTER_EDITOR={key:"CanopyXFilterEditor",name:"filter-editor",label:"filter editor",version:"__CX_FILTER_VERSION__",script:"__CX_FILTER_SCRIPT__",style:"__CX_FILTER_STYLE__",
+    context:()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
     reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,
-    GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null};}
-  function loadGridFilterEditor(){
-    if(filterEditorReady)return filterEditorReady;
-    filterEditorReady=Promise.resolve().then(async()=>{
-      if(global.CanopyXFilterEditor?.version!==FILTER_EDITOR_VERSION){
-        const payload=document.querySelector('script[type="application/x-canopyx-filter-editor"][data-cx-version="'+FILTER_EDITOR_VERSION+'"]');
-        const script=h("script"),style=h("style"),embeddedStyle=document.querySelector('script[type="application/x-canopyx-filter-style"][data-cx-version="'+FILTER_EDITOR_VERSION+'"]');
-        if(payload){if(embeddedStyle){setText(style,embeddedStyle.textContent);if(payload.nonce)style.nonce=payload.nonce;document.head.appendChild(style);}
+    GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null})};
+  function loadGridPart(part){
+    return part.ready||=Promise.resolve().then(async()=>{
+      if(global[part.key]?.version!==part.version){
+        const find=type=>document.querySelector('script[type="application/x-canopyx-'+type+'"][data-cx-version="'+part.version+'"]');
+        const payload=find(part.name),script=h("script"),embeddedStyle=part.style&&find("filter-style");
+        if(payload){if(embeddedStyle){const style=h("style");setText(style,embeddedStyle.textContent);if(payload.nonce)style.nonce=payload.nonce;document.head.appendChild(style);}
           setText(script,payload.textContent);if(payload.nonce)script.nonce=payload.nonce;document.head.appendChild(script);script.remove();}
         else{
-          const runtime=FILTER_RUNTIME_URL||global.CanopyXFilterEditorBase||document.baseURI,hashed=FILTER_RUNTIME_URL&&/\.[a-f\d]{16}\.js(?:[?#]|$)/.test(FILTER_RUNTIME_URL);
-          const link=h("link");link.rel="stylesheet";link.href=new URL(hashed?FILTER_EDITOR_STYLE:"canopyx-filter-editor.css",runtime).href;
-          script.src=new URL(hashed?FILTER_EDITOR_SCRIPT:"canopyx-filter-editor.js",runtime).href;
-          await Promise.all([new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=()=>{link.remove();reject(new Error("CanopyX: filter editor stylesheet unavailable."));};document.head.appendChild(link);}),
-            new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=()=>{script.remove();reject(new Error("CanopyX: filter editor script unavailable."));};document.head.appendChild(script);})]);script.remove();
+          const runtime=GRID_PART_URL||global.CanopyXFilterEditorBase||document.baseURI,hashed=GRID_PART_URL&&/\.[a-f\d]{16}\.js(?:[?#]|$)/.test(GRID_PART_URL);
+          const load=(element,attribute,file,kind)=>new Promise((resolve,reject)=>{element[attribute]=new URL(file,runtime).href;element.onload=resolve;
+            element.onerror=()=>{element.remove();reject(new Error("CanopyX: "+part.label+" "+kind+" unavailable."));};document.head.appendChild(element);});
+          const link=h("link");link.rel="stylesheet";
+          await Promise.all([part.style&&load(link,"href",hashed?part.style:"canopyx-"+part.name+".css","stylesheet"),
+            load(script,"src",hashed?part.script:"canopyx-"+part.name+".js","script")]);script.remove();
         }
       }
-      if(global.CanopyXFilterEditor?.version!==FILTER_EDITOR_VERSION)throw new Error("CanopyX: filter editor and runtime must come from the same build.");
-      global.CanopyXFilterEditor.install(gridFilterEditorContext());
-    }).catch(error=>{filterEditorReady=null;throw error;});return filterEditorReady;
+      if(global[part.key]?.version!==part.version)throw new Error("CanopyX: "+part.label+" and runtime must come from the same build.");
+      global[part.key].install(part.context());
+    }).catch(error=>{part.ready=null;throw error;});
   }
+  function loadGridFilterEditor(){return loadGridPart(FILTER_EDITOR);}
   Object.assign(DataGrid.prototype,{
     buildGridFilters(){
       this.reportingFacetStops=new Set();this.reportingFacetSequence=0;

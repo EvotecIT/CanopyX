@@ -122,9 +122,13 @@ $assets = @(
 
 $filterEditorParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'filter-editor-parts.json') -Raw | ConvertFrom-Json)
 $filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# Export parts ship in the lazy export file of the grid runtimes. The interactive tree runtime includes its export part
+# directly; the grid-only export parts never reach a tree-only runtime.
+$exportParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'export-parts.json') -Raw | ConvertFrom-Json)
+$exportPaths = @($exportParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 
 function Join-AssetSource {
-    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor)
+    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor, [switch] $ExcludeExport)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
@@ -139,6 +143,7 @@ function Join-AssetSource {
     }
 
     if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
+    if ($ExcludeExport) { $parts = @($parts | Where-Object FullName -NotIn $exportPaths) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -216,8 +221,8 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
 '@
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
-const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels } = CanopyX;
-export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels };
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat };
 export default CanopyX;
 '@
     if ($Grid) {
@@ -309,13 +314,34 @@ $editorScriptName = 'canopyx-filter-editor.' + (Get-AssetHash $editorScript) + '
 $editorStyleName = 'canopyx-filter-editor.' + (Get-AssetHash $editorStyle) + '.css'
 $assets += @(@{ Generated = $editorScript; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.js' },
     @{ Generated = $editorStyle; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.css' })
+$exportBody = Join-AssetSource -SourcePath $exportPaths[0] -ExtensionPath $exportPaths[1..($exportPaths.Count - 1)]
+$exportVersion = Get-AssetHash $exportBody
+$exportHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXExport = {version:"__VERSION__", install(context) {
+if (installed.has(context.EXPORT_IMPL)) return;
+const {DataGrid,EXPORT_IMPL,h,setText,gridButton,gridOption,fill,numberFormat,gridOperationActive,formatting,gridQuery,
+validateGridCursorPage,validateGridPage,GRID_REPORTING,gridFreeze,cellValue,cellText,isCellObject,exportTimeout,exportFormat,EXPORT_FORMATS} = context;
+'@
+$exportFooter = @'
+installed.add(EXPORT_IMPL);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$exportScript = Compress-ScriptSpacing (($exportHeader.Replace('__VERSION__', $exportVersion).Replace("`r`n", "`n")) + "`n" + $exportBody + $exportFooter.Replace("`r`n", "`n") + "`n")
+$exportScriptName = 'canopyx-export.' + (Get-AssetHash $exportScript) + '.js'
+$assets += @(@{ Generated = $exportScript; Target = 'CanopyX.Html/Assets/canopyx-export.js' })
 
 foreach ($asset in $assets) {
     $sourcePath = if ($asset.Source) { Join-Path $root $asset.Source } else { $null }
     $targetPath = Join-Path $root $asset.Target
     $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
-    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath }
+    $grid = [bool]($asset.Extension | Where-Object { $_ -like '*canopyx.grid.source' })
+    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -ExcludeExport:$grid }
     $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
+    $generated = $generated.Replace('__CX_EXPORT_VERSION__', $exportVersion).Replace('__CX_EXPORT_SCRIPT__', $exportScriptName)
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)

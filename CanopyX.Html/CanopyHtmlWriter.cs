@@ -19,7 +19,10 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
+        // A tree on a grid runtime (chosen by grid labels or explicitly) loads its export writers from the export part.
+        var runtime = RuntimeFor(view, options);
+        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options) + (options.AssetMode == CanopyAssetMode.Inline &&
+            (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) ? CanopyHtmlAssets.ExportMarkup : string.Empty);
     }
 
     private static string FragmentDocument(string json, CanopyHtmlOptions options) {
@@ -39,7 +42,7 @@ internal static class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, Runtime = options.Runtime, AssetMode = options.AssetMode };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
@@ -57,7 +60,7 @@ internal static class CanopyHtmlWriter {
     internal static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
-        return FragmentDocument(view.ToJson(), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.FilterEditorMarkup : string.Empty);
+        return FragmentDocument(view.ToJson(), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.FilterEditorMarkup + CanopyHtmlAssets.ExportMarkup : string.Empty);
     }
 
     internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options) {

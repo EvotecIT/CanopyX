@@ -1,9 +1,22 @@
   // ---------- explicit client export scope ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExport: "Export", gridFilteredResults: "Filtered results", gridSelectedRows: "Selected rows",
-    gridAllResults: "All results", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details"
+    gridAllResults: "All results", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
+    gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
+    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export"
   }));
+  // The Export menu body, CSV, copy, the host export hook and format writers ship in the lazy export part. These methods
+  // capture the export synchronously, so the accepted query, columns and selection are the ones at invocation, and finish
+  // once the part is installed. They stay the same functions for the grid's lifetime, so reporting wrappers keep working.
+  const GRID_EXPORT_PART={key:"CanopyXExport",name:"export",label:"export part",version:"__CX_EXPORT_VERSION__",script:"__CX_EXPORT_SCRIPT__",
+    context:()=>({...FILTER_EDITOR.context(),EXPORT_IMPL,gridOperationActive,formatting,validateGridCursorPage,validateGridPage,gridFreeze,isCellObject,exportTimeout,exportFormat,EXPORT_FORMATS})};
+  function loadExportPart(){return loadGridPart(GRID_EXPORT_PART);}
+  for(const name of ["toCsv","copy","exportToHost"])DataGrid.prototype[name]=function(...args){
+    const capture=this.prepareExport(args.at(-1));return loadExportPart().then(()=>EXPORT_IMPL[name].call(this,capture,...args));};
+  for(const name of ["exportText","copyFocused"])DataGrid.prototype[name]=function(...args){return loadExportPart().then(()=>EXPORT_IMPL[name].apply(this,args));};
   Object.assign(DataGrid.prototype, {
+    async *exportRows(...args){await loadExportPart();yield*EXPORT_IMPL.exportRows.apply(this,args);},
+    exportAs(format,options){return exportAs(this,format,options);},
     // Record details is a more-menu entry, kept when the Export menu is switched off.
     buildExportControls() {
       this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridDetails, () => {
@@ -13,29 +26,13 @@
           this.openDetails(row.key).catch(error => this.emit("error", { error }));
         } catch (error) { this.emit("error", { error }); }
       }), { className: "cx-button cx-grid-details" }));
-      if (this.tools.export === false) return;
-      const panel = this.controlPanel(this.labels.gridExport, "cx-grid-export").panel, scope = h("select");
-      scope.setAttribute("aria-label", this.labels.gridExport);
-      for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]]) {
-        scope.appendChild(gridOption(value, this.labels[label]));
-      }
-      panel.appendChild(scope);
-      const status = h("p", "cx-grid-control-error"); status.setAttribute("role", "status");
-      const run = action => {
-        buttons.forEach(button => button.disabled = true); setText(status, this.labels.loading);
-        Promise.resolve().then(action).then(() => setText(status, ""), error => {
-          setText(status, error.message); this.emit("error", { error });
-        }).finally(() => { if (!this.destroyed) buttons.forEach(button => button.disabled = false); });
-      };
-      const csv = gridButton(this.labels.gridDownloadCsv, () => run(async () => {
-        const text = await this.toCsv({ scope: scope.value }), url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
-        try {
-          if (this.destroyed) return;
-          const link = h("a"); link.href = url; link.download = this.view.id.replace(/[^a-z0-9_-]/gi, "_") + ".csv";
-          document.body.appendChild(link); link.click(); link.remove();
-        } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
-      }));
-      const copy = gridButton(this.labels.gridCopy, () => run(() => this.copy({ scope: scope.value })));
-      const buttons = [csv, copy]; panel.append(csv, copy, status);
+      if (this.tools.export !== false) this.exportControl = this.controlPanel(this.labels.gridExport, "cx-grid-export", panel => this.renderGridExport(panel));
+    },
+    // Replaced by the export part's menu once it is installed.
+    async renderGridExport(panel) {
+      if (panel.firstChild) return;
+      setText(panel, this.labels.loading);
+      try { await loadExportPart(); if (!this.destroyed && panel.isConnected) { this.renderGridExport(panel); this.controlFlyouts.forEach(item => item.position()); } }
+      catch (error) { if (!this.destroyed && panel.isConnected) { setText(panel, this.labels.gridLoadFailed); panel.appendChild(gridButton(this.labels.gridRetry, () => this.renderGridExport(panel, setText(panel, "")))); this.emit("error", { error }); } }
     }
   });
