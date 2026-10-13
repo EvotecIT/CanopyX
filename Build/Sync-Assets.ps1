@@ -233,17 +233,22 @@ function Compress-ScriptSpacing {
     param([string] $Content)
 
     # Preserve ASI boundaries and quoted literals. A slash may start a regex, comment or division: keep its suffix
-    # and the following newline. Join only after delimiters that cannot end an ASI statement, or before a closer.
-    $literal = '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|/.*)'
+    # and the following newline. A slash with whitespace on both sides is division (the runtime parts never start
+    # a regex with a space), so its spaces go and the line goes on. Join only after delimiters that cannot end an
+    # ASI statement, or before a closer.
+    $literal = '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|(?!(?<=\s)/\s)/.*)'
     $output = [System.Text.StringBuilder]::new()
     $previous = ''
     $slash = $false
     foreach ($line in $Content.Split("`n")) {
         $pieces = [regex]::Split($line, $literal)
         for ($i = 0; $i -lt $pieces.Length; $i += 2) {
-            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]<>!&|?:%*^])\s*', '$1')
-            # A spaced + or - joins its operands unless a neighbour is another + or -, which would form ++ or --.
-            $pieces[$i] = [regex]::Replace($pieces[$i], '(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])', '$1')
+            if ($pieces[$i] -match '(?:[=(,:?!&|{};\[]|\b(?:return|typeof|case|void|throw|yield|await|delete|in|of|do|else))\s*/\s') {
+                throw "Start a regex with \s or a character class, not a space, in the runtime source parts: $line"
+            }
+            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]<>!&|?:%*^/])\s*', '$1')
+            # Spaces around + or - go unless the neighbour across them is another + or -, which would form ++ or --.
+            $pieces[$i] = [regex]::Replace([regex]::Replace($pieces[$i], '(?<![+\-\s])\s+(?=[+\-])', ''), '(?<=[+\-])\s+(?![+\-\s])', '')
             # A closing brace ends the statement before it; dropping a needed empty statement would not parse.
             $pieces[$i] = $pieces[$i].Replace(';}', '}')
         }
@@ -264,7 +269,9 @@ function Compress-StyleSpacing {
     param([string] $Content)
 
     # Whitespace around braces and after semicolons, commas and declaration colons carries no meaning in CSS.
-    # Quoted text stays as written; spaces inside values and between selector parts are kept.
+    # Quoted text stays as written; spaces inside values and between selector parts are kept. A line break after a
+    # brace, semicolon or comma, or before a closing brace, separates nothing, so those lines are joined; other breaks
+    # (after the header comment, or inside a value that continues on the next line) stay.
     $lines = foreach ($line in $Content.Split("`n")) {
         $pieces = [regex]::Split($line, '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*'')')
         for ($i = 0; $i -lt $pieces.Length; $i += 2) {
@@ -274,7 +281,7 @@ function Compress-StyleSpacing {
         }
         $pieces -join ''
     }
-    $lines -join "`n"
+    [regex]::Replace(($lines -join "`n"), '(?<=[{};,])\n(?=.)|\n(?=\})', '')
 }
 
 function Get-AssetHash([string] $Content) {

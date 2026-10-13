@@ -239,7 +239,7 @@ public sealed class RuntimeAssetTests {
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n").Replace("\r", "\n");
 
-    private static string CompressStyleSpacing(string value) => string.Join("\n", value.Split('\n').Select(line => {
+    private static string CompressStyleSpacing(string value) => Regex.Replace(string.Join("\n", value.Split('\n').Select(line => {
         var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*')");
         for (var i = 0; i < parts.Length; i += 2) {
             var part = Regex.Replace(parts[i], @"\s*([{}])\s*", "$1");
@@ -247,17 +247,17 @@ public sealed class RuntimeAssetTests {
             parts[i] = Regex.Replace(part, @"((?:^|[{;])-*[A-Za-z][\w-]*):\s+", "$1:");
         }
         return string.Concat(parts);
-    }));
+    })), @"(?<=[{};,])\n(?=.)|\n(?=\})", "");
 
     private static string CompressScriptSpacing(string value) {
         var output = new StringBuilder();
         var previous = "";
         var slash = false;
         foreach (var line in value.Split('\n')) {
-            var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|/.*)");
+            var parts = Regex.Split(line, "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|(?!(?<=\\s)/\\s)/.*)");
             for (var i = 0; i < parts.Length; i += 2) {
-                parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]<>!&|?:%*^])\s*", "$1");
-                parts[i] = Regex.Replace(parts[i], @"(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])", "$1");
+                parts[i] = Regex.Replace(parts[i], @"\s*([=(){},;\[\]<>!&|?:%*^/])\s*", "$1");
+                parts[i] = Regex.Replace(Regex.Replace(parts[i], @"(?<![+\-\s])\s+(?=[+\-])", ""), @"(?<=[+\-])\s+(?![+\-\s])", "");
                 parts[i] = parts[i].Replace(";}", "}");
             }
             var compact = string.Concat(parts);
