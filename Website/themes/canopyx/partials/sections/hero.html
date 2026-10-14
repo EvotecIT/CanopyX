@@ -26,8 +26,15 @@
     </div>
   </div>
 
+  <ul class="cnx-stats" aria-label="What the demos below contain">
+    <li><strong>{{ data.demos.files.nodes }}</strong><span>nodes in the explorer below</span></li>
+    <li><strong>{{ data.demos.files.dataFiles }}</strong><span>static files, no server</span></li>
+    <li><strong>{{ data.demos.inventory.rows }}</strong><span>devices in the inventory grid</span></li>
+    <li><strong>0</strong><span>runtime dependencies</span></li>
+  </ul>
   <figure class="cnx-stage" data-cnx-stage>
     <div class="cnx-stage__bar">
+      <span class="cnx-stage__dots" aria-hidden="true"><i></i><i></i><i></i></span>
       <div class="cnx-stage__tabs" role="tablist" aria-label="Live demo">
         <button type="button" role="tab" id="cnx-demo-tab-files" aria-controls="cnx-demo-files" aria-selected="true" tabindex="0" data-cnx-demo="files">File explorer</button>
         <button type="button" role="tab" id="cnx-demo-tab-inventory" aria-controls="cnx-demo-inventory" aria-selected="false" tabindex="-1" data-cnx-demo="inventory">Device inventory</button>
@@ -63,11 +70,12 @@
   </figure>
 </section>
 
-<section class="cnx-facts" aria-label="Product facts">
-  {{~ for f in data.home.facts ~}}
-  <div class="cnx-fact">
-    <h2>{{ f.title }}</h2>
-    <p>{{ f.body }}</p>
-  </div>
+<section class="cnx-surfaces" aria-label="Ways to deliver CanopyX">
+  {{~ for s in data.home.surfaces ~}}
+  <a class="cnx-surface" href="{{ s.url }}">
+    <strong>{{ s.name }}</strong>
+    <span>{{ s.body }}</span>
+    <em>{{ s.action }}</em>
+  </a>
   {{~ end ~}}
 </section>

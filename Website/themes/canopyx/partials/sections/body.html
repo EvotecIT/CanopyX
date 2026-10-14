@@ -9,6 +9,25 @@
   <p class="cnx-note">This table is <code>CanopyStaticHtml.RenderGrid</code> output, the same script-free HTML your emails get.</p>
 </section>
 
+<section class="cnx-showcase" aria-labelledby="cnx-showcase-title">
+  <div class="cnx-showcase__inner">
+    <div class="cnx-showcase__head">
+      <h2 id="cnx-showcase-title">Reports people actually open</h2>
+      <p>Both demos are generated in C# and served as static files. They follow your theme and work the same from a laptop, a file share or a web server.</p>
+    </div>
+    <div class="cnx-showcase__grid">
+      {{~ for c in data.home.showcases ~}}
+      <a class="cnx-shot" href="{{ c.url }}">
+        <span class="cnx-shot__media">
+          <img class="cnx-only-light" src="{{ c.light }}" width="1440" height="820" loading="lazy" decoding="async" alt="{{ c.title }} in the light theme" />
+          <img class="cnx-only-dark" src="{{ c.dark }}" width="1440" height="820" loading="lazy" decoding="async" alt="{{ c.title }} in the dark theme" />
+        </span>
+        <span class="cnx-shot__text"><strong>{{ c.title }}</strong><span>{{ c.body }}</span></span>
+      </a>
+      {{~ end ~}}
+    </div>
+  </div>
+</section>
 <section class="cnx-section cnx-delivery" aria-labelledby="cnx-delivery-title">
   <div class="cnx-section__head">
     <h2 id="cnx-delivery-title">Ship it the way your readers work</h2>

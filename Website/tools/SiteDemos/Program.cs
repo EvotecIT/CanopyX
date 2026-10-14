@@ -22,7 +22,11 @@ var utf8 = new UTF8Encoding(false);
 
 // File explorer: the large file-share tree from the examples, written as a sidecar bundle that loads branches on demand.
 var fileTree = new SyntheticFileTree();
-var files = ExampleViews.FileShares("files", fileTree.Build(shares: 26, departments: 8, projects: 10, minFiles: 10, maxFiles: 40, longListFiles: 3_000));
+var fileRoots = fileTree.Build(shares: 26, departments: 8, projects: 10, minFiles: 10, maxFiles: 40, longListFiles: 3_000);
+// Open the first department and its first project so the explorer starts on files with owners, states and history.
+fileRoots[0].Children[0].Expanded = true;
+fileRoots[0].Children[0].Children[0].Expanded = true;
+var files = ExampleViews.FileShares("files", fileRoots);
 var bundle = files.SaveHtmlBundle(Path.Combine(demos, "files"),
     new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "CanopyX file explorer", Theme = CanopyTheme.Auto });
 
