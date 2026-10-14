@@ -5,9 +5,15 @@
     gridSelection: "Selection", gridSelectPage: "Select page", gridSelectMatching: "Select all matching"
   }));
   const SELECTION_CONTROLS_BASE = {};
-  for (const name of ["buildGridControls", "fillRow", "refreshRowState", "onClick", "onKey", "setQuery"])
+  for (const name of ["buildGridControls", "fillRow", "refreshRowState", "onClick", "onKey", "setQuery", "closeMenusOutside"])
     SELECTION_CONTROLS_BASE[name] = DataGrid.prototype[name];
   Object.assign(DataGrid.prototype, {
+    // The header selection menu closes with the toolbar menus (57-toolbar-panels.js).
+    closeMenusOutside(node) {
+      SELECTION_CONTROLS_BASE.closeMenusOutside.call(this, node);
+      const menu = this.headRow?.querySelector(".cx-header-selection");
+      if (menu?.open && !menu.contains(node)) menu.open = false;
+    },
     buildGridControls() {
       SELECTION_CONTROLS_BASE.buildGridControls.call(this);
       if (!this.view.reporting?.selectionControls) return;
@@ -43,7 +49,7 @@
       this.headCells[0].prepend(menu);
       const flyout = this.headerSelectionFlyout = watchFlyout(menu, panel, () => menu.open);
       panel.popover = "manual";
-      menu.addEventListener("toggle", () => { if (menu.open) { if (panel.isConnected) panel.showPopover?.(); flyout.position(); } else panel.hidePopover?.(); });
+      menu.addEventListener("toggle", () => { if (menu.open) { announceMenu(menu); if (panel.isConnected) panel.showPopover?.(); flyout.position(); } else panel.hidePopover?.(); });
       menu.addEventListener("keydown", event => { if (event.key === "Escape") { menu.open = false; summary.focus(); event.preventDefault(); } });
       this.syncSelectionControls();
     },    runReportingSelection(action) {

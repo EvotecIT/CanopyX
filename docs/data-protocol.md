@@ -275,6 +275,12 @@ as the flat grid's menus and fit. Single-file pages carry it as inert payloads (
 content-hashed files beside itself, so hosts serve them beside every entry point. The tree reports ready once the part is
 installed; a tree whose part cannot load keeps its rows, search and filter switches and reports a `canopyx:error`.
 
+CanopyX menus (the toolbar menus, a flat grid's column popover, a tree's actions menu and the reporting header selection
+menu) close on a pointer press or focus outside them, and when another CanopyX menu opens: an opening menu dispatches
+`canopyx:closemenus` on the document with itself as `detail.source`. A host closes them the same way, dispatching
+`canopyx:closemenus` on the document (every view) or, with `bubbles: true`, on an element that holds views (those views); `closeMenus()` on a grid
+or tree closes its own. A host can listen to the event to close its own popovers when a CanopyX menu opens.
+
 Tree columns declare their initial `width` and may include `minWidth` and `maxWidth` in CSS pixels. The bounds are
 integers from 40 through 2,147,483,647, with the minimum no greater than the maximum; absent bounds use that full
 range. The runtime clamps the initial width, pointer and keyboard resizing, `setColumnWidth()` and restored widths

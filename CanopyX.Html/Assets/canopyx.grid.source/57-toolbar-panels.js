@@ -15,15 +15,27 @@
     const option = h("option"); option.value = value; setText(option, text); return option;
   }
 
+  // A CanopyX menu that opens dispatches this event on the document with itself as detail.source; a host dispatches it on
+  // the document, or on an element that holds views, to close their menus (closeMenus closes one view's).
+  const MENU_EVENT = "canopyx:closemenus", announceMenu = source => document.dispatchEvent(new CustomEvent(MENU_EVENT, { detail: { source } }));
   const TOOLBAR_PANELS = {
-    // Menus close on a pointer press outside them; their flyouts follow the viewport until the view is destroyed.
+    // Menus close on a pointer press or focus outside them, when another CanopyX menu opens and on the menu event; their
+    // flyouts follow the viewport until the view is destroyed.
     startMenus() {
       this.controlFlyouts = [];
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
-      document.addEventListener("pointerdown", event => {
-        for (const details of this.toolbar.children) if (details.open && !details.contains(event.target)) details.open = false;
-      }, { signal: this.lifetime.signal });
+      // A menu event without a source closes every menu of the views inside its target (the document holds them all).
+      for (const type of ["pointerdown", "focusin", MENU_EVENT]) document.addEventListener(type, event =>
+        (type !== MENU_EVENT || event.target.contains(this.host)) && this.closeMenusOutside(event.detail?.source || event.target), { signal: this.lifetime.signal });
     },
+    // Closes the toolbar menus (and the menus inside them, such as Views and Export in the phone more menu) and the column
+    // popover that do not hold the node (the document closes every one).
+    closeMenusOutside(node) {
+      for (const details of this.toolbar.querySelectorAll(".cx-columns[open]")) if (!details.contains(node)) details.open = false;
+      const popover = this.gridPopover;
+      if (popover && !popover.panel.contains(node) && !popover.anchor?.contains(node)) this.closeGridPopover(false);
+    },
+    closeMenus() { this.closeMenusOutside(document); },
 
     controlPanel(title, className, onOpen) {
       const details = h("details", "cx-columns " + className), summary = h("summary", "cx-btn"), panel = h("div", "cx-columns-list cx-grid-panel cx-pop");
@@ -38,7 +50,7 @@
       // inside it (the phone layout moves Views and Export into the more menu).
       panel.popover = "manual";
       const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
-      details.addEventListener("toggle", () => { if (details.open) { if (panel.isConnected) panel.showPopover?.(); if (onOpen) onOpen(panel); flyout.position(); } else { panel.hidePopover?.(); for (const inner of panel.querySelectorAll("details[open]")) inner.open = false; } });
+      details.addEventListener("toggle", () => { if (details.open) { announceMenu(details); if (panel.isConnected) panel.showPopover?.(); if (onOpen) onOpen(panel); flyout.position(); } else { panel.hidePopover?.(); for (const inner of panel.querySelectorAll("details[open]")) inner.open = false; } });
       details.addEventListener("keydown", event => {
         if (event.key === "Escape" && details.open) { details.open = false; summary.focus(); event.preventDefault(); event.stopPropagation(); }
       });

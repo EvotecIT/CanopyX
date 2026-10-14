@@ -42,6 +42,8 @@ export interface TreeGrid {
   visibleRows(): { node: CanopyNode; level: number; path: string[] }[];
   /** The indented outline of the open rows that print uses; drawn by the tree tools part, so empty until ready. */
   toOutline(): string;
+  /** Closes this tree's toolbar menus and actions menu (none before ready). To close every view's menus, dispatch canopyx:closemenus on the document. */
+  closeMenus(): void;
   /** Once ready (the tree tools part): captures the visible rows (default), the loaded selected nodes or all rows now, with level and id path. */
   prepareExport(options?: TreeExportOptions): TreeExport;
   /** Once ready: captures now, then runs a registered or configured export format and downloads its file. */
