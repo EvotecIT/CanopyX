@@ -3,7 +3,7 @@
   const FILTER_EDITOR={key:"CanopyXFilterEditor",name:"filter-editor",label:"filter editor",version:"__CX_FILTER_VERSION__",script:"__CX_FILTER_SCRIPT__",style:"__CX_FILTER_STYLE__",
     context:()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
-    reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,
+    reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,announceMenu,
     GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null})};
   function loadGridFilterEditor(){return loadPart(FILTER_EDITOR);}
   Object.assign(DataGrid.prototype,{

@@ -121,3 +121,34 @@ test("a tree host takes over Enter and double-click activation; Space, the expan
   await expect(row(page, "a")).toHaveAttribute("aria-expanded", "false");
   await capture(page, "row-activation-tree");
 });
+
+// The drawer's title: whether it has focus and shows a focus ring, and its subtitle.
+const drawerTitle = page => page.locator(".cx-drawer h4").evaluate(title => ({ focused: document.activeElement === title,
+  ring: title.matches(":focus-visible") && getComputedStyle(title).outlineStyle !== "none", subtitle: title.nextElementSibling.hidden ? null : title.nextElementSibling.textContent }));
+
+for (const theme of ["light", "dark"]) {
+  test("the record drawer takes focus with a ring for keyboard activation only, and shows no raw id (" + theme + ")", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: theme });
+    await open(page, gridView({ rowAction: "details" }));
+    await page.locator("[data-canopyx-host]").evaluate((host, value) => host.setAttribute("data-cx-theme", value), theme);
+    await page.locator('.cx-row[data-cx-id="r4"] .cx-cell').first().click();
+    await expect(page.locator(".cx-drawer h4")).toHaveText("Server 4");
+    expect(await drawerTitle(page)).toEqual({ focused: true, ring: false, subtitle: null });
+    await capture(page, "drawer-mouse-" + theme + "-1100");
+    await page.keyboard.press("Escape");
+    await row(page, "r4").focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".cx-drawer h4")).toHaveText("Server 4");
+    expect(await drawerTitle(page)).toEqual({ focused: true, ring: true, subtitle: null });
+    await capture(page, "drawer-keyboard-" + theme + "-1100");
+  });
+}
+
+test("a double click opens the drawer without a ring, and a configured secondary column is its subtitle", async ({ page }) => {
+  await open(page, gridView({ columns: [{ id: "name", title: "Name", kind: "text", presenter: { kind: "identifier", secondaryColumn: "site" } },
+    { id: "state", title: "State", kind: "text" }, { id: "site", title: "Site", kind: "text" }],
+    rows: Array.from({ length: 3 }, (_, i) => ({ id: "r" + i, cells: { name: "Server " + i, state: "Pass", site: "Site " + i } })) }));
+  await row(page, "r1").locator(".cx-cell").nth(1).dblclick();
+  await expect(page.locator(".cx-drawer h4")).toHaveText("Server 1");
+  expect(await drawerTitle(page)).toEqual({ focused: true, ring: false, subtitle: "Site 1" });
+});
