@@ -1,15 +1,33 @@
 # Column sizing, priority and pinning
 
-Flat grids size their columns from their content, fill the width they are given, and decide what gives way when the
+Flat grids and trees size their columns from their content, fill the width they are given, and decide what gives way when the
 width runs short. Hosts describe intent (which column identifies a row, which columns matter, which may hide); the
 runtime turns it into widths for the current container, recomputes when the container resizes, a column is shown or
 hidden, or a new query result arrives, and never recomputes while scrolling. The generated examples include
 `column-layout.html` (and `column-layout-dark.html`) with wide, narrow, pinned and phone-sized containers.
 
-Tree columns use the same `CanopyColumnSizing` bounds. Their initial width is the assigned width, or 160 pixels
-clamped to those bounds. Pointer and keyboard resizing, `setColumnWidth()` and restored state all honour the bounds;
-the resize separator exposes them through ARIA. Automatic content fitting, flex and responsive priorities apply to
-flat grids.
+## Trees
+
+Trees run the same fit routines (`canopyx.grid.source/33-column-fit-core.js`) from their tree tools part, with these
+differences:
+
+- **Need.** A tree column measures the header and up to 2,000 visible rows (not loaded but collapsed ones) in the grid
+  font. The tree column adds each row's indent (18 pixels a level below the first), the 18-pixel expander and the cell's
+  gaps, its icon, an interactive checkbox and its badges, so its need is the width of its deepest, longest visible row.
+  It is measured whole, up to its `maxWidth`; other columns stop at 420 pixels. Columns are measured again when the
+  visible rows change (expanding, collapsing, filtering, sorting, loading), at most once a frame, never while scrolling.
+- **Identity and pinning.** The tree column is always the identity column: essential, first, and pinned left while the
+  other columns scroll, unless it declares `Pinned = CanopyGridColumnPin.None` (`pinned: null`); `PinTreeColumn` and
+  `setTreeColumnPinned` still apply. Other tree columns cannot be pinned, and `RowHeader` is a flat-grid option.
+- **Widths.** A content-sized column (`CanopyColumnSizing.Content`, the default) writes `autoWidth: true` and 160 pixels as
+  the width a tree uses until the tree tools part has measured; an assigned width is preferred. User widths are sticky
+  (`sized` in remembered state and named views) until **Reset columns**; a host's restored width that differs from the
+  declared one counts as a user width. Pointer and keyboard resizing start from the width on screen.
+- **Hiding.** Optional columns hide first, normal ones too on phones (a host of 640 pixels or less), as on flat grids. The
+  Columns menu marks them "Hidden at this width"; exports keep them. There is no record drawer or "+N" button on trees.
+
+The `tree-parity.html` example (and `tree-parity-dark.html`) shows an organisation chart, a file system eleven levels deep
+and nested groups that start collapsed to three rows.
 
 ## How a width is chosen
 
