@@ -288,7 +288,7 @@ public sealed partial class CanopyDataGridView {
         return columnIds;
     }
 
-    private static bool IsExportFormatId(string? id) {
+    internal static bool IsExportFormatId(string? id) {
         if (id == null || id.Length == 0 || id.Length > 32 || id[0] < 'a' || id[0] > 'z' || id == "csv") return false;
         foreach (var character in id) {
             if (!(character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '-')) return false;

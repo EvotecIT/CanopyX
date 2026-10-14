@@ -910,7 +910,14 @@
         "sortable": { "type": "boolean" },
         "editable": { "type": "boolean" },
         "hidden": { "type": "boolean" },
-        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." }
+        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." },
+        "autoWidth": { "type": "boolean", "description": "Tree columns: fit the visible rows' content; width is the fallback until the tree tools part measures." },
+        "fixed": { "type": "boolean", "description": "Tree columns: the width is hard during fitting. Otherwise width is preferred." },
+        "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Tree columns: share of spare width, given before the tree column." },
+        "autoSize": { "enum": ["content", "header", "none"], "description": "Tree columns: what content measuring reads. Default content." },
+        "priority": { "$ref": "#/$defs/gridColumn/properties/priority" },
+        "alwaysVisible": { "type": "boolean", "description": "Tree columns: retained during responsive fitting." },
+        "pinned": { "enum": ["left", null], "description": "Tree column only: null lets it scroll sideways; it pins left by default." }
       }
     },
     "gridColumn": {
@@ -1083,6 +1090,9 @@
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
         "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
         "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control tree toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" } } },
+        "exportFormats": { "$ref": "#/$defs/grid/properties/exportFormats" },
+        "autoHeight": { "type": "boolean", "description": "A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true." },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
         "labels": {
@@ -1181,6 +1191,8 @@
             "gridFilteredResults": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectedRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridAllResults": { "$ref": "#/$defs/accessibleLabel" },
+            "gridVisibleRows": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAllRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridDownloadCsv": { "$ref": "#/$defs/accessibleLabel" },
             "gridCopy": { "$ref": "#/$defs/accessibleLabel" },
             "gridDetails": { "$ref": "#/$defs/accessibleLabel" },

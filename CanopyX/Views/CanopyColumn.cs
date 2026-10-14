@@ -34,7 +34,7 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets or sets the column's immutable sizing intent. The default fits content; tree widths start at 160 pixels within the bounds.</summary>
+    /// <summary>Gets or sets the column's immutable sizing intent. The default fits content in flat grids and trees; trees write 160 pixels, within the bounds, as the width a tree uses until its columns are measured.</summary>
     public CanopyColumnSizing Sizing {
         get => _sizing;
         set => _sizing = value ?? throw new ArgumentNullException(nameof(value));
@@ -77,7 +77,7 @@ public sealed partial class CanopyColumn {
         writer.Property("width", InitialWidth);
         if (Sizing.Minimum != MinWidth) writer.Property("minWidth", Sizing.Minimum);
         if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);
-        if (grid && !Sizing.Width.HasValue) writer.Property("autoWidth", true);
+        if (!Sizing.Width.HasValue) writer.Property("autoWidth", true);
         writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {
             writer.Property("sortable", true);
@@ -86,7 +86,7 @@ public sealed partial class CanopyColumn {
         if (Wrap) writer.Property("wrap", true);
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);
-        if (grid) WriteLayoutJson(writer);
+        WriteLayoutJson(writer, grid);
         if (grid) writer.OptionalProperty("section", Section);
 
         if (Hidden) {

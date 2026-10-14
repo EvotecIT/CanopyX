@@ -118,6 +118,19 @@ public sealed class CanopyTreeView {
     /// <summary>Gets the "only matching" switches shown in the toolbar.</summary>
     public IList<CanopyFilter> Filters { get; } = new List<CanopyFilter>();
 
+    /// <summary>Gets the per-control toolbar switches: filter switches, Columns, Views, Export and the more menu. All default to on.</summary>
+    public CanopyTreeToolbar Toolbar { get; } = new CanopyTreeToolbar();
+
+    /// <summary>Gets the identities of the registered export formats the Export menu offers, in order.</summary>
+    /// <remarks>Each identity names a format the page registers in the browser with <c>CanopyX.registerExportFormat</c>; an identity no page registers is skipped. Empty writes nothing, which offers every registered format; a browser host's <c>exportFormats</c> option takes precedence. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
+    public IList<string> ExportFormats { get; } = new List<string>();
+
+    /// <summary>
+    /// Gets or sets whether a tree with few visible rows is only as tall as its toolbar, header and rows. Longer trees keep
+    /// the host's height and scroll inside it; the height follows expanding and collapsing. Defaults to true.
+    /// </summary>
+    public bool AutoHeight { get; set; } = true;
+
     /// <summary>
     /// Gets the icons nodes can refer to by key, as trusted SVG markup declared once per view. Icons are drawn with
     /// the text colour, so use <c>currentColor</c> in the SVG.
@@ -279,6 +292,21 @@ public sealed class CanopyTreeView {
         if (Search != null) {
             writer.Name("search");
             Search.WriteJson(writer);
+        }
+
+        if (!Toolbar.IsDefault) {
+            writer.Name("toolbar");
+            Toolbar.WriteJson(writer);
+        }
+
+        if (ExportFormats.Count > 0) {
+            writer.Name("exportFormats").BeginArray();
+            foreach (var format in ExportFormats) writer.String(format);
+            writer.EndArray();
+        }
+
+        if (!AutoHeight) {
+            writer.Property("autoHeight", false);
         }
 
         if (Filters.Count > 0) {
