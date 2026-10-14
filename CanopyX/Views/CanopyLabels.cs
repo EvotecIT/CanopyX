@@ -466,7 +466,10 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the flat-grid control text. Default "is present".</summary>
     public string GridIsNotNull { get => Get(); set => Set(value); }
 
-    /// <summary>Gets whether translations require the flat-grid superset runtime.</summary>
+    /// <summary>
+    /// Gets whether a flat-grid label is translated. Flat grids always use a grid runtime; a tree view writes only the
+    /// labels the tree runtimes read (its toolbar menus' grid labels among them), so its translations never require one.
+    /// </summary>
     public bool RequiresDataGridRuntime {
         get {
             foreach (var name in _values.Keys) if (name.StartsWith("Grid", StringComparison.Ordinal)) return true;
@@ -578,23 +581,24 @@ public sealed partial class CanopyLabels {
     }
 
     /// <summary>Whether any label the browser reads differs from English, so the view document carries it.</summary>
-    internal bool HasRuntimeLabels {
-        get {
-            foreach (var name in RuntimeNames) {
-                if (_values.ContainsKey(name)) {
-                    return true;
-                }
+    /// <param name="tree">Count only the labels the tree runtimes read (a tree view's document).</param>
+    internal bool HasRuntimeLabels(bool tree) {
+        foreach (var name in RuntimeNames) {
+            if (_values.ContainsKey(name) && (!tree || ReadByTrees(name))) {
+                return true;
             }
-
-            return false;
         }
+
+        return false;
     }
 
     /// <summary>Writes the view document's <c>labels</c>: the labels the browser reads that differ from English.</summary>
-    internal void WriteJson(CanopyJsonWriter writer) {
+    /// <param name="writer">The view document's writer.</param>
+    /// <param name="tree">Write only the labels the tree runtimes read (a tree view's document).</param>
+    internal void WriteJson(CanopyJsonWriter writer, bool tree) {
         writer.BeginObject();
         foreach (var name in RuntimeNames) {
-            if (_values.TryGetValue(name, out var value)) {
+            if ((!tree || ReadByTrees(name)) && _values.TryGetValue(name, out var value)) {
                 writer.Property(char.ToLowerInvariant(name[0]) + name.Substring(1), value);
             }
         }

@@ -4,23 +4,13 @@
   // into TreeGrid. The toolbar reads, left to right: search, the filter switches, Columns, Views, then Export and the
   // more menu at the right edge, as on a flat grid.
 
-  // English texts of the menus. The tree runtimes carry no grid labels; on a grid runtime the tree's own labels, translated
-  // ones included, take precedence.
-  const TOOL_LABELS = {
-    gridViews: "Views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view", gridResetView: "Reset view",
-    gridChooseView: "Choose a saved view", gridApply: "Apply", gridFindColumn: "Find a column…", gridShowAllColumns: "Show all",
-    gridResetColumns: "Reset columns", gridReorderColumn: "{column}: drag, or press Alt+Up or Alt+Down to move", gridPinnedLeft: "Pinned left",
-    gridPinnedRight: "Pinned right", gridResponsiveHidden: "Hidden at this width", gridExport: "Export", gridVisibleRows: "Visible rows",
-    gridSelectedRows: "Selected rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy",
-    gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records", gridExportCancelled: "Export cancelled",
-    gridCancelExport: "Cancel export", gridMore: "More", gridPrint: "Print"
-  };
-
+  // The menus' texts are labels of every tree runtime (canopyx.source/02-tree-tool-labels.js on the tree runtimes, the flat
+  // grid's labels on the grid runtimes), so the tree's labels, translated ones included, are complete here.
   Object.assign(TreeGrid.prototype, TOOLBAR_PANELS, COLUMNS_MENU, {
     /** Builds this tree's menus, then starts column fitting and auto height. Runs once per tree, after the part installs. */
     installTools() {
       this.checkTreeLayout();
-      const bar = this.toolbar, tools = this.tools, labels = this.labels = Object.freeze({ ...TOOL_LABELS, ...this.labels });
+      const bar = this.toolbar, tools = this.tools, labels = this.labels;
       this.host.classList.add("cx-chrome", "cx-tree-tools");
       this.exportScopes = [["visible", "gridVisibleRows"], ["selected", "gridSelectedRows"], ["all", "gridAllRows"]];
       // The search box takes the flat grid's look, with its icon.

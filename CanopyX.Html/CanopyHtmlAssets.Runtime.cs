@@ -4,13 +4,14 @@ namespace CanopyX.Html;
 
 public static partial class CanopyHtmlAssets {
     /// <summary>Gets the browser entry point required to render a view.</summary>
-    /// <param name="view">The view whose features and translated labels determine the minimum runtime.</param>
+    /// <param name="view">The view whose interaction features and interaction labels determine the minimum runtime.</param>
     /// <param name="preferred">The host's preferred runtime when the view needs no interactive features.</param>
-    /// <returns>The preferred runtime, upgraded when the view's interactions or translations require a larger entry point.</returns>
+    /// <returns>The preferred runtime, upgraded when the view's interactions or interaction labels require the interactive entry point.</returns>
     /// <remarks>
     /// Fragment hosts use this result with <see cref="GetScript"/> and <see cref="GetStyle"/>.
     /// A page containing several views includes the interactive entry point once if any view requires it.
-    /// The interactive entry point includes the standard tree runtime.
+    /// The interactive entry point includes the standard tree runtime. A tree's other labels, the toolbar menus' grid labels
+    /// among them, never require a larger entry point: the view writes only the labels the tree runtimes read.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="preferred"/> is unknown.</exception>
@@ -18,9 +19,7 @@ public static partial class CanopyHtmlAssets {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (preferred != CanopyRuntime.TreeGrid && preferred != CanopyRuntime.InteractiveTreeGrid && preferred != CanopyRuntime.DataGrid && preferred != CanopyRuntime.ReportingGrid)
             throw new ArgumentOutOfRangeException(nameof(preferred), preferred, "Unknown browser runtime.");
-        if (view.Labels.RequiresReportingRuntime) return CanopyRuntime.ReportingGrid;
         if (preferred == CanopyRuntime.DataGrid || preferred == CanopyRuntime.ReportingGrid) return preferred;
-        if (view.Labels.RequiresDataGridRuntime) return CanopyRuntime.DataGrid;
         if (view.Checkboxes != CanopyCheckboxMode.None || view.DragDrop || view.ContextActions.Count > 0 || view.Labels.RequiresInteractiveRuntime)
             return CanopyRuntime.InteractiveTreeGrid;
         foreach (var column in view.Columns) if (column.Editable) return CanopyRuntime.InteractiveTreeGrid;

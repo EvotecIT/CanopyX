@@ -126,9 +126,12 @@ $filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullP
 # directly; the grid-only export parts never reach a tree-only runtime.
 $exportParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'export-parts.json') -Raw | ConvertFrom-Json)
 $exportPaths = @($exportParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# Tree-only core parts define what the grid parts define again for flat grids (the tree menus' labels); grid runtimes leave them out.
+$treeOnlyParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'tree-only-parts.json') -Raw | ConvertFrom-Json)
+$treeOnlyPaths = @($treeOnlyParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 
 function Join-AssetSource {
-    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor, [switch] $ExcludeExport)
+    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor, [switch] $GridRuntime)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
@@ -143,7 +146,7 @@ function Join-AssetSource {
     }
 
     if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
-    if ($ExcludeExport) { $parts = @($parts | Where-Object FullName -NotIn $exportPaths) }
+    if ($GridRuntime) { $parts = @($parts | Where-Object { $_.FullName -notin $exportPaths -and $_.FullName -notin $treeOnlyPaths }) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -373,7 +376,7 @@ foreach ($asset in $assets) {
     $targetPath = Join-Path $root $asset.Target
     $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
     $grid = [bool]($asset.Extension | Where-Object { $_ -like '*canopyx.grid.source' })
-    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -ExcludeExport:$grid }
+    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -GridRuntime:$grid }
     $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
     $generated = $generated.Replace('__CX_EXPORT_VERSION__', $exportVersion).Replace('__CX_EXPORT_SCRIPT__', $exportScriptName)
     $generated = $generated.Replace('__CX_TOOLS_VERSION__', $toolsVersion).Replace('__CX_TOOLS_SCRIPT__', $toolsScriptName).Replace('__CX_TOOLS_STYLE__', $toolsStyleName)

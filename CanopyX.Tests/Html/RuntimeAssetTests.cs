@@ -37,6 +37,9 @@ public sealed class RuntimeAssetTests {
         // Grid runtimes load the export parts from the lazy export file; the interactive tree runtime includes its tree part.
         var exportParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "export-parts.json")))!;
         var exportPaths = exportParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // Tree-only core parts (the tree menus' labels) are defined again by the grid parts, so grid runtimes leave them out.
+        var treeOnlyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "tree-only-parts.json")))!;
+        exportPaths.UnionWith(treeOnlyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))));
         if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) files = files.Where(file => !exportPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
         var parts = files

@@ -59,11 +59,14 @@ public sealed class GridExportFormatTests {
 
     [Fact]
     public void TreePagesOnAGridRuntime_CarryTheExportPartInline() {
+        // A translated tree stays on the tree runtimes (its interaction texts choose the interactive one); a grid runtime is
+        // the host's choice, and then the tree's exports run through the export part.
         var tree = new CanopyTreeView("files", "Files") { Labels = CanopyLabels.Polish() };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(tree));
-        Assert.Contains("application/x-canopyx-export", tree.ToHtmlPage());
-        Assert.Contains("application/x-canopyx-export", tree.ToHtmlFragment());
+        Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(tree));
+        Assert.DoesNotContain("application/x-canopyx-export", tree.ToHtmlPage());
+        Assert.Contains("application/x-canopyx-export", tree.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.DataGrid }));
+        Assert.Contains("application/x-canopyx-export", tree.ToHtmlFragment(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
         var plain = new CanopyTreeView("plain", "Plain");
         plain.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtmlPage());

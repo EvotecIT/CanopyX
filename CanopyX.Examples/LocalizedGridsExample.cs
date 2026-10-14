@@ -32,5 +32,26 @@ internal static class LocalizedGridsExample {
                 view.SaveHtmlPage(Path.Combine(output, "localized-grid-" + languages[language] + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = titles[language], Language = languages[language], Theme = theme });
         }
+        WriteTree(output);
+    }
+
+    /// <summary>A tree with the complete Polish pack: its toolbar menus are translated and it stays on a tree runtime.</summary>
+    private static void WriteTree(string output) {
+        var tree = new CanopyTreeView("localized-tree", "Struktura raportów") {
+            Labels = CanopyLabels.Polish(), StateKey = "localized-tree", Search = new CanopySearchOptions()
+        };
+        tree.Columns.Add(new CanopyColumn("name", "Raport"));
+        tree.Columns.Add(new CanopyColumn("status", "Stan"));
+        for (var group = 0; group < 6; group++) {
+            var node = new CanopyNode("group-" + group, "Grupa " + (group + 1)) { Expanded = group == 0 };
+            node.Cells["status"] = "Zakończony";
+            for (var i = 0; i < 4; i++) {
+                var child = new CanopyNode("group-" + group + "-" + i, "Raport " + (group * 4 + i + 1));
+                child.Cells["status"] = i == 0 ? "Do sprawdzenia" : "Zakończony";
+                node.Children.Add(child);
+            }
+            tree.Roots.Add(node);
+        }
+        tree.SaveHtmlPage(Path.Combine(output, "localized-tree-pl.html"), new CanopyHtmlOptions { Title = tree.Label, Language = "pl" });
     }
 }

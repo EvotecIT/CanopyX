@@ -19,8 +19,11 @@ public sealed class GridFilterControlTests {
         Assert.Equal("Filtruj {column}", document.RootElement.GetProperty("labels").GetProperty("gridHeaderFilter").GetString());
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(grid));
         var tree = new CanopyTreeView("tree", "Tree");
+        tree.Columns.Add(new CanopyColumn("name", "Name"));
         tree.Labels.GridHeaderFilter = "Filtruj {column}";
-        Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(tree, CanopyRuntime.DataGrid));
+        // A tree never reads the flat grid's filter labels: it leaves them out and keeps the runtime the host chose.
+        Assert.Equal(CanopyRuntime.DataGrid, CanopyHtmlAssets.GetRuntime(tree, CanopyRuntime.DataGrid));
+        Assert.DoesNotContain("gridHeaderFilter", tree.ToJson());
         grid.Reporting = null;
         Assert.Equal(CanopyRuntime.ReportingGrid, CanopyHtmlAssets.GetRuntime(grid));
     }
