@@ -47,7 +47,7 @@
     }
     const update=()=>{try{syncWords(root);apply(readQuery());setText(error,"");}catch(_){clearTimeout(timer);draft=null;setText(error,this.labels.gridInvalidFilter);}};
     const makeGroup=(parent,definition,depth)=>{
-      const block=h("div",depth?"cx-group cx-grid-filter-group":"cx-filter-root"),heading=h("div","cx-group-h"),rows=h("div","cx-condition-rows"),children=h("div","cx-grid-filter-group-children"),actions=h("div","cx-adds");
+      const block=h("div",depth?"cx-grid-filter-group":"cx-filter-root"),heading=h("div","cx-group-h"),rows=h("div","cx-condition-rows"),children=h("div","cx-grid-filter-group-children"),actions=h("div","cx-adds");
       const segment=gridFilterSegment(this,definition?.operator||"and",update);if(!depth)heading.append(document.createTextNode(this.labels.gridShowRowsWhere+" "));
       heading.append(segment,document.createTextNode(" "+(depth?this.labels.gridOfThese:this.labels.gridOfTheseAreTrue)));
       block._group={segment,rows,children};block.append(heading,rows,children,actions);parent.appendChild(block);
