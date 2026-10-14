@@ -1,9 +1,5 @@
 
   // ---------- tree grid: remembered state, deep links, outline, counts ----------
-  function escapeHtml(value) {
-    return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
-  }
-
   Object.assign(TreeGrid.prototype, {
     pathOf(w) {
       const path = [];
@@ -173,44 +169,11 @@
       return this.rows.filter((w) => !w.status).map((w) => ({ node: w.h, level: w.level, path: this.pathOf(w) }));
     },
 
-    /** An indented outline table of the rows that are open, for print and hosts that export what the user sees. */
-    toOutline() {
-      const cols = this.visibleColumns();
-      const out = ["<table class=\"cx-outline-table\"><thead><tr>"];
-      cols.forEach((column) => out.push("<th>" + escapeHtml(column.title) + "</th>"));
-      out.push("</tr></thead><tbody>");
-      this.rows.forEach((w) => {
-        if (w.status) {
-          return;
-        }
-        const pad = " style=\"padding-left:" + ((w.level - 1) * 14 + 4) + "px\"";
-        if (w.h.detail) {
-          const detail = w.h.detail;
-          const content = h("div");
-          this.renderDetail(w.h, content, true);
-          out.push("<tr><td" + pad + " colspan=\"" + cols.length + "\">" + content.innerHTML + "</td></tr>");
-          return;
-        }
-        out.push("<tr>");
-        cols.forEach((column, i) => {
-          const index = this.columns.indexOf(column);
-          const value = this.cellOf(w.h, column, index);
-          const text = cellText(value, column, this.fmt);
-          const content = h("span");
-          const slot = {};
-          try {
-          if (!column.render || column.render(w.h, content, new HostCellContext(slot, column.id, w.level, w.expanded, index)) !== true) {
-            const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
-            content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.fmt));
-          }
-          out.push("<td" + (i === 0 ? pad : "") + ">" + content.outerHTML + "</td>");
-          } finally { disposeHostSlot(slot); }
-        });
-        out.push("</tr>");
-      });
-      out.push("</tbody></table>");
-      return out.join("");
-    },
+    /**
+     * An indented outline table of the rows that are open, for print and hosts that export what the user sees. The tree
+     * tools part draws it (canopyx.tree-tools.source/47-tree-outline.js); until it is installed the outline is empty.
+     */
+    toOutline() { return this.outlineMarkup ? this.outlineMarkup() : ""; },
 
     /** Retires loaded descendants and their requests, including inactive cache membership. */
     invalidateChildren(w) {

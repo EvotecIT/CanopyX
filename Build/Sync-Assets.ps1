@@ -354,7 +354,7 @@ const installed = new WeakSet();
 global.CanopyXTreeTools = {version:"__VERSION__", install(context) {
 if (installed.has(context.TreeGrid.prototype)) return;
 const {TreeGrid,h,setText,fill,numberFormat,watchFlyout,columnWidth,prepareWidth,cellText,cellValue,isCellObject,foldText,formatting,
-sortKey,compareKeys,EXPORT_FORMATS,exportFormat,exportTimeout,INDENT,MAX_PROTOCOL_INTEGER} = context;
+sortKey,compareKeys,EXPORT_FORMATS,exportFormat,exportTimeout,INDENT,MAX_PROTOCOL_INTEGER,detailCell,HostCellContext,disposeHostSlot} = context;
 const EXPORT_IMPL = {};
 '@
 $toolsFooter = @'
