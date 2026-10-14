@@ -255,7 +255,7 @@ A registered format is offered by every grid on the page that does not choose it
 
 Page reads keep their own `requestTimeoutMs` deadline. The writer runs under a separate safety timeout, `exportTimeoutMs` (10 minutes by default, also per call as `timeoutMs`; checked when an export runs), so long workbook or PDF generation is not cut off at 30 seconds; Cancel export, the timeout and grid destruction abort its `signal` and settle the menu even when a writer ignores it. A writer error is shown in the menu status and dispatched as the grid's `error` event. `onExport`/`exportToHost` use the same export timeout.
 
-Tree grids capture with `api.prepareExport({ scope: "visible" })` (the rows the reader can see) or `{ scope: "selected" }` (the loaded selected nodes in tree order, including collapsed branches). Each record carries `level` (1 for a root) and `path` (the id path ending with its own id) beside its cells, so a writer can indent or add Level and Path columns. `api.exportAs("xlsx", { scope: "visible" })` runs the same writers. Tree exports need the interactive tree runtime or a grid runtime; the core-only tree script has none.
+Tree grids list the same formats in their own Export menu, after Download CSV, with the scopes Visible rows, Selected rows and All rows. Hosts capture with `api.prepareExport({ scope: "visible" })` (the rows the reader can see), `{ scope: "selected" }` (the loaded selected nodes in tree order, including collapsed branches) or `{ scope: "all" }` (every node in sort order: the whole inline tree, or the loaded nodes of a lazy source). Each record carries `level` (1 for a root) and `path` (the id path ending with its own id) beside its cells, so a writer can indent or add Level and Path columns; the built-in CSV indents the tree column by level. `api.exportAs("xlsx", { scope: "visible" })` runs the same writers. Every tree runtime has tree exports once the tree is ready (they come with the tree tools part); `CanopyTreeView.ExportFormats` chooses which registered formats the menu offers. A host that drew its own export buttons above a tree can drop them and use the tree's Export menu.
 
 The Export menu body, CSV, copy and the writers ship in `canopyx-export.js`, loaded on first use (the menu, an export method, Ctrl/Command+C or reading a capture). The .NET page, fragment and asset writers include it automatically; JavaScript hosts serve it beside the grid runtime or module, as they do the filter editor, also when the Export menu is switched off.
 
@@ -297,19 +297,42 @@ Toolbar menus (Filters, Columns, Views, Export, ⋯ and the header selection men
 
 ## Tree Grid Features
 
+Trees have the flat grid's toolbar: the search box and filter switches on the left, then **Columns** (show, hide and
+reorder; the tree column stays first and shown), **Views** (named session views and Reset view, with `StateKey`), and on
+the right **Export** (Visible rows, Selected rows or All rows as CSV or a registered format, with progress, Cancel export
+and status) and the **⋯** menu (host `actions` run with the selected nodes, and Print). On phones Views and Export move
+into ⋯, as on flat grids. Columns size to their content: the tree column measures each visible row with its indent,
+expander, icon and badges, stays pinned while the others scroll and takes spare width; priorities hide optional columns
+first. A tree with few visible rows is only as tall as its rows (`AutoHeight`), and grows to the host height when expanded.
+The controls, fitting and exports come from the tree tools part every tree runtime loads (`canopyx-tree-tools.js` and
+`.css`; single-file pages embed it).
+
+```csharp
+var view = new CanopyTreeView("org", "Organisation") { StateKey = "org", Search = new CanopySearchOptions() };
+view.Columns.Add(new CanopyColumn("name", "Name"));
+view.Columns.Add(new CanopyColumn("email", "Email") { ResponsivePriority = 10000 }); // optional: hides first
+view.ExportFormats.Add("xlsx");   // a writer the page registers with CanopyX.registerExportFormat
+view.Toolbar.More = false;        // per-control switches: Filters, Columns, Views, Export, More
+view.AutoHeight = true;           // the default
+```
+
+JavaScript hosts pass `toolbar` (`false`, or switches including `search`), `actions` and `exportFormats` to
+`createTreeGrid` or `configure`. Once `ready` has resolved the tree API also has `prepareExport`, `exportAs`,
+`getSavedViews`, `saveView`, `applySavedView`, `removeSavedView`, `resetView`, `setColumnOrder` and `resetColumns`.
+
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.
 - Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM. Large logical heights map to a bounded native scrollbar, keeping every loaded row reachable through scrolling, keyboard navigation, and saved anchors.
-- Columns with per-level sort, resize, and hide, and a tree column that can stay pinned while the others scroll; dates in UTC or the reader's time zone, switchable at run time.
+- Columns with per-level sort, resize, hide and reorder, content-sized to fill the width, and a tree column that stays pinned while the others scroll; dates in UTC or the reader's time zone, switchable at run time.
 - Search that returns id paths and expands the tree to the match, optionally limited to the node kinds worth finding; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
 - "Only matching" filters that keep the ancestors of matching rows.
 - Cells with host-supplied values, display text, tones, and badges; icons declared once per view. Six tones are built in, and a host adds its own (a severity scale, a maintenance state) with a name and two theme colours.
 - Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.
 - Single and multi-select, selection events for a drawer, deep links that expand a path (in the default scheme or the host's own), and versioned view state remembered for the session.
 - Light and dark themes from a handful of CSS custom properties.
-- Every text CanopyX writes itself (search hints, "show more" and error rows, the column chooser, screen-reader announcements, date marks, the outline's notes) comes from `CanopyTreeView.Labels`: English by default, translated once per view.
+- Every text CanopyX writes itself (search hints, "show more" and error rows, the toolbar menus, screen-reader announcements, date marks, the outline's notes) comes from `CanopyTreeView.Labels`: English by default, translated once per view.
 - A script-free outline table for email, print, and Word, in the light or dark palette or the host's own colours.
 
-JavaScript hosts can save a view with `const state = api.getState()` and restore it with `await api.setState(state)`. The JSON snapshot includes columns, sort, declared filters, selection, expansion, timezone, focus, and a scroll anchor. Existing expansion-only snapshots remain readable. `stateKey` remembers the same settings in session storage. Host predicates and callbacks stay with the host and are not serialized.
+JavaScript hosts can save a view with `const state = api.getState()` and restore it with `await api.setState(state)`. The JSON snapshot includes columns (in their order, with `sized` for widths the reader chose), sort, declared filters, selection, expansion, timezone, focus, and a scroll anchor. Existing expansion-only snapshots remain readable. `stateKey` remembers the same settings in session storage. Host predicates and callbacks stay with the host and are not serialized.
 
 Use `await api.reload()` to reread roots, or `await api.reload(parentId, { signal })` to reread a loaded parent's children. Reload reads through the range already loaded, validates the replacement before applying it, and preserves surviving selection, expansion, focus, and scroll position. A newer reload supersedes an older one. Failed validation retains the old data; cancellation returns `false`. `api.refresh()` repaints the current nodes, and `api.refreshCounts()` updates rollup values and child counts.
 
