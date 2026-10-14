@@ -1,4 +1,4 @@
-// CanopyX site behaviour: theme switch, code blocks, grid tables, tabs, the table of contents and the live demo stage.
+// CanopyX site behaviour: theme switch, header navigation, code blocks, grid tables, tabs, the table of contents and live frames.
 (function () {
   'use strict';
 
@@ -13,6 +13,96 @@
       try { localStorage.setItem('cnx-theme', next); } catch (e) { /* storage unavailable */ }
       themeListeners.forEach(function (listener) { listener(next); });
     });
+  });
+
+  // Header navigation. Each group button discloses its panel: one panel at a time on wide screens, closed by Escape,
+  // a click outside or tabbing out of the group. The phone sheet lists every group open. A panel's thumbnails are
+  // CanopyX renders fetched the first time the group is hovered, focused or opened.
+  var header = document.querySelector('[data-cnx-header]');
+  var compactNav = window.matchMedia('(max-width: 900px)');
+  var navToggle = document.getElementById('cnx-nav-toggle');
+
+  function loadThumbs(scope) {
+    scope.querySelectorAll('[data-cnx-thumb]').forEach(function (slot) {
+      var src = slot.getAttribute('data-cnx-thumb');
+      slot.removeAttribute('data-cnx-thumb');
+      if (!window.fetch) return;
+      fetch(src, { credentials: 'same-origin' }).then(function (response) {
+        return response.ok ? response.text() : '';
+      }).then(function (html) { if (html) slot.innerHTML = html; }, function () {});
+    });
+  }
+
+  if (header) {
+    var groups = Array.prototype.slice.call(header.querySelectorAll('[data-cnx-navgroup]'));
+    var triggerOf = function (group) { return group.querySelector('.cnx-navgroup__trigger'); };
+    var setOpen = function (group, open) {
+      triggerOf(group).setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open && !compactNav.matches) loadThumbs(group);
+    };
+    var closeAll = function (except) { groups.forEach(function (group) { if (group !== except) setOpen(group, false); }); };
+
+    groups.forEach(function (group) {
+      var trigger = triggerOf(group);
+      var links = Array.prototype.slice.call(group.querySelectorAll('.cnx-navitem__link'));
+      var warm = function () { if (!compactNav.matches) loadThumbs(group); };
+      trigger.addEventListener('pointerenter', warm);
+      trigger.addEventListener('focus', warm);
+      trigger.addEventListener('click', function () {
+        var open = trigger.getAttribute('aria-expanded') !== 'true';
+        if (!compactNav.matches) closeAll(group);
+        setOpen(group, open);
+      });
+      trigger.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowDown' || compactNav.matches || !links.length) return;
+        event.preventDefault();
+        closeAll(group);
+        setOpen(group, true);
+        links[0].focus();
+      });
+      group.addEventListener('keydown', function (event) {
+        var index = links.indexOf(document.activeElement);
+        if (event.key === 'Escape' && !compactNav.matches && trigger.getAttribute('aria-expanded') === 'true') {
+          setOpen(group, false);
+          trigger.focus();
+        } else if (index >= 0 && !compactNav.matches && /^Arrow(Left|Right|Up|Down)$/.test(event.key)) {
+          event.preventDefault();
+          var step = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
+          links[(index + step + links.length) % links.length].focus();
+        }
+      });
+      group.addEventListener('focusout', function (event) {
+        if (!compactNav.matches && event.relatedTarget && !group.contains(event.relatedTarget)) setOpen(group, false);
+      });
+    });
+
+    document.addEventListener('click', function (event) {
+      if (!compactNav.matches && !header.contains(event.target)) closeAll(null);
+    });
+    var reset = function () {
+      if (compactNav.matches) groups.forEach(function (group) { setOpen(group, true); });
+      else { closeAll(null); if (navToggle) navToggle.checked = false; }
+    };
+    if (compactNav.addEventListener) compactNav.addEventListener('change', reset);
+    reset();
+  }
+
+  if (navToggle) {
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && navToggle.checked && compactNav.matches) { navToggle.checked = false; navToggle.focus(); }
+    });
+  }
+
+  // Docs map and other inline thumbnails that were not rendered into the page.
+  document.querySelectorAll('main [data-cnx-thumb]').forEach(function (slot) { loadThumbs(slot.parentNode); });
+
+  // Every tab carries the sort indicator of the shared tab component.
+  document.querySelectorAll('.cnx-tabs [role="tab"]').forEach(function (tab) {
+    if (tab.querySelector('.cnx-tab__sort')) return;
+    var sort = document.createElement('span');
+    sort.className = 'cnx-tab__sort';
+    sort.setAttribute('aria-hidden', 'true');
+    tab.appendChild(sort);
   });
 
   function wireCopy(button, text) {
@@ -80,7 +170,7 @@
   });
 
   // Markdown tables become grid tables that scroll inside their frame on narrow screens.
-  document.querySelectorAll('.cnx-prose table').forEach(function (table) {
+  document.querySelectorAll('.cnx-prose > table, .markdown-body > table').forEach(function (table) {
     if (table.closest('.cnx-gridtable')) return;
     var wrap = document.createElement('div');
     wrap.className = 'cnx-gridtable';
@@ -151,13 +241,26 @@
     } catch (e) { /* frame not ready */ }
   }
 
+  // A frame's grid may mount after the load event (a module script, a sidecar manifest), so sync once more shortly after.
+  function watchFrame(frame) {
+    frame.addEventListener('load', function () {
+      syncFrameTheme(frame);
+      setTimeout(function () { syncFrameTheme(frame); }, 400);
+    });
+  }
+
   function loadFrame(frame) {
     if (!frame || frame.getAttribute('src')) return;
-    frame.addEventListener('load', function () { syncFrameTheme(frame); });
+    watchFrame(frame);
     frame.setAttribute('src', frame.getAttribute('data-src'));
   }
 
   document.querySelectorAll('[data-cnx-frame][data-eager]').forEach(loadFrame);
+  // Frames that load lazily by themselves (documentation output) only need the theme.
+  document.querySelectorAll('iframe[data-cnx-frame][src]').forEach(function (frame) {
+    watchFrame(frame);
+    syncFrameTheme(frame);
+  });
 
   themeListeners.push(function () {
     document.querySelectorAll('[data-cnx-frame][src]').forEach(syncFrameTheme);

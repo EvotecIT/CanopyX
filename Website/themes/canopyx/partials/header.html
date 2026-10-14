@@ -1,11 +1,49 @@
+{{~ ## The one site header, on every page. Groups come from the "main" menu in site.json: each opens a panel whose
+     destinations carry a description and a small CanopyX render (data.docs.thumbs, fetched when the panel first opens).
+     Without JavaScript the panels open on hover and focus and every destination stays a plain link. ## ~}}
+{{~ navmenu = pf.menu "main"; thumbs = data.docs.thumbs ~}}
 <a class="cnx-skip" href="#main">Skip to content</a>
-<header class="cnx-header">
+<header class="cnx-header" data-cnx-header>
   <div class="cnx-header__inner">
     <a class="cnx-brand" href="/" aria-label="CanopyX home">{{ include "logo" }}<span>CanopyX</span></a>
-    <input type="checkbox" id="cnx-nav-toggle" class="cnx-nav-toggle" />
-    <label for="cnx-nav-toggle" class="cnx-nav-toggle__label" aria-label="Toggle navigation"><span></span><span></span></label>
+    <input type="checkbox" id="cnx-nav-toggle" class="cnx-nav-toggle" aria-label="Show navigation" />
+    <label for="cnx-nav-toggle" class="cnx-nav-toggle__label" aria-hidden="true"><span></span><span></span></label>
     <nav class="cnx-nav" aria-label="Main">
-      <div class="cnx-nav__links">{{ pf.nav_links "main" }}</div>
+      <ul class="cnx-nav__groups">
+        {{~ for g in navmenu.items ~}}
+        {{~ current = null
+            for it in g.items
+              if it.is_active && !(it.url | string.contains "#"); current = it; end
+            end
+            if !current
+              for it in g.items
+                if it.is_ancestor; current = it; end
+              end
+            end ~}}
+        <li class="cnx-navgroup{{ if current }} is-current{{ end }}" data-cnx-navgroup>
+          <button type="button" class="cnx-navgroup__trigger" id="cnx-nav-{{ g.id }}-trigger" aria-expanded="false" aria-controls="cnx-nav-{{ g.id }}">
+            <span class="cnx-navgroup__label">{{ g.title }}</span>
+            {{~ if current ~}}
+            <span class="cnx-navgroup__current"><span class="cnx-sr">, current page: </span>{{ current.title }}</span>
+            {{~ end ~}}
+            <span class="cnx-chev cnx-navgroup__chev" aria-hidden="true"></span>
+          </button>
+          <div class="cnx-navpanel cnx-navpanel--{{ g.items.size }}" id="cnx-nav-{{ g.id }}">
+            <p class="cnx-navpanel__lede">{{ g.description }}</p>
+            <ul class="cnx-navpanel__items">
+              {{~ for item in g.items ~}}
+              {{~ t = thumbs[item.meta.thumb]; here = item.is_active && !(item.url | string.contains "#") ~}}
+              <li class="cnx-navitem{{ if here }} is-current{{ end }}">
+                <span class="cnx-navitem__thumb cnx-thumb" aria-hidden="true"{{ if t }} data-cnx-thumb="{{ t.src }}"{{ end }}></span>
+                <a class="cnx-navitem__link" href="{{ item.url }}" aria-describedby="cnx-nav-{{ item.id }}-desc"{{ if here }} aria-current="page"{{ end }}>{{ item.title }}{{ if item.external }}<span class="cnx-sr"> (GitHub)</span>{{ end }}</a>
+                <span class="cnx-navitem__desc" id="cnx-nav-{{ item.id }}-desc">{{ item.description }}</span>
+              </li>
+              {{~ end ~}}
+            </ul>
+          </div>
+        </li>
+        {{~ end ~}}
+      </ul>
       <div class="cnx-nav__actions">
         <button type="button" class="cnx-theme-toggle" data-cnx-theme-toggle aria-label="Switch between light and dark theme">
           <svg class="cnx-theme-toggle__sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>

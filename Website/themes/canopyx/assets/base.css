@@ -50,7 +50,13 @@ h1, h2, h3, h4 {
   text-wrap: balance;
 }
 
+/* Headings use the body face at a heavy weight, so every capital (the J of JavaScript too) sits on the baseline.
+   Fraunces is kept for display moments: the home hero and section heads, and the documentation hero. */
 h1, h2 {
+  font-weight: 760;
+  letter-spacing: -.022em;
+}
+.cnx-display {
   font-family: var(--cnx-display);
   font-weight: 560;
   font-variation-settings: "opsz" 120, "SOFT" 40;
@@ -140,42 +146,6 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 }
 .cnx-logo { flex: none; display: block; }
 
-.cnx-nav {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.cnx-nav__links { display: flex; gap: 4px; }
-.cnx-nav__links a {
-  position: relative;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: var(--cnx-ink-2);
-  font-size: .9375rem;
-  font-weight: 560;
-  text-decoration: none;
-}
-.cnx-nav__links a:hover { color: var(--cnx-ink); background: color-mix(in srgb, var(--cnx-ink) 5%, transparent); }
-.cnx-nav__links a.is-ancestor { color: var(--cnx-ink); }
-.cnx-nav__links a[aria-current="page"],
-.cnx-nav__links a.is-active { color: var(--cnx-ink); }
-.cnx-nav__links a[aria-current="page"]::after,
-.cnx-nav__links a.is-active::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: -13px;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: var(--cnx-accent);
-}
-
-.cnx-nav__actions { display: flex; align-items: center; gap: 8px; }
-
 .cnx-icon-link,
 .cnx-theme-toggle {
   display: inline-grid;
@@ -220,6 +190,93 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 .cnx-btn--quiet { background: transparent; color: var(--cnx-ink); border-color: var(--cnx-line-strong); }
 .cnx-btn--quiet:hover { background: var(--cnx-card); border-color: var(--cnx-ink-3); }
 .cnx-btn--small { min-height: 38px; padding: 0 14px; font-size: .875rem; }
+
+/* Tabs: one component for code, demo and delivery choices, drawn as the header row of a grid. Each tab is a column
+   header; the selected one carries the sort indicator of a sorted column, which turns over when the choice changes. */
+.cnx-tabs {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  --cnx-tab-line: var(--cnx-line);
+  --cnx-tab-ink: var(--cnx-ink-2);
+  --cnx-tab-ink-on: var(--cnx-ink);
+  --cnx-tab-on: color-mix(in srgb, var(--cnx-accent) 9%, transparent);
+  --cnx-tab-bar: var(--cnx-accent);
+}
+.cnx-tabs::-webkit-scrollbar { display: none; }
+.cnx-tab {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px 0 16px;
+  border: 0;
+  border-right: 1px solid var(--cnx-tab-line);
+  background: transparent;
+  color: var(--cnx-tab-ink);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 640;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cnx-tab:hover { color: var(--cnx-tab-ink-on); background: color-mix(in srgb, var(--cnx-tab-ink-on) 4%, transparent); }
+.cnx-tab[aria-selected="true"] { color: var(--cnx-tab-ink-on); background: var(--cnx-tab-on); box-shadow: inset 0 -2px 0 var(--cnx-tab-bar); }
+.cnx-tab:focus-visible { outline-offset: -3px; }
+.cnx-tab__sort {
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  opacity: 0;
+  -webkit-mask: var(--cnx-chevron) center / 10px 10px no-repeat;
+  mask: var(--cnx-chevron) center / 10px 10px no-repeat;
+  transition: transform .2s ease, opacity .2s ease;
+}
+.cnx-tab:hover .cnx-tab__sort { opacity: .4; }
+.cnx-tab[aria-selected="true"] .cnx-tab__sort { opacity: 1; color: var(--cnx-tab-bar); transform: rotate(180deg); }
+.cnx-tab small { color: var(--cnx-ink-3); font-size: .75rem; font-weight: 500; }
+/* On the dark code surfaces. */
+.cnx-tabs--code {
+  --cnx-tab-line: var(--cnx-code-line);
+  --cnx-tab-ink: var(--cnx-code-muted);
+  --cnx-tab-ink-on: #fff;
+  --cnx-tab-on: rgba(167, 196, 178, .1);
+  --cnx-tab-bar: var(--cnx-leaf);
+}
+.cnx-tabs--code .cnx-tab { min-height: 40px; font-family: var(--cnx-mono); font-size: .78rem; font-weight: 500; }
+
+/* Paper: CanopyX static output shown as the document it is written for. */
+.cnx-paper { overflow-x: auto; padding: 14px 16px; border-radius: var(--cnx-radius-sm); background: #ffffff; color: #16181c; }
+.cnx-paper table { min-width: 100%; }
+.cnx-paper--dark { background: #111a15; }
+.cnx-paper--themed { background: var(--cnx-card); color: var(--cnx-ink); }
+
+/* Mail: a message frame around a static outline. */
+.cnx-mail { min-height: 100%; max-width: 860px; margin: 0 auto; border-inline: 1px solid var(--cnx-line); background: var(--cnx-card); }
+.cnx-mail__head { display: grid; gap: 4px; margin: 0; padding: 14px 20px; border-bottom: 1px solid var(--cnx-line); font-size: .8125rem; }
+.cnx-mail__head div { display: flex; gap: 10px; }
+.cnx-mail__head dt { width: 56px; color: var(--cnx-ink-3); }
+.cnx-mail__head dd { margin: 0; color: var(--cnx-ink); font-weight: 600; }
+.cnx-mail__body { padding: 16px 20px 24px; color: var(--cnx-ink-2); font-size: .9063rem; }
+.cnx-mail__body > p { margin-bottom: 12px; }
+.cnx-mail__body table { max-width: 100%; }
+.cnx-frame--flat { box-shadow: none; border-color: var(--cnx-line); }
+
+/* The branch guides of an expanded tree grid, the texture of the forest bands. */
+:root {
+  --guide: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='112'%3E%3Cg fill='none' stroke='%2374c69a' stroke-opacity='.12' stroke-width='1'%3E%3Cpath d='M14 0v112M14 28h18M14 84h18M46 34v50M46 56h18M46 84h18M88 0v40M88 20h18'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Install command: the code block component with package tabs in its caption bar. */
+.cnx-install { border-color: rgba(167, 196, 178, .24); background: rgba(4, 14, 9, .55); }
+.cnx-install .cnx-codeblock__bar { padding: 0 6px 0 0; background: rgba(4, 14, 9, .35); border-bottom-color: rgba(167, 196, 178, .18); }
+.cnx-install__line { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; }
+.cnx-install__line code { flex: 1; min-width: 0; overflow-x: auto; color: #fff; font-size: .9375rem; white-space: nowrap; }
+.cnx-install__prompt { color: var(--cnx-leaf); font-weight: 700; }
 
 /* Copy buttons sit on the dark code surfaces, so they use fixed light-on-dark colours. */
 .cnx-copy {
@@ -352,15 +409,15 @@ code, pre, kbd { font-family: var(--cnx-mono); }
   border-radius: var(--cnx-radius);
   background: var(--cnx-card);
 }
-.cnx-prose table {
+.cnx-gridtable table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: .9063rem;
   line-height: 1.45;
 }
-.cnx-prose th, .cnx-prose td { padding: 9px 14px; border-bottom: 1px solid var(--cnx-line); text-align: left; vertical-align: top; }
-.cnx-prose th {
+.cnx-gridtable th, .cnx-gridtable td { padding: 9px 14px; border-bottom: 1px solid var(--cnx-line); text-align: left; vertical-align: top; }
+.cnx-gridtable th {
   padding-block: 8px;
   background: var(--cnx-card-alt);
   border-bottom-color: var(--cnx-line-strong);
@@ -369,12 +426,12 @@ code, pre, kbd { font-family: var(--cnx-mono); }
   font-weight: 680;
   white-space: nowrap;
 }
-.cnx-prose th + th { box-shadow: inset 1px 0 0 var(--cnx-line); }
-.cnx-prose td { color: var(--cnx-ink-2); }
-.cnx-prose td:first-child { color: var(--cnx-ink); font-weight: 560; }
-.cnx-prose tbody tr:last-child td { border-bottom: 0; }
-.cnx-prose tbody tr:hover td { background: color-mix(in srgb, var(--cnx-accent) 6%, var(--cnx-card)); }
-.cnx-prose td code { white-space: nowrap; overflow-wrap: normal; }
+.cnx-gridtable th + th { box-shadow: inset 1px 0 0 var(--cnx-line); }
+.cnx-gridtable td { color: var(--cnx-ink-2); }
+.cnx-gridtable td:first-child { color: var(--cnx-ink); font-weight: 560; }
+.cnx-gridtable tbody tr:last-child td { border-bottom: 0; }
+.cnx-gridtable tbody tr:hover td { background: color-mix(in srgb, var(--cnx-accent) 6%, var(--cnx-card)); }
+.cnx-gridtable td code { white-space: nowrap; overflow-wrap: normal; }
 
 /* Tree list: links hung from a guide line with elbow connectors. */
 .cnx-tree { margin: 0; padding: 0; list-style: none; }
@@ -613,32 +670,6 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 }
 
 @media (max-width: 900px) {
-  .cnx-nav-toggle__label {
-    display: grid;
-    gap: 5px;
-    margin-left: auto;
-    padding: 10px;
-    cursor: pointer;
-  }
-  .cnx-nav-toggle__label span { display: block; width: 20px; height: 2px; border-radius: 2px; background: var(--cnx-ink); }
-  .cnx-nav {
-    position: absolute;
-    top: 64px;
-    left: 0;
-    right: 0;
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 12px clamp(16px, 4vw, 40px) 20px;
-    border-bottom: 1px solid var(--cnx-line);
-    background: var(--cnx-page);
-  }
-  .cnx-nav-toggle:checked ~ .cnx-nav { display: flex; }
-  .cnx-nav-toggle:focus-visible + .cnx-nav-toggle__label { outline: 2px solid var(--cnx-focus); border-radius: 8px; }
-  .cnx-nav__links { flex-direction: column; }
-  .cnx-nav__links a { padding: 10px 14px; }
-  .cnx-nav__links a[aria-current="page"]::after,
-  .cnx-nav__links a.is-active::after { left: 0; right: auto; top: 10px; bottom: 10px; width: 2px; height: auto; }
   .cnx-footer__inner { grid-template-columns: 1fr 1fr; }
   .cnx-footer__brand { grid-column: 1 / -1; }
 }
@@ -669,3 +700,7 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: var(--cnx-scroll-thumb) padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--cnx-scroll-thumb-hover) padding-box; }
+
+.cnx-codeblock__bar:has(> .cnx-tabs) { padding-block: 0; padding-left: 0; }
+.cnx-codeblock__bar > .cnx-tabs { align-self: stretch; margin-right: auto; }
+

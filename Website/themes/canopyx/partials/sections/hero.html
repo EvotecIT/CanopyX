@@ -8,9 +8,9 @@
     <div class="cnx-hero__side">
       <div class="cnx-codeblock cnx-install" data-cnx-tabs>
         <div class="cnx-codeblock__bar">
-          <div class="cnx-codeblock__tabs" role="tablist" aria-label="Package">
+          <div class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Package">
             {{~ for i in data.home.install ~}}
-            <button type="button" role="tab" id="cnx-install-tab-{{ i.id }}" aria-controls="cnx-install-{{ i.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}">{{ i.label }}</button>
+            <button type="button" role="tab" id="cnx-install-tab-{{ i.id }}" aria-controls="cnx-install-{{ i.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" class="cnx-tab">{{ i.label }}<span class="cnx-tab__sort" aria-hidden="true"></span></button>
             {{~ end ~}}
           </div>
         </div>
@@ -37,10 +37,10 @@
 
   <figure class="cnx-frame cnx-stage" data-cnx-stage>
     <div class="cnx-frame__bar">
-      <div class="cnx-stage__tabs" role="tablist" aria-label="Live demo">
-        <button type="button" role="tab" id="cnx-demo-tab-files" aria-controls="cnx-demo-files" aria-selected="true" tabindex="0" data-cnx-demo="files">File explorer</button>
-        <button type="button" role="tab" id="cnx-demo-tab-inventory" aria-controls="cnx-demo-inventory" aria-selected="false" tabindex="-1" data-cnx-demo="inventory">Device inventory</button>
-        <button type="button" role="tab" id="cnx-demo-tab-email" aria-controls="cnx-demo-email" aria-selected="false" tabindex="-1" data-cnx-demo="email">Email table</button>
+      <div class="cnx-tabs" role="tablist" aria-label="Live demo">
+        <button type="button" role="tab" id="cnx-demo-tab-files" aria-controls="cnx-demo-files" aria-selected="true" tabindex="0" data-cnx-demo="files" class="cnx-tab">File explorer<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+        <button type="button" role="tab" id="cnx-demo-tab-inventory" aria-controls="cnx-demo-inventory" aria-selected="false" tabindex="-1" data-cnx-demo="inventory" class="cnx-tab">Device inventory<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+        <button type="button" role="tab" id="cnx-demo-tab-email" aria-controls="cnx-demo-email" aria-selected="false" tabindex="-1" data-cnx-demo="email" class="cnx-tab">Email table<span class="cnx-tab__sort" aria-hidden="true"></span></button>
       </div>
       <span class="cnx-frame__meta">
         <span data-cnx-caption="files">{{ data.demos.files.nodes }} nodes, {{ data.demos.files.size }}</span>

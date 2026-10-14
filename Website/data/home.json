@@ -58,7 +58,7 @@
       "body": "Your application serves pages, search results and counts. Paged and cursor-based sources keep large record sets on the server.",
       "link": {
         "label": "Read the data protocol",
-        "url": "https://github.com/EvotecIT/CanopyX/blob/main/docs/data-protocol.md"
+        "url": "/docs/data-protocol/"
       }
     }
   ],
@@ -89,7 +89,7 @@
       "name": ".NET",
       "body": "Build views from your objects with CanopyX.Html on NuGet, net472 to net10.",
       "action": "Get started",
-      "url": "/docs/"
+      "url": "/docs/getting-started/"
     },
     {
       "name": "JavaScript",

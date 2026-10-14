@@ -1,9 +1,6 @@
 /* CanopyX home and demos: forest hero, live demo frames and the sections that follow. */
 
 /* The branch guides of an expanded tree grid, used as the texture of the forest bands. */
-:root {
-  --guide: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='112'%3E%3Cg fill='none' stroke='%2374c69a' stroke-opacity='.12' stroke-width='1'%3E%3Cpath d='M14 0v112M14 28h18M14 84h18M46 34v50M46 56h18M46 84h18M88 0v40M88 20h18'/%3E%3C/g%3E%3C/svg%3E");
-}
 
 .cnx-hero__inner,
 .cnx-stats,
@@ -15,8 +12,15 @@
   margin-inline: auto;
 }
 
-/* Hero */
-.cnx-hero {
+/* Display moments keep Fraunces: the hero, the section heads and the closing call to action. */
+.cnx-hero__title, .cnx-section__head h2, .cnx-showcase__head h2, .cnx-cta h2 {
+  font-family: var(--cnx-display);
+  font-weight: 560;
+  font-variation-settings: "opsz" 120, "SOFT" 40;
+  letter-spacing: -.018em;
+}
+
+/* Hero */.cnx-hero {
   position: relative;
   padding: clamp(48px, 7vw, 96px) 0 0;
   background:
@@ -59,34 +63,6 @@
 .cnx-hero .cnx-btn--ghost { background: transparent; color: #f1f8f3; border-color: rgba(229, 241, 234, .38); }
 .cnx-hero .cnx-btn--ghost:hover { background: rgba(255, 255, 255, .06); }
 
-/* Install command: the code block component with package tabs in its caption bar. */
-.cnx-install { border-color: rgba(167, 196, 178, .24); background: rgba(4, 14, 9, .55); }
-.cnx-install .cnx-codeblock__bar { padding-left: 6px; background: rgba(4, 14, 9, .35); border-bottom-color: rgba(167, 196, 178, .18); }
-.cnx-install__line { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; }
-.cnx-install__line code { flex: 1; min-width: 0; overflow-x: auto; color: #fff; font-size: .9375rem; white-space: nowrap; }
-.cnx-install__prompt { color: var(--cnx-leaf); font-weight: 700; }
-
-/* Tabs inside a code block caption bar. */
-.cnx-codeblock__tabs { display: flex; gap: 2px; min-width: 0; margin-right: auto; overflow-x: auto; scrollbar-width: none; }
-.cnx-codeblock__tabs button {
-  position: relative;
-  flex: none;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--cnx-radius-sm);
-  background: transparent;
-  color: var(--cnx-code-muted);
-  font: inherit;
-  font-family: var(--cnx-mono);
-  font-size: .78rem;
-  cursor: pointer;
-}
-.cnx-codeblock__tabs button:hover { color: var(--cnx-code-ink); }
-.cnx-codeblock__tabs button[aria-selected="true"] { background: rgba(167, 196, 178, .12); color: #fff; }
-.cnx-codeblock__tabs button:focus-visible { outline-offset: -2px; }
-.cnx-install .cnx-codeblock__tabs button { font-family: var(--cnx-font); font-size: .8125rem; font-weight: 600; }
-
 /* Stats */
 .cnx-stats {
   display: grid;
@@ -111,50 +87,13 @@
 
 /* Stage: the live demo frame that straddles the forest band. */
 .cnx-stage { margin-top: clamp(36px, 5vw, 56px); box-shadow: 0 1px 0 rgba(0, 0, 0, .06), 0 40px 80px -36px rgba(0, 0, 0, .55); }
-.cnx-stage .cnx-frame__bar { padding-block: 0; padding-left: 6px; align-items: stretch; }
+.cnx-stage .cnx-frame__bar { padding-block: 0; padding-left: 0; align-items: stretch; }
 .cnx-stage .cnx-frame__meta, .cnx-stage .cnx-frame__open { align-self: center; }
-.cnx-stage__tabs { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.cnx-stage__tabs::-webkit-scrollbar { display: none; }
-.cnx-stage__tabs button {
-  position: relative;
-  flex: none;
-  min-height: 50px;
-  padding: 0 14px;
-  border: 0;
-  background: transparent;
-  color: var(--cnx-ink-2);
-  font: inherit;
-  font-size: .9063rem;
-  font-weight: 620;
-  cursor: pointer;
-}
-.cnx-stage__tabs button:hover { color: var(--cnx-ink); }
-.cnx-stage__tabs button::after {
-  content: "";
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-}
-.cnx-stage__tabs button[aria-selected="true"] { color: var(--cnx-ink); }
-.cnx-stage__tabs button[aria-selected="true"]::after { background: var(--cnx-accent); }
-.cnx-stage__tabs button:focus-visible { outline-offset: -4px; }
 .cnx-stage .cnx-frame__open { margin-right: 2px; }
 
 .cnx-demo { position: absolute; inset: 0; }
 .cnx-demo iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--cnx-card); }
 .cnx-demo--email { overflow: auto; background: var(--cnx-card-alt); }
-.cnx-mail { min-height: 100%; max-width: 860px; margin: 0 auto; border-inline: 1px solid var(--cnx-line); background: var(--cnx-card); }
-.cnx-mail__head { display: grid; gap: 4px; margin: 0; padding: 14px 20px; border-bottom: 1px solid var(--cnx-line); font-size: .8125rem; }
-.cnx-mail__head div { display: flex; gap: 10px; }
-.cnx-mail__head dt { width: 56px; color: var(--cnx-ink-3); }
-.cnx-mail__head dd { margin: 0; color: var(--cnx-ink); font-weight: 600; }
-.cnx-mail__body { padding: 16px 20px 24px; color: var(--cnx-ink-2); font-size: .9063rem; }
-.cnx-mail__body > p { margin-bottom: 12px; }
-.cnx-mail__body table { max-width: 100%; }
-
 /* Reach: one view definition branching to every delivery target, drawn as a tree. */
 .cnx-reach { margin-top: clamp(56px, 7vw, 88px); }
 .cnx-reach__root {
@@ -225,7 +164,6 @@
 .cnx-main > .cnx-section { width: min(100% - 2 * clamp(16px, 4vw, 40px), var(--cnx-max)); margin-inline: auto; }
 .cnx-main > .cnx-section + .cnx-section { border-top: 1px solid var(--cnx-line); }
 .cnx-note { margin-top: 14px; color: var(--cnx-ink-3); font-size: .875rem; }
-.cnx-frame--flat { box-shadow: none; border-color: var(--cnx-line); }
 
 /* Showcase band */
 .cnx-showcase {
@@ -290,14 +228,6 @@
 .cnx-cta .cnx-link { color: #9fe3bb; border-bottom-color: rgba(159, 227, 187, .4); }
 .cnx-cta .cnx-link:hover { border-bottom-color: #9fe3bb; }
 
-/* Demos page */
-.cnx-demo-block { margin-top: clamp(48px, 6vw, 72px); }
-.cnx-demo-block:first-of-type { margin-top: 0; }
-.cnx-demo-block .cnx-node { max-width: 760px; margin-bottom: 24px; }
-.cnx-demo-block .cnx-node h2 { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); }
-.cnx-demo-block .cnx-frame__screen { height: clamp(480px, 70vh, 680px); }
-.cnx-demos__about { margin-top: clamp(48px, 6vw, 72px); }
-
 @media (max-width: 1000px) {
   .cnx-hero__inner { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .cnx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; }
@@ -333,10 +263,12 @@
   .cnx-stage .cnx-frame__meta { display: none; }
   .cnx-stage .cnx-frame__open { margin-left: auto; }
   .cnx-stage .cnx-frame__screen { height: 520px; }
-  .cnx-stage__tabs button { min-height: 46px; padding: 0 9px; font-size: .8438rem; }
-  .cnx-stage__tabs button::after { left: 8px; right: 8px; }
+  .cnx-stage .cnx-tab { min-height: 46px; padding: 0 10px; font-size: .8438rem; }
   .cnx-install__line code { font-size: .8125rem; }
   .cnx-family__list { grid-template-columns: 1fr; }
   .cnx-stats li, .cnx-stats li + li { padding-left: 0; border-left: 0; }
   .cnx-stats li:nth-child(even) { padding-left: 16px; border-left: 1px solid rgba(167, 196, 178, .16); }
 }
+.cnx-stage .cnx-tab { min-height: 50px; }
+.cnx-code-tabs .cnx-codeblock__bar, .cnx-install .cnx-codeblock__bar { padding-left: 0; }
+
