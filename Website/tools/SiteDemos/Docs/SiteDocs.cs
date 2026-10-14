@@ -267,9 +267,6 @@ internal sealed class SiteDocs {
     }
 
     private void Thumbnails(CanopyTreeView shares, CanopyDataGridView devices, CanopyTreeView bundleLayout) {
-        Image("demos", "/img/showcase-files", "The live file explorer");
-        Image("inventory", "/img/showcase-inventory", "The device inventory reporting grid");
-        Thumb("outline", CanopyStaticHtml.Render(shares, new CanopyStaticHtmlOptions { MaxRows = 9, MaxDepth = 3, UseThemeVariables = true, Caption = string.Empty }));
 
         var map = new CanopyTreeView("docs-map", "Documentation");
         map.Columns.Add(new CanopyColumn("name", "Topic"));
@@ -333,15 +330,6 @@ internal sealed class SiteDocs {
         File.WriteAllText(Path.Combine(_liveThumbs, id + ".html"), fragment, _utf8);
         File.WriteAllText(Path.Combine(_partialThumbs, id + ".html"), fragment, _utf8);
         _thumbs[id] = new { kind = "html", src = "/live/thumbs/" + id + ".html", partial = "generated/thumbs/" + id, bytes = _utf8.GetByteCount(fragment) };
-    }
-
-    private void Image(string id, string basePath, string alt) {
-        var fragment = "<img class=\"cnx-only-light\" src=\"" + basePath + "-light.png\" width=\"1440\" height=\"820\" alt=\"\" decoding=\"async\" />"
-            + "<img class=\"cnx-only-dark\" src=\"" + basePath + "-dark.png\" width=\"1440\" height=\"820\" alt=\"\" decoding=\"async\" />";
-        fragment = "<div class=\"cnx-thumb__shot\" title=\"" + alt + "\">" + fragment + "</div>";
-        File.WriteAllText(Path.Combine(_liveThumbs, id + ".html"), fragment, _utf8);
-        File.WriteAllText(Path.Combine(_partialThumbs, id + ".html"), fragment.Replace("decoding=\"async\"", "loading=\"lazy\" decoding=\"async\""), _utf8);
-        _thumbs[id] = new { kind = "image", src = "/live/thumbs/" + id + ".html", partial = "generated/thumbs/" + id, bytes = _utf8.GetByteCount(fragment) };
     }
 
     /// <summary>The headings of a Markdown document as a tree: level 2 under the title, level 3 under level 2.</summary>

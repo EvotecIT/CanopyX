@@ -248,86 +248,89 @@
         "Name": "main",
         "Items": [
           {
-            "Id": "product",
-            "Title": "Product",
-            "Description": "CanopyX output generated in C# and served as static files.",
-            "Items": [
-              {
-                "Id": "demos",
-                "Title": "Live demos",
-                "Url": "/demos/",
-                "Description": "A file explorer over 100,000 nodes and a reporting grid, with a guided tour.",
-                "Meta": { "thumb": "demos" }
-              },
-              {
-                "Id": "inventory",
-                "Title": "Device inventory",
-                "Url": "/demos/#inventory",
-                "Description": "Grouping, facets, aggregates and CSV export in one HTML page.",
-                "Meta": { "thumb": "inventory" }
-              },
-              {
-                "Id": "outline",
-                "Title": "Static outline",
-                "Url": "/demos/#outline",
-                "Description": "The same tree as script-free HTML for email, print and Word.",
-                "Meta": { "thumb": "outline" }
-              }
-            ]
+            "Id": "demos",
+            "Title": "Demos",
+            "Url": "/demos/"
           },
           {
-            "Id": "developers",
-            "Title": "Developers",
-            "Description": "Build views in C# or JavaScript, then choose how to ship them.",
+            "Id": "docs",
+            "Title": "Docs",
+            "Description": "Every page of the documentation, each with the output it produces.",
             "Items": [
               {
-                "Id": "docs",
-                "Title": "Documentation",
+                "Id": "overview",
+                "Title": "Overview",
                 "Url": "/docs/",
                 "Description": "Every topic next to the output it produces.",
-                "Meta": { "thumb": "docs" }
+                "Meta": {
+                  "thumb": "docs"
+                }
               },
               {
                 "Id": "getting-started",
                 "Title": "Getting started",
                 "Url": "/docs/getting-started/",
                 "Description": "Install, then build a file explorer and an inventory table in C#.",
-                "Meta": { "thumb": "getting-started", "group": "Start", "api": "CanopyTreeView, CanopyDataGridView" }
+                "Meta": {
+                  "thumb": "getting-started",
+                  "group": "Start",
+                  "api": "CanopyTreeView, CanopyDataGridView"
+                }
               },
               {
                 "Id": "javascript",
                 "Title": "JavaScript",
                 "Url": "/docs/javascript/",
                 "Description": "Mount the same runtime from npm and translate its controls.",
-                "Meta": { "thumb": "javascript", "group": "Start", "api": "createTreeGrid, createDataGrid" }
+                "Meta": {
+                  "thumb": "javascript",
+                  "group": "Start",
+                  "api": "createTreeGrid, createDataGrid"
+                }
               },
               {
                 "Id": "reporting",
                 "Title": "Reporting grids",
                 "Url": "/docs/reporting/",
                 "Description": "Group, filter, aggregate and export records with presenters.",
-                "Meta": { "thumb": "reporting", "group": "Build", "api": "CanopyGridReporting, CanopyGridPresenter" }
+                "Meta": {
+                  "thumb": "reporting",
+                  "group": "Build",
+                  "api": "CanopyGridReporting, CanopyGridPresenter"
+                }
               },
               {
                 "Id": "static-tables",
                 "Title": "Email and print",
                 "Url": "/docs/static-tables/",
                 "Description": "Script-free tables from the same views for mail, print and Word.",
-                "Meta": { "thumb": "static-tables", "group": "Build", "api": "CanopyStaticHtml" }
+                "Meta": {
+                  "thumb": "static-tables",
+                  "group": "Build",
+                  "api": "CanopyStaticHtml"
+                }
               },
               {
                 "Id": "delivery",
                 "Title": "Delivery modes",
                 "Url": "/docs/delivery/",
                 "Description": "Single file, sidecar bundle or hosted data, and what each writes.",
-                "Meta": { "thumb": "delivery", "group": "Ship", "api": "SaveHtmlPage, SaveHtmlBundle" }
+                "Meta": {
+                  "thumb": "delivery",
+                  "group": "Ship",
+                  "api": "SaveHtmlPage, SaveHtmlBundle"
+                }
               },
               {
                 "Id": "data-protocol",
                 "Title": "Data protocol",
                 "Url": "/docs/data-protocol/",
                 "Description": "The canopyx/2 documents beside the grids they produce.",
-                "Meta": { "thumb": "data-protocol", "group": "Ship", "api": "canopyx/2 view, page, grid" }
+                "Meta": {
+                  "thumb": "data-protocol",
+                  "group": "Ship",
+                  "api": "canopyx/2 view, page, grid"
+                }
               },
               {
                 "Id": "authoring",
@@ -335,9 +338,18 @@
                 "Url": "https://github.com/EvotecIT/CanopyX/blob/main/docs/authoring.md",
                 "External": true,
                 "Description": "The full reference for every option, in the repository.",
-                "Meta": { "thumb": "authoring", "group": "Reference", "api": "docs/authoring.md" }
+                "Meta": {
+                  "thumb": "authoring",
+                  "group": "Reference",
+                  "api": "docs/authoring.md"
+                }
               }
             ]
+          },
+          {
+            "Id": "javascript-link",
+            "Title": "JavaScript",
+            "Url": "/docs/javascript/"
           }
         ]
       },

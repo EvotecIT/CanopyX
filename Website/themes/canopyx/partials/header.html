@@ -1,7 +1,11 @@
-{{~ ## The one site header, on every page. Groups come from the "main" menu in site.json: each opens a panel whose
-     destinations carry a description and a small CanopyX render (data.docs.thumbs, fetched when the panel first opens).
-     Without JavaScript the panels open on hover and focus and every destination stays a plain link. ## ~}}
-{{~ navmenu = pf.menu "main"; thumbs = data.docs.thumbs ~}}
+{{~ ## The one site header, on every page. Items come from the "main" menu in site.json: an item with a URL is a plain
+     link; an item with children (Docs) opens a panel of separate pages, each with a description and a small CanopyX
+     render (data.docs.thumbs, fetched when the panel first opens). The current item is marked with a tint and an accent
+     bar inside its own box, so nothing moves between pages or states. Without JavaScript the panel opens on hover and
+     focus and every destination stays a plain link. ## ~}}
+{{~ navmenu = pf.menu "main"; thumbs = data.docs.thumbs
+    linkActive = false
+    for g in navmenu.items; if g.items.size == 0 && g.is_active; linkActive = true; end; end ~}}
 <a class="cnx-skip" href="#main">Skip to content</a>
 <header class="cnx-header" data-cnx-header>
   <div class="cnx-header__inner">
@@ -11,37 +15,33 @@
     <nav class="cnx-nav" aria-label="Main">
       <ul class="cnx-nav__groups">
         {{~ for g in navmenu.items ~}}
-        {{~ current = null
-            for it in g.items
-              if it.is_active && !(it.url | string.contains "#"); current = it; end
-            end
-            if !current
-              for it in g.items
-                if it.is_ancestor; current = it; end
-              end
+        {{~ if g.items.size == 0 ~}}
+        <li class="cnx-navgroup cnx-navgroup--link"><a class="cnx-navgroup__trigger{{ if g.is_active }} is-current{{ end }}" href="{{ g.url }}"{{ if g.is_active }} aria-current="page"{{ end }}><span class="cnx-navgroup__label">{{ g.title }}</span></a></li>
+        {{~ else ~}}
+        {{~ current = false
+            if !linkActive
+              for it in g.items; if it.is_active || it.is_ancestor; current = true; end; end
             end ~}}
-        <li class="cnx-navgroup{{ if current }} is-current{{ end }}" data-cnx-navgroup>
-          <button type="button" class="cnx-navgroup__trigger" id="cnx-nav-{{ g.id }}-trigger" aria-expanded="false" aria-controls="cnx-nav-{{ g.id }}">
-            <span class="cnx-navgroup__label">{{ g.title }}</span>
-            {{~ if current ~}}
-            <span class="cnx-navgroup__current"><span class="cnx-sr">, current page: </span>{{ current.title }}</span>
-            {{~ end ~}}
+        <li class="cnx-navgroup" data-cnx-navgroup>
+          <button type="button" class="cnx-navgroup__trigger{{ if current }} is-current{{ end }}" id="cnx-nav-{{ g.id }}-trigger" aria-expanded="false" aria-controls="cnx-nav-{{ g.id }}">
+            <span class="cnx-navgroup__label">{{ g.title }}</span>{{ if current }}<span class="cnx-sr"> (current section)</span>{{ end }}
             <span class="cnx-chev cnx-navgroup__chev" aria-hidden="true"></span>
           </button>
           <div class="cnx-navpanel cnx-navpanel--{{ g.items.size }}" id="cnx-nav-{{ g.id }}">
             <p class="cnx-navpanel__lede">{{ g.description }}</p>
             <ul class="cnx-navpanel__items">
               {{~ for item in g.items ~}}
-              {{~ t = thumbs[item.meta.thumb]; here = item.is_active && !(item.url | string.contains "#") ~}}
-              <li class="cnx-navitem{{ if here }} is-current{{ end }}">
+              {{~ t = thumbs[item.meta.thumb] ~}}
+              <li class="cnx-navitem{{ if item.is_active }} is-current{{ end }}">
                 <span class="cnx-navitem__thumb cnx-thumb" aria-hidden="true"{{ if t }} data-cnx-thumb="{{ t.src }}"{{ end }}></span>
-                <a class="cnx-navitem__link" href="{{ item.url }}" aria-describedby="cnx-nav-{{ item.id }}-desc"{{ if here }} aria-current="page"{{ end }}>{{ item.title }}{{ if item.external }}<span class="cnx-sr"> (GitHub)</span>{{ end }}</a>
+                <a class="cnx-navitem__link" href="{{ item.url }}" aria-describedby="cnx-nav-{{ item.id }}-desc"{{ if item.is_active }} aria-current="page"{{ end }}>{{ item.title }}{{ if item.external }}<span class="cnx-sr"> (GitHub)</span>{{ end }}</a>
                 <span class="cnx-navitem__desc" id="cnx-nav-{{ item.id }}-desc">{{ item.description }}</span>
               </li>
               {{~ end ~}}
             </ul>
           </div>
         </li>
+        {{~ end ~}}
         {{~ end ~}}
       </ul>
       <div class="cnx-nav__actions">

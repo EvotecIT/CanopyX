@@ -14,8 +14,8 @@
 {{ include "site-header" }}
 {{~ ## The documentation index: a forest band with the install command, then every topic as a row of a tree grid,
      grouped by what a reader is doing, with the output that topic produces rendered by CanopyX. Topics, their groups
-     and their thumbnails come from the "Developers" group of the main menu in site.json. ## ~}}
-{{~ dev = null; for g in (pf.menu "main").items; if g.id == "developers"; dev = g; end; end ~}}
+     and their thumbnails come from the "Docs" group of the main menu in site.json. ## ~}}
+{{~ dev = null; for g in (pf.menu "main").items; if g.id == "docs"; dev = g; end; end ~}}
 <main id="main" class="cnx-main cnx-map">
   <section class="cnx-maphero" aria-labelledby="cnx-map-title">
     <div class="cnx-maphero__inner">

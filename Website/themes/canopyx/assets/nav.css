@@ -15,12 +15,15 @@
 
 .cnx-nav__groups { display: flex; align-items: center; gap: 4px; margin: 0; padding: 0; list-style: none; }
 
+/* Every top-level item is the same box in every state: plain links, the Docs button, hovered, open or current.
+   Only colours change, so switching pages or opening the panel never moves the header. */
 .cnx-navgroup__trigger {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 10px 0 12px;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -28,26 +31,17 @@
   font: inherit;
   font-size: .9375rem;
   font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
 }
 .cnx-navgroup__trigger:hover { color: var(--cnx-ink); background: color-mix(in srgb, var(--cnx-ink) 5%, transparent); }
-.cnx-navgroup.is-current .cnx-navgroup__trigger { color: var(--cnx-ink); }
 .cnx-navgroup__trigger[aria-expanded="true"] { color: var(--cnx-ink); border-color: var(--cnx-line-strong); background: var(--cnx-card); }
-.cnx-navgroup__chev { width: 14px; height: 14px; color: var(--cnx-ink-3); -webkit-mask-size: 14px; mask-size: 14px; transition: transform .18s ease; }
+/* The current page or section: the selected row of the docs tree, drawn inside the same box. */
+.cnx-navgroup__trigger.is-current { color: var(--cnx-ink); background: var(--cnx-select); box-shadow: inset 2px 0 0 var(--cnx-accent); }
+.cnx-navgroup__chev { width: 14px; height: 14px; margin-right: -2px; color: var(--cnx-ink-3); -webkit-mask-size: 14px; mask-size: 14px; transition: transform .18s ease; }
 .cnx-navgroup__trigger[aria-expanded="true"] .cnx-navgroup__chev { transform: rotate(180deg); color: var(--cnx-accent); }
-
-/* The current page inside its group: the selected row of a tree grid. */
-.cnx-navgroup__current {
-  padding: 2px 8px 2px 9px;
-  border-radius: 0 4px 4px 0;
-  background: var(--cnx-select);
-  box-shadow: inset 2px 0 0 var(--cnx-accent);
-  color: var(--cnx-ink);
-  font-size: .8125rem;
-  font-weight: 640;
-  white-space: nowrap;
-}
-
 .cnx-nav__actions { display: flex; align-items: center; gap: 8px; }
 
 /* Panel */
@@ -149,8 +143,6 @@
 .cnx-thumb__render table { width: 100%; }
 .cnx-thumb__render--dark { min-height: 100%; background: #111a15; }
 .cnx-thumb:has(.cnx-thumb__render--dark) { background: #111a15; }
-.cnx-thumb__shot, .cnx-thumb__shot img { display: block; width: 100%; height: 100%; }
-.cnx-thumb__shot img { object-fit: cover; object-position: top left; }
 
 /* Compact: a sheet under the header with every group open as a tree of links. */
 @media (max-width: 900px) {
@@ -183,11 +175,11 @@
   }
   .cnx-nav-toggle:checked ~ .cnx-nav { display: flex; }
   .cnx-nav__groups { flex-direction: column; align-items: stretch; gap: 10px; }
-  .cnx-navgroup__trigger { width: 100%; min-height: 44px; padding-left: 6px; }
+  .cnx-navgroup__trigger { width: 100%; height: 44px; padding-left: 10px; }
   .cnx-navgroup__trigger[aria-expanded="true"] { border-color: transparent; background: transparent; }
-  .cnx-navgroup__chev { order: -1; transform: rotate(-90deg); }
+  .cnx-navgroup__trigger[aria-expanded="true"].is-current { background: var(--cnx-select); }
+  .cnx-navgroup__chev { order: -1; margin-right: 0; transform: rotate(-90deg); }
   .cnx-navgroup__trigger[aria-expanded="true"] .cnx-navgroup__chev { transform: none; }
-  .cnx-navgroup__current { margin-left: auto; }
   .cnx-navpanel { position: static; width: auto; padding: 0 0 0 6px; border: 0; border-radius: 0; background: none; box-shadow: none; }
   :root:not(.cnx-js) .cnx-navpanel { display: block; }
   .cnx-navpanel__lede { display: none; }
@@ -202,4 +194,12 @@
   .cnx-nav__actions { padding-top: 12px; border-top: 1px solid var(--cnx-line); }
 }
 .cnx-thumb__render td, .cnx-thumb__render th { white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .cnx-navgroup--link .cnx-navgroup__trigger { padding-left: 30px; }
+}
+
+@media (min-width: 901px) {
+  .cnx-navitem:nth-child(n+5)::before { display: none; }
+}
 
