@@ -328,7 +328,10 @@ view.AutoHeight = true;           // the default
 
 JavaScript hosts pass `toolbar` (`false`, or switches including `search`), `actions` and `exportFormats` to
 `createTreeGrid` or `configure`. Once `ready` has resolved the tree API also has `prepareExport`, `exportAs`,
-`getSavedViews`, `saveView`, `applySavedView`, `removeSavedView`, `resetView`, `setColumnOrder` and `resetColumns`.
+`getSavedViews`, `saveView`, `applySavedView`, `removeSavedView`, `resetView`, `setColumnOrder`, `resetColumns`,
+`setColumnPinned`, `openDetails` and a filled `toOutline()`; before that the methods that return a promise reject it and the
+others throw. `closeMenus()` and the `canopyx:closemenus` document event close its menus, and `onRowActivate` (the cancelable
+`canopyx:rowActivate` event) lets a host take over Enter and double-click activation.
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.
 - Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM. Large logical heights map to a bounded native scrollbar, keeping every loaded row reachable through scrolling, keyboard navigation, and saved anchors.

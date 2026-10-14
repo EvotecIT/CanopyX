@@ -93,6 +93,14 @@ public static partial class CanopyHtmlAssets {
     public static IReadOnlyList<string> WriteTo(string directory, CanopyAssetNaming naming) => WriteTo(directory, naming, CanopyRuntime.TreeGrid);
 
     /// <summary>Writes the selected runtime and stylesheet, using the same naming as the page that loads them.</summary>
+    /// <remarks>
+    /// The optional parts the runtime loads from files beside it are written too, under the same naming: the tree tools part
+    /// (<see cref="TreeToolsScriptFileName"/>, <see cref="TreeToolsStyleFileName"/>) and the export part
+    /// (<see cref="ExportScriptFileName"/>) for every runtime, and for <see cref="CanopyRuntime.DataGrid"/> and
+    /// <see cref="CanopyRuntime.ReportingGrid"/> also the filter editor and the history presenters
+    /// (<see cref="HistoryScriptFileName"/>). The result lists only the script and the stylesheet; a host that copies or
+    /// uploads the written files elsewhere takes the whole folder.
+    /// </remarks>
     /// <param name="directory">The output directory.</param>
     /// <param name="naming">Content-hashed or plain file names.</param>
     /// <param name="runtime">The single browser entry point used by the page.</param>

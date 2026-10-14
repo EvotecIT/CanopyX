@@ -22,7 +22,7 @@ differences:
 - **Pins.** As on a flat grid, any other column pins left or right (`Pinned = CanopyGridColumnPin.Left` or `Right`, `pinned:
   "left"` or `"right"`, or `setColumnPinned(id, pin)` at run time): left pins follow the tree column and right pins stay at
   the right edge while the other columns scroll. They keep their place next to their edge when the reader reorders columns,
-  never hide for width, and are part of remembered state and named views; **Reset columns** returns to the declared pins.
+  never hide for width (except on phones, see **Hiding** below), and are part of remembered state and named views; **Reset columns** returns to the declared pins.
   When the pins would leave the scrolling columns less than 128 pixels, the innermost of them scroll too.
 - **Widths.** A content-sized column (`CanopyColumnSizing.Content`, the default) writes `autoWidth: true` and 160 pixels as
   the width a tree uses until the tree tools part has measured; an assigned width is preferred. User widths are sticky

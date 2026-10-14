@@ -24,10 +24,10 @@ public sealed partial class CanopyGridPresenter {
     public bool MarkLast { get; private set; }
     /// <summary>Gets exact raw text values mapped to semantic tones.</summary>
     public IReadOnlyDictionary<string, CanopyTone> Tones { get; private set; } = new ReadOnlyDictionary<string, CanopyTone>(new Dictionary<string, CanopyTone>());
-    /// <summary>Gets the tones an enum or state presenter shows as plain muted text instead of a chip or dot. Empty keeps every tone coloured.</summary>
+    /// <summary>Gets the tones an enum or state presenter shows as plain text instead of a chip or dot, muted unless <see cref="QuietStyle"/> is <see cref="CanopyGridQuietStyle.Plain"/>. Empty keeps every tone coloured.</summary>
     public IReadOnlyList<CanopyTone> QuietTones { get; private set; } = Array.Empty<CanopyTone>();
 
-    /// <summary>Returns a copy of this enum or state presenter that shows the given tones as plain muted text, for example
+    /// <summary>Returns a copy of this enum or state presenter that shows the given tones as plain text (muted by default, see <see cref="WithQuietStyle"/>), for example
     /// <c>CanopyTone.Success</c> so healthy values read quietly while chips stay for values that need attention.</summary>
     /// <param name="tones">At most 16 named tones. Hosts map their values to tones with the tone mapping or cell tones.</param>
     /// <returns>A new immutable descriptor.</returns>

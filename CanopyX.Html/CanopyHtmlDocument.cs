@@ -5,14 +5,14 @@ namespace CanopyX.Html;
 
 /// <summary>
 /// One HTML document that several CanopyX fragments are written into. Fragments written with inline assets and the same
-/// <see cref="CanopyHtmlOptions.Document"/> embed each shared part once: the tree tools part, the grid export part and the
-/// filter editor travel with the first fragment that needs them, and the later fragments leave them out.
+/// <see cref="CanopyHtmlOptions.Document"/> embed each shared part once: the tree tools part, the grid export part, the filter editor
+/// and the history presenters travel with the first fragment that needs them, and the later fragments leave them out.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The runtime finds a part's payload anywhere in the document by its marker, the payload script's type and version
-/// (<c>script[type="application/x-canopyx-tree-tools"][data-cx-version="…"]</c>, and likewise for <c>export</c> and
-/// <c>filter-editor</c>), so the views of a page share one payload. Use one instance per output
+/// (<c>script[type="application/x-canopyx-tree-tools"][data-cx-version="…"]</c>, and likewise for <c>export</c>,
+/// <c>filter-editor</c> and <c>history</c>), so the views of a page share one payload. Use one instance per output
 /// document, and only for markup that reaches that document: a fragment written and then discarded may hold the only payload.
 /// The fragment that carries a payload must be in the page before a view that needs the part mounts; a host that inserts
 /// fragments later (tabs, templates, injected HTML) inserts the first one first, or gives each such fragment its own document.
