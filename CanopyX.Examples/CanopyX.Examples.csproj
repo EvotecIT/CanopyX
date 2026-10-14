@@ -24,5 +24,6 @@
     <EmbeddedResource Include="Templates\interactions.html" LogicalName="CanopyX.Examples.Templates.interactions.html" />
     <EmbeddedResource Include="Templates\contained-grids.html" LogicalName="CanopyX.Examples.Templates.contained-grids.html" />
     <EmbeddedResource Include="Templates\column-layout.html" LogicalName="CanopyX.Examples.Templates.column-layout.html" />
+    <EmbeddedResource Include="Templates\tree-parity.html" LogicalName="CanopyX.Examples.Templates.tree-parity.html" />
   </ItemGroup>
 </Project>

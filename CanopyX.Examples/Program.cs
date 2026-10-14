@@ -84,6 +84,7 @@ SidecarKeysExample.Write(output);
 GroupedGridExample.Write(output);
 ContainedGridsExample.Write(output);
 ColumnLayoutExample.Write(output);
+TreeParityExample.Write(output);
 WrappedGridExample.Write(output);
 ContentGridExample.Write(output);
 LocalizedGridsExample.Write(output);
