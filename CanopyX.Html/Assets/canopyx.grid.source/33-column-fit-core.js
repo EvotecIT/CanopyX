@@ -2,8 +2,8 @@
   // Each view measures its own columns (column.need, column.headNeed and this.fitCh, the width of eleven digits) and calls
   // these routines; flat grids mix them into DataGrid (33-grid-column-fit.js), and the tree tools part, which includes this
   // part, mixes them into TreeGrid. Spare width goes to flex columns, then the identity column up to the cap, then it is
-  // shared with the widest normal text column. A shortfall first takes slack from normal and optional columns, then hides
-  // optional columns, and only then scrolls with pinned columns.
+  // shared with the widest normal text column. A shortfall first takes slack from long free text (flex columns, then the
+  // widest text columns), then from the other columns, then hides optional columns, and only then scrolls with pinned columns.
   function gridPriority(value) {
     return ["essential", "normal", "optional"].includes(value) || Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
@@ -41,17 +41,13 @@
     },
     // Sets renderWidth on the shown columns for a viewport of the given width. A shortfall first takes the preferred width
     // above content (so long values keep their measured width before short columns keep their declared one), then content
-    // slack down to the floors; spare width is spread by fitSpare.
+    // slack down to the floors (fitShrink); spare width is spread by fitSpare.
     fitWidths(cols, width) {
       let total = 0, target;
       for (const column of cols) total += column.renderWidth = this.fitSize(column);
-      for (const level of [2, 1, 0]) if (width && total > width) {
-        let slack = 0;
-        for (const column of cols) slack += column.renderWidth - this.fitSize(column, level);
-        if (!level && slack < total - width) continue;
-        const share = Math.min(1, (total - width) / slack || 0); total = 0;
-        for (const column of cols) total += column.renderWidth -= (column.renderWidth - this.fitSize(column, level)) * share;
-      }
+      // The identity column yields its content width (level 0) only when that avoids scrolling.
+      for (const level of [2, 1, 0]) if (width && total > width && (level || cols.reduce((sum, column) => sum + column.renderWidth - this.fitSize(column, 0), 0) >= total - width))
+        total = width + this.fitShrink(cols, total - width, level);
       if (width && total < width) target = this.fitSpare(cols.filter(column => !column.fixed && !column.sized), width - total);
       total = 0;
       for (const column of cols) total += column.renderWidth = Math.floor(column.renderWidth);
@@ -61,6 +57,22 @@
         if (!column.fixed && !column.sized && column.renderWidth < column.maxW && gridTextual(column)) target = column;
       if (target) target.renderWidth += Math.min(width - total, target.maxW - target.renderWidth);
       return cols.map(column => column.renderWidth);
+    },
+    // Takes up to excess pixels down to the widths of a level (fitSize). Long free text gives way first: the flex columns, then
+    // the text columns, then all the others, each group levelled down from its widest column to one common width that no
+    // column goes below its floor for. Short and fixed-format values (dates, numbers, states, short names) so keep their whole
+    // width while the total allows. Returns the excess left.
+    fitShrink(cols, excess, level) {
+      for (const group of [cols.filter(column => column.flex), cols.filter(gridTextual), cols]) {
+        if (excess <= 0.5) break;
+        const floor = new Map(group.map(column => [column, Math.min(column.renderWidth, this.fitSize(column, level))]));
+        const cut = width => group.reduce((sum, column) => sum + Math.max(0, column.renderWidth - Math.max(width, floor.get(column))), 0);
+        let low = 0, high = Math.max(0, ...group.map(column => column.renderWidth));
+        for (let step = 0; step < 24; step++) { const middle = (low + high) / 2; if (cut(middle) >= excess) low = middle; else high = middle; }
+        excess -= cut(low);
+        for (const column of group) column.renderWidth = Math.min(column.renderWidth, Math.max(low, floor.get(column)));
+      }
+      return excess;
     },
     fitSpare(columns, spare) {
       let target, flex = columns.filter(column => column.flex && column.flexWeight);

@@ -72,7 +72,9 @@ as one cell ("Overall ⋮"), and so does an active header filter.
    the widths down leaves, the last text column below its maximum that is neither fixed nor sized by the reader takes
    the rest, so the rows end at the right edge (number and graphic columns keep their width).
 4. **Short width** gives way in this order:
-   1. normal and optional columns lose their slack, down to their header width or about eleven characters for text;
+   1. normal and optional columns lose their slack, long free text first: `flex` columns, then the text columns from the
+      widest down (levelled to one width), and only then the others, so dates, numbers, states and short names keep their
+      whole width while the total allows; no column goes below its header width or about eleven characters for text;
    2. optional columns hide (on phones, at 640 pixels and below, normal columns hide too); hidden columns stay in the
       record drawer, exports and the phone "+N" button, and the Columns menu marks them "Hidden at this width";
    3. only then the grid scrolls horizontally inside itself, with pinned columns in place.
