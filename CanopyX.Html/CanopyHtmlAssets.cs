@@ -117,6 +117,8 @@ public static partial class CanopyHtmlAssets {
             WriteOnce(style, FileEncoding.GetBytes(styleText));
         }
 
+        // Every entry point mounts trees, which load the tree tools part; the grid entry points also load the editor and export parts.
+        WriteTreeTools(directory, naming);
         if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) { WriteFilterEditor(directory, naming); WriteExportPart(directory, naming); }
         return new[] { script, style };
     }

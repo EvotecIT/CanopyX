@@ -31,6 +31,8 @@
   "GridFilteredResults": ["Przefiltrowane wyniki","Gefilterte Ergebnisse","Resultados filtrados"],
   "GridSelectedRows": ["Zaznaczone wiersze","Ausgewählte Zeilen","Filas seleccionadas"],
   "GridAllResults": ["Wszystkie wyniki","Alle Ergebnisse","Todos los resultados"],
+  "GridVisibleRows": ["Widoczne wiersze","Sichtbare Zeilen","Filas visibles"],
+  "GridAllRows": ["Wszystkie wiersze","Alle Zeilen","Todas las filas"],
   "GridDownloadCsv": ["Pobierz plik CSV","CSV herunterladen","Descargar CSV"],
   "GridCopy": ["Kopiuj","Kopieren","Copiar"],
   "GridDetails": ["Szczegóły rekordu","Datensatzdetails","Detalles del registro"],

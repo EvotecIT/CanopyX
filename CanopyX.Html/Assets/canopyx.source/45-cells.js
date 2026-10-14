@@ -78,7 +78,7 @@
         return;
       }
       rowEl._cells = this.cols.map((column, i) => {
-        const cell = this.cell(rowEl, i, column.width, column.kind);
+        const cell = this.cell(rowEl, i, column.renderWidth || column.width, column.kind);
         const slot = { cell, base: cell.className + (i === 0 ? " cx-tree" : ""), cls: null, title: null, badges: [], iconKey: null, iconEl: null, mode: "default" };
         cell.className = slot.base;
         if (i === 0) {

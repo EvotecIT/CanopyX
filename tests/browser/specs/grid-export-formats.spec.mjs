@@ -203,7 +203,7 @@ for (const runtime of ["interactive", "grid"]) test("tree grids capture visible 
     grid.setSelection(["a2x", "b1", "a"]);
     const selected = await collect(grid.prepareExport({ scope: "selected", columns: ["owner", "name"] }));
     const errors = [];
-    for (const options of [{ scope: "all" }, { values: "html" }, { columns: ["missing"] }, { columns: ["name", "name"] }])
+    for (const options of [{ scope: "filtered" }, { values: "html" }, { columns: ["missing"] }, { columns: ["name", "name"] }])
       try { grid.prepareExport(options); errors.push(null); } catch (error) { errors.push(error.message); }
     const written = await grid.exportAs("xlsx", { download: false });
     const cancelled = new AbortController(), pending = collect(grid.prepareExport({ signal: cancelled.signal })); cancelled.abort();
@@ -221,9 +221,17 @@ for (const runtime of ["interactive", "grid"]) test("tree grids capture visible 
   expect(result.write.request.kind).toBe("tree"); expect(result.cancelled).toBe("AbortError"); expect(result.frozen).toBe(true);
 });
 
-test("the ordinary tree runtime stays without exports", async ({ page }) => {
-  await open(page, tree(), "", "tree");
-  expect(await page.evaluate(api => [typeof eval(api).prepareExport, typeof CanopyX.registerExportFormat], api)).toEqual(["undefined", "undefined"]);
+test("the ordinary tree runtime exports through its tree tools part", async ({ page }) => {
+  await open(page, tree(), fakeFormats, "tree");
+  const result = await page.evaluate(async api => {
+    const grid = eval(api), all = [];
+    for await (const row of grid.prepareExport({ scope: "all" }).rows()) all.push([row.id, row.level, row.path.join("/")]);
+    const written = await grid.exportAs("xlsx", { scope: "all", download: false });
+    return { all, written: await written.blob.text() };
+  }, api);
+  // All rows reads the whole inline tree, collapsed branches included, in tree order.
+  expect(result.all).toEqual([["a", 1, "a"], ["a1", 2, "a/a1"], ["a2", 2, "a/a2"], ["a2x", 3, "a/a2/a2x"], ["b", 1, "b"], ["b1", 2, "b/b1"]]);
+  expect(result.written).toBe("xlsx:a,a1,a2,a2x,b,b1");
 });
 
 // The export part loads on first use, like the filter editor, from an inline payload, plain files, hashed files or the module.
@@ -314,7 +322,8 @@ test("trees on a grid runtime and export methods load the export part on demand"
     const file = new URL(route.request().url()).pathname.split("/").at(-1); loads.push(file);
     if (file === "page") return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><title>Mixed</title><style>' + style +
       '</style><script defer src="/assets/canopyx-grid.js"></script></head><body>' + fragment(tree()) + fragment(definition()) + "</body></html>" });
-    return route.fulfill({ contentType: "text/javascript", body: file === "canopyx-grid.js" ? script : file === "canopyx-export.js" ? part : "" });
+    const tools = file.startsWith("canopyx-tree-tools") ? read(file) : null;
+    return route.fulfill({ contentType: file.endsWith(".css") ? "text/css" : "text/javascript", body: file === "canopyx-grid.js" ? script : file === "canopyx-export.js" ? part : tools ?? "" });
   });
   await page.goto("http://canopyx.test/page"); await page.waitForFunction(() => document.querySelectorAll("[data-cx-ready]").length === 2);
   const parts = () => loads.filter(file => file.startsWith("canopyx-export"));

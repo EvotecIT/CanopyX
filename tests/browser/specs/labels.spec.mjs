@@ -38,11 +38,14 @@ test("a view's labels translate the toolbar, the rows, the cells, and what a scr
   const search = page.getByRole("combobox");
   await expect(search).toHaveAttribute("placeholder", "Szukaj plików");
   await expect(page.locator(".cx-results")).toHaveAttribute("aria-label", "Wyniki wyszukiwania");
-  await expect(page.locator(".cx-columns > summary")).toHaveText("Kolumny");
-  await expect(page.locator(".cx-columns legend")).toHaveText("Widoczne kolumny");
+  await expect(page.locator(".cx-grid-columns > summary")).toHaveText("Kolumny");
+  await page.locator(".cx-grid-columns > summary").click();
+  await expect(page.locator(".cx-grid-columns [role=group]")).toHaveAttribute("aria-label", "Widoczne kolumny");
+  await page.keyboard.press("Escape");
   const grip = page.locator('.cx-hcell[data-cx-column="done"] .cx-resize');
   await expect(grip).toHaveAttribute("aria-label", "Zmień szerokość: Gotowe");
-  await expect(grip).toHaveAttribute("aria-valuetext", "90 pikseli");
+  // The grip reports the width on screen, which column fitting chose.
+  await expect(grip).toHaveAttribute("aria-valuetext", /^\d+ pikseli$/);
 
   // Cells: booleans and dates without display text; the tooltip gives the other time zone.
   await expect(row(page, "a").locator('[aria-colindex="2"]')).toHaveText("Tak");
@@ -77,7 +80,7 @@ test("labels a host passes to configure apply on top of the view's", async ({ pa
   const noPlaceholder = Object.assign({}, view, { search: { minLength: 2, maxResults: 20 } });
   await open(page, noPlaceholder, "CanopyX.configure('labelled', { labels: { columns: 'Pola', yes: '✓', searchPlaceholder: 'Znajdź' } });");
   await page.waitForSelector("[data-cx-ready]");
-  await expect(page.locator(".cx-columns > summary")).toHaveText("Pola");
+  await expect(page.locator(".cx-grid-columns > summary")).toHaveText("Pola");
   await expect(row(page, "a").locator('[aria-colindex="2"]')).toHaveText("✓");
   await expect(row(page, "b").locator('[aria-colindex="2"]')).toHaveText("Nie");
   // A view without a placeholder of its own takes the label, so a browser host can translate it too.

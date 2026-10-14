@@ -1,12 +1,12 @@
-// On a narrow screen only one or two columns fit. The tree column can stay pinned while the others scroll, and a
-// host can set a column's width.
+// On a narrow screen only one or two columns fit. The tree column stays pinned while the others scroll (the columns here
+// are fixed and always visible, so fitting and the phone layout keep them), and a host can set a column's width.
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
 test.use({ viewport: { width: 390, height: 700 } });
 
 const view = (extra) => ({ protocol: "canopyx/2", type: "view", id: "layout", label: "Layout", rowHeight: 28, pageSize: 100, selection: "single",
-  columns: [{ id: "name", title: "Name", width: 220, kind: "text" }].concat(Array.from({ length: 5 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 200, kind: "text" }))),
+  columns: [{ id: "name", title: "Name", width: 220, kind: "text", fixed: true }].concat(Array.from({ length: 5 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 200, kind: "text", fixed: true, alwaysVisible: true }))),
   source: { kind: "inline" },
   roots: Array.from({ length: 30 }, (_, i) => ({ id: "n" + i, label: "Node " + i, cells: { c0: "zero " + i, c4: "four " + i } })), ...extra });
 
@@ -55,8 +55,9 @@ test("a pinned tree column stays at the left edge, opaque and on top, while the 
   expect(free.head).toBeLessThan(-400);
 });
 
-test("without the option the tree column scrolls away with the rest", async ({ page }) => {
-  await open(page, view());
+test("a tree column the view unpins scrolls away with the rest", async ({ page }) => {
+  const unpinned = view(); unpinned.columns[0].pinned = null;
+  await open(page, unpinned);
   expect((await scrolledRight(page)).tree).toBeLessThan(-400);
 });
 

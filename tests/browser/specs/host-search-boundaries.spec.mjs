@@ -70,7 +70,8 @@ for(const queued of [true,false]) test(`sidecar pair identity is unambiguous (${
 
 for(const id of ["\u0000","line\nbreak","quote\"","emoji😀"]) test(`toolbar controls preserve exact identifier ${JSON.stringify(id)}`,async({page})=>{
   await open(page,{...view,columns:[...view.columns,{id,title:"Extra",width:100}],filters:[{id,label:"Only flagged",flag:"yes"}],roots:[{id:"one",label:"Alpha Beta",flags:["yes"]}]});
-  const checked=await page.evaluate(id=>{api.setFilterActive(id,true);api.setColumnVisible(id,false);return [document.querySelector('[data-cx-filter]').checked,document.querySelector('[data-cx-column][type=checkbox]').checked];},id);
+  await page.locator('.cx-grid-columns > summary').click(); await page.locator('.cx-grid-column-choice').first().waitFor();
+  const checked=await page.evaluate(id=>{api.setFilterActive(id,true);api.setColumnVisible(id,false);return [document.querySelector('[data-cx-filter]').checked,[...document.querySelectorAll('.cx-grid-column-choice')].find(row=>row.dataset.cxColumn===id).querySelector('input').checked];},id);
   expect(checked).toEqual([true,false]);
 });
 
