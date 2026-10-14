@@ -56,6 +56,7 @@
       trigger.addEventListener('keydown', function (event) {
         if (event.key !== 'ArrowDown' || compactNav.matches || !links.length) return;
         event.preventDefault();
+        event.stopPropagation();
         closeAll(group);
         setOpen(group, true);
         links[0].focus();
@@ -93,6 +94,14 @@
     });
   }
 
+  // The docs contents start folded on phones and open on wider screens.
+  var docsMenu = document.querySelector('[data-cnx-docs-menu]');
+  if (docsMenu) {
+    var phone = window.matchMedia('(max-width: 760px)');
+    var fold = function () { docsMenu.open = !phone.matches; };
+    fold();
+    if (phone.addEventListener) phone.addEventListener('change', fold);
+  }
   // Docs map and other inline thumbnails that were not rendered into the page.
   document.querySelectorAll('main [data-cnx-thumb]').forEach(function (slot) { loadThumbs(slot.parentNode); });
 

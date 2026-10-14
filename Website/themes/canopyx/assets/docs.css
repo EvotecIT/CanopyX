@@ -317,3 +317,24 @@
   .cnx-example__meta { display: none; }
   .cnx-example__label { max-width: 52vw; }
 }
+
+/* The contents tree folds into one row on phones, so the article starts on the first screen. */
+.cnx-docs__menu > summary { display: none; }
+@media (max-width: 760px) {
+  .cnx-docs__nav { display: block; }
+  .cnx-docs__menu > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    color: var(--cnx-ink);
+    font-weight: 680;
+    list-style: none;
+    cursor: pointer;
+  }
+  .cnx-docs__menu > summary::-webkit-details-marker { display: none; }
+  .cnx-docs__menu > summary .cnx-chev { color: var(--cnx-accent); transform: rotate(-90deg); transition: transform .18s ease; }
+  .cnx-docs__menu[open] > summary .cnx-chev { transform: none; }
+  .cnx-docs__menu[open] > summary { margin-bottom: 8px; }
+  .cnx-docs__menu .cnx-docs__group + .cnx-docs__group { margin-top: 16px; }
+}

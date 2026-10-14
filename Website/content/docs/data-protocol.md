@@ -1,7 +1,7 @@
 ---
 title: The canopyx/2 data protocol
 order: 6
-description: The JSON documents a host sends to the CanopyX runtime, each shown beside the grid it produces, from the view definition to lazy children pages and hosted endpoints.
+description: The JSON documents a host sends to the CanopyX runtime, each beside the grid it produces, from the view definition to children pages and hosted endpoints.
 layout: docs
 meta.wide: true
 ---

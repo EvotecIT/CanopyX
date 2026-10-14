@@ -3,6 +3,7 @@ title: Build a reporting grid
 order: 3
 description: Group records, filter from the column headers, count values with facets, add aggregates and cell presenters, and export what the reader selected.
 layout: docs
+meta.wide: true
 ---
 
 A reporting grid is a `CanopyDataGridView` with a `Reporting` definition. Pages written from C# pick the reporting runtime by themselves; JavaScript hosts import `@evotecit/canopyx/reporting` and its `reporting.css`.

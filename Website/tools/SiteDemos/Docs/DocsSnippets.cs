@@ -13,8 +13,12 @@ internal static class DocsSnippets {
         // docs:begin tree
         var files = new CanopyTreeView("files", "Project files");
         files.Search = new CanopySearchOptions();
-        files.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(250) });
-        files.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
+        files.Columns.Add(new CanopyColumn("name", "Name") {
+            Sortable = true, Sizing = CanopyColumnSizing.Preferred(250)
+        });
+        files.Columns.Add(new CanopyColumn("size", "Size") {
+            Kind = CanopyColumnKind.Number, Sortable = true
+        });
         files.Columns.Add(new CanopyColumn("owner", "Owner") { Sortable = true });
 
         var projects = new CanopyNode("projects", "Projects") { Expanded = true };
@@ -25,7 +29,7 @@ internal static class DocsSnippets {
         projects.Children.Add(report);
 
         var archive = new CanopyNode("archive", "Archive");
-        archive.Children.Add(File("plan-2025", "Project plan 2025.docx", 40_960, "anna.kowalska"));
+        archive.Children.Add(File("plan-2025", "Plan 2025.docx", 40_960, "anna.kowalska"));
         archive.Children.Add(File("budget-2025", "Budget 2025.xlsx", 19_456, "ben.okafor"));
 
         files.Roots.Add(projects);
@@ -47,11 +51,14 @@ internal static class DocsSnippets {
         var inventory = new CanopyDataGridView("inventory", "Inventory");
         inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
         inventory.Columns.Add(new CanopyColumn("site", "Site") { Sortable = true });
-        inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
+        inventory.Columns.Add(new CanopyColumn("size", "Size") {
+            Kind = CanopyColumnKind.Number, Sortable = true
+        });
 
         var records = new[] {
-            ("Archive", "Warsaw", 2048L), ("Documents", "London", 512L), ("Invoices", "Warsaw", 9216L),
-            ("Photos", "Berlin", 40960L), ("Reports", "London", 3072L)
+            ("Archive", "Warsaw", 2048L), ("Documents", "London", 512L),
+            ("Invoices", "Warsaw", 9216L), ("Photos", "Berlin", 40960L),
+            ("Reports", "London", 3072L)
         };
         foreach (var (name, site, bytes) in records) {
             var row = new CanopyGridRow(name.ToLowerInvariant());
@@ -91,9 +98,13 @@ internal static class DocsSnippets {
         };
         // docs:begin reporting
         var devices = new CanopyDataGridView("devices", "Devices") {
-            Selection = CanopySelectionMode.Multiple, StatusBar = true, Noun = "devices",
+            Selection = CanopySelectionMode.Multiple,
+            StatusBar = true,
+            Noun = "devices",
             Reporting = new CanopyGridReporting {
-                Grouping = new CanopyGridGrouping("site"), HeaderFilters = true, SelectionControls = true
+                Grouping = new CanopyGridGrouping("site"),
+                HeaderFilters = true,
+                SelectionControls = true
             }
         };
         devices.Columns.Add(new CanopyColumn("device", "Device") {
@@ -101,21 +112,25 @@ internal static class DocsSnippets {
         });
         devices.Columns.Add(new CanopyColumn("site", "Site") { Sortable = true });
         devices.Columns.Add(new CanopyColumn("patch", "Patch level") {
-            Kind = CanopyColumnKind.Number, Sortable = true, Presenter = CanopyGridPresenter.Progress()
+            Kind = CanopyColumnKind.Number,
+            Sortable = true,
+            Presenter = CanopyGridPresenter.Progress()
         });
         devices.Columns.Add(new CanopyColumn("encrypted", "Encrypted") {
             Sortable = true, Presenter = CanopyGridPresenter.Boolean()
         });
         devices.Reporting.FacetColumns.Add("site");
         devices.Reporting.Aggregates.Add(new CanopyGridAggregate(
-            "patch-average", "patch", CanopyGridAggregateOperation.Average, "Average patch level"));
+            "patch-average", "patch", CanopyGridAggregateOperation.Average,
+            "Average patch level"));
 
         foreach (var (name, site, patch, encrypted) in records) {
             var row = new CanopyGridRow(name.ToLowerInvariant());
             row.Cells["device"] = name;
             row.Cells["site"] = site;
             row.Cells["patch"] = new CanopyCell(patch) {
-                Text = $"{patch}%", Tone = patch < 70 ? CanopyTone.Danger : CanopyTone.None
+                Text = $"{patch}%",
+                Tone = patch < 70 ? CanopyTone.Danger : CanopyTone.None
             };
             row.Cells["encrypted"] = encrypted;
             devices.Rows.Add(row);
