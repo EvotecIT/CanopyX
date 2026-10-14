@@ -40,6 +40,7 @@ export interface TreeGrid {
   selectAll(options: { scope: "visible" | "loaded" }): boolean;
   focus(): void;
   visibleRows(): { node: CanopyNode; level: number; path: string[] }[];
+  /** The indented outline of the open rows that print uses; drawn by the tree tools part, so empty until ready. */
   toOutline(): string;
   /** Once ready (the tree tools part): captures the visible rows (default), the loaded selected nodes or all rows now, with level and id path. */
   prepareExport(options?: TreeExportOptions): TreeExport;
