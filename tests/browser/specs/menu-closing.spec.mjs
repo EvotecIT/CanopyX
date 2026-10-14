@@ -176,6 +176,8 @@ test("a phone sheet opened from the more menu shows one drag handle in the dark 
   await expect(host(page, 0)).toHaveClass(/cx-phone/);
   await host(page, 0).locator(".cx-grid-overflow > summary").click();
   expect(await handles(page)).toEqual(["overflow"]);
+  // The more menu announces itself from its queued toggle event; open Export only after that, as a reader would.
+  await expect.poll(() => page.evaluate(() => window.menuEvents.at(-1) || "")).toContain("cx-grid-overflow");
   await host(page, 0).locator(".cx-grid-overflow .cx-grid-export > summary").focus();
   await page.keyboard.press("Enter");
   await expect(host(page, 0).locator(".cx-grid-export")).toHaveAttribute("open", "");
