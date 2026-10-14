@@ -158,10 +158,12 @@ test("a low toolbar opens its chooser above and repositions when the viewport ch
   await control.click(); await expect(menu).toBeVisible();
   await expect.poll(() => menu.evaluate(group => group.getBoundingClientRect().bottom <= group.parentElement.getBoundingClientRect().top)).toBe(true);
   await capture(page, "columns-above");
+  // On a phone the open menu becomes a sheet along the bottom edge, as on flat grids.
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".cx-host")).toHaveClass(/cx-phone/);
   await expect.poll(() => menu.evaluate(group => {
     const r = group.getBoundingClientRect();
-    return r.left >= 7 && r.right <= innerWidth - 7 && r.top >= group.parentElement.getBoundingClientRect().bottom && r.bottom <= innerHeight - 7;
+    return Math.round(r.left) === 0 && Math.round(r.right) === innerWidth && Math.round(r.bottom) === innerHeight;
   })).toBe(true);
 });
 
