@@ -155,6 +155,9 @@ interface HostOptionsBase {
   onSelect?: (node: CanopyNode | null, nodes: CanopyNode[]) => void;
   onToggle?: (node: CanopyNode, expanded: boolean) => void;
   onLoad?: (node: CanopyNode | null, info: LoadInfo) => void;
+  /** Row activation (Enter on a node row, or a double click), with the tree tools part: runs before the tree's own action
+   * (select and toggle); returning false keeps that from running. The cancelable canopyx:rowActivate event carries { id, node, keyboard }. */
+  onRowActivate?: (node: CanopyNode, context: { readonly keyboard: boolean }) => boolean | void;
   isSelectable?: (node: CanopyNode) => boolean;
   beforeSelect?: (node: CanopyNode | null, nodes: CanopyNode[], context: SelectionContext) => boolean | void;
   isCheckable?: (node: CanopyNode) => boolean;

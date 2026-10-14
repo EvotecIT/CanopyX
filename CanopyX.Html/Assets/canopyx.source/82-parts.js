@@ -29,4 +29,4 @@
   // The tree toolbar menus (Columns, Views, Export, more), column fitting and auto height. Trees on every runtime load it.
   const TREE_TOOLS = { key: "CanopyXTreeTools", name: "tree-tools", label: "tree tools", version: "__CX_TOOLS_VERSION__", script: "__CX_TOOLS_SCRIPT__", style: "__CX_TOOLS_STYLE__",
     context: () => ({ TreeGrid, h, setText, fill, numberFormat, watchFlyout, columnWidth, prepareWidth, cellText, cellValue, isCellObject, foldText, formatting,
-      sortKey, compareKeys, EXPORT_FORMATS, exportFormat, exportTimeout, INDENT, MAX_PROTOCOL_INTEGER, detailCell, HostCellContext, disposeHostSlot }) };
+      sortKey, compareKeys, EXPORT_FORMATS, exportFormat, exportTimeout, INDENT, MAX_PROTOCOL_INTEGER, hostControl, detailCell, HostCellContext, disposeHostSlot }) };

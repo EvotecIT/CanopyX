@@ -34,8 +34,8 @@
       grid.addEventListener("click", event => this.onClick(event), { signal });
       grid.addEventListener("dblclick", event => {
         const element = event.target.closest(".cx-row"), row = element && element._w;
-        if (row && !row.status && !event.target.closest("a,button,input,select,textarea,[contenteditable]"))
-          Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
+        if (row && !row.status && !event.target.closest("a,button,input,select,textarea,[contenteditable]") && !this.clickAction(element))
+          this.activateRow(row, false);
       }, { signal });
       grid.addEventListener("keydown", event => this.onKey(event), { signal });
       this.canvas.addEventListener("focusin", event => {

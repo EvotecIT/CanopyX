@@ -15,9 +15,21 @@
       this.setFocus(row, true);
       if (row.status) { if (row.status === "error") this.retry().catch(() => {}); return; }
       // A plain click never selects; selection comes from Space, row checkboxes or the API. The row's primary action runs.
-      const link = this.view.rowAction === "link" && element.querySelector("a[href]");
-      if (link) link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey }));
-      else if (this.phone || this.view.rowAction === "details") Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
+      // The second click of a double click activates nothing more.
+      const action = event.detail < 2 && this.clickAction(element);
+      if (action) this.activateRow(row, false, action !== true ? () =>
+        action.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey })) : undefined);
+    },
+    // What a plain click on the row does: follow its link, open details (true), or nothing; a double click activates otherwise.
+    clickAction(element) {
+      return this.view.rowAction === "link" && element.querySelector("a[href]") || this.phone || this.view.rowAction === "details";
+    },
+
+    // Activation (a double click, Enter on the row, Ctrl+Enter, or a click with a row action or on a phone) asks the host
+    // first: the cancelable canopyx:rowActivate event and onRowActivate, returning false, keep the row's own action (the link,
+    // or record details through onDetails or the drawer) from running, so a host can open its own view of the row.
+    activateRow(row, keyboard, own = () => Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }))) {
+      if (this.emit("rowActivate", { id: row.key, row: gridFreeze(JSON.parse(JSON.stringify(row.h))), keyboard })) own();
     },
 
     onKey(event) {
@@ -31,13 +43,13 @@
         column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
       const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
-      if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();Promise.resolve().then(()=>this.openDetails(row.key)).catch(error=>this.emit("error",{error}));return;}
+      if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();this.activateRow(row,true);return;}
       if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
         if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
           event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error })); return;
         }
         if (event.key === "Enter") {
-          event.preventDefault(); Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error })); return;
+          event.preventDefault(); this.activateRow(row, true); return;
         }
       }
       const controls = cell ? cellControls(cell) : [];

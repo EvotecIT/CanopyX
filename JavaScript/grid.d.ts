@@ -375,6 +375,14 @@ export interface GridExportProgress {
   readonly completed: number;
   readonly total: number | null;
 }
+/** The detail of canopyx:rowActivate and the argument of onRowActivate on a flat grid. */
+export interface GridRowActivation {
+  readonly id: string;
+  /** A frozen copy of the loaded row. */
+  readonly row: Readonly<GridRow>;
+  /** True for Enter or Ctrl/Command+Enter, false for a click or double click. */
+  readonly keyboard: boolean;
+}
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
   /** Defaults to visible columns in their current order. */
@@ -475,6 +483,10 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: Readonly<GridRow>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  /** Row activation: a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, or a click with rowAction (or on a
+   * phone). Runs before the row's own action (onDetails or the drawer, or the row's link); returning false keeps that from
+   * running, so the host can open its own view of the row. The cancelable canopyx:rowActivate event carries the same detail. */
+  onRowActivate?: (event: GridRowActivation) => boolean | void;
   /** Adds Chart to the selection bar. The host owns chart generation. */
   onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
