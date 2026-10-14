@@ -71,7 +71,17 @@ internal static class CanopyHtmlWriter {
         var html = FragmentDocument(view.ToJson(), options);
         return options.AssetMode != CanopyAssetMode.Inline ? html : html
             + SharedPart(options, "filter-editor", CanopyHtmlAssets.FilterEditorVersion, () => CanopyHtmlAssets.FilterEditorMarkup)
-            + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup);
+            + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup)
+            + (HasHistoryPresenters(view) ? SharedPart(options, "history", CanopyHtmlAssets.HistoryVersion, () => CanopyHtmlAssets.HistoryMarkup) : string.Empty);
+    }
+
+    /// <summary>Whether a grid draws a status strip or a sparkline, whose presenter part its fragment then carries.</summary>
+    private static bool HasHistoryPresenters(CanopyDataGridView view) {
+        foreach (var column in view.Columns) {
+            var kind = column.Presenter?.Kind;
+            if (kind == CanopyGridPresenterKind.StatusStrip || kind == CanopyGridPresenterKind.SparklineBars || kind == CanopyGridPresenterKind.SparklineLine) return true;
+        }
+        return false;
     }
 
     internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options) {
