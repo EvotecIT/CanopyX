@@ -11,6 +11,16 @@
   const TREE_FIT_ROWS = 2000;
 
   Object.assign(TreeGrid.prototype, COLUMN_FIT, {
+    // The layout fields flat-grid validation checks; only the tree column may unpin (pinned: null) or pin left.
+    checkTreeLayout() {
+      for (const [index, column] of this.view.columns.entries()) {
+        if (column.priority !== undefined && !gridPriority(column.priority) || column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) ||
+            [column.fixed, column.alwaysVisible, column.autoWidth].some(value => value !== undefined && typeof value !== "boolean") ||
+            column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
+            column.pinned !== undefined && (index || column.pinned !== null && column.pinned !== "left")) throw new Error("CanopyX: invalid tree column layout.");
+      }
+    },
+
     startFit() {
       const identity = this.columns[0];
       for (const column of this.columns) {

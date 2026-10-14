@@ -101,14 +101,14 @@
       try {
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
+        // The tree tools part restores column order, user widths and the pin; a failed part leaves the plain tree.
+        await this.toolsReady;
         await this.restoreState();
         // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
         // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.
         await this.expandInitial(this.root);
         // A queued address belongs to the data lifetime in which its caller requested it.
         if (!this.linkChanged || !this.linkChanged.aborted) await this.openDeepLink();
-        // The view is ready once its toolbar and column layout are in place; a failed tools part leaves the plain tree.
-        await this.toolsReady;
       } finally {
         this.initializing = false;
       }

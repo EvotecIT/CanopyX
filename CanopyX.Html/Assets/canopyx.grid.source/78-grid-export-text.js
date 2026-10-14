@@ -67,9 +67,9 @@
       let count = 0;
       for await (const row of exported.rows()) {
         if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded.");
-        // Tree rows indent their first column by level, two spaces a level, as the tree shows them.
-        lines.push(request.columns.map((column, index) => { const value = request.values === "raw" ? row.cells[column.id]?.value : row.cells[column.id]?.text;
-          return gridExportField(index || !(row.level > 1) ? value : "  ".repeat(row.level - 1) + (value ?? ""), delimiter); }).join(delimiter));
+        // Tree rows indent the tree column by level, two spaces a level, as the tree shows them.
+        lines.push(request.columns.map(column => { const value = request.values === "raw" ? row.cells[column.id]?.value : row.cells[column.id]?.text;
+          return gridExportField(row.level > 1 && column.id === this.columns[0].id ? "  ".repeat(row.level - 1) + (value ?? "") : value, delimiter); }).join(delimiter));
       }
       gridOperationActive(this, signal);
       return lines.join("\r\n") + "\r\n";

@@ -19,6 +19,7 @@
   Object.assign(TreeGrid.prototype, TOOLBAR_PANELS, COLUMNS_MENU, {
     /** Builds this tree's menus, then starts column fitting and auto height. Runs once per tree, after the part installs. */
     installTools() {
+      this.checkTreeLayout();
       const bar = this.toolbar, tools = this.tools, labels = this.labels = Object.freeze({ ...TOOL_LABELS, ...this.labels });
       this.host.classList.add("cx-chrome", "cx-tree-tools");
       this.exportScopes = [["visible", "gridVisibleRows"], ["selected", "gridSelectedRows"], ["all", "gridAllRows"]];
@@ -36,6 +37,8 @@
       bar.appendChild(this.spacer = h("span", "cx-spacer"));
       if (tools.export !== false) this.exportControl = this.controlPanel(labels.gridExport, "cx-grid-export", panel => this.renderGridExport(panel));
       if (tools.more !== false) this.buildMoreMenu();
+      // A toolbar left with only its spacer has nothing to show.
+      if (bar.childElementCount === 1) bar.replaceChildren();
       this.syncToolbar();
       this.startFit();
     },

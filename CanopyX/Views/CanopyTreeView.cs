@@ -81,8 +81,9 @@ public sealed class CanopyTreeView {
 
     /// <summary>
     /// Gets or sets whether the tree column stays in view while the other columns scroll sideways, which keeps rows
-    /// identifiable on a narrow screen. A host can change it at run time with the grid's
-    /// <c>setTreeColumnPinned</c>, for example below a viewport width of its choosing.
+    /// identifiable on a narrow screen. The tree tools part pins the tree column by default; set
+    /// <see cref="CanopyColumn.Pinned"/> to <see cref="CanopyGridColumnPin.None"/> on the tree column to let it scroll. A host
+    /// can change it at run time with the grid's <c>setTreeColumnPinned</c>, for example below a viewport width of its choosing.
     /// </summary>
     public bool PinTreeColumn { get; set; }
 
