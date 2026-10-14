@@ -43,12 +43,14 @@
       this.ready = this.initializeState();
     }
 
+    // False when a listener cancelled the event or the callback returned false; only rowActivate has a default to cancel.
     emit(name, detail) {
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail }));
+      let go = this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail, cancelable: true }));
       const callback = this.opts["on" + name[0].toUpperCase() + name.slice(1)];
       if (typeof callback === "function") {
-        try { callback(detail); } catch (error) { if (global.console) global.console.error(error); }
+        try { go = callback(detail) !== false && go; } catch (error) { if (global.console) global.console.error(error); }
       }
+      return go;
     }
 
     stateChanged() {

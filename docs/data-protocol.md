@@ -80,6 +80,8 @@ Export controls expose progress and cancellation for CSV, copy, export formats a
 
 Enter on a row, double click, the Record details overflow action, and Ctrl/Command+Enter open a record drawer. F2 enters cell navigation. The built-in drawer shows every declared field using its cell presenter, supports previous/next records with Up/Down, and restores focus when Escape closes it. It docks beside the grid on wide screens and becomes a modal full-screen sheet on phones. Configure `onDetails` to supply a host-owned record view instead; its context retains an immutable raw row, accepted query, cancellation signal and `returnFocus`. A newer details request or query cancels an unfinished opening operation. Hosts own their completed view and focus restoration. On phones a plain row click also opens the drawer.
 
+Row activation (a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, and a plain click when `rowAction` is `details` or `link` or on a phone) first dispatches the cancelable `canopyx:rowActivate` event on the host element with `{ id, row, keyboard }` (`row` a frozen copy of the loaded record, `keyboard` true for Enter) and calls the `onRowActivate(detail)` option. Calling `preventDefault()` on the event, or returning `false` from the callback, keeps the row's own action (the drawer or `onDetails`, or the row's link) from running, so a host can open its own drawer for the row; otherwise the action runs as before. The Record details action, the phone "+N" button and `openDetails(id)` open details directly. Trees offer the same hook (see [View](#view)).
+
 A `grid` definition contains `id`, `label`, `rowHeight`, `pageSize`, `selection`, `search`, `columns`, and `source`. Column definitions and cells have the same value, display text, tooltip, tone, and badge contract as tree views. Any column can start hidden, but at least one must remain visible. Flat-grid definitions do not expose tree edit proposals. Optional `stateKey`, `timeZone`, and `labels` retain their shared meanings.
 
 Optional `toolbar` switches toolbar controls off: `{ "filters": false, "columns": false, "views": false, "export": false, "more": false, "count": false }`, each optional and boolean. An absent switch keeps its control. A control switched off is removed: it is not built, or is taken out before the grid appears, so no hidden element, focus stop or listener of it stays in the page. The matching API methods stay available. `more` covers host actions, Record details and Print: with it off those entries are dropped, and the reporting runtime's print hook is reached through `api.print()`. With `export` off, a reporting grid that has an `onPrint` hook keeps a Print entry in the more menu for the filtered result. `count` is the result count shown with the query chips; `views` includes Reset view; with `filters` off, header filters keep working and a condition too complex for its column popover is removed through the query chips. The search box keeps its own `search` property. Browser hosts can override any switch, including `search`, with the `toolbar` option of `createDataGrid`; `toolbar: false` still hides the whole toolbar. The runtime rejects an unknown switch name or a non-boolean value in either object.
@@ -275,8 +277,14 @@ as the flat grid's menus and fit. Single-file pages carry it as inert payloads (
 content-hashed files beside itself, so hosts serve them beside every entry point. The runtime finds a payload anywhere in
 the document by its type and `data-cx-version`, so several trees on one page share one payload: fragments written with
 the same `CanopyHtmlOptions.Document` (a `CanopyHtmlDocument`) embed the part once, in the first fragment, and so do the
-grid export and filter editor parts of flat grids. The tree reports ready once the part is
-installed; a tree whose part cannot load keeps its rows, search and filter switches and reports a `canopyx:error`.
+grid export and filter editor parts of flat grids. The tree reports ready once the part is installed; a tree whose part
+cannot load keeps its rows, search and filter switches and reports a `canopyx:error`.
+
+The part also brings the print outline and `toOutline()` (empty until it is installed, so call it once `ready` has resolved), and row activation: Enter on a node
+row (which selects and toggles) and a double click (which toggles) first dispatch the cancelable `canopyx:rowActivate` event
+with `{ id, node, keyboard }` and call `onRowActivate(node, { keyboard })`; `preventDefault()` or a `false` return keeps the
+tree's own action from running, so a host can open its own view of the node. Space, the expander and the status rows keep
+their actions.
 
 CanopyX menus (the toolbar menus, a flat grid's column popover, a tree's actions menu and the reporting header selection
 menu) close on a pointer press or focus outside them, and when another CanopyX menu opens: an opening menu dispatches

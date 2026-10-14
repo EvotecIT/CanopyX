@@ -378,5 +378,15 @@ const exportingGrid = createDataGrid(document.createElement("div"), { view: { pr
   source: { kind: "inline" }, rows: [], pageSize: 50, selection: "multiple", search: true, exportFormats: ["xlsx", "pdf"],
   columns: [{ id: "name", title: "Name", kind: "text" }] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 600000 });
 void exportingGrid.exportAs("xlsx", { scope: "filtered", timeoutMs: 30000 }).then(result => result.fileName);
+// Row activation and menu closing, on grids and trees.
+const activatingGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "activate-grid", label: "Grid",
+  source: { kind: "inline" }, rows: [], pageSize: 50, selection: "single", search: false, rowAction: "details", columns: [{ id: "name", title: "Name", kind: "text" }] },
+  onRowActivate: event => { const id: string = event.id; const keyboard: boolean = event.keyboard; return event.row.cells.name === undefined && id.length > 0 && keyboard; } });
+activatingGrid.closeMenus();
+const activatingTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "activate-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], roots: [] }, onRowActivate: (node, context) => node.id === "a" && !context.keyboard ? false : undefined });
+activatingTree.closeMenus();
+// @ts-expect-error A tree's activation hook takes the node and a context.
+createTreeGrid(document.createElement("div"), { view, onRowActivate: (event: { id: number }) => false });
 // @ts-expect-error Format writers return a Blob or bytes.
 CanopyX.registerExportFormat({ id: "bad", label: "Bad", extension: "txt", write: () => 42 });
