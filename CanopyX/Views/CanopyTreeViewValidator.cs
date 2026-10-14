@@ -51,6 +51,19 @@ internal static class CanopyTreeViewValidator {
             }
         }
 
+        for (var index = 0; index < view.Columns.Count; index++) {
+            var column = view.Columns[index];
+            column.ValidateLayout();
+            if (column.RowHeader) throw new InvalidOperationException("View '" + view.Id + "' identifies rows by its tree column; RowHeader applies to flat grids.");
+            if (column.Pinned.HasValue && (index > 0 || column.Pinned == CanopyGridColumnPin.Right))
+                throw new InvalidOperationException("View '" + view.Id + "' can pin only its tree column, to the left; column '" + column.Id + "' cannot be pinned.");
+        }
+
+        var formats = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var format in view.ExportFormats) {
+            if (!CanopyDataGridView.IsExportFormatId(format) || !formats.Add(format)) throw new InvalidOperationException("Export formats must be unique identities of 1 to 32 lowercase letters, digits and hyphens, starting with a letter; csv is built in.");
+        }
+
         if (view.Columns[0].Hidden) {
             throw new InvalidOperationException("The tree column '" + view.Columns[0].Id + "' of view '" + view.Id + "' cannot be hidden.");
         }
