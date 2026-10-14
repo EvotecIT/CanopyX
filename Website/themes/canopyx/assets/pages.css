@@ -1,0 +1,104 @@
+/* Demos: each live demo beside a guided tour drawn as the numbered rows of a grid. */
+
+.cnx-demos .cnx-pagehead { margin-bottom: 28px; }
+
+/* Index: the three demos as the header cells of one row. */
+.cnx-demos__index {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: clamp(40px, 5vw, 64px);
+  border: 1px solid var(--cnx-line);
+  border-radius: var(--cnx-radius);
+  background: var(--cnx-card);
+}
+.cnx-demos__index a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 14px 18px;
+  color: inherit;
+  text-decoration: none;
+}
+.cnx-demos__index a + a { box-shadow: inset 1px 0 0 var(--cnx-line); }
+.cnx-demos__index a:hover { background: color-mix(in srgb, var(--cnx-accent) 6%, transparent); }
+.cnx-demos__index a:hover strong { color: var(--cnx-accent); }
+.cnx-demos__num {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--cnx-line-strong);
+  border-radius: 6px;
+  color: var(--cnx-ink-3);
+  font-family: var(--cnx-mono);
+  font-size: .8125rem;
+}
+.cnx-demos__index strong { color: var(--cnx-ink); font-size: 1rem; }
+.cnx-demos__index span:last-child { color: var(--cnx-ink-3); font-size: .8438rem; }
+
+.cnx-tour { scroll-margin-top: 80px; }
+.cnx-tour + .cnx-tour { margin-top: clamp(56px, 7vw, 96px); padding-top: clamp(40px, 5vw, 64px); border-top: 1px solid var(--cnx-line); }
+.cnx-tour__head { max-width: 780px; }
+.cnx-tour__head h2 { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); }
+
+/* Facts: a row of value cells, like a summary row under a grid. */
+.cnx-tour__facts {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 22px 0 24px;
+  padding: 0;
+}
+.cnx-tour__facts div { display: grid; gap: 2px; padding: 2px 22px; border-left: 1px solid var(--cnx-line-strong); }
+.cnx-tour__facts div:first-child { padding-left: 0; border-left: 0; }
+.cnx-tour__facts dt { color: var(--cnx-ink-3); font-size: .8125rem; }
+.cnx-tour__facts dd { margin: 0; color: var(--cnx-ink); font-size: 1.125rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.cnx-tour__body {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(280px, 4fr);
+  gap: 20px;
+  align-items: start;
+}
+.cnx-tour .cnx-frame__screen { height: clamp(500px, 72vh, 700px); }
+.cnx-tour__side { display: grid; gap: 16px; min-width: 0; }
+.cnx-tour__mail { max-height: 640px; overflow: auto; background: var(--cnx-card-alt); }
+.cnx-tour__disk { margin-top: 24px; }
+
+/* Steps: a two-column grid with a row-number column, hung from a guide line. */
+.cnx-steps { overflow: hidden; border: 1px solid var(--cnx-line); border-radius: var(--cnx-radius); background: var(--cnx-card); }
+.cnx-steps__head,
+.cnx-step { display: grid; grid-template-columns: 40px minmax(0, 1fr); }
+.cnx-steps__head {
+  margin: 0;
+  border-bottom: 1px solid var(--cnx-line-strong);
+  background: var(--cnx-card-alt);
+  color: var(--cnx-ink);
+  font-size: .8125rem;
+  font-weight: 680;
+}
+.cnx-steps__head span { padding: 9px 14px; }
+.cnx-steps__head span:first-child { padding-inline: 0; color: var(--cnx-ink-3); text-align: center; }
+.cnx-steps__head span + span { box-shadow: inset 1px 0 0 var(--cnx-line); }
+.cnx-steps__rows { margin: 0; padding: 0; list-style: none; }
+.cnx-step + .cnx-step { border-top: 1px solid var(--cnx-line); }
+.cnx-step:hover { background: var(--cnx-select); box-shadow: inset 2px 0 0 var(--cnx-accent); }
+.cnx-step__num { padding-top: 12px; color: var(--cnx-ink-3); font-family: var(--cnx-mono); font-size: .8125rem; text-align: center; }
+.cnx-step:hover .cnx-step__num { color: var(--cnx-accent); }
+.cnx-step__text { display: grid; gap: 3px; padding: 11px 14px 12px; box-shadow: inset 1px 0 0 var(--cnx-line); }
+.cnx-step__feature { color: var(--cnx-ink); font-size: .9063rem; }
+.cnx-step__try { color: var(--cnx-ink); font-size: .875rem; line-height: 1.45; }
+.cnx-step__watch { color: var(--cnx-ink-3); font-size: .8125rem; line-height: 1.45; }
+
+.cnx-demos__about { margin-top: clamp(48px, 6vw, 72px); }
+
+@media (max-width: 1080px) {
+  .cnx-tour__body { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .cnx-demos__index { grid-template-columns: minmax(0, 1fr); }
+  .cnx-demos__index a + a { box-shadow: inset 0 1px 0 var(--cnx-line); }
+  .cnx-tour .cnx-frame__screen { height: 540px; }
+  .cnx-tour__facts div { padding: 2px 14px; }
+}
