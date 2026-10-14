@@ -38,3 +38,13 @@ Demo iframes are same-origin; `assets/site.js` sets `data-cx-theme` on their gri
 ## Validation
 
 Run the CI-mode pipeline and check the home, demos and docs pages at desktop and phone widths in both themes, including the theme of each demo frame. A local build does not prove that canopyx.dev has deployed the change.
+
+## Design system
+
+- **One header and footer.** `partials/header.html` and `partials/footer.html` are the only chrome; every layout includes them and their styles are global (`base.css`, `nav.css`). Top-level items of the `main` menu in `site.json` with a URL are plain links; an item with children (Docs) opens a panel of separate pages. Never put same-page anchors in the header; the demos page has its own in-page index. Every nav item is the same 40 px box in every state; the current page changes colours only (tint and a 2 px accent bar), so nothing shifts.
+- **Docs topics** come from the Docs group of the `main` menu: `Meta.thumb` names a render in `data/docs.json`, `Meta.group` places the topic on the docs map, `Meta.api` lists what the reader writes.
+- **Output next to code.** Docs snippets live in `tools/SiteDemos/Docs/DocsSnippets.cs` between `// docs:begin <id>` and `// docs:end`; SiteDocs runs them and writes `data/docs.json`, live pages under `static/live/docs/` (sharing `static/live/assets/`) and static renders under `partials/generated/docs/`. Pages show them with `{{< cnx-example id="..." caption="..." >}}`, `{{< cnx-render id="..." >}}` and `{{< cnx-modes >}}`. Captions are plain text without `>`.
+- **Tabs** use `.cnx-tabs` / `.cnx-tab` (with `.cnx-tabs--code` on dark code surfaces): grid column headers with a sort indicator on the selected tab.
+- **Full-screen pages** under `/live/` get the site's slim bar from `LiveBar.cs`; inside a frame the bar hides and `site.js` themes the grid.
+- **Type.** Headings use Schibsted Grotesk at a heavy weight. Fraunces (`.cnx-display`) is for display moments only: the home hero and section heads, and the docs map hero.
+- **Motif.** Chevrons, guide lines and elbows from an expanded tree; the selected-row treatment marks the current item. Avoid all-caps eyebrows, gradient washes, entrance animations and arrows appended to link text.
