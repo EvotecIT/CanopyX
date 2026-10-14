@@ -12,7 +12,7 @@ The C# types write these documents and the browser runtime reads them. A host th
 
 `CanopyTreeView.ToJson()` writes a `view`: columns, behaviour, the data source and, for an inline source, the nodes. A cell is a bare value or an object with a `value` for sorting, a `text` to show and a `tone` the theme turns into a colour. Every string is inserted as text, never as HTML.
 
-{{< cnx-example id="protocol-view" layout="split" caption="The document on the left is the one inside the page on the right. Collapse Projects or sort by Size: the runtime does it from this JSON alone." >}}
+{{< cnx-example id="protocol-view" layout="split" caption="The output is this exact document mounted in a page. Collapse Projects or sort by Size: the runtime does it from this JSON alone." >}}
 
 ## A grid and the table it produces
 

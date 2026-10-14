@@ -259,7 +259,7 @@
             "Items": [
               {
                 "Id": "overview",
-                "Title": "Overview",
+                "Title": "Documentation",
                 "Url": "/docs/",
                 "Description": "Every topic next to the output it produces.",
                 "Meta": {
