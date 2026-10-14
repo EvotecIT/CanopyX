@@ -13,7 +13,9 @@
     const paint=(row,position)=>{
       record=row;index=position;setText(title,cellText(row.cells[primary.id],primary,this.fmt)||row.id);
       const options=primary.presenter;
-      setText(subtitle,row.cells[primary.id]?.secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||row.id);
+      // The subtitle is the secondary text the host configures (a cell's secondary text or the presenter's secondaryColumn), never the raw row id.
+      const secondary=row.cells[primary.id]?.secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||"";
+      setText(subtitle,secondary);subtitle.hidden=!secondary;
       previous.disabled=index<=0||this.cursor&&index<=this.rowBounds().first;next.disabled=index>=this.rowCount()-1;
       body.replaceChildren();const sections=new Map();
       for(const column of this.columns){const name=column.section||this.labels.gridDetailsSection;
