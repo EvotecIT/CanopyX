@@ -62,5 +62,14 @@ public sealed class GridColumnFitTests {
         Assert.Contains("\"quietTones\":[\"success\",\"up\"]", json);
         Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Link().WithQuietTones(CanopyTone.Success));
         Assert.Throws<ArgumentException>(() => CanopyGridPresenter.State().WithQuietTones(CanopyTone.None));
+
+        // Quiet values in the normal text colour.
+        view.Columns[0].Presenter = CanopyGridPresenter.Enum().WithQuietTones(CanopyTone.Neutral).WithQuietStyle(CanopyGridQuietStyle.Plain);
+        json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "quiet style");
+        Assert.Contains("\"quietStyle\":\"plain\"", json);
+        Assert.DoesNotContain("quietStyle", new CanopyDataGridView("plain", "Plain") { Columns = { new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.Enum().WithQuietStyle(CanopyGridQuietStyle.Muted) } } }.ToJson());
+        Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Link().WithQuietStyle(CanopyGridQuietStyle.Plain));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyGridPresenter.Enum().WithQuietStyle((CanopyGridQuietStyle)7));
     }
 }

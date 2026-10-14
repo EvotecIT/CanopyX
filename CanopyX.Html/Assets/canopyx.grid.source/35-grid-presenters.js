@@ -22,6 +22,7 @@
         (![options.minimum,options.scaleMaximum].every(value=>Number.isFinite(value)&&Math.abs(value)<=Number.MAX_SAFE_INTEGER)||options.minimum>=options.scaleMaximum)) invalid();
     if (options.mark!==undefined&&!['last','worst'].includes(options.mark)) invalid();
     if (options.quietTones!==undefined&&(!Array.isArray(options.quietTones)||options.quietTones.length>16||options.quietTones.some(tone=>typeof tone!=="string"||!/^[a-z][a-z0-9-]{0,31}$/.test(tone)))) invalid();
+    if (options.quietStyle!==undefined&&!["muted","plain"].includes(options.quietStyle)) invalid();
     if (options.tones!==undefined&&(!options.tones||typeof options.tones!=="object"||Array.isArray(options.tones)||Object.keys(options.tones).length>512||
         Object.entries(options.tones).some(([key,value])=>key.length>4096||typeof value!=="string"))) invalid();
     if (options.thresholds!==undefined&&(!Array.isArray(options.thresholds)||options.thresholds.length>32||options.thresholds.some((point,index)=>

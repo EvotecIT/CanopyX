@@ -21,7 +21,8 @@
         value.setAttribute("role","img");value.setAttribute("aria-label",raw?grid.labels.yes:grid.labels.no);
         if(raw)value.appendChild(gridIcon("check"));
       } else if(options.kind==="state"||options.kind==="enum") {
-        if(options.quietTones?.includes(tone)) add(text,"p-muted");
+        // Quiet values are plain text (muted unless quietStyle is "plain"); in an enum they keep the pills' inline start.
+        if(options.quietTones?.includes(tone)) add(text,(options.quietStyle==="plain"?"cx-presenter-text":"p-muted")+(options.kind==="enum"?" p-inset":""));
         else if(options.kind==="state"||tone==="success") {
           const state=add("","p-state"+(tone==="success"?" quiet":""));const dot=h("span","p-dot "+(tone==="success"?"quiet":tone));
           toneColors(dot,toneOf(tone));state.append(dot,document.createTextNode(text));
