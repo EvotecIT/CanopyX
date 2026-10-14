@@ -378,3 +378,16 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* Scrollbars that belong to the theme: thin, a track that blends into the surface, and a muted thumb that brightens on hover. */
+:root { --cnx-scroll-thumb: rgba(69, 86, 76, .32); --cnx-scroll-thumb-hover: rgba(27, 117, 72, .6); }
+:root[data-theme="dark"] { --cnx-scroll-thumb: rgba(200, 220, 206, .26); --cnx-scroll-thumb-hover: rgba(110, 214, 150, .55); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --cnx-scroll-thumb: rgba(200, 220, 206, .26); --cnx-scroll-thumb-hover: rgba(110, 214, 150, .55); }
+}
+.cnx-code, .cnx-hero { --cnx-scroll-thumb: rgba(200, 220, 206, .26); }
+* { scrollbar-width: thin; scrollbar-color: var(--cnx-scroll-thumb) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: var(--cnx-scroll-thumb) padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--cnx-scroll-thumb-hover) padding-box; }
