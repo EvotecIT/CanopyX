@@ -324,9 +324,9 @@ public sealed class CanopyTreeView {
             writer.Property("pinTreeColumn", true);
         }
 
-        if (_labels.HasRuntimeLabels) {
+        if (_labels.HasRuntimeLabels(true)) {
             writer.Name("labels");
-            _labels.WriteJson(writer);
+            _labels.WriteJson(writer, true);
         }
 
         writer.OptionalProperty("stateKey", StateKey);

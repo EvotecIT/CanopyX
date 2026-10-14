@@ -19,7 +19,7 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        // A single-file tree carries its tree tools part; on a grid runtime (chosen by labels or explicitly) its exports run through the
+        // A single-file tree carries its tree tools part; on a grid runtime (chosen explicitly) its exports run through the
         // export part too. Fragments that share a document carry each part once.
         var runtime = RuntimeFor(view, options);
         var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), options);

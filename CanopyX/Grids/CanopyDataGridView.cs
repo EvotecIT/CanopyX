@@ -211,9 +211,9 @@ public sealed partial class CanopyDataGridView {
             writer.Name("query");
             Query.WriteJson(writer, this);
         }
-        if (Labels.HasRuntimeLabels) {
+        if (Labels.HasRuntimeLabels(false)) {
             writer.Name("labels");
-            Labels.WriteJson(writer);
+            Labels.WriteJson(writer, false);
         }
         if (Source.Kind == CanopyGridSourceKind.Inline) {
             writer.Name("rows").BeginArray();
