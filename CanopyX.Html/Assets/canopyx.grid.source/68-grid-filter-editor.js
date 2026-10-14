@@ -4,7 +4,7 @@
   let filterEditorReady;
   function gridFilterEditorContext(){return {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
-    reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,
+    reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,numberText,fill,
     GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null};}
   function loadGridFilterEditor(){
     if(filterEditorReady)return filterEditorReady;

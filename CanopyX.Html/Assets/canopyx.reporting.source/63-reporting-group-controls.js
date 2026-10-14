@@ -5,7 +5,7 @@
     gridGroupOrder: "Group order is fixed by this report"
   }));
   const GROUP_BASE = {}, GROUP_API = GRID_REPORTING.api;
-  for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
+  for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "onKey", "setQuery", "applyWidths"]) GROUP_BASE[name] = DataGrid.prototype[name];
   GRID_REPORTING.api = (api, grid) => {
     GROUP_API?.(api, grid);
     if (reportingSummaryEnabled(grid.view)) api.getSummary = () => grid.summary || null;
@@ -49,10 +49,38 @@
       const key=[this.summary,count,this.layout,this.rowWidth,...this.cols.map(column=>column.renderWidth+":"+column.effectivePin)];
       if(this.summaryRenderKey?.every((value,index)=>value===key[index]))return;this.summaryRenderKey=key;
       this.summaryControls.replaceChildren();const row=h("div","cx-summary-row");row.setAttribute("role","row");row.setAttribute("aria-rowindex",String(count+2));row.style.width=this.rowWidth+"px";
-      this.cols.forEach((column,index)=>{const cell=this.newCell(index,column.width,column.kind);cell.setAttribute("role","gridcell");cell.style.width=column.renderWidth+"px";
-        const aggregates=this.view.reporting.aggregates.filter(item=>item.column===column.id),value=aggregates.map(item=>formatValue(this.summary.aggregates[item.id],"number",this.fmt)).join(" · ");
-        setText(cell,value||index===0?value||this.labels.gridSummary:"");cell.title=aggregates.map(item=>item.label+": "+formatValue(this.summary.aggregates[item.id],"number",this.fmt)).join(" · ");row.appendChild(cell);});
-      this.summaryControls.appendChild(row);
+      const cells=this.cols.map((column,index)=>{const cell=this.newCell(index,column.width,column.kind);cell.setAttribute("role","gridcell");cell.style.width=column.renderWidth+"px";
+        const aggregates=this.view.reporting.aggregates.filter(item=>item.column===column.id);
+        if(aggregates.length)this.paintAggregates(cell,aggregates,this.summary.aggregates);else if(index===0)setText(cell,this.labels.gridSummary);row.appendChild(cell);return cell;});
+      this.spanAggregates(cells);this.summaryControls.appendChild(row);
+    },
+    /** Labelled aggregate values in the aggregate format, else the column format; counts are whole numbers. */
+    paintAggregates(cell, aggregates, values) {
+      const names = [], list = cell.appendChild(h("span", "cx-aggregate-list"));
+      cell.classList.add("cx-aggregate-cell");
+      aggregates.forEach((aggregate, index) => {
+        const column = this.columns.find(item => item.id === aggregate.column), value = values[aggregate.id];
+        const text = value === null ? "—" : numberText(value, this.lang, aggregate.format || (aggregate.operation === "count" ? null : column.format));
+        const item = h("span", "cx-aggregate"), label = h("span", "cx-aggregate-label"), amount = h("span", "cx-aggregate-value");
+        setText(label, aggregate.label); setText(amount, text); item.append(label, " ", amount);
+        list.append(...(index ? [" ", item] : [item])); names.push(aggregate.label + ": " + (value === null ? this.labels.gridNoData : text));
+      });
+      cell.title = names.join("\n"); cell.setAttribute("aria-label", names.join(", "));
+    },
+    /** Number aggregates may extend over empty cells before them with the same pinning, as spreadsheet text does. */
+    spanAggregates(cells) {
+      cells.forEach((cell, index) => {
+        if (!cell?.classList.contains("cx-aggregate-cell") || this.cols[index]?.kind !== "number") return;
+        let spare = 0;
+        for (let left = index - 1; left > 0 && cells[left] && !cells[left].firstChild && this.cols[left].effectivePin === this.cols[index].effectivePin; left--)
+          spare += this.cols[left].renderWidth;
+        cell.style.setProperty("--cx-aggregate-spare", spare + "px");
+      });
+    },
+    applyWidths(...widths) {
+      const result = GROUP_BASE.applyWidths.apply(this, widths);
+      for (const row of this.canvas?.querySelectorAll(".cx-grid-group") || []) this.spanAggregates((row._cells || []).map(slot => slot.cell));
+      return result;
     },
     fillRow(element, row) {
       if (!row.group) { element.removeAttribute("data-cx-group"); return GROUP_BASE.fillRow.call(this, element, row); }
@@ -65,17 +93,17 @@
       const button=h("button","cx-grid-group-toggle");button.type="button";button.tabIndex=-1;const collapsed=this.collapsedGroups.has(row.group.key);
       button.disabled=!!this.pendingQuery;button.setAttribute("aria-expanded",String(!collapsed));button.setAttribute("aria-label",collapsed?this.labels.gridGroupExpand:this.labels.gridGroupCollapse);setText(button,collapsed?"▸":"▾");
       button.addEventListener("click",()=>{if(!this.pendingQuery){this.setFocus(row,false);this.setGroupCollapsed(row.group.key,!this.collapsedGroups.has(row.group.key));this.setFocus(this.focused,true);}});
-      const groupColumn=this.columns.find(item=>item.id===this.view.reporting.grouping.column),label=fill(this.labels.gridGroupHeading,{column:groupColumn.title,value:row.group.value===null?this.labels.gridGroupMissing:formatValue(row.group.value,groupColumn.kind,this.fmt),count:numberFormat(this.lang).format(row.group.count)}),cells=[];
+      const groupColumn=this.columns.find(item=>item.id===this.view.reporting.grouping.column),label=fill(this.labels.gridGroupHeading,{column:groupColumn.title,value:row.group.value===null?this.labels.gridGroupMissing:formatValue(row.group.value,groupColumn.kind,this.fmt,groupColumn.format),count:numberFormat(this.lang).format(row.group.count)}),cells=[];
       this.cols.forEach((column,index)=>{const cell=this.cell(element,index,column.width,column.kind);cells.push({cell,content:cell});
-        if(index===0){const text=h("span","cx-grid-group-text"),count=h("span","cx-grid-group-count");setText(text,row.group.value===null?this.labels.gridGroupMissing:formatValue(row.group.value,groupColumn.kind,this.fmt));setText(count,numberFormat(this.lang).format(row.group.count));cell.append(button,text,count);cell.title=label;}
+        if(index===0){const text=h("span","cx-grid-group-text"),count=h("span","cx-grid-group-count");setText(text,row.group.value===null?this.labels.gridGroupMissing:formatValue(row.group.value,groupColumn.kind,this.fmt,groupColumn.format));setText(count,numberFormat(this.lang).format(row.group.count));cell.append(button,text,count);cell.title=label;}
         else {const aggregates=(this.view.reporting.aggregates||[]).filter(item=>item.column===column.id);
           if(!aggregates.length&&Object.hasOwn(row.group.cells||{},column.id)){
             const options=column.presenter||this.view.reporting.presenters?.[column.id];
             if(options)gridCellRenderer(this,column,options)({id:row.group.key,cells:row.group.cells},cell);
             else setText(cell,cellText(row.group.cells[column.id],column,this.fmt));
-          }else{setText(cell,aggregates.map(item=>formatValue(row.group.aggregates[item.id],"number",this.fmt)).join(" · "));cell.title=aggregates.map(item=>item.label+": "+formatValue(row.group.aggregates[item.id],"number",this.fmt)).join(" · ");}}
+          }else if(aggregates.length)this.paintAggregates(cell,aggregates,row.group.aggregates);}
       });
-      element._cells = cells;
+      element._cells = cells; this.spanAggregates(cells.map(slot => slot.cell));
       this.paintGridHighlights(element, row);
     },
     setQuery(input, paging) {

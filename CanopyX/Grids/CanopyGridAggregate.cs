@@ -9,12 +9,13 @@ public sealed class CanopyGridAggregate {
     /// <param name="id">Stable aggregate identity, independent of the column and display label.</param>
     /// <param name="column">The declared raw column identity.</param>
     /// <param name="operation">The generic aggregate operation.</param>
-    /// <param name="label">Plain display text, bounded to 512 characters.</param>
-    public CanopyGridAggregate(string id, string column, CanopyGridAggregateOperation operation, string label) {
+    /// <param name="label">Plain display text, bounded to 512 characters. Summary cells show it beside the value.</param>
+    /// <param name="format">Optional value format. Null uses the column format, except that counts use whole numbers.</param>
+    public CanopyGridAggregate(string id, string column, CanopyGridAggregateOperation operation, string label, CanopyGridNumberFormat? format = null) {
         CanopyIdentifiers.Require(id, nameof(id)); CanopyIdentifiers.Require(column, nameof(column));
         if (!Enum.IsDefined(typeof(CanopyGridAggregateOperation), operation)) throw new ArgumentOutOfRangeException(nameof(operation));
         if (string.IsNullOrWhiteSpace(label) || label.Length > 512) throw new ArgumentException("An aggregate needs a label of 1 to 512 characters.", nameof(label));
-        Id = id; Column = column; Operation = operation; Label = label;
+        Id = id; Column = column; Operation = operation; Label = label; Format = format;
     }
     /// <summary>Gets the stable aggregate identity.</summary>
     public string Id { get; }
@@ -24,8 +25,13 @@ public sealed class CanopyGridAggregate {
     public CanopyGridAggregateOperation Operation { get; }
     /// <summary>Gets the plain display label.</summary>
     public string Label { get; }
-    internal void WriteJson(CanopyJsonWriter writer) => writer.BeginObject().Property("id", Id).Property("column", Column)
-        .Property("operation", OperationName(Operation)).Property("label", Label).EndObject();
+    /// <summary>Gets the explicit value format, or null to follow the column format (whole numbers for counts).</summary>
+    public CanopyGridNumberFormat? Format { get; }
+    internal void WriteJson(CanopyJsonWriter writer) {
+        writer.BeginObject().Property("id", Id).Property("column", Column).Property("operation", OperationName(Operation)).Property("label", Label);
+        if (Format != null) { writer.Name("format"); Format.WriteJson(writer); }
+        writer.EndObject();
+    }
     internal static string OperationName(CanopyGridAggregateOperation operation) => operation == CanopyGridAggregateOperation.Count ? "count" :
         operation == CanopyGridAggregateOperation.Sum ? "sum" : operation == CanopyGridAggregateOperation.Average ? "average" :
         operation == CanopyGridAggregateOperation.Minimum ? "minimum" : "maximum";

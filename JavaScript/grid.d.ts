@@ -30,12 +30,21 @@ export interface GridExportColumn {
   readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
   readonly wrap?: boolean; readonly alignment?: "left" | "right";
   readonly presenter?: GridPresenter;
+  /** The column number format that produced the display text. */
+  readonly format?: GridNumberFormat;
   readonly diagnostics?: readonly string[];
+}
+/** Fraction digits (0 to 10) and literal text (1 to 16 code units) around the digits; the prefix follows any minus sign. */
+export interface GridNumberFormat {
+  readonly minimumFractionDigits?: number; readonly maximumFractionDigits?: number;
+  readonly prefix?: string; readonly suffix?: string;
 }
 export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   editable?: false; wrap?: boolean;
   /** Declarative presentation; explicit host renderers take precedence. */
   presenter?: GridPresenter;
+  /** Number columns: display format of raw numbers without cell text, also used by summaries and selection totals. */
+  format?: GridNumberFormat;
   /** Include selected numeric values in the optional status bar. */
   aggregatable?: boolean;
   /** Record drawer section label. */
@@ -294,8 +303,11 @@ export interface GridSource extends GridFacetSource<GridQuery> {
   summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
 }
 export interface GridAggregate {
+  /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: "count" | "sum" | "average" | "minimum" | "maximum";
+  /** Value format; defaults to the column format, or whole numbers for counts. */
+  readonly format?: GridNumberFormat;
 }
 export interface GridGroup {
   readonly key: string; readonly value: CellValue; readonly offset: number; readonly count: number;

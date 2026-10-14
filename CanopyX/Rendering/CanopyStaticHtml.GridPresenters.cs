@@ -7,7 +7,7 @@ namespace CanopyX.Rendering;
 public static partial class CanopyStaticHtml {
     private static string GridPresenterText(CanopyDataGridView view, CanopyGridRow row, CanopyColumn column, CanopyCell? cell) {
         var presenter = column.Presenter;
-        var text = cell?.DisplayText(column.Kind, view.Labels) ?? string.Empty;
+        var text = cell?.DisplayText(column, view.Labels) ?? string.Empty;
         if (presenter?.Kind == CanopyGridPresenterKind.StatusStrip && cell != null && cell.Series.Count > 0) {
             return string.Join("; ", cell.Series.GroupBy(point => point.State ?? (point.Value.HasValue ? point.Value.Value.ToString("G", CultureInfo.InvariantCulture) : view.Labels.GridNoData))
                 .Select(group => group.Key + ": " + group.Count().ToString(CultureInfo.InvariantCulture)));
@@ -19,7 +19,7 @@ public static partial class CanopyStaticHtml {
         if (presenter?.Kind == CanopyGridPresenterKind.Identifier) {
             var secondary = cell?.Secondary;
             if (presenter.SecondaryColumn != null && row.Cells.TryGetValue(presenter.SecondaryColumn, out var other)) {
-                var declared = view.Columns.First(item => item.Id == presenter.SecondaryColumn); secondary = other?.DisplayText(declared.Kind, view.Labels);
+                var declared = view.Columns.First(item => item.Id == presenter.SecondaryColumn); secondary = other?.DisplayText(declared, view.Labels);
             }
             return string.IsNullOrEmpty(secondary) ? text : text + " · " + secondary;
         }

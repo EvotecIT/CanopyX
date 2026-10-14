@@ -34,7 +34,7 @@
       const { revision, total, matched } = this.snapshot;
       const request = gridFreeze({ scope, query, revision, total, matched, recordCount: scope === "selected" ? selection.length :
           filtered ? matched : total, selection,
-        columns: columns.map(({ id, title, kind }) => ({ id, title, kind })), presentation: GRID_REPORTING.exportRecord ? "semantic" : "text",
+        columns: columns.map(({ id, title, kind, format }) => ({ id, title, kind, ...(format ? { format: { ...format } } : {}) })), presentation: GRID_REPORTING.exportRecord ? "semantic" : "text",
         values: values || "display", timeZone: this.local ? "local" : "utc" });
       // The descriptor is captured now, before the iterator is consumed or the UI query changes.
       return Object.freeze({ request, rows: options => this.exportRows(request, gridExportSignal(signal, options)) });

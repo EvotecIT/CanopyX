@@ -64,6 +64,10 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets a safe flat-grid presenter. Raw values still drive search, sort and export.</summary>
     public CanopyGridPresenter? Presenter { get; set; }
 
+    /// <summary>Gets or sets the flat-grid display format of raw numbers in a number column. Cell display text takes precedence.</summary>
+    /// <remarks>Summary aggregates and selection totals use the same format. Raw values still drive search, sort and export.</remarks>
+    public CanopyGridNumberFormat? Format { get; set; }
+
     /// <summary>Gets or sets whether selected raw numeric values contribute to the optional status bar.</summary>
     public bool Aggregatable { get; set; }
 
@@ -84,6 +88,7 @@ public sealed partial class CanopyColumn {
         }
         if (Editable) writer.Property("editable", true);
         if (Wrap) writer.Property("wrap", true);
+        if (grid && Format != null) { writer.Name("format"); Format.WriteJson(writer); }
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);
         if (grid) WriteLayoutJson(writer);

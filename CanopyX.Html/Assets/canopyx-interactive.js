@@ -31,9 +31,6 @@ return tone}
 function applyTone(element,base,tone){element.className=base+tone.cls;toneColors(element,tone)}
 function toneColors(element,tone){if((element._tone||null)===tone.host){return}
 element._tone=tone.host;if(tone.host){element.style.setProperty("--cx-t","var(--cx-tone-"+tone.host+")");element.style.setProperty("--cx-t-bg","var(--cx-tone-"+tone.host+"-bg)")}else{element.style.removeProperty("--cx-t");element.style.removeProperty("--cx-t-bg")}}
-const numberFormats=new Map();function numberFormat(lang){const key=lang||"";let format=numberFormats.get(key);if(!format){try{format=new Intl.NumberFormat(lang||undefined,{maximumFractionDigits:3})}catch(e){format=new Intl.NumberFormat(undefined,{maximumFractionDigits:3})}
-if(numberFormats.size>=16)numberFormats.delete(numberFormats.keys().next().value);numberFormats.set(key,format)}
-return format}
 function pad2(value){return value<10?"0"+value:String(value)}
 const dateTexts=new Map();function dateText(value){let texts=dateTexts.get(value);if(texts===undefined){const time=Date.parse(value);const d=new Date(time);texts=isNaN(time)?null:[String(d.getUTCFullYear()).padStart(4,"0")+ "-"+pad2(d.getUTCMonth()+ 1)+ "-"+pad2(d.getUTCDate())+ " "+pad2(d.getUTCHours())+ ":"+pad2(d.getUTCMinutes()),String(d.getFullYear()).padStart(4,"0")+ "-"+pad2(d.getMonth()+ 1)+ "-"+pad2(d.getDate())+ " "+pad2(d.getHours())+ ":"+pad2(d.getMinutes())];if(dateTexts.size>=DATE_CACHE)dateTexts.clear();dateTexts.set(value,texts)}
 return texts}
@@ -46,13 +43,13 @@ function formatting(lang,local,labels){const split=(template)=>{const at=templat
 function formatDate(value,fmt){const texts=dateText(value);return texts?(fmt.local?texts[1]:fmt.utc[0]+ texts[0]+ fmt.utc[1]):String(value)}
 function otherZone(cell,column,fmt){const value=cellValue(cell);if(column.kind!=="datetime"||typeof value!=="string"||(isCellObject(cell)&&typeof cell.text==="string")){return null}
 const texts=dateText(value);return texts?(fmt.local?fmt.utc[0]+ texts[0]+ fmt.utc[1]:fmt.other[0]+ texts[1]+ fmt.other[1]):null}
-function formatValue(value,kind,fmt){if(value===null||value===undefined){return ""}
+function formatValue(value,kind,fmt,format){if(value===null||value===undefined){return ""}
 if(typeof value==="boolean"){return value?fmt.labels.yes:fmt.labels.no}
-if(typeof value==="number"&&kind==="number"){return numberFormat(fmt.lang).format(value)}
+if(typeof value==="number"&&kind==="number"){return numberText(value,fmt.lang,format)}
 if(typeof value==="string"&&kind==="datetime"){return formatDate(value,fmt)}
 return String(value)}
 function cellText(cell,column,fmt){if(isCellObject(cell)&&typeof cell.text==="string"){return cell.text}
-return formatValue(cellValue(cell),column.kind,fmt)}
+return formatValue(cellValue(cell),column.kind,fmt,column.format)}
 const collator=new Intl.Collator(undefined,{numeric:true,sensitivity:"base"});function sortKey(cell,column){let value=cellValue(cell);if((value===null||value==="")&&isCellObject(cell)&&typeof cell.text==="string"&&cell.text!==""){value=cell.text}
 if(value===null||value===""){return{rank:2,value:0}}
 if(typeof value==="boolean"){return{rank:0,value:value?1:0}}
@@ -62,6 +59,10 @@ return{rank:1,value:String(value)}}
 function compareKeys(a,b,direction){if(a.rank!==b.rank){return a.rank-b.rank}
 if(a.rank===2){return 0}
 const order=a.rank===0?(a.value<b.value?-1:a.value>b.value?1:0):collator.compare(a.value,b.value);return order*direction}
+const numberFormats=new Map();function numberFormat(lang,minimum=0,maximum=3){const key=(lang||"")+ "|"+minimum+"|"+maximum;let format=numberFormats.get(key);if(!format){const digits={minimumFractionDigits:minimum,maximumFractionDigits:maximum};try{format=new Intl.NumberFormat(lang||undefined,digits)}catch(e){format=new Intl.NumberFormat(undefined,digits)}
+if(numberFormats.size>=16)numberFormats.delete(numberFormats.keys().next().value);numberFormats.set(key,format)}
+return format}
+function numberText(value,lang,format){if(!format)return numberFormat(lang).format(value);const minimum=format.minimumFractionDigits??0,maximum=format.maximumFractionDigits??Math.max(3,minimum);const parts=numberFormat(lang,minimum,maximum).formatToParts(+value.toFixed(maximum)||0);const at=parts.findIndex(part=>!["minusSign","literal"].includes(part.type));return parts.map((part,index)=>(index===at&&format.prefix||"")+ part.value).join("")+(format.suffix||"")}
 const EXTRA_FOLD_PAIRS="1t.w.q.1,2u.w.n.1,2.w.7.1,y.1.o.2,4.1.3.2,3.1.8.2,3.1.n.2,2.-3d,1.1.3.2,4.5u,1.1,2.1,2.5q,1.1,2.5p,1.5p,1.1,3.27,1.5m,1.5n,1.1,2.5p,1.5r,2.5v,1.5t,1.1,4.5v,1.5x,2.5y,1.1.3.2,2.62,1.1,2.62,3.1,2.62,1.1,2.61,1.61,1.1,2.1,2.63,1.1,4.1,8.2,1.1,2.2,1.1,2.2,1.1.9.2,3.1.9.2,3.2,1.1,2.1,2.-2p,1.-1k,1.1.k.2,2.-3m,2.1.9.2,8.8bv,1.1,2.-4j,1.8bs,3.1,2.-5f,1.1x,1.1z,1.1.5.2,82.1,2.1,4.1,9.38,7.12,2.11.3.1,2.1s,2.1r,1.1r,2.w.h.1,2.w.9.1,10.8,9.1.c.2,6.-1o,3.1,2.-7,1.1,3.-3m.3.1,1.28.g.1,1.w.w.1,1d.1.h.2,a.1.r.2,2.f,1.1.7.2,3.1.1c.2,3.1c.12.1,28a.5ls.12.1,2.5ls,6.5ls,k3.tzk.28.1,1.8.6.1,1p0.1,7.-2bk.17.1,3.-2bk.3.1,8x.1.23.2,a.-5vj,2.1.1c.2,a.-8.8.1,9.-8.6.1,b.-8.8.1,9.-8.8.1,9.-8.6.1,c.-8.4.2,9.-8.8.1,p.-8.8.1,9.-8.8.1,9.-8.8.1,9.-8,1.-8,1.-22,1.-22,1.-9,c.-2e.4.1,1.-9,c.-8,1.-8,1.-2s,1.-2s,d.-8,1.-8,1.-34,1.-34,1.-7,c.-3k,1.-3k,1.-3i,1.-3i,1.-9,8a.-5st,4.-6gv,1.-6di,7.s,1a.g.g.1,k.1,mr.q.q.1,1f5.1c.1c.1,1d.1,2.-8af,1.-2xy,1.-89z,3.1.3.2,2.-8bg,1.-8al,1.-8bj,1.-8bi,2.1,3.1,9.-8cf,1.-8cf,1.1.1e.2,9.1,2.1,5.1,nym.1.n.2,k.1.e.2,3s.1.7.2,4.1.v.2,b.1,2.1,2.-r9g,1.1.5.2,5.1,2.-wmg,3.1,2.1,4.1.a.2,2.-wn8,1.-wnj,1.-wnf,1.-wn5,1.-wn8,2.-wlu,1.-wmi,1.-wlx,1.ps,1.1.8.2,2.-1c,1.-wn7,1.-raw,1.1,2.1,2.-wo7,1.1,4.1,6.1.3.2,2.-wu9,p.1,h7w.w.q.1";const EXTRA_LOWERCASE=new Map();let extraUnit=0;for(const record of EXTRA_FOLD_PAIRS.split(",")){const[gap,delta,count=1,step=0]=record.split(".").map(part=>parseInt(part,36));extraUnit +=gap;for(let i=0;i<count;i++)EXTRA_LOWERCASE.set(extraUnit+i*step,extraUnit+i*step+delta);extraUnit +=(count-1)*step}
 function foldCode(c){if(c<0x80){return c>=65&&c<=90?c+32:c}
 return EXTRA_LOWERCASE.get(c)||c}

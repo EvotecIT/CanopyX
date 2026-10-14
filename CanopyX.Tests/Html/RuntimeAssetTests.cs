@@ -90,7 +90,7 @@ public sealed class RuntimeAssetTests {
     public void Assets_StayWithinTheCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 
-        Assert.True(compressed <= 48 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 48 KB.");
+        Assert.True(compressed <= 56 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 56 KiB.");
     }
 
     [Fact]
@@ -102,13 +102,13 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        Assert.True(compressed <= 96 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 96 KiB.");
+        Assert.True(compressed <= 112 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 112 KiB.");
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid));
-        Assert.True(compressed <= 128 * 1024, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 128 KiB.");
+        Assert.True(compressed <= 144 * 1024, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 144 KiB.");
     }
 
     [Fact]

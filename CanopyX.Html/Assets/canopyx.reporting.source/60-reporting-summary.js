@@ -22,6 +22,7 @@
       if (!column || ids.has(aggregate.id) || !["count", "sum", "average", "minimum", "maximum"].includes(aggregate.operation) ||
           aggregate.operation !== "count" && column.kind !== "number" || typeof aggregate.label !== "string" ||
           !aggregate.label.trim() || aggregate.label.length > 512) throw new Error("CanopyX: invalid aggregate binding.");
+      if (aggregate.format !== undefined) gridNumberFormat(aggregate.format);
       ids.add(aggregate.id);
     }
   };

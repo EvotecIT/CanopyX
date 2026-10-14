@@ -205,7 +205,18 @@
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
         "operation": { "enum": ["count", "sum", "average", "minimum", "maximum"] },
-        "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
+        "label": { "type": "string", "minLength": 1, "maxLength": 512, "description": "Shown beside the value in group headings and the query totals row." },
+        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Value format. Defaults to the column format; counts default to whole numbers." } }
+    },
+    "gridNumberFormat": {
+      "type": "object", "additionalProperties": false,
+      "description": "Display format of raw numbers. Readers format digits in their language; the prefix follows any minus sign. minimumFractionDigits must not exceed maximumFractionDigits.",
+      "properties": {
+        "minimumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 0 },
+        "maximumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },
+        "prefix": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "suffix": { "type": "string", "minLength": 1, "maxLength": 16 }
+      }
     },
     "gridAggregateValues": {
       "type": "object", "maxProperties": 32, "propertyNames": { "$ref": "#/$defs/identifier" },
@@ -952,6 +963,10 @@
         },
         "presenter": {
           "$ref": "#/$defs/gridPresenter"
+        },
+        "format": {
+          "$ref": "#/$defs/gridNumberFormat",
+          "description": "Number columns only: display format of raw numbers without cell text, also used by summaries and selection totals."
         },
         "aggregatable": {
           "type": "boolean"

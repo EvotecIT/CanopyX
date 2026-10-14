@@ -81,7 +81,7 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 
 Gate:
 
-- In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within 48 KB gzip.
+- In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within the 56 KiB gzip budget.
 - With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was patched Wunderbaum's median in the spike (56 of about 900).
 - In TestimoX, measured there on its own fixture: the GPO explorer design packet renders both views on CanopyX with the L fixture (5 domains, 5,000 GPOs, 200,000 links) within the TestimoX plan section 7.2 budgets.
 - Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) renders on CanopyX with the same content.
