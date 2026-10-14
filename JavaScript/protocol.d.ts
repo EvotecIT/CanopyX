@@ -67,6 +67,28 @@ export interface CanopyColumn {
   sortable?: boolean;
   hidden?: boolean;
   editable?: boolean;
+  /** Fit the visible rows' content (the tree tools part measures it); width is the fallback until then. Otherwise width is preferred. */
+  autoWidth?: boolean;
+  /** The width stays during fitting; the reader can still resize the column. */
+  fixed?: boolean;
+  /** Share of spare width, given before the tree column. */
+  flex?: number;
+  /** What content measuring reads. Default content. */
+  autoSize?: "content" | "header" | "none";
+  /** How the column gives way when narrow: 0-1 essential, 10000+ optional; or the named levels. */
+  priority?: "essential" | "normal" | "optional" | number;
+  /** Retained during responsive fitting. */
+  alwaysVisible?: boolean;
+  /** Tree column only: null lets it scroll sideways; it pins left by default. */
+  pinned?: "left" | null;
+}
+/** Per-control tree toolbar switches in the view document; an absent switch keeps its control. */
+export interface TreeToolbarControls {
+  filters?: boolean;
+  columns?: boolean;
+  views?: boolean;
+  export?: boolean;
+  more?: boolean;
 }
 export interface CanopyFilter {
   id: string;
@@ -107,7 +129,7 @@ export type LabelName =
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
   | "gridResultCount" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
-  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
+  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
   | "searchPlaceholder" | "searchResults" | "searchResultCount" | "searchResultCountOfTotal"
   | "searchResultCountOfMany" | "searchNoResults" | "searchTooShort" | "searchWordTooShort" | "searchFailed"
   | "columns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"
@@ -169,6 +191,12 @@ interface ViewDefinitionBase {
   filters?: CanopyFilter[];
   timeZone?: TimeZone;
   pinTreeColumn?: boolean;
+  /** Per-control toolbar switches (the search box is the search property). */
+  toolbar?: TreeToolbarControls;
+  /** Identities of registered export formats the Export menu offers after CSV, in order. */
+  exportFormats?: string[];
+  /** A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true. */
+  autoHeight?: boolean;
   stateKey?: string;
   deepLink?: boolean;
   labels?: CanopyLabels;
