@@ -29,7 +29,14 @@ public sealed class CanopyGridToolbar {
     /// <summary>Gets or sets whether the result count is shown above the grid while a search or filter is active.</summary>
     public bool Count { get; set; } = true;
 
-    internal bool IsDefault => Filters && Columns && Views && Export && More && Count;
+    /// <summary>
+    /// Gets or sets whether each header has its column menu button (sort, filter, pin, fit and hide). Switched off, the
+    /// header keeps no room for it when columns are fitted. Sorting by the header keeps working, an active header filter keeps
+    /// its button, and readers start filters from the Filters menu.
+    /// </summary>
+    public bool ColumnMenus { get; set; } = true;
+
+    internal bool IsDefault => Filters && Columns && Views && Export && More && Count && ColumnMenus;
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
@@ -39,6 +46,7 @@ public sealed class CanopyGridToolbar {
         if (!Export) writer.Property("export", false);
         if (!More) writer.Property("more", false);
         if (!Count) writer.Property("count", false);
+        if (!ColumnMenus) writer.Property("columnMenus", false);
         writer.EndObject();
     }
 }

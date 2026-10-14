@@ -196,8 +196,22 @@
       }
     },
 
+    // A column tooltip, read on hover over a node row's cell: "auto" shows the cell's full value while it is cut off, a
+    // column id that column's text. A title the cell has already (its own, or the other time zone's) wins; paintSlot clears
+    // what this wrote when the slot shows another row.
+    cellTip(event) {
+      const cell = event.target.closest?.(".cx-cell"), row = cell?.parentNode._kind === "node" && cell.parentNode._w;
+      const column = row && !row.status && this.cols[[...cell.parentNode.children].indexOf(cell)], tip = column?.tooltip;
+      const source = tip === "auto" ? column : this.columns.find(item => item.id === tip);
+      if (!source || cell.title && !cell._cxTip) return;
+      cell._cxTip = true;
+      cell.title = tip !== "auto" || [cell, ...cell.querySelectorAll("*")].some(item => item.scrollWidth > item.clientWidth) ?
+        cellText(this.cellOf(row.h, source, this.columns.indexOf(source)), source, this.fmt) : "";
+    },
+
     paintSlot(slot, node, column, index, w) {
       const value = this.cellOf(node, column, index);
+      if (slot.cell._cxTip) { slot.cell._cxTip = false; slot.cell.removeAttribute("title"); slot.title = null; }
       // "host" when the renderer drew the cell, "decorated" when it changed the element and left the text to the default.
       const hosted = column.render ? this.paintHostSlot(slot, node, column, index, w) : null;
       if (hosted === "host") {

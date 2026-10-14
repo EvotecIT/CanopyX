@@ -35,7 +35,7 @@
         if (isCellObject(cell)) {
           if (Array.isArray(cell) ||
               ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
-              cell.secondary !== undefined && cell.secondary.length > 4096 || cell.series !== undefined && !gridSeriesValid(cell.series) ||
+              cell.secondary !== undefined && cell.secondary.length > 4096 || cell.sort !== undefined && !(typeof cell.sort === "string" ? cell.sort.length <= 4096 : Number.isFinite(cell.sort)) || cell.series !== undefined && !gridSeriesValid(cell.series) ||
               cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
                 ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
             throw new Error("CanopyX: malformed grid cell.");
@@ -62,7 +62,7 @@
           ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
           column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
           column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
-          column.fixed && column.width === undefined)
+          column.fixed && column.width === undefined || column.tooltip !== undefined && column.tooltip !== "auto" && !view.columns.some(item => item.id === column.tooltip))
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);

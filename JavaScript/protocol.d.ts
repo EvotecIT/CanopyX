@@ -20,6 +20,8 @@ export interface CanopyCell {
   secondary?: string;
   /** At most 4096 ordered periods for a flat-grid history presenter. */
   series?: CellPeriod[];
+  /** Sort key when it differs from the value (text or a number); filters, value lists, search and display keep reading value and text. */
+  sort?: string | number;
 }
 export type Cell = CellValue | CanopyCell;
 
@@ -79,8 +81,10 @@ export interface CanopyColumn {
   priority?: "essential" | "normal" | "optional" | number;
   /** Retained during responsive fitting. */
   alwaysVisible?: boolean;
-  /** Tree column only: null lets it scroll sideways; it pins left by default. */
-  pinned?: "left" | null;
+  /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
+  tooltip?: string;
+  /** The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right. */
+  pinned?: "left" | "right" | null;
 }
 /** Per-control tree toolbar switches in the view document; an absent switch keeps its control. */
 export interface TreeToolbarControls {

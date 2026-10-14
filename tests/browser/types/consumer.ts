@@ -390,3 +390,13 @@ activatingTree.closeMenus();
 createTreeGrid(document.createElement("div"), { view, onRowActivate: (event: { id: number }) => false });
 // @ts-expect-error Format writers return a Blob or bytes.
 CanopyX.registerExportFormat({ id: "bad", label: "Bad", extension: "txt", write: () => 42 });
+
+// Column tooltips, the column menu switch and tree pins.
+const tipGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "tip-grid", label: "Grid", source: { kind: "inline" }, rows: [], pageSize: 50,
+  selection: "none", search: false, toolbar: { columnMenus: false }, columns: [{ id: "name", title: "Name", kind: "text", tooltip: "auto" }, { id: "path", title: "Path", kind: "text", tooltip: "name" }] } });
+void tipGrid;
+const pinTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "pin-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200, tooltip: "auto" }, { id: "state", title: "State", kind: "text", width: 90, pinned: "right" }], roots: [] } });
+pinTree.setColumnPinned("state", "left");
+// @ts-expect-error Pins are left, right or none.
+pinTree.setColumnPinned("state", "top");

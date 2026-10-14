@@ -58,8 +58,10 @@ export interface TreeGrid {
   resetView(): Promise<boolean>;
   /** Names every column once; the tree column stays first. */
   setColumnOrder(ids: string[]): void;
-  /** Returns columns to their declared order, widths and visibility. */
+  /** Returns columns to their declared order, widths, visibility and pins. */
   resetColumns(): void;
+  /** Once ready: pins a column other than the tree column to the left (after the tree column) or right edge, or unpins it. */
+  setColumnPinned(columnId: string, pin: "left" | "right" | "none"): void;
   getState(): ViewState;
   setState(state: ViewState | LegacyViewState): Promise<boolean>;
   search(query: string, limit?: number): Promise<SearchResult>;

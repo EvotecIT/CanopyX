@@ -42,7 +42,7 @@
     },
     declaredColumns() {
       return this.view.columns.map((declared, index) => ({ id: declared.id, width: columnWidth(this.columns.find(column => column.id === declared.id), declared.width ?? 160),
-        hidden: index > 0 && !!declared.hidden }));
+        hidden: index > 0 && !!declared.hidden, pin: index && declared.pinned || "none" }));
     },
 
     setColumnOrder(ids) {
@@ -50,15 +50,15 @@
         throw new Error("CanopyX: name each column once.");
       if (this.cancelResize) this.cancelResize();
       const identity = this.columns[0];
+      // Pinned columns keep their pin and stay next to their edge.
       this.columns = [identity, ...ids.filter(id => id !== identity.id).map(id => this.columns.find(column => column.id === id))];
-      for (const column of this.columns) column.pin = column === identity ? "left" : "none";
-      this.columnsChanged();
+      this.groupPins(); this.columnsChanged();
     },
     showAllColumns() { for (const column of this.columns) column.hidden = false; this.columnsChanged(); },
     resetColumns() {
       const declared = this.declaredColumns();
-      this.columns = declared.map(saved => Object.assign(this.columns.find(column => column.id === saved.id), { width: saved.width, hidden: saved.hidden, sized: false }));
-      this.columnsChanged();
+      this.columns = declared.map((saved, index) => Object.assign(this.columns.find(column => column.id === saved.id), { width: saved.width, hidden: saved.hidden, sized: false, ...index && { pin: saved.pin } }));
+      this.groupPins(); this.columnsChanged();
     },
     columnsChanged() { this.buildHeader(); this.syncColumnControls(); this.relayout(); this.stateChanged(); }
   });
