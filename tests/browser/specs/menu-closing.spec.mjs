@@ -68,6 +68,8 @@ test("a toolbar menu closes when focus moves outside it, so a host popover opene
 test("opening a CanopyX menu closes the others and announces itself to the host", async ({ page }) => {
   await open(page, [grid("first"), grid("second")]);
   await openFromKeyboard(page, 0, "columns");
+  // The menu announces itself from its queued toggle event; a menu opened before that would be closed by it.
+  await expect.poll(() => page.evaluate(() => window.menuEvents)).toEqual(["cx-columns cx-grid-columns"]);
   // A menu opened without moving focus (a host's own control can do this) still closes the other view's menu.
   await host(page, 1).locator(".cx-grid-export").evaluate(menu => { menu.open = true; });
   await expect.poll(() => openMenus(page)).toEqual(["second:cx-grid-export"]);
