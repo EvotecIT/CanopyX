@@ -1,90 +1,123 @@
-/* Documentation, examples and Mermaid support pages. */
+/* Documentation: a tree sidebar, the article column and an "on this page" guide. */
 
 .cnx-docs {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr) 200px;
-  gap: clamp(24px, 3vw, 48px);
+  grid-template-columns: 248px minmax(0, 1fr) 208px;
+  gap: clamp(28px, 3.5vw, 56px);
   width: min(100% - 2 * clamp(16px, 4vw, 40px), var(--cnx-max));
   margin-inline: auto;
   padding-block: clamp(32px, 5vw, 56px);
 }
 
+/* Sidebar: the documentation drawn as an expanded tree. */
 .cnx-docs__nav {
   position: sticky;
   top: 88px;
   align-self: start;
   max-height: calc(100vh - 110px);
   overflow-y: auto;
+  padding: 2px 4px 8px 0;
   font-size: .9063rem;
 }
 .cnx-docs__nav h2 {
-  margin: 20px 0 6px;
-  color: var(--cnx-ink-3);
-  font-size: .8125rem;
-  font-weight: 640;
-  font-stretch: 92%;
+  margin: 26px 0 4px;
+  font-family: var(--cnx-font);
+  font-size: .9375rem;
+  font-weight: 680;
   letter-spacing: 0;
+  font-variation-settings: normal;
 }
-.cnx-docs__nav h2:first-child { margin-top: 0; }
-.cnx-docs__nav ul { margin: 0; padding: 0; list-style: none; }
-.cnx-docs__nav ul ul { padding-left: 12px; }
-.cnx-docs__nav a {
-  display: block;
-  padding: 5px 10px;
-  border-left: 2px solid transparent;
-  color: var(--cnx-ink-2);
-  text-decoration: none;
+.cnx-docs__group:first-child h2 { margin-top: 0; }
+.cnx-tree--nav ul { margin: 0; padding: 0; list-style: none; }
+.cnx-tree--nav > ul:not(:last-child) > li:last-child::before { bottom: 0; height: auto; }
+.cnx-tree--nav li > a { padding: 6px 10px; }
+.cnx-tree--nav li.is-active > a,
+.cnx-tree--nav a[aria-current="page"] {
+  background: var(--cnx-select);
+  color: var(--cnx-ink);
+  font-weight: 640;
+  box-shadow: inset 2px 0 0 var(--cnx-accent);
+  border-radius: 0 var(--cnx-radius-sm) var(--cnx-radius-sm) 0;
 }
-.cnx-docs__nav a:hover { color: var(--cnx-ink); }
-.cnx-docs__nav a[aria-current="page"],
-.cnx-docs__nav a.active,
-.cnx-docs__nav a.is-active { border-left-color: var(--cnx-accent); color: var(--cnx-ink); font-weight: 600; }
+.cnx-tree--nav li.is-active::after,
+.cnx-tree--nav li:has(> a[aria-current="page"])::after { border-top-color: var(--cnx-accent); }
 
 .cnx-docs__article { min-width: 0; }
-.cnx-docs__article .cnx-page__head h1 { font-size: clamp(1.875rem, 1.3rem + 1.8vw, 2.5rem); }
-.cnx-docs__edit { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--cnx-line); font-size: .875rem; }
+.cnx-docs__article > .cnx-prose { max-width: 70ch; }
+.cnx-docs__article .cnx-pagehead h1 { font-size: clamp(1.875rem, 1.3rem + 1.8vw, 2.625rem); }
 
+/* Edit link: closes the article with the same elbow that opens the header. */
+.cnx-docs__edit {
+  position: relative;
+  max-width: 70ch;
+  margin-top: 56px;
+  padding: 18px 0 0 30px;
+  font-size: .875rem;
+}
+.cnx-docs__edit::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  width: 14px;
+  height: 28px;
+  border-left: 1px solid var(--cnx-guide);
+  border-bottom: 1px solid var(--cnx-guide);
+  border-bottom-left-radius: 8px;
+}
+.cnx-docs__edit::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-top: 1px solid var(--cnx-line);
+}
+.cnx-docs__edit a { color: var(--cnx-ink-2); font-weight: 600; }
+.cnx-docs__edit a:hover { color: var(--cnx-accent); }
+
+/* On this page: a guide line with a tick for each heading; the current one is lit. */
 .cnx-docs__toc {
   position: sticky;
   top: 88px;
   align-self: start;
-  font-size: .8438rem;
+  font-size: .875rem;
 }
-.cnx-docs__toc h2 { margin-bottom: 8px; color: var(--cnx-ink-3); font-size: .8125rem; font-weight: 640; font-stretch: 92%; }
-.cnx-docs__toc ul { margin: 0; padding: 0; list-style: none; }
-.cnx-docs__toc ul ul { padding-left: 10px; }
-.cnx-docs__toc a { display: block; padding: 3px 0; color: var(--cnx-ink-2); text-decoration: none; }
-.cnx-docs__toc a:hover { color: var(--cnx-accent); }
-
-/* Mermaid families */
-.cnx-families {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+.cnx-docs__toc .pf-toc-title { margin-bottom: 10px; color: var(--cnx-ink); font-weight: 680; font-size: .9375rem; }
+.cnx-docs__toc ul { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--cnx-line-strong); }
+.cnx-docs__toc ul ul { margin-left: 12px; }
+.cnx-docs__toc a {
+  display: block;
+  margin-left: -1px;
+  padding: 5px 0 5px 14px;
+  border-left: 2px solid transparent;
+  color: var(--cnx-ink-2);
+  line-height: 1.4;
+  text-decoration: none;
 }
-.cnx-families__group {
-  padding: 18px 20px;
-  border: 1px solid var(--cnx-line);
-  border-radius: 14px;
-  background: var(--cnx-card);
-}
-.cnx-families__group h2 { font-size: 1rem; font-stretch: 104%; }
-.cnx-families__group ul { margin: 12px 0 0; padding: 0; list-style: none; }
-.cnx-families__group li { padding: 5px 0; border-top: 1px solid var(--cnx-line); color: var(--cnx-ink-2); font-size: .9375rem; }
-.cnx-body--mermaid .cnx-prose { margin-top: 40px; }
-.cnx-body--mermaid .cnx-mermaid { border-top: 1px solid var(--cnx-line); }
+.cnx-docs__toc a:hover { color: var(--cnx-ink); }
+.cnx-docs__toc a[aria-current] { border-left-color: var(--cnx-accent); color: var(--cnx-ink); font-weight: 600; }
 
 @media (max-width: 1100px) {
   .cnx-docs { grid-template-columns: 220px minmax(0, 1fr); }
   .cnx-docs__toc { display: none; }
-  .cnx-families { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
-  .cnx-docs { grid-template-columns: 1fr; }
-  .cnx-docs__nav { position: static; max-height: none; padding-bottom: 16px; border-bottom: 1px solid var(--cnx-line); }
-  .cnx-families { grid-template-columns: 1fr; }
+  .cnx-docs { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .cnx-docs__nav {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-height: none;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--cnx-line);
+    font-size: .875rem;
+  }
+  .cnx-docs__nav h2 { margin-top: 0; }
 }
 
-.cnx-docs__nav h2, .cnx-docs__toc h2 { font-family: var(--cnx-font); font-variation-settings: normal; }
+@media (max-width: 460px) {
+  .cnx-docs__nav { grid-template-columns: minmax(0, 1fr); }
+}

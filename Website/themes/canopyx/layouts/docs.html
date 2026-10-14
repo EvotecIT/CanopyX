@@ -15,14 +15,12 @@
 <main id="main" class="cnx-main cnx-docs">
   {{ include "docs-sidebar" }}
   <article class="cnx-docs__article">
-    <header class="cnx-page__head">
-      <h1>{{ page.title }}</h1>
-      {{ if page.description != "" }}<p class="cnx-lede">{{ page.description }}</p>{{ end }}
-    </header>
+    {{ include "pagehead" }}
+
     <div class="cnx-prose">
 {{ content }}
     </div>
-    {{ if edit_url != "" }}<p class="cnx-docs__edit"><a href="{{ edit_url }}">Edit this page on GitHub</a></p>{{ end }}
+    {{ if edit_url != "" }}<footer class="cnx-docs__edit"><a href="{{ edit_url }}">Edit this page on GitHub</a></footer>{{ end }}
   </article>
   {{ if toc != "" }}<aside class="cnx-docs__toc" aria-label="On this page">{{ toc }}</aside>{{ end }}
 </main>

@@ -14,10 +14,8 @@
 {{ include "site-header" }}
 <main id="main" class="cnx-main">
   <article class="cnx-page">
-    <header class="cnx-page__head">
-      <h1>{{ page.title }}</h1>
-      {{ if page.description != "" }}<p class="cnx-lede">{{ page.description }}</p>{{ end }}
-    </header>
+    {{ include "pagehead" }}
+
     <div class="cnx-prose">
 {{ content }}
     </div>

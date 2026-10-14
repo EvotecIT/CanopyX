@@ -47,7 +47,9 @@ files.SaveHtmlPage("files.html");
 
 Open `files.html` in a browser and expand Projects. The first column displays the node label; the Size column displays the matching cell. Numeric values control sorting while `Text` controls the displayed value.
 
-For a larger tree, write a bundle that loads branches on demand with `files.SaveHtmlBundle("file-report")`. Keep the generated page, assets and data files together. The bundle can be opened directly from disk or a file share.
+For a larger tree, write a bundle that loads branches on demand with `files.SaveHtmlBundle("file-report")`.
+
+> **Keep the bundle together.** The generated page, assets and data files belong side by side. The bundle can then be opened directly from disk or a file share.
 
 ## Create an inventory table
 
