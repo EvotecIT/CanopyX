@@ -34,6 +34,9 @@ async function open(page, views, runtime = "grid") {
 const host = (page, index) => page.locator("[data-canopyx-host]").nth(index);
 const openMenus = page => page.evaluate(() => [...document.querySelectorAll("details[open]")].map(menu => menu.closest("[data-canopyx-host]").canopyx.view.id + ":" + menu.className.split(" ").pop())
   .concat([...document.querySelectorAll(".cx-grid-overlay.cx-pop, .cx-interaction-panel")].map(panel => "panel:" + panel.getAttribute("role"))));
+// The open phone sheets that show a drag handle.
+const handles = page => page.evaluate(() => [...document.querySelectorAll("details[open] > .cx-grid-panel")].filter(panel => getComputedStyle(panel, "::before").display !== "none")
+  .map(panel => panel.parentElement.className.split(" ").pop().replace("cx-grid-", "")));
 async function capture(page, name) { if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, name + ".png") }); }
 
 /** Opens a toolbar menu from the keyboard: focus its summary, press Enter. */
@@ -156,7 +159,28 @@ test("phone more-menu entries and the reporting header selection menu follow the
   await expect(host(page, 0).locator(".cx-grid-views")).not.toHaveAttribute("open", "");
   await page.keyboard.press("Enter");
   await expect.poll(() => openMenus(page)).toEqual(["first:cx-grid-overflow", "first:cx-grid-export"]);
-  await capture(page, "menus-phone-more-export-390");
+  // The Export sheet replaces the more menu's sheet: one drag handle shows.
+  expect(await handles(page)).toEqual(["export"]);
+  await capture(page, "menus-phone-more-export-light-390");
   await host(page, 0).evaluate(element => element.canopyx.closeMenus());
   expect(await openMenus(page)).toEqual([]);
+});
+
+test("a phone sheet opened from the more menu shows one drag handle in the dark theme too", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await open(page, [grid("first")]);
+  await host(page, 0).evaluate(element => element.setAttribute("data-cx-theme", "dark"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(host(page, 0)).toHaveClass(/cx-phone/);
+  await host(page, 0).locator(".cx-grid-overflow > summary").click();
+  expect(await handles(page)).toEqual(["overflow"]);
+  await host(page, 0).locator(".cx-grid-overflow .cx-grid-export > summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(host(page, 0).locator(".cx-grid-export")).toHaveAttribute("open", "");
+  expect(await handles(page)).toEqual(["export"]);
+  await capture(page, "menus-phone-more-export-dark-390");
+  // Closing Export gives the more menu its handle back.
+  await page.keyboard.press("Escape");
+  await expect(host(page, 0).locator(".cx-grid-export")).not.toHaveAttribute("open", "");
+  expect(await handles(page)).toEqual(["overflow"]);
 });
