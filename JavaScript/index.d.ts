@@ -41,10 +41,22 @@ export interface TreeGrid {
   focus(): void;
   visibleRows(): { node: CanopyNode; level: number; path: string[] }[];
   toOutline(): string;
-  /** Interactive and grid runtimes. Captures the visible rows (default) or the loaded selected nodes now, with level and id path. */
+  /** Once ready (the tree tools part): captures the visible rows (default), the loaded selected nodes or all rows now, with level and id path. */
   prepareExport(options?: TreeExportOptions): TreeExport;
-  /** Interactive and grid runtimes. Captures now, then runs a registered or configured export format and downloads its file. */
+  /** Once ready: captures now, then runs a registered or configured export format and downloads its file. */
   exportAs(format: string, options?: TreeExportOptions & ExportFormatOptions): Promise<ExportFormatResult>;
+  /** Once ready: names of the views saved for the session (with stateKey; the page only otherwise). */
+  getSavedViews(): string[];
+  /** Saves the current state under a name of 1 to 100 characters; at most 20 views. */
+  saveView(name: string): void;
+  applySavedView(name: string): Promise<boolean>;
+  removeSavedView(name: string): void;
+  /** Returns to the declared columns, sort, filters and expansion. */
+  resetView(): Promise<boolean>;
+  /** Names every column once; the tree column stays first. */
+  setColumnOrder(ids: string[]): void;
+  /** Returns columns to their declared order, widths and visibility. */
+  resetColumns(): void;
   getState(): ViewState;
   setState(state: ViewState | LegacyViewState): Promise<boolean>;
   search(query: string, limit?: number): Promise<SearchResult>;
@@ -75,7 +87,7 @@ export function mount(root?: ParentNode): TreeGrid[];
 export const sources: Readonly<Sources>;
 export function badge(value: CanopyBadge): HTMLElement;
 export const labels: Readonly<Record<LabelName, string>>;
-/** Registers an export format for every grid on the page that does not choose its own; returns a disposer. Not in the core-only classic script. */
+/** Registers an export format for every grid and tree on the page that does not choose its own; returns a disposer. */
 export function registerExportFormat(format: ExportFormat): () => void;
 
 declare const CanopyX: Readonly<{

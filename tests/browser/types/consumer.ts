@@ -270,6 +270,13 @@ api.selectAll({ scope: "loaded" });
 await api.updateActiveFilters({ add: ["flagged"], remove: ["other"] });
 // @ts-expect-error Filter changes contain arrays of declared IDs.
 api.updateActiveFilters({ remove: "other" });
+// Tree toolbar switches, host actions, all-rows exports, named views and column order.
+createTreeGrid(document.createElement("div"), { view: { ...view, toolbar: { export: false }, autoHeight: false, exportFormats: ["xlsx"] },
+  toolbar: { columns: false, search: false }, actions: [{ label: "Audit", run: ({ nodes, signal }) => signal.aborted || nodes.length }] });
+const treeScope: "visible" | "selected" | "all" = api.prepareExport({ scope: "all" }).request.scope;
+api.saveView("Mine"); const savedViews: string[] = api.getSavedViews(); await api.resetView(); api.setColumnOrder(["name"]);
+// @ts-expect-error Tree toolbar switches are booleans.
+createTreeGrid(document.createElement("div"), { view, toolbar: { export: "no" } });
 CanopyX.badge({ text: labels.saveEdit, tone: "success" });
 await sources.inline(view).page(null, null);
 

@@ -1,6 +1,6 @@
 import type {
   CanopyNode, CanopyColumn, CanopyView, InlineView, SidecarView, RemoteView, CanopyLabels, CellValue, CheckIntent,
-  CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone
+  CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
 } from "./protocol.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
@@ -113,8 +113,9 @@ export interface ExportFormatOptions {
 }
 export interface ExportFormatResult { readonly blob: Blob; readonly fileName: string; readonly format: string; }
 export interface TreeExportOptions {
-  /** "visible" (default): the rows the reader can see, in order. "selected": the loaded selected nodes in tree order, including collapsed ones. */
-  scope?: "visible" | "selected";
+  /** "visible" (default): the rows the reader can see, in order. "selected": the loaded selected nodes in tree order, including collapsed ones.
+   * "all": every node in the current sort order, the whole tree of an inline source and the loaded nodes of a lazy one. */
+  scope?: "visible" | "selected" | "all";
   /** Defaults to the visible columns in their current order. */
   columns?: string[];
   values?: "raw" | "display";
@@ -122,7 +123,7 @@ export interface TreeExportOptions {
 }
 export interface TreeExportRequest extends ExportRequest {
   readonly kind: "tree";
-  readonly scope: "visible" | "selected";
+  readonly scope: "visible" | "selected" | "all";
   readonly presentation: "text";
   readonly revision: string | null;
   readonly recordCount: number;
@@ -138,8 +139,12 @@ interface HostOptionsBase {
   source?: DataSource;
   labels?: CanopyLabels;
   requestTimeoutMs?: number;
-  /** Interactive and grid runtimes: the formats exportAs offers (ids of registered formats or provider objects); absent offers every registered format. */
+  /** The formats the Export menu and exportAs offer (ids of registered formats or provider objects); absent offers the view's exportFormats, else every registered format. */
   exportFormats?: readonly (string | ExportFormat)[];
+  /** False hides the tree toolbar; an object switches single controls off, overriding the view's toolbar switches. */
+  toolbar?: boolean | TreeToolbarOptions;
+  /** Host entries of the tree's more menu, run with the selected nodes; the host owns what they do. */
+  actions?: readonly TreeAction[];
   /** Safety timeout for export format writers, 1..2147483647 ms (default 600000). */
   exportTimeoutMs?: number;
   retainedNodeLimit?: number;
@@ -162,6 +167,16 @@ interface HostOptionsBase {
   canDrag?: (node: CanopyNode) => boolean;
   canDrop?: (proposal: DropProposal) => boolean;
   isActionEnabled?: (node: CanopyNode, action: Readonly<ContextAction>) => boolean;
+}
+/** Per-control tree toolbar switches; an absent switch keeps its control, and a control switched off is not built. */
+export interface TreeToolbarOptions extends TreeToolbarControls {
+  /** The search box; the view's search options still decide whether there is one. */
+  search?: boolean;
+}
+/** A more-menu entry of a tree. */
+export interface TreeAction {
+  label: string;
+  run(context: { nodes: CanopyNode[]; signal: AbortSignal }): unknown;
 }
 /** A custom deep-link scheme supplies its formatter and parser together. */
 export type HostOptions = HostOptionsBase & (
