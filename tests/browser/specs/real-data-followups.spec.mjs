@@ -316,9 +316,10 @@ for (const width of [1440, 390]) {
     await fits();
     const collapsed = (await gap()).height;
     // Administrators opens two rows: the tree grows by them and stays fitted.
+    // The height follows after a short debounce, so wait for it to grow before checking the fit (the old height still fits).
     await host.locator('.cx-row[data-cx-id="g-admins"] .cx-exp').click();
+    await expect.poll(async () => (await gap()).height).toBeGreaterThan(collapsed);
     await fits();
-    expect((await gap()).height).toBeGreaterThan(collapsed);
     // Everyone opens 497 rows: the tree reaches the host's cap (420 pixels) and scrolls inside it.
     await host.locator('.cx-row[data-cx-id="g-everyone"] .cx-exp').click();
     await expect.poll(async () => (await gap()).height).toBe(420);
