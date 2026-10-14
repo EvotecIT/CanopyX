@@ -101,3 +101,4 @@ body .cx-host.cx-grid-overlay{height:auto;min-height:0;padding:0;}
 .cx-tree-tools .cx-hcell[aria-sort="descending"] .cx-sort::after{content:"↓";font-size:var(--cx-size-14px);color:var(--cx-accent);}
 .cx-tree-tools .cx-switch{font-size:var(--cx-size-14px);color:var(--cx-text-2);white-space:nowrap;}
 .cx-tree-tools .cx-hidden-fields{color:var(--cx-muted);font:var(--cx-size-12d5px) var(--cx-font);border:0;background:transparent;padding:0;flex:none;height:auto;min-height:0;margin-left:var(--cx-size-4px);}
+.cx-tree-tools.cx-drawer :focus-visible{outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px);}

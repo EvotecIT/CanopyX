@@ -6,8 +6,9 @@
   const GRID_HISTORY_IMPL = {}, GRID_HISTORY = { key: "CanopyXHistory", name: "history", label: "history presenters", version: "__CX_HISTORY_VERSION__",
     script: "__CX_HISTORY_SCRIPT__", context: () => ({ GRID_HISTORY_IMPL, h, setText, fill, gridSeries, gridPresenterTone, toneColors, toneOf, GRID_TONE_RANK }) };
   const GRID_HISTORY_INIT = DataGrid.prototype.initializeState;
+  // One load per grid: history cells painted while it runs, or after it failed, neither request the part again nor repeat the error.
   DataGrid.prototype.loadHistory = function () {
-    return loadPart(GRID_HISTORY).then(() => { this.version++; this.scheduleRender(); }, error => this.emit("error", { error }));
+    return this.historyLoad ||= loadPart(GRID_HISTORY).then(() => { this.version++; this.scheduleRender(); }, error => this.emit("error", { error }));
   };
   DataGrid.prototype.initializeState = function () {
     const ready = GRID_HISTORY_INIT.call(this);

@@ -235,6 +235,17 @@ test("a tree whose tree tools part cannot load keeps its rows, search and filter
   await expect(page.locator(".cx-grid-columns")).toHaveCount(0);
   const errors = await page.evaluate(() => window.errors);
   expect(errors).toHaveLength(1); expect(errors[0]).toMatch(/^CanopyX: tree tools (script|stylesheet) unavailable\.$/);
+  // The part's methods report it: those returning a promise reject it, the others throw.
+  expect(await page.evaluate(() => {
+    const api = document.querySelector("[data-canopyx-host]").canopyx; let thrown = null;
+    try { api.saveView("x"); } catch (error) { thrown = error.message; }
+    return api.resetView().then(() => "resolved", error => [thrown, error.message]);
+  })).toEqual(["CanopyX: saveView needs the tree tools part.", "CanopyX: resetView needs the tree tools part."]);
+  // Without the part there is no outline to print, so the rows on screen print rather than a blank page.
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  await page.emulateMedia({ media: "print" });
+  await expect(page.locator(".cx-outline")).toBeEmpty();
+  await expect(page.locator('.cx-row[data-cx-id="a"]')).toBeVisible();
 });
 
 // The tools part loaded from files arrives after the roots; remembered order, user widths and an unpinned tree column still apply.

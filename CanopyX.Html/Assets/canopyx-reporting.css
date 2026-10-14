@@ -315,6 +315,7 @@ color-scheme:light;height:auto !important;color:var(--cx-text);background:var(--
 }
 .cx-outline-table{color:var(--cx-text);background:var(--cx-surface);}
 .cx-grid,.cx-toolbar{display:none !important;}
+.cx-host:has(> .cx-outline:empty) > .cx-grid{display:block !important;}
 .cx-outline{display:block;}
 }
 body.cx-page{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}

@@ -117,6 +117,9 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
       await capture(page, "wide-tree-drawer-" + theme + "-390");
       await page.keyboard.press("ArrowDown");
       await expect(drawer.locator("h4")).toHaveText("Policies 2024");
+      // After the keyboard, the title shows the accent focus ring of the flat grid's drawer, not the browser's.
+      await expect(drawer.locator("h4")).toHaveCSS("outline-style", "solid");
+      await expect(drawer.locator("h4")).toHaveCSS("outline-width", "2px");
       await page.keyboard.press("Escape");
       await expect(drawer).toHaveCount(0);
     }
