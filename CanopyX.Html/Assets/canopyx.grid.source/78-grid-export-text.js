@@ -1,6 +1,7 @@
   // ---------- export part: record enumeration, CSV and clipboard text, and the host export hook ----------
   // This part ships in the lazy export file. The grid runtime keeps stable methods that capture the export first and
-  // call these implementations once the part is installed, so reporting wrappers of those methods keep working.
+  // call these implementations once the part is installed, so reporting wrappers of those methods keep working. The tree
+  // tools part includes it for exportText, the CSV of tree captures.
   function gridExportField(value, delimiter) {
     if (value == null) return "";
     let text = String(value);
@@ -66,8 +67,9 @@
       let count = 0;
       for await (const row of exported.rows()) {
         if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded.");
-        lines.push(request.columns.map(column => gridExportField(request.values === "raw" ? row.cells[column.id]?.value :
-          row.cells[column.id]?.text, delimiter)).join(delimiter));
+        // Tree rows indent their first column by level, two spaces a level, as the tree shows them.
+        lines.push(request.columns.map((column, index) => { const value = request.values === "raw" ? row.cells[column.id]?.value : row.cells[column.id]?.text;
+          return gridExportField(index || !(row.level > 1) ? value : "  ".repeat(row.level - 1) + (value ?? ""), delimiter); }).join(delimiter));
       }
       gridOperationActive(this, signal);
       return lines.join("\r\n") + "\r\n";

@@ -30,9 +30,10 @@ public sealed class ExportPartAssetsTests {
             Assert.Contains(signature.Replace(" ", string.Empty), CanopyHtmlAssets.ExportScript.Replace(" ", string.Empty));
             Assert.DoesNotContain(signature.Replace(" ", string.Empty), CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid).Replace(" ", string.Empty));
         }
-        // The tree part ships directly in the interactive tree runtime.
-        Assert.Contains("treeRows", CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid));
-        Assert.DoesNotContain("treeRows(grid,request,rows,signal)", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid));
+        // Tree captures and writers ship in the tree tools part, which every tree runtime loads, not in an entry point.
+        Assert.Contains("treeRows", CanopyHtmlAssets.TreeToolsScript);
+        foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid })
+            Assert.DoesNotContain("treeRows", CanopyHtmlAssets.GetScript(runtime));
     }
 
     [Theory]

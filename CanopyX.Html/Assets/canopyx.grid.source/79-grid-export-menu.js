@@ -1,6 +1,7 @@
   // ---------- export part: the Export menu ----------
-  // One menu for ordinary and reporting grids: the scope, built-in CSV, the grid's format providers and copy, with shared
-  // progress, cancellation and error status. A reporting print action in the more menu runs through the same controls.
+  // One menu for ordinary and reporting grids and trees: the scope, built-in CSV, the format providers and copy (where the
+  // view copies), with shared progress, cancellation and error status. A reporting print action in the more menu runs through
+  // the same controls. The export part makes it DataGrid's renderGridExport; the tree tools part, which includes this part, TreeGrid's.
   Object.assign(EXPORT_IMPL, {
     exportFromMenu(action) {
       const { details, panel } = this.exportControl;
@@ -10,12 +11,13 @@
     }
   });
   // Drawn on the first open; later opens refresh the format buttons, so formats registered after mounting appear.
-  DataGrid.prototype.renderGridExport = function (panel) {
+  // A view lists its scopes as [value, label name] pairs in exportScopes; flat grids use filtered, selected and all.
+  const exportMenu = function (panel) {
     if (panel.cxRun) return panel.cxFormats();
     panel.replaceChildren();
     const reporting = !!this.view.reporting, scope = h("select"), labels = this.labels;
     scope.setAttribute("aria-label", labels.gridExport);
-    for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
+    for (const [value, label] of this.exportScopes || [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
       scope.appendChild(gridOption(value, labels[label]));
     const status = h("p", "cx-grid-delivery-status"); status.setAttribute("role", "status");
     const meter = h("progress"); meter.setAttribute("aria-label", labels.gridExport); meter.hidden = true;
@@ -54,7 +56,7 @@
       const text = await this.exportText(exported, 50000, ",", options.signal); gridOperationActive(this, options.signal);
       saveExport(new Blob([text], { type: "text/csv;charset=utf-8" }), (exported.request.fileName || this.view.id.replace(/[^a-z0-9_-]/gi, "_")) + ".csv");
     }));
-    const copy = gridButton(labels.gridCopy, () => panel.cxRun((options, onProgress) => this.copy(traced(options, onProgress))));
+    const copy = this.copy ? gridButton(labels.gridCopy, () => panel.cxRun((options, onProgress) => this.copy(traced(options, onProgress)))) : h("span");
     panel.cxFormats = () => {
       if (operation) return;
       formats.forEach(button => button.remove());

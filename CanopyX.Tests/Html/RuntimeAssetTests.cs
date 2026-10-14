@@ -62,7 +62,9 @@ public sealed class RuntimeAssetTests {
         expected = expected.Replace("__CX_FILTER_VERSION__", CanopyHtmlAssets.FilterEditorVersion)
             .Replace("__CX_FILTER_SCRIPT__", CanopyHtmlAssets.HashedFilterEditorScriptFileName)
             .Replace("__CX_FILTER_STYLE__", CanopyHtmlAssets.HashedFilterEditorStyleFileName)
-            .Replace("__CX_EXPORT_VERSION__", CanopyHtmlAssets.ExportVersion).Replace("__CX_EXPORT_SCRIPT__", CanopyHtmlAssets.HashedExportScriptFileName);
+            .Replace("__CX_EXPORT_VERSION__", CanopyHtmlAssets.ExportVersion).Replace("__CX_EXPORT_SCRIPT__", CanopyHtmlAssets.HashedExportScriptFileName)
+            .Replace("__CX_TOOLS_VERSION__", CanopyHtmlAssets.TreeToolsVersion).Replace("__CX_TOOLS_SCRIPT__", CanopyHtmlAssets.HashedTreeToolsScriptFileName)
+            .Replace("__CX_TOOLS_STYLE__", CanopyHtmlAssets.HashedTreeToolsStyleFileName);
         expected = CompressScriptSpacing(expected);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
@@ -79,6 +81,7 @@ public sealed class RuntimeAssetTests {
         if (runtime != CanopyRuntime.TreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.interactive.source", "canopyx.css"));
         if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "chrome.css")).Replace("\r\n", "\n").TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "canopyx.css"));
         if (runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.reporting.source", "canopyx.css"));
@@ -87,7 +90,8 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void FilterEditorStyle_MatchesItsSource() {
-        var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "canopyx.css"));
+        var source = Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "canopyx.css"))).TrimEnd('\n') + "\n" +
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "columns.css"));
         Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.FilterEditorStyle));
     }
 
@@ -175,7 +179,8 @@ public sealed class RuntimeAssetTests {
 
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
-            Assert.Equal(2, Directory.GetFiles(directory).Length);
+            // The runtime and its stylesheet, and the tree tools part every tree loads beside them.
+            Assert.Equal(4, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

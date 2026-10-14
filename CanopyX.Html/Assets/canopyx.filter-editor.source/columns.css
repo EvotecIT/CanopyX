@@ -1,0 +1,10 @@
+/* The Columns menu body, shared by the flat-grid editor part and the tree tools part. */
+.cx-grid-column-choice { display:flex;align-items:center;border-radius:var(--cx-radius-sm); }
+.cx-grid-column-choice label { flex:1;min-width:0;white-space:nowrap; }
+.cx-grid-column-name { flex:1;overflow:hidden;text-overflow:ellipsis; }
+:is(.cx-grid-column-note,.cx-grid-column-handle) { flex:none;padding:0 var(--cx-size-6px);color:var(--cx-muted);font-size:var(--cx-size-12px);white-space:nowrap; }
+.cx-grid-column-handle { height:var(--cx-size-28px);border:0;background:none;cursor:grab;touch-action:none; }
+.cx-grid-column-choice.cx-drop-before { box-shadow:inset 0 var(--cx-size-2px) var(--cx-accent); }
+.cx-grid-column-choice.cx-drop-after { box-shadow:inset 0 var(--cx-size-neg-2px) var(--cx-accent); }
+.cx-grid-column-actions { display:flex;justify-content:space-between;margin-top:var(--cx-size-4px);padding-top:var(--cx-size-4px);border-top:var(--cx-size-1px) solid var(--cx-line); }
+.cx-grid-column-actions .cx-button { border:0;color:var(--cx-accent-text);background:none; }

@@ -1,5 +1,5 @@
   // ---------- export part: format writers and tree records ----------
-  // Grid runtimes ship this part in the lazy export file; the interactive tree runtime includes it directly.
+  // Grid runtimes ship this part in the lazy export file; the interactive tree runtime and the tree tools part include it.
   function saveExport(blob, name) {
     const url = URL.createObjectURL(blob), link = h("a"); link.href = url; link.download = name;
     document.body.appendChild(link); link.click(); link.remove();
@@ -9,7 +9,7 @@
 
   // The host option wins, then the view's declared ids, then every registered format. An id nobody registered is skipped.
   function exportFormatsOf(grid) {
-    const list = grid.opts.exportFormats ?? (grid.view.type === "grid" ? grid.view.exportFormats : undefined);
+    const list = grid.opts.exportFormats ?? grid.view.exportFormats;
     if (list === undefined) return [...EXPORT_FORMATS.values()];
     const formats = Array.isArray(list) ? list.map(item => typeof item === "string" ? EXPORT_FORMATS.get(item) : exportFormat(item)).filter(Boolean) : null;
     if (!formats || new Set(formats.map(format => format.id)).size !== formats.length) throw new Error("CanopyX: invalid exportFormats.");
