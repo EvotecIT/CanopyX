@@ -85,7 +85,7 @@
         const quiet = options.quietTones?.includes(gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone));
         values = Math.max(values, kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
-          (kind === "progress" ? 80 : kind === "enum" && !quiet ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
+          (kind === "progress" ? 80 : kind === "enum" ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
       // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
       const cap = columnWidth(column, 420);

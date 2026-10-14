@@ -37,6 +37,21 @@ public sealed partial class CanopyGridPresenter {
         if (Kind != CanopyGridPresenterKind.Enum && Kind != CanopyGridPresenterKind.State) throw new InvalidOperationException("Quiet tones apply to enum and state presenters.");
         if (tones == null || tones.Length > 16 || Array.Exists(tones, tone => tone.Name == null)) throw new ArgumentException("Quiet tones need 1 to 16 named tones.", nameof(tones));
         var copy = (CanopyGridPresenter)MemberwiseClone(); copy.QuietTones = Array.AsReadOnly((CanopyTone[])tones.Clone()); return copy;
+    }
+    /// <summary>Gets how the values of the quiet tones read: muted (the default) or in the normal text colour.</summary>
+    public CanopyGridQuietStyle QuietStyle { get; private set; }
+
+    /// <summary>Returns a copy of this enum or state presenter whose quiet values use the given style, for example
+    /// <see cref="CanopyGridQuietStyle.Plain"/> so values without a tone read as ordinary text rather than disabled. In an enum
+    /// column quiet values keep the inline start of the chips beside them.</summary>
+    /// <param name="style">The style of quiet values.</param>
+    /// <returns>A new immutable descriptor.</returns>
+    /// <exception cref="InvalidOperationException">The presenter is not an enum or state presenter.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="style"/> is unknown.</exception>
+    public CanopyGridPresenter WithQuietStyle(CanopyGridQuietStyle style) {
+        if (Kind != CanopyGridPresenterKind.Enum && Kind != CanopyGridPresenterKind.State) throw new InvalidOperationException("Quiet styles apply to enum and state presenters.");
+        if (style != CanopyGridQuietStyle.Muted && style != CanopyGridQuietStyle.Plain) throw new ArgumentOutOfRangeException(nameof(style), style, "Unknown quiet style.");
+        var copy = (CanopyGridPresenter)MemberwiseClone(); copy.QuietStyle = style; return copy;
     }    /// <summary>Gets ordered inclusive upper bounds for progress and history tones.</summary>
     public IReadOnlyList<CanopyGridThreshold> Thresholds { get; private set; } = Array.Empty<CanopyGridThreshold>();
 
@@ -138,6 +153,7 @@ public sealed partial class CanopyGridPresenter {
         if (Minimum.HasValue) writer.Name("minimum").Number(Minimum.Value).Name("scaleMaximum").Number(ScaleMaximum!.Value);
         if (Tones.Count > 0) { writer.Name("tones").BeginObject(); foreach (var pair in Tones) writer.Property(pair.Key, pair.Value.Name ?? "neutral"); writer.EndObject(); }
         if (QuietTones.Count > 0) { writer.Name("quietTones").BeginArray(); foreach (var tone in QuietTones) writer.String(tone.Name); writer.EndArray(); }
+        if (QuietStyle == CanopyGridQuietStyle.Plain) writer.Property("quietStyle", "plain");
         if (Thresholds.Count > 0) { writer.Name("thresholds").BeginArray(); foreach (var threshold in Thresholds) threshold.WriteJson(writer); writer.EndArray(); }
     }
 }
