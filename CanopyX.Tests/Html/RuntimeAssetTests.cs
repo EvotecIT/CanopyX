@@ -40,6 +40,9 @@ public sealed class RuntimeAssetTests {
         // Tree-only core parts (the tree menus' labels) are defined again by the grid parts, so grid runtimes leave them out.
         var treeOnlyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "tree-only-parts.json")))!;
         exportPaths.UnionWith(treeOnlyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))));
+        // The history presenters ship in their own part.
+        var historyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "history-parts.json")))!;
+        exportPaths.UnionWith(historyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))));
         if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) files = files.Where(file => !exportPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
         var parts = files
@@ -66,6 +69,7 @@ public sealed class RuntimeAssetTests {
             .Replace("__CX_FILTER_SCRIPT__", CanopyHtmlAssets.HashedFilterEditorScriptFileName)
             .Replace("__CX_FILTER_STYLE__", CanopyHtmlAssets.HashedFilterEditorStyleFileName)
             .Replace("__CX_EXPORT_VERSION__", CanopyHtmlAssets.ExportVersion).Replace("__CX_EXPORT_SCRIPT__", CanopyHtmlAssets.HashedExportScriptFileName)
+            .Replace("__CX_HISTORY_VERSION__", CanopyHtmlAssets.HistoryVersion).Replace("__CX_HISTORY_SCRIPT__", CanopyHtmlAssets.HashedHistoryScriptFileName)
             .Replace("__CX_TOOLS_VERSION__", CanopyHtmlAssets.TreeToolsVersion).Replace("__CX_TOOLS_SCRIPT__", CanopyHtmlAssets.HashedTreeToolsScriptFileName)
             .Replace("__CX_TOOLS_STYLE__", CanopyHtmlAssets.HashedTreeToolsStyleFileName);
         expected = CompressScriptSpacing(expected);

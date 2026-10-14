@@ -126,6 +126,9 @@ $filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullP
 # directly; the grid-only export parts never reach a tree-only runtime.
 $exportParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'export-parts.json') -Raw | ConvertFrom-Json)
 $exportPaths = @($exportParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# The history presenters (status strips, sparklines) ship in their own part, loaded by grids with such a column.
+$historyParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'history-parts.json') -Raw | ConvertFrom-Json)
+$historyPaths = @($historyParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 # Tree-only core parts define what the grid parts define again for flat grids (the tree menus' labels); grid runtimes leave them out.
 $treeOnlyParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'tree-only-parts.json') -Raw | ConvertFrom-Json)
 $treeOnlyPaths = @($treeOnlyParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
@@ -146,7 +149,7 @@ function Join-AssetSource {
     }
 
     if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
-    if ($GridRuntime) { $parts = @($parts | Where-Object { $_.FullName -notin $exportPaths -and $_.FullName -notin $treeOnlyPaths }) }
+    if ($GridRuntime) { $parts = @($parts | Where-Object { $_.FullName -notin $exportPaths -and $_.FullName -notin $treeOnlyPaths -and $_.FullName -notin $historyPaths }) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -339,6 +342,26 @@ $exportScript = Compress-ScriptSpacing (($exportHeader.Replace('__VERSION__', $e
 $exportScriptName = 'canopyx-export.' + (Get-AssetHash $exportScript) + '.js'
 $assets += @(@{ Generated = $exportScript; Target = 'CanopyX.Html/Assets/canopyx-export.js' })
 
+$historyBody = Join-AssetSource -SourcePath $historyPaths[0]
+$historyVersion = Get-AssetHash $historyBody
+$historyHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXHistory = {version:"__VERSION__", install(context) {
+if (installed.has(context.GRID_HISTORY_IMPL)) return;
+const {GRID_HISTORY_IMPL,h,setText,fill,gridSeries,gridPresenterTone,toneColors,toneOf,GRID_TONE_RANK} = context;
+'@
+$historyFooter = @'
+GRID_HISTORY_IMPL.render = gridRenderHistory;
+installed.add(GRID_HISTORY_IMPL);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$historyScript = Compress-ScriptSpacing (($historyHeader.Replace('__VERSION__', $historyVersion).Replace("`r`n", "`n")) + "`n" + $historyBody + $historyFooter.Replace("`r`n", "`n") + "`n")
+$historyScriptName = 'canopyx-history.' + (Get-AssetHash $historyScript) + '.js'
+$assets += @(@{ Generated = $historyScript; Target = 'CanopyX.Html/Assets/canopyx-history.js' })
+
 # The tree tools part: the shared toolbar menus, column fitting and export menu sources plus the tree's own parts in
 # canopyx.tree-tools.source, with the shared chrome and Columns menu styles. Every tree runtime loads it on mount. Its export
 # writers live in an EXPORT_IMPL of its own, so a grid runtime's export part keeps the runtime's writers.
@@ -379,6 +402,7 @@ foreach ($asset in $assets) {
     $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -GridRuntime:$grid }
     $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
     $generated = $generated.Replace('__CX_EXPORT_VERSION__', $exportVersion).Replace('__CX_EXPORT_SCRIPT__', $exportScriptName)
+    $generated = $generated.Replace('__CX_HISTORY_VERSION__', $historyVersion).Replace('__CX_HISTORY_SCRIPT__', $historyScriptName)
     $generated = $generated.Replace('__CX_TOOLS_VERSION__', $toolsVersion).Replace('__CX_TOOLS_SCRIPT__', $toolsScriptName).Replace('__CX_TOOLS_STYLE__', $toolsStyleName)
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }

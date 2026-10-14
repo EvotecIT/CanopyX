@@ -36,6 +36,8 @@
       (point.value==null||Number.isFinite(point.value)&&Math.abs(point.value)<=Number.MAX_SAFE_INTEGER)&&
       (point.state==null||typeof point.state==="string"&&point.state.length<=4096)&&(point.tone===undefined||typeof point.tone==="string"));
   }
+  // Worst-first ranking of tones, shared by the history presenters and reporting group summaries.
+  const GRID_TONE_RANK={none:0,neutral:0,success:1,info:2,warning:3,danger:4}, GRID_HISTORY_KINDS=["statusStrip","sparklineBars","sparklineLine"];
   function gridPresenterTone(options,raw,fallback) {
     if (options.tones&&Object.hasOwn(options.tones,String(raw))) return options.tones[String(raw)];
     return options.thresholds?.find(item=>typeof raw==="number"&&raw<=item.upperBound)?.tone || fallback || "neutral";

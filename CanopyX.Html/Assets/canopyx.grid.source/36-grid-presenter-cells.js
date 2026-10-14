@@ -9,8 +9,8 @@
         button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",fill(grid.labels.gridExpandCell,{column:column.title}));
         button.addEventListener("click",()=>grid.showReportingText(column,value,button,row.id,options.mono));return button;
       };
-      if (["statusStrip","sparklineBars","sparklineLine"].includes(options.kind)) {
-        gridRenderHistory(grid,column,options,cell,element,text);
+      if (GRID_HISTORY_KINDS.includes(options.kind)) {
+        if(GRID_HISTORY_IMPL.render)GRID_HISTORY_IMPL.render(grid,column,options,cell,element,text);else grid.loadHistory();
       } else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
       else if (options.kind==="link") {
         const href=gridPresenterLink(cellValue(options.hrefColumn?row.cells[options.hrefColumn]:cell));

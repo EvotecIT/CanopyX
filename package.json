@@ -33,6 +33,7 @@
     "./filter-editor.js": "./CanopyX.Html/Assets/canopyx-filter-editor.js",
     "./filter-editor.css": "./CanopyX.Html/Assets/canopyx-filter-editor.css",
     "./export.js": "./CanopyX.Html/Assets/canopyx-export.js",
+    "./history.js": "./CanopyX.Html/Assets/canopyx-history.js",
     "./tree-tools.js": "./CanopyX.Html/Assets/canopyx-tree-tools.js",
     "./tree-tools.css": "./CanopyX.Html/Assets/canopyx-tree-tools.css",
     "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
@@ -62,6 +63,7 @@
     "CanopyX.Html/Assets/canopyx-filter-editor.js",
     "CanopyX.Html/Assets/canopyx-filter-editor.css",
     "CanopyX.Html/Assets/canopyx-export.js",
+    "CanopyX.Html/Assets/canopyx-history.js",
     "CanopyX.Html/Assets/canopyx-tree-tools.js",
     "CanopyX.Html/Assets/canopyx-tree-tools.css"
   ],
