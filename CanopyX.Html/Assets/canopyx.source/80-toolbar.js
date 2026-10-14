@@ -21,8 +21,8 @@
       });
       this.syncToolbar();
       // The Columns, Views, Export and more menus, column fitting and auto height come from the tree tools part. A tree
-      // whose part cannot load keeps its search and filter switches and reports the error.
-      this.toolsReady = loadPart(TREE_TOOLS).then(() => this.destroyed || this.installTools(), error => this.emit("error", { error }));
+      // whose part cannot load or install keeps its search and filter switches and reports the error.
+      this.toolsReady = loadPart(TREE_TOOLS).then(() => this.destroyed || this.installTools()).catch(error => this.emit("error", { error }));
     },
 
     syncToolbar() { this.toolbar.hidden = !this.toolbar.firstChild || this.opts.toolbar === false; },

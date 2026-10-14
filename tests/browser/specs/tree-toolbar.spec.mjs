@@ -72,6 +72,7 @@ test("the Export menu exports visible, selected and all rows as CSV and through 
     return download;
   };
   await host.locator(".cx-grid-export > summary").click();
+  await panel.getByRole("combobox").waitFor();
   expect(await panel.getByRole("combobox").locator("option").evaluateAll(options => options.map(option => [option.value, option.textContent])))
     .toEqual([["visible", "Visible rows"], ["selected", "Selected rows"], ["all", "All rows"]]);
   await expect(panel.locator("button:not([hidden])")).toHaveText(["Download CSV", "Download Excel"]);
@@ -220,4 +221,47 @@ test("a tree whose tree tools part cannot load keeps its rows, search and filter
   await expect(page.locator(".cx-grid-columns")).toHaveCount(0);
   const errors = await page.evaluate(() => window.errors);
   expect(errors).toHaveLength(1); expect(errors[0]).toMatch(/^CanopyX: tree tools (script|stylesheet) unavailable\.$/);
+});
+
+// The tools part loaded from files arrives after the roots; remembered order, user widths and an unpinned tree column still apply.
+test("remembered column order, user widths and the pin survive a reload with file-loaded tree tools", async ({ page }) => {
+  const read = name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8");
+  const view = { protocol: "canopyx/2", type: "view", id: "remembered", label: "Remembered", rowHeight: 28, stateKey: "remembered-tools",
+    columns: [{ id: "name", title: "Name", width: 160, autoWidth: true }, { id: "a", title: "Alpha", width: 120 }, { id: "b", title: "Beta", width: 120 }],
+    source: { kind: "inline" }, roots: [{ id: "n", label: "Node", cells: { a: "one", b: "two" } }] };
+  await page.route("https://remember.test/**", async route => {
+    const file = new URL(route.request().url()).pathname.slice(1);
+    if (!file) return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><title>Remembered</title><style>' + read("canopyx.css") +
+      '</style><script defer src="/canopyx.js"></script></head><body><div class="cx-host" data-canopyx-host><script type="application/json" class="cx-config">' + JSON.stringify(view) + "</script></div></body></html>" });
+    // The part arrives late, after the roots and the remembered state could have been applied.
+    if (file.startsWith("canopyx-tree-tools")) await new Promise(resolve => setTimeout(resolve, 300));
+    return route.fulfill({ contentType: file.endsWith(".css") ? "text/css" : "text/javascript", body: read(file) });
+  });
+  page.errors = [];
+  await page.goto("https://remember.test/"); await page.waitForSelector("[data-cx-ready]");
+  await page.evaluate(() => { const api = document.querySelector("[data-canopyx-host]").canopyx;
+    api.setColumnOrder(["name", "b", "a"]); api.setColumnWidth("a", 222); api.setTreeColumnPinned(false); });
+  await page.waitForTimeout(400);
+  await page.reload(); await page.waitForSelector("[data-cx-ready]"); await nextFrames(page);
+  const host = page.locator("[data-canopyx-host]");
+  expect(await headers(host)).toEqual(["name", "b", "a"]);
+  expect(await host.locator('.cx-hcell[data-cx-column="a"]').evaluate(cell => cell.getBoundingClientRect().width)).toBe(222);
+  expect(await host.evaluate(element => element.classList.contains("cx-pin-tree"))).toBe(false);
+});
+
+test("an invalid host action or tree column layout is reported while the tree stays ready", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async () => {
+    const host = document.createElement("div"), errors = []; document.body.appendChild(host);
+    host.addEventListener("canopyx:error", event => errors.push(event.detail.error.message));
+    const view = { protocol: "canopyx/2", type: "view", id: "invalid-tools", label: "Invalid", rowHeight: 28, columns: [{ id: "name", title: "Name", width: 200 }, { id: "x", title: "X", width: 90, flex: -1 }],
+      source: { kind: "inline" }, roots: [{ id: "r", label: "Root" }] };
+    const layout = CanopyX.createTreeGrid(host, { view }); await layout.ready;
+    const second = document.createElement("div"); document.body.appendChild(second);
+    second.addEventListener("canopyx:error", event => errors.push(event.detail.error.message));
+    const actions = CanopyX.createTreeGrid(second, { view: { ...view, id: "invalid-actions", columns: [view.columns[0]] }, actions: [{ label: "No handler" }] }); await actions.ready;
+    return { errors, rows: [layout, actions].map(api => api.visibleRows().length) };
+  });
+  expect(result.errors).toEqual(["CanopyX: invalid tree column layout.", "CanopyX: actions need a label and handler."]);
+  expect(result.rows).toEqual([1, 1]);
 });

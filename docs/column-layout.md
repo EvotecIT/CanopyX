@@ -17,8 +17,8 @@ differences:
   It is measured whole, up to its `maxWidth`; other columns stop at 420 pixels. Columns are measured again when the
   visible rows change (expanding, collapsing, filtering, sorting, loading), at most once a frame, never while scrolling.
 - **Identity and pinning.** The tree column is always the identity column: essential, first, and pinned left while the
-  other columns scroll, unless it declares `Pinned = CanopyGridColumnPin.None` (`pinned: null`); `PinTreeColumn` and
-  `setTreeColumnPinned` still apply. Other tree columns cannot be pinned, and `RowHeader` is a flat-grid option.
+  other columns scroll, unless it declares `Pinned = CanopyGridColumnPin.None` (`pinned: null`). `PinTreeColumn` no
+  longer changes the default (it can only pin), while `setTreeColumnPinned` and remembered state still decide at run time. Other tree columns cannot be pinned, and `RowHeader` is a flat-grid option.
 - **Widths.** A content-sized column (`CanopyColumnSizing.Content`, the default) writes `autoWidth: true` and 160 pixels as
   the width a tree uses until the tree tools part has measured; an assigned width is preferred. User widths are sticky
   (`sized` in remembered state and named views) until **Reset columns**; a host's restored width that differs from the
