@@ -1,0 +1,4 @@
+/* The flat grid's overlays, after the drawer: an overlay drawer keeps the overlay's font and height. */
+.cx-grid-overlay { color:var(--cx-text); font:var(--cx-font-size)/1.45 var(--cx-font); }
+body .cx-host.cx-grid-overlay { height:auto; min-height:0; padding:0; }
+.cx-grid-overlay [hidden] { display:none!important; }

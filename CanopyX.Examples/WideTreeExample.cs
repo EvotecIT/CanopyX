@@ -5,7 +5,8 @@ namespace CanopyX.Examples;
 /// <summary>
 /// A wide tree of a document library: more columns than a laptop screen holds. The tree column and the owner pin left, the
 /// status pins right, the description takes the spare width (flex), the least important columns hide first on narrow
-/// screens, and the long path shows in full in a tooltip when it is cut off.
+/// screens, and the long path shows in full in a tooltip when it is cut off. On a phone the tree column keeps its room: the
+/// owner hides like the other columns, the essential status stays, and a "+N" button opens the hidden fields.
 /// </summary>
 internal static class WideTreeExample {
     private static readonly string[] Teams = { "Finance", "Legal", "Marketing", "Operations", "Research" };
@@ -29,7 +30,7 @@ internal static class WideTreeExample {
         view.Columns.Add(new CanopyColumn("reviewer", "Reviewer") { ResponsivePriority = 10000 });
         view.Columns.Add(new CanopyColumn("path", "Path") { Tooltip = CanopyColumn.AutoTooltip, Sizing = CanopyColumnSizing.Content(maximum: 260) });
         view.Columns.Add(new CanopyColumn("description", "Description") { Sizing = CanopyColumnSizing.Flex(1) });
-        view.Columns.Add(new CanopyColumn("status", "Status") { Pinned = CanopyGridColumnPin.Right });
+        view.Columns.Add(new CanopyColumn("status", "Status") { Pinned = CanopyGridColumnPin.Right, ResponsivePriority = 0 });
         var epoch = new DateTime(2026, 1, 5, 9, 0, 0, DateTimeKind.Utc);
         for (var t = 0; t < Teams.Length; t++) {
             var team = Node("team-" + t, Teams[t] + " documents", t, 0, epoch, "/library/" + Teams[t].ToLowerInvariant());

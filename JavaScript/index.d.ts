@@ -62,6 +62,8 @@ export interface TreeGrid {
   resetColumns(): void;
   /** Once ready: pins a column other than the tree column to the left (after the tree column) or right edge, or unpins it. */
   setColumnPinned(columnId: string, pin: "left" | "right" | "none"): void;
+  /** Once ready: opens the record drawer of a visible node, its label and every other column (the phone "+N" button opens it too). */
+  openDetails(id: string): Promise<void>;
   getState(): ViewState;
   setState(state: ViewState | LegacyViewState): Promise<boolean>;
   search(query: string, limit?: number): Promise<SearchResult>;

@@ -1,7 +1,7 @@
   // ---------- export part: record enumeration, CSV and clipboard text, and the host export hook ----------
   // This part ships in the lazy export file. The grid runtime keeps stable methods that capture the export first and
-  // call these implementations once the part is installed, so reporting wrappers of those methods keep working. The tree
-  // tools part includes it for exportText, the CSV of tree captures.
+  // call these implementations once the part is installed, so reporting wrappers of those methods keep working. Trees load
+  // it too, for exportText, the CSV of tree captures.
   function gridExportField(value, delimiter) {
     if (value == null) return "";
     let text = String(value);

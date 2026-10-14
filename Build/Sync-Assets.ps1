@@ -122,8 +122,7 @@ $assets = @(
 
 $filterEditorParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'filter-editor-parts.json') -Raw | ConvertFrom-Json)
 $filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
-# Export parts ship in the lazy export file of the grid runtimes. The interactive tree runtime includes its export part
-# directly; the grid-only export parts never reach a tree-only runtime.
+# Export parts ship in the lazy export file, which flat grids and trees load on first use; the grid runtimes leave them out.
 $exportParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'export-parts.json') -Raw | ConvertFrom-Json)
 $exportPaths = @($exportParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 # The history presenters (status strips, sparklines) ship in their own part, loaded by grids with such a column.
@@ -231,7 +230,7 @@ const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge,
 export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat };
 export default CanopyX;
 '@
-    # Optional parts load from files beside the module: the tree tools part for every module, the editor and export parts for grids.
+    # Optional parts load from files beside the module: the tree tools and export parts for every module, the editor part for grids.
     $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
     if ($Grid) {
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
@@ -296,7 +295,7 @@ function Get-AssetHash([string] $Content) {
 }
 
 $editorBody = Join-AssetSource -SourcePath $filterEditorPaths[0] -ExtensionPath $filterEditorPaths[1..($filterEditorPaths.Count - 1)] -IncludeFilterEditor
-$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css') -ExtensionPath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/columns.css'))
+$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css') -ExtensionPath @((Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/columns.css'), (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/drawer.css'), (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/overlay.css')))
 $editorVersion = Get-AssetHash ($editorBody + $editorStyle)
 $editorHeader = @'
 (function(global) {
@@ -362,9 +361,10 @@ $historyScript = Compress-ScriptSpacing (($historyHeader.Replace('__VERSION__', 
 $historyScriptName = 'canopyx-history.' + (Get-AssetHash $historyScript) + '.js'
 $assets += @(@{ Generated = $historyScript; Target = 'CanopyX.Html/Assets/canopyx-history.js' })
 
-# The tree tools part: the shared toolbar menus, column fitting and export menu sources plus the tree's own parts in
-# canopyx.tree-tools.source, with the shared chrome and Columns menu styles. Every tree runtime loads it on mount. Its export
-# writers live in an EXPORT_IMPL of its own, so a grid runtime's export part keeps the runtime's writers.
+# The tree tools part: the shared toolbar menus and column fitting sources plus the tree's own parts in
+# canopyx.tree-tools.source, with the shared chrome and Columns menu styles. Every tree runtime loads it on mount. A tree loads
+# the export part (the Export menu body and the writers) on first use, into an EXPORT_IMPL of the tree tools' own, so a grid
+# runtime's export part keeps the runtime's writers.
 $toolsParts = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'tree-tools-parts.json') -Raw | ConvertFrom-Json
 $toolsPaths = @($toolsParts.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 $toolsBody = Join-AssetSource -SourcePath $toolsPaths[0] -ExtensionPath $toolsPaths[1..($toolsPaths.Count - 1)] -IncludeFilterEditor
@@ -372,7 +372,7 @@ $toolsStylePaths = @($toolsParts.styles | ForEach-Object { [IO.Path]::GetFullPat
 # The shared chrome targets .cx-chrome in the grid stylesheets; this copy targets tree hosts only (.cx-tree-tools), so on a grid
 # runtime page it never overrides a flat grid's own rules that follow the chrome.
 $toolsStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath $toolsStylePaths[0] -ExtensionPath $toolsStylePaths[1..($toolsStylePaths.Count - 1)]).Replace('.cx-chrome', '.cx-tree-tools')
-$toolsVersion = Get-AssetHash ($toolsBody + $toolsStyle)
+$toolsVersion = Get-AssetHash ($toolsBody + $toolsStyle + $exportVersion)
 $toolsHeader = @'
 (function(global) {
 "use strict";
@@ -380,7 +380,7 @@ const installed = new WeakSet();
 global.CanopyXTreeTools = {version:"__VERSION__", install(context) {
 if (installed.has(context.TreeGrid.prototype)) return;
 const {TreeGrid,h,setText,fill,numberFormat,watchFlyout,columnWidth,prepareWidth,cellText,cellValue,isCellObject,foldText,formatting,
-sortKey,compareKeys,EXPORT_FORMATS,exportFormat,exportTimeout,INDENT,MAX_PROTOCOL_INTEGER,hostControl,detailCell,HostCellContext,disposeHostSlot} = context;
+sortKey,compareKeys,EXPORT_FORMATS,exportFormat,exportTimeout,INDENT,MAX_PROTOCOL_INTEGER,hostControl,detailCell,HostCellContext,disposeHostSlot,loadPart} = context;
 const EXPORT_IMPL = {};
 '@
 $toolsFooter = @'
@@ -389,6 +389,8 @@ installed.add(TreeGrid.prototype);
 })(typeof window !== "undefined" ? window : globalThis);
 '@
 $toolsScript = Compress-ScriptSpacing (($toolsHeader.Replace('__VERSION__', $toolsVersion).Replace("`r`n", "`n")) + "`n" + $toolsBody + $toolsFooter.Replace("`r`n", "`n") + "`n")
+# The tree tools load the export part, so its hashed name is part of their content (and of their own hashed name).
+$toolsScript = $toolsScript.Replace('__CX_EXPORT_VERSION__', $exportVersion).Replace('__CX_EXPORT_SCRIPT__', $exportScriptName)
 $toolsScriptName = 'canopyx-tree-tools.' + (Get-AssetHash $toolsScript) + '.js'
 $toolsStyleName = 'canopyx-tree-tools.' + (Get-AssetHash $toolsStyle) + '.css'
 $assets += @(@{ Generated = $toolsScript; Target = 'CanopyX.Html/Assets/canopyx-tree-tools.js' },

@@ -400,3 +400,6 @@ const pinTree = createTreeGrid(document.createElement("div"), { view: { protocol
 pinTree.setColumnPinned("state", "left");
 // @ts-expect-error Pins are left, right or none.
 pinTree.setColumnPinned("state", "top");
+pinTree.openDetails("node-1");
+// @ts-expect-error A node is named by its id.
+pinTree.openDetails(1);

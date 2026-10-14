@@ -5,14 +5,13 @@
     "CanopyX.Html/Assets/canopyx.grid.source/57-toolbar-panels.js",
     "CanopyX.Html/Assets/canopyx.grid.source/60-grid-columns-menu.js",
     "CanopyX.Html/Assets/canopyx.grid.source/69-export-run.js",
-    "CanopyX.Html/Assets/canopyx.grid.source/78-grid-export-text.js",
-    "CanopyX.Html/Assets/canopyx.grid.source/79-grid-export-menu.js",
-    "CanopyX.Html/Assets/canopyx.grid.source/87-export-formats.js",
     "CanopyX.Html/Assets/canopyx.tree-tools.source"
   ],
   "styles": [
     "CanopyX.Html/Assets/canopyx.grid.source/chrome.css",
     "CanopyX.Html/Assets/canopyx.filter-editor.source/columns.css",
+    "CanopyX.Html/Assets/canopyx.filter-editor.source/drawer.css",
+    "CanopyX.Html/Assets/canopyx.filter-editor.source/overlay.css",
     "CanopyX.Html/Assets/canopyx.tree-tools.source/canopyx.css"
   ]
 }

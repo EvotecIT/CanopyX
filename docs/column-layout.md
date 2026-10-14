@@ -29,12 +29,16 @@ differences:
   (`sized` in remembered state and named views) until **Reset columns**; a host's restored width that differs from the
   declared one counts as a user width. Pointer and keyboard resizing start from the width on screen.
 - **Hiding.** Optional columns hide first, normal ones too on phones (a host of 640 pixels or less), as on flat grids. The
-  Columns menu marks them "Hidden at this width"; exports keep them. There is no record drawer or "+N" button on trees.
+  Columns menu marks them "Hidden at this width"; exports keep them. On phones the tree column keeps its indent and about
+  two dozen characters (see the identity column below), the tree column holds the "+N" button of the hidden fields, and
+  the button opens the row's record drawer with every column; **Record details** in the more menu opens it for the focused
+  row, and `openDetails(id)` for any visible node.
 
 The `tree-parity.html` example (and `tree-parity-dark.html`) shows an organisation chart, a file system eleven levels deep
 and nested groups that start collapsed to three rows. The `wide-tree.html` example (and `wide-tree-dark.html`) is a document
 library with more columns than a laptop shows: the owner pins left, the status right, the description takes the spare width,
-the optional version and reviewer hide first, and the long path shows in a tooltip when it is cut off.
+the optional version and reviewer hide first, and the long path shows in a tooltip when it is cut off. On a phone the
+owner hides too and the essential status stays beside the tree column and its "+N" button.
 
 ## Tooltips and header room
 
@@ -78,7 +82,9 @@ as one cell ("Overall ⋮"), and so does an active header filter.
    spare, the identity column still shows its values in full next to the button.
 
    Essential columns never shrink below their need and never hide. Pinned, user-sized and `alwaysVisible` columns
-   never hide either.
+   never hide either, except on phones: there the identity column (a tree's tree column) keeps its indent and about two
+   dozen characters beside its "+N" button, and pinned columns that are not essential hide too, after the unpinned ones and
+   in the same priority order, rather than cut it short.
 
 ## Identity column and pinning
 

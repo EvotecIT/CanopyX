@@ -19,14 +19,12 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        // A single-file tree carries its tree tools part; on a grid runtime (chosen explicitly) its exports run through the
-        // export part too. Fragments that share a document carry each part once.
-        var runtime = RuntimeFor(view, options);
+        // A single-file tree carries its tree tools part and the export part its Export menu and exports load on first use.
+        // Fragments that share a document carry each part once.
         var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
         if (options.AssetMode != CanopyAssetMode.Inline) return html;
-        html += SharedPart(options, "tree-tools", CanopyHtmlAssets.TreeToolsVersion, () => CanopyHtmlAssets.TreeToolsMarkup);
-        return runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid
-            ? html + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup) : html;
+        return html + SharedPart(options, "tree-tools", CanopyHtmlAssets.TreeToolsVersion, () => CanopyHtmlAssets.TreeToolsMarkup)
+            + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup);
     }
 
     /// <summary>A shared part's payload, unless the fragment's document already carries it.</summary>

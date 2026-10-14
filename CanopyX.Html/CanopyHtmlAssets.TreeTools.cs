@@ -39,6 +39,7 @@ public static partial class CanopyHtmlAssets {
     /// <remarks>
     /// Tree fragments written with inline assets already carry this markup. Custom JavaScript hosts can include it once
     /// outside a mounted host, or serve <see cref="TreeToolsScriptFileName"/> and <see cref="TreeToolsStyleFileName"/> beside the runtime.
+    /// Trees load the export part too (<see cref="ExportMarkup"/>, <see cref="ExportScriptFileName"/>) for their Export menu.
     /// </remarks>
     public static string TreeToolsMarkup => "<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + TreeToolsVersion + "\">" + TreeToolsStyle
         + "</script><script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + TreeToolsVersion + "\">" + TreeToolsScript + "</script>";
