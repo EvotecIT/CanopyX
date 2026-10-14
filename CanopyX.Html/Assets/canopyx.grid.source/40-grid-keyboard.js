@@ -10,15 +10,18 @@
     },
 
     onClick(event) {
-      const element = event.target.closest(".cx-row"), row = element && element._w;
+      const element = event.target.closest(".cx-row"), row = element && element._w, link = event.target.closest("a.p-link");
+      // A link cell asks the host first (canopyx:link, onLink); cancelling keeps the browser from following it, so a host can
+      // route the link itself. The row's own link action arrives here too, as a click on the link.
+      if (row && link && !this.emit("link", { id: row.key, row: gridFreeze(JSON.parse(JSON.stringify(row.h))), href: link.href,
+        column: this.visibleColumns()[this.rowCells(element).findIndex(cell => cell.contains(link))]?.id })) event.preventDefault();
       if (!row || event.defaultPrevented || event.target.closest("a,button,input,select,textarea,[contenteditable]")) return;
       this.setFocus(row, true);
       if (row.status) { if (row.status === "error") this.retry().catch(() => {}); return; }
       // A plain click never selects; selection comes from Space, row checkboxes or the API. The row's primary action runs.
       // The second click of a double click activates nothing more.
       const action = event.detail < 2 && this.clickAction(element);
-      if (action) this.activateRow(row, false, action !== true ? () =>
-        action.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey })) : undefined);
+      if (action) this.activateRow(row, false, action !== true && action, event);
     },
     // What a plain click on the row does: follow its link, open details (true), or nothing; a double click activates otherwise.
     clickAction(element) {
@@ -28,8 +31,11 @@
     // Activation (a double click, Enter on the row, Ctrl+Enter, or a click with a row action or on a phone) asks the host
     // first: the cancelable canopyx:rowActivate event and onRowActivate, returning false, keep the row's own action (the link,
     // or record details through onDetails or the drawer) from running, so a host can open its own view of the row.
-    activateRow(row, keyboard, own = () => Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }))) {
-      if (this.emit("rowActivate", { id: row.key, row: gridFreeze(JSON.parse(JSON.stringify(row.h))), keyboard })) own();
+    // The row's own action follows its link (with the click's modifier keys) or opens record details.
+    activateRow(row, keyboard, link, event = {}) {
+      if (this.emit("rowActivate", { id: row.key, row: gridFreeze(JSON.parse(JSON.stringify(row.h))), keyboard })) link ?
+        link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey })) :
+        Promise.resolve().then(() => this.openDetails(row.key)).catch(error => this.emit("error", { error }));
     },
 
     onKey(event) {
@@ -43,7 +49,8 @@
         column = this.visibleColumns().findIndex(item => item.id === navigation.columnId);
       const columnCount = row.status && column >= 0 ? this.visibleColumns().length : cells.length;
       const cell = column >= 0 ? cells[column] : null, control = cell && event.target !== cell ? event.target : null;
-      if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();this.activateRow(row,true);return;}
+      // Enter on a link row follows its link, like a click; Ctrl/Command+Enter keeps opening record details.
+      if(event.key==="Enter"&&!control&&!row.status&&column<0){event.preventDefault();this.activateRow(row,true,this.view.rowAction==="link"&&!event.ctrlKey&&!event.metaKey&&element.querySelector("a[href]"));return;}
       if (!control && !row.status && (event.ctrlKey || event.metaKey)) {
         if (event.key.toLowerCase() === "c" && !(global.getSelection() || "").toString()) {
           event.preventDefault(); Promise.resolve().then(() => this.copyFocused(row, cell)).catch(error => this.emit("error", { error })); return;
