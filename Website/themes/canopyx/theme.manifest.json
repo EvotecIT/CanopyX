@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/EvotecIT/PSPublishModule/main/Schemas/powerforge.web.themespec.schema.json",
+  "name": "canopyx",
+  "schemaVersion": 2,
+  "engine": "scriban",
+  "defaultLayout": "page",
+  "layoutsPath": "layouts",
+  "partialsPath": "partials",
+  "assetsPath": "assets",
+  "scriptsPath": "assets",
+  "slots": {
+    "site-header": "header",
+    "site-footer": "footer",
+    "theme-tokens": "theme-tokens",
+    "docs-sidebar": "docs-sidebar"
+  },
+  "tokens": {
+    "color": {
+      "page": "#f3f6f2",
+      "card": "#ffffff",
+      "ink": "#12201a",
+      "accent": "#1b7548",
+      "forest": "#0e2419"
+    },
+    "font": {
+      "body": "Schibsted Grotesk, system-ui, sans-serif",
+      "display": "Fraunces, Georgia, serif",
+      "mono": "JetBrains Mono, Cascadia Code, Consolas, monospace"
+    },
+    "layout": {
+      "maxWidth": "1240px"
+    }
+  },
+  "features": [
+    "docs",
+    "notFound"
+  ],
+  "featureContracts": {
+    "docs": {
+      "requiredLayouts": [
+        "docs"
+      ],
+      "requiredPartials": [
+        "docs-sidebar"
+      ],
+      "requiredSlots": [],
+      "requiredSurfaces": [
+        "docs"
+      ],
+      "cssHrefs": [
+        "/themes/canopyx/assets/docs.css"
+      ],
+      "requiredCssSelectors": [
+        ".cnx-docs",
+        ".cnx-docs__nav",
+        ".cnx-prose"
+      ]
+    }
+  }
+}

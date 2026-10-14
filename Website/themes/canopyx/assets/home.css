@@ -1,0 +1,274 @@
+/* CanopyX home: forest hero, live demo stage and sections. */
+
+/* Hero: a forest band drawn with the branch guides of an expanded tree grid. */
+:root {
+  --guide: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='112'%3E%3Cg fill='none' stroke='%2374c69a' stroke-opacity='.13' stroke-width='1'%3E%3Cpath d='M14 0v112M14 28h18M14 84h18M46 34v50M46 56h18M46 84h18M88 0v40M88 20h18'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.cnx-hero {
+  position: relative;
+  padding: clamp(48px, 7vw, 96px) 0 0;
+  background:
+    linear-gradient(to bottom, transparent calc(100% - 260px), var(--cnx-page) calc(100% - 260px)),
+    var(--guide),
+    radial-gradient(120% 90% at 85% 0%, var(--cnx-forest-2) 0%, var(--cnx-forest) 62%);
+  color: var(--cnx-forest-ink);
+}
+
+.cnx-hero__inner,
+.cnx-stage,
+.cnx-facts,
+.cnx-cta {
+  width: min(100% - 2 * clamp(16px, 4vw, 40px), var(--cnx-max));
+  margin-inline: auto;
+}
+
+.cnx-hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  align-items: end;
+  gap: clamp(24px, 4vw, 64px);
+}
+
+.cnx-hero__title {
+  color: #f1f8f3;
+  font-size: clamp(2.5rem, 1.2rem + 3.6vw, 4.5rem);
+  font-weight: 520;
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+  line-height: 1.02;
+  letter-spacing: -.025em;
+}
+.cnx-hero__title span { display: block; }
+.cnx-hero__title span + span { color: var(--cnx-forest-muted); font-style: normal; }
+
+.cnx-hero__lede {
+  max-width: 54ch;
+  margin-top: 22px;
+  color: #c9dccf;
+  font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem);
+  line-height: 1.6;
+}
+
+.cnx-hero__side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; padding-bottom: 6px; }
+
+.cnx-install { display: block; max-width: none; padding: 0; border: 1px solid rgba(167, 196, 178, .28); border-radius: 12px; background: rgba(4, 14, 9, .45); }
+.cnx-install__tabs { display: flex; gap: 2px; padding: 4px 4px 0; }
+.cnx-install__tabs button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--cnx-forest-muted);
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cnx-install__tabs button[aria-selected="true"] { color: #fff; box-shadow: inset 0 -2px 0 var(--cnx-leaf); }
+.cnx-install__line { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; }
+.cnx-install__line code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; color: #fff; font-size: .9375rem; }
+.cnx-install__prompt { color: var(--cnx-leaf); font-weight: 700; }
+.cnx-install .cnx-copy, .cnx-cta .cnx-copy { background: transparent; color: #e5f1ea; border-color: rgba(167, 196, 178, .4); }
+
+.cnx-hero__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.cnx-hero .cnx-btn { background: var(--cnx-leaf); border-color: var(--cnx-leaf); color: #06170d; }
+.cnx-hero .cnx-btn:hover { background: #8fd6ae; }
+.cnx-btn--ghost { background: transparent; color: #f1f8f3; border-color: rgba(229, 241, 234, .38); }
+.cnx-hero .cnx-btn--ghost { background: transparent; color: #f1f8f3; border-color: rgba(229, 241, 234, .38); }
+.cnx-hero .cnx-btn--ghost:hover { background: rgba(255, 255, 255, .06); }
+
+/* The stage: live CanopyX output. */
+.cnx-stage {
+  margin-top: clamp(36px, 5vw, 56px);
+  margin-bottom: 0;
+  overflow: hidden;
+  border: 1px solid var(--cnx-line);
+  border-radius: 16px;
+  background: var(--cnx-card);
+  box-shadow: var(--cnx-shadow);
+  color: var(--cnx-ink);
+}
+.cnx-stage__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px 0;
+  border-bottom: 1px solid var(--cnx-line);
+  background: var(--cnx-card-alt);
+}
+.cnx-stage__tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.cnx-stage__tabs::-webkit-scrollbar { display: none; }
+.cnx-stage__tabs button {
+  position: relative;
+  flex: none;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--cnx-ink-2);
+  font: inherit;
+  font-size: .9063rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cnx-stage__tabs button::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+}
+.cnx-stage__tabs button[aria-selected="true"] { color: var(--cnx-ink); }
+.cnx-stage__tabs button[aria-selected="true"]::after { background: var(--cnx-accent); }
+.cnx-stage__open { flex: none; padding-bottom: 6px; font-size: .8438rem; font-weight: 600; color: var(--cnx-accent); text-decoration: none; }
+.cnx-stage__open:hover { text-decoration: underline; }
+
+.cnx-stage__screen { position: relative; height: clamp(420px, 62vh, 600px); }
+.cnx-demo { position: absolute; inset: 0; }
+.cnx-demo iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--cnx-card); }
+
+.cnx-demo--email { overflow: auto; background: var(--cnx-card-alt); }
+.cnx-mail { max-width: 860px; margin: 0 auto; background: var(--cnx-card); border-inline: 1px solid var(--cnx-line); min-height: 100%; }
+.cnx-mail__head { display: grid; gap: 4px; margin: 0; padding: 14px 20px; border-bottom: 1px solid var(--cnx-line); font-size: .8125rem; }
+.cnx-mail__head div { display: flex; gap: 10px; }
+.cnx-mail__head dt { width: 56px; color: var(--cnx-ink-3); }
+.cnx-mail__head dd { margin: 0; color: var(--cnx-ink); font-weight: 600; }
+.cnx-mail__body { padding: 16px 20px 24px; color: var(--cnx-ink-2); font-size: .9063rem; }
+.cnx-mail__body > p { margin-bottom: 12px; }
+.cnx-mail__body table { max-width: 100%; }
+
+.cnx-stage__caption {
+  padding: 14px 18px;
+  border-top: 1px solid var(--cnx-line);
+  color: var(--cnx-ink-2);
+  font-size: .875rem;
+  line-height: 1.55;
+}
+.cnx-stage__caption strong { color: var(--cnx-ink); }
+.cnx-stage__caption code, .cnx-note code, .cnx-section__head code {
+  padding: .05em .35em;
+  border-radius: 5px;
+  background: var(--cnx-card-alt);
+  border: 1px solid var(--cnx-line);
+  font-size: .85em;
+}
+
+/* Facts */
+.cnx-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: clamp(28px, 4vw, 48px);
+  border-top: 1px solid var(--cnx-line-strong);
+}
+.cnx-fact { padding: 20px 24px 8px 0; }
+.cnx-fact + .cnx-fact { padding-left: 24px; border-left: 1px solid var(--cnx-line); }
+.cnx-fact h2 { font-family: var(--cnx-font); font-size: 1rem; font-weight: 700; letter-spacing: 0; font-variation-settings: normal; }
+.cnx-fact p { margin-top: 6px; color: var(--cnx-ink-2); font-size: .9063rem; line-height: 1.5; }
+
+/* Sections */
+.cnx-main > .cnx-section {
+  width: min(100% - 2 * clamp(16px, 4vw, 40px), var(--cnx-max));
+  margin-inline: auto;
+}
+.cnx-note { margin-top: 14px; color: var(--cnx-ink-3); font-size: .875rem; }
+
+.cnx-views__table {
+  overflow-x: auto;
+  padding: 18px;
+  border: 1px solid var(--cnx-line);
+  border-radius: 14px;
+  background: var(--cnx-card);
+}
+.cnx-views__table table { width: 100%; }
+
+.cnx-delivery__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.cnx-delivery__item {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--cnx-line);
+  border-radius: 14px;
+  background: var(--cnx-card);
+}
+.cnx-delivery__item h3 { font-size: 1.125rem; }
+.cnx-delivery__item p { color: var(--cnx-ink-2); font-size: .9375rem; }
+.cnx-delivery__item .cnx-code { font-size: .8125rem; }
+
+.cnx-code-tabs { display: grid; gap: 14px; max-width: 920px; }
+.cnx-code-tabs .cnx-segment { justify-self: start; }
+.cnx-code--large { font-size: .8438rem; }
+
+.cnx-family__list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cnx-family__list a {
+  display: grid;
+  gap: 6px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--cnx-line);
+  border-radius: 12px;
+  background: var(--cnx-card);
+  color: inherit;
+  text-decoration: none;
+}
+.cnx-family__list a:hover { border-color: var(--cnx-accent); }
+.cnx-family__list strong { color: var(--cnx-ink); font-weight: 700; }
+.cnx-family__list span { color: var(--cnx-ink-2); font-size: .875rem; line-height: 1.5; }
+
+/* Closing call to action */
+.cnx-cta {
+  display: grid;
+  gap: 18px;
+  margin-top: clamp(24px, 4vw, 40px);
+  padding: clamp(32px, 5vw, 56px);
+  border-radius: 18px;
+  background: var(--guide, none), var(--cnx-forest);
+  color: var(--cnx-forest-ink);
+}
+.cnx-cta h2 { max-width: 22ch; color: #f1f8f3; font-size: clamp(1.75rem, 1.1rem + 1.9vw, 2.625rem); }
+.cnx-cta__lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; max-width: 560px; }
+.cnx-cta .cnx-install__line { border: 1px solid rgba(167, 196, 178, .28); border-radius: 12px; background: rgba(4, 14, 9, .45); }
+.cnx-cta .cnx-link { color: #9fe3bb; border-bottom-color: rgba(159, 227, 187, .4); }
+
+/* Demos page */
+.cnx-demo-block { margin-top: 48px; }
+.cnx-demo-block__head { display: grid; gap: 8px; max-width: 72ch; margin-bottom: 16px; }
+.cnx-demo-block__head h2 { font-size: 1.75rem; }
+.cnx-demo-block__head p { color: var(--cnx-ink-2); }
+.cnx-demo-block__head .cnx-link { justify-self: start; }
+.cnx-demo-block__frame { display: block; width: 100%; height: 640px; border: 1px solid var(--cnx-line); border-radius: 14px; background: var(--cnx-card); }
+.cnx-demo-block__static { overflow-x: auto; padding: 18px; border: 1px solid var(--cnx-line); border-radius: 14px; background: var(--cnx-card); }
+
+@media (max-width: 1000px) {
+  .cnx-hero__inner { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .cnx-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cnx-fact:nth-child(3) { padding-left: 0; border-left: 0; }
+  .cnx-delivery__grid { grid-template-columns: 1fr; }
+  .cnx-family__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .cnx-stage__screen { height: 520px; }
+  .cnx-stage__open { display: none; }
+  .cnx-facts { grid-template-columns: 1fr; }
+  .cnx-fact, .cnx-fact + .cnx-fact { padding: 16px 0 4px; border-left: 0; }
+  .cnx-fact + .cnx-fact { border-top: 1px solid var(--cnx-line); }
+  .cnx-family__list { grid-template-columns: 1fr; }
+  .cnx-demo-block__frame { height: 520px; }
+}

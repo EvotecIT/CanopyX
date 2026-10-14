@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{ include "head" }}
+  {{ assets.preloads_html }}
+  {{ assets.critical_css_html }}
+  {{ include "theme-tokens" }}
+  {{ extra_css_html }}
+  {{ assets.css_html }}
+  {{ opengraph_html }}
+  {{ structured_data_html }}
+  {{ head_html }}</head>
+<body class="cnx-body cnx-body--page{{ if body_class != "" }} {{ body_class }}{{ end }}">
+{{ include "site-header" }}
+<main id="main" class="cnx-main">
+  <article class="cnx-page">
+    <header class="cnx-page__head">
+      <h1>{{ page.title }}</h1>
+      {{ if page.description != "" }}<p class="cnx-lede">{{ page.description }}</p>{{ end }}
+    </header>
+    <div class="cnx-prose">
+{{ content }}
+    </div>
+  </article>
+</main>
+{{ include "site-footer" }}
+{{ assets.js_html }}
+{{ extra_scripts_html }}
+</body>
+</html>

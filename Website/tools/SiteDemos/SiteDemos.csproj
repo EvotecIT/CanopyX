@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Writes the canopyx.dev demos with CanopyX itself. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\CanopyX.Html\CanopyX.Html.csproj" />
+    <Compile Include="..\..\..\CanopyX.Examples\SyntheticFileTree.cs" Link="Examples\SyntheticFileTree.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\ExampleViews.cs" Link="Examples\ExampleViews.cs" />
+  </ItemGroup>
+</Project>

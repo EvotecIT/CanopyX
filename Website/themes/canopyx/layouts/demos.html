@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{ include "head" }}
+  {{ assets.preloads_html }}
+  {{ assets.critical_css_html }}
+  {{ include "theme-tokens" }}
+  {{ extra_css_html }}
+  {{ assets.css_html }}
+  {{ opengraph_html }}
+  {{ structured_data_html }}
+  {{ head_html }}
+</head>
+<body class="cnx-body cnx-body--demos{{ if body_class != "" }} {{ body_class }}{{ end }}">
+{{ include "site-header" }}
+<main id="main" class="cnx-main">
+  <article class="cnx-page cnx-page--wide">
+    <header class="cnx-page__head">
+      <h1>{{ page.title }}</h1>
+      <p class="cnx-lede">{{ page.description }}</p>
+    </header>
+    <section class="cnx-demo-block" aria-labelledby="cnx-demo-files-title">
+      <div class="cnx-demo-block__head">
+        <h2 id="cnx-demo-files-title">File explorer</h2>
+        <p>{{ data.demos.files.nodes }} nodes across 26 shares, written with <code>SaveHtmlBundle</code> into {{ data.demos.files.dataFiles }} static files ({{ data.demos.files.size }} in total, the largest {{ data.demos.files.largestFile }}). Search, sort, filter to recent changes, and open a file's history to see its detail table.</p>
+        <a class="cnx-link" href="/live/files/index.html">Open the file explorer full screen</a>
+      </div>
+      <iframe class="cnx-demo-block__frame" title="CanopyX file explorer" data-cnx-frame data-eager data-src="/live/files/index.html"></iframe>
+    </section>
+    <section class="cnx-demo-block" aria-labelledby="cnx-demo-inventory-title">
+      <div class="cnx-demo-block__head">
+        <h2 id="cnx-demo-inventory-title">Device inventory</h2>
+        <p>{{ data.demos.inventory.rows }} devices in a single HTML page. Group by site, filter from the column headers or facets, select rows, export CSV, and read the aggregates in the status bar.</p>
+        <a class="cnx-link" href="/live/inventory.html">Open the device inventory full screen</a>
+      </div>
+      <iframe class="cnx-demo-block__frame" title="CanopyX device inventory" data-cnx-frame data-eager data-src="/live/inventory.html"></iframe>
+    </section>
+    <section class="cnx-demo-block" aria-labelledby="cnx-demo-outline-title">
+      <div class="cnx-demo-block__head">
+        <h2 id="cnx-demo-outline-title">Static outline</h2>
+        <p>The file tree rendered by <code>CanopyStaticHtml.Render</code>: a table with no script that works in email, print and Word.</p>
+      </div>
+      <div class="cnx-demo-block__static">{{ include "generated/outline" }}</div>
+    </section>
+    <div class="cnx-prose">
+{{ content }}
+    </div>
+  </article>
+</main>
+{{ include "site-footer" }}
+{{ assets.js_html }}
+{{ extra_scripts_html }}
+</body>
+</html>
