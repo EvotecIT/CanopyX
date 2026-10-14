@@ -26,6 +26,7 @@ export interface TreeGrid {
   setQuery(query: ViewQuery, options?: { signal?: AbortSignal }): Promise<boolean>;
   setColumnVisible(columnId: string, visible: boolean): void;
   setColumnWidth(columnId: string, width: number): void;
+  /** Pins the tree column to the left edge or lets it scroll with the other columns; remembered with the view state. */
   setTreeColumnPinned(pinned: boolean): void;
   setTimeZone(zone: TimeZone): void;
   getTimeZone(): TimeZone;
