@@ -76,7 +76,8 @@ test("opening a CanopyX menu closes the others and announces itself to the host"
   await host(page, 0).locator('[data-cx-column-menu="state"]').focus();
   await page.keyboard.press("ArrowDown");
   await expect(page.locator(".cx-column-menu")).toBeVisible();
-  expect(await openMenus(page)).toEqual(["panel:dialog"]);
+  // Details toggles are queued, so the other menu closes a task later.
+  await expect.poll(() => openMenus(page)).toEqual(["panel:dialog"]);
   // A toolbar menu opening closes the popover.
   await host(page, 1).locator(".cx-grid-columns").evaluate(menu => { menu.open = true; });
   await expect.poll(() => openMenus(page)).toEqual(["second:cx-grid-columns"]);
