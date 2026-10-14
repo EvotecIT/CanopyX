@@ -54,8 +54,13 @@
         for (const column of this.columns) { const result = this.measureGridColumn(column); column.need = result.width; column.headNeed = result.head; }
       }
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
-      for (const column of this.columns) if (!column.fixed && !column.sized) column.width = this.fitSize(column);
+      for (const column of this.columns) { column.reserve = 0; if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
       this.fitHide(shown, width, phone);
+      // On phones the first shown column also holds the "+N" button of the hidden fields (76-grid-phone.js). Its width is
+      // reserved beside the column's content, and the columns are hidden again so the reserved width fits.
+      // The button's text is measured again once the count is final.
+      const first = shown.find(column => !column.fitHidden), reserve = () => first.reserve = Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width) + 8;
+      if (phone && first && this.hiddenFieldCount()) { this.fitContext.font = this.fitFont[1]; reserve(); this.fitHide(shown, width, phone); reserve(); }
     },
     measureGridColumn(column) {
       const context = this.fitContext ||= document.createElement("canvas").getContext("2d"), query = this.acceptedQuery;
