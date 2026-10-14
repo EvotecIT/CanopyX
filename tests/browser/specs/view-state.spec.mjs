@@ -30,7 +30,8 @@ test("a JSON snapshot restores columns, sort, filters, selection, expansion, tim
   expect(result.accepted).toBe(true); expect(result.after).toEqual(result.saved);
   await expect(page.locator('[data-cx-id="n60"]')).toHaveAttribute("aria-selected", "true");
   await expect(page.locator('[data-cx-filter="marked"]')).toBeChecked();
-  await expect(page.locator('[data-cx-column="size"]')).not.toBeChecked();
+  await page.locator(".cx-grid-columns > summary").click();
+  await expect(page.locator('.cx-grid-column-choice[data-cx-column="size"] input')).not.toBeChecked();
   await expect(page.locator('.cx-head [data-cx-column="size"]')).toHaveCount(0);
   expect(result.scroll).toBeGreaterThan(0);
 });
@@ -121,12 +122,13 @@ test("obsolete column and filter IDs are skipped while valid snapshot settings s
 test("a snapshot restores fractional CSS widths produced by pointer resizing", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(async () => {
-    const handle = document.querySelector('.cx-head [data-cx-column="name"] .cx-resize');
+    // A drag starts from the width on screen, which column fitting chose.
+    const handle = document.querySelector('.cx-head [data-cx-column="name"] .cx-resize'), start = handle.parentElement.offsetWidth;
     handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, clientX: 100, button: 0 }));
     document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 130.5 }));
     document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientX: 130.5 }));
     api.setSelection(["n1"]); const saved = api.getState(); api.setColumnWidth("name", 400); api.clearSelection();
-    const accepted = await api.setState(saved); return { accepted, width: api.getState().columns[0].width, selected: api.getSelected().map(n => n.id), saved: saved.columns[0].width };
+    const accepted = await api.setState(saved); return { accepted, width: api.getState().columns[0].width - start, selected: api.getSelected().map(n => n.id), saved: saved.columns[0].width - start };
   });
-  expect(result).toEqual({ accepted: true, width: 330.5, selected: ["n1"], saved: 330.5 });
+  expect(result).toEqual({ accepted: true, width: 30.5, selected: ["n1"], saved: 30.5 });
 });

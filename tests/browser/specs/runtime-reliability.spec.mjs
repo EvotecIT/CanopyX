@@ -135,12 +135,14 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 180 }
     await open(page, { ...view, columns: [view.columns[0], ...Array.from({ length: 30 }, (_, i) => ({
       id: "c" + i, title: "A translated column title with long words " + "x".repeat(80), width: 120
     }))] });
-    await page.locator(".cx-columns > summary").click();
-    const menu = page.locator(".cx-columns-list"); await expect(menu).toBeVisible();
-    await expect.poll(() => menu.evaluate(group => {
+    await page.locator(".cx-grid-columns > summary").click();
+    const menu = page.locator(".cx-grid-columns .cx-grid-panel"); await expect(menu).toBeVisible();
+    // On a phone the menu is a sheet along the bottom edge, as on flat grids; elsewhere it keeps a margin.
+    const margin = viewport.width <= 640 ? 0 : 7;
+    await expect.poll(() => menu.evaluate((group, margin) => {
       const r = group.getBoundingClientRect();
-      return r.left >= 7 && r.right <= innerWidth - 7 && r.top >= 7 && r.bottom <= innerHeight - 7;
-    })).toBe(true);
+      return r.left >= margin && r.right <= innerWidth - margin && r.top >= margin && r.bottom <= innerHeight - margin;
+    }, margin)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
     await menu.locator("input").last().uncheck();
     await expect(menu.locator("input").last()).not.toBeChecked();
@@ -152,7 +154,7 @@ test("a low toolbar opens its chooser above and repositions when the viewport ch
   await page.setViewportSize({ width: 844, height: 390 });
   await open(page, { ...view, columns: [view.columns[0], ...Array.from({ length: 20 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 100 }))] });
   await page.locator(".cx-host").evaluate(host => { host.style.marginTop = "290px"; });
-  const control = page.locator(".cx-columns > summary"), menu = page.locator(".cx-columns-list");
+  const control = page.locator(".cx-grid-columns > summary"), menu = page.locator(".cx-grid-columns .cx-grid-panel");
   await control.click(); await expect(menu).toBeVisible();
   await expect.poll(() => menu.evaluate(group => group.getBoundingClientRect().bottom <= group.parentElement.getBoundingClientRect().top)).toBe(true);
   await capture(page, "columns-above");

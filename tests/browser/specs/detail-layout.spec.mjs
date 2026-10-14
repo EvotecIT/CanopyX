@@ -4,8 +4,8 @@ import { expect, test } from "@playwright/test";
 import { nextFrames, row, viewPage } from "./support.mjs";
 
 const long = "A value long enough to wrap onto several lines inside one column of the table. ".repeat(3).trim();
-const columns = [{ id: "name", title: "Name", width: 300, kind: "text" }]
-  .concat(Array.from({ length: 8 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 260, kind: "text" })));
+const columns = [{ id: "name", title: "Name", width: 300, kind: "text", fixed: true }]
+  .concat(Array.from({ length: 8 }, (_, i) => ({ id: "c" + i, title: "Column " + i, width: 260, kind: "text", fixed: true, alwaysVisible: true })));
 const view = (roots) => ({ protocol: "canopyx/2", type: "view", id: "details", label: "Details", rowHeight: 28, pageSize: 100,
   selection: "single", columns, source: { kind: "inline" }, roots });
 const table = (rows, more) => ({ type: "table", columns: ["Setting", "Before", "After"],

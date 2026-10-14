@@ -1,0 +1,75 @@
+  // ---------- tree tools: the flat grid's toolbar on a tree ----------
+  // The tree runtimes load this part for every tree; it holds the flat grid's toolbar menus, Columns menu, column fitting
+  // and Export menu (the shared source parts listed in Build/tree-tools-parts.json) and these tree parts, which mix them
+  // into TreeGrid. The toolbar reads, left to right: search, the filter switches, Columns, Views, then Export and the
+  // more menu at the right edge, as on a flat grid.
+
+  // English texts of the menus. The tree runtimes carry no grid labels; on a grid runtime the tree's own labels, translated
+  // ones included, take precedence.
+  const TOOL_LABELS = {
+    gridViews: "Views", gridViewName: "View name", gridSaveView: "Save view", gridRemoveView: "Remove view", gridResetView: "Reset view",
+    gridChooseView: "Choose a saved view", gridApply: "Apply", gridFindColumn: "Find a column…", gridShowAllColumns: "Show all",
+    gridResetColumns: "Reset columns", gridReorderColumn: "{column}: drag, or press Alt+Up or Alt+Down to move", gridPinnedLeft: "Pinned left",
+    gridPinnedRight: "Pinned right", gridResponsiveHidden: "Hidden at this width", gridExport: "Export", gridVisibleRows: "Visible rows",
+    gridSelectedRows: "Selected rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy",
+    gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records", gridExportCancelled: "Export cancelled",
+    gridCancelExport: "Cancel export", gridMore: "More", gridPrint: "Print"
+  };
+
+  Object.assign(TreeGrid.prototype, TOOLBAR_PANELS, COLUMNS_MENU, {
+    /** Builds this tree's menus, then starts column fitting and auto height. Runs once per tree, after the part installs. */
+    installTools() {
+      const bar = this.toolbar, tools = this.tools, labels = this.labels = Object.freeze({ ...TOOL_LABELS, ...this.labels });
+      this.host.classList.add("cx-chrome", "cx-tree-tools");
+      this.exportScopes = [["visible", "gridVisibleRows"], ["selected", "gridSelectedRows"], ["all", "gridAllRows"]];
+      // The search box takes the flat grid's look, with its icon.
+      this.toolbar.querySelector(".cx-search")?.prepend(gridIcon("search"));
+      this.startMenus();
+      this.lifetime.signal.addEventListener("abort", () => { this.disposeControls(); this.host.classList.remove("cx-chrome", "cx-tree-tools", "cx-phone"); }, { once: true });
+      if (tools.columns !== false && this.columns.length > 1) this.controlPanel(labels.columns, "cx-grid-columns", panel => this.renderGridColumns(panel));
+      // The Views menu needs the remembered state the view's stateKey turns on; the API keeps views for the page without it.
+      this.prepareSavedViews();
+      if (tools.views !== false && this.stateKey()) {
+        this.buildSavedViews();
+        bar.querySelector(".cx-grid-views .cx-grid-panel").appendChild(gridButton(labels.gridResetView, () => this.resetView().catch(() => {})));
+      }
+      bar.appendChild(this.spacer = h("span", "cx-spacer"));
+      if (tools.export !== false) this.exportControl = this.controlPanel(labels.gridExport, "cx-grid-export", panel => this.renderGridExport(panel));
+      if (tools.more !== false) this.buildMoreMenu();
+      this.syncToolbar();
+      this.startFit();
+    },
+
+    // Host actions ({ label, run({ nodes, signal }) }, run with the selected nodes) and Print.
+    buildMoreMenu() {
+      const overflow = this.overflow = this.controlPanel(this.labels.gridMore, "cx-grid-overflow"), summary = overflow.details.firstChild;
+      summary.replaceChildren(gridIcon("more")); summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
+      for (const action of this.opts.actions || []) {
+        if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
+        overflow.panel.appendChild(gridButton(action.label, () => Promise.resolve().then(() =>
+          action.run({ nodes: this.treeSelection(), signal: this.dataLifetime.signal })).catch(error => this.emit("error", { error }))));
+      }
+      overflow.panel.appendChild(Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
+    },
+
+    treeSelection() { return Array.from(this.selected, w => w.h); },
+
+    // The list of columns keeps the accessible name the tree's former column chooser had.
+    renderGridColumns(panel) {
+      COLUMNS_MENU.renderGridColumns.call(this, panel);
+      this.columnList.setAttribute("role", "group"); this.columnList.setAttribute("aria-label", this.labels.visibleColumns);
+    },
+    // The tree column stays first and shown: its row has no handle and its checkbox stays checked.
+    syncColumnControls() {
+      COLUMNS_MENU.syncColumnControls.call(this);
+      const row = this.columnList?.firstChild;
+      if (row) { row.querySelector(".cx-grid-column-handle").hidden = true; row.querySelector("input").disabled = true; }
+    },
+
+    // At 640 pixels and below the toolbar takes the phone layout: Views and Export move into the more menu.
+    syncPhone() {
+      const phone = this.host.clientWidth <= 640;
+      if (phone === this.phone) return;
+      this.phone = phone; this.host.classList.toggle("cx-phone", phone); this.placeMenus(phone);
+    }
+  });

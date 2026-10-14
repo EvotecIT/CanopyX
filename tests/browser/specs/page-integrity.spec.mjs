@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { viewPage, nextFrames, repo } from "./support.mjs";
 const view = { protocol: "canopyx/2", type: "view", id: "integrity", label: "Integrity",
-  columns: [{ id: "name", title: "Name", width: 500 }], source: { kind: "inline" }, roots: [] };
+  columns: [{ id: "name", title: "Name", width: 500, fixed: true }], source: { kind: "inline" }, roots: [] };
 async function open(page, data = view, after = "") {
   const html = viewPage(data).replace("</body>", after + "</body>");
   await page.route("https://canopyx.test/", r => r.fulfill({ contentType: "text/html", body: html }));
@@ -88,7 +88,7 @@ test("resize separator exposes the supported range and clamps its maximum", asyn
   const grip = page.getByRole("separator"); await expect(grip).toHaveAttribute("aria-valuemax", "2147483647");
   await expect(grip).toHaveAttribute("aria-valuemin", "40"); await expect(grip).toHaveAttribute("aria-valuenow", "500");
   await page.screenshot({ path: path.join(repo, "artifacts/takeover/ninth-resize-range.png") });
-  await page.evaluate(async data => { const host=document.querySelector(".cx-host");host.canopyx.destroy();const api=CanopyX.createTreeGrid(host,{view:{...data,columns:[{id:"name",title:"Name",width:2147483647}]}});await api.ready; }, view);
+  await page.evaluate(async data => { const host=document.querySelector(".cx-host");host.canopyx.destroy();const api=CanopyX.createTreeGrid(host,{view:{...data,columns:[{id:"name",title:"Name",width:2147483647,fixed:true}]}});await api.ready; }, view);
   await grip.dispatchEvent("keydown", { key: "ArrowRight", bubbles: true });
   await expect(grip).toHaveAttribute("aria-valuenow", "2147483647");
   await grip.dispatchEvent("pointerdown", { button: 0, pointerId: 41, clientX: 100, bubbles: true });

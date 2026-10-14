@@ -19,10 +19,11 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        // A tree on a grid runtime (chosen by grid labels or explicitly) loads its export writers from the export part.
+        // A single-file tree carries its tree tools part; on a grid runtime (chosen by grid labels or explicitly) its exports
+        // run through the export part too.
         var runtime = RuntimeFor(view, options);
-        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options) + (options.AssetMode == CanopyAssetMode.Inline &&
-            (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) ? CanopyHtmlAssets.ExportMarkup : string.Empty);
+        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.TreeToolsMarkup +
+            (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid ? CanopyHtmlAssets.ExportMarkup : string.Empty) : string.Empty);
     }
 
     private static string FragmentDocument(string json, CanopyHtmlOptions options) {

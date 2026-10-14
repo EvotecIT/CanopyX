@@ -29,7 +29,7 @@ public static partial class CanopyHtmlAssets {
     public static string HashedFilterEditorStyleFileName => "canopyx-filter-editor." + Hash(FilterEditorStyle) + ".css";
     /// <summary>Gets inert payload markup for hosts embedding the runtime into a single-file page.</summary>
     /// <remarks>Grid fragments already carry this markup. Custom JavaScript hosts can include it once outside a mounted host; it activates on first use of an editor, menu, drawer, or selected aggregate.</remarks>
-    public static string FilterEditorMarkup => "<script type=\"application/x-canopyx-filter-style\" data-cx-version=\"" + FilterEditorVersion + "\">" + FilterEditorStyle
+    public static string FilterEditorMarkup => "<script type=\"application/x-canopyx-filter-editor-style\" data-cx-version=\"" + FilterEditorVersion + "\">" + FilterEditorStyle
         + "</script><script type=\"application/x-canopyx-filter-editor\" data-cx-version=\"" + FilterEditorVersion + "\">" + FilterEditorScript + "</script>";
 
     private static void WriteFilterEditor(string directory, CanopyAssetNaming naming) {
