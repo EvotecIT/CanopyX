@@ -1,10 +1,6 @@
   // ---------- immutable export requests, independent of viewport pages ----------
   const gridExportSignal = (signal, options) => AbortSignal.any([signal, options?.signal].filter(Boolean));
 
-  function gridOperationActive(grid, signal) {
-    if (grid.destroyed || signal?.aborted) throw new DOMException("Grid cancelled.", "AbortError");
-  }
-
   Object.assign(DataGrid.prototype, {
     prepareExport(options) {
       if (!this.view.reporting && ["fileName", "locale", "timeZone", "onProgress"].some(key => options?.[key] !== undefined))

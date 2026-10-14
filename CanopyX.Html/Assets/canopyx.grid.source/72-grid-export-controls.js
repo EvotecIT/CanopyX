@@ -1,7 +1,7 @@
   // ---------- explicit client export scope ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExport: "Export", gridFilteredResults: "Filtered results", gridSelectedRows: "Selected rows",
-    gridAllResults: "All results", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
+    gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
     gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export"
   }));
@@ -10,7 +10,7 @@
   // once the part is installed. They stay the same functions for the grid's lifetime, so reporting wrappers keep working.
   const GRID_EXPORT_PART={key:"CanopyXExport",name:"export",label:"export part",version:"__CX_EXPORT_VERSION__",script:"__CX_EXPORT_SCRIPT__",
     context:()=>({...FILTER_EDITOR.context(),EXPORT_IMPL,gridOperationActive,formatting,validateGridCursorPage,validateGridPage,gridFreeze,isCellObject,exportTimeout,exportFormat,EXPORT_FORMATS})};
-  function loadExportPart(){return loadGridPart(GRID_EXPORT_PART);}
+  function loadExportPart(){return loadPart(GRID_EXPORT_PART);}
   for(const name of ["toCsv","copy","exportToHost"])DataGrid.prototype[name]=function(...args){
     const capture=this.prepareExport(args.at(-1));return loadExportPart().then(()=>EXPORT_IMPL[name].call(this,capture,...args));};
   for(const name of ["exportText","copyFocused"])DataGrid.prototype[name]=function(...args){return loadExportPart().then(()=>EXPORT_IMPL[name].apply(this,args));};

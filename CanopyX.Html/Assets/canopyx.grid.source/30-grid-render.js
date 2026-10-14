@@ -5,7 +5,7 @@
       const minimum = style.getPropertyValue("--cx-min-h"), priority = style.getPropertyPriority("--cx-min-h"),rowHeight=style.getPropertyValue("--cx-row-h"),rowPriority=style.getPropertyPriority("--cx-row-h"),density=host.getAttribute("data-cx-density"),maximum=style.maxHeight;
       this.restoreHeight = () => {style.maxHeight=maximum;style.setProperty("--cx-min-h",minimum,priority);style.setProperty("--cx-row-h",rowHeight,rowPriority);if(density===null)host.removeAttribute("data-cx-density");else host.setAttribute("data-cx-density",density);};
       style.removeProperty("--cx-min-h");
-      host.classList.add("cx-host", "cx-data-grid");
+      host.classList.add("cx-host", "cx-data-grid", "cx-chrome");
       host.classList.toggle("cx-row-accents", !!this.view.rowAccents);
       host.setAttribute("data-cx-density", this.view.density || "default");
       if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
