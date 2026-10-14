@@ -1,7 +1,7 @@
   // ---------- export part: the Export menu ----------
   // One menu for ordinary and reporting grids and trees: the scope, built-in CSV, the format providers and copy (where the
   // view copies), with shared progress, cancellation and error status. A reporting print action in the more menu runs through
-  // the same controls. The export part makes it DataGrid's renderGridExport; the tree tools part, which includes this part, TreeGrid's.
+  // the same controls. The export part makes it DataGrid's renderGridExport, and TreeGrid's when a tree installs it.
   Object.assign(EXPORT_IMPL, {
     exportFromMenu(action) {
       const { details, panel } = this.exportControl;

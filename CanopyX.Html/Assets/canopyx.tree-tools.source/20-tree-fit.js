@@ -96,13 +96,18 @@
       if (this.fitRows !== this.rows || this.fitKey !== key) {
         this.fitRows = this.rows; this.fitKey = key; this.measureTreeColumns();
       }
-      this.fitHide(TREE_FIT.visibleColumns.call(this), width, this.host.clientWidth <= 640);
+      const shown = TREE_FIT.visibleColumns.call(this), phone = this.host.clientWidth <= 640, identity = this.columns[0];
+      // On phones the tree column also holds the "+N" button of the hidden fields (48-tree-details.js): its width is reserved
+      // beside the column's content, and the columns are hidden again so it fits, as on a flat grid.
+      identity.reserve = 0; this.fitHide(shown, width, phone);
+      const reserve = () => { this.fitContext.font = "700 12.5px" + this.fitFamily; identity.reserve = Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width) + 8; };
+      if (phone && this.fitContext && this.hiddenFieldCount()) { reserve(); this.fitHide(shown, width, phone); reserve(); }
     },
 
     measureTreeColumns() {
       const context = this.fitContext ||= document.createElement("canvas").getContext("2d");
       if (!context) return;
-      const style = getComputedStyle(this.grid), family = " " + style.fontFamily, head = this.headCells?.[0] && getComputedStyle(this.headCells[0]);
+      const style = getComputedStyle(this.grid), family = this.fitFamily = " " + style.fontFamily, head = this.headCells?.[0] && getComputedStyle(this.headCells[0]);
       const font = style.fontWeight + " " + style.fontSize + family, headFont = (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family;
       const badgeFont = "400 " + parseFloat(style.fontSize) * 0.8 + "px" + family, pad = parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 8;
       const text = (value, using = font) => { context.font = using; return context.measureText(String(value).slice(0, 512)).width; };
@@ -114,17 +119,18 @@
       const check = this.checkMode ? 22 : 0;
       this.columns.forEach((column, index) => {
         const headNeed = Math.ceil(text(column.title, headFont) + 2 * pad + (column.sortable ? 22 : 8));
-        let values = 0;
+        let values = 0, indent = 0;
         if (column.autoSize !== "none" && column.autoSize !== "header") for (const w of rows) {
           const cell = this.cellOf(w.h, column, index), object = isCellObject(cell);
           let need = text(cellText(cell, column, this.fmt)) + badges(index === 0 ? w.h.badges : null) + badges(object ? cell.badges : null);
           // The indent, the 18-pixel expander and the cell's two 2-pixel gaps; an icon is 16 pixels with 4 of margin and a gap.
-          if (index === 0) need += (w.level - 1) * INDENT + 22 + check + (w.h.icon && this.iconTemplates.has(w.h.icon) ? 22 : 0);
-          if (need > values) values = need;
+          const lead = index ? 0 : (w.level - 1) * INDENT + 22 + check + (w.h.icon && this.iconTemplates.has(w.h.icon) ? 22 : 0);
+          if (lead > indent) indent = lead;
+          if (need + lead > values) values = need + lead;
         }
         // The tree column is measured whole (its maximum width bounds it); other columns stop at 420 pixels.
         const cap = index === 0 ? column.maxW : columnWidth(column, 420);
-        column.headNeed = Math.min(headNeed, cap);
+        column.headNeed = Math.min(headNeed, cap); column.indentNeed = indent + 2 * pad;
         column.need = Math.max(column.minW, column.autoSize === "none" ? column.pref || column.width : Math.min(cap, Math.max(headNeed, Math.ceil(values + 2 * pad + 2))));
       });
     },

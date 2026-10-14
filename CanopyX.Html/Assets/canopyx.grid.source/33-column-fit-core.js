@@ -80,13 +80,20 @@
       grow(identity, Infinity); grow(widest, Infinity);
       return target;
     },
-    // Hides optional columns (and normal ones on phones) until the floors fit. Essential, pinned and sized columns stay.
+    // Hides optional columns (and normal ones on phones) until the floors fit. Essential, pinned and sized columns stay,
+    // except on phones: there the identity column (a tree's tree column) keeps its indent and about two dozen characters
+    // (indentNeed, set by trees, plus twice fitCh) beside its "+N" button, and pinned columns that are not essential hide,
+    // after the others and in the same order, rather than cut it short.
     fitHide(shown, width, phone) {
       let total = 0, remaining = shown.length;
+      const order = (a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a), identity = phone && shown.find(column => column.identity);
+      const hide = (column, pinned) => !column.sized && !column.alwaysVisible && (column.pin === "none") !== pinned && !(phone && column.identity) && gridLevel(column) > !phone;
       for (const column of this.columns) column.fitHidden = false;
       for (const column of shown) total += this.fitSize(column, 1);
-      for (const column of shown.filter(column => column.pin === "none" && !column.sized && !column.alwaysVisible &&
-          gridLevel(column) > !phone).sort((a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a)))
+      for (const column of shown.filter(column => hide(column, false)).sort(order))
         if (total > width && remaining > 1) { column.fitHidden = true; total -= this.fitSize(column, 1); remaining--; }
+      if (identity && !identity.fixed && !identity.sized) total += Math.min(identity.need ?? identity.width, (identity.indentNeed || 0) + 2 * (this.fitCh || 88)) + (identity.reserve || 0) - this.fitSize(identity, 1);
+      if (identity) for (const column of shown.filter(column => hide(column, true)).sort(order))
+        if (total > width) { column.fitHidden = true; total -= this.fitSize(column, 1); }
     }
   };

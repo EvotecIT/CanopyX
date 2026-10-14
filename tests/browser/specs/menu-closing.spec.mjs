@@ -71,7 +71,7 @@ test("opening a CanopyX menu closes the others and announces itself to the host"
   // A menu opened without moving focus (a host's own control can do this) still closes the other view's menu.
   await host(page, 1).locator(".cx-grid-export").evaluate(menu => { menu.open = true; });
   await expect.poll(() => openMenus(page)).toEqual(["second:cx-grid-export"]);
-  expect(await page.evaluate(() => window.menuEvents)).toEqual(["cx-columns cx-grid-columns", "cx-columns cx-grid-export"]);
+  await expect.poll(() => page.evaluate(() => window.menuEvents)).toEqual(["cx-columns cx-grid-columns", "cx-columns cx-grid-export"]);
   // The column menu (a popover) closes the toolbar menus of its own view and of the others too.
   await host(page, 0).locator('[data-cx-column-menu="state"]').focus();
   await page.keyboard.press("ArrowDown");

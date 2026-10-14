@@ -97,8 +97,9 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void FilterEditorStyle_MatchesItsSource() {
-        var source = Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "canopyx.css"))).TrimEnd('\n') + "\n" +
-            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "columns.css"));
+        // The editor's own rules, the Columns menu and record drawer styles it shares with the tree tools part, then the overlay base.
+        var source = string.Join("\n", new[] { "canopyx.css", "columns.css", "drawer.css", "overlay.css" }.Select(name =>
+            Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", name))).TrimEnd('\n')));
         Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.FilterEditorStyle));
     }
 
@@ -186,8 +187,8 @@ public sealed class RuntimeAssetTests {
 
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
-            // The runtime and its stylesheet, and the tree tools part every tree loads beside them.
-            Assert.Equal(4, Directory.GetFiles(directory).Length);
+            // The runtime and its stylesheet, the tree tools part every tree loads beside them, and the export part.
+            Assert.Equal(5, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

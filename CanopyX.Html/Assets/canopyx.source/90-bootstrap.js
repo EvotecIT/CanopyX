@@ -88,7 +88,7 @@
       }
     }, grid.interactionApi && grid.interactionApi());
     // Exports, named views and column order come with the tree tools part: they work once ready has resolved.
-    for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned"])
+    for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned", "openDetails"])
       api[name] = (...args) => { if (!grid[name]) throw new Error("CanopyX: " + name + " needs the tree tools part."); return grid[name](...args); };
     Object.freeze(api);
     activeGrids.set(host, api);

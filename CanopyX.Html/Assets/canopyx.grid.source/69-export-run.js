@@ -1,6 +1,6 @@
   // ---------- export runs shared by flat grids and trees ----------
-  // A capture is taken at invocation; the writer runs once the export part is ready. Grid runtimes load that part on first
-  // use (loadExportPart); the tree tools part includes the writers, so there it is ready at once.
+  // A capture is taken at invocation; the writer runs once the export part is ready. Flat grids and trees load that part on
+  // first use (loadExportPart, 72-grid-export-controls.js and 50-tree-export.js).
   function gridOperationActive(grid, signal) {
     if (grid.destroyed || signal?.aborted) throw new DOMException("Grid cancelled.", "AbortError");
   }

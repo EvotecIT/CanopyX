@@ -30,8 +30,11 @@ public sealed class ExportPartAssetsTests {
             Assert.Contains(signature.Replace(" ", string.Empty), CanopyHtmlAssets.ExportScript.Replace(" ", string.Empty));
             Assert.DoesNotContain(signature.Replace(" ", string.Empty), CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid).Replace(" ", string.Empty));
         }
-        // Tree captures and writers ship in the tree tools part, which every tree runtime loads, not in an entry point.
+        // Tree captures ship in the tree tools part and their writers in the export part, which trees load on first use.
         Assert.Contains("treeRows", CanopyHtmlAssets.TreeToolsScript);
+        Assert.Contains("treeRows", CanopyHtmlAssets.ExportScript);
+        Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.TreeToolsScript);
+        Assert.DoesNotContain("function saveExport", CanopyHtmlAssets.TreeToolsScript);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid })
             Assert.DoesNotContain("treeRows", CanopyHtmlAssets.GetScript(runtime));
     }
@@ -39,7 +42,7 @@ public sealed class ExportPartAssetsTests {
     [Theory]
     [InlineData(CanopyAssetNaming.Plain)]
     [InlineData(CanopyAssetNaming.ContentHash)]
-    public void GridAssetWriters_WriteTheExportPartBesideTheRuntime(CanopyAssetNaming naming) {
+    public void AssetWriters_WriteTheExportPartBesideEveryRuntime(CanopyAssetNaming naming) {
         var directory = Path.Combine(Path.GetTempPath(), "canopyx-export-part-" + Guid.NewGuid().ToString("N"));
         try {
             var files = CanopyHtmlAssets.WriteTo(directory, naming, CanopyRuntime.ReportingGrid);
@@ -48,7 +51,7 @@ public sealed class ExportPartAssetsTests {
             Assert.Equal(CanopyHtmlAssets.ExportScript, File.ReadAllText(Path.Combine(directory, name)));
             var tree = Path.Combine(directory, "tree");
             CanopyHtmlAssets.WriteTo(tree, naming, CanopyRuntime.InteractiveTreeGrid);
-            Assert.Empty(Directory.GetFiles(tree, "canopyx-export*"));
+            Assert.Equal(CanopyHtmlAssets.ExportScript, File.ReadAllText(Path.Combine(tree, name)));
         } finally { Directory.Delete(directory, true); }
     }
 

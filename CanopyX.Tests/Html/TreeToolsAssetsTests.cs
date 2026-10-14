@@ -23,6 +23,12 @@ public sealed class TreeToolsAssetsTests {
         // The shared chrome in this copy targets tree hosts only, so a flat grid's own rules keep their order on a mixed page.
         Assert.DoesNotContain(".cx-chrome", CanopyHtmlAssets.TreeToolsStyle);
         Assert.Contains(".cx-tree-tools", CanopyHtmlAssets.TreeToolsStyle);
+        // The record drawer rules it shares with the editor part come before the flat grid's overlay rules, as in the editor's
+        // stylesheet, so a flat grid's drawer keeps the overlay's font and height when the tree tools load after the editor.
+        foreach (var style in new[] { CanopyHtmlAssets.TreeToolsStyle, CanopyHtmlAssets.FilterEditorStyle }) {
+            Assert.True(style.IndexOf("body .cx-host.cx-drawer{", StringComparison.Ordinal) >= 0, "The record drawer rules are missing.");
+            Assert.True(style.IndexOf("body .cx-host.cx-grid-overlay{", StringComparison.Ordinal) > style.IndexOf("body .cx-host.cx-drawer{", StringComparison.Ordinal));
+        }
     }
 
     [Fact]
@@ -52,14 +58,15 @@ public sealed class TreeToolsAssetsTests {
         Assert.Single(Regex.Matches(page, "application/x-canopyx-tree-tools-style"));
         Assert.Contains("x-canopyx-tree-tools", fragments[0]);
         Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("x-canopyx-tree-tools", fragment));
-        Assert.Equal(new[] { "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion }, document.EmbeddedParts);
+        Assert.Equal(new[] { "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion }, document.EmbeddedParts);
+        Assert.Single(Regex.Matches(page, "application/x-canopyx-export"));
 
-        // Flat grids share the filter editor and export parts the same way, and a tree on a grid runtime reuses the export part.
+        // Flat grids share the filter editor and export parts the same way: the trees above already carry the export part.
         var grid = new CanopyDataGridView("records", "Records");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         var first = grid.ToHtmlFragment(options);
         Assert.Contains("application/x-canopyx-filter-editor", first);
-        Assert.Contains("application/x-canopyx-export", first);
+        Assert.DoesNotContain("application/x-canopyx-export", first);
         Assert.DoesNotContain("application/x-canopyx-", grid.ToHtmlFragment(options).Replace("application/json", ""));
         var tree = new CanopyTreeView("mixed", "Mixed");
         tree.Columns.Add(new CanopyColumn("name", "Name"));

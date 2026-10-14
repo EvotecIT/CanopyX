@@ -1,7 +1,7 @@
   // ---------- tree tools: the flat grid's toolbar on a tree ----------
-  // The tree runtimes load this part for every tree; it holds the flat grid's toolbar menus, Columns menu, column fitting
-  // and Export menu (the shared source parts listed in Build/tree-tools-parts.json) and these tree parts, which mix them
-  // into TreeGrid. The toolbar reads, left to right: search, the filter switches, Columns, Views, then Export and the
+  // The tree runtimes load this part for every tree; it holds the flat grid's toolbar menus, Columns menu and column fitting
+  // (the shared source parts listed in Build/tree-tools-parts.json) and these tree parts, which mix them into TreeGrid; the
+  // Export menu body comes with the export part (50-tree-export.js). The toolbar reads, left to right: search, the filter switches, Columns, Views, then Export and the
   // more menu at the right edge, as on a flat grid.
 
   // The menus' texts are labels of every tree runtime (canopyx.source/02-tree-tool-labels.js on the tree runtimes, the flat
@@ -42,6 +42,10 @@
         overflow.panel.appendChild(gridButton(action.label, () => Promise.resolve().then(() =>
           action.run({ nodes: this.treeSelection(), signal: this.dataLifetime.signal })).catch(error => this.emit("error", { error }))));
       }
+      // Record details opens the focused (or else a selected) row's drawer (48-tree-details.js), the keyboard's way to the
+      // "+N" fields on phones; a tree with one column has no other fields to show.
+      if (this.columns.length > 1) overflow.panel.appendChild(Object.assign(gridButton(this.labels.gridDetails, () =>
+        this.openDetails((this.focused || this.rows.find(w => this.selected.has(w)))?.key).catch(error => this.emit("error", { error }))), { className: "cx-button cx-grid-details" }));
       overflow.panel.appendChild(Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
     },
 
@@ -66,10 +70,12 @@
       if (row) { row.querySelector(".cx-grid-column-handle").hidden = true; row.querySelector("input").disabled = true; }
     },
 
-    // At 640 pixels and below the toolbar takes the phone layout: Views and Export move into the more menu.
+    // At 640 pixels and below the toolbar takes the phone layout: Views and Export move into the more menu. Rows are painted
+    // again only when the "+N" button of the hidden fields (48-tree-details.js) comes or goes, so host cells keep their state.
     syncPhone() {
       const phone = this.host.clientWidth <= 640;
       if (phone === this.phone) return;
+      if (this.hiddenFieldCount()) this.version++;
       this.phone = phone; this.host.classList.toggle("cx-phone", phone); this.placeMenus(phone);
     }
   });

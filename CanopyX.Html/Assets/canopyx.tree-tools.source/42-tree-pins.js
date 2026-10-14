@@ -1,8 +1,9 @@
   // ---------- tree tools: pinned columns besides the tree column ----------
   // The tree column pins left (the cx-pin-tree class). Like a flat grid, any other column pins left or right (pinned in the
   // view, setColumnPinned, or remembered state): left pins follow the tree column and right pins stay at the right edge while
-  // the other columns scroll. Pinned columns never hide for width (33-column-fit-core.js); when they would leave the scrolling
-  // columns less than 128 pixels, the innermost of them scroll too.
+  // the other columns scroll. Pinned columns hide for width only on phones, after the others, to keep the tree column
+  // readable (33-column-fit-core.js); when they would leave the scrolling columns less than 128 pixels, the innermost of
+  // them scroll too.
   const TREE_PINS = {};
   for (const name of ["applyWidths", "render", "setTreeColumnPinned"]) TREE_PINS[name] = TreeGrid.prototype[name];
 

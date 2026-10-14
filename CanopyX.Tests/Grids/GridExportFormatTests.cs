@@ -58,19 +58,18 @@ public sealed class GridExportFormatTests {
     }
 
     [Fact]
-    public void TreePagesOnAGridRuntime_CarryTheExportPartInline() {
-        // A translated tree stays on the tree runtimes (its interaction texts choose the interactive one); a grid runtime is
-        // the host's choice, and then the tree's exports run through the export part.
+    public void TreePages_CarryTheExportPartInline() {
+        // Every tree runtime loads the export part for a tree's Export menu and exports, so single-file tree pages carry it.
         var tree = new CanopyTreeView("files", "Files") { Labels = CanopyLabels.Polish() };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(tree));
-        Assert.DoesNotContain("application/x-canopyx-export", tree.ToHtmlPage());
+        Assert.Contains("application/x-canopyx-export", tree.ToHtmlPage());
         Assert.Contains("application/x-canopyx-export", tree.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.DataGrid }));
         Assert.Contains("application/x-canopyx-export", tree.ToHtmlFragment(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
         var plain = new CanopyTreeView("plain", "Plain");
         plain.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtmlPage());
-        Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.InteractiveTreeGrid }));
+        Assert.Contains("application/x-canopyx-export", plain.ToHtmlPage());
+        Assert.Contains("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.InteractiveTreeGrid }));
         Assert.Contains("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid }));
         Assert.DoesNotContain("application/x-canopyx-export", plain.ToHtmlPage(new CanopyHtmlOptions { Runtime = CanopyRuntime.ReportingGrid, AssetMode = CanopyAssetMode.External }));
     }

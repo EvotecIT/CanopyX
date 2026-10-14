@@ -1,5 +1,5 @@
   // ---------- export part: format writers and tree records ----------
-  // Grid runtimes ship this part in the lazy export file; the interactive tree runtime and the tree tools part include it.
+  // This part ships in the lazy export file, which flat grids and trees load on first use.
   function saveExport(blob, name) {
     const url = URL.createObjectURL(blob), link = h("a"); link.href = url; link.download = name;
     document.body.appendChild(link); link.click(); link.remove();

@@ -78,8 +78,9 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
     await nextFrames(page);
     let result = await layout(page);
     const ids = result.columns.map(column => column.id);
-    // Pinned columns sit next to their edge: the tree column, then the owner; the status at the right.
-    expect(ids[0]).toBe("name"); expect(ids[1]).toBe("owner"); expect(ids.at(-1)).toBe("status");
+    // Pinned columns sit next to their edge: the tree column, then the owner (on desktops); the status at the right.
+    expect(ids[0]).toBe("name"); expect(ids.at(-1)).toBe("status");
+    if (width === 1440) expect(ids[1]).toBe("owner");
     // The rows reach the right edge: rounding the fitted widths down leaves no band after the last column.
     expect(result.head).toBeGreaterThanOrEqual(result.client);
     if (width === 1440) {
@@ -97,11 +98,27 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
         expect(Math.abs(result.columns.at(-1).right)).toBeLessThanOrEqual(1);
       }
     } else {
-      // On a phone the optional columns hide first, and the pinned ones stay.
-      expect(ids).not.toContain("version");
-      expect(ids).not.toContain("reviewer");
-      expect(ids).toContain("status");
+      // On a phone the tree column keeps its room: the other columns hide, the pinned owner too, and the essential status
+      // stays. The tree column holds the "+N" button of the hidden fields, which opens the row's record drawer.
+      expect(ids).toEqual(["name", "status"]);
+      const name = result.columns[0];
+      expect(result.columns[1].left - name.left).toBeGreaterThanOrEqual(200);
+      const top = page.locator('.cx-row[data-cx-id="team-0"] .cx-cell').first();
+      await expect(top.locator(".cx-text")).toHaveText("Finance documents");
+      expect(await top.locator(".cx-text").evaluate(text => text.scrollWidth <= text.clientWidth)).toBe(true);
+      const more = top.locator(".cx-hidden-fields");
+      await expect(more).toHaveText("+7");
       await capture(page, "wide-tree-" + theme + "-390");
+      await more.click();
+      const drawer = page.locator("dialog.cx-drawer");
+      await expect(drawer.locator("h4")).toHaveText("Finance documents");
+      await expect(drawer.locator("dt").first()).toHaveText("Owner");
+      await expect(drawer.locator("dd").first()).toHaveText("Finance team");
+      await capture(page, "wide-tree-drawer-" + theme + "-390");
+      await page.keyboard.press("ArrowDown");
+      await expect(drawer.locator("h4")).toHaveText("Policies 2024");
+      await page.keyboard.press("Escape");
+      await expect(drawer).toHaveCount(0);
     }
   });
 }
@@ -238,5 +255,82 @@ for (const language of ["en", "pl"]) for (const theme of ["light", "dark"]) for 
         await context.close();
       }
     }
+  });
+}
+// A deep tree on a phone: the tree column keeps every level's indent and its labels, and the "+N" button opens the rest.
+for (const theme of ["light", "dark"]) {
+  test("a deep tree on a phone keeps its tree column readable and offers its hidden fields (" + theme + ")", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    page.errors = []; page.on("pageerror", error => page.errors.push(error.message));
+    await openExample(page, theme === "dark" ? "tree-parity-dark.html" : "tree-parity.html");
+    const tree = page.locator("[data-canopyx-host]").nth(1);
+    await tree.scrollIntoViewIfNeeded();
+    await nextFrames(page);
+    // Storage, then nine folders down: every label shows in full beside its indent.
+    const labels = await tree.locator(".cx-row[data-cx-id] .cx-cell.cx-tree").evaluateAll(cells => cells.slice(0, 10).map(cell => {
+      const text = cell.querySelector(".cx-text");
+      return { level: Number(cell.parentNode.getAttribute("aria-level")), full: text.scrollWidth <= text.clientWidth, hidden: cell.querySelector(".cx-hidden-fields")?.textContent };
+    }));
+    expect(labels.length).toBe(10);
+    expect(Math.max(...labels.map(item => item.level))).toBeGreaterThanOrEqual(4);
+    expect(labels.every(item => item.full && item.hidden === "+3")).toBe(true);
+    await tree.screenshot({ path: process.env.CANOPYX_EVIDENCE ? path.join(process.env.CANOPYX_EVIDENCE, "deep-tree-" + theme + "-390.png") : undefined });
+    // Record details in the more menu opens the focused row's drawer, for keyboard readers.
+    await tree.locator('.cx-row[data-cx-id="fs-2"]').click();
+    await tree.locator(".cx-grid-overflow > summary").click();
+    await tree.locator(".cx-grid-details").click();
+    const drawer = page.locator("dialog.cx-drawer");
+    await expect(drawer.locator("h4")).toHaveText("Projects");
+    await expect(drawer.locator("dt")).toHaveText(["Size", "Modified", "Type"]);
+    await page.keyboard.press("Escape");
+    await expect(drawer).toHaveCount(0);
+    expect(page.errors).toEqual([]);
+  });
+}
+test("a tree loads the export part on first use and offers its Export menu", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 });
+  page.errors = []; page.on("pageerror", error => page.errors.push(error.message));
+  await openExample(page, "wide-tree.html");
+  // The tree tools part is installed; the export part is not, until the menu opens.
+  expect(await page.evaluate(() => [typeof window.CanopyXTreeTools, typeof window.CanopyXExport])).toEqual(["object", "undefined"]);
+  await page.locator(".cx-grid-export > summary").click();
+  await expect(page.locator(".cx-grid-export").getByRole("button", { name: "Download CSV" })).toBeVisible();
+  expect(await page.evaluate(() => typeof window.CanopyXExport)).toBe("object");
+  expect(page.errors).toEqual([]);
+});
+// Auto height on trees, as on flat grids: a short tree is as tall as its toolbar, header and rows inside the host's height
+// cap, and follows expanding, collapsing and a toolbar that wraps differently at another width.
+for (const width of [1440, 390]) {
+  test("a short tree follows its rows through expanding, collapsing and resizing (" + width + ")", async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openExample(page, "tree-parity.html");
+    const host = page.locator("[data-canopyx-host]").nth(2);
+    await host.scrollIntoViewIfNeeded();
+    // The gap between the host's height and its content: toolbar, header and rows (and the host's borders and padding).
+    const gap = () => host.evaluate(element => {
+      const grid = element.querySelector(".cx-grid"), rows = [...element.querySelectorAll(".cx-row[data-cx-id]")];
+      const bottom = Math.max(...rows.map(row => row.getBoundingClientRect().bottom), grid.querySelector(".cx-head").getBoundingClientRect().bottom);
+      return { gap: Math.round(element.getBoundingClientRect().bottom - bottom), height: element.offsetHeight, rows: rows.length };
+    });
+    const fits = () => expect.poll(async () => { const { gap: value } = await gap(); return value >= 0 && value <= 16 ? "fits" : value; }).toBe("fits");
+    await fits();
+    const collapsed = (await gap()).height;
+    // Administrators opens two rows: the tree grows by them and stays fitted.
+    await host.locator('.cx-row[data-cx-id="g-admins"] .cx-exp').click();
+    await fits();
+    expect((await gap()).height).toBeGreaterThan(collapsed);
+    // Everyone opens 497 rows: the tree reaches the host's cap (420 pixels) and scrolls inside it.
+    await host.locator('.cx-row[data-cx-id="g-everyone"] .cx-exp').click();
+    await expect.poll(async () => (await gap()).height).toBe(420);
+    await host.locator('.cx-row[data-cx-id="g-everyone"] .cx-exp').click();
+    await host.locator('.cx-row[data-cx-id="g-admins"] .cx-exp').click();
+    await expect.poll(async () => (await gap()).height).toBe(collapsed);
+    await fits();
+    // Across the phone breakpoint the toolbar wraps differently; the height is measured again both ways.
+    await page.setViewportSize({ width: width === 1440 ? 390 : 1440, height: 900 });
+    await fits();
+    await page.setViewportSize({ width, height: 900 });
+    await expect.poll(async () => (await gap()).height).toBe(collapsed);
+    await fits();
   });
 }

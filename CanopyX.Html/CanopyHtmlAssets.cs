@@ -117,10 +117,11 @@ public static partial class CanopyHtmlAssets {
             WriteOnce(style, FileEncoding.GetBytes(styleText));
         }
 
-        // Every entry point mounts trees, which load the tree tools part; the grid entry points also load the editor, export and
-        // history presenter parts.
+        // Every entry point mounts trees, which load the tree tools part and, for their Export menu and exports, the export part;
+        // the grid entry points also load the editor and history presenter parts.
         WriteTreeTools(directory, naming);
-        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) { WriteFilterEditor(directory, naming); WriteExportPart(directory, naming); WriteHistoryPart(directory, naming); }
+        WriteExportPart(directory, naming);
+        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) { WriteFilterEditor(directory, naming); WriteHistoryPart(directory, naming); }
         return new[] { script, style };
     }
 
