@@ -55,6 +55,10 @@
       if (width && total < width) target = this.fitSpare(cols.filter(column => !column.fixed && !column.sized), width - total);
       total = 0;
       for (const column of cols) total += column.renderWidth = Math.floor(column.renderWidth);
+      // Rounding down leaves a pixel per column, and the growing columns may have reached their maximum: the last text column
+      // with room takes the rest, so the rows end at the edge (graphic and number columns keep their width).
+      if (width > total && !(target?.renderWidth < target?.maxW)) for (const column of cols)
+        if (!column.fixed && !column.sized && column.renderWidth < column.maxW && gridTextual(column)) target = column;
       if (target) target.renderWidth += Math.min(width - total, target.maxW - target.renderWidth);
       return cols.map(column => column.renderWidth);
     },

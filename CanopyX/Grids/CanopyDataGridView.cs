@@ -255,7 +255,7 @@ public sealed partial class CanopyDataGridView {
             column.Presenter?.Validate(column, Columns);
             if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
             if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
-            column.ValidateLayout();
+            column.ValidateLayout(Columns);
             if (column.Ordering != null && (Reporting == null || !column.Sortable || column.Kind != CanopyColumnKind.Text))
                 throw new InvalidOperationException("Ordering requires reporting capabilities and a sortable text column.");
             if (column.RowHeader && ++rowHeaders > 1) throw new InvalidOperationException("A grid has at most one row header column.");

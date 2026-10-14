@@ -31,7 +31,7 @@
       this.buildGridStatus();
       this.buildHeader();
       grid.addEventListener("scroll", () => { this.scheduleRender(); this.syncPinnedShadows(); this.stateChanged(); }, { passive: true, signal });
-      grid.addEventListener("click", event => this.onClick(event), { signal });
+      grid.addEventListener("click", event => this.onClick(event), { signal }); grid.addEventListener("pointerover", event => this.cellTip(event), { signal });
       grid.addEventListener("dblclick", event => {
         const element = event.target.closest(".cx-row"), row = element && element._w;
         if (row && !row.status && !event.target.closest("a,button,input,select,textarea,[contenteditable]") && !this.clickAction(element))

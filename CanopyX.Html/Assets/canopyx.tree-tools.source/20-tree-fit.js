@@ -11,13 +11,13 @@
   const TREE_FIT_ROWS = 2000;
 
   Object.assign(TreeGrid.prototype, COLUMN_FIT, {
-    // The layout fields flat-grid validation checks; only the tree column may unpin (pinned: null) or pin left.
+    // The layout fields flat-grid validation checks; the tree column may unpin (pinned: null) or pin left, the others pin left or right.
     checkTreeLayout() {
       for (const [index, column] of this.view.columns.entries()) {
         if (column.priority !== undefined && !gridPriority(column.priority) || column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) ||
             [column.fixed, column.alwaysVisible, column.autoWidth].some(value => value !== undefined && typeof value !== "boolean") ||
             column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
-            column.pinned !== undefined && (index || column.pinned !== null && column.pinned !== "left")) throw new Error("CanopyX: invalid tree column layout.");
+            column.pinned !== undefined && (index ? !["left", "right"].includes(column.pinned) : column.pinned !== null && column.pinned !== "left")) throw new Error("CanopyX: invalid tree column layout.");
       }
     },
 
@@ -31,8 +31,10 @@
         // A state restored before this part installed keeps its widths as the reader's.
         column.declared = columnWidth(column, declared.width ?? 160);
         if (this.restoredPin && column.width !== column.declared) column.sized = true;
-        column.pin = column === identity ? "left" : "none";
+        // A remembered state keeps its pins; otherwise the view declares them (42-tree-pins.js).
+        column.pin = column === identity ? "left" : this.restoredPin && column.pin || declared.pinned || "none";
       }
+      this.groupPins();
       // The tree column pins left unless the view unpins it (pinned: null) or the state chose otherwise.
       if (identity.pinned !== null && !this.restoredPin) this.host.classList.add("cx-pin-tree");
       this.fitReady = true; this.fitRows = null;
@@ -142,12 +144,15 @@
     // or restored one, which fitting treats as preferred; the width on screen is not saved, so snapshots do not churn.
     getState() {
       const state = TREE_FIT.getState.call(this);
-      state.columns.forEach((saved, index) => { if (this.columns[index].sized) saved.sized = true; });
+      state.columns.forEach((saved, index) => { const column = this.columns[index]; if (column.sized) saved.sized = true; if (index) saved.pin = column.pin; });
       return state;
     },
     readState(state) {
       const result = TREE_FIT.readState.call(this, state);
-      if (result && result.columns) result.columns.forEach((column, index) => { if (state.columns[index].sized === true) column.sized = true; });
+      if (result && result.columns) result.columns.forEach((column, index) => {
+        if (state.columns[index].sized === true) column.sized = true;
+        if (["none", "left", "right"].includes(state.columns[index].pin)) column.pin = state.columns[index].pin;
+      });
       return result;
     },
     applyStatePresentation(state) {
@@ -156,7 +161,11 @@
         const order = state.columns.map(column => column.id), rank = column => { const at = order.indexOf(column.id); return at < 0 ? order.length : at; };
         this.columns = [this.columns[0], ...this.columns.slice(1).sort((a, b) => rank(a) - rank(b))];
         // A width a host restores without sized is the reader's width when it differs from the declared one.
-        for (const saved of state.columns) { const column = this.columns.find(item => item.id === saved.id); if (column) column.sized = !!saved.sized || column.declared !== undefined && saved.width !== column.declared; }
+        for (const saved of state.columns) {
+          const column = this.columns.find(item => item.id === saved.id);
+          if (column) { column.sized = !!saved.sized || column.declared !== undefined && saved.width !== column.declared; if (column !== this.columns[0]) column.pin = saved.pin ?? column.pin; }
+        }
+        this.groupPins();
         this.restoredPin = true;
       }
       return TREE_FIT.applyStatePresentation.call(this, state);

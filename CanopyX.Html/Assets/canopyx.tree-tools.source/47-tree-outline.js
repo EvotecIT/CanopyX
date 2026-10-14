@@ -1,15 +1,12 @@
   // ---------- tree tools: the print outline and toOutline ----------
   // An indented table of the open rows, drawn with the cells' own painters or the host's renderers, like the tree's exports
   // a capture of what the reader sees. The core's toOutline and its print handler call it once this part is installed.
-  function escapeHtml(value) {
-    return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
-  }
-
   Object.assign(TreeGrid.prototype, {
     outlineMarkup() {
       const cols = this.visibleColumns();
       const out = ["<table class=\"cx-outline-table\"><thead><tr>"];
-      cols.forEach((column) => out.push("<th>" + escapeHtml(column.title) + "</th>"));
+      // Header titles are text: the element encodes them.
+      cols.forEach((column) => { const th = h("th"); setText(th, column.title); out.push(th.outerHTML); });
       out.push("</tr></thead><tbody>");
       this.rows.forEach((w) => {
         if (w.status) {

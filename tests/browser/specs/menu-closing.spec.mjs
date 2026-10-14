@@ -123,7 +123,7 @@ test("tree menus and the actions menu close on focus outside, another menu and t
   // The actions menu opens from the keyboard (the API Shift+F10 uses) and closes when focus leaves it.
   await host(page, 0).evaluate(element => element.canopyx.openActions("a"));
   await expect(page.locator(".cx-interaction-panel[role=menu]")).toBeVisible();
-  expect(await page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-interaction-panel");
+  await expect.poll(() => page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-interaction-panel");
   await page.locator("#host-popover").focus();
   await expect(page.locator(".cx-interaction-panel")).toHaveCount(0);
   // A grid menu opening closes the actions menu, and so does the host event.
@@ -145,7 +145,8 @@ test("phone more-menu entries and the reporting header selection menu follow the
   // The header selection menu announces itself and closes when focus leaves it.
   await host(page, 0).locator(".cx-header-check").click();
   await expect(host(page, 0).locator(".cx-header-selection")).toHaveAttribute("open", "");
-  expect(await page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-columns cx-header-selection");
+  // The toggle event that announces the menu follows the open attribute asynchronously.
+  await expect.poll(() => page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-columns cx-header-selection");
   await page.locator("#host-popover").focus();
   await expect(host(page, 0).locator(".cx-header-selection")).not.toHaveAttribute("open", "");
   // On a phone Views and Export sit inside the more menu: opening one closes the other and keeps the more menu open.

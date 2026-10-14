@@ -53,10 +53,11 @@ internal static class CanopyTreeViewValidator {
 
         for (var index = 0; index < view.Columns.Count; index++) {
             var column = view.Columns[index];
-            column.ValidateLayout();
+            column.ValidateLayout(view.Columns);
             if (column.RowHeader) throw new InvalidOperationException("View '" + view.Id + "' identifies rows by its tree column; RowHeader applies to flat grids.");
-            if (column.Pinned.HasValue && (index > 0 || column.Pinned == CanopyGridColumnPin.Right))
-                throw new InvalidOperationException("View '" + view.Id + "' can pin only its tree column, to the left; column '" + column.Id + "' cannot be pinned.");
+            // The tree column pins left or scrolls (None); the other columns pin left or right, as on a flat grid.
+            if (column.Pinned.HasValue && (index == 0 ? column.Pinned == CanopyGridColumnPin.Right : column.Pinned == CanopyGridColumnPin.None))
+                throw new InvalidOperationException("View '" + view.Id + "' pins its tree column left or lets it scroll, and its other columns left or right; column '" + column.Id + "' cannot take that pin.");
         }
 
         var formats = new HashSet<string>(StringComparer.Ordinal);

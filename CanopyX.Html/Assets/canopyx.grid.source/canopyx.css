@@ -28,6 +28,8 @@
 .cx-data-grid .cx-hcell.cx-kind-number > :is(.cx-grid-column-menu,.cx-grid-header-filter) { order:-1; }
 .cx-data-grid .cx-hcell.cx-kind-number > .cx-grid-column-menu { margin-right:auto; }
 .cx-data-grid .cx-hcell.cx-kind-number .cx-sort::after { order:-1; }
+/* Where the menu always shows (phones, touch), it follows the title, so a number header never reads as two cells. */
+.cx-data-grid.cx-phone .cx-hcell.cx-kind-number > :is(.cx-grid-column-menu,.cx-grid-header-filter) { order:0; margin-right:0; }
 .cx-data-grid .cx-grid-pager { flex:none;display:flex;align-items:center;gap:var(--cx-size-12px) var(--cx-size-20px);padding:var(--cx-size-8px) var(--cx-size-12px);border-top:var(--cx-size-1px) solid var(--cx-line);font-size:var(--cx-size-13d5px);color:var(--cx-muted); }
 .cx-data-grid .cx-grid-page-range { font-variant-numeric:tabular-nums; }
 .cx-data-grid .cx-grid-pager .cx-grid-field { flex:none;flex-direction:row;align-items:center;gap:var(--cx-size-8px);white-space:nowrap; }
@@ -118,7 +120,7 @@
 .cx-data-grid .cx-cell[data-cx-pin] { box-shadow:none; }
 .cx-data-grid.cx-scroll-left [data-cx-pin="left"].cx-pin-edge { box-shadow:var(--cx-size-4px) 0 var(--cx-size-8px) color-mix(in srgb,var(--cx-shadow-ink) 8%,transparent); }
 .cx-data-grid.cx-scroll-right [data-cx-pin="right"].cx-pin-edge { box-shadow:var(--cx-size-neg-4px) 0 var(--cx-size-8px) color-mix(in srgb,var(--cx-shadow-ink) 8%,transparent); }
-@media (any-pointer:coarse) { .cx-data-grid .cx-grid-column-menu { opacity:1; } }
+@media (any-pointer:coarse) { .cx-data-grid .cx-grid-column-menu { opacity:1; } .cx-data-grid .cx-hcell.cx-kind-number > :is(.cx-grid-column-menu,.cx-grid-header-filter) { order:0; margin-right:0; } }
 
 .cx-state { display:grid; justify-items:center; gap:var(--cx-size-6px); padding:var(--cx-size-44px) var(--cx-size-16px); text-align:center; }
 .cx-state h4 { margin:0; font-size:var(--cx-size-16px); }

@@ -69,6 +69,8 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-grid-column-actions{display:flex;justify-content:space-between;margin-top:var(--cx-size-4px);padding-top:var(--cx-size-4px);border-top:var(--cx-size-1px) solid var(--cx-line);}
 .cx-grid-column-actions .cx-button{border:0;color:var(--cx-accent-text);background:none;}
 .cx-tree-tools.cx-pin-tree .cx-row > .cx-cell.cx-tree:first-child{position:sticky;}
+.cx-tree-tools .cx-row > [data-cx-pin]{position:sticky;z-index:1;background:inherit;}
+.cx-tree-tools .cx-hcell[data-cx-pin]{position:sticky;z-index:2;background:var(--cx-head-bg);}
 .cx-tree-tools .cx-results{position:fixed;}
 .cx-tree-tools .cx-hcell[aria-sort="ascending"] .cx-sort::after{content:"↑";font-size:var(--cx-size-14px);color:var(--cx-accent);}
 .cx-tree-tools .cx-hcell[aria-sort="descending"] .cx-sort::after{content:"↓";font-size:var(--cx-size-14px);color:var(--cx-accent);}

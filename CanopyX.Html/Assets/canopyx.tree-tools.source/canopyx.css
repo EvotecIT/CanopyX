@@ -1,6 +1,9 @@
 /* Tree tools: what a tree adds to the shared Graphite chrome. */
 /* The pinned tree column keeps its sticky position over the chrome's positioned first cell. */
 .cx-chrome.cx-pin-tree .cx-row > .cx-cell.cx-tree:first-child { position:sticky; }
+/* Pinned columns besides the tree column (42-tree-pins.js) stay at their edge over the scrolling ones, on the row's background. */
+.cx-tree-tools .cx-row > [data-cx-pin] { position:sticky; z-index:1; background:inherit; }
+.cx-tree-tools .cx-hcell[data-cx-pin] { position:sticky; z-index:2; background:var(--cx-head-bg); }
 /* Search results leave the card, which clips its content: they are placed in viewport coordinates like the menus. */
 .cx-tree-tools .cx-results { position:fixed; }
 .cx-tree-tools .cx-hcell[aria-sort="ascending"] .cx-sort::after { content:"↑";font-size:var(--cx-size-14px);color:var(--cx-accent); }

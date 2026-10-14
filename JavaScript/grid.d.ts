@@ -60,6 +60,8 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   rowHeader?: boolean;
   /** Retain this column during responsive fitting; explicit user hiding still applies. */
   alwaysVisible?: boolean;
+  /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
+  tooltip?: string;
 };
 export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
@@ -149,6 +151,8 @@ export interface GridToolbarControls {
   export?: boolean;
   /** More menu: host actions, Record details and Print. */
   more?: boolean;
+  /** Each header's column menu button; switched off, column fitting keeps no room for it. */
+  columnMenus?: boolean;
   /** Result count shown with the query chips. */
   count?: boolean;
 }

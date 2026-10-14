@@ -93,13 +93,21 @@ public sealed class TreeToolbarTests {
     }
 
     [Fact]
-    public void PinsOtherThanTheTreeColumnOnTheLeft_AreRejected() {
+    public void TreePins_FollowTheTreeColumnAndTheEdges() {
+        // The tree column pins left or scrolls; it cannot pin right.
         var right = View();
         right.Columns[0].Pinned = CanopyGridColumnPin.Right;
         Assert.Throws<InvalidOperationException>(() => right.ToJson());
 
+        // Other columns pin left (after the tree column) or right, as on a flat grid; None is the default for them.
         var other = View();
+        other.Columns[1].Pinned = CanopyGridColumnPin.Right;
+        var json = other.ToJson();
+        ProtocolSchema.AssertValid(json, "tree pins");
+        Assert.Contains("\"pinned\":\"right\"", json);
         other.Columns[1].Pinned = CanopyGridColumnPin.Left;
+        Assert.Contains("\"pinned\":\"left\"", other.ToJson());
+        other.Columns[1].Pinned = CanopyGridColumnPin.None;
         Assert.Throws<InvalidOperationException>(() => other.ToJson());
     }
 

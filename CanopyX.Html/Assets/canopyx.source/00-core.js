@@ -307,9 +307,13 @@
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-  /** Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. */
+  /**
+   * Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. A cell's sort field (text or a
+   * number) replaces its value for sorting only; search and filters keep reading the value.
+   */
   function sortKey(cell, column) {
-    let value = cellValue(cell);
+    // Trees read a sort key that is text or a finite number and ignore any other (flat grids reject it).
+    let value = isCellObject(cell) && (typeof cell.sort === "string" || Number.isFinite(cell.sort)) ? cell.sort : cellValue(cell);
     if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
       value = cell.text;
     }

@@ -31,9 +31,12 @@
   };
   GRID_REPORTING.compare = view => {
     const compare = SUMMARY_COMPARE(view), grouping = view.reporting?.grouping;
+    // Groups are runs of equal values, so the grouping column orders by its values: its cells' sort keys are left out.
+    const plain = (row, column) => { const cell = row.cells[column.id]; return isCellObject(cell) && cell.sort != null ? { cells: { [column.id]: { ...cell, sort: null } } } : row; };
     return !grouping ? compare : (a, b, column, direction) => {
-      const compared = compare(a, b, column, direction);
-      if (compared || column.id !== grouping.column) return compared;
+      if (column.id !== grouping.column) return compare(a, b, column, direction);
+      const compared = compare(plain(a, column), plain(b, column), column, direction);
+      if (compared) return compared;
       const left = gridScalar(a.cells[column.id], column), right = gridScalar(b.cells[column.id], column);
       const result = gridOrder(typeof left, typeof right) || gridOrder(String(left), String(right));
       return direction === "desc" ? -result : result;

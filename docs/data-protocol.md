@@ -86,7 +86,7 @@ Following a link presenter cell (a click, Enter on the link, or the row's link a
 
 A `grid` definition contains `id`, `label`, `rowHeight`, `pageSize`, `selection`, `search`, `columns`, and `source`. Column definitions and cells have the same value, display text, tooltip, tone, and badge contract as tree views. Any column can start hidden, but at least one must remain visible. Flat-grid definitions do not expose tree edit proposals. Optional `stateKey`, `timeZone`, and `labels` retain their shared meanings.
 
-Optional `toolbar` switches toolbar controls off: `{ "filters": false, "columns": false, "views": false, "export": false, "more": false, "count": false }`, each optional and boolean. An absent switch keeps its control. A control switched off is removed: it is not built, or is taken out before the grid appears, so no hidden element, focus stop or listener of it stays in the page. The matching API methods stay available. `more` covers host actions, Record details and Print: with it off those entries are dropped, and the reporting runtime's print hook is reached through `api.print()`. With `export` off, a reporting grid that has an `onPrint` hook keeps a Print entry in the more menu for the filtered result. `count` is the result count shown with the query chips; `views` includes Reset view; with `filters` off, header filters keep working and a condition too complex for its column popover is removed through the query chips. The search box keeps its own `search` property. Browser hosts can override any switch, including `search`, with the `toolbar` option of `createDataGrid`; `toolbar: false` still hides the whole toolbar. The runtime rejects an unknown switch name or a non-boolean value in either object.
+Optional `toolbar` switches toolbar controls off: `{ "filters": false, "columns": false, "views": false, "export": false, "more": false, "count": false, "columnMenus": false }`, each optional and boolean. An absent switch keeps its control. A control switched off is removed: it is not built, or is taken out before the grid appears, so no hidden element, focus stop or listener of it stays in the page. The matching API methods stay available. `more` covers host actions, Record details and Print: with it off those entries are dropped, and the reporting runtime's print hook is reached through `api.print()`. With `export` off, a reporting grid that has an `onPrint` hook keeps a Print entry in the more menu for the filtered result. `count` is the result count shown with the query chips; `columnMenus` is each header's column menu button (switched off, column fitting keeps no room for it; an active header filter keeps its button, and readers start filters from the Filters menu); `views` includes Reset view; with `filters` off, header filters keep working and a condition too complex for its column popover is removed through the query chips. The search box keeps its own `search` property. Browser hosts can override any switch, including `search`, with the `toolbar` option of `createDataGrid`; `toolbar: false` still hides the whole toolbar. The runtime rejects an unknown switch name or a non-boolean value in either object.
 
 Optional `presentation` is `continuous` (the default) or `paged`. `pageLength` is the visible page length from 1 to 10,000, defaulting to 50. `pageSize` remains the independent source fetch size. Both presentations filter/sort the full source, retain global row indices and use the same selection, revision and export contracts. Paged presentation bounds the shared virtual viewport to one page; neither cached adjacent records nor retained focus can render outside that page.
 
@@ -282,6 +282,8 @@ the same `CanopyHtmlOptions.Document` (a `CanopyHtmlDocument`) embed the part on
 grid export and filter editor parts of flat grids. The tree reports ready once the part is installed; a tree whose part
 cannot load keeps its rows, search and filter switches and reports a `canopyx:error`.
 
+Tree columns other than the tree column pin left (after it) or right (`pinned`), as on flat grids; `setColumnPinned(id, pin)` changes a pin once the part is installed, and remembered state keeps the pins. A column's optional `tooltip` is `"auto"` (a cut-off cell shows its full value on hover) or the id of a declared column whose text the tooltip shows, on trees and flat grids alike; a cell's own `title` wins.
+
 The part also brings the print outline and `toOutline()` (empty until it is installed, so call it once `ready` has resolved), and row activation: Enter on a node
 row (which selects and toggles) and a double click (which toggles) first dispatch the cancelable `canopyx:rowActivate` event
 with `{ id, node, keyboard }` and call `onRowActivate(node, { keyboard })`; `preventDefault()` or a `false` return keeps the
@@ -444,6 +446,13 @@ A cell is either a bare value (string, number, boolean, or null) or an object:
 ```
 
 - `value` is used for sorting and, when `text` is absent, for display. Dates are ISO 8601 UTC strings, `yyyy-MM-ddTHH:mm:ssZ` or with milliseconds `yyyy-MM-ddTHH:mm:ss.fffZ`.
+- `sort` (text of at most 4,096 code units, or a number) is the key the cell sorts by when it differs from its value, like
+  DataTables' orthogonal `sort` data or an AG Grid comparator: a run named "Nightly 42" sorts by its ISO start time while its
+  column filter, value list and search read the name. Only sorting reads it (inline flat grids, which reject a malformed key, and trees, which ignore one;
+  a host source sorts on its own). The grouping column of a grouped grid orders by its values, so groups stay whole, and a column with a text
+  `ordering` policy orders by its values through that policy. Give every cell of a column a key of the same type; keys of
+  mixed types order numbers before text when ascending. `CanopyCell.SortKey` writes it from C# (dates as ISO 8601 UTC text
+  with milliseconds, `yyyy-MM-ddTHH:mm:ss.fffZ`).
 - `text` replaces the formatted value. Hosts use it for units, localisation, and phrases like "not collected".
 - `tone` is a name: a lowercase letter followed by lowercase letters, digits, and hyphens, at most 32 characters, not ending in `-bg`. The theme maps tones to colours; hosts never send colours. See [Tones](#tones).
 - Every string is inserted as text, never as HTML.

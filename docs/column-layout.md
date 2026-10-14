@@ -18,7 +18,12 @@ differences:
   visible rows change (expanding, collapsing, filtering, sorting, loading), at most once a frame, never while scrolling.
 - **Identity and pinning.** The tree column is always the identity column: essential, first, and pinned left while the
   other columns scroll, unless it declares `Pinned = CanopyGridColumnPin.None` (`pinned: null`). `PinTreeColumn` no
-  longer changes the default (it can only pin), while `setTreeColumnPinned` and remembered state still decide at run time. Other tree columns cannot be pinned, and `RowHeader` is a flat-grid option.
+  longer changes the default (it can only pin), while `setTreeColumnPinned` and remembered state still decide at run time. `RowHeader` is a flat-grid option.
+- **Pins.** As on a flat grid, any other column pins left or right (`Pinned = CanopyGridColumnPin.Left` or `Right`, `pinned:
+  "left"` or `"right"`, or `setColumnPinned(id, pin)` at run time): left pins follow the tree column and right pins stay at
+  the right edge while the other columns scroll. They keep their place next to their edge when the reader reorders columns,
+  never hide for width, and are part of remembered state and named views; **Reset columns** returns to the declared pins.
+  When the pins would leave the scrolling columns less than 128 pixels, the innermost of them scroll too.
 - **Widths.** A content-sized column (`CanopyColumnSizing.Content`, the default) writes `autoWidth: true` and 160 pixels as
   the width a tree uses until the tree tools part has measured; an assigned width is preferred. User widths are sticky
   (`sized` in remembered state and named views) until **Reset columns**; a host's restored width that differs from the
@@ -27,7 +32,24 @@ differences:
   Columns menu marks them "Hidden at this width"; exports keep them. There is no record drawer or "+N" button on trees.
 
 The `tree-parity.html` example (and `tree-parity-dark.html`) shows an organisation chart, a file system eleven levels deep
-and nested groups that start collapsed to three rows.
+and nested groups that start collapsed to three rows. The `wide-tree.html` example (and `wide-tree-dark.html`) is a document
+library with more columns than a laptop shows: the owner pins left, the status right, the description takes the spare width,
+the optional version and reviewer hide first, and the long path shows in a tooltip when it is cut off.
+
+## Tooltips and header room
+
+A column's `Tooltip` (`tooltip`) shows on hover: `"auto"` (`CanopyColumn.AutoTooltip`) shows a cell's full value while it is
+cut off, like the DataTables ellipsis renderer, and the id of another declared column shows that column's text, like AG Grid's
+`tooltipField`. A cell's own `title` wins. Flat grids and trees both read it.
+
+A flat grid's header keeps room for its column menu button (32 pixels, 52 on phones) while columns are fitted. A host that
+draws no column menus switches them off with `Toolbar.ColumnMenus = false` (`toolbar: { columnMenus: false }`): the buttons
+are not built and the headers keep no room for them. Sorting from the header keeps working, an active header filter keeps its
+button, and readers start filters from the Filters menu.
+
+A number column's title sits at the right, over its numbers. With a mouse its menu button shows on hover at the left of
+the header; on phones and touch screens, where the button always shows, it follows the title instead, so the header reads
+as one cell ("Overall ⋮"), and so does an active header filter.
 
 ## How a width is chosen
 
@@ -41,8 +63,10 @@ and nested groups that start collapsed to three rows.
    and keeps the extra while there is room. `fixed: true` makes `width` hard. A width the reader dragged, typed or
    fitted is sticky (`sized` in the saved view) until **Reset columns** or `autoSizeColumns()`.
 3. **Spare width** goes first to `flex` columns in proportion to their weights, then to the identity column up to the
-   cap, then it is shared between the identity column and the widest normal text column. The right side of a grid is
-   never left empty while a column can take the space.
+   cap, then it is shared between the identity column and the widest normal text column. The right side of a grid or
+   a tree is never left empty while a column can take the space: when no column grows, and for the pixels that rounding
+   the widths down leaves, the last text column below its maximum that is neither fixed nor sized by the reader takes
+   the rest, so the rows end at the right edge (number and graphic columns keep their width).
 4. **Short width** gives way in this order:
    1. normal and optional columns lose their slack, down to their header width or about eleven characters for text;
    2. optional columns hide (on phones, at 640 pixels and below, normal columns hide too); hidden columns stay in the
