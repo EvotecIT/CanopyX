@@ -1,4 +1,4 @@
-// CanopyX site behaviour: theme switch, copy buttons, tabs and the live demo stage.
+// CanopyX site behaviour: theme switch, code blocks, grid tables, tabs, the table of contents and the live demo stage.
 (function () {
   'use strict';
 
@@ -15,17 +15,101 @@
     });
   });
 
-  document.querySelectorAll('[data-cnx-copy]').forEach(function (button) {
+  function wireCopy(button, text) {
     button.addEventListener('click', function () {
       if (!navigator.clipboard || !navigator.clipboard.writeText) return;
-      navigator.clipboard.writeText(button.getAttribute('data-cnx-copy')).then(function () {
-        var label = button.textContent;
+      navigator.clipboard.writeText(text()).then(function () {
         button.setAttribute('data-copied', '');
         button.textContent = 'Copied';
-        setTimeout(function () { button.removeAttribute('data-copied'); button.textContent = label; }, 1600);
+        setTimeout(function () { button.removeAttribute('data-copied'); button.textContent = 'Copy'; }, 1600);
       }, function () {});
     });
+  }
+
+  document.querySelectorAll('[data-cnx-copy]').forEach(function (button) {
+    wireCopy(button, function () { return button.getAttribute('data-cnx-copy'); });
   });
+
+  // One code block component: Markdown blocks get the same caption bar as the hand-written ones.
+  var languages = {
+    csharp: 'C#', cs: 'C#', javascript: 'JavaScript', js: 'JavaScript', typescript: 'TypeScript', ts: 'TypeScript',
+    html: 'HTML', markup: 'HTML', xml: 'XML', shell: 'Shell', bash: 'Shell', sh: 'Shell', powershell: 'PowerShell',
+    ps1: 'PowerShell', json: 'JSON', css: 'CSS', yaml: 'YAML'
+  };
+  function languageOf(code) {
+    var match = /(?:^|\s)language-([\w-]+)/.exec(code.className || '');
+    return match ? match[1].toLowerCase() : '';
+  }
+
+  document.querySelectorAll('.cnx-prose pre > code').forEach(function (code) {
+    var pre = code.parentNode;
+    if (pre.closest('.cnx-codeblock')) return;
+    var figure = document.createElement('figure');
+    figure.className = 'cnx-codeblock';
+    var bar = document.createElement('figcaption');
+    bar.className = 'cnx-codeblock__bar';
+    var lang = document.createElement('span');
+    lang.className = 'cnx-codeblock__lang';
+    lang.textContent = languages[languageOf(code)] || 'Code';
+    bar.appendChild(lang);
+    pre.parentNode.insertBefore(figure, pre);
+    figure.appendChild(bar);
+    figure.appendChild(pre);
+  });
+
+  document.querySelectorAll('.cnx-codeblock').forEach(function (figure) {
+    var bar = figure.querySelector('.cnx-codeblock__bar');
+    var pres = figure.querySelectorAll('pre');
+    if (!bar || !pres.length) return;
+    var label = bar.querySelector('.cnx-codeblock__file') || bar.querySelector('.cnx-codeblock__lang');
+    Array.prototype.forEach.call(pres, function (pre) {
+      pre.tabIndex = 0;
+      if (label && !pre.hasAttribute('aria-labelledby')) pre.setAttribute('aria-label', 'Code: ' + label.textContent);
+    });
+    if (bar.querySelector('.cnx-codeblock__copy')) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'cnx-copy cnx-codeblock__copy';
+    button.textContent = 'Copy';
+    button.setAttribute('aria-label', 'Copy code');
+    bar.appendChild(button);
+    wireCopy(button, function () {
+      var visible = figure.querySelector('pre:not([hidden]) code') || figure.querySelector('pre code');
+      return visible ? visible.textContent.replace(/\n$/, '') : '';
+    });
+  });
+
+  // Markdown tables become grid tables that scroll inside their frame on narrow screens.
+  document.querySelectorAll('.cnx-prose table').forEach(function (table) {
+    if (table.closest('.cnx-gridtable')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'cnx-gridtable';
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+    if (wrap.scrollWidth > wrap.clientWidth + 1) {
+      wrap.tabIndex = 0;
+      wrap.setAttribute('role', 'region');
+      var head = table.querySelector('th');
+      wrap.setAttribute('aria-label', 'Table' + (head ? ': ' + head.textContent : ''));
+    }
+  });
+
+  // Mark the section being read in the table of contents.
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.cnx-docs__toc a[href^="#"]'));
+  if (tocLinks.length && 'IntersectionObserver' in window) {
+    var byId = {};
+    tocLinks.forEach(function (link) { byId[decodeURIComponent(link.getAttribute('href').slice(1))] = link; });
+    var headings = Object.keys(byId).map(function (id) { return document.getElementById(id); }).filter(Boolean);
+    var markCurrent = function () {
+      var currentId = headings[0] ? headings[0].id : '';
+      headings.forEach(function (heading) { if (heading.getBoundingClientRect().top < 140) currentId = heading.id; });
+      tocLinks.forEach(function (link) { link.removeAttribute('aria-current'); });
+      if (byId[currentId]) byId[currentId].setAttribute('aria-current', 'location');
+    };
+    var spy = new IntersectionObserver(markCurrent, { rootMargin: '-80px 0px -55% 0px', threshold: [0, 1] });
+    headings.forEach(function (heading) { spy.observe(heading); });
+    markCurrent();
+  }
 
   // Accessible tabs: arrow keys move between tabs, Home/End jump to the ends.
   function wireTabs(tabs, onSelect) {
