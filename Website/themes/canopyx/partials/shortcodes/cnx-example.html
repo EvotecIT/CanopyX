@@ -1,0 +1,23 @@
+{{~ ## A snippet from data/docs.json (written by tools/SiteDemos from the code it runs) with its output hanging below it
+     as a child row: a live frame, static CanopyX HTML or the JSON document it writes. Newlines inside code are written as
+     character references so the surrounding Markdown keeps the figure as one HTML block. ## ~}}
+{{~ a = shortcode.attrs; e = data.docs.examples[a.id]; o = e.output
+    lang = e.lang == "csharp" ? "C#" : (e.lang == "javascript" ? "JavaScript" : (e.lang == "json" ? "JSON" : e.lang))
+    nl = "\n" ~}}
+<figure class="cnx-example cnx-example--{{ o.kind }}{{ if a.layout }} cnx-example--{{ a.layout }}{{ end }}">
+<div class="cnx-codeblock cnx-example__code"><div class="cnx-codeblock__bar"><span class="cnx-codeblock__file">{{ e.file }}</span><span class="cnx-codeblock__lang">{{ lang }}</span></div><pre><code class="language-{{ e.lang }}">{{ e.code | html.escape | string.replace nl "&#10;" }}</code></pre></div>
+{{~ if o.kind != "none" ~}}
+<div class="cnx-example__out"><div class="cnx-example__bar"><span class="cnx-example__tag">{{ if o.kind == "json" }}Writes{{ else }}Output{{ end }}</span><code class="cnx-example__label">{{ o.label }}</code>{{ if o.meta }}<span class="cnx-example__meta">{{ o.meta }}</span>{{ end }}{{ if o.kind == "live" }}<a class="cnx-frame__open" href="{{ o.src }}">Open<span class="cnx-sr"> {{ o.label }} in its own page</span></a>{{ end }}</div>
+{{~ if o.kind == "live" ~}}
+<div class="cnx-example__screen" style="height: {{ a.height ?? o.height }}px"><iframe src="{{ o.src }}" title="{{ a.title ?? ("Output of " + e.file) }}" loading="lazy" data-cnx-frame></iframe></div>
+{{~ else if o.kind == "static" ~}}
+<div class="cnx-example__body">{{ include o.partial }}</div>
+{{~ else ~}}
+<div class="cnx-codeblock cnx-example__json"><pre><code class="language-json">{{ o.code | html.escape | string.replace nl "&#10;" }}</code></pre></div>
+{{~ end ~}}
+</div>
+{{~ end ~}}
+{{~ if a.caption ~}}
+<figcaption class="cnx-example__caption">{{ a.caption }}</figcaption>
+{{~ end ~}}
+</figure>

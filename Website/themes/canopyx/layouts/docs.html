@@ -12,7 +12,7 @@
   {{ head_html }}</head>
 <body class="cnx-body cnx-body--docs{{ if body_class != "" }} {{ body_class }}{{ end }}">
 {{ include "site-header" }}
-<main id="main" class="cnx-main cnx-docs">
+<main id="main" class="cnx-main cnx-docs{{ if page.meta.wide }} cnx-docs--wide{{ end }}">
   {{ include "docs-sidebar" }}
   <article class="cnx-docs__article">
     {{ include "pagehead" }}
@@ -22,7 +22,7 @@
     </div>
     {{ if edit_url != "" }}<footer class="cnx-docs__edit"><a href="{{ edit_url }}">Edit this page on GitHub</a></footer>{{ end }}
   </article>
-  {{ if toc != "" }}<aside class="cnx-docs__toc" aria-label="On this page">{{ toc }}</aside>{{ end }}
+  {{ if toc != "" && !page.meta.wide }}<aside class="cnx-docs__toc" aria-label="On this page">{{ toc }}</aside>{{ end }}
 </main>
 {{ include "site-footer" }}
 {{ assets.js_html }}

@@ -1,7 +1,7 @@
 ---
 title: Getting started with CanopyX
-order: 0
-description: Install CanopyX, build a file explorer and an inventory table in C#, and render a static table for email or print.
+order: 1
+description: Install CanopyX, build a file explorer and an inventory table in C#, and render both as script-free tables for email or print.
 layout: docs
 ---
 
@@ -23,68 +23,26 @@ Neither .NET package adds third-party runtime dependencies. Generating a report 
 
 ## Create a file explorer
 
-```csharp
-using CanopyX;
-using CanopyX.Html;
+A `CanopyTreeView` holds columns and nodes. The first column shows each node's label; the other columns show the node's cells. Numeric values control sorting while `Text` controls what the reader sees.
 
-var files = new CanopyTreeView("files", "Project files");
-files.Search = new CanopySearchOptions();
-files.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
-files.Columns.Add(new CanopyColumn("size", "Size")
-{
-    Kind = CanopyColumnKind.Number,
-    Sortable = true
-});
+{{< cnx-example id="tree" caption="The page this code writes, running here. Expand Archive, sort by Size or Owner, or search for budget." >}}
 
-var projects = new CanopyNode("projects", "Projects");
-var report = new CanopyNode("quarterly-report", "Quarterly report.pdf");
-report.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
-projects.Children.Add(report);
-files.Roots.Add(projects);
-
-files.SaveHtmlPage("files.html");
-```
-
-Open `files.html` in a browser and expand Projects. The first column displays the node label; the Size column displays the matching cell. Numeric values control sorting while `Text` controls the displayed value.
-
-For a larger tree, write a bundle that loads branches on demand with `files.SaveHtmlBundle("file-report")`.
+For a larger tree, write a bundle that loads branches on demand with `files.SaveHtmlBundle("file-report")`. [Delivery modes](/docs/delivery/) shows the files each choice writes.
 
 > **Keep the bundle together.** The generated page, assets and data files belong side by side. The bundle can then be opened directly from disk or a file share.
 
 ## Create an inventory table
 
-```csharp
-using CanopyX;
-using CanopyX.Html;
+A `CanopyDataGridView` is a flat list of records. Rows keep their IDs when the reader sorts, so selection and exports refer to the same records whatever the order on screen.
 
-var inventory = new CanopyDataGridView("inventory", "Inventory");
-inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
-inventory.Columns.Add(new CanopyColumn("size", "Size")
-{
-    Kind = CanopyColumnKind.Number,
-    Sortable = true
-});
+{{< cnx-example id="grid" caption="The inventory page, running here. Search the records, sort by any column, and resize or hide columns from the header." >}}
 
-foreach (var (name, bytes) in new[] { ("Archive", 2048L), ("Documents", 512L) })
-{
-    var row = new CanopyGridRow(name);
-    row.Cells["name"] = name;
-    row.Cells["size"] = new CanopyCell(bytes) { Text = $"{bytes:N0} bytes" };
-    inventory.Rows.Add(row);
-}
-
-inventory.SaveHtmlPage("inventory.html");
-```
-
-Open `inventory.html` to search the records, sort by name or size, and adjust the columns. Record IDs stay stable when the order changes.
+Grouping, facets, aggregates and cell presenters such as progress bars are covered in [Reporting grids](/docs/reporting/).
 
 ## Render a table for email or print
 
-```csharp
-using CanopyX.Rendering;
+The same two views render as HTML tables with no script and inline styles, ready for an email body, a print layout or a Word document.
 
-string treeTable = CanopyStaticHtml.Render(files);
-string inventoryTable = CanopyStaticHtml.RenderGrid(inventory);
-```
+{{< cnx-example id="static" caption="Both strings, exactly as the code returns them. They use literal colours, so mail clients show them the same way; this page shows them on white for that reason." >}}
 
-These methods return HTML tables with no scripts. Insert the returned HTML into your email, print layout or document-generation workflow.
+[Email and print](/docs/static-tables/) covers row limits, the overflow link to the full report, the dark palette and tables that follow the page theme.
