@@ -61,6 +61,9 @@ File.WriteAllText(Path.Combine(website, "data", "demos.json"),
 Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
     $"Bundle: {bundle.NodeCount:N0} nodes in {bundle.FileCount:N0} files, {bundle.TotalBytes / 1048576.0:N1} MB. Inventory: {inventory.Rows.Count:N0} rows."));
 
+// The documentation's visuals: output under each snippet, file layouts, protocol messages and navigation thumbnails.
+Console.WriteLine(SiteDemos.Docs.SiteDocs.Write(website, utf8));
+
 /// <summary>A deterministic device inventory with the kind of data an endpoint report carries.</summary>
 internal static class DeviceInventory {
     private static readonly string[] Sites = { "Warsaw", "London", "Berlin", "Madrid", "Remote" };
