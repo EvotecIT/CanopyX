@@ -57,6 +57,13 @@
 
     treeSelection() { return Array.from(this.selected, w => w.h); },
 
+    // The interactive runtime's actions menu closes with the toolbar menus (an editor keeps its own rules).
+    closeMenusOutside(node) {
+      TOOLBAR_PANELS.closeMenusOutside.call(this, node);
+      const panel = this.interactionPanel;
+      if (panel?.getAttribute("role") === "menu" && !panel.contains(node)) this.closeInteractionPanel(false);
+    },
+
     // The list of columns keeps the accessible name the tree's former column chooser had.
     renderGridColumns(panel) {
       COLUMNS_MENU.renderGridColumns.call(this, panel);
@@ -76,3 +83,10 @@
       this.phone = phone; this.host.classList.toggle("cx-phone", phone); this.placeMenus(phone);
     }
   });
+  // An actions menu that opens closes the other CanopyX menus, as a toolbar menu does.
+  const OPEN_PANEL = TreeGrid.prototype.openInteractionPanel;
+  if (OPEN_PANEL) TreeGrid.prototype.openInteractionPanel = function (...args) {
+    const panel = OPEN_PANEL.apply(this, args);
+    if (panel?.getAttribute("role") === "menu") announceMenu(panel);
+    return panel;
+  };

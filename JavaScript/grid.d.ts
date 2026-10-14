@@ -582,6 +582,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
   scrollToRow(index: number): Promise<void>;
   retry(): Promise<Q | void>;
+  /** Closes this grid's toolbar menus and column popover. To close the menus of every view, dispatch canopyx:closemenus on the document. */
+  closeMenus(): void;
   /** Repaints the accepted data without querying the source. */
   refresh(): void;
   /** Requests a fresh source revision with accepted filters and ordering, or initial definition criteria before acceptance. Traversal restarts at the first page. */

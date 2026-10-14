@@ -295,6 +295,16 @@ actions: [{ label: "Save view…", render(container, { close }) {
 
 Toolbar menus (Filters, Columns, Views, Export, ⋯ and the header selection menu) open in the browser's top layer as popovers, so a short grid or a host with `overflow: hidden` no longer clips them. They stay inside the grid's DOM, so themes, focus order and events are unchanged, and list menus keep their 320-pixel height cap. Browsers without the popover API give them viewport-fixed positioning instead, which escapes `overflow: hidden` but not an ancestor with a `transform`, `filter` or `contain` that captures fixed positioning.
 
+One CanopyX menu is open at a time, from the mouse or the keyboard. A menu (including a column popover and a tree's actions menu) closes on a pointer press or focus outside it and when another CanopyX menu opens; the opening menu dispatches `canopyx:closemenus` on the document with itself as `detail.source`. Hosts with popovers of their own coordinate through the same event:
+
+```js
+// Before the host opens its popover: close every CanopyX menu on the page (or call grid.closeMenus() for one view;
+// dispatched on an element that holds views, the event needs bubbles: true).
+document.dispatchEvent(new CustomEvent("canopyx:closemenus"));
+// When a CanopyX menu opens: close the host's popover.
+document.addEventListener("canopyx:closemenus", event => { if (event.detail?.source) hostPopover.hidePopover(); });
+```
+
 ## Tree Grid Features
 
 Trees have the flat grid's toolbar: the search box and filter switches on the left, then **Columns** (show, hide and

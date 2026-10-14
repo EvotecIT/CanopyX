@@ -16,6 +16,8 @@
       const panel=h("div","cx-host cx-grid-overlay cx-pop "+className),controller=new AbortController(),signal=controller.signal;
       gridOverlayTheme(this,panel);panel.setAttribute("role","dialog");panel.setAttribute("aria-label",title);panel.tabIndex=-1;
       panel.id=this.id+"-popover";anchor.setAttribute("aria-controls",panel.id);anchor.setAttribute("aria-expanded","true");document.body.appendChild(panel);
+      // Other CanopyX menus close; this grid closes the popover on a press, focus or menu event outside it (57-toolbar-panels.js).
+      document.dispatchEvent(new CustomEvent("canopyx:closemenus",{detail:{source:panel}}));
       const position=()=>{
         const current=this.headCells.find(cell=>cell.dataset.cxColumn===columnId)||anchor,bounds=current.getBoundingClientRect();
         panel.classList.toggle("cx-phone",this.host.clientWidth<=640);
@@ -26,7 +28,6 @@
       };
       this.gridPopover={panel,controller,anchor,columnId,position};
       global.addEventListener("resize",position,{signal});global.addEventListener("scroll",position,{capture:true,signal});
-      document.addEventListener("pointerdown",event=>{if(!panel.contains(event.target)&&!anchor.contains(event.target))this.closeGridPopover(false);},{signal});
       panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopPropagation();this.closeGridPopover();}else gridMenuFocus(panel,event);},{signal});
       this.lifetime.signal.addEventListener("abort",()=>controller.abort(),{once:true,signal});
       signal.addEventListener("abort",()=>panel.remove(),{once:true});queueMicrotask(position);return panel;

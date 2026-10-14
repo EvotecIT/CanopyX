@@ -79,6 +79,8 @@
       },
       applyCounts: (doc) => grid.applyCounts(doc),
       refreshCounts: (ids) => grid.refreshCounts(ids),
+      // The toolbar and action menus come with the tree tools part; until it is installed there are none to close.
+      closeMenus: () => grid.closeMenus?.(),
       destroy: () => {
         grid.destroy();
         if (activeGrids.get(host) === api) activeGrids.delete(host);
