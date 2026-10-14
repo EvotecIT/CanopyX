@@ -31,7 +31,8 @@
     // The base width (content or preferred), the content width (level 2), or the narrowest width before hiding
     // (level 1): essential columns keep their content width.
     fitSize(column, level) {
-      const need = column.need ?? column.width;
+      // reserve: width a view keeps beside the column's content, such as the flat grid's phone "+N" button.
+      const need = (column.need ?? column.width) + (column.reserve || 0);
       // The default identity yields last, only when that can avoid scrolling. Explicit or user-sized widths stay.
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
         Math.max(column.minW, column.headNeed || 0) : column.renderWidth;

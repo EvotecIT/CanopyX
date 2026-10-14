@@ -49,6 +49,10 @@ and nested groups that start collapsed to three rows.
       record drawer, exports and the phone "+N" button, and the Columns menu marks them "Hidden at this width";
    3. only then the grid scrolls horizontally inside itself, with pinned columns in place.
 
+   On phones the first shown column also holds the "+N" button that opens the hidden fields, so fitting reserves the
+   button's width beside that column's content (hiding another column when that is what makes room): with no width to
+   spare, the identity column still shows its values in full next to the button.
+
    Essential columns never shrink below their need and never hide. Pinned, user-sized and `alwaysVisible` columns
    never hide either.
 
