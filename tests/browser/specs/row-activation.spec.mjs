@@ -48,7 +48,6 @@ test("a grid host takes over row activation by mouse and keyboard and keeps the 
   await page.keyboard.press("Enter");
   await expect(page.locator(".cx-drawer")).toBeVisible();
   expect(await activations(page)).toEqual([{ id: "r4", keyboard: true, row: true }]);
-  await capture(page, "row-activation-grid-default-drawer");
 });
 
 test("without a row action a grid activates a row by double click, once, and a plain click activates nothing", async ({ page }) => {

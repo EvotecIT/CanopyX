@@ -375,6 +375,16 @@ export interface GridExportProgress {
   readonly completed: number;
   readonly total: number | null;
 }
+/** The detail of canopyx:link and the argument of onLink: a link presenter cell the user follows (by click, Enter or the row's link action). */
+export interface GridLinkActivation {
+  readonly id: string;
+  /** A frozen copy of the loaded row. */
+  readonly row: Readonly<GridRow>;
+  /** The id of the column whose link it is. */
+  readonly column: string;
+  /** The resolved address. */
+  readonly href: string;
+}
 /** The detail of canopyx:rowActivate and the argument of onRowActivate on a flat grid. */
 export interface GridRowActivation {
   readonly id: string;
@@ -487,6 +497,9 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
    * phone). Runs before the row's own action (onDetails or the drawer, or the row's link); returning false keeps that from
    * running, so the host can open its own view of the row. The cancelable canopyx:rowActivate event carries the same detail. */
   onRowActivate?: (event: GridRowActivation) => boolean | void;
+  /** A link cell being followed. Returning false (or cancelling the canopyx:link event) keeps the browser from following it,
+   * so the host can route the address itself. */
+  onLink?: (event: GridLinkActivation) => boolean | void;
   /** Adds Chart to the selection bar. The host owns chart generation. */
   onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
