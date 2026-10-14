@@ -1,12 +1,19 @@
 <section class="cnx-section cnx-views" aria-labelledby="cnx-views-title">
-  <div class="cnx-section__head">
+  <div class="cnx-section__head cnx-node">
     <h2 id="cnx-views-title">Two views, one model</h2>
     <p>Use a tree grid when records have parents, and a data grid when they are a flat list. Both share columns, cells, themes and the <code>canopyx/2</code> data protocol.</p>
   </div>
-  <div class="cnx-views__table">
-    {{ include "generated/features" }}
-  </div>
-  <p class="cnx-note">This table is <code>CanopyStaticHtml.RenderGrid</code> output, the same script-free HTML your emails get.</p>
+  <figure class="cnx-frame cnx-frame--flat">
+    <div class="cnx-frame__bar">
+      <span class="cnx-frame__title">Capabilities</span>
+      <span class="cnx-frame__path">CanopyStaticHtml.RenderGrid(view)</span>
+      <span class="cnx-frame__meta">Script-free HTML</span>
+    </div>
+    <div class="cnx-frame__body">
+      {{ include "generated/features" }}
+    </div>
+    <figcaption class="cnx-frame__caption">This table is <code>CanopyStaticHtml.RenderGrid</code> output, the same script-free HTML your emails get.</figcaption>
+  </figure>
 </section>
 
 <section class="cnx-showcase" aria-labelledby="cnx-showcase-title">
@@ -17,19 +24,25 @@
     </div>
     <div class="cnx-showcase__grid">
       {{~ for c in data.home.showcases ~}}
-      <a class="cnx-shot" href="{{ c.url }}">
+      <a class="cnx-frame cnx-shot" href="{{ c.url }}">
+        <span class="cnx-frame__bar">
+          <span class="cnx-frame__title">{{ c.title }}</span>
+          <span class="cnx-frame__path">{{ c.url }}</span>
+          <span class="cnx-frame__open">Open full screen</span>
+        </span>
         <span class="cnx-shot__media">
           <img class="cnx-only-light" src="{{ c.light }}" width="1440" height="820" loading="lazy" decoding="async" alt="{{ c.title }} in the light theme" />
           <img class="cnx-only-dark" src="{{ c.dark }}" width="1440" height="820" loading="lazy" decoding="async" alt="{{ c.title }} in the dark theme" />
         </span>
-        <span class="cnx-shot__text"><strong>{{ c.title }}</strong><span>{{ c.body }}</span></span>
+        <span class="cnx-frame__caption">{{ c.body }}</span>
       </a>
       {{~ end ~}}
     </div>
   </div>
 </section>
+
 <section class="cnx-section cnx-delivery" aria-labelledby="cnx-delivery-title">
-  <div class="cnx-section__head">
+  <div class="cnx-section__head cnx-node">
     <h2 id="cnx-delivery-title">Ship it the way your readers work</h2>
     <p>The same view definition becomes a self-contained page, a folder that opens from a file share, or a front end for your own API.</p>
   </div>
@@ -39,7 +52,10 @@
       <h3>{{ d.title }}</h3>
       <p>{{ d.body }}</p>
       {{~ if d.code ~}}
-      <pre class="cnx-code"><code>{{ d.code | html.escape }}</code></pre>
+      <figure class="cnx-codeblock">
+        <figcaption class="cnx-codeblock__bar"><span class="cnx-codeblock__lang">C#</span></figcaption>
+        <pre><code class="language-csharp">{{ d.code | html.escape }}</code></pre>
+      </figure>
       {{~ end ~}}
       {{~ if d.link ~}}
       <p><a class="cnx-link" href="{{ d.link.url }}">{{ d.link.label }}</a></p>
@@ -50,53 +66,55 @@
 </section>
 
 <section class="cnx-section cnx-code-section" aria-labelledby="cnx-code-title">
-  <div class="cnx-section__head">
+  <div class="cnx-section__head cnx-node">
     <h2 id="cnx-code-title">Write it in C# or JavaScript</h2>
     <p>Build the view from your .NET objects and save it, or mount it in a page you already have. Both produce the same grid.</p>
   </div>
-  <div class="cnx-code-tabs" data-cnx-tabs>
-    <div class="cnx-segment" role="tablist" aria-label="Language">
-      <button type="button" role="tab" id="cnx-code-tab-cs" aria-controls="cnx-code-cs" aria-selected="true" tabindex="0">C#</button>
-      <button type="button" role="tab" id="cnx-code-tab-js" aria-controls="cnx-code-js" aria-selected="false" tabindex="-1">JavaScript</button>
-    </div>
-<pre class="cnx-code cnx-code--large" role="tabpanel" id="cnx-code-cs" aria-labelledby="cnx-code-tab-cs"><code><span class="k">using</span> CanopyX;
-<span class="k">using</span> CanopyX.Html;
+  <figure class="cnx-codeblock cnx-code-tabs" data-cnx-tabs>
+    <figcaption class="cnx-codeblock__bar">
+      <span class="cnx-codeblock__tabs" role="tablist" aria-label="Language">
+        <button type="button" role="tab" id="cnx-code-tab-cs" aria-controls="cnx-code-cs" aria-selected="true" tabindex="0">Program.cs</button>
+        <button type="button" role="tab" id="cnx-code-tab-js" aria-controls="cnx-code-js" aria-selected="false" tabindex="-1">files.js</button>
+      </span>
+    </figcaption>
+<pre role="tabpanel" id="cnx-code-cs" aria-labelledby="cnx-code-tab-cs"><code class="language-csharp">using CanopyX;
+using CanopyX.Html;
 
-<span class="k">var</span> files = <span class="k">new</span> <span class="t">CanopyTreeView</span>(<span class="s">"files"</span>, <span class="s">"Project files"</span>);
-files.Search = <span class="k">new</span> <span class="t">CanopySearchOptions</span>();
-files.Columns.Add(<span class="k">new</span> <span class="t">CanopyColumn</span>(<span class="s">"name"</span>, <span class="s">"Name"</span>) { Sortable = <span class="k">true</span> });
-files.Columns.Add(<span class="k">new</span> <span class="t">CanopyColumn</span>(<span class="s">"size"</span>, <span class="s">"Size"</span>) { Kind = <span class="t">CanopyColumnKind</span>.Number, Sortable = <span class="k">true</span> });
+var files = new CanopyTreeView("files", "Project files");
+files.Search = new CanopySearchOptions();
+files.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
+files.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
 
-<span class="k">var</span> projects = <span class="k">new</span> <span class="t">CanopyNode</span>(<span class="s">"projects"</span>, <span class="s">"Projects"</span>);
-<span class="k">var</span> report = <span class="k">new</span> <span class="t">CanopyNode</span>(<span class="s">"quarterly-report"</span>, <span class="s">"Quarterly report.pdf"</span>);
-report.Cells[<span class="s">"size"</span>] = <span class="k">new</span> <span class="t">CanopyCell</span>(<span class="n">2048L</span>) { Text = <span class="s">"2 KiB"</span> };
+var projects = new CanopyNode("projects", "Projects");
+var report = new CanopyNode("quarterly-report", "Quarterly report.pdf");
+report.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB" };
 projects.Children.Add(report);
 files.Roots.Add(projects);
 
-files.SaveHtmlPage(<span class="s">"files.html"</span>);</code></pre>
-<pre class="cnx-code cnx-code--large" role="tabpanel" id="cnx-code-js" aria-labelledby="cnx-code-tab-js" hidden><code><span class="k">import</span> { createTreeGrid } <span class="k">from</span> <span class="s">"@evotecit/canopyx"</span>;
-<span class="k">import</span> <span class="s">"@evotecit/canopyx/styles.css"</span>;
+files.SaveHtmlPage("files.html");</code></pre>
+<pre role="tabpanel" id="cnx-code-js" aria-labelledby="cnx-code-tab-js" hidden><code class="language-javascript">import { createTreeGrid } from "@evotecit/canopyx";
+import "@evotecit/canopyx/styles.css";
 
-<span class="k">const</span> grid = createTreeGrid(document.getElementById(<span class="s">"files"</span>), {
+const grid = createTreeGrid(document.getElementById("files"), {
   view: {
-    protocol: <span class="s">"canopyx/2"</span>, type: <span class="s">"view"</span>, id: <span class="s">"files"</span>, label: <span class="s">"Project files"</span>,
-    rowHeight: <span class="n">28</span>, pageSize: <span class="n">100</span>, selection: <span class="s">"single"</span>,
-    search: { minLength: <span class="n">1</span>, maxResults: <span class="n">50</span> },
-    columns: [{ id: <span class="s">"name"</span>, title: <span class="s">"Name"</span>, kind: <span class="s">"text"</span>, width: <span class="n">320</span> }],
-    source: { kind: <span class="s">"inline"</span> },
+    protocol: "canopyx/2", type: "view", id: "files", label: "Project files",
+    rowHeight: 28, pageSize: 100, selection: "single",
+    search: { minLength: 1, maxResults: 50 },
+    columns: [{ id: "name", title: "Name", kind: "text", width: 320 }],
+    source: { kind: "inline" },
     roots: [{
-      id: <span class="s">"projects"</span>, label: <span class="s">"Projects"</span>,
-      children: [{ id: <span class="s">"quarterly-report"</span>, label: <span class="s">"Quarterly report.pdf"</span> }]
+      id: "projects", label: "Projects",
+      children: [{ id: "quarterly-report", label: "Quarterly report.pdf" }]
     }]
   }
 });
 
-<span class="k">await</span> grid.ready;</code></pre>
-  </div>
+await grid.ready;</code></pre>
+  </figure>
 </section>
 
 <section class="cnx-section cnx-family" aria-labelledby="cnx-family-title">
-  <div class="cnx-section__head">
+  <div class="cnx-section__head cnx-node">
     <h2 id="cnx-family-title">Part of the Evotec toolkit</h2>
   </div>
   <ul class="cnx-family__list">
@@ -110,7 +128,7 @@ files.SaveHtmlPage(<span class="s">"files.html"</span>);</code></pre>
   <h2 id="cnx-cta-title">Put your data in front of people who need to explore it</h2>
   <div class="cnx-cta__lines">
     {{~ for i in data.home.install ~}}
-    <div class="cnx-install__line"><code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code><button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}">Copy</button></div>
+    <div class="cnx-install__line"><code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code><button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}" aria-label="Copy {{ i.command }}">Copy</button></div>
     {{~ end ~}}
   </div>
   <p><a class="cnx-link" href="/docs/">Start with the getting started guide</a></p>

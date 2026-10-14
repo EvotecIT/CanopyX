@@ -15,34 +15,63 @@
 {{ include "site-header" }}
 <main id="main" class="cnx-main">
   <article class="cnx-page cnx-page--wide">
-    <header class="cnx-page__head">
-      <h1>{{ page.title }}</h1>
-      <p class="cnx-lede">{{ page.description }}</p>
-    </header>
+    {{ include "pagehead" }}
+
     <section class="cnx-demo-block" aria-labelledby="cnx-demo-files-title">
-      <div class="cnx-demo-block__head">
+      <div class="cnx-node">
         <h2 id="cnx-demo-files-title">File explorer</h2>
-        <p>{{ data.demos.files.nodes }} nodes across 26 shares, written with <code>SaveHtmlBundle</code> into {{ data.demos.files.dataFiles }} static files ({{ data.demos.files.size }} in total, the largest {{ data.demos.files.largestFile }}). Search, sort, filter to recent changes, and open a file's history to see its detail table.</p>
-        <a class="cnx-link" href="/live/files/index.html">Open the file explorer full screen</a>
+        <p>A share audit across 26 shares. Search, sort, filter to recent changes, and open a file's history to see its detail table.</p>
       </div>
-      <iframe class="cnx-demo-block__frame" title="CanopyX file explorer" data-cnx-frame data-eager data-src="/live/files/index.html"></iframe>
+      <figure class="cnx-frame">
+        <div class="cnx-frame__bar">
+          <span class="cnx-frame__title">File explorer</span>
+          <span class="cnx-frame__path">/live/files/index.html</span>
+          <span class="cnx-frame__meta">{{ data.demos.files.nodes }} nodes, {{ data.demos.files.dataFiles }} files, {{ data.demos.files.size }}</span>
+          <a class="cnx-frame__open" href="/live/files/index.html"><span>Open<span class="cnx-sr"> the file explorer</span> full screen</span></a>
+        </div>
+        <div class="cnx-frame__screen">
+          <iframe title="CanopyX file explorer" data-cnx-frame data-eager data-src="/live/files/index.html"></iframe>
+        </div>
+        <figcaption class="cnx-frame__caption">Written with <code>SaveHtmlBundle</code> into {{ data.demos.files.dataFiles }} static files ({{ data.demos.files.size }} in total, the largest {{ data.demos.files.largestFile }}). Branches and search shards load only when you open them.</figcaption>
+      </figure>
     </section>
+
     <section class="cnx-demo-block" aria-labelledby="cnx-demo-inventory-title">
-      <div class="cnx-demo-block__head">
+      <div class="cnx-node">
         <h2 id="cnx-demo-inventory-title">Device inventory</h2>
-        <p>{{ data.demos.inventory.rows }} devices in a single HTML page. Group by site, filter from the column headers or facets, select rows, export CSV, and read the aggregates in the status bar.</p>
-        <a class="cnx-link" href="/live/inventory.html">Open the device inventory full screen</a>
+        <p>Group by site, filter from the column headers or facets, select rows, export CSV, and read the aggregates in the status bar.</p>
       </div>
-      <iframe class="cnx-demo-block__frame" title="CanopyX device inventory" data-cnx-frame data-eager data-src="/live/inventory.html"></iframe>
+      <figure class="cnx-frame">
+        <div class="cnx-frame__bar">
+          <span class="cnx-frame__title">Device inventory</span>
+          <span class="cnx-frame__path">/live/inventory.html</span>
+          <span class="cnx-frame__meta">{{ data.demos.inventory.rows }} rows in one HTML page</span>
+          <a class="cnx-frame__open" href="/live/inventory.html"><span>Open<span class="cnx-sr"> the device inventory</span> full screen</span></a>
+        </div>
+        <div class="cnx-frame__screen">
+          <iframe title="CanopyX device inventory" data-cnx-frame data-eager data-src="/live/inventory.html"></iframe>
+        </div>
+        <figcaption class="cnx-frame__caption">Written with <code>ToHtmlPage</code>: data and runtime in a single file you can attach to a ticket or open from disk.</figcaption>
+      </figure>
     </section>
+
     <section class="cnx-demo-block" aria-labelledby="cnx-demo-outline-title">
-      <div class="cnx-demo-block__head">
+      <div class="cnx-node">
         <h2 id="cnx-demo-outline-title">Static outline</h2>
-        <p>The file tree rendered by <code>CanopyStaticHtml.Render</code>: a table with no script that works in email, print and Word.</p>
+        <p>The file tree as a plain table with no script, for email, print and Word.</p>
       </div>
-      <div class="cnx-demo-block__static">{{ include "generated/outline" }}</div>
+      <figure class="cnx-frame cnx-frame--flat">
+        <div class="cnx-frame__bar">
+          <span class="cnx-frame__title">Static outline</span>
+          <span class="cnx-frame__path">CanopyStaticHtml.Render(view)</span>
+          <span class="cnx-frame__meta">Script-free HTML</span>
+        </div>
+        <div class="cnx-frame__body">{{ include "generated/outline" }}</div>
+        <figcaption class="cnx-frame__caption">Rendered by <code>CanopyStaticHtml.Render</code>. Inline styles keep it intact in mail clients; it follows the page theme here.</figcaption>
+      </figure>
     </section>
-    <div class="cnx-prose">
+
+    <div class="cnx-prose cnx-demos__about">
 {{ content }}
     </div>
   </article>
