@@ -135,6 +135,8 @@ for (const theme of ["light", "dark"]) {
     expect(await drawerTitle(page)).toEqual({ focused: true, ring: false, subtitle: null });
     await capture(page, "drawer-mouse-" + theme + "-1100");
     await page.keyboard.press("Escape");
+    // The dialog leaves the page on its close event, a task after Escape.
+    await expect(page.locator(".cx-drawer")).toHaveCount(0);
     await row(page, "r4").focus();
     await page.keyboard.press("Enter");
     await expect(page.locator(".cx-drawer h4")).toHaveText("Server 4");
