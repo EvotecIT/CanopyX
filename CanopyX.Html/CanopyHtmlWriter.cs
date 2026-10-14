@@ -19,12 +19,19 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        // A single-file tree carries its tree tools part; on a grid runtime (chosen by grid labels or explicitly) its exports
-        // run through the export part too.
+        // A single-file tree carries its tree tools part; on a grid runtime (chosen by labels or explicitly) its exports run through the
+        // export part too. Fragments that share a document carry each part once.
         var runtime = RuntimeFor(view, options);
-        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.TreeToolsMarkup +
-            (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid ? CanopyHtmlAssets.ExportMarkup : string.Empty) : string.Empty);
+        var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
+        if (options.AssetMode != CanopyAssetMode.Inline) return html;
+        html += SharedPart(options, "tree-tools", CanopyHtmlAssets.TreeToolsVersion, () => CanopyHtmlAssets.TreeToolsMarkup);
+        return runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid
+            ? html + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup) : html;
     }
+
+    /// <summary>A shared part's payload, unless the fragment's document already carries it.</summary>
+    private static string SharedPart(CanopyHtmlOptions options, string name, string version, Func<string> markup) =>
+        options.Document == null || options.Document.Claim(name, version) ? markup() : string.Empty;
 
     private static string FragmentDocument(string json, CanopyHtmlOptions options) {
         var builder = new StringBuilder(json.Length + 160);
@@ -61,7 +68,10 @@ internal static class CanopyHtmlWriter {
     internal static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
-        return FragmentDocument(view.ToJson(), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.FilterEditorMarkup + CanopyHtmlAssets.ExportMarkup : string.Empty);
+        var html = FragmentDocument(view.ToJson(), options);
+        return options.AssetMode != CanopyAssetMode.Inline ? html : html
+            + SharedPart(options, "filter-editor", CanopyHtmlAssets.FilterEditorVersion, () => CanopyHtmlAssets.FilterEditorMarkup)
+            + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup);
     }
 
     internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options) {
