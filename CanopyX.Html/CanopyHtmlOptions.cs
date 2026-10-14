@@ -58,6 +58,13 @@ public sealed class CanopyHtmlOptions {
     /// </summary>
     public ISet<string> HiddenFilterIds { get; } = new HashSet<string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Gets or sets the HTML document the fragment is written into. Inline fragments that share a document embed the tree
+    /// tools part, the grid export part and the filter editor once, in the first fragment that needs each; without one,
+    /// every inline fragment carries its own copies. Pages ignore it. See <see cref="CanopyHtmlDocument"/>.
+    /// </summary>
+    public CanopyHtmlDocument? Document { get; set; }
+
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }
 

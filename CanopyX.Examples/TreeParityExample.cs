@@ -18,7 +18,8 @@ internal static class TreeParityExample {
         using var reader = new StreamReader(stream);
         var template = reader.ReadToEnd();
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var options = new CanopyHtmlOptions { Theme = theme, Height = "420px" };
+            // The three trees share one document, so the page carries the tree tools part once.
+            var options = new CanopyHtmlOptions { Theme = theme, Height = "420px", Document = new CanopyHtmlDocument() };
             var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.TreeGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.TreeGrid))
                 .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")

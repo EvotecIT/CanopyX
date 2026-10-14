@@ -272,7 +272,10 @@ Every tree runtime loads the **tree tools part** (`canopyx-tree-tools.js` and `.
 Columns, Views, Export and more menus, column fitting, auto height, named views and tree exports, from the same sources
 as the flat grid's menus and fit. Single-file pages carry it as inert payloads (`application/x-canopyx-tree-tools` and
 `application/x-canopyx-tree-tools-style`, `CanopyHtmlAssets.TreeToolsMarkup`); otherwise the runtime loads the plain or
-content-hashed files beside itself, so hosts serve them beside every entry point. The tree reports ready once the part is
+content-hashed files beside itself, so hosts serve them beside every entry point. The runtime finds a payload anywhere in
+the document by its type and `data-cx-version`, so several trees on one page share one payload: fragments written with
+the same `CanopyHtmlOptions.Document` (a `CanopyHtmlDocument`) embed the part once, in the first fragment, and so do the
+grid export and filter editor parts of flat grids. The tree reports ready once the part is
 installed; a tree whose part cannot load keeps its rows, search and filter switches and reports a `canopyx:error`.
 
 CanopyX menus (the toolbar menus, a flat grid's column popover, a tree's actions menu and the reporting header selection

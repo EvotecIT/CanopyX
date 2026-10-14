@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using CanopyX.Html;
 
 namespace CanopyX.Tests.Html;
@@ -35,6 +36,48 @@ public sealed class TreeToolsAssetsTests {
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.DoesNotContain("x-canopyx-tree-tools", grid.ToHtmlFragment());
+    }
+
+    [Fact]
+    public void FragmentsSharingADocument_CarryEachSharedPartOnce() {
+        var document = new CanopyHtmlDocument();
+        var options = new CanopyHtmlOptions { Document = document };
+        var fragments = new[] { "org", "files", "groups" }.Select(id => {
+            var view = new CanopyTreeView(id, id);
+            view.Columns.Add(new CanopyColumn("name", "Name"));
+            return view.ToHtmlFragment(options);
+        }).ToArray();
+        var page = string.Concat(fragments);
+        Assert.Single(Regex.Matches(page, "<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">"));
+        Assert.Single(Regex.Matches(page, "application/x-canopyx-tree-tools-style"));
+        Assert.Contains("x-canopyx-tree-tools", fragments[0]);
+        Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("x-canopyx-tree-tools", fragment));
+        Assert.Equal(new[] { "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion }, document.EmbeddedParts);
+
+        // Flat grids share the filter editor and export parts the same way, and a tree on a grid runtime reuses the export part.
+        var grid = new CanopyDataGridView("records", "Records");
+        grid.Columns.Add(new CanopyColumn("name", "Name"));
+        var first = grid.ToHtmlFragment(options);
+        Assert.Contains("application/x-canopyx-filter-editor", first);
+        Assert.Contains("application/x-canopyx-export", first);
+        Assert.DoesNotContain("application/x-canopyx-", grid.ToHtmlFragment(options).Replace("application/json", ""));
+        var tree = new CanopyTreeView("mixed", "Mixed");
+        tree.Columns.Add(new CanopyColumn("name", "Name"));
+        Assert.DoesNotContain("application/x-canopyx-", tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document, Runtime = CanopyRuntime.DataGrid }));
+        // Without a document every inline fragment stands alone.
+        Assert.Contains("application/x-canopyx-tree-tools", tree.ToHtmlFragment());
+    }
+
+    [Fact]
+    public void Runtime_FindsAPayloadByTheMarkerTheWriterEmits() {
+        // The writer marks a payload with its type and version; the part loader looks for exactly that pair anywhere in the
+        // document, so the views of a page share one payload whatever their order.
+        foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
+            var script = CanopyHtmlAssets.GetScript(runtime);
+            Assert.Contains("document.querySelector('script[type=\"application/x-canopyx-'+type+'\"][data-cx-version=\"'+part.version+'\"]')", script);
+        }
+        Assert.StartsWith("<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
+        Assert.Contains("<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
     }
 
     [Theory]

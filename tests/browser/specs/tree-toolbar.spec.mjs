@@ -4,6 +4,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { exampleUrl, nextFrames, repo } from "./support.mjs";
 
 const hosts = page => page.locator("[data-canopyx-host]");
@@ -26,6 +27,19 @@ const toolbarRows = host => host.locator(".cx-toolbar").evaluate(bar => {
 const headers = host => host.locator(".cx-head .cx-hcell").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn));
 
 test.afterEach(({ page }) => { expect(page.errors).toEqual([]); });
+
+test("three trees written into one document share a single embedded tree tools part", async ({ page }) => {
+  await open(page);
+  // The .NET writer embedded the part with the first fragment only; the runtime found it by type and version for all three.
+  expect(await page.locator('script[type="application/x-canopyx-tree-tools"]').count()).toBe(1);
+  expect(await page.locator('script[type="application/x-canopyx-tree-tools-style"]').count()).toBe(1);
+  for (const host of [org(page), files(page), groups(page)]) {
+    await expect(host).toHaveClass(/cx-tree-tools/);
+    await expect(host.locator(".cx-grid-columns > summary")).toBeVisible();
+  }
+  const html = fs.readFileSync(fileURLToPath(exampleUrl("tree-parity.html")), "utf8");
+  expect(html.split("application/x-canopyx-tree-tools\"").length - 1).toBe(1);
+});
 
 test("the tree toolbar is one row of search, filter, Columns, Views, Export and more, and its controls work", async ({ page }) => {
   await open(page);
