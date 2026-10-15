@@ -202,6 +202,8 @@ export interface GridEditingOptions<Q extends AcceptedGridQuery = GridQuery> ext
   validateRow?(row: Readonly<GridRow>, change: GridChange): string | Record<string, string> | null | undefined | PromiseLike<string | Record<string, string> | null | undefined>;
   /** Lookup suggestions by column, in place of the editor's options and the data source. */
   lookups?: Readonly<Record<string, (request: GridLookupRequest) => readonly GridEditorOption[] | PromiseLike<readonly GridEditorOption[]>>>;
+  /** The text edited cells of a column show, by column: the same formatter the host's source text comes from, so every cell of the column reads alike. Without one, edited cells use the column's default formatting (or a choice's label). */
+  formatters?: Readonly<Record<string, (value: Exclude<CellValue, null>, row: Readonly<GridRow>) => string>>;
   /** Editors for this grid, beside the built-in ones and the plugins'. */
   editors?: Readonly<Record<string, CanopyCellEditor>>;
   /** The batch writer; wins over the source's commit. */

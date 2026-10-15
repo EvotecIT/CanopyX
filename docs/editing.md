@@ -107,6 +107,17 @@ cell while the cell or its editor has focus. The drawer's form shows messages un
 
 ## The change set
 
+An edited cell shows its value the way every cell of its column does: with the column's default formatting (numbers and
+dates in the page language and the grid's time zone), or a choice's label for select and lookup columns. When the host
+writes the column's text itself (cells with `text`, for example money as `€1,234.50`), it gives the same formatter for
+edited values with `editing.formatters`, so edited and untouched cells read alike until the writer's canonical cells
+replace them:
+
+```js
+const money = new Intl.NumberFormat("en", { style: "currency", currency: "EUR" });
+CanopyX.configure("assets", { editing: { formatters: { cost: value => money.format(value) } } });
+```
+
 Applied values show at once and stay in the grid's change set until a commit confirms them. Changed cells carry a corner mark
 and a hidden "Edited" description (`gridEditEdited`); rows that arrive again (scrolling, sorting, paging) show their pending
 values. The edit bar (toggle with `editBar`) shows the number of unsaved changes and errors with Undo, Redo, Discard and Save.

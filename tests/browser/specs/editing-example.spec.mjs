@@ -20,7 +20,7 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"]]) {
     await cost.click(); await page.keyboard.press("F2");
     await cost.locator("input").fill("-12");
     await page.keyboard.press("Enter");
-    await expect(page.locator(".cx-edit-tip")).toHaveText("Cost must be at least 0.");
+    await expect(page.locator(".cx-edit-tip")).toHaveText("Cost (EUR) must be at least 0.");
     await shot(page, `editing-${theme}-${width}-refused`);
     await cost.locator("input").fill("2450,5".replace(",", "."));
     await page.keyboard.press("Enter");

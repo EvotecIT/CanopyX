@@ -20,6 +20,7 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
 </style>
 <script>
 (() => {
+  const money = new Intl.NumberFormat("en", { style: "currency", currency: "EUR" });
   const log = text => { document.getElementById("register-log").textContent = text; };
   // The mock service keeps its own copy of the rows and a revision, as a database would.
   const stored = new Map(), taken = new Set();
@@ -45,6 +46,8 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
   }, 400));
   CanopyX.configure("asset-register", {
     editing: {
+      // Edited costs show the same money text as the costs the page was written with.
+      formatters: { cost: value => money.format(value) },
       isEditable: (row, column) => row.cells.status !== "Retired" || column === "status",
       validators: {
         name: (value, row) => new Promise(resolve => setTimeout(() => resolve(
@@ -77,7 +80,7 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
             Validation = new CanopyCellValidation { Required = true, MaxLength = 60 } });
         grid.Columns.Add(new CanopyColumn("category", "Category") { Sortable = true, Editable = true,
             Editor = CanopyCellEditor.Select("Laptop", "Monitor", "Phone", "Printer", "Server", "Desk") });
-        grid.Columns.Add(new CanopyColumn("cost", "Cost") { Kind = CanopyColumnKind.Number, Sortable = true, Editable = true, Editor = CanopyCellEditor.Number(0, 100000, 0.01) });
+        grid.Columns.Add(new CanopyColumn("cost", "Cost (EUR)") { Kind = CanopyColumnKind.Number, Sortable = true, Editable = true, Editor = CanopyCellEditor.Number(0, 100000, 0.01) });
         grid.Columns.Add(new CanopyColumn("purchased", "Purchased") { Kind = CanopyColumnKind.DateTime, Sortable = true, Editable = true, Editor = CanopyCellEditor.Date(),
             Validation = new CanopyCellValidation { Earliest = new DateTimeOffset(2015, 1, 1, 0, 0, 0, TimeSpan.Zero) } });
         grid.Columns.Add(new CanopyColumn("warranty", "Warranty ends") { Kind = CanopyColumnKind.DateTime, Editable = true, Editor = CanopyCellEditor.DateTime() });
@@ -98,7 +101,9 @@ body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
             row.Cells["tag"] = "AS-" + (1000 + i).ToString(CultureInfo.InvariantCulture);
             row.Cells["name"] = category + " " + (i + 1).ToString("D2", CultureInfo.InvariantCulture);
             row.Cells["category"] = category;
-            row.Cells["cost"] = Math.Round(180 + i * 37.25 % 2400, 2);
+            // Money reads with two decimals: the page formats edited costs with the same formatter (editing.formatters).
+            var cost = Math.Round(180 + i * 37.25 % 2400, 2);
+            row.Cells["cost"] = new CanopyCell(cost) { Text = "€" + cost.ToString("N2", CultureInfo.InvariantCulture) };
             var purchased = new DateTime(2019 + i % 6, 1 + i % 12, 1 + i % 27, 0, 0, 0, DateTimeKind.Utc);
             row.Cells["purchased"] = purchased;
             row.Cells["warranty"] = purchased.AddYears(3).AddHours(17);

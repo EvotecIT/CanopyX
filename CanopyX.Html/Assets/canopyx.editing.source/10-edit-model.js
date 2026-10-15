@@ -80,7 +80,7 @@
       const mode = options.mode ?? view.mode ?? "cell", drawer = options.drawer ?? view.drawer ?? "phone";
       // Hooks are functions, maps are objects, and the mode and drawer are known words.
       if (!object(options) || !object(view) || ["isEditable", "validateRow", "commit"].some(name => options[name] != null && typeof options[name] !== "function") ||
-          ["validators", "lookups", "editors"].some(name => options[name] != null && !object(options[name])) ||
+          ["validators", "lookups", "editors", "formatters"].some(name => options[name] != null && !object(options[name])) ||
           !["cell", "row"].includes(mode) || !["phone", "always", "never"].includes(drawer)) throw new Error("CanopyX: invalid editing settings.");
       const editors = Object.assign({}, EDIT_EDITORS, ...this.plugins.map(item => item.editors || {}), options.editors);
       for (const [name, editor] of Object.entries(editors)) if (!editor || typeof editor.create !== "function")
@@ -131,8 +131,7 @@
         if (original === undefined) delete cells[spec.id]; else cells[spec.id] = original;
         delete entry.original[spec.id]; delete entry.values[spec.id]; delete entry.errors[spec.id];
       } else {
-        const option = (spec.options || state.seen?.get(spec.id))?.find(item => item.value === value);
-        cells[spec.id] = editCell(original, value, option && option.label !== String(value) ? option.label : undefined);
+        cells[spec.id] = editCell(original, value, this.editText(spec, value, record));
         entry.values[spec.id] = value;
       }
       entry.row = record; entry.error = entry.rowError = null; entry.rowErrors = {}; entry.committed = false;
@@ -148,6 +147,15 @@
       this.editChanged();
       this.emit("cellValueChanged", { ...detail, row: editCopy(record) });
       return true;
+    },
+
+    // The text an edited cell shows: the host's formatter for the column (the one its source text comes from), else the
+    // label of a select or lookup choice, else none, so the column's default formatting applies as it does to every cell.
+    editText(spec, value, record) {
+      const format = spec && this.edit.options.formatters?.[spec.id];
+      if (typeof format === "function" && value != null) return String(format(value, editCopy(record)));
+      const option = spec && (spec.options || this.edit.seen?.get(spec.id))?.find(item => item.value === value);
+      return option && option.label !== String(value) ? option.label : undefined;
     },
 
     // Runs several changes as one undo step (a row edit, a drawer save, a revert).
@@ -237,8 +245,7 @@
     if (changes?.size) for (const item of page.items) {
       const entry = changes.get(item.id);
       if (entry) for (const [column, value] of Object.entries(entry.values)) {
-        const option = (this.edit.specs.get(column)?.options || this.edit.seen?.get(column))?.find(choice => choice.value === value);
-        item.cells[column] = editCell(item.cells[column], value, option && option.label !== String(value) ? option.label : undefined);
+        item.cells[column] = editCell(item.cells[column], value, this.editText(this.edit.specs.get(column), value, item));
       }
     }
     const result = EDIT_STORE_PAGE.call(this, page);

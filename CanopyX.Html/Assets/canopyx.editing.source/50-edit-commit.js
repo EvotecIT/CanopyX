@@ -132,7 +132,7 @@
       for (const [column, value] of Object.entries(entry.saved)) {
         const current = cellValue(record.cells[column]);
         if (editSame(current, value)) { delete entry.values[column]; delete entry.original[column]; delete entry.errors[column]; }
-        else { entry.original[column] = editCell(entry.original[column], value); entry.values[column] = current; }
+        else { entry.original[column] = editCell(entry.original[column], value, this.editText(this.edit.specs.get(column), value, record)); entry.values[column] = current; }
       }
       for (const [column, cell] of Object.entries(canonical || {})) if (!Object.hasOwn(entry.values, column)) record.cells[column] = cell;
       if (inline) for (const column of new Set([...Object.keys(entry.saved), ...Object.keys(canonical || {})])) {

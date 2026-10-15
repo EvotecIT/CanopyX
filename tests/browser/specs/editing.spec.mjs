@@ -253,3 +253,34 @@ test("an editor that does not fit its column's kind and an unknown editing label
   expect(await page.evaluate(() => window.errors)).toEqual(["CanopyX: there is no label 'gridEditSav'."]);
   await page.evaluate(() => { window.errors.length = 0; });
 });
+
+test("an edited number reads like the unedited cells of its column", async ({ page }) => {
+  await serveGrid(page);
+  // a4 costs 1002 and is untouched; a0 gets the same value by typing it, and both show the column's one format.
+  const edited = cell(page, "a0", 2), neighbour = cell(page, "a4", 2);
+  await expect(neighbour).toHaveText("1,002");
+  await edited.click(); await page.keyboard.press("F2");
+  await edited.locator("input").fill("1002");
+  await page.keyboard.press("Enter");
+  await expect(edited).toHaveText(await neighbour.textContent());
+  await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setCellValue("a1", "cost", 1002));
+  await expect(cell(page, "a1", 2)).toHaveText("1,002");
+});
+
+test("columns whose source text the host formats keep that format when edited, through editing.formatters", async ({ page }) => {
+  const view = assetView();
+  for (const row of view.rows) row.cells.cost = { value: row.cells.cost, text: "€" + row.cells.cost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/, ",") };
+  await serveGrid(page, { view, script: `const money = new Intl.NumberFormat("en", { style: "currency", currency: "EUR" });
+    CanopyX.configure("assets", { editing: { formatters: { cost: value => money.format(value) } } });` });
+  const edited = cell(page, "a0", 2), neighbour = cell(page, "a4", 2);
+  await expect(neighbour).toHaveText("€1,002.00");
+  await edited.click(); await page.keyboard.press("F2");
+  // The editor edits the raw number, not the text.
+  await expect(edited.locator("input")).toHaveValue("900");
+  await edited.locator("input").fill("1002");
+  await page.keyboard.press("Enter");
+  await expect(edited).toHaveText("€1,002.00");
+  // Undo restores the source cell, text included.
+  await edited.click(); await page.keyboard.press("Control+z");
+  await expect(edited).toHaveText("€900.00");
+});

@@ -61,7 +61,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "a25a4f81ebd3a712",
+      "version": "efd5f39ab5302ef0",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
