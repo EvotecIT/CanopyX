@@ -224,18 +224,24 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
 
     /// <summary>
     /// The innermost groups of a grouped request in record order: level by level, each level's groups in its order (by value,
-    /// or by the level's aggregate over the group). One grouped scan reads the innermost groups and their counts; each level
-    /// ordered by an aggregate adds one scan over its prefix of the grouping columns.
+    /// or by the level's aggregate over the group). One grouped scan reads the innermost groups and their counts, with the
+    /// count, minimum and maximum aggregates of the levels, which combine exactly up the levels; a level ordered by a sum,
+    /// average or distinct count adds one scan over its prefix of the grouping columns, so its groups order exactly as the
+    /// summary computes them.
     /// </summary>
     private async Task<List<(QueryTranslator<T>.StoreGroup Group, int Start)>> OrderedLeavesAsync(QueryTranslator<T> translator, IQueryable<T> filtered,
         IReadOnlyList<CanopySummaryLevel> levels, CancellationToken cancellationToken) {
         var columns = levels.Select(level => level.Column.Id).ToList();
-        var leaves = await translator.GroupsAsync(filtered, columns, Array.Empty<CanopySummaryAggregate>(), 10001, Executor, cancellationToken).ConfigureAwait(false);
+        var exact = levels.Where(level => level.Aggregate != null).Select(level => level.Aggregate!).Where(aggregate => (aggregate.Operation == CanopyGridAggregateOperation.Count ||
+            aggregate.Operation == CanopyGridAggregateOperation.Minimum || aggregate.Operation == CanopyGridAggregateOperation.Maximum)).Distinct().ToList();
+        var leaves = await translator.GroupsAsync(filtered, columns, exact, 10001, Executor, cancellationToken).ConfigureAwait(false);
         if (leaves.Count > 10000) throw CanopyRequestException.Limit("The result has more groups than the protocol allows.");
         var aggregates = new Dictionary<string, double?>[levels.Count];
+        var combined = new int[levels.Count];
         for (var depth = 0; depth < levels.Count; depth++) {
             var aggregate = levels[depth].Aggregate;
-            if (aggregate == null) continue;
+            combined[depth] = aggregate == null ? -1 : exact.IndexOf(aggregate);
+            if (aggregate == null || combined[depth] >= 0) continue;
             var groups = await translator.GroupsAsync(filtered, columns.Take(depth + 1).ToList(), new[] { aggregate }, 10001, Executor, cancellationToken).ConfigureAwait(false);
             if (groups.Count > 10000) throw CanopyRequestException.Limit("The result has more groups than the protocol allows.");
             aggregates[depth] = groups.ToDictionary(group => PathKey(group.KeyValues, depth + 1), group => group.Values[0], StringComparer.Ordinal);
@@ -248,7 +254,9 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
                 if (!node.Children.TryGetValue(key, out var child)) {
                     node.Children[key] = child = new GroupNode(leaf.KeyValues[depth]);
                     if (aggregates[depth] != null) child.Aggregate = aggregates[depth].TryGetValue(PathKey(leaf.KeyValues, depth + 1), out var value) ? value : null;
+                    else if (combined[depth] >= 0 && levels[depth].Aggregate!.Operation == CanopyGridAggregateOperation.Count) child.Aggregate = 0;
                 }
+                if (combined[depth] >= 0) child.Aggregate = Combine(levels[depth].Aggregate!.Operation, child.Aggregate, leaf.Values[combined[depth]]);
                 child.Count += leaf.Count;
                 node = child;
             }
@@ -270,6 +278,14 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         }
         Walk(root, 0);
         return ordered;
+    }
+
+    /// <summary>Combines a group's count, minimum or maximum with one inner group's: these combine exactly.</summary>
+    private static double? Combine(CanopyGridAggregateOperation operation, double? total, double? part) {
+        if (operation == CanopyGridAggregateOperation.Count) return (total ?? 0) + (part ?? 0);
+        if (!part.HasValue) return total;
+        if (!total.HasValue) return part;
+        return operation == CanopyGridAggregateOperation.Minimum ? Math.Min(total.Value, part.Value) : Math.Max(total.Value, part.Value);
     }
 
     /// <summary>

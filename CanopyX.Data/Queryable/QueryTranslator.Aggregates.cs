@@ -100,12 +100,17 @@ internal sealed partial class QueryTranslator<T> {
         var projection = Expression.Lambda<Func<IGrouping<TKey, T>, AggregateRow<TKey>>>(Expression.MemberInit(Expression.New(rowType), bindings), group);
         var keyLambda = Expression.Lambda<Func<T, TKey>>(key, Row);
         var rows = source.GroupBy(keyLambda).Select(projection);
+        // Ordering by the key makes the bounded read deterministic; the endpoint applies the protocol's group order afterwards.
+        var item = Expression.Parameter(rowType, "row");
+        Expression key0 = Expression.Property(item, nameof(AggregateRow<TKey>.Key));
         if (width <= 1) {
-            // Ordering by the key makes the bounded read deterministic; the endpoint applies the protocol's group order afterwards.
-            var item = Expression.Parameter(rowType, "row");
-            rows = rows.OrderBy(Expression.Lambda<Func<AggregateRow<TKey>, TKey>>(Expression.Property(item, nameof(AggregateRow<TKey>.Key)), item));
+            rows = rows.OrderBy(Expression.Lambda<Func<AggregateRow<TKey>, TKey>>(key0, item));
+        } else {
+            var members = CompositeKeys.Members(typeof(TKey));
+            var ordered = (IOrderedQueryable<AggregateRow<TKey>>)Order(rows, Expression.Lambda(Expression.Property(key0, members[0]), item), nameof(Queryable.OrderBy));
+            for (var i = 1; i < members.Length; i++) ordered = (IOrderedQueryable<AggregateRow<TKey>>)Order(ordered, Expression.Lambda(Expression.Property(key0, members[i]), item), nameof(Queryable.ThenBy));
+            rows = ordered;
         }
-        // A composite read is complete or rejected (callers ask for one group more than they accept), so its order does not matter.
         var list = await executor.ToListAsync(rows.Take(take), cancellationToken).ConfigureAwait(false);
         var result = new List<StoreGroup>(list.Count);
         foreach (var row in list) {
@@ -184,6 +189,12 @@ internal sealed partial class QueryTranslator<T> {
 
     private static IOrderedQueryable<TRow> ThenByKey<TRow, TKey>(IOrderedQueryable<TRow> rows, Expression<Func<TRow, TKey>> key, bool canonical) =>
         canonical && typeof(TKey) == typeof(string) ? rows.ThenBy(key, (IComparer<TKey>)StringComparer.Ordinal) : rows.ThenBy(key);
+
+    private static IQueryable Order(IQueryable source, LambdaExpression key, string name) {
+        var method = typeof(Queryable).GetMethods().Single(candidate => candidate.Name == name && candidate.GetParameters().Length == 2)
+            .MakeGenericMethod(source.ElementType, key.ReturnType);
+        return (IQueryable)method.Invoke(null, new object[] { source, key })!;
+    }
 
     private static MethodInfo Method(string name, int parameters) => typeof(Enumerable).GetMethods()
         .Single(method => method.Name == name && method.GetParameters().Length == parameters);
