@@ -118,7 +118,7 @@
       const cell = this.cellOf(node, column, position), object = isCellObject(cell);
       if (typeof column.render === "function") {
         try { if (column.render(node, value, { column: column.id, level: 1, expanded: false, index: position, signal: context.signal,
-          onDispose: cleanup => context.signal.addEventListener("abort", cleanup, { once: true }) }) === true) return; }
+          onDispose: cleanup => { if (context.signal.aborted) cleanup(); else context.signal.addEventListener("abort", cleanup, { once: true }); } }) === true) return; }
         catch (error) { this.emit("error", { error }); }
       }
       const text = cellText(cell, column, this.fmt), span = h("span");

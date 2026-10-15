@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "b17d7233f099f83c",
+      "version": "8e4e7e4b96163db1",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "9abffd80021ef3eb",
+      "version": "ba59a14d582e92fd",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -217,7 +217,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "7effa3ded816d814",
+      "version": "fc73e8b146d2d772",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [

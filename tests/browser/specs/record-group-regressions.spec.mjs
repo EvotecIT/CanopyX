@@ -198,6 +198,36 @@ test("detail HTML and record icons respect sanitation and Trusted Types", async 
   expect(await page.evaluate("sanitized.at(-1)")).toEqual({ html: "<b>host markup</b>", kind: "detail" });
 });
 
+test("tree drawer cleanup registered after async setup runs after repaint and close", async ({ page }) => {
+  const view = { protocol: "canopyx/2", type: "view", id: "tree-lifetime", label: "Tree lifetime", rowHeight: 28, pageSize: 20, selection: "none",
+    source: { kind: "inline" }, columns: [{ id: "name", title: "Name", kind: "text" }, { id: "status", title: "Status", kind: "text" }],
+    roots: [{ id: "a", label: "Alpha", cells: { status: "Active" } }, { id: "b", label: "Beta", cells: { status: "Idle" } }] };
+  await openView(page, view, `window.drawerSetups = []; CanopyX.configure('tree-lifetime', { renderers: {
+    status(node, element, context) {
+      if (!element.matches('dd')) return false;
+      element.textContent = node.cells.status;
+      const setup = { context, disposed: 0 }; drawerSetups.push(setup);
+      setup.ready = (async () => {
+        await new Promise(resolve => { setup.finish = resolve; });
+        context.onDispose(() => setup.disposed++);
+      })();
+      return true;
+    }
+  } });`);
+  await page.evaluate(api + ".openDetails('a')");
+  await expect(drawer(page).locator('dd[data-cx-field="status"]')).toHaveText("Active");
+  await drawer(page).getByRole("button", { name: "Next record", exact: true }).click();
+  await expect(drawer(page).locator('dd[data-cx-field="status"]')).toHaveText("Idle");
+  expect(await page.evaluate("drawerSetups[0].context.signal.aborted")).toBe(true);
+  await page.evaluate(async () => { drawerSetups[0].finish(); await drawerSetups[0].ready; });
+  expect(await page.evaluate("drawerSetups[0].disposed")).toBe(1);
+  await drawer(page).getByRole("button", { name: "Close record details", exact: true }).click();
+  await expect(drawer(page)).toHaveCount(0);
+  expect(await page.evaluate("drawerSetups[1].context.signal.aborted")).toBe(true);
+  await page.evaluate(async () => { drawerSetups[1].finish(); await drawerSetups[1].ready; });
+  expect(await page.evaluate("drawerSetups.map(setup => setup.disposed)")).toEqual([1, 1]);
+});
+
 for (const kind of ["grid", "tree"]) for (const input of ["pointer", "keyboard"]) test(`${kind} record repaint fallback keeps the title focus treatment after ${input} input`, async ({ page }) => {
   const view = recordView(); view.record.sections[0].renderer = "temporary";
   if (kind === "tree") { view.type = "view"; view.rowHeight = 28; view.roots = view.rows.map(row => ({ ...row, label: row.cells.name })); delete view.rows; }

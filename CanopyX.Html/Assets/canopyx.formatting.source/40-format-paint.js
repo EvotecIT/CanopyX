@@ -69,7 +69,10 @@
       slot.highlighted = true;
       formatDecorate(slot.cell, target, slot.fx, slot.textSpan, "fill");
     }
-    if (first && first.hiddenFields) this.formatHiddenFields(first, result);
+    if (first && first.hiddenFields) {
+      const details = this.formatResult(row.h, true);
+      if (details) this.formatHiddenFields(first, details);
+    }
   };
   // The phone "+N" button names the flagged fields it hides (a tone, an icon, a badge or a cue; bars and scales are not
   // flags) and takes the strongest tone among them.

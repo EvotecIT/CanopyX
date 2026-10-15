@@ -23,7 +23,7 @@
       setQuery(input, paging) {
         const desired = this.linkFilters || [];
         if (!desired.length && !this.linkAcceptedExt && !this.linkSent) return SET_QUERY.call(this, input, paging);
-        // A query from queryForChange carries the reader's conditions only; any other (a host's, a saved state) may end with them.
+        // Reader changes and parsed saved state carry reader conditions; a full effective query may end in external predicates.
         const ext = linkPredicates(desired), own = !input || !input.filters ? [] : input[LINK_OWN] ? input.filters : strip(input.filters, tailOf(this, true));
         const before = this.queryEpoch, promise = SET_QUERY.call(this, { ...(input || {}), filters: own.concat(ext), [LINK_OWN]: undefined }, paging);
         // The base takes its epoch before its first wait, so the accepted query later tells which call it came from; a call
@@ -48,8 +48,9 @@
       getState() {
         const state = GET_STATE.call(this);
         if (!this.linkAcceptedExt) return state;
-        const kept = linkPredicates((this.linkCommitted || []).filter(filter => filter.persist));
-        return { ...state, query: { ...state.query, filters: strip(state.query.filters, this.linkAcceptedExt).concat(kept) } };
+        const own = strip(state.query.filters, this.linkAcceptedExt);
+        const kept = linkPredicates((this.linkCommitted || []).filter(filter => filter.persist)).filter(filter => !own.some(item => same(item, filter)));
+        return { ...state, query: { ...state.query, filters: own.concat(kept) } };
       },
       /** Commits the filters through a query that keeps the reader's search, filters and sort; a newer query resolves it false. */
       async linkCommit(next, reason) {

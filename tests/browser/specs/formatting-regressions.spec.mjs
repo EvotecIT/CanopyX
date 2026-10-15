@@ -6,8 +6,8 @@ import { nextFrames } from "./support.mjs";
 
 const cell = (page, id, index) => page.locator('.cx-row[data-cx-id="' + id + '"] .cx-cell').nth(index);
 
-async function open(page, rules, rows) {
-  const view = healthView(2, { formatRules: rules, ...(rows ? { rows } : {}) });
+async function open(page, rules, rows, extra = {}) {
+  const view = healthView(2, { formatRules: rules, ...(rows ? { rows } : {}), ...extra });
   await page.route(ORIGIN + "/formatting-regressions", route => route.fulfill({ contentType: "text/html", body: formattingPage(view) }));
   await page.goto(ORIGIN + "/formatting-regressions");
   await page.evaluate(() => { window.grid = document.querySelector("[data-canopyx-host]").canopyx; return grid.ready; });
@@ -69,6 +69,47 @@ test("drawer formatting merges only aspects from rules that allow details", asyn
   await expect(value.locator(".cx-fmt-badge")).toHaveCount(0);
   await expect(value.locator(".cx-sr-only")).toHaveText(", Drawer cue");
   expect(await value.evaluate(element => element.style.getPropertyValue("--cx-fmt"))).toBe("");
+});
+
+test("phone hidden-field cues exclude tones and descriptions from grid-only formatting rules", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, [{ id: "grid-only", description: "Grid-only danger", column: "cpu", details: false, style: { tone: "danger", badge: "private" } },
+    { id: "details", description: "Drawer-safe cue", column: "cpu", style: { cue: "public" } }], undefined,
+    { columns: healthView().columns.map(column => column.id === "cpu" ? { ...column, hidden: true } : column) });
+  const hidden = page.locator('.cx-row[data-cx-id="srv-00000"] .cx-hidden-fields');
+  await expect(hidden).toHaveClass(/cx-fmt-flag/);
+  await expect(hidden).toHaveAttribute("aria-label", /Drawer-safe cue/);
+  await expect(hidden).not.toHaveAttribute("aria-label", /Grid-only danger/);
+  expect(await hidden.evaluate(button => button.style.getPropertyValue("--cx-fmt"))).not.toContain("danger");
+  await hidden.click();
+  const value = page.locator('.cx-drawer dd[data-cx-field="cpu"]');
+  await expect(value.locator(".cx-fmt-cue")).toHaveText("public");
+  await expect(value.locator(".cx-fmt-badge")).toHaveCount(0);
+  await expect(value.locator(".cx-sr-only")).toHaveText(", Drawer-safe cue");
+  expect(await value.evaluate(element => element.style.getPropertyValue("--cx-fmt"))).not.toContain("danger");
+});
+
+test("reporting state restoration rejects destruction from onSelect without an unhandled formatting rejection", async ({ page }) => {
+  const pageErrors = []; page.on("pageerror", error => pageErrors.push(error.message));
+  const view = healthView(2, { reporting: {}, formatRules: [] });
+  const script = `window.unhandled = []; window.selectionAtDestroy = [];
+    window.addEventListener("unhandledrejection", event => unhandled.push(event.reason?.name || String(event.reason)));
+    CanopyX.configure("health", { onSelect({ ids }) {
+      if (ids.length) { window.selectionAtDestroy = ids; document.querySelector("[data-canopyx-host]").canopyx.destroy(); }
+    } });`;
+  await page.route(ORIGIN + "/reporting-format-state", route => route.fulfill({ contentType: "text/html", body: formattingPage(view, { script }) }));
+  await page.goto(ORIGIN + "/reporting-format-state");
+  const result = await page.evaluate(async () => {
+    const host = document.querySelector("[data-canopyx-host]"), grid = host.canopyx; await grid.ready;
+    const outcome = await grid.setState({ ...grid.getState(), selection: ["srv-00000"],
+      formatRules: [{ id: "changed", column: "status", style: { tone: "danger" } }] })
+      .then(() => "accepted", error => error.name);
+    return { outcome, selected: selectionAtDestroy, destroyed: !host.canopyx, rules: grid.getFormatRules() };
+  });
+  await nextFrames(page);
+  expect(result).toEqual({ outcome: "AbortError", selected: ["srv-00000"], destroyed: true, rules: [] });
+  expect(await page.evaluate(() => unhandled)).toEqual([]);
+  expect(pageErrors).toEqual([]);
 });
 
 test("stopIfTrue prevents later rules when its numeric paint has no value", async ({ page }) => {

@@ -194,6 +194,48 @@ test("identical reader filters survive normalized sorting paging reload and link
   expect((await page.evaluate(`${api}.getPaging()`)).matched).toBe(2);
 });
 
+for (const method of ["setState", "applySavedView"]) for (const persist of [false, true])
+  test(`saved reader filters survive ${method} with external persistence ${persist}`, async ({ page }) => {
+    await serveGrid(page, { view: plain() });
+    await page.evaluate(`${api}.setQuery({filters:[${JSON.stringify(condition("Berlin"))}]})`);
+    await page.evaluate(`${api}.setExternalFilter('sites',{field:'site',values:['Berlin'],persist:${persist}})`);
+    const state = await page.evaluate(`JSON.parse(JSON.stringify(${api}.getState()))`);
+    expect(state.query.filters).toEqual([condition("Berlin")]);
+    await page.evaluate(`${api}.saveView('Berlin')`);
+    for (let pass = 0; pass < 2; pass++) {
+      if (method === "setState") await page.evaluate(state => document.querySelector('[data-canopyx-host]').canopyx.setState(state), state);
+      else await page.evaluate(`${api}.applySavedView('Berlin')`);
+      expect(await page.evaluate(`${api}.getState().query.filters`)).toEqual([condition("Berlin")]);
+    }
+    await page.evaluate(`${api}.clearExternalFilters()`);
+    expect(await page.evaluate(`${api}.getQuery().filters`)).toEqual([condition("Berlin")]);
+    expect((await page.evaluate(`${api}.getPaging()`)).matched).toBe(2);
+  });
+
+for (const method of ["setState", "applySavedView"])
+  test(`persistent linked state survives ${method} after its external source is cleared`, async ({ page }) => {
+    await serveGrid(page, { view: plain() });
+    await page.evaluate(`${api}.setExternalFilter('sites',{field:'site',values:['Berlin'],persist:true})`);
+    const state = await page.evaluate(`${api}.getState()`); await page.evaluate(`${api}.saveView('Berlin')`);
+    await page.evaluate(`${api}.clearExternalFilters()`);
+    expect(await page.evaluate(`${api}.getQuery().filters`)).toEqual([]);
+    if (method === "setState") await page.evaluate(state => document.querySelector('[data-canopyx-host]').canopyx.setState(state), state);
+    else await page.evaluate(`${api}.applySavedView('Berlin')`);
+    expect(await page.evaluate(`${api}.getQuery().filters`)).toEqual([condition("Berlin")]);
+    expect(await page.evaluate(`${api}.getExternalFilters()`)).toEqual([]);
+    expect((await page.evaluate(`${api}.getPaging()`)).matched).toBe(2);
+  });
+
+test("setQuery accepts a full effective query without converting its external tail into reader state", async ({ page }) => {
+  await serveGrid(page, { view: plain() });
+  await page.evaluate(`${api}.setQuery({filters:[${JSON.stringify(condition("Berlin"))}]})`);
+  await page.evaluate(`${api}.setExternalFilter('sites',{field:'site',values:['Berlin']})`);
+  await page.evaluate(`${api}.setQuery(${api}.getQuery())`);
+  expect(await page.evaluate(`${api}.getQuery().filters`)).toEqual([condition("Berlin"), condition("Berlin")]);
+  await page.evaluate(`${api}.clearExternalFilters()`);
+  expect(await page.evaluate(`${api}.getQuery().filters`)).toEqual([condition("Berlin")]);
+});
+
 test("Clear all recovers from the first linked filter producing an empty result", async ({ page }) => {
   await serveGrid(page, { view: plain() }); await page.evaluate(`${api}.setExternalFilter('sites',{field:'site',values:['Missing']})`);
   await page.locator(".cx-grid-notice .acts button").click();

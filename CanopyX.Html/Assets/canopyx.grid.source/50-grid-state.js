@@ -56,7 +56,8 @@
       if (!input || typeof input !== "object" || !Array.isArray(input.sort) || !Array.isArray(input.filters)) throw new Error("CanopyX: invalid state query.");
       const known = id => this.columns.some(column => column.id === id);
       const query = gridQuery(this.view, gridQueryStart(input, {
-        sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }), true);
+        sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)),
+        [LINK_IMPL.queryOwn]: true }), true);
       const parsed = { version: 1, view: this.view.id, columns, query,
         timeZone: state.timeZone, selection, scrollTop: state.scrollTop, formatRules: state.formatRules };
       if (this.paged || state.paging) {
