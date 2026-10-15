@@ -50,8 +50,16 @@ public static class FleetDetailsSeed {
         ("Password manager", "Litware"), ("Log shipper", "Fabrikam"), ("Web server", "Open Source"), ("Message broker", "Contoso"), ("Scripting runtime", "Open Source"),
         ("Device drivers", null), ("Firmware tools", null), ("Text editor", "Open Source"), ("Diagram tool", "Adatum")
     };
-    private static readonly string[] Kinds = { "Inspection", "Repair", "Upgrade", "Failure" };
-    private static readonly string[] Summaries = { "Replaced a fan", "Cleaned filters", "Upgraded memory", "Replaced a disk", "Updated firmware", "Checked cabling", "Power supply failed", "Moved to a new rack position" };
+    // Each visit's summary with the kind it is, so a timeline tag always fits its event.
+    private static readonly (string Summary, string Kind)[] Visits = {
+        ("Replaced a fan", "Repair"), ("Cleaned filters", "Inspection"), ("Upgraded memory", "Upgrade"), ("Replaced a disk", "Repair"),
+        ("Updated firmware", "Upgrade"), ("Checked cabling", "Inspection"), ("Power supply failed", "Failure"), ("Disk reported read errors", "Failure"),
+        ("Routine health check", "Inspection"), ("Replaced the power supply", "Repair")
+    };
+    private static readonly string[] OperatingSystems = { "Windows", "Linux", "macOS", "FreeBSD" };
+    private static readonly string[] SiteNames = { "Amsterdam", "Austin", "Berlin", "Singapore", "São Paulo", "Sydney", "Toronto", "Warsaw" };
+    private static readonly string[] TeamNames = { "Platform", "Data", "Payments", "Identity", "Edge", "Research", "Support" };
+    private static readonly string[] BackupPlans = { "None", "Weekly", "Daily", "Hourly" };
     private static readonly string[] Technicians = { "Alex", "Sam", "Robin", "Kim", "Jordan", "Taylor" };
     private static readonly string[] Settings = { "Memory (GB)", "Cores", "Operating system", "Site", "Team", "Backup plan" };
     private static readonly string[] Notes = { "Spare parts kept on site.", "Scheduled for replacement next quarter.", "Hosts a shared build cache.", "Keep online during business hours.", "Battery replaced last year." };
@@ -75,6 +83,8 @@ public static class FleetDetailsSeed {
     /// <summary>Inserts every machine's software, maintenance events and configuration changes.</summary>
     public static void Insert(SqliteConnection connection, SqliteTransaction transaction, int rows, DateTime now) {
         var random = new Random(4242);
+        var history = new Random(4343);
+        var current = CurrentValues(connection, transaction, rows);
         using var software = Command(connection, transaction, "INSERT INTO InstalledSoftware (MachineId, Name, Version, Publisher, InstalledOn) VALUES ($machine, $name, $version, $publisher, $installed)", out var s);
         using var events = Command(connection, transaction, "INSERT INTO MaintenanceEvents (MachineId, At, Kind, Summary, Technician) VALUES ($machine, $at, $kind, $summary, $technician)", out var e);
         using var changes = Command(connection, transaction, "INSERT INTO ConfigurationChanges (MachineId, At, Setting, Before, After) VALUES ($machine, $at, $setting, $before, $after)", out var c);
@@ -90,18 +100,67 @@ public static class FleetDetailsSeed {
                 software.ExecuteNonQuery();
             }
             for (var i = random.Next(7); i > 0; i--) {
-                var kind = Kinds[random.Next(Kinds.Length)];
+                var (summary, kind) = Visits[random.Next(Visits.Length)];
                 e[0].Value = machine; e[1].Value = Date(now.AddMinutes(-random.Next(60, 60 * 24 * 400))); e[2].Value = kind;
-                e[3].Value = Summaries[random.Next(Summaries.Length)]; e[4].Value = random.Next(6) == 0 ? DBNull.Value : Technicians[random.Next(Technicians.Length)];
+                e[3].Value = summary; e[4].Value = random.Next(6) == 0 ? DBNull.Value : Technicians[random.Next(Technicians.Length)];
                 events.ExecuteNonQuery();
             }
-            for (var i = random.Next(5); i > 0; i--) {
-                c[0].Value = machine; c[1].Value = Date(now.AddMinutes(-random.Next(60, 60 * 24 * 200))); c[2].Value = Settings[random.Next(Settings.Length)];
-                c[3].Value = random.Next(5) == 0 ? DBNull.Value : "v" + random.Next(1, 9); c[4].Value = "v" + random.Next(1, 9);
+            // Changes run back from the machine's current values: the newest change of a setting ends on its value today, and each
+            // older one ends where the next one starts, in the setting's own type and unit.
+            var values = new Dictionary<string, string?>(current[machine - 1]);
+            var at = now;
+            for (var i = history.Next(5); i > 0; i--) {
+                var setting = Settings[history.Next(Settings.Length)];
+                if (!values.TryGetValue(setting, out var after) || after == null) continue;
+                var before = Earlier(history, setting, after);
+                at = at.AddMinutes(-history.Next(60, 60 * 24 * 50));
+                c[0].Value = machine; c[1].Value = Date(at); c[2].Value = setting;
+                c[3].Value = (object?)before ?? DBNull.Value; c[4].Value = after;
                 changes.ExecuteNonQuery();
+                values[setting] = before;
             }
         }
     }
+
+    /// <summary>Each machine's values today for the settings its changes record, as the grid shows them.</summary>
+    private static List<Dictionary<string, string?>> CurrentValues(SqliteConnection connection, SqliteTransaction transaction, int rows) {
+        var values = new List<Dictionary<string, string?>>(rows);
+        using var read = connection.CreateCommand();
+        read.Transaction = transaction;
+        read.CommandText = "SELECT Id, Site, Os, Cores, MemoryGb, TeamId FROM Machines ORDER BY Id";
+        using var reader = read.ExecuteReader();
+        var plans = new Random(4444);
+        while (reader.Read()) {
+            values.Add(new Dictionary<string, string?> {
+                ["Site"] = reader.IsDBNull(1) ? null : reader.GetString(1),
+                ["Operating system"] = OperatingSystems[reader.GetInt32(2)],
+                ["Cores"] = reader.IsDBNull(3) ? null : reader.GetInt32(3).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["Memory (GB)"] = Number(reader.GetDouble(4)),
+                ["Team"] = reader.IsDBNull(5) ? null : TeamNames[reader.GetInt32(5) - 1],
+                ["Backup plan"] = BackupPlans[1 + plans.Next(BackupPlans.Length - 1)]
+            });
+        }
+        return values;
+    }
+
+    /// <summary>A plausible value of a setting before it changed to <paramref name="after"/>; null when it was not set yet.</summary>
+    private static string? Earlier(Random random, string setting, string after) {
+        string Other(string[] choices) { string value; do value = choices[random.Next(choices.Length)]; while (value == after); return value; }
+        switch (setting) {
+            case "Memory (GB)":
+                var memory = double.Parse(after, System.Globalization.CultureInfo.InvariantCulture);
+                return Number(memory > 2 ? Math.Round(memory / 2, 1) : memory * 2);
+            case "Cores":
+                var cores = int.Parse(after, System.Globalization.CultureInfo.InvariantCulture);
+                return (cores > 1 ? cores / 2 : 2).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            case "Operating system": return Other(OperatingSystems);
+            case "Site": return random.Next(6) == 0 ? null : Other(SiteNames);
+            case "Team": return random.Next(6) == 0 ? null : Other(TeamNames);
+            default: return Other(BackupPlans);
+        }
+    }
+
+    private static string Number(double value) => value.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
     private static string Date(DateTime value) => value.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
 
