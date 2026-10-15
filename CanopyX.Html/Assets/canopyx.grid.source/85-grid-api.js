@@ -1,4 +1,5 @@
   // ---------- flat-grid entry point ----------
+  LINK_IMPL.DataGrid = DataGrid; LINK_IMPL.gridQueryStart = gridQueryStart; linkMethods(DataGrid); linkGridPart(DataGrid);
   /** Creates a flat grid. A host source implements query(gridQuery, { signal }) and returns a complete gridPage. */
   function createDataGrid(host, options) {
     if (!host || !options || !options.view) throw new Error("CanopyX: createDataGrid needs a host element and a grid document.");
@@ -17,8 +18,10 @@
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
       "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "openDetails", "scrollToRow", "retry", "closeMenus"])
-      api[name] = grid[name].bind(grid);
+      // Each call looks the method up, so a part installed later (the link part) serves the API it replaces.
+      api[name] = (...args) => grid[name](...args);
     GRID_REPORTING.api?.(api, grid);
+    Object.assign(api, linkApi(grid));
     Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
   }

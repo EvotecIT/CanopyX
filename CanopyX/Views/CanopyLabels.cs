@@ -240,6 +240,12 @@ public sealed partial class CanopyLabels {
         [nameof(UtcTime)] = "{time} UTC",
         [nameof(LocalTime)] = "{time} local time",
         [nameof(MountError)] = "This view could not be displayed: {error}",
+        [nameof(LinkFilteredBy)] = "Filtered by {source}: {values}",
+        [nameof(LinkRemoveFilter)] = "Remove the filter from {source}: {values}",
+        [nameof(LinkFiltered)] = "Filtered by {source}: {count} rows",
+        [nameof(LinkHighlighted)] = "{count} rows highlighted from {source}",
+        [nameof(LinkHighlightedRows)] = "{count} rows highlighted",
+        [nameof(LinkCleared)] = "Linked filters removed",
         [nameof(OverflowNote)] = "Showing {shown} of {total} rows.",
         [nameof(UnknownTotal)] = "unknown",
         [nameof(HiddenRows)] = "{count} rows below are not shown",
@@ -283,7 +289,8 @@ public sealed partial class CanopyLabels {
         nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(QueryFailed), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
         nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError),
         nameof(Actions), nameof(EditValue), nameof(SaveEdit), nameof(CancelEdit), nameof(InvalidEdit), nameof(InteractionPending),
-        nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove)
+        nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove),
+        nameof(LinkFilteredBy), nameof(LinkRemoveFilter), nameof(LinkFiltered), nameof(LinkHighlighted), nameof(LinkHighlightedRows), nameof(LinkCleared)
     };
 
     private static readonly string[] InteractionNames = {

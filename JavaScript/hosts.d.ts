@@ -149,6 +149,8 @@ interface HostOptionsBase {
   actions?: readonly TreeAction[];
   /** Plugins for this tree only, after the page's (CanopyX.use); one replaces a page plugin of the same name. */
   plugins?: readonly CanopyPlugin[];
+  /** Loads the link part when the tree is created and reports its selection as canopyx:linkchange (LinkChange). */
+  linkEvents?: boolean;
   /** Safety timeout for export format writers, 1..2147483647 ms (default 600000). */
   exportTimeoutMs?: number;
   retainedNodeLimit?: number;
@@ -204,3 +206,67 @@ export type NodeFilter = ((node: CanopyNode) => boolean) | {
   match(node: CanopyNode): boolean;
   keep?(node: CanopyNode): boolean;
 };
+
+// ---------- linked views (docs/linked-views.md) ----------
+/** A raw value an external filter or a link payload carries. */
+export type LinkValue = string | number | boolean;
+interface ExternalFilterText {
+  /** The chip shows this instead of the values. */
+  label?: string;
+  /** Who applied the filter, as the chip and announcements name it; defaults to the source id. */
+  sourceLabel?: string;
+  /** Keep the filter in the state saved views and the remembered state store; off by default. */
+  persist?: boolean;
+}
+/** What another view applies: 1 to 1000 values of a declared column, or a [from, to] range (either end null) of a number or date column. */
+export type ExternalFilterInput = ExternalFilterText & (
+  | { field: string; values: readonly LinkValue[]; range?: never }
+  | { field: string; range: readonly [LinkValue, LinkValue | null] | readonly [null, LinkValue]; values?: never });
+/** An applied external filter, as getExternalFilters and canopyx:externalfilter report it. */
+export interface ExternalFilter {
+  readonly source: string;
+  readonly field: string;
+  readonly values?: readonly LinkValue[];
+  readonly range?: readonly [LinkValue | null, LinkValue | null];
+  readonly label?: string;
+  readonly sourceLabel: string;
+  readonly persist: boolean;
+}
+export interface HighlightOptions {
+  /** Scroll the first highlighted row into view (default true). */
+  scroll?: boolean;
+  /** Who asked, for the screen-reader announcement. */
+  source?: string;
+}
+/** The detail of canopyx:externalfilter: the filters now applied, and whether the reader removed one (a chip or Clear all). */
+export interface ExternalFilterEvent {
+  readonly filters: readonly ExternalFilter[];
+  readonly reason: "api" | "user";
+}
+/**
+ * The detail of canopyx:linkchange, which a view with linkEvents dispatches: the reader's selection (select, with the row keys
+ * and each column's distinct values across the selected loaded rows) or a flat grid's own eq and in conditions (filter, by
+ * column), and clear when either became empty. External filters and highlights never report.
+ */
+export interface LinkChange {
+  readonly view: string;
+  readonly action: "select" | "filter" | "clear";
+  readonly scope: "select" | "filter";
+  readonly keys: readonly string[];
+  readonly values: Readonly<Record<string, readonly LinkValue[]>>;
+  readonly label: string;
+}
+/** The link methods of trees and flat grids. The first call loads the link part; the getters answer without it. */
+export interface LinkedView {
+  /** Replaces the external filters of one source (1 to 128 letters, digits, '.', ':', '_' or '-'); null removes them. Resolves once the view shows the result. */
+  setExternalFilter(source: string, filter: ExternalFilterInput | readonly ExternalFilterInput[] | null): Promise<boolean>;
+  /** Removes every external filter, or those of one source. */
+  clearExternalFilters(source?: string): Promise<boolean>;
+  getExternalFilters(): ExternalFilter[];
+  /** Marks the rows with these keys (at most 10000) without filtering; resolves with the number of keys. */
+  setHighlight(keys: readonly string[], options?: HighlightOptions): Promise<number>;
+  clearHighlight(): Promise<number>;
+  getHighlight(): string[];
+  /** Starts canopyx:linkchange on a view created without linkEvents (for hosts that link views after they mount). */
+  startLinkEvents(): Promise<void>;
+}

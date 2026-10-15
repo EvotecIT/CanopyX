@@ -1,7 +1,7 @@
 import CanopyX from "./index.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
-import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
+import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, LinkedView } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
 export * from "./index.js";
 
@@ -512,6 +512,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   actions?: readonly GridAction<Q>[];
   /** Plugins for this grid only, after the page's (CanopyX.use); one replaces a page plugin of the same name. */
   plugins?: readonly CanopyPlugin[];
+  /** Loads the link part when the grid is created and reports its selection and own conditions as canopyx:linkchange (LinkChange). */
+  linkEvents?: boolean;
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
 }
@@ -526,7 +528,7 @@ export type GridOptions = GridHostOptions & ({ view: InlineGridView } | { view: 
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends LinkedView {
   readonly element: HTMLElement;
   readonly view: GridView;
   readonly ready: Promise<Q>;

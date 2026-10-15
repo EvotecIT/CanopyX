@@ -215,6 +215,12 @@ const labels = Object.freeze({
   utcTime: "{time} UTC",
   localTime: "{time} czasu lokalnego",
   mountError: "Nie można wyświetlić widoku: {error}",
+  linkFilteredBy: "Filtr z {source}: {values}",
+  linkRemoveFilter: "Usuń filtr z {source}: {values}",
+  linkFiltered: "Filtr z {source}, wiersze: {count}",
+  linkHighlighted: "Wyróżnione wiersze z {source}: {count}",
+  linkHighlightedRows: "Wyróżnione wiersze: {count}",
+  linkCleared: "Usunięto powiązane filtry",
 });
 const staticLabels = Object.freeze({
   overflowNote: "Pokazano {shown} z {total} wierszy.",

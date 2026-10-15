@@ -1,0 +1,19 @@
+/* Linked views: external filter chips and highlighted rows. The info tone keeps both apart from the reader's own chips and selection. */
+.cx-has-linked,.cx-link-bar,.cx-link-chip { --cx-linked-bg:color-mix(in srgb,var(--cx-tone-info) 14%,var(--cx-surface)); }
+.cx-has-linked .cx-row[data-cx-linked="true"] { background:var(--cx-linked-bg); }
+.cx-has-linked .cx-row[data-cx-linked="true"][aria-selected="true"] { background:color-mix(in srgb,var(--cx-tone-info) 14%,var(--cx-selected-bg)); }
+.cx-has-linked .cx-row[data-cx-linked="true"] [data-cx-pin] { background:var(--cx-linked-bg); }
+.cx-has-linked .cx-row[data-cx-linked="true"] > :first-child { box-shadow:inset var(--cx-size-3px) 0 0 var(--cx-tone-info); }
+.cx-link-bar { flex:none;display:flex;flex-wrap:wrap;gap:var(--cx-size-6px);padding:0 0 var(--cx-size-8px);min-width:0; }
+.cx-link-chip { max-width:100%;height:var(--cx-size-24px);min-height:var(--cx-size-24px);padding:0 var(--cx-size-9px);border:0;border-radius:var(--cx-size-12px);background:var(--cx-linked-bg);color:var(--cx-text);font:inherit;font-size:var(--cx-size-13px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer; }
+.cx-data-grid .cx-link-chip.cx-grid-chip { background:var(--cx-linked-bg); }
+.cx-link-chip:hover { background:color-mix(in srgb,var(--cx-tone-info) 22%,var(--cx-surface)); }
+.cx-link-chip:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-1px); }
+@media (forced-colors:active) {
+  .cx-has-linked .cx-row[data-cx-linked="true"] { outline:var(--cx-size-2px) dashed Highlight;outline-offset:var(--cx-size-neg-2px); }
+  .cx-link-chip { border:var(--cx-size-1px) solid ButtonText; }
+}
+@media print {
+  .cx-link-bar { padding:0 0 var(--cx-size-4px); }
+  .cx-link-chip { background:transparent;padding:0;height:auto;white-space:normal; }
+}

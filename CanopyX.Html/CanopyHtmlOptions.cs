@@ -69,6 +69,15 @@ public sealed class CanopyHtmlOptions {
     /// </summary>
     public CanopyHtmlDocument? Document { get; set; }
 
+    /// <summary>
+    /// Gets the names of parts (<see cref="CanopyHtmlAssets.Parts"/>) a fragment carries besides the ones its view needs, for code
+    /// the page runs itself: for example <c>link</c> when the page links the view to charts or other grids (linked views). With
+    /// <see cref="CanopyAssetMode.Inline"/> the payloads travel with the fragment, once per <see cref="Document"/>; with external
+    /// assets the runtime loads the part files that <c>WriteTo</c> and <c>SaveHtmlBundle</c> write beside it. Writing fails for a
+    /// name that is not a part, or a part that does not ship with the view's runtime.
+    /// </summary>
+    public ISet<string> Parts { get; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }
 

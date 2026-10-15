@@ -215,6 +215,12 @@ const labels = Object.freeze({
   utcTime: "{time} UTC",
   localTime: "{time} Ortszeit",
   mountError: "Diese Ansicht konnte nicht angezeigt werden: {error}",
+  linkFilteredBy: "Gefiltert nach {source}: {values}",
+  linkRemoveFilter: "Filter von {source} entfernen: {values}",
+  linkFiltered: "Gefiltert nach {source}: {count} Zeilen",
+  linkHighlighted: "{count} Zeilen aus {source} hervorgehoben",
+  linkHighlightedRows: "{count} Zeilen hervorgehoben",
+  linkCleared: "Verknüpfte Filter entfernt",
 });
 const staticLabels = Object.freeze({
   overflowNote: "{shown} Zeilen angezeigt. Gesamtzahl: {total}.",

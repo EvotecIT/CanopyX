@@ -216,5 +216,12 @@
   "GridShowRowsWhere": ["Pokaż wiersze, dla których","Zeilen anzeigen, für die","Mostrar filas donde","Afficher les lignes où","Mostra le righe in cui"],
   "GridOfTheseAreTrue": ["z tych warunków są spełnione","dieser Bedingungen zutreffen","de estas condiciones se cumplen","de ces conditions sont vraies","di queste condizioni sono vere"],
   "GridOfThese": ["z tych warunków","dieser Bedingungen","de estas condiciones","de ces conditions","di queste condizioni"],
-  "GridGroupCount": ["Grupy: {count}","{count} Gruppen","{count} grupos","Groupes : {count}","Gruppi: {count}"]
+  "GridGroupCount": ["Grupy: {count}","{count} Gruppen","{count} grupos","Groupes : {count}","Gruppi: {count}"],
+
+  "LinkFilteredBy": ["Filtr z {source}: {values}","Gefiltert nach {source}: {values}","Filtrado por {source}: {values}","Filtré par {source} : {values}","Filtrato da {source}: {values}"],
+  "LinkRemoveFilter": ["Usuń filtr z {source}: {values}","Filter von {source} entfernen: {values}","Quitar el filtro de {source}: {values}","Retirer le filtre de {source} : {values}","Rimuovi il filtro di {source}: {values}"],
+  "LinkFiltered": ["Filtr z {source}, wiersze: {count}","Gefiltert nach {source}: {count} Zeilen","Filtrado por {source}: {count} filas","Filtré par {source} : {count} lignes","Filtrato da {source}: {count} righe"],
+  "LinkHighlighted": ["Wyróżnione wiersze z {source}: {count}","{count} Zeilen aus {source} hervorgehoben","{count} filas resaltadas desde {source}","Lignes mises en évidence par {source} : {count}","Righe evidenziate da {source}: {count}"],
+  "LinkHighlightedRows": ["Wyróżnione wiersze: {count}","{count} Zeilen hervorgehoben","{count} filas resaltadas","Lignes mises en évidence : {count}","Righe evidenziate: {count}"],
+  "LinkCleared": ["Usunięto powiązane filtry","Verknüpfte Filter entfernt","Filtros vinculados eliminados","Filtres liés retirés","Filtri collegati rimossi"]
 }
