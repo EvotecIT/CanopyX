@@ -96,6 +96,12 @@ public sealed class LabelsTests {
 
         // The runtime's English texts are the C# defaults, name for name.
         var runtime = RuntimeLabels(CanopyX.Html.CanopyRuntime.ReportingGrid);
+        // The editing part brings its gridEdit… labels: names the core accepts for it without defining them.
+        var editing = PartLabels("editing");
+        Assert.NotEmpty(editing);
+        Assert.All(editing.Keys, name => Assert.StartsWith("gridEdit", name));
+        Assert.All(editing.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
+        foreach (var (name, text) in editing) runtime.Add(name, text);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();
         foreach (var property in browser) {
@@ -157,6 +163,13 @@ public sealed class LabelsTests {
             @"DEFAULT_LABELS\s*=\s*Object\.freeze\((?:Object\.assign\(\{\},\s*DEFAULT_LABELS,\s*)?\{(?<body>[\s\S]*?)\}\)?\);");
         return blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
                 "(\\w+):\\s*(\"(?:[^\"\\\\]|\\\\.)*\")"))
+            .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
+    }
+
+    // The labels a part brings with its English texts: its EDIT_LABELS-style object of name: "text" pairs.
+    private static Dictionary<string, string?> PartLabels(string part) {
+        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, @"const EDIT_LABELS=\{(?<body>.*?)\};", System.Text.RegularExpressions.RegexOptions.Singleline);
+        return System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value, "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }
 

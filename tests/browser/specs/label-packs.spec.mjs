@@ -28,7 +28,13 @@ for (const [language,labels,staticLabels] of packs) {
       `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridCopy:'Host copy'}});</script></head>`);
     await page.route('http://canopyx.test/translated',route=>route.fulfill({contentType:'text/html',body:html}));
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
-    expect(Object.keys(labels).sort()).toEqual(await page.evaluate(()=>Object.keys(CanopyX.labels).sort()));
+    // The editing part brings its gridEdit… labels; the runtime defines the rest.
+    const runtimeNames = await page.evaluate(()=>Object.keys(CanopyX.labels));
+    const partNames = Object.keys(labels).filter(name=>!runtimeNames.includes(name));
+    expect(Object.keys(labels).filter(name=>runtimeNames.includes(name)).sort()).toEqual(runtimeNames.sort());
+    const editing = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-editing.js'),'utf8');
+    expect(partNames.length).toBeGreaterThan(0);
+    for (const name of partNames) { expect(name).toMatch(/^gridEdit[A-Z]/); expect(editing).toContain(name+':"'); }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});
     await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await expect(page.locator('.cx-grid-columns > summary')).toHaveText(labels.columns);

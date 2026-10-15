@@ -431,3 +431,52 @@ registerPart("custom", { version: "0123456789abcdef", install() {} });
 use({ init() {} });
 // @ts-expect-error The views are tree and grid.
 use({ name: "bad", views: ["matrix"] });
+// Editing: typed editors and validation on the columns, host checks and writers in the options, the change API.
+import type { CanopyCellEditor, GridCommit, GridCommitResult, GridChange, GridCommitOutcome } from "@evotecit/canopyx/grid";
+const stars: CanopyCellEditor = { create(context) {
+  const select = document.createElement("select");
+  select.value = String(context.value ?? 0);
+  return { element: select, getValue: () => Number(select.value), error: () => null };
+} };
+use({ name: "stars", editors: { stars } });
+const writer = async (batch: GridCommit, { signal }: { signal: AbortSignal }): Promise<GridCommitResult> => {
+  void signal;
+  return { protocol: "canopyx/2", type: "gridCommitResult", view: batch.view, revision: "r2", rows: batch.rows.map(row => ({ id: row.id, status: "saved" as const })) };
+};
+const editable = createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "assets", label: "Assets", pageSize: 100, selection: "multiple", search: true, source: { kind: "inline" },
+    editing: { mode: "row", drawer: "always" },
+    columns: [
+      { id: "tag", title: "Tag", kind: "text", editable: true, validation: { required: true, pattern: "[A-Z]{2}-\\d{4}", maxLength: 7 } },
+      { id: "cost", title: "Cost", kind: "number", editable: true, editor: { type: "number", min: 0, step: 0.01 } },
+      { id: "when", title: "When", kind: "datetime", editable: true, editor: "date", validation: { min: "2000-01-01T00:00:00Z" } },
+      { id: "status", title: "Status", kind: "text", editable: true, editor: { type: "select", options: ["New", { value: "Old", label: "Retired" }] } },
+      { id: "owner", title: "Owner", kind: "text", editable: true, editor: { type: "lookup", lookup: { limit: 10 } } },
+      { id: "rating", title: "Rating", kind: "number", editable: true, editor: "stars" }],
+    rows: [{ id: "a1", cells: { tag: "AS-1000", cost: 1 } }] },
+  editing: {
+    isEditable: (row, column) => column !== "tag" || row.id !== "locked",
+    validators: { cost: value => typeof value === "number" && value > 1000 ? "Too expensive." : null, tag: async value => value === "XX-0000" ? "Taken." : null },
+    validateRow: (row, change: GridChange) => change.values.cost === 0 ? { cost: "Zero cost." } : null,
+    lookups: { owner: async ({ search, limit }) => ["Ada", "Ben"].filter(name => name.startsWith(search)).slice(0, limit) },
+    commit: writer,
+    undoLimit: 50
+  },
+  onCellValueChanging: event => event.value !== "forbidden",
+  onCellValueChanged: event => { void event.previous; void event.source; },
+  onRowCommit: event => event.id === "a1" ? Promise.resolve({ status: "saved" as const, cells: { cost: 2 } }) : undefined,
+  onCommit: (result: GridCommitOutcome) => { void result.saved; }
+});
+void editable.beginEdit("a1", "cost", { initial: "5" });
+void editable.setCellValue("a1", "cost", 12).then(result => { const valid: boolean = result.valid; void valid; });
+const changes: GridChange[] = editable.getChanges();
+void changes;
+void editable.commitChanges({ ids: ["a1"] }).then(result => result.rows.map(row => row.status));
+const undone: boolean = editable.undo() || editable.redo() || editable.canUndo() || editable.canRedo();
+void undone;
+editable.revertChanges(["a1"]);
+editable.setReadOnly(true);
+// @ts-expect-error The edit mode is cell or row.
+createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "x", label: "X", pageSize: 1, selection: "none", search: false, source: { kind: "inline" }, rows: [], columns: [{ id: "a", title: "A", kind: "text" }], editing: { mode: "sheet" } } });
+// @ts-expect-error setCellValue needs a cell value.
+void editable.setCellValue("a1", "cost", { value: 1 });
