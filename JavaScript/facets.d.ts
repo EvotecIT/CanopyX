@@ -1,12 +1,9 @@
 // The facet panel of flat grids (docs/facets.md): value lists with counts and ranges with histograms that filter each other.
-import type { GridRow } from "./grid.js";
-
-/** Column ids of a row type; plain string ids for untyped rows. */
-type FacetColumnId<Row extends GridRow> = string extends keyof Row["cells"] ? string : Extract<keyof Row["cells"], string>;
+import type { GridRow, GridColumnId } from "./grid.js";
 
 /** One facet: a column id, or a column with its settings. */
-export type GridFacet<Row extends GridRow = GridRow> = FacetColumnId<Row> | {
-  column: FacetColumnId<Row>;
+export type GridFacet<Row extends GridRow = GridRow> = GridColumnId<Row> | {
+  column: GridColumnId<Row>;
   /** "list" (text columns by default) or "range" with a histogram (number and date columns by default). */
   kind?: "list" | "range";
   /** The facet's heading; the column's title by default. */
