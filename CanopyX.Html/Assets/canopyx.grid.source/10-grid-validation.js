@@ -19,9 +19,10 @@
     return value;
   }
 
-  function validateGridRows(rows, columns) {
+  // ids carries the identities of the earlier chunks of the same rows (the data part validates rowData chunk by chunk).
+  function validateGridRows(rows, columns, ids = new Set()) {
     if (!Array.isArray(rows)) throw new Error("CanopyX: grid rows must be an array.");
-    const ids = new Set(), declared = new Map(columns.map(column => [column.id, column]));
+    const declared = new Map(columns.map(column => [column.id, column]));
     for (const row of rows) {
       requireIdentifier(row && row.id, "grid row ID");
       if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
@@ -97,7 +98,10 @@
     if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||
         view.pageLength !== undefined && (!Number.isInteger(view.pageLength) || view.pageLength < 1 || view.pageLength > 10000))
       throw new Error("CanopyX: invalid grid presentation or page length.");
-    if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
+    // rowData replaces an inline grid's rows; the data part (52-grid-row-data.js) decodes and validates it with the first query.
+    if (view.rowData !== undefined) {
+      if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
+    } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
     return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 28 : view.density === "comfortable" ? 42 : 34) };

@@ -177,7 +177,10 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Writes the HTML-safe <c>grid</c> document of the <c>canopyx/2</c> protocol.</summary>
     /// <returns>The serialized flat-grid definition.</returns>
     /// <exception cref="InvalidOperationException">The definition has ambiguous identities or incompatible source data.</exception>
-    public string ToJson() {
+    public string ToJson() => WriteJson(null, null);
+
+    /// <summary>Writes the document; with row data, its compact descriptor (<c>rowData</c>) takes the place of the inline rows.</summary>
+    internal string WriteJson(CanopyGridRowData? rowData, string? rowDataBase) {
         Validate();
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
@@ -227,7 +230,10 @@ public sealed partial class CanopyDataGridView {
             writer.Name("labels");
             Labels.WriteJson(writer, false);
         }
-        if (Source.Kind == CanopyGridSourceKind.Inline) {
+        if (Source.Kind == CanopyGridSourceKind.Inline && rowData != null) {
+            writer.Name("rowData");
+            rowData.WriteDescriptor(writer, rowDataBase);
+        } else if (Source.Kind == CanopyGridSourceKind.Inline) {
             writer.Name("rows").BeginArray();
             foreach (var row in Rows) row.WriteJson(writer);
             writer.EndArray();

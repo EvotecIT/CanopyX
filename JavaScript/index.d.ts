@@ -92,7 +92,10 @@ export function createTreeGrid(host: HTMLElement, options: TreeGridOptions): Tre
 /** Configures future fragment mounts and returns a disposer for this registration. Requires a browser DOM. */
 export function configure(viewId: string, options: HostOptions): () => void;
 export function unconfigure(viewId: string): boolean;
-/** Mounts unmounted fragments below root. Requires a browser DOM. */
+/**
+ * Mounts unmounted fragments below root, or root itself when it is a fragment. Fragments marked `data-cx-mount="visible"`
+ * below root wait until they come near the viewport; passing such a fragment as root mounts it at once. Requires a browser DOM.
+ */
 export function mount(root?: ParentNode): TreeGrid[];
 export const sources: Readonly<Sources>;
 export function badge(value: CanopyBadge): HTMLElement;

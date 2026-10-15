@@ -120,6 +120,18 @@
       ]
     },
     {
+      "name": "data",
+      "label": "row data",
+      "runtimes": ["grid"],
+      "views": [],
+      "key": "GRID_DATA_IMPL",
+      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar"],
+      "end": "GRID_DATA_IMPL.source = rowDataSource;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
+      ]
+    },
+    {
       "name": "links",
       "label": "deep links",
       "runtimes": ["tree", "grid"],

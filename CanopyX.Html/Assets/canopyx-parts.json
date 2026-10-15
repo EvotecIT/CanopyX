@@ -83,6 +83,16 @@
       "views": []
     },
     {
+      "name": "data",
+      "label": "row data",
+      "version": "baed52a5a19cd3c5",
+      "script": "canopyx-data.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": []
+    },
+    {
       "name": "links",
       "label": "deep links",
       "version": "4531e2678de320f2",

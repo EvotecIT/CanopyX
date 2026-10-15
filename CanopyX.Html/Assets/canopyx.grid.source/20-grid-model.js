@@ -1,11 +1,16 @@
   // ---------- flat-grid model and accepted query lifetime ----------
   class DataGrid {
     constructor(host, options) {
-      const definition = validateGridView(options.view);
+      const { rows, rowData, ...definition } = validateGridView(options.view), owned = parsedViews.has(options.view);
+      // A host's view is copied, so later changes to it cannot reach the grid; the rows of a view the runtime parsed from the
+      // page belong to no one else, and copying a large inline dataset would double its parse time and peak memory.
       this.view = JSON.parse(JSON.stringify(definition));
+      if (rows) this.view.rows = owned ? rows : JSON.parse(JSON.stringify(rows));
+      // The rows of rowData arrive in view.rows as the data part decodes them.
+      if (rowData) { this.view.rowData = owned ? rowData : JSON.parse(JSON.stringify(rowData)); this.view.rows = []; }
       this.host = host; this.opts = options; this.id = "cx" + ++instanceSeq;
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
-      this.source = options.source || (this.view.source.kind === "inline" ? inlineGridSource(this.view) : null);
+      this.source = options.source || (this.view.source.kind === "inline" ? this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
@@ -19,7 +24,8 @@
       if (!Number.isInteger(this.searchDelayMs) || this.searchDelayMs < 0 || this.searchDelayMs > 5000)
         throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
       this.cachePageLimit = options.cachePageLimit === undefined ? 40 : options.cachePageLimit;
-      this.requestTimeoutMs = options.requestTimeoutMs === undefined ? 30000 : options.requestTimeoutMs;
+      // Decoding row data is local work, which no request deadline bounds unless the host sets one.
+      this.requestTimeoutMs = options.requestTimeoutMs === undefined ? rowData && !options.source ? 2147483647 : 30000 : options.requestTimeoutMs;
       if (!Number.isInteger(this.cachePageLimit) || this.cachePageLimit < 2 || this.cachePageLimit > 1000 ||
           !Number.isInteger(this.requestTimeoutMs) || this.requestTimeoutMs < 1 || this.requestTimeoutMs > 2147483647)
         throw new Error("CanopyX: invalid grid cache or request timeout.");

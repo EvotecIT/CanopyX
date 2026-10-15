@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -33,11 +34,13 @@ internal static class CanopyHtmlWriter {
         return builder.ToString();
     }
 
-    private static string FragmentDocument(string json, CanopyHtmlOptions options) {
-        var builder = new StringBuilder(json.Length + 160);
+    private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null) {
+        var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
         builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
         if (!options.AutoMount) {
             builder.Append(" data-cx-mount=\"manual\"");
+        } else if (options.MountWhenVisible) {
+            builder.Append(" data-cx-mount=\"visible\"");
         }
 
         var height = string.IsNullOrEmpty(options.Height) ? null : ValidateCssLength(options.Height!);
@@ -49,7 +52,7 @@ internal static class CanopyHtmlWriter {
         }
 
         // The JSON writer escapes <, > and &, so the document cannot close the script element early.
-        builder.Append("><script type=\"application/json\" class=\"cx-config\">").Append(json).Append("</script></div>");
+        builder.Append("><script type=\"application/json\" class=\"cx-config\">").Append(json).Append("</script>").Append(content).Append("</div>");
         if (height != null && options.Nonce != null) {
             builder.Append("<style").Append(CanopyContentSecurity.Attribute(options.Nonce)).Append(">[data-cx-height=\"").Append(height)
                 .Append("\"]{height:").Append(height).Append("}</style>");
@@ -59,7 +62,7 @@ internal static class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
@@ -74,22 +77,42 @@ internal static class CanopyHtmlWriter {
     internal static CanopyRuntime RuntimeFor(CanopyTreeView view, CanopyHtmlOptions options)
         => CanopyHtmlAssets.GetRuntime(view, options.Runtime);
 
-    internal static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options) {
+    internal static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options) => Fragment(view, options, null, null);
+
+    /// <summary>A grid fragment; <paramref name="bundled"/> is row data a bundle wrote into the sidecar files under <paramref name="bundleBase"/>.</summary>
+    private static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options, CanopyGridRowData? bundled, string? bundleBase) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
-        // A single-file grid carries the filter editor and export parts, and the history part when it draws history presenters.
-        var html = FragmentDocument(view.ToJson(), options);
-        return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, CanopyHtmlAssets.GetRequiredParts(view));
+        // Compact row data travels in scripts inside the host element, after the configuration, or in a bundle's sidecar files.
+        var data = bundled ?? (options.RowData != null && view.Source.Kind == CanopyGridSourceKind.Inline ? new CanopyGridRowData(view, options.RowData) : null);
+        string html;
+        if (data == null) {
+            html = FragmentDocument(view.ToJson(), options);
+        } else {
+            var chunks = new StringBuilder();
+            for (var index = 0; bundled == null && index < data.ChunkCount; index++) {
+                chunks.Append("<script type=\"application/x-canopyx-rows\">").Append(data.GetChunk(index)).Append("</script>");
+            }
+
+            html = FragmentDocument(data.ToJson(bundleBase), options, chunks.ToString());
+        }
+
+        // A single-file grid carries the filter editor and export parts, the history part when it draws history presenters, and
+        // the row data part when its rows are compact.
+        if (options.AssetMode != CanopyAssetMode.Inline) return html;
+        var required = CanopyHtmlAssets.GetRequiredParts(view);
+        return html + SharedParts(options, CanopyHtmlAssets.Parts.Where(part => required.Contains(part) || data != null && part.Name == "data"));
     }
 
-    internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options) {
+    internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options, CanopyGridRowData? bundled = null, string? bundleBase = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
-            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, AssetMode = options.AssetMode, Nonce = options.Nonce })
+            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible,
+                AssetMode = options.AssetMode, RowData = options.RowData, Nonce = options.Nonce }, bundled, bundleBase)
         };
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);

@@ -113,17 +113,9 @@ public static partial class CanopyHtmlExtensions {
         }
 
         var pageOptions = options ?? new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
-        var assetFolder = pageOptions.AssetBaseUrl;
-        while (assetFolder.StartsWith("./", StringComparison.Ordinal)) assetFolder = assetFolder.Substring(2);
-        var localAssets = pageOptions.AssetMode == CanopyAssetMode.External && IsLocalFolder(assetFolder);
-        if (localAssets) {
-            var folder = assetFolder.EndsWith("/", StringComparison.Ordinal) ? assetFolder.Substring(0, assetFolder.Length - 1) : assetFolder;
-            foreach (var component in folder.Length == 0 ? Array.Empty<string>() : folder.Split('/')) {
-                if (!CanopyX.Bundles.PortableFolderNames.IsPortableComponent(component)) {
-                    throw new ArgumentException("Asset folders must contain portable names of at most 255 characters, without empty components, trailing dots, or reserved device names.", nameof(options));
-                }
-            }
-        }
+        var localFolder = LocalAssetFolder(pageOptions);
+        var localAssets = localFolder != null;
+        var assetFolder = localFolder ?? string.Empty;
         // A mistyped filter id fails before the data is written, not when the page is.
         foreach (var id in pageOptions.HiddenFilterIds) {
             if (!view.Filters.Any(filter => filter.Id == id)) {
@@ -149,6 +141,25 @@ public static partial class CanopyHtmlExtensions {
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The asset folder a bundle writes the runtime into: the options' base URL without a leading <c>./</c> when the assets are
+    /// external and the folder is a relative one inside the bundle, or null when the host serves the assets itself.
+    /// </summary>
+    /// <exception cref="ArgumentException">The folder has a component that is not a portable name.</exception>
+    private static string? LocalAssetFolder(CanopyHtmlOptions options) {
+        var assetFolder = options.AssetBaseUrl;
+        while (assetFolder.StartsWith("./", StringComparison.Ordinal)) assetFolder = assetFolder.Substring(2);
+        if (options.AssetMode != CanopyAssetMode.External || !IsLocalFolder(assetFolder)) return null;
+        var folder = assetFolder.EndsWith("/", StringComparison.Ordinal) ? assetFolder.Substring(0, assetFolder.Length - 1) : assetFolder;
+        foreach (var component in folder.Length == 0 ? Array.Empty<string>() : folder.Split('/')) {
+            if (!CanopyX.Bundles.PortableFolderNames.IsPortableComponent(component)) {
+                throw new ArgumentException("Asset folders must contain portable names of at most 255 characters, without empty components, trailing dots, or reserved device names.", nameof(options));
+            }
+        }
+
+        return assetFolder;
     }
 
     /// <summary>Rejects page/file collisions and overlapping local asset/data trees before any output is written.</summary>

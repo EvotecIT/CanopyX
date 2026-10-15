@@ -40,8 +40,8 @@
       this.pendingPageNavigation = navigation; return navigation.promise;
     },
     setPageLength(length) {
-      const all=length==="all";if(all){if(this.view.source.kind!=="inline")throw new Error("CanopyX: All rows needs inline data.");length=Math.max(1,this.view.rows.length);}
-      if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > Math.max(10000,this.view.source.kind==="inline"?this.view.rows.length:0))
+      const all=length==="all";if(all){if(this.view.source.kind!=="inline")throw new Error("CanopyX: All rows needs inline data.");length=Math.max(1,(this.view.rowData?.count??this.view.rows.length));}
+      if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > Math.max(10000,this.view.source.kind==="inline"?(this.view.rowData?.count??this.view.rows.length):0))
         throw new Error("CanopyX: visible page length is an integer from 1 to 10000 for an accepted paged result.");
       const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
       if (this.cursor) return this.setQuery(gridQueryStart(query), { pageLength: length, allRows: all });

@@ -133,9 +133,24 @@
     return configured.delete(viewId);
   }
 
+  // Views the runtime parsed from the page: nothing else holds them, so a grid keeps their rows instead of copying them.
+  const parsedViews = new WeakSet();
+  // Fragments marked data-cx-mount="visible" mount when they come within half a viewport of the visible area (the observer
+  // also reports a hidden tab or a closed panel once it opens), before the page prints, or when CanopyX.mount is given the
+  // host itself. Until then their configuration and rows are not even parsed.
+  let watcher = null;
+  function mountWhenVisible(host) {
+    if (!watcher) {
+      watcher = new IntersectionObserver(entries => entries.forEach(entry => entry.isIntersecting && mount(entry.target)), { rootMargin: "50% 0px" });
+      global.addEventListener("beforeprint", () => document.querySelectorAll('[data-cx-mount="visible"]:not([data-canopyx-mounted])').forEach(host => mount(host)));
+    }
+    watcher.observe(host);
+  }
+
   /**
-   * Mounts every [data-canopyx-host] element under root that has a JSON configuration script. The automatic mount
-   * when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by the host.
+   * Mounts every [data-canopyx-host] element under root (or root itself, when it is one) that has a JSON configuration
+   * script. The automatic mount when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by
+   * the host; fragments marked data-cx-mount="visible" wait until they are near the viewport, unless root is the host.
    */
   function mount(root, automatic) {
     const scope = root || document;
@@ -161,15 +176,19 @@
       host.appendChild(notice);
       if (global.console) global.console.error(err);
     };
-    scope.querySelectorAll("[data-canopyx-host]:not([data-canopyx-mounted])").forEach((host) => {
-      const config = host.querySelector("script.cx-config");
-      if (!config || (automatic === true && host.getAttribute("data-cx-mount") === "manual")) {
+    const selector = "[data-canopyx-host]:not([data-canopyx-mounted])";
+    (scope.matches?.(selector) ? [scope] : scope.querySelectorAll(selector)).forEach((host) => {
+      const config = host.querySelector("script.cx-config"), mode = host.getAttribute("data-cx-mount");
+      if (!config || (automatic === true && mode === "manual")) {
         return;
       }
+      if (mode === "visible" && host !== scope && global.IntersectionObserver) return mountWhenVisible(host);
+      watcher?.unobserve(host);
       host.setAttribute("data-canopyx-mounted", "true");
       let view = null;
       try {
         view = JSON.parse(config.textContent);
+        if (view === Object(view)) parsedViews.add(view);
         const create = view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
         const api = create(host, Object.assign({}, view && configured.get(view.id), { view }));
         created.push(api);
