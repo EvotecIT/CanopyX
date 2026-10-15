@@ -2,6 +2,7 @@
 import type { CanopyNode, CanopyView } from "./protocol.js";
 import type { CellContext, ExportFormat } from "./hosts.js";
 import type { TreeGrid } from "./index.js";
+import type { RecordSectionRenderer, RecordAction } from "./records.js";
 import type { DataGrid, GridCellContext, GridRow, GridView } from "./grid.js";
 
 /** The kinds of view a plugin can apply to. */
@@ -87,6 +88,10 @@ export interface CanopyPlugin {
   readonly aggregates?: Readonly<Record<string, CanopyAggregate | CanopyAggregate["compute"]>>;
   /** Detail renderers by name; a reporting definition chooses one with detail.renderer. */
   readonly detailRenderers?: Readonly<Record<string, (row: Readonly<{ id: string; cells: Readonly<Record<string, unknown>> }>, element: HTMLElement, context: { readonly id: string; readonly signal: AbortSignal; readonly api: unknown; readonly labels: Readonly<Record<string, string>>; onDispose(cleanup: () => void): void }) => void | PromiseLike<void>>>;
+  /** Record panel section renderers by name (a chart, for example); a section chooses one with renderer. */
+  readonly drawerSections?: Readonly<Record<string, RecordSectionRenderer>>;
+  /** Actions of the record panel's actions menu, after the built-in ones and the host's. */
+  readonly recordActions?: readonly RecordAction[];
   /** Buttons in the toolbar's left-hand group, after Columns and before Views. */
   readonly toolbarItems?: readonly CanopyPluginItem[];
   /** Entries of the more menu, after the host's actions. */

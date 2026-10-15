@@ -15,7 +15,7 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
         Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[2]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
@@ -38,8 +38,8 @@ public sealed class RuntimePartTests {
                 Assert.Equal(part.IsShippedWith(runtime), script.Contains(entry, StringComparison.Ordinal));
             }
         }
-        Assert.Equal(new[] { "tree-tools", "export", "links", "search", "link", "highlight", "layouts" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "export", "links", "search", "link", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class RuntimePartTests {
         tree.DeepLink = true;
         Assert.Equal(new[] { "tree-tools", "export", "links" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
         tree.Source = CanopySource.Sidecar("data/tree/");
-        Assert.Equal(new[] { "tree-tools", "export", "links", "search", "link", "highlight", "layouts" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
+        Assert.Equal(new[] { "tree-tools", "export", "links", "search", "link", "highlight", "layouts", "record-panel" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
 
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));

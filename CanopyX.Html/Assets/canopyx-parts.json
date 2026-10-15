@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "a11fe2ae75e24b39",
+      "version": "75f2c0bab65c9787",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "0de5f77503b8c5d2",
+      "version": "1ece52fe0ca43475",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -278,6 +278,24 @@
         "grid"
       ],
       "feature": "layout"
+    },
+    {
+      "name": "record-panel",
+      "label": "record panel",
+      "version": "14daf6ac8f916dec",
+      "script": "canopyx-record-panel.js",
+      "style": "canopyx-record-panel.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "record"
+      ]
     }
   ]
 }

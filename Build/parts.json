@@ -8,7 +8,8 @@
       "views": ["tree"],
       "key": "TreeGrid.prototype",
       "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
-        "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems"],
+        "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
+        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL"],
       "start": "const EXPORT_IMPL = {};",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
@@ -42,7 +43,8 @@
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridQuery", "gridQueryStart",
         "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
-        "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "fill", "announceMenu", "reportingRangeRows"],
+        "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "fill", "announceMenu", "reportingRangeRows",
+        "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL"],
       "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",
       "end": "Object.assign(DataGrid.prototype, COLUMNS_MENU, {buildGridFilters:buildFilters});\ncontext.GRID_REPORTING?.installFilters?.({gridDateInput});",
       "scripts": [
@@ -301,6 +303,22 @@
       "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural"],
       "scripts": ["CanopyX.Html/Assets/canopyx.layouts.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
+    },
+    {
+      "name": "record-panel",
+      "label": "record panel",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree", "grid"],
+      "features": ["record"],
+      "key": "RECORD_IMPL",
+      "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors",
+        "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.record-panel.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.record-panel.source/record-panel.css"
+      ]
     }
   ]
 }

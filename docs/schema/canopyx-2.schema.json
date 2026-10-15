@@ -15,6 +15,9 @@
     { "$ref": "#/$defs/gridSummary" },
     { "$ref": "#/$defs/gridCommit" },
     { "$ref": "#/$defs/gridCommitResult" },
+    { "$ref": "#/$defs/gridRecordQuery" },
+    { "$ref": "#/$defs/gridRecord" },
+    { "$ref": "#/$defs/gridRecordPack" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -34,7 +37,8 @@
         "id": { "$ref": "#/$defs/identifier" },
         "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
         "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" },
-        "detail": { "$ref": "#/$defs/gridRowDetail" }
+        "detail": { "$ref": "#/$defs/gridRowDetail" },
+        "fields": { "$ref": "#/$defs/recordValues", "description": "Values of the view's record fields (record.fields): shown in the record drawer only, never queried, searched, sorted, exported or saved." }
       }
     },
     "gridEditorName": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "text, number, date, datetime, time, select, toggle, lookup, or an editor a plugin or the host registers." },
@@ -299,6 +303,7 @@
         "columnGroups": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/gridColumnGroup" }, "description": "Header rows above the columns, up to three levels. Each column belongs to one group at most; the grid keeps a group's columns together in its column order. Loads the column-groups part." },
         "rangeSelection": { "oneOf": [{ "type": "boolean" }, { "type": "object", "additionalProperties": false, "properties": { "enabled": { "type": "boolean", "description": "False keeps the API without pointer, keyboard and touch input. Default true." }, "multiple": { "type": "boolean", "description": "Ctrl or Cmd adds ranges. Default true." }, "fillHandle": { "type": "boolean", "description": "Show the fill handle on a single range. Default false." } } }], "description": "Cell ranges by mouse, keyboard and touch, the cell menu and the clipboard keys. Loads the cell-range part. Absent or false leaves them off." },
         "clipboard": { "type": "object", "additionalProperties": false, "properties": { "copyHeaders": { "type": "boolean", "description": "Copies start with the column titles and group rows. Default false." }, "copyValues": { "enum": ["display", "raw"], "description": "Copy the shown text or raw values. Default display." }, "paste": { "type": "boolean", "description": "Paste into the cells. Default true." } }, "description": "How cell ranges copy and paste." },
+        "record": { "$ref": "#/$defs/recordPanel" },
         "columns": {
           "type": "array", "minItems": 1,
           "items": { "$ref": "#/$defs/gridColumn" },
@@ -839,6 +844,14 @@
               "const": "missing"
             }
           }
+        },
+        {
+          "type": "object", "required": ["kind"], "additionalProperties": false,
+          "description": "A summary of a structured value (a list, object, collection, timeline or changes): a count, chips, or the first item and +N.",
+          "properties": {
+            "kind": { "const": "structured" }, "display": { "enum": ["count", "chips", "first"] },
+            "limit": { "type": "integer", "minimum": 1, "maximum": 16 }, "countText": { "type": "string", "maxLength": 256, "pattern": "\\{count\\}" }
+          }
         }
       ]
     },
@@ -1008,6 +1021,12 @@
               "type": "string",
               "maxLength": 4096
             },
+            "items": { "type": "array", "maxItems": 4096, "items": { "$ref": "#/$defs/cell" }, "description": "A list value: items shown as chips. At most one of items, fields, records, events and changes; writers and readers enforce it, and that list items are values." },
+            "fields": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/recordField" }, "description": "An object value: named values shown as a nested property list." },
+            "records": { "$ref": "#/$defs/recordList" },
+            "events": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/recordEvent" }, "description": "A timeline value, in the order shown." },
+            "changes": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/recordChange" }, "description": "Before/after values of changed fields." },
+            "ref": { "$ref": "#/$defs/recordRef" },
             "sort": {
               "anyOf": [{ "type": "string", "maxLength": 4096 }, { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991 }],
               "description": "Sort key when it differs from the value (orthogonal sort data); filters, value lists, search and display keep reading value and text."
@@ -1093,6 +1112,7 @@
         "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
         "data": { "description": "Host facts handed to host callbacks; not shown and not searched.", "type": "object", "propertyNames": { "type": "string", "minLength": 1, "not": { "const": "__proto__" } }, "additionalProperties": { "type": "string" } },
+        "fields": { "$ref": "#/$defs/recordValues", "description": "Values of the view's record fields (record.fields), shown in the record drawer only." },
         "hasChildren": { "type": "boolean" },
         "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647, "$comment": "When children is present, readers require this value to equal its length; this cross-field equality is a semantic protocol constraint." },
         "ref": { "$ref": "#/$defs/identifier" },
@@ -1156,7 +1176,7 @@
         "alwaysVisible": { "type": "boolean", "description": "Tree columns: retained during responsive fitting." },
         "tooltip": { "$ref": "#/$defs/gridColumn/properties/tooltip" },
         "pinned": { "enum": ["left", "right", null], "description": "The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right." },
-        "renderer": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "The name of a cell renderer a browser plugin registers (cellRenderers, docs/plugins.md). An unregistered name keeps the built-in painter; a host renderer for the column wins." }
+        "drawer": { "type": "boolean", "description": "false keeps the column out of the tree's record drawer. Default true." }, "section": { "type": "string", "minLength": 1, "maxLength": 256, "description": "The record drawer section of a tree column." }, "renderer": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "The name of a cell renderer a browser plugin registers (cellRenderers, docs/plugins.md). An unregistered name keeps the built-in painter; a host renderer for the column wins." }
       }
     },
     "gridColumnGroup": {
@@ -1220,7 +1240,7 @@
         "aggregatable": {
           "type": "boolean"
         },
-        "section": {
+        "drawer": { "type": "boolean", "description": "false keeps the column out of the record drawer and record panel. Default true." }, "section": {
           "type": "string",
           "minLength": 1,
           "maxLength": 256
@@ -1355,6 +1375,7 @@
         "autoHeight": { "type": "boolean", "description": "A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true." },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
+        "record": { "$ref": "#/$defs/recordPanel" },
         "labels": {
           "description": "Translations of the texts the runtime writes itself; English where a name is absent. {placeholders} are replaced.",
           "type": "object",
@@ -1368,6 +1389,40 @@
             "gridEditPattern": { "type": "string" }, "gridEditChoice": { "type": "string" }, "gridEditConflict": { "type": "string" }, "gridEditRejected": { "type": "string" },
             "gridEditNotSaved": { "type": "string" }, "gridEditNoMatches": { "type": "string" }, "gridEditSearching": { "type": "string" }, "gridEditUndone": { "type": "string" },
             "gridEditRedone": { "type": "string" }, "gridEditNone": { "type": "string" },
+            "recordBack": { "type": "string" },
+            "recordBackTo": { "type": "string" },
+            "recordTrail": { "type": "string" },
+            "recordShowing": { "type": "string" },
+            "recordTabs": { "type": "string" },
+            "recordSections": { "type": "string" },
+            "recordOtherFields": { "type": "string" },
+            "recordShowEmpty": { "type": "string" },
+            "recordHideEmpty": { "type": "string" },
+            "recordActions": { "type": "string" },
+            "recordCopyValues": { "type": "string" },
+            "recordCopyJson": { "type": "string" },
+            "recordCopyLink": { "type": "string" },
+            "recordCopied": { "type": "string" },
+            "recordPrint": { "type": "string" },
+            "recordExportCsv": { "type": "string" },
+            "recordExportJson": { "type": "string" },
+            "recordOpenAll": { "type": "string" },
+            "recordLoadMore": { "type": "string" },
+            "recordCount": { "type": "string" },
+            "recordItems": { "type": "string" },
+            "recordMore": { "type": "string" },
+            "recordShowAll": { "type": "string" },
+            "recordRetry": { "type": "string" },
+            "recordLoadFailed": { "type": "string" },
+            "recordUnavailable": { "type": "string" },
+            "recordField": { "type": "string" },
+            "recordValue": { "type": "string" },
+            "recordSection": { "type": "string" },
+            "recordBefore": { "type": "string" },
+            "recordAfter": { "type": "string" },
+            "recordAdded": { "type": "string" },
+            "recordRemoved": { "type": "string" },
+            "recordChanged": { "type": "string" },
             "gridFitContent": { "type": "string" },
         "matchesHighlight": { "type": "string" },
         "matchesCount": { "type": "string" },
@@ -1898,6 +1953,90 @@
         { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
         { "$ref": "#/$defs/identifier" }
       ]
+    },
+    "recordValues": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier", "not": { "const": "__proto__" } }, "additionalProperties": { "$ref": "#/$defs/cell" } },
+    "recordRef": {
+      "description": "A link to another record: of the value's own view, or of the grid or tree with id view. path is a tree record's id path, ending with id.",
+      "type": "object", "required": ["id"], "additionalProperties": false,
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "view": { "$ref": "#/$defs/identifier" }, "path": { "type": "array", "minItems": 1, "maxItems": 256, "items": { "$ref": "#/$defs/identifier" } } }
+    },
+    "recordField": {
+      "type": "object", "required": ["name", "value"], "additionalProperties": false,
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 4096 }, "value": { "$ref": "#/$defs/cell" }, "kind": { "enum": ["text", "number", "datetime"] } }
+    },
+    "recordList": {
+      "description": "A collection of records: rows with their own columns (or tree roots), the total when rows are the first ones, and the grid whose records they are.",
+      "type": "object", "required": ["columns"], "additionalProperties": false,
+      "properties": {
+        "columns": { "type": "array", "minItems": 1, "maxItems": 256, "items": { "anyOf": [{ "$ref": "#/$defs/gridColumn" }, { "$ref": "#/$defs/column" }] } },
+        "rows": { "type": "array", "maxItems": 100000, "items": { "$ref": "#/$defs/gridRow" } },
+        "roots": { "type": "array", "items": { "$ref": "#/$defs/inlineNode" } },
+        "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "pageLength": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "target": {
+          "type": "object", "required": ["view"], "additionalProperties": false,
+          "properties": { "view": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
+            "values": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/$defs/cellValue" } }, "filters": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gridFilter" } } }
+        }
+      },
+      "not": { "required": ["rows", "roots"] }
+    },
+    "recordEvent": {
+      "type": "object", "required": ["summary"], "additionalProperties": false,
+      "properties": { "time": { "type": "string" }, "summary": { "type": "string", "minLength": 1, "maxLength": 4096 }, "actor": { "type": "string", "maxLength": 4096 },
+        "kind": { "type": "string", "maxLength": 256 }, "tone": { "$ref": "#/$defs/tone" }, "ref": { "$ref": "#/$defs/recordRef" },
+        "changes": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/recordChange" } } }
+    },
+    "recordChange": {
+      "type": "object", "required": ["name", "before", "after"], "additionalProperties": false,
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 4096 }, "before": { "$ref": "#/$defs/cell" }, "after": { "$ref": "#/$defs/cell" }, "kind": { "enum": ["text", "number", "datetime"] } }
+    },
+    "recordSection": {
+      "type": "object", "required": ["id", "label"], "additionalProperties": false,
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "fields": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/identifier" } }, "collapsed": { "type": "boolean" },
+        "renderer": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" }, "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/recordSection" } } }
+    },
+    "recordPanel": {
+      "description": "The record panel: record-only fields, a pinned summary, sections, tabs, empty-field hiding, jump list, record deep links, where details load from and the built-in actions. docs/record-panel.md. Writers and readers check that ids are unique and that sections, tabs and the summary name declared fields and sections.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "fields": { "type": "array", "items": { "type": "object", "required": ["id", "title"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "title": { "$ref": "#/$defs/accessibleLabel" }, "kind": { "enum": ["text", "number", "datetime"] },
+          "presenter": { "$ref": "#/$defs/gridPresenter" }, "wrap": { "type": "boolean" }, "section": { "type": "string", "minLength": 1, "maxLength": 256 } } } },
+        "header": { "type": "object", "additionalProperties": false, "properties": { "status": { "$ref": "#/$defs/identifier" },
+          "facts": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "$ref": "#/$defs/identifier" } } } },
+        "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/recordSection" } },
+        "tabs": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id", "label", "sections"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 }, "sections": { "type": "array", "items": { "$ref": "#/$defs/identifier" } } } } },
+        "hideEmpty": { "type": "boolean" }, "jumpList": { "type": "boolean" },
+        "deepLink": { "anyOf": [{ "const": true }, { "type": "object", "additionalProperties": false, "properties": { "key": { "type": "string", "pattern": "^[A-Za-z][\\w.-]{0,31}$" } } }] },
+        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host", "sidecar"] },
+          "base": { "type": "string", "minLength": 1, "maxLength": 1024 }, "shards": { "type": "integer", "minimum": 1, "maximum": 65536 } },
+          "if": { "properties": { "kind": { "const": "sidecar" } } }, "then": { "required": ["base", "shards"] } },
+        "actions": { "type": "object", "additionalProperties": false, "properties": { "copy": { "type": "boolean" }, "print": { "type": "boolean" }, "export": { "type": "boolean" }, "link": { "type": "boolean" } } }
+      }
+    },
+    "gridRecordQuery": {
+      "description": "A request for one record's details when its drawer opens: the whole record, the next rows of a collection field (field, offset, limit), or with row the record's row too.",
+      "type": "object", "required": ["protocol", "type", "view", "id"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRecordQuery" }, "view": { "$ref": "#/$defs/identifier" }, "id": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" }, "field": { "$ref": "#/$defs/identifier" }, "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 10000 }, "row": { "const": true } }
+    },
+    "gridRecord": {
+      "description": "One record's details: record field values, fuller column values for the drawer, and the row when asked for it.",
+      "type": "object", "required": ["protocol", "type", "view", "id"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRecord" }, "view": { "$ref": "#/$defs/identifier" }, "id": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" }, "cells": { "$ref": "#/$defs/recordValues" }, "fields": { "$ref": "#/$defs/recordValues" }, "row": { "$ref": "#/$defs/gridRow" } }
+    },
+    "gridRecordPack": {
+      "description": "A record pack beside a page (records/r<shard>.js): the details of the records whose id hashes to the shard (FNV-1a of the UTF-16 code units, modulo the shard count).",
+      "type": "object", "required": ["protocol", "type", "view", "shard", "records"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRecordPack" }, "view": { "$ref": "#/$defs/identifier" }, "shard": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "records": { "type": "array", "items": { "type": "object", "required": ["id"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "cells": { "$ref": "#/$defs/recordValues" }, "fields": { "$ref": "#/$defs/recordValues" }, "row": { "$ref": "#/$defs/gridRow" } } } } }
     },
     "searchEntries": {
       "type": "object",

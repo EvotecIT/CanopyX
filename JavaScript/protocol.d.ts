@@ -8,7 +8,9 @@ export type SortDirection = "asc" | "desc";
 export interface CanopyBadge { text: string; tone?: string; title?: string; }
 /** Ordered visual history metadata; raw cell values still drive queries and exports. */
 export interface CellPeriod { period: string; value?: number | null; state?: string | null; tone?: string; }
-export interface CanopyCell {
+import type { StructuredCell, RecordPanelDefinition } from "./records.js";
+/** A cell: a value with display text, tooltip, tone and badges; it may hold a structured value or a record link (records.d.ts). */
+export interface CanopyCell extends StructuredCell {
   value?: CellValue;
   text?: string;
   /** Alternate flat-grid search text, independent of display, typed queries and export. */
@@ -53,6 +55,8 @@ interface NodeDefinition {
   badges?: CanopyBadge[];
   flags?: string[];
   data?: Record<string, string>;
+  /** Values of the view's record fields (record.fields), shown in the record drawer only. */
+  fields?: Record<string, Cell>;
   expanded?: boolean;
   className?: string;
 }
@@ -87,6 +91,10 @@ export interface CanopyColumn {
   pinned?: "left" | "right" | null;
   /** The name of a cell renderer a plugin registers (cellRenderers); an unregistered name keeps the built-in painter. */
   renderer?: string;
+  /** The record drawer section of the column. */
+  section?: string;
+  /** false keeps the column out of the record drawer. Default true. */
+  drawer?: boolean;
 }
 /** Per-control tree toolbar switches in the view document; an absent switch keeps its control. */
 export interface TreeToolbarControls {
@@ -233,7 +241,9 @@ export type LabelName =
   | "formatIcon" | "formatNoIcon" | "formatAutomatic" | "formatBadge" | "formatCue" | "formatLowest" | "formatMidpoint" | "formatHighest"
   | "formatAddBand" | "formatRemoveBand" | "formatSave" | "formatCancel" | "formatShowLegend" | "formatInvalid" | "formatMatchCase" | "formatToneDanger"
   | "formatToneWarning" | "formatToneSuccess" | "formatToneInfo" | "formatToneNeutral" | "formatToneMuted" | "formatNotContains" | "formatEndsWith" | "formatNotIn"
-  | "formatBetween" | "formatLike" | "formatMatches" | "formatOlderThan" | "formatWithinLast" | "formatNotLike" | "formatNotMatches" | "formatBetweenExclusive";
+  | "formatBetween" | "formatLike" | "formatMatches" | "formatOlderThan" | "formatWithinLast" | "formatNotLike" | "formatNotMatches" | "formatBetweenExclusive"
+  /** The record panel (docs/record-panel.md). */
+  | "recordBack" | "recordBackTo" | "recordTrail" | "recordShowing" | "recordTabs" | "recordSections" | "recordOtherFields" | "recordShowEmpty" | "recordHideEmpty" | "recordActions" | "recordCopyValues" | "recordCopyJson" | "recordCopyLink" | "recordCopied" | "recordPrint" | "recordExportCsv" | "recordExportJson" | "recordOpenAll" | "recordLoadMore" | "recordCount" | "recordItems" | "recordMore" | "recordShowAll" | "recordRetry" | "recordLoadFailed" | "recordUnavailable" | "recordField" | "recordValue" | "recordSection" | "recordBefore" | "recordAfter" | "recordAdded" | "recordRemoved" | "recordChanged";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }
@@ -274,6 +284,8 @@ interface ViewDefinitionBase {
   autoHeight?: boolean;
   stateKey?: string;
   deepLink?: boolean;
+  /** The record panel of the tree's drawer (records.d.ts, docs/record-panel.md). */
+  record?: RecordPanelDefinition;
   labels?: CanopyLabels;
   dragDrop?: boolean;
   contextActions?: ContextAction[];

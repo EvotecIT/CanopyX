@@ -5,6 +5,8 @@ import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult
 import type { CanopyPlugin } from "./plugins.js";
 import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
   GridRowCommit, GridCommitRowResult, GridCommitOutcome, GridCommit, GridCommitResult } from "./editing.js";
+import type { RecordPanelDefinition, RecordLoader, RecordSectionRenderer, RecordAction, RecordOpenAll, OpenRecordOptions } from "./records.js";
+export * from "./records.js";
 export * from "./index.js";
 export * from "./enhance.js";
 import type { enhance, grid } from "./enhance.js";
@@ -19,7 +21,9 @@ export * from "./cell-ranges.js";
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
   /** Reporting detail rows: the record's table, properties or trusted HTML payload, or its nested grid rows or tree roots. */
-  detail?: GridRowDetail; }
+  detail?: GridRowDetail;
+  /** Values of the view's record fields (record.fields): shown in the record drawer only, never queried, searched, sorted or exported. */
+  fields?: Record<string, Cell>; }
 /** A record's detail payload: a table, property list or trusted HTML, or the inline data of the definition's nested view. */
 export type GridRowDetail =
   | { type: "table"; caption?: string; columns: string[]; widths?: number[]; rows: Cell[][] }
@@ -73,6 +77,8 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   aggregatable?: boolean;
   /** Record drawer section label. */
   section?: string;
+  /** false keeps the column out of the record drawer and record panel. Default true. */
+  drawer?: boolean;
   /** Preferred width; the column grows to its header and loaded content. Omit to use the content width. Saved user widths take precedence. */
   width?: number;
   /** Wire documents retain a numeric width and set this flag for initial content fitting. */
@@ -117,7 +123,9 @@ export type GridPresenter =
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
   | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
-  | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 };
+  | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 }
+  /** A structured value's summary: a count (countText with {count}), chips (limit) or the first item and +N. The record panel shows it whole. */
+  | { readonly kind: "structured"; readonly display?: "count" | "chips" | "first"; readonly limit?: number; readonly countText?: string };
 /** Ascending inclusive upper bounds; unmatched values use cell tones. */
 export interface GridThreshold { readonly upperBound: number; readonly tone: string; }
 /** Both shared scale bounds must be supplied together; otherwise each cell scales independently. */
@@ -332,6 +340,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   rangeSelection?: GridRangeSelection;
   /** How cell ranges copy and paste. */
   clipboard?: GridClipboardSettings;
+  /** The record panel: record fields, sections, tabs, a pinned summary, deep links, record details on demand (records.d.ts). */
+  record?: RecordPanelDefinition;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -406,6 +416,10 @@ export interface GridSource extends GridFacetSource<GridQuery> {
   summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
   /** Saves changed rows (a remote source posts the gridCommit document to its commit endpoint) and answers per row. */
   commit?(batch: GridCommit, options: { signal: AbortSignal }): GridCommitResult | PromiseLike<GridCommitResult>;
+  /** A record's details when its drawer opens (a gridRecordQuery answered with a gridRecord), as a remote protocol client sends it. */
+  record?: RecordLoader;
+  /** A record's position in the query's result, or -1, so openRecord and deep links scroll the grid to it. */
+  position?(query: GridQuery, id: string, options: { signal: AbortSignal }): number | PromiseLike<number>;
 }
 /** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
 export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
@@ -666,6 +680,16 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal; layout: "table" | "stacked" }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: Readonly<GridRow>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  /** Loads a record's details when its record panel opens; used whatever the view's record source declares. */
+  loadRecord?: RecordLoader;
+  /** Record panel section renderers by name, beside the plugins' drawerSections. */
+  recordSections?: Readonly<Record<string, RecordSectionRenderer>>;
+  /** Actions of the record actions menu, after the built-in ones. */
+  recordActions?: readonly RecordAction[];
+  /** Open all in grid of a collection; return false (or cancel canopyx:openAll) to filter the target yourself. */
+  onOpenAll?: (event: RecordOpenAll) => boolean | void;
+  /** Print one record; return false (or cancel canopyx:recordPrint) to print the sheet yourself. */
+  onRecordPrint?: (event: { readonly id: string; readonly element: HTMLElement }) => boolean | void;
   /** Row activation: a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, or a click with rowAction (or on a
    * phone). Runs before the row's own action (onDetails or the drawer, or the row's link); returning false keeps that from
    * running, so the host can open its own view of the row. The cancelable canopyx:rowActivate event carries the same detail. */
@@ -808,6 +832,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridE
   setFormatRules(rules: readonly GridFormatRule[]): Promise<readonly GridFormatRule[]>;
   /** Opens the rule editor; loads the formatting and rule editor parts on first use. */
   openFormatRules(): Promise<void>;
+  /** Opens any record in the record drawer: a loaded row, one the grid scrolls to, or one its record source returns. */
+  openRecord(id: string, options?: OpenRecordOptions): Promise<void>;
   focus(): void;
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
   scrollToRow(index: number): Promise<void>;

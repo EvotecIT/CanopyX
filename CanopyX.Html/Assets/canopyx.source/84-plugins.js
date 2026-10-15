@@ -1,6 +1,6 @@
   // ---------- plugins: page-wide and per-grid extensions (docs/plugins.md) ----------
   // A plugin is { name, requires?, views?, init?, destroy?, cellRenderers?, columnTypes?, editors?, toolbarItems?, menuItems?,
-  // exportFormats?, events? }. CanopyX.use registers one for every grid and tree created afterwards; the plugins option adds
+  // exportFormats?, events?, detailRenderers?, drawerSections?, recordActions? }. CanopyX.use registers one for every grid and tree created afterwards; the plugins option adds
   // one to a single grid, replacing a page plugin of the same name. A grid subscribes its plugins' events and destroy hooks
   // as it is created, then starts them in requires order: the parts a plugin requires are loaded, then init runs with the
   // plugin context. The grid's ready waits for its plugins; a plugin that fails is reported as the grid's error event.
@@ -10,11 +10,11 @@
     // A toolbar item runs; a menu entry runs or, on the reporting runtime, renders content.
     const entry = menu => action => action && typeof action.label === "string" && (fn(action.run) || menu && fn(action.render));
     if (!value || !partName(item.name) || PARTS[item.name] || [item.init, item.destroy].some(hook => hook !== undefined && !fn(hook)) ||
-        ["requires", "views", "toolbarItems", "menuItems", "exportFormats"].some(key => item[key] !== undefined && !Array.isArray(item[key])) ||
-        ["cellRenderers", "columnTypes", "editors", "events", "aggregates", "detailRenderers"].some(key => item[key] !== undefined && Object(item[key]) !== item[key]) ||
+        ["requires", "views", "toolbarItems", "menuItems", "exportFormats", "recordActions"].some(key => item[key] !== undefined && !Array.isArray(item[key])) ||
+        ["cellRenderers", "columnTypes", "editors", "events", "aggregates", "detailRenderers", "drawerSections"].some(key => item[key] !== undefined && Object(item[key]) !== item[key]) ||
         !(item.requires || []).every(partName) || !(item.views || []).every(kind => kind === "tree" || kind === "grid") ||
-        ![...Object.values(item.cellRenderers || {}), ...Object.values(item.events || {}), ...Object.values(item.detailRenderers || {})].every(fn) ||
-        !(item.toolbarItems || []).every(entry()) || !(item.menuItems || []).every(entry(true)))
+        ![...Object.values(item.cellRenderers || {}), ...Object.values(item.events || {}), ...Object.values(item.detailRenderers || {}), ...Object.values(item.drawerSections || {})].every(fn) ||
+        !(item.toolbarItems || []).every(entry()) || !(item.recordActions || []).every(entry()) || !(item.menuItems || []).every(entry(true)))
       throw new Error("CanopyX: invalid plugin '" + item.name + "'.");
     item.exportFormats?.forEach(exportFormat);
     return item;

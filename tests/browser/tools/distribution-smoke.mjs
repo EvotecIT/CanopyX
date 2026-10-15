@@ -20,7 +20,7 @@ try {
   const run = (file, args, cwd) => execute(file, args, { cwd, timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
   const result = await run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", output], repo);
   const [packed] = JSON.parse(result.stdout);
-  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts", "JavaScript/editing.d.ts", "JavaScript/formatting.d.ts", "JavaScript/column-groups.d.ts", "JavaScript/cell-ranges.d.ts",
+  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts", "JavaScript/editing.d.ts", "JavaScript/formatting.d.ts", "JavaScript/column-groups.d.ts", "JavaScript/cell-ranges.d.ts", "JavaScript/records.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
@@ -29,7 +29,7 @@ try {
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js", "CanopyX.Html/Assets/canopyx-link.js", "CanopyX.Html/Assets/canopyx-link.css",
     "CanopyX.Html/Assets/canopyx-formatting.js", "CanopyX.Html/Assets/canopyx-formatting.css", "CanopyX.Html/Assets/canopyx-format-editor.js", "CanopyX.Html/Assets/canopyx-format-editor.css",
     "CanopyX.Html/Assets/canopyx-column-groups.js", "CanopyX.Html/Assets/canopyx-column-groups.css", "CanopyX.Html/Assets/canopyx-cell-range.js", "CanopyX.Html/Assets/canopyx-cell-range.css",
-    "CanopyX.Html/Assets/canopyx-highlight.js", "CanopyX.Html/Assets/canopyx-highlight.css", "CanopyX.Html/Assets/canopyx-layouts.js", "CanopyX.Html/Assets/canopyx-layouts.css",
+    "CanopyX.Html/Assets/canopyx-highlight.js", "CanopyX.Html/Assets/canopyx-highlight.css", "CanopyX.Html/Assets/canopyx-layouts.js", "CanopyX.Html/Assets/canopyx-layouts.css", "CanopyX.Html/Assets/canopyx-record-panel.js", "CanopyX.Html/Assets/canopyx-record-panel.css",
     ...['pl','de','es','fr','it'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
@@ -68,7 +68,7 @@ try {
     const view = { pageSize: 2, roots: [{id:'a',label:'Atlas'}] };
     const page = await runtime.sources.inline(view).page(null, null);
     assert.deepEqual(page.items, view.roots);
-    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','export.js','history.js','pager.js','pager.css','enhance.js','editing.js','editing.css','tree-tools.js','tree-tools.css','links.js','search.js','formatting.js','formatting.css','format-editor.js','format-editor.css','link.js','link.css','detail-rows.js','detail-rows.css','grouping.js','grouping.css','column-groups.js','column-groups.css','cell-range.js','cell-range.css','highlight.js','highlight.css','layouts.js','layouts.css','locales/pl.js','locales/de.js','locales/es.js','locales/fr.js','locales/it.js']) {
+    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','export.js','history.js','pager.js','pager.css','enhance.js','editing.js','editing.css','tree-tools.js','tree-tools.css','links.js','search.js','formatting.js','formatting.css','format-editor.js','format-editor.css','link.js','link.css','detail-rows.js','detail-rows.css','grouping.js','grouping.css','column-groups.js','column-groups.css','cell-range.js','cell-range.css','highlight.js','highlight.css','layouts.js','layouts.css','record-panel.js','record-panel.css','locales/pl.js','locales/de.js','locales/es.js','locales/fr.js','locales/it.js']) {
       assert.ok(import.meta.resolve('@evotecit/canopyx/' + name).startsWith('file:'));
     }`;
   await fs.writeFile(path.join(consumer, "import-check.mjs"), importCheck);

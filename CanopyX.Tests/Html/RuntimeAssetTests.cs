@@ -182,8 +182,8 @@ public sealed class RuntimeAssetTests {
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
-            // the link part and the highlight and layout mode parts, each with its stylesheet.
-            Assert.Equal(13, Directory.GetFiles(directory).Length);
+            // the link, highlight, layout mode and record panel parts, each with its stylesheet.
+            Assert.Equal(15, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

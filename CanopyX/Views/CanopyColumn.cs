@@ -80,6 +80,10 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets the record drawer section label. Null uses the default details section.</summary>
     public string? Section { get; set; }
 
+    /// <summary>Gets or sets whether the record drawer shows this column. Default true; false keeps a column (an internal key, a
+    /// value the summary already shows) out of the drawer and the record panel while the grid keeps it.</summary>
+    public bool ShowInDrawer { get; set; } = true;
+
     /// <summary>
     /// Gets or sets the name of a cell renderer a browser plugin registers (<c>cellRenderers</c> in docs/plugins.md), which
     /// draws this column's cells in trees and flat grids. Null, or a name no plugin on the page registers, keeps the built-in
@@ -123,7 +127,8 @@ public sealed partial class CanopyColumn {
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);
         WriteLayoutJson(writer, grid);
-        if (grid) writer.OptionalProperty("section", Section);
+        writer.OptionalProperty("section", Section);
+        if (!ShowInDrawer) writer.Property("drawer", false);
         writer.OptionalProperty("renderer", Renderer);
 
         if (Hidden) {

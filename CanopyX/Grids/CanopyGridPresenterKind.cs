@@ -31,5 +31,7 @@ public enum CanopyGridPresenterKind {
     /// <summary>Up to three outlined tags followed by a complete-text control.</summary>
     Tags,
     /// <summary>Normal text with an em dash for missing values.</summary>
-    Missing
+    Missing,
+    /// <summary>A summary of a structured value (a list, object, collection, timeline or changes): a count, chips, or the first item and +N.</summary>
+    Structured
 }

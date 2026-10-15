@@ -214,6 +214,7 @@ public sealed partial class CanopyDataGridView {
         }
         WriteFormattingJson(writer);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
+        if (Record != null) { writer.Name("record"); Record.WriteJson(writer, grid: true); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (HasPager) { writer.Name("pager"); Pager.WriteJson(writer); }
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
@@ -312,6 +313,7 @@ public sealed partial class CanopyDataGridView {
         }
         if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
         CanopyGridRows.Validate(Rows, columnIds, Columns);
+        ValidateRecord();
         var nested = Reporting?.Detail?.View;
         if (nested != null) {
             var nestedIds = new HashSet<string>(StringComparer.Ordinal);

@@ -3,6 +3,7 @@ import type {
   CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
 } from "./protocol.js";
 import type { CanopyPlugin } from "./plugins.js";
+import type { RecordPanelOptions } from "./records.js";
 import type { TreeGrid } from "./index.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
@@ -139,7 +140,7 @@ export interface TreeExport extends ExportCapture {
 /** The TrustedHTML type of the DOM library when it declares Trusted Types; otherwise never. */
 export type HostTrustedHTML = typeof globalThis extends { TrustedHTML: { prototype: infer T } } ? T : never;
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */
-interface HostOptionsBase {
+interface HostOptionsBase extends RecordPanelOptions {
   source?: DataSource;
   labels?: CanopyLabels;
   requestTimeoutMs?: number;
@@ -165,6 +166,8 @@ interface HostOptionsBase {
    * Return a string, a TrustedHTML from the host's own Trusted Types policy, or a Node, which is inserted as it is (docs/security.md).
    */
   sanitizeHtml?: (html: string, context: { readonly kind: "detail" | "icon" }) => string | HostTrustedHTML | Node;
+  /** Replaces the tree's record drawer with the host's own view of the node (a frozen copy); restore returnFocus when it closes. */
+  onDetails?: (event: { node: Readonly<CanopyNode>; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
   onSelect?: (node: CanopyNode | null, nodes: CanopyNode[]) => void;
   onToggle?: (node: CanopyNode, expanded: boolean) => void;
   onLoad?: (node: CanopyNode | null, info: LoadInfo) => void;

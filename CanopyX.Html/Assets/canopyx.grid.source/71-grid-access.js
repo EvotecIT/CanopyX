@@ -35,7 +35,8 @@
       if (!row) throw new Error("CanopyX: details require a loaded record.");
       if(typeof this.opts.onDetails!=="function"){
         const epoch=this.queryEpoch,returnFocus=document.activeElement;
-        return loadGridFilterEditor().then(()=>{if(!this.destroyed&&!this.pendingQuery&&epoch===this.queryEpoch)this.openGridDrawer(row.h,row._ri,returnFocus);});
+        // A record panel (sections, tabs, structured values) loads its part with the drawer.
+        return Promise.all([loadGridFilterEditor(),this.recordNeeded(row.h)&&loadRecordPanel()]).then(()=>{if(!this.destroyed&&!this.pendingQuery&&epoch===this.queryEpoch)this.openGridDrawer(row.h,row._ri,returnFocus);});
       }
       if (this.detailController) this.detailController.abort();
       const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;

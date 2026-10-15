@@ -77,6 +77,12 @@
         }
         return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
           total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
-      }
+      },
+      // A record's position in a query's result (-1 outside it) and a record by id, for record deep links and related records.
+      position(query, id) {
+        if (gridResultShape(query) !== lastShape) { ordered = gridQueryRows(view, query, columns, compare); lastShape = gridResultShape(query); }
+        return ordered.findIndex(row => row.id === id);
+      },
+      row(id) { return view.rows.find(row => row.id === id) || null; }
     };
   }

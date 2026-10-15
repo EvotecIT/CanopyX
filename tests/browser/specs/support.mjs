@@ -100,12 +100,14 @@ export function runtimeAssets(runtime = "tree") {
       // The links and search parts every runtime loads for deep links and sidecar searches.
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-links.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-search.js"),"utf8") +
       // The search highlighting and layout mode parts of views that declare them.
-      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.js"),"utf8"),
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.js"),"utf8") +
+      // The record panel part every runtime loads for record panels, structured values and record links.
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.js"),"utf8"),
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
       (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.css"),"utf8") : "") +
       "\n" + treeToolsAssets().style + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.css"),"utf8") +
-      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.css"),"utf8")
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.css"),"utf8")
   };
 }
 

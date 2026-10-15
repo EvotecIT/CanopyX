@@ -4,7 +4,7 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing"];
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing", "structured"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
     if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
     if (["progress","change"].includes(options.kind) && column.kind!=="number" ||
@@ -20,6 +20,8 @@
         options.limit!==undefined&&(!Number.isInteger(options.limit)||options.limit<1||options.limit>16))) invalid();
     if ((options.minimum===undefined)!==(options.scaleMaximum===undefined)||options.minimum!==undefined&&
         (![options.minimum,options.scaleMaximum].every(value=>Number.isFinite(value)&&Math.abs(value)<=Number.MAX_SAFE_INTEGER)||options.minimum>=options.scaleMaximum)) invalid();
+    if (options.kind==="structured"&&(options.display!==undefined&&!["count","chips","first"].includes(options.display)||options.limit!==undefined&&(!Number.isInteger(options.limit)||options.limit<1||options.limit>16)||
+        options.countText!==undefined&&(typeof options.countText!=="string"||!options.countText.includes("{count}")||options.countText.length>256))) invalid();
     if (options.mark!==undefined&&!['last','worst'].includes(options.mark)) invalid();
     if (options.quietTones!==undefined&&(!Array.isArray(options.quietTones)||options.quietTones.length>16||options.quietTones.some(tone=>typeof tone!=="string"||!/^[a-z][a-z0-9-]{0,31}$/.test(tone)))) invalid();
     if (options.quietStyle!==undefined&&!["muted","plain"].includes(options.quietStyle)) invalid();

@@ -88,7 +88,8 @@ public sealed partial class CanopyGridPresenter {
         CanopyGridPresenterKind.Enum => "enum", CanopyGridPresenterKind.State => "state",
         CanopyGridPresenterKind.Change => "change", CanopyGridPresenterKind.StatusStrip => "statusStrip",
         CanopyGridPresenterKind.SparklineBars => "sparklineBars", CanopyGridPresenterKind.SparklineLine => "sparklineLine",
-        CanopyGridPresenterKind.Identifier => "identifier", CanopyGridPresenterKind.Tags => "tags", _ => "missing"
+        CanopyGridPresenterKind.Identifier => "identifier", CanopyGridPresenterKind.Tags => "tags",
+        CanopyGridPresenterKind.Structured => "structured", _ => "missing"
     };
 
     internal void WriteJson(CanopyJsonWriter writer) {
@@ -99,6 +100,7 @@ public sealed partial class CanopyGridPresenter {
         if (Kind == CanopyGridPresenterKind.Progress) writer.Name("maximum").Number(Maximum);
         if (Separator != null) writer.Property("separator", Separator).Property("limit", Limit);
         WriteDesignJson(writer);
+        WriteStructuredJson(writer);
         writer.EndObject();
     }
 }
