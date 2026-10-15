@@ -5,7 +5,8 @@ using CanopyX.Html;
 using FleetInventory;
 using Microsoft.EntityFrameworkCore;
 
-// Fleet inventory: CanopyX grids in remote mode over SQLite and EF Core, with an editable page and a two-level grouped page.
+// Fleet inventory: CanopyX grids in remote mode over SQLite and EF Core, with machine records loaded on demand, an editable
+// page and a two-level grouped page.
 // Options (command line or environment): --database <path> (default: fleet.db in the temp folder), --rows <count> (default 100000).
 // --bench times typical requests in process and exits; --sql also prints the SQL that EF Core sends.
 var bench = args.Contains("--bench");
@@ -30,8 +31,11 @@ if (bench) {
 // Every saved row increments the revision in the database, so readers of an older revision reload instead of mixing snapshots.
 var revision = new FleetRevision(connectionString);
 revision.Ensure();
+// The main grid opens each machine in a record panel whose details load from the record route.
+var machines = FleetGrid.View("machines", "Machines", grouped: false);
+FleetRecords.Panel(machines);
 var grids = new[] {
-    (Path: "/", Endpoint: "/api/machines", View: FleetGrid.View("machines", "Machines", grouped: false), Note: (Func<CanopyTheme, string>?)null),
+    (Path: "/", Endpoint: "/api/machines", View: machines, Note: (Func<CanopyTheme, string>?)null),
     (Path: "/by-site", Endpoint: "/api/machines-by-site", View: FleetGrid.View("machines-by-site", "Machines by site", grouped: true), Note: null),
     (Path: "/edit", Endpoint: "/api/machines-edit", View: FleetGrid.EditableView(), Note: FleetDemo.EditNote),
     (Path: "/by-site-os", Endpoint: "/api/machines-by-site-os", View: FleetGrid.GroupedView(), Note: FleetDemo.GroupNote)
@@ -41,13 +45,17 @@ foreach (var grid in grids) {
     var editable = map.Schema.EditableColumns.Count > 0;
     // What a caller may read; real hosts restrict it per user (for example .Where(machine => machine.TeamId == teamOfUser)).
     IQueryable<Machine> Readable(HttpContext http) => http.RequestServices.GetRequiredService<FleetDb>().Machines;
-    app.MapCanopyRemote(grid.Endpoint, Readable, map, options => {
+    // With a record map, record lookups compose on the same Readable query, so a machine the caller cannot read is not found.
+    if (grid.View.Record != null) app.MapCanopyRemote(grid.Endpoint, Readable, map, FleetRecords.Map(map), Configure);
+    else app.MapCanopyRemote(grid.Endpoint, Readable, map, Configure);
+    void Configure(CanopyRemoteEndpointOptions options) {
         options.Query.Executor = new EfCoreExecutor();
         options.Query.Revision = revision.ReadAsync;
         options.Limits.MaxPageSize = 1000;
         options.Limits.MaxExportRows = 250000;
         // The sample has no sign-in. Real hosts keep the default, which requires authorization, or name a policy.
         options.AllowAnonymous = true;
+        // Rate limiting belongs to the host: options.RecordEndpoint = route => route.RequireRateLimiting("records");
         if (!editable) return;
         options.Writer = http => {
             var db = http.RequestServices.GetRequiredService<FleetDb>();
@@ -61,7 +69,7 @@ foreach (var grid in grids) {
         };
         // Real hosts name the policy that may write (options.WriteAuthorizationPolicy = "Inventory.Write"); the sample has no sign-in.
         options.AllowAnonymousWrites = true;
-    });
+    }
     var light = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Light, grid.Note?.Invoke(CanopyTheme.Light));
     var dark = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Dark, grid.Note?.Invoke(CanopyTheme.Dark));
     app.MapGet(grid.Path, (HttpContext http) => Results.Content(http.Request.Query["theme"] == "dark" ? dark : light, "text/html; charset=utf-8"));
