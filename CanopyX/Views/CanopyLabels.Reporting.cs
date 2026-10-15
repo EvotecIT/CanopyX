@@ -95,6 +95,8 @@ public sealed partial class CanopyLabels {
         _values.ContainsKey(nameof(GridSelectionQueryCount)) || _values.ContainsKey(nameof(GridSelectionQueryUnknown)) || _values.ContainsKey(nameof(GridSelectRecord)) ||
         _values.ContainsKey(nameof(GridGroupHeading)) || _values.ContainsKey(nameof(GridGroupMissing)) || _values.ContainsKey(nameof(GridGroupExpand)) ||
         _values.ContainsKey(nameof(GridGroupCollapse)) || _values.ContainsKey(nameof(GridSummary)) || _values.ContainsKey(nameof(GridGroupOrder)) ||
+        _values.ContainsKey(nameof(GridAggregateCount)) || _values.ContainsKey(nameof(GridAggregateSum)) || _values.ContainsKey(nameof(GridAggregateAverage)) ||
+        _values.ContainsKey(nameof(GridAggregateMinimum)) || _values.ContainsKey(nameof(GridAggregateMaximum)) ||
         _values.ContainsKey(nameof(GridPrint)) ||
         _values.ContainsKey(nameof(GridHealthy)) || _values.ContainsKey(nameof(GridValue)) || _values.ContainsKey(nameof(GridAddFilter)) ||
         _values.ContainsKey(nameof(GridMoveEarlier)) || _values.ContainsKey(nameof(GridMoveLater)) || _values.ContainsKey(nameof(GridFitColumn));

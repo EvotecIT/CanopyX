@@ -174,10 +174,12 @@ function Assert-PackageContents {
         [Parameter(Mandatory = $true)] [string] $PackagePath,
         [Parameter(Mandatory = $true)] [string] $Assembly,
         [Parameter(Mandatory = $true)] [string] $Version,
-        [Parameter(Mandatory = $true)] [AllowEmptyCollection()] [string[]] $DependencyIds
+        [Parameter(Mandatory = $true)] [AllowEmptyCollection()] [string[]] $DependencyIds,
+        [string[]] $Frameworks = @('net472', 'netstandard2.0', 'net8.0', 'net10.0'),
+        [AllowEmptyCollection()] [string[]] $LegacyDependencyIds = @()
     )
 
-    $frameworks = @('net472', 'netstandard2.0', 'net8.0', 'net10.0')
+    $frameworks = $Frameworks
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
     try {
@@ -201,14 +203,22 @@ function Assert-PackageContents {
             $reader.Dispose()
         }
 
-        # Every framework group must list exactly the expected packages at the package's own version.
+        # Every framework group must list exactly the expected CanopyX packages at the package's own version. Groups for
+        # .NET Framework and .NET Standard may add the listed polyfill packages, which modern targets get from the runtime.
         $groups = @($nuspec.package.metadata.dependencies.group)
         if ($groups.Count -ne $frameworks.Count) {
             throw "$Assembly package has $($groups.Count) dependency groups, expected $($frameworks.Count)."
         }
         $expected = (@($DependencyIds | Sort-Object | ForEach-Object { "$_@$Version" }) -join ',')
         foreach ($group in $groups) {
-            $declared = (@($group.dependency | Where-Object { $_ } | Sort-Object id | ForEach-Object { "$($_.id)@$($_.version)" }) -join ',')
+            $dependencies = @($group.dependency | Where-Object { $_ })
+            $legacy = $group.targetFramework -match '^\.NET(Framework|Standard)'
+            $external = @($dependencies | Where-Object { $_.id -notlike 'CanopyX*' } | ForEach-Object { $_.id } | Sort-Object)
+            $expectedExternal = if ($legacy) { @($LegacyDependencyIds | Sort-Object) } else { @() }
+            if (($external -join ',') -ne ($expectedExternal -join ',')) {
+                throw "$Assembly package external dependencies for $($group.targetFramework) are '$($external -join ',')', expected '$($expectedExternal -join ',')'."
+            }
+            $declared = (@($dependencies | Where-Object { $_.id -like 'CanopyX*' } | Sort-Object id | ForEach-Object { "$($_.id)@$($_.version)" }) -join ',')
             if ($declared -ne $expected) {
                 throw "$Assembly package dependencies for $($group.targetFramework) are '$declared', expected '$expected'."
             }
@@ -224,10 +234,14 @@ try {
     $solution = Join-Path $root 'CanopyX.sln'
     $packageProjects = @(
         [ordered] @{ Id = 'CanopyX'; Project = (Join-Path $root 'CanopyX/CanopyX.csproj'); DependencyIds = @() },
-        [ordered] @{ Id = 'CanopyX.Html'; Project = (Join-Path $root 'CanopyX.Html/CanopyX.Html.csproj'); DependencyIds = @('CanopyX') }
+        [ordered] @{ Id = 'CanopyX.Html'; Project = (Join-Path $root 'CanopyX.Html/CanopyX.Html.csproj'); DependencyIds = @('CanopyX') },
+        [ordered] @{ Id = 'CanopyX.Data'; Project = (Join-Path $root 'CanopyX.Data/CanopyX.Data.csproj'); DependencyIds = @('CanopyX');
+            LegacyDependencyIds = @('Microsoft.Bcl.AsyncInterfaces', 'System.Text.Json') },
+        [ordered] @{ Id = 'CanopyX.AspNetCore'; Project = (Join-Path $root 'CanopyX.AspNetCore/CanopyX.AspNetCore.csproj'); DependencyIds = @('CanopyX.Data');
+            Frameworks = @('net8.0', 'net10.0') }
     )
 
-    Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html')
+    Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html', 'CanopyX.Data', 'CanopyX.AspNetCore')
     Assert-RuntimeLineBudget -Root $root
     & (Join-Path $root 'Build/Sync-Assets.ps1') -Check
 
@@ -288,7 +302,10 @@ try {
                 throw "Symbol package was not created: $symbols"
             }
 
-            Assert-PackageContents -PackagePath $package -Assembly $packageProject.Id -Version $version -DependencyIds $packageProject.DependencyIds
+            $contents = @{ PackagePath = $package; Assembly = $packageProject.Id; Version = $version; DependencyIds = $packageProject.DependencyIds }
+            if ($packageProject.Frameworks) { $contents.Frameworks = $packageProject.Frameworks }
+            if ($packageProject.LegacyDependencyIds) { $contents.LegacyDependencyIds = $packageProject.LegacyDependencyIds }
+            Assert-PackageContents @contents
             $packageProject.Version = $version
         }
 
