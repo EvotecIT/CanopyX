@@ -29,6 +29,7 @@ These Tier 1 items have landed; each has its own page.
 | | **Large data:** mount when visible, compact row data and grid bundles | [large-data.md](large-data.md) |
 | | **Security and accessibility modes:** strict CSP and Trusted Types, forced colours, reduced motion, target sizes | [security.md](security.md), [accessibility.md](accessibility.md) |
 | M | **Live data:** rows that change in place with a stable order, flashing cells, a batched update rate, polling and revision-aware refresh | [live-data.md](live-data.md) |
+| L | **Facet panel:** value lists with counts and range histograms beside or above the grid, filtering each other; a sheet on phones | [facets.md](facets.md) |
 
 ## Tier 1: in progress
 
@@ -75,7 +76,7 @@ These came out of a review of what CanopyX doesn't offer yet. Most fit a feature
 | Keyboard cell focus API and events | D, F |
 | Custom sort comparators, custom filter predicates and custom column types for flat grids | A |
 | A row-level render hook | A |
-| **Faceted filter panel:** value lists with counts for several columns shown side by side, always visible | New. Value lists with counts already exist in the filter popover of inline text columns, and of server-backed columns declared as facets. |
+| **Faceted filter panel:** value lists with counts for several columns shown side by side, always visible | Available (L, [facets.md](facets.md)) |
 | **Live data:** add, update and remove rows in place, keeping focus, selection and scroll position | Available (M, [live-data.md](live-data.md)) |
 | **Shareable state in the URL** (query string or hash), alongside session and local storage | Available for enhanced and simple-setup grids (`stateSave.url`, H) |
 | **Row reordering in flat grids** by drag and keyboard, raised to the host like tree moves | New (alongside D) |

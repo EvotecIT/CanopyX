@@ -294,6 +294,14 @@ source: {
 Read the same counts from code with `grid.getFacets("status", { limit: 100 })` (reporting). See the
 [flat grid protocol](data-protocol.md#flat-grid-documents).
 
+To keep those values in view, show a facet panel beside the grid; ranges get a histogram, and the facets filter each other:
+
+```csharp
+view.FacetPanel = new CanopyFacetPanel().Add("status").Add("region").Add("amount");
+```
+
+See [facet panel](facets.md).
+
 ## Keep a grid up to date while it is open
 
 Apply changes in place instead of reloading: the reader keeps their sort, filters, selection, focus and scroll position.

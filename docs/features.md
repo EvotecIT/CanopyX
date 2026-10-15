@@ -58,6 +58,7 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Typed column filters (equals, contains, ranges, is any of, is empty) | Grid | Header ⋮ menu, `query.filters` | [Flat data grid](authoring.md#flat-data-grid) |
 | Value lists with full-query counts for inline text columns | Grid | Column filter popover | [Flat data grid](authoring.md#flat-data-grid) |
 | Value lists with counts from your server; facet API | Reporting | `reporting.facetColumns` with `source.facet`; `getFacets()` | [Flat data grid](authoring.md#flat-data-grid) |
+| Facet panel beside or above the grid: value lists and range histograms that filter each other, a sheet on phones | Grid (hosted: Reporting) | `facets`, `getFacetPanel()`, `setFacetPanelOpen()`; C# `CanopyFacetPanel` | [facets.md](facets.md) |
 | Condition builder with nested All/Any groups and date presets | Grid | Filters menu, `query.filterGroup`; C# `CanopyGridFilterGroup` | [Flat data grid](authoring.md#flat-data-grid) |
 | Active search and filter chips, result count, clear all | Grid | Built in | [Flat data grid](authoring.md#flat-data-grid) |
 | Named filters that keep the ancestors of matches | Tree | `filters`, `ancestorFlag`, `setFilter({ match, keep })` | [Hosted filtering](authoring.md#hosted-filtering) |
