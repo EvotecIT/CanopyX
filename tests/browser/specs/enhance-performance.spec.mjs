@@ -21,7 +21,9 @@ async function measure(browser, warm) {
   }, [ROWS, warm]);
   // The page shows the table and settles first, as it does while its scripts load: the browser's own work after a large
   // table arrives (layout, paint, and in some browsers a scan of the new page text) is not part of the enhancement.
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestIdleCallback(resolve, { timeout: 5000 })))));
+  // WebKit has no requestIdleCallback; a short timeout stands in for the idle moment there.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() =>
+    typeof requestIdleCallback === "function" ? requestIdleCallback(resolve, { timeout: 5000 }) : setTimeout(resolve, 100)))));
   const result = await page.evaluate(async () => {
     const started = performance.now();
     const grid = await CanopyX.enhance("#big");
