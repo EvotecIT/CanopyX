@@ -17,6 +17,20 @@ public sealed class RandomQueries {
     }
 
     /// <summary>A gridQuery document. The last sort key is the unique name, so the order is total without the record key.</summary>
+    private static readonly string[] GroupColumns = { "site", "os", "online", "cores", "owner", "memory", "lastSeen" };
+    private static readonly string[] AggregateIds = { "coreCount", "memorySum", "memoryAvg", "coresMin", "coresMax", "ownerDistinct", "seenDistinct" };
+
+    /// <summary>A gridQuery document of the runtime-grouping view with random groupBy levels: zero to four columns, either
+    /// direction, some ordered by an aggregate; sometimes omitted, so the declared levels apply.</summary>
+    public string GroupedQuery(int maxOffset) {
+        var query = Query(maxOffset);
+        if (_random.Next(8) == 0) return query;
+        var count = _random.Next(10) == 0 ? 4 : _random.Next(0, 4);
+        var levels = GroupColumns.OrderBy(_ => _random.Next()).Take(count).Select(id => "{\"column\":\"" + id + "\",\"direction\":\"" + (_random.Next(2) == 0 ? "asc" : "desc") + "\"" +
+            (_random.Next(3) == 0 ? ",\"aggregate\":\"" + AggregateIds[_random.Next(AggregateIds.Length)] + "\"" : "") + "}");
+        return query.Substring(0, query.Length - 1) + ",\"groupBy\":[" + string.Join(",", levels) + "]}";
+    }
+
     public string Query(int maxOffset, bool search = true, bool sortGroupingFirst = false) {
         var builder = new StringBuilder("{\"protocol\":\"canopyx/2\",\"type\":\"gridQuery\",\"view\":\"fleet\"");
         builder.Append(",\"offset\":").Append(_random.Next(0, maxOffset + 1)).Append(",\"limit\":").Append(_random.Next(1, 60));

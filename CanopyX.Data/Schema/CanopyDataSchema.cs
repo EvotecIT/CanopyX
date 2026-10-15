@@ -8,7 +8,8 @@ namespace CanopyX.Data;
 /// <remarks>
 /// A request may only reference columns in this schema. Declared view columns that are not allowed stay display-only:
 /// a request that sorts, filters or exports them is rejected. The schema copies the declared column order, sortability,
-/// search columns, facet columns, grouping and aggregates when it is created; later changes to the view do not apply.
+/// search columns, facet columns, grouping (fixed or runtime levels), aggregates and editable columns when it is created;
+/// later changes to the view do not apply.
 /// </remarks>
 public sealed class CanopyDataSchema {
     private readonly Dictionary<string, CanopyDataColumn> _byId = new Dictionary<string, CanopyDataColumn>(StringComparer.Ordinal);
@@ -48,11 +49,24 @@ public sealed class CanopyDataSchema {
         if (Grouping != null && !_byId.ContainsKey(Grouping.Column))
             throw new ArgumentException("The grouping column '" + Grouping.Column + "' must be allowed.", nameof(columns));
         var aggregates = new List<CanopyGridAggregate>();
+        var bindings = new List<CanopySummaryAggregate>();
         if (view.Reporting != null) foreach (var aggregate in view.Reporting.Aggregates) {
-            if (!_byId.ContainsKey(aggregate.Column)) throw new ArgumentException("The aggregate column '" + aggregate.Column + "' must be allowed.", nameof(columns));
+            if (!_byId.TryGetValue(aggregate.Column, out var column)) throw new ArgumentException("The aggregate column '" + aggregate.Column + "' must be allowed.", nameof(columns));
             aggregates.Add(aggregate);
+            bindings.Add(new CanopySummaryAggregate(aggregate.Id, column, aggregate.Operation, aggregate.CustomOperation));
         }
         Aggregates = new ReadOnlyCollection<CanopyGridAggregate>(aggregates);
+        SummaryAggregates = new ReadOnlyCollection<CanopySummaryAggregate>(bindings);
+        var levels = new List<CanopyGridGroupLevel>();
+        if (view.Reporting != null) foreach (var level in view.Reporting.GroupBy) {
+            if (!_byId.ContainsKey(level.Column)) throw new ArgumentException("The grouping level column '" + level.Column + "' must be allowed.", nameof(columns));
+            levels.Add(level);
+        }
+        GroupBy = new ReadOnlyCollection<CanopyGridGroupLevel>(levels);
+        Groupable = view.Reporting?.Groupable == true;
+        var editable = new List<CanopyDataColumn>();
+        foreach (var column in list) if (column.Editable) editable.Add(column);
+        EditableColumns = new ReadOnlyCollection<CanopyDataColumn>(editable);
     }
 
     /// <summary>Gets the grid definition.</summary>
@@ -73,8 +87,42 @@ public sealed class CanopyDataSchema {
     /// <summary>Gets the declared aggregates of the view.</summary>
     public IReadOnlyList<CanopyGridAggregate> Aggregates { get; }
 
+    /// <summary>Gets the declared runtime grouping levels, outermost first; queries without <c>groupBy</c> use them.</summary>
+    public IReadOnlyList<CanopyGridGroupLevel> GroupBy { get; }
+
+    /// <summary>Gets whether readers may group by any sortable column at runtime.</summary>
+    public bool Groupable { get; }
+
+    /// <summary>Gets whether the view groups at runtime: its queries carry <c>groupBy</c> levels (declared levels or <see cref="Groupable"/>).</summary>
+    public bool DynamicGrouping => GroupBy.Count != 0 || Groupable;
+
     /// <summary>Gets whether the view requests complete-query summaries (grouping or aggregates).</summary>
-    public bool HasSummary => Grouping != null || Aggregates.Count > 0;
+    public bool HasSummary => Grouping != null || DynamicGrouping || Aggregates.Count > 0;
+
+    /// <summary>Gets the allowed columns the view declares editable. Only these can be written through a commit.</summary>
+    public IReadOnlyList<CanopyDataColumn> EditableColumns { get; }
+
+    /// <summary>The declared aggregates bound to their allowed columns, shared by every request of this schema.</summary>
+    internal IReadOnlyList<CanopySummaryAggregate> SummaryAggregates { get; }
+
+    /// <summary>Gets a declared aggregate bound to its allowed column, for example to order a grouping level built in code.</summary>
+    /// <param name="id">The declared aggregate identity.</param>
+    /// <returns>The aggregate binding.</returns>
+    /// <exception cref="ArgumentException">The view declares no such aggregate.</exception>
+    public CanopySummaryAggregate GetAggregate(string id) =>
+        FindAggregate(id ?? throw new ArgumentNullException(nameof(id))) ?? throw new ArgumentException("The view declares no aggregate '" + id + "'.", nameof(id));
+
+    internal CanopySummaryAggregate? FindAggregate(string id) {
+        foreach (var aggregate in SummaryAggregates) if (aggregate.Id == id) return aggregate;
+        return null;
+    }
+
+    /// <summary>The protocol's raw group order of a sortable column (<see cref="CanopyGridGrouping.CreateComparer"/>), built once per column and direction.</summary>
+    internal IComparer<CanopyCell> GroupComparer(string column, bool descending) =>
+        _comparers.GetOrAdd(column + (descending ? "\u0001desc" : "\u0001asc"), _ => new CanopyGridGrouping(column, descending).CreateComparer(View));
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, IComparer<CanopyCell>> _comparers =
+        new System.Collections.Concurrent.ConcurrentDictionary<string, IComparer<CanopyCell>>(StringComparer.Ordinal);
 
     /// <summary>Finds an allowed column.</summary>
     /// <param name="id">The column identity.</param>

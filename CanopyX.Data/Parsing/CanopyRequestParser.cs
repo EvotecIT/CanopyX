@@ -38,7 +38,8 @@ public static partial class CanopyRequestParser {
     /// <summary>Parses a query from query-string parameters.</summary>
     /// <param name="parameters">The decoded parameters. <c>q</c> carries a complete <c>gridQuery</c> document; otherwise
     /// <c>offset</c>, <c>limit</c>, <c>search</c>, <c>searchMode</c>, <c>revision</c>, repeatable <c>sort</c>
-    /// (<c>column</c>, <c>column:desc</c> or <c>-column</c>), <c>filters</c> (a JSON array) and <c>filterGroup</c> (a JSON object) are read.</param>
+    /// (<c>column</c>, <c>column:desc</c> or <c>-column</c>), <c>filters</c> (a JSON array), <c>filterGroup</c> (a JSON object)
+    /// and <c>groupBy</c> (a JSON array of levels) are read.</param>
     /// <param name="schema">The column allow-list.</param>
     /// <param name="limits">Safety limits; null uses the defaults.</param>
     /// <returns>The validated request.</returns>
@@ -151,6 +152,7 @@ public static partial class CanopyRequestParser {
         var revision = OptionalString(root, "revision");
         if (revision != null) RequireIdentifier(revision, "revision");
         var sort = Sorts(root, schema);
+        var levels = GroupLevels(root, schema, sort);
         var budget = new Budget();
         var children = new List<CanopyFilterNode>();
         if (root.TryGetProperty("filters", out var filters) && filters.ValueKind != JsonValueKind.Null) {
@@ -160,8 +162,52 @@ public static partial class CanopyRequestParser {
         if (root.TryGetProperty("filterGroup", out var group) && group.ValueKind != JsonValueKind.Null) children.Add(Group(group, schema, limits, budget, 1));
         if (CanopyDataRequest.SplitTerms(search, mode).Count > limits.MaxSearchTerms) throw CanopyRequestException.Limit("The search has too many words.");
         var request = new CanopyDataRequest(schema, children.Count == 0 ? null : children.Count == 1 ? children[0] : new CanopyFilterGroup(CanopyGridFilterJunction.All, children),
-            sort, search, mode, offset, limit, revision);
+            sort, search, mode, offset, limit, revision, levels);
         return request.WithRaw(root.GetRawText());
+    }
+
+    /// <summary>
+    /// Reads the runtime grouping levels (<c>groupBy</c>) of a view that groups at runtime and normalizes the sort the way the
+    /// browser does: a sort entry for a column grouped by value turns that level around, and the levels' columns lead the
+    /// sort (ascending for a level ordered by an aggregate). Views with a fixed grouping or none reject <c>groupBy</c>.
+    /// </summary>
+    private static IReadOnlyList<CanopySummaryLevel>? GroupLevels(JsonElement root, CanopyDataSchema schema, List<CanopySortKey> sort) {
+        var present = root.TryGetProperty("groupBy", out var element) && element.ValueKind != JsonValueKind.Null;
+        if (!schema.DynamicGrouping) {
+            if (present) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "This view does not group at runtime.");
+            return null;
+        }
+        var levels = new List<CanopySummaryLevel>();
+        if (!present) {
+            foreach (var declared in schema.GroupBy)
+                levels.Add(new CanopySummaryLevel(schema.GetColumn(declared.Column), declared.Descending, declared.Aggregate == null ? null : schema.FindAggregate(declared.Aggregate)));
+        } else {
+            if (element.ValueKind != JsonValueKind.Array) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "groupBy must be an array of levels.");
+            if (element.GetArrayLength() > 4) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "groupBy lists at most four levels.");
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var item in element.EnumerateArray()) {
+                if (item.ValueKind != JsonValueKind.Object) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "A grouping level must be a JSON object.");
+                var column = schema.GetColumn(RequireString(item, "column"));
+                if (!column.Sortable) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "A grouping level needs a sortable column.");
+                if (!seen.Add(column.Id)) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "A column can lead one grouping level only.");
+                var direction = OptionalString(item, "direction");
+                if (direction != "asc" && direction != "desc") throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "A grouping level direction is asc or desc.");
+                var aggregateId = OptionalString(item, "aggregate");
+                CanopySummaryAggregate? aggregate = null;
+                if (aggregateId != null && (aggregate = schema.FindAggregate(aggregateId)) == null)
+                    throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "A grouping level orders by a declared aggregate.");
+                levels.Add(new CanopySummaryLevel(column, direction == "desc", aggregate));
+            }
+        }
+        for (var i = 0; i < levels.Count; i++) {
+            var level = levels[i];
+            if (level.Aggregate != null) continue;
+            var key = sort.Find(item => item.Column.Id == level.Column.Id);
+            if (key != null && key.Descending != level.Descending) levels[i] = new CanopySummaryLevel(level.Column, key.Descending);
+        }
+        sort.RemoveAll(key => levels.Exists(level => level.Column.Id == key.Column.Id));
+        sort.InsertRange(0, levels.ConvertAll(level => new CanopySortKey(level.Column, level.Aggregate == null && level.Descending)));
+        return levels;
     }
 
     private static List<CanopySortKey> Sorts(JsonElement root, CanopyDataSchema schema) {
@@ -308,6 +354,7 @@ public static partial class CanopyRequestParser {
             }
             WriteJson(writer, values, "filters", JsonValueKind.Array);
             WriteJson(writer, values, "filterGroup", JsonValueKind.Object);
+            WriteJson(writer, values, "groupBy", JsonValueKind.Array);
             writer.WriteEndObject();
         }
         return Encoding.UTF8.GetString(stream.ToArray());

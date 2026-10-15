@@ -59,6 +59,17 @@ public static class Fleet {
     }
 
     /// <summary>The grid definition: every kind, value lists, aggregates, an optional fixed grouping.</summary>
+    /// <summary>The grid definition with runtime grouping: declared levels site then operating system, readers may regroup, and a distinct count.</summary>
+    public static CanopyDataGridView DynamicView() {
+        var view = View();
+        view.Reporting!.Groupable = true;
+        view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("site"));
+        view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os", descending: true));
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("ownerDistinct", "owner", CanopyGridAggregateOperation.DistinctCount, "Owners"));
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("seenDistinct", "lastSeen", CanopyGridAggregateOperation.DistinctCount, "Distinct last seen"));
+        return view;
+    }
+
     public static CanopyDataGridView View(bool grouped = false, bool explicitSearch = true, string groupColumn = "site") {
         var view = new CanopyDataGridView("fleet", "Fleet inventory") { Source = CanopyGridSource.HostedOffset(), PageSize = 50, Selection = CanopySelectionMode.Multiple };
         view.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });

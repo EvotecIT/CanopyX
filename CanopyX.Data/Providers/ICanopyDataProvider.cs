@@ -15,8 +15,10 @@ namespace CanopyX.Data;
 /// </para>
 /// <para>
 /// Ordering contract: apply the sort keys in order with missing values last in both directions, then stable record
-/// identity ascending. When the schema declares a grouping, the first sort key is the grouping column and records must
-/// come in the group order <see cref="SummarizeAsync"/> reports, so pages and group ranges agree.
+/// identity ascending. When a request has grouping levels (<see cref="CanopyDataRequest.Levels"/>: the fixed grouping or
+/// the query's <c>groupBy</c>), order records level by level first, each level's groups in their order (by value, or by
+/// the level's aggregate over the group, see <see cref="CanopySummaryLevel"/>), then by the other sort keys and identity,
+/// so pages, exports and the group ranges <see cref="SummarizeAsync"/> reports agree.
 /// </para>
 /// <para>Methods that a back end cannot serve throw <see cref="CanopyRequestException"/> with <see cref="CanopyRequestError.Unsupported"/>.</para>
 /// </remarks>
@@ -50,7 +52,8 @@ public interface ICanopyDataProvider {
     /// <returns>The value list.</returns>
     ValueTask<CanopyFacetResult> FacetAsync(CanopyFacetRequest request, CancellationToken cancellationToken);
 
-    /// <summary>Returns the declared aggregates over the complete query, and per group when the schema declares grouping.</summary>
+    /// <summary>Returns the declared aggregates over the complete query, and per group of every grouping level of the request,
+    /// with each level's groups nested in the group of the level above.</summary>
     /// <param name="request">The validated summary request.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>The summary.</returns>

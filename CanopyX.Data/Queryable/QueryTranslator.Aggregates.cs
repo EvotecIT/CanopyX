@@ -12,13 +12,25 @@ internal sealed partial class QueryTranslator<T> {
     private static readonly MethodInfo CountAll = Method(nameof(Enumerable.Count), 1);
     private static readonly MethodInfo CountWhere = Method(nameof(Enumerable.Count), 2);
 
-    /// <summary>A group as read from the store: the typed key, its normalized value, its count and aggregate slots.</summary>
+    private static readonly MethodInfo WhereMethod = typeof(Enumerable).GetMethods().Single(method => method.Name == nameof(Enumerable.Where) &&
+        method.GetParameters().Length == 2 && method.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>));
+    private static readonly MethodInfo SelectMethod = typeof(Enumerable).GetMethods().Single(method => method.Name == nameof(Enumerable.Select) &&
+        method.GetParameters().Length == 2 && method.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Func<,>));
+    private static readonly MethodInfo DistinctMethod = Method(nameof(Enumerable.Distinct), 1);
+
+    /// <summary>A group as read from the store: the typed key of each grouping column, their normalized values, the count and aggregate slots.</summary>
     internal sealed class StoreGroup {
-        internal StoreGroup(object? key, int count, double?[] values, int[] counts) {
-            Key = key; Value = CanopyDataValues.Normalize(key); Count = count; Values = values; Counts = counts;
+        internal StoreGroup(object?[] keys, int count, double?[] values, int[] counts) {
+            Keys = keys; KeyValues = keys.Select(CanopyDataValues.Normalize).ToArray(); Count = count; Values = values; Counts = counts;
         }
-        internal object? Key { get; }
-        internal object? Value { get; }
+        /// <summary>The typed store key of each grouping column, outermost first.</summary>
+        internal object?[] Keys { get; }
+        /// <summary>The normalized raw value of each grouping column.</summary>
+        internal object?[] KeyValues { get; }
+        /// <summary>The typed key of the first grouping column.</summary>
+        internal object? Key => Keys.Length == 0 ? null : Keys[0];
+        /// <summary>The normalized value of the first grouping column.</summary>
+        internal object? Value => KeyValues.Length == 0 ? null : KeyValues[0];
         internal int Count { get; }
         internal double?[] Values { get; }
         internal int[] Counts { get; }
@@ -32,31 +44,51 @@ internal sealed partial class QueryTranslator<T> {
         internal int Count { get; }
     }
 
-    /// <summary>Groups by the exact value of a column (or a constant for complete-query totals) and evaluates the aggregates in the store.</summary>
-    internal Task<List<StoreGroup>> GroupsAsync(IQueryable<T> source, string? column, IReadOnlyList<CanopySummaryAggregate> aggregates, int take,
+    /// <summary>Groups by the exact values of up to four columns (or a constant for complete-query totals) and evaluates the aggregates in the store.</summary>
+    internal Task<List<StoreGroup>> GroupsAsync(IQueryable<T> source, IReadOnlyList<string> columns, IReadOnlyList<CanopySummaryAggregate> aggregates, int take,
         CanopyQueryExecutor executor, CancellationToken cancellationToken) {
         if (aggregates.Count > 32) throw new ArgumentException("At most 32 aggregates are supported.", nameof(aggregates));
-        var key = column == null ? (Expression)Expression.Constant(1) : _values[column];
+        if (columns.Count > 4) throw new ArgumentException("At most four grouping columns are supported.", nameof(columns));
+        foreach (var aggregate in aggregates) {
+            if (aggregate.Operation == CanopyGridAggregateOperation.Custom)
+                throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute the custom aggregate '" + aggregate.CustomOperation + "'.");
+        }
+        var parts = columns.Select(column => _values[column]).ToArray();
+        // One column groups by its value; several by a composite key, which LINQ providers translate like an anonymous type.
+        var key = parts.Length == 0 ? Expression.Constant(1) : parts.Length == 1 ? parts[0] : CompositeKeys.New(parts);
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(GroupsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type);
-        return (Task<List<StoreGroup>>)method.Invoke(this, new object[] { source, key, aggregates, take, executor, cancellationToken })!;
+        return (Task<List<StoreGroup>>)method.Invoke(this, new object[] { source, key, parts.Length, aggregates, take, executor, cancellationToken })!;
     }
 
-    private async Task<List<StoreGroup>> GroupsCoreAsync<TKey>(IQueryable<T> source, Expression key, IReadOnlyList<CanopySummaryAggregate> aggregates, int take,
+    private async Task<List<StoreGroup>> GroupsCoreAsync<TKey>(IQueryable<T> source, Expression key, int width, IReadOnlyList<CanopySummaryAggregate> aggregates, int take,
         CanopyQueryExecutor executor, CancellationToken cancellationToken) {
         var group = Expression.Parameter(typeof(IGrouping<TKey, T>), "group");
         var rowType = typeof(AggregateRow<TKey>);
+        Expression groupKey = Expression.Property(group, nameof(IGrouping<TKey, T>.Key));
+        // A composite key is rebuilt from its members, which every provider projects as plain grouped columns.
+        if (width > 1) groupKey = CompositeKeys.New(CompositeKeys.Members(typeof(TKey)).Select(member => (Expression)Expression.Property(groupKey, member)).ToArray());
         var bindings = new List<MemberBinding> {
-            Expression.Bind(rowType.GetProperty(nameof(AggregateRow<TKey>.Key))!, Expression.Property(group, nameof(IGrouping<TKey, T>.Key))),
+            Expression.Bind(rowType.GetProperty(nameof(AggregateRow<TKey>.Key))!, groupKey),
             Expression.Bind(rowType.GetProperty(nameof(AggregateRow<TKey>.Rows))!, Expression.Call(CountAll.MakeGenericMethod(typeof(T)), group))
         };
         for (var i = 0; i < aggregates.Count; i++) {
             var value = _values[aggregates[i].Column.Id];
-            var present = ExpressionTools.IsNullable(value.Type)
+            var nullable = ExpressionTools.IsNullable(value.Type);
+            var present = nullable
                 ? Expression.Call(CountWhere.MakeGenericMethod(typeof(T)), group, Expression.Lambda(ExpressionTools.NotNull(value), Row))
                 : (Expression)Expression.Call(CountAll.MakeGenericMethod(typeof(T)), group);
             bindings.Add(Expression.Bind(rowType.GetProperty("N" + i)!, present));
             var operation = aggregates[i].Operation;
             if (operation == CanopyGridAggregateOperation.Count) continue;
+            if (operation == CanopyGridAggregateOperation.DistinctCount) {
+                // COUNT(DISTINCT value) over the nonmissing values: group.Where(value != null).Select(value).Distinct().Count().
+                Expression members = group;
+                if (nullable) members = Expression.Call(WhereMethod.MakeGenericMethod(typeof(T)), members, Expression.Lambda(ExpressionTools.NotNull(value), Row));
+                var selected = Expression.Call(SelectMethod.MakeGenericMethod(typeof(T), value.Type), members, Expression.Lambda(value, Row));
+                var distinct = Expression.Call(CountAll.MakeGenericMethod(value.Type), Expression.Call(DistinctMethod.MakeGenericMethod(value.Type), selected));
+                bindings.Add(Expression.Bind(rowType.GetProperty("V" + i)!, Expression.Convert(distinct, typeof(double?))));
+                continue;
+            }
             var name = operation == CanopyGridAggregateOperation.Sum ? nameof(Enumerable.Sum) : operation == CanopyGridAggregateOperation.Average ? nameof(Enumerable.Average)
                 : operation == CanopyGridAggregateOperation.Minimum ? nameof(Enumerable.Min) : nameof(Enumerable.Max);
             var selector = Expression.Lambda(typeof(Func<T, double?>), Expression.Convert(value, typeof(double?)), Row);
@@ -67,19 +99,29 @@ internal sealed partial class QueryTranslator<T> {
         }
         var projection = Expression.Lambda<Func<IGrouping<TKey, T>, AggregateRow<TKey>>>(Expression.MemberInit(Expression.New(rowType), bindings), group);
         var keyLambda = Expression.Lambda<Func<T, TKey>>(key, Row);
-        // Ordering by the key makes the bounded read deterministic; the endpoint applies the protocol's group order afterwards.
-        var item = Expression.Parameter(rowType, "row");
-        var byKey = Expression.Lambda<Func<AggregateRow<TKey>, TKey>>(Expression.Property(item, nameof(AggregateRow<TKey>.Key)), item);
-        var rows = await executor.ToListAsync(source.GroupBy(keyLambda).Select(projection).OrderBy(byKey).Take(take), cancellationToken).ConfigureAwait(false);
-        var result = new List<StoreGroup>(rows.Count);
-        foreach (var row in rows) {
+        var rows = source.GroupBy(keyLambda).Select(projection);
+        if (width <= 1) {
+            // Ordering by the key makes the bounded read deterministic; the endpoint applies the protocol's group order afterwards.
+            var item = Expression.Parameter(rowType, "row");
+            rows = rows.OrderBy(Expression.Lambda<Func<AggregateRow<TKey>, TKey>>(Expression.Property(item, nameof(AggregateRow<TKey>.Key)), item));
+        }
+        // A composite read is complete or rejected (callers ask for one group more than they accept), so its order does not matter.
+        var list = await executor.ToListAsync(rows.Take(take), cancellationToken).ConfigureAwait(false);
+        var result = new List<StoreGroup>(list.Count);
+        foreach (var row in list) {
             var values = new double?[aggregates.Count];
             var counts = new int[aggregates.Count];
             for (var i = 0; i < aggregates.Count; i++) {
                 counts[i] = (int)rowType.GetProperty("N" + i)!.GetValue(row)!;
-                values[i] = aggregates[i].Operation == CanopyGridAggregateOperation.Count ? counts[i] : counts[i] == 0 ? null : (double?)rowType.GetProperty("V" + i)!.GetValue(row);
+                var stored = (double?)rowType.GetProperty("V" + i)!.GetValue(row);
+                values[i] = aggregates[i].Operation switch {
+                    CanopyGridAggregateOperation.Count => counts[i],
+                    CanopyGridAggregateOperation.DistinctCount => counts[i] == 0 ? 0 : stored ?? 0,
+                    _ => counts[i] == 0 ? null : stored
+                };
             }
-            result.Add(new StoreGroup(row.Key, row.Rows, values, counts));
+            var keys = width == 0 ? Array.Empty<object?>() : width == 1 ? new object?[] { row.Key } : CompositeKeys.Values(row.Key!);
+            result.Add(new StoreGroup(keys, row.Rows, values, counts));
         }
         return result;
     }
