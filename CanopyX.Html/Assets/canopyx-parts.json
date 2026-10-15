@@ -299,6 +299,22 @@
       ]
     },
     {
+      "name": "facets",
+      "label": "facet panel",
+      "version": "d3ca2f95e58dcf8f",
+      "script": "canopyx-facets.js",
+      "style": "canopyx-facets.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "facets"
+      ]
+    },
+    {
       "name": "live",
       "label": "live data",
       "version": "e2f3cdfcb1f696bc",

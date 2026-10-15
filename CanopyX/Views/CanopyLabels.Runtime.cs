@@ -14,6 +14,7 @@ public sealed partial class CanopyLabels {
         nameof(GridEditRedone), nameof(GridEditNone),
         nameof(GridLiveOrderChanged), nameof(GridLiveResort), nameof(GridLiveNewData), nameof(GridLiveRefresh), nameof(GridLiveOrderHint),
         nameof(GridLiveChanged), nameof(GridLiveSorted), nameof(GridLiveRecordRemoved),
+        nameof(GridFacetPanel), nameof(GridFacetPanelHide), nameof(GridFacetPanelShow), nameof(GridFacetShowMore), nameof(GridFacetShowFewer), nameof(GridFacetEmptyValue), nameof(GridFacetFrom), nameof(GridFacetTo), nameof(GridFacetHistogram), nameof(GridFacetBin), nameof(GridFacetNoChart), nameof(GridFacetClear), nameof(GridFacetCustom), nameof(GridFacetResult), nameof(GridFacetSelected), nameof(GridFacetValueCount), nameof(GridFacetCollapse), nameof(GridFacetExpand), nameof(GridFacetInvalid), nameof(GridFacetReversed),
         nameof(MatchesHighlight), nameof(MatchesCount), nameof(MatchesPosition), nameof(MatchesNone), nameof(MatchesLoaded), nameof(MatchesPrevious), nameof(MatchesNext), nameof(MatchesAnnounce), nameof(LayoutMenu), nameof(LayoutFit), nameof(LayoutScroll), nameof(LayoutCards), nameof(LayoutDensity), nameof(LayoutCompact), nameof(LayoutNormal), nameof(LayoutComfortable), nameof(LayoutChanged), nameof(LayoutSort),
         nameof(GridGroupCount),
         nameof(GridOfThese),

@@ -18,6 +18,8 @@ import type { GridRangeSelection, GridClipboardSettings, GridCellRange, GridPast
 export * from "./column-groups.js";
 export * from "./cell-ranges.js";
 import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
+import type { GridFacetPanelDefinition, GridFacetPanelOptions, GridFacetPanelApi } from "./facets.js";
+export * from "./facets.js";
 export * from "./live.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -346,6 +348,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   record?: RecordPanelDefinition;
   /** Live data: rows that change in place, the stable order, flashing cells, batching and polling (live.d.ts). */
   live?: GridLiveDefinition;
+  /** A facet panel beside or above the grid: value lists with counts and ranges with histograms (facets.d.ts). */
+  facets?: GridFacetPanelDefinition;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -626,6 +630,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   layout?: LayoutState;
   /** The reader's Highlight matches switch, in a grid with searchHighlight. */
   highlight?: boolean;
+  /** Whether the reader left the facet panel open, in a grid with facets. */
+  facets?: { open: boolean };
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -735,6 +741,10 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   live?: boolean | GridLiveOptions<GridRow, Q>;
   /** After rows changed in place (a transaction, a poll, a refresh); canopyx:rowsChanged carries the same detail. */
   onRowsChanged?: (event: GridLiveResult) => void;
+  /** Facet panel settings over the view's facets, and an element the panel renders into (facets.d.ts). */
+  facets?: GridFacetPanelOptions;
+  /** After the reader opened or collapsed the facet panel; canopyx:facetPanel carries the same detail. */
+  onFacetPanel?: (event: { open: boolean }) => void;
   /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
   onPaste?: (event: GridPasteEvent) => boolean | void;
   /** After the cell ranges changed. */
@@ -751,7 +761,7 @@ export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGri
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<GridRow, Q> {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<GridRow, Q>, GridFacetPanelApi {
   readonly element: HTMLElement;
   readonly view: GridView;
   readonly ready: Promise<Q>;
