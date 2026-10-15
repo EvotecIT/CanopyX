@@ -233,8 +233,9 @@ test("row selection keeps its own controls beside cell ranges", async ({ page })
   await page.keyboard.press(" ");
   expect(await page.evaluate(() => api.getSelection())).toEqual(["r0005"]);
   expect(await ranges(page)).toHaveLength(1);
-  expect(await page.locator('.cx-canvas .cx-row[data-cx-id="r0005"]').getAttribute("aria-selected")).toBe("true");
-  expect(await page.locator('.cx-canvas .cx-row[data-cx-id="r0001"]').getAttribute("aria-selected")).toBe("false");
+  // The rows repaint their selection on the next frame; under a full suite's load that frame can come late.
+  await expect(page.locator('.cx-canvas .cx-row[data-cx-id="r0005"]')).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('.cx-canvas .cx-row[data-cx-id="r0001"]')).toHaveAttribute("aria-selected", "false");
 });
 
 test("the outline stays visible in forced colours", async ({ page }) => {
