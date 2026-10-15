@@ -2,7 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery, GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
@@ -431,3 +431,21 @@ registerPart("custom", { version: "0123456789abcdef", install() {} });
 use({ init() {} });
 // @ts-expect-error The views are tree and grid.
 use({ name: "bad", views: ["matrix"] });
+
+// Column groups and cell ranges.
+const budgetGroups: GridColumnGroup[] = [{ id: "h1", title: "First half", pinned: "left", groups: [{ id: "q1", title: "Q1", columns: ["jan", "feb", "mar"] }] }, { id: "total", title: "Totals", columns: ["year"] }];
+const budgetView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "budget", label: "Budget", source: { kind: "inline" }, rows: [], pageSize: 100, selection: "multiple", search: true, rowHeight: 34,
+  columns: ["jan", "feb", "mar", "year"].map(id => ({ id, title: id, kind: "number" as const })), columnGroups: budgetGroups,
+  rangeSelection: { multiple: true, fillHandle: true }, clipboard: { copyHeaders: true, copyValues: "raw", paste: true } };
+const budget = createDataGrid(document.createElement("div"), { view: budgetView, rangeSelection: true, clipboard: { copyValues: "display" },
+  onPaste: (event: GridPasteEvent) => { event.respondWith({ refused: event.cells.filter(cell => cell.column === "year").map(cell => ({ id: cell.id, column: cell.column, reason: "Computed" })) }); },
+  onCellRangeChange: ({ ranges }) => { const first: GridCellRange | undefined = ranges[0]; void first; } });
+const groupState: readonly GridColumnGroupState[] = budget.getColumnGroups();
+void groupState[0]?.visibleColumns;
+void budget.setColumnGroupVisible("q1", false);
+void budget.setCellRanges([{ startRow: 0, startColumn: "jan", endRow: 2, endColumn: "mar" }]);
+const rangeText: Promise<string> = budget.copyCellRanges({ headers: true, values: "raw" });
+const pasted: Promise<GridPasteResult> = budget.pasteCells("1\t2", { row: 0, column: "jan" });
+void rangeText; void pasted; void budget.getCellRanges(); void budget.clearCellRanges(); void budget.selectAllCells(); void budget.getCellRangeText();
+// @ts-expect-error Copied values are display or raw.
+void budget.copyCellRanges({ values: "typed" });
