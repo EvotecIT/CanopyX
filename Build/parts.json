@@ -1,0 +1,122 @@
+{
+  "$comment": "Lazy runtime parts. Build/Sync-Assets.ps1 assembles each into canopyx-<name>.js (and .css), registers it with CanopyX.registerPart, writes the build manifest every entry point reads, and writes canopyx-parts.json, which CanopyX.Html reads to write and embed the parts. Entry points leave out every script a part lists, unless the part lists it under shared too. See docs/plugins.md.",
+  "parts": [
+    {
+      "name": "tree-tools",
+      "label": "tree tools",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree"],
+      "key": "TreeGrid.prototype",
+      "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
+        "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems"],
+      "start": "const EXPORT_IMPL = {};",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/33-column-fit-core.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/57-toolbar-panels.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/60-grid-columns-menu.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/69-export-run.js",
+        "CanopyX.Html/Assets/canopyx.tree-tools.source"
+      ],
+      "shared": [
+        "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/33-column-fit-core.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/57-toolbar-panels.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/60-grid-columns-menu.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/69-export-run.js"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.grid.source/chrome.css",
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/columns.css",
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/drawer.css",
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/overlay.css",
+        "CanopyX.Html/Assets/canopyx.tree-tools.source/canopyx.css"
+      ],
+      "styleScope": [".cx-chrome", ".cx-tree-tools"]
+    },
+    {
+      "name": "filter-editor",
+      "label": "filter editor",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridQuery", "gridQueryStart",
+        "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
+        "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "fill", "announceMenu", "reportingRangeRows"],
+      "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",
+      "end": "Object.assign(DataGrid.prototype, COLUMNS_MENU, {buildGridFilters:buildFilters});\ncontext.GRID_REPORTING?.installFilters?.({gridDateInput});",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/38-grid-text-dialog.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/60-grid-columns-menu.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/61-grid-filters.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-filters.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/66-grid-column-conditions.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/67-grid-filter-builder.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/69-grid-menu.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/74-grid-record-drawer.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/75-grid-text-dialog-ui.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/77-grid-status-aggregates.js"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css",
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/columns.css",
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/drawer.css",
+        "CanopyX.Html/Assets/canopyx.filter-editor.source/overlay.css"
+      ]
+    },
+    {
+      "name": "export",
+      "label": "export part",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree", "grid"],
+      "key": "EXPORT_IMPL",
+      "context": ["DataGrid", "EXPORT_IMPL", "h", "setText", "gridButton", "gridOption", "fill", "numberFormat", "gridOperationActive", "formatting", "gridQuery",
+        "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS"],
+      "end": "DataGrid.prototype.renderGridExport = exportMenu;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/87-export-formats.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/78-grid-export-text.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/79-grid-export-menu.js"
+      ]
+    },
+    {
+      "name": "history",
+      "label": "history presenters",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "presenters": ["statusStrip", "sparklineBars", "sparklineLine"],
+      "key": "GRID_HISTORY_IMPL",
+      "context": ["GRID_HISTORY_IMPL", "h", "setText", "fill", "gridSeries", "gridPresenterTone", "toneColors", "toneOf", "GRID_TONE_RANK"],
+      "end": "GRID_HISTORY_IMPL.render = gridRenderHistory;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/37-grid-history.js"
+      ]
+    },
+    {
+      "name": "links",
+      "label": "deep links",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree"],
+      "deepLink": true,
+      "key": "TreeGrid.prototype",
+      "context": ["TreeGrid", "navigationScope"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.links.source/10-links.js"
+      ]
+    },
+    {
+      "name": "search",
+      "label": "sidecar search",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree"],
+      "sources": ["sidecar"],
+      "key": "SEARCH_IMPL",
+      "context": ["SEARCH_IMPL", "checkDocument", "badIndex", "isCount", "isIdentifier", "recentCache", "packBytes", "shardKey", "foldText", "trimSeparators",
+        "rankHits", "validateSearchHit", "PACK_CACHE", "PACK_CACHE_BYTES", "SHARD_CACHE", "ENTRY_CACHE", "ENTRY_BATCH", "SEARCH_CANDIDATES"],
+      "end": "SEARCH_IMPL.create = sidecarSearch;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.search.source/10-search-index.js"
+      ]
+    }
+  ]
+}

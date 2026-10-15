@@ -45,20 +45,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\canopyx.js" LogicalName="CanopyX.Html.Assets.canopyx.js" />
-    <EmbeddedResource Include="Assets\canopyx.css" LogicalName="CanopyX.Html.Assets.canopyx.css" />
-    <EmbeddedResource Include="Assets\canopyx-interactive.js" LogicalName="CanopyX.Html.Assets.canopyx-interactive.js" />
-    <EmbeddedResource Include="Assets\canopyx-interactive.css" LogicalName="CanopyX.Html.Assets.canopyx-interactive.css" />
-    <EmbeddedResource Include="Assets\canopyx-grid.js" LogicalName="CanopyX.Html.Assets.canopyx-grid.js" />
-    <EmbeddedResource Include="Assets\canopyx-grid.css" LogicalName="CanopyX.Html.Assets.canopyx-grid.css" />
-    <EmbeddedResource Include="Assets\canopyx-reporting.js" LogicalName="CanopyX.Html.Assets.canopyx-reporting.js" />
-    <EmbeddedResource Include="Assets\canopyx-reporting.css" LogicalName="CanopyX.Html.Assets.canopyx-reporting.css" />
-    <EmbeddedResource Include="Assets\canopyx-filter-editor.js" LogicalName="CanopyX.Html.Assets.canopyx-filter-editor.js" />
-    <EmbeddedResource Include="Assets\canopyx-filter-editor.css" LogicalName="CanopyX.Html.Assets.canopyx-filter-editor.css" />
-    <EmbeddedResource Include="Assets\canopyx-export.js" LogicalName="CanopyX.Html.Assets.canopyx-export.js" />
-    <EmbeddedResource Include="Assets\canopyx-history.js" LogicalName="CanopyX.Html.Assets.canopyx-history.js" />
-    <EmbeddedResource Include="Assets\canopyx-tree-tools.js" LogicalName="CanopyX.Html.Assets.canopyx-tree-tools.js" />
-    <EmbeddedResource Include="Assets\canopyx-tree-tools.css" LogicalName="CanopyX.Html.Assets.canopyx-tree-tools.css" />
+    <!-- Every runtime entry point, every part of Build/parts.json and the part manifest; the label packs ship as .NET factories. -->
+    <EmbeddedResource Include="Assets\canopyx.js;Assets\canopyx.css;Assets\canopyx-*.js;Assets\canopyx-*.css;Assets\canopyx-parts.json" Exclude="Assets\canopyx-labels-*.js" LogicalName="CanopyX.Html.Assets.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Assets\page.html" LogicalName="CanopyX.Html.Assets.page.html" />
   </ItemGroup>
 </Project>

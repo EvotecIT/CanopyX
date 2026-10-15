@@ -36,6 +36,8 @@
     "./history.js": "./CanopyX.Html/Assets/canopyx-history.js",
     "./tree-tools.js": "./CanopyX.Html/Assets/canopyx-tree-tools.js",
     "./tree-tools.css": "./CanopyX.Html/Assets/canopyx-tree-tools.css",
+    "./links.js": "./CanopyX.Html/Assets/canopyx-links.js",
+    "./search.js": "./CanopyX.Html/Assets/canopyx-search.js",
     "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
     "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
     "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
@@ -65,7 +67,9 @@
     "CanopyX.Html/Assets/canopyx-export.js",
     "CanopyX.Html/Assets/canopyx-history.js",
     "CanopyX.Html/Assets/canopyx-tree-tools.js",
-    "CanopyX.Html/Assets/canopyx-tree-tools.css"
+    "CanopyX.Html/Assets/canopyx-tree-tools.css",
+    "CanopyX.Html/Assets/canopyx-links.js",
+    "CanopyX.Html/Assets/canopyx-search.js"
   ],
   "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

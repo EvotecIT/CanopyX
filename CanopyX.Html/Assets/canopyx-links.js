@@ -1,0 +1,14 @@
+(function(global){"use strict";const installed=new WeakSet();const part={version:"4531e2678de320f2",install(context){if(installed.has(context.TreeGrid.prototype))return;const{TreeGrid,navigationScope}=context;Object.assign(TreeGrid.prototype,{deepLinkName(){return "cx."+encodeURIComponent(this.view.id)},hashParams(){return(global.location.hash||"").replace(/^#/, "").split("&").filter(Boolean);
+},currentLink(){if(this.opts.parseLink){return(global.location.hash||"").replace(/^#/, "");
+}
+const prefix=this.deepLinkName()+ "=";const param=this.hashParams().find((p)=>p.startsWith(prefix));return param?param.slice(prefix.length):null},openDeepLink(){const link=this.view.deepLink?this.currentLink():null;if(link!==this.link&&this.linkOpening)this.linkOpening.abort();if(link==null||link===this.link){if(link==null)this.link=null;return link!=null&&this.linkTask&&this.linkTask.link===link?this.linkTask.promise:Promise.resolve()}
+this.link=link;if(this.linkOpening)this.linkOpening.abort();const current=this.linkOpening=new AbortController();const promise=this.openLink(link,current);this.linkTask={link,promise};promise.then(()=>{if(this.linkTask&&this.linkTask.promise===promise)this.linkTask=null});return promise},async openLink(link,current){const navigation=navigationScope(this,current.signal,true);try{const ids=this.opts.parseLink?await navigation.wait(this.opts.parseLink(link)):link.split("/").filter(Boolean).map(decodeURIComponent);if(Array.isArray(ids)&&ids.length&&!navigation.cancelled()&&
+!await this.navigatePath(ids,{select:true,focus:false},navigation)&&!navigation.cancelled()){this.link=null}}catch(e){if(!navigation.cancelled()){this.link=null;this.announce(e&&e.message?e.message:String(e))}}finally{const cancelled=navigation.cancelled();navigation.dispose();if(this.linkOpening===current){if(cancelled&&this.link===link)this.link=null;this.linkOpening=null}
+current.abort()}},writeDeepLink(w,revision=this.selectionRevision){if(!this.view.deepLink){return}
+let hash;if(this.opts.formatLink){let link=null;try{link=this.opts.formatLink(w?this.pathOf(w):[],w?w.h:null)}catch(e){if(global.console)global.console.error(e)}
+if(link==null||this.destroyed||revision!==this.selectionRevision){return}
+hash="#"+String(link).replace(/^#/, "");
+}else{const prefix=this.deepLinkName()+ "=";const params=this.hashParams().filter((p)=>!p.startsWith(prefix));if(w)params.push(prefix+this.pathOf(w).map(encodeURIComponent).join("/"));hash="#"+params.join("&")}
+try{global.history.replaceState(global.history.state,"",global.location.href.replace(/#.*$/, "") + hash);
+}catch(e){global.location.hash=hash}
+this.link=this.currentLink();this.locationEvent=null}});installed.add(context.TreeGrid.prototype)}};(global.CanopyXParts||=[]).push(["links",part])})(typeof window!=="undefined"?window:globalThis);

@@ -87,14 +87,16 @@ export function treeToolsAssets() {
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-tree-tools.css"), "utf8") };
 }
 
-/** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves; the tree tools part is preloaded. */
+/** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves; the lazy parts are preloaded. */
 export function runtimeAssets(runtime = "tree") {
   const stem = runtime === "reporting" ? "canopyx-reporting" : runtime === "grid" ? "canopyx-grid" : runtime === "interactive" ? "canopyx-interactive" : "canopyx";
   return {
     script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8") +
       (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-history.js"),"utf8") : "") +
-      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script,
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script +
+      // The links and search parts every runtime loads for deep links and sidecar searches.
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-links.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-search.js"),"utf8"),
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
       (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") : "") +
       "\n" + treeToolsAssets().style

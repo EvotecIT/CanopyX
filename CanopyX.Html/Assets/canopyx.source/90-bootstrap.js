@@ -38,7 +38,8 @@
     const api = Object.assign({
       element: host,
       view: grid.view,
-      ready: grid.ready,
+      // Waits for the grid's plugins too (84-plugins.js), which start once this API exists.
+      ready: startPlugins(grid, () => api),
       expandPath: (ids, o) => grid.expandPath(ids, o),
       // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
       setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
@@ -193,7 +194,10 @@
     // The English texts and their names, for a host that builds its translations from them.
     labels: DEFAULT_LABELS,
     // Export format providers for the Export menus and exportAs of every grid on the page.
-    registerExportFormat
+    registerExportFormat,
+    // Plugins for the grids and trees created afterwards, and the registration lazily loaded parts call (docs/plugins.md).
+    use,
+    registerPart
   }, typeof createDataGrid === "function" ? { createDataGrid } : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and

@@ -37,8 +37,11 @@
       // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels);
-      // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
-      const renderers = hostRenderers(options.renderers || {}, view.columns);
+      // A host draws only the columns it names, a plugin the columns that name its renderer; every other column keeps the
+      // default painter and its cell reuse.
+      this.kind = "tree";
+      this.plugins = viewPlugins(options, this.kind);
+      const renderers = hostRenderers(options.renderers || {}, view.columns, this.plugins);
       if (!options.formatLink !== !options.parseLink) {
         throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
       }
@@ -72,6 +75,8 @@
       this.initializing = true;
       this.build();
       this.buildToolbar();
+      // The links part (86-links.js) loads beside the data; a failure is reported when the address is first read.
+      if (view.deepLink) loadPart(LINKS).catch(() => {});
       this.ready = this.init();
     }
 

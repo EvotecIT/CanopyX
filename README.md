@@ -184,6 +184,10 @@ The stylesheet import uses your application's asset pipeline. For a page without
 
 Module imports are safe on the server; mounting a view requires a browser. The included TypeScript declarations describe the view, data-source and event APIs.
 
+### Extend it with plugins
+
+`CanopyX.use(plugin)` adds cell renderers that columns choose by name, toolbar buttons, menu entries, export formats and event handlers to every grid and tree on the page; the `plugins` option adds them to one view. Optional features load as separate parts only when a view needs them, so serve the `canopyx-*.js` files beside the runtime (the .NET writers do). See [docs/plugins.md](docs/plugins.md).
+
 ### Translate the controls
 
 Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de` or `/locales/es` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()` or `Spanish()` before writing the page.

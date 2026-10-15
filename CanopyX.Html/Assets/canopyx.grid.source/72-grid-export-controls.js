@@ -8,8 +8,7 @@
   // The Export menu body, CSV, copy, the host export hook and format writers ship in the lazy export part. These methods
   // capture the export synchronously, so the accepted query, columns and selection are the ones at invocation, and finish
   // once the part is installed. They stay the same functions for the grid's lifetime, so reporting wrappers keep working.
-  const GRID_EXPORT_PART={key:"CanopyXExport",name:"export",label:"export part",version:"__CX_EXPORT_VERSION__",script:"__CX_EXPORT_SCRIPT__",
-    context:()=>({...FILTER_EDITOR.context(),EXPORT_IMPL,gridOperationActive,formatting,validateGridCursorPage,validateGridPage,gridFreeze,isCellObject,exportTimeout,exportFormat,EXPORT_FORMATS})};
+  const GRID_EXPORT_PART=definePart(DataGrid,"export","export part",()=>({...FILTER_EDITOR.context(),EXPORT_IMPL,gridOperationActive,formatting,validateGridCursorPage,validateGridPage,gridFreeze,isCellObject,exportTimeout,exportFormat,EXPORT_FORMATS}));
   function loadExportPart(){return loadPart(GRID_EXPORT_PART);}
   for(const name of ["toCsv","copy","exportToHost"])DataGrid.prototype[name]=function(...args){
     const capture=this.prepareExport(args.at(-1));return loadExportPart().then(()=>EXPORT_IMPL[name].call(this,capture,...args));};

@@ -6,8 +6,10 @@ import type {
   TreeGridOptions, HostOptions, Sources, ExpandPathOptions, NodeFilter, FilterOptions,
   InteractionOptions, DropPlacement, ExportFormat, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions
 } from "./hosts.js";
+import type { CanopyPlugin, CanopyPartDefinition } from "./plugins.js";
 export * from "./protocol.js";
 export * from "./hosts.js";
+export * from "./plugins.js";
 
 /** One mounted grid. Every method owns presentation only; host hooks own domain writes. */
 export interface TreeGrid {
@@ -97,6 +99,10 @@ export function badge(value: CanopyBadge): HTMLElement;
 export const labels: Readonly<Record<LabelName, string>>;
 /** Registers an export format for every grid and tree on the page that does not choose its own; returns a disposer. */
 export function registerExportFormat(format: ExportFormat): () => void;
+/** Registers a plugin for every grid and tree created afterwards; returns a disposer. Throws for an invalid plugin or a name already registered. */
+export function use(plugin: CanopyPlugin): () => void;
+/** Registers the code of a part of the runtime; part scripts call it as they run (docs/plugins.md). */
+export function registerPart(name: string, part: CanopyPartDefinition): void;
 
 declare const CanopyX: Readonly<{
   protocol: typeof protocol;
@@ -108,5 +114,7 @@ declare const CanopyX: Readonly<{
   badge: typeof badge;
   labels: typeof labels;
   registerExportFormat: typeof registerExportFormat;
+  use: typeof use;
+  registerPart: typeof registerPart;
 }>;
 export default CanopyX;

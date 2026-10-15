@@ -924,7 +924,8 @@
         "priority": { "$ref": "#/$defs/gridColumn/properties/priority" },
         "alwaysVisible": { "type": "boolean", "description": "Tree columns: retained during responsive fitting." },
         "tooltip": { "$ref": "#/$defs/gridColumn/properties/tooltip" },
-        "pinned": { "enum": ["left", "right", null], "description": "The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right." }
+        "pinned": { "enum": ["left", "right", null], "description": "The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right." },
+        "renderer": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "The name of a cell renderer a browser plugin registers (cellRenderers, docs/plugins.md). An unregistered name keeps the built-in painter; a host renderer for the column wins." }
       }
     },
     "gridColumn": {
@@ -976,6 +977,7 @@
           "minLength": 1,
           "maxLength": 256
         },
+        "renderer": { "$ref": "#/$defs/column/properties/renderer" },
         "minWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "maxWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647, "description": "Widest width and the content measuring cap." },
         "alwaysVisible": { "type": "boolean", "description": "Retain this column during responsive fitting. Explicit user hiding still applies." },
