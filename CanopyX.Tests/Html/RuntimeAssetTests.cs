@@ -111,7 +111,8 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        Assert.True(compressed <= 96 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 96 KiB.");
+        // Raised from 96 KiB with the record panel's grid hooks (structured presenter, record part wiring, inline record positions).
+        Assert.True(compressed <= 111 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 111 KiB.");
     }
 
     [Fact]
@@ -179,8 +180,8 @@ public sealed class RuntimeAssetTests {
 
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
-            // The runtime and its stylesheet, the tree tools part every tree loads beside them, and the export, links and search parts.
-            Assert.Equal(7, Directory.GetFiles(directory).Length);
+            // The runtime and its stylesheet, the tree tools part every tree loads beside them, and the export, links, search and record panel parts.
+            Assert.Equal(9, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

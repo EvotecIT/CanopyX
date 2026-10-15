@@ -15,7 +15,7 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "links", "search", "detail-rows", "grouping" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "links", "search", "detail-rows", "grouping", "record-panel" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
         Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[2]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
@@ -38,8 +38,8 @@ public sealed class RuntimePartTests {
                 Assert.Equal(part.IsShippedWith(runtime), script.Contains(entry, StringComparison.Ordinal));
             }
         }
-        Assert.Equal(new[] { "tree-tools", "export", "links", "search" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "links", "search", "detail-rows", "grouping" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "export", "links", "search", "record-panel" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "links", "search", "detail-rows", "grouping", "record-panel" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
     }
 
     [Fact]
