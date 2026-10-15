@@ -431,3 +431,31 @@ registerPart("custom", { version: "0123456789abcdef", install() {} });
 use({ init() {} });
 // @ts-expect-error The views are tree and grid.
 use({ name: "bad", views: ["matrix"] });
+
+// Linked views: external filters, highlights and the neutral payloads of canopyx:linkchange (docs/linked-views.md).
+import type { ExternalFilter, ExternalFilterEvent, LinkChange, LinkedView } from "@evotecit/canopyx";
+const linkedGrid = createDataGrid(document.createElement("div"), { linkEvents: true, view: { protocol: "canopyx/2", type: "grid", id: "linked", label: "Linked", pageSize: 100, selection: "multiple", search: false,
+  source: { kind: "inline" }, columns: [{ id: "site", title: "Site", kind: "text" }, { id: "load", title: "Load", kind: "number" }], rows: [] } });
+const linked: LinkedView = linkedGrid;
+void linked.setExternalFilter("site-chart", { field: "site", values: ["Berlin"], sourceLabel: "Sites chart" }).then((done: boolean) => done);
+void linked.setExternalFilter("load-band", [{ field: "load", range: [10, null], persist: true }]);
+void linked.setExternalFilter("site-chart", null);
+void linked.clearExternalFilters();
+const applied: ExternalFilter[] = linked.getExternalFilters();
+void applied[0]?.sourceLabel;
+void linked.setHighlight(["row-1"], { scroll: false, source: "Sites chart" }).then((count: number) => count);
+void linked.clearHighlight();
+void linked.startLinkEvents().then(() => undefined);
+const highlighted: string[] = linked.getHighlight();
+void highlighted;
+linkedGrid.element.addEventListener("canopyx:linkchange", event => {
+  const detail = (event as CustomEvent<LinkChange>).detail;
+  const sites: readonly (string | number | boolean)[] = detail.values.site || [];
+  void sites; void (detail.action === "select" ? detail.keys : detail.scope);
+});
+linkedGrid.element.addEventListener("canopyx:externalfilter", event => { const detail = (event as CustomEvent<ExternalFilterEvent>).detail; void (detail.reason === "user"); });
+CanopyX.configure("linked-tree", { linkEvents: true });
+// @ts-expect-error A range needs at least one end.
+void linked.setExternalFilter("open", { field: "load", range: [null, null] });
+// @ts-expect-error An external filter has values or a range, not both.
+void linked.setExternalFilter("both", { field: "load", values: [1], range: [1, 2] });
