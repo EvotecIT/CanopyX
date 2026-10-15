@@ -7,7 +7,7 @@
   function gridPriority(value) {
     return ["essential", "normal", "optional"].includes(value) || Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
-  // Numeric priorities follow DataTables' responsivePriority: 0-1 essential, 10000 and above optional, normal between.
+  // Numeric priorities: 0-1 are essential, 10000 and above optional, the numbers between normal.
   function gridRank(column) {
     const value = column.priority;
     return typeof value === "number" ? value : value === "optional" ? 10000 : value === "essential" || value === undefined && column.identity ? 0 : 5000;
@@ -45,6 +45,8 @@
     fitWidths(cols, width) {
       let total = 0, target;
       for (const column of cols) total += column.renderWidth = this.fitSize(column);
+      // The scroll and card layouts (87-view-modes.js) keep every column at its own width and scroll sideways instead.
+      if (width && total > width && this.layoutMode && this.layoutMode !== "fit") width = total;
       // The identity column yields its content width (level 0) only when that avoids scrolling.
       for (const level of [2, 1, 0]) if (width && total > width && (level || cols.reduce((sum, column) => sum + column.renderWidth - this.fitSize(column, 0), 0) >= total - width))
         total = width + this.fitShrink(cols, total - width, level);
@@ -101,6 +103,7 @@
       const order = (a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a), identity = phone && shown.find(column => column.identity);
       const hide = (column, pinned) => !column.sized && !column.alwaysVisible && (column.pin === "none") !== pinned && !(phone && column.identity) && gridLevel(column) > !phone;
       for (const column of this.columns) column.fitHidden = false;
+      if (this.layoutMode && this.layoutMode !== "fit") return;
       for (const column of shown) total += this.fitSize(column, 1);
       for (const column of shown.filter(column => hide(column, false)).sort(order))
         if (total > width && remaining > 1) { column.fitHidden = true; total -= this.fitSize(column, 1); remaining--; }

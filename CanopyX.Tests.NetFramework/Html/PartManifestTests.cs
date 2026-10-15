@@ -8,7 +8,7 @@ public sealed class PartManifestTests {
     [Fact]
     public void Parts_AreReadFromTheEmbeddedManifestOnNetFramework() {
         var names = CanopyHtmlAssets.Parts.Select(part => part.Name).ToArray();
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "links", "search", "highlight" }, names);
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "links", "search", "highlight", "layouts" }, names);
         foreach (var part in CanopyHtmlAssets.Parts) {
             Assert.Matches("^[a-f0-9]{16}$", part.Version);
             Assert.Contains("version:\"" + part.Version + "\"", part.Script);
