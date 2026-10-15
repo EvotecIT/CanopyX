@@ -67,7 +67,8 @@ function foldCode(c){if(c<0x80){return c>=65&&c<=90?c+32:c}
 return EXTRA_LOWERCASE.get(c)||c}
 function foldUnit(unit){return String.fromCharCode(foldCode(unit.charCodeAt(0)))}
 function isSeparator(code){return code<128&&!((code>=48&&code<=57)||(code>=65&&code<=90)||(code>=97&&code<=122))}
-function foldText(text){const source=String(text==null?"":text);let out="";for(let i=0;i<source.length;i++){out +=foldUnit(source.charAt(i))}
+function foldText(text){const source=String(text==null?"":text);if(!/[^\0-\x7f]/.test(source)) return source.toLowerCase();
+let out="";for(let i=0;i<source.length;i++){out +=foldUnit(source.charAt(i))}
 return out}
 function words(text){const folded=foldText(text);const out=[];let current="";for(let i=0;i<folded.length;i++){if(isSeparator(folded.charCodeAt(i))){if(current){out.push(current);current=""}}else{current +=folded.charAt(i)}}
 if(current){out.push(current)}
@@ -587,12 +588,14 @@ function checkedGridPage(page,view,query,accepted){if(query.revision!==undefined
 accepted.matched!==undefined&&page.matched!==accepted.matched))throw new Error("CanopyX: grid page snapshot changed.");validateGridRows(page.items,view.columns);return{...page,items:JSON.parse(JSON.stringify(page.items))}}
 function gridOrder(left,right){return left===right?0:left<right?-1:1}
 function gridSortScalar(cell,column){return isCellObject(cell)&&cell.sort!=null?cell.sort:gridScalar(cell,column)}
-function gridCompare(left,right,column,direction){const a=gridSortScalar(left.cells[column.id],column),b=gridSortScalar(right.cells[column.id],column);if(a===null||b===null)return a===b?0:a===null?1:-1;const x=column.kind==="text"&&typeof a!=="number"?String(a):a,y=column.kind==="text"&&typeof b!=="number"?String(b):b;const result=gridOrder(typeof x,typeof y)||gridOrder(x,y);return direction==="desc"?-result:result}
+function gridCompare(left,right,column,direction){return gridKeyCompare(gridSortScalar(left.cells[column.id],column),gridSortScalar(right.cells[column.id],column),column,direction)}
+function gridKeyCompare(a,b,column,direction){if(a===null||b===null)return a===b?0:a===null?1:-1;const x=column.kind==="text"&&typeof a!=="number"?String(a):a,y=column.kind==="text"&&typeof b!=="number"?String(b):b;const result=gridOrder(typeof x,typeof y)||gridOrder(x,y);return direction==="desc"?-result:result}
 function gridMatches(row,predicate,column){const scalar=gridScalar(row.cells[column.id],column),op=predicate.operator;if(op==="isNull")return scalar===null;if(op==="isNotNull")return scalar!==null;if(scalar===null)return false;const normalize=value=>column.kind==="text"&&typeof value==="string"?foldText(value):value;const value=normalize(scalar),values=predicate.values.map(operand=>normalize(gridScalar(operand,column))),operand=values[0];switch(op){case "eq":return value===operand;case "ne":return value!==operand;case "in":return values.includes(value);case "contains":return String(value).includes(String(operand));case "startsWith":return String(value).startsWith(String(operand));case "gt":return value>operand;case "ge":return value>=operand;case "lt":return value<operand;case "le":return value<=operand}
 return false}
 function gridQueryRows(view,query,columns,compare=gridCompare){const terms=gridSearchTerms(query.search,query.searchMode),searchColumns=view.searchColumns?view.searchColumns.map(id=>columns.get(id)):view.columns;const rows=view.rows.filter(row=>gridMatchesSearch(row,terms,searchColumns)&&
-query.filters.every(predicate=>gridMatches(row,predicate,columns.get(predicate.column)))&&gridMatchesGroup(row,query.filterGroup,columns));return compare?rows.sort((a,b)=>{for(const sort of query.sort){const compared=compare(a,b,columns.get(sort.column),sort.direction);if(compared)return compared}
-return gridOrder(a.id,b.id)}):rows}
+query.filters.every(predicate=>gridMatches(row,predicate,columns.get(predicate.column)))&&gridMatchesGroup(row,query.filterGroup,columns));if(compare!==gridCompare||!query.sort.length)return compare?rows.sort((a,b)=>{for(const sort of query.sort){const compared=compare(a,b,columns.get(sort.column),sort.direction);if(compared)return compared}
+return gridOrder(a.id,b.id)}):rows;const sorts=query.sort.map(sort=>[columns.get(sort.column),sort.direction]),keys=sorts.map(([column])=>rows.map(row=>gridSortScalar(row.cells[column.id],column)));return rows.map((row,index)=>index).sort((a,b)=>{for(let s=0;s<sorts.length;s++){const compared=gridKeyCompare(keys[s][a],keys[s][b],sorts[s][0],sorts[s][1]);if(compared)return compared}
+return gridOrder(rows[a].id,rows[b].id)}).map(index=>rows[index])}
 function inlineGridSource(view){const columns=new Map(view.columns.map(column=>[column.id,column]));const compare=GRID_REPORTING.compare?.(view);let lastShape=null,ordered=null;return{query(query,options){if(options.signal.aborted)throw new DOMException("Grid cancelled.","AbortError");const shape=gridResultShape(query);if(shape!==lastShape){ordered=gridQueryRows(view,query,columns,compare);lastShape=shape}
 return{protocol:PROTOCOL,type:"gridPage",view:view.id,revision:"inline",offset:query.offset,total:view.rows.length,matched:ordered.length,items:ordered.slice(query.offset,query.offset+query.limit)}}}}
 function gridCursor(cursor){requireIdentifier(cursor,"grid cursor");if(cursor.length>4096)throw new Error("CanopyX: cursor exceeds 4096 code units.")}

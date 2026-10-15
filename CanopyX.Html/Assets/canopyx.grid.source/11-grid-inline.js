@@ -5,7 +5,10 @@
   function gridSortScalar(cell, column) { return isCellObject(cell) && cell.sort != null ? cell.sort : gridScalar(cell, column); }
 
   function gridCompare(left, right, column, direction) {
-    const a = gridSortScalar(left.cells[column.id], column), b = gridSortScalar(right.cells[column.id], column);
+    return gridKeyCompare(gridSortScalar(left.cells[column.id], column), gridSortScalar(right.cells[column.id], column), column, direction);
+  }
+
+  function gridKeyCompare(a, b, column, direction) {
     // Empty strings are values. Missing/null cells sort last in either direction.
     if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
     const x = column.kind === "text" && typeof a !== "number" ? String(a) : a, y = column.kind === "text" && typeof b !== "number" ? String(b) : b;
@@ -41,13 +44,23 @@
       searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
       query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
-    return compare ? rows.sort((a, b) => {
+    if (compare !== gridCompare || !query.sort.length) return compare ? rows.sort((a, b) => {
       for (const sort of query.sort) {
         const compared = compare(a, b, columns.get(sort.column), sort.direction);
         if (compared) return compared;
       }
       return gridOrder(a.id, b.id);
     }) : rows;
+    // The built-in order reads each row's keys once, not in every comparison: a date key parses its text.
+    const sorts = query.sort.map(sort => [columns.get(sort.column), sort.direction]),
+      keys = sorts.map(([column]) => rows.map(row => gridSortScalar(row.cells[column.id], column)));
+    return rows.map((row, index) => index).sort((a, b) => {
+      for (let s = 0; s < sorts.length; s++) {
+        const compared = gridKeyCompare(keys[s][a], keys[s][b], sorts[s][0], sorts[s][1]);
+        if (compared) return compared;
+      }
+      return gridOrder(rows[a].id, rows[b].id);
+    }).map(index => rows[index]);
   }
 
   function inlineGridSource(view) {

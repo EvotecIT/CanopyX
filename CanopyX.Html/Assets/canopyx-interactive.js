@@ -67,7 +67,8 @@ function foldCode(c){if(c<0x80){return c>=65&&c<=90?c+32:c}
 return EXTRA_LOWERCASE.get(c)||c}
 function foldUnit(unit){return String.fromCharCode(foldCode(unit.charCodeAt(0)))}
 function isSeparator(code){return code<128&&!((code>=48&&code<=57)||(code>=65&&code<=90)||(code>=97&&code<=122))}
-function foldText(text){const source=String(text==null?"":text);let out="";for(let i=0;i<source.length;i++){out +=foldUnit(source.charAt(i))}
+function foldText(text){const source=String(text==null?"":text);if(!/[^\0-\x7f]/.test(source)) return source.toLowerCase();
+let out="";for(let i=0;i<source.length;i++){out +=foldUnit(source.charAt(i))}
 return out}
 function words(text){const folded=foldText(text);const out=[];let current="";for(let i=0;i<folded.length;i++){if(isSeparator(folded.charCodeAt(i))){if(current){out.push(current);current=""}}else{current +=folded.charAt(i)}}
 if(current){out.push(current)}
