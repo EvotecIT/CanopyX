@@ -184,6 +184,18 @@ The stylesheet import uses your application's asset pipeline. For a page without
 
 Module imports are safe on the server; mounting a view requires a browser. The included TypeScript declarations describe the view, data-source and event APIs.
 
+### Enhance a table, or start from records or a URL
+
+A page that already has an HTML table needs one call. The table's headers, rows, `data-order` and `data-search` values, row ids, caption and footer become a grid with search, filters, sorting, numbered pages and export, and the table stays the script-free fallback:
+
+```html
+<link rel="stylesheet" href="canopyx-grid.css">
+<script src="canopyx-grid.js"></script>
+<script>CanopyX.enhance("#servers", { pageLength: 10, stateSave: true });</script>
+```
+
+`CanopyX.grid(element, { data, columns })` builds the same grid from plain records with field paths and render functions, and `url` reads records from an address once or, with `serverSide`, asks it for every page. See [docs/enhance.md](docs/enhance.md) and [docs/paging.md](docs/paging.md).
+
 ### Extend it with plugins
 
 `CanopyX.use(plugin)` adds cell renderers that columns choose by name, toolbar buttons, menu entries, export formats and event handlers to every grid and tree on the page; the `plugins` option adds them to one view. Optional features load as separate parts only when a view needs them, so serve the `canopyx-*.js` files beside the runtime (the .NET writers do). See [docs/plugins.md](docs/plugins.md).

@@ -93,6 +93,33 @@
       ]
     },
     {
+      "name": "pager",
+      "label": "pager controls",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "pager": true,
+      "key": "GRID_PAGER_IMPL",
+      "context": ["DataGrid", "GRID_PAGER_IMPL", "h", "setText", "fill", "gridButton", "gridOption", "numberFormat", "gridCountLabel"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.pager.source/10-pager.js"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.pager.source/pager.css"
+      ]
+    },
+    {
+      "name": "enhance",
+      "label": "table enhancement",
+      "runtimes": ["grid"],
+      "views": [],
+      "key": "GRID_ENHANCE_IMPL",
+      "context": ["DataGrid", "GRID_ENHANCE_IMPL", "PROTOCOL", "createDataGrid", "h", "setText", "gridQueryRows", "gridCompare", "gridResultShape", "isIdentifier", "GRID_REPORTING",
+        "loadPart", "GRID_PAGER"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.enhance.source"
+      ]
+    },
+    {
       "name": "links",
       "label": "deep links",
       "runtimes": ["tree", "grid"],

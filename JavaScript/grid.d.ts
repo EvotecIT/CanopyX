@@ -4,6 +4,8 @@ import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZo
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
 export * from "./index.js";
+export * from "./enhance.js";
+import type { enhance, grid } from "./enhance.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string; }
@@ -92,6 +94,23 @@ export interface GridThreshold { readonly upperBound: number; readonly tone: str
 export interface GridHistoryPresentation {
   readonly minimum?: number; readonly scaleMaximum?: number; readonly thresholds?: readonly GridThreshold[];
   readonly higherIsGood?: boolean; readonly mark?: "worst" | "last";
+}
+/** A page-size choice: rows per page, "all" for every row of inline data, or either with its own menu text. */
+export type GridPageLengthChoice = number | "all" | { readonly value: number | "all"; readonly label: string };
+/** Settings of a paged grid's pager; continuous grids ignore them (docs/paging.md). */
+export interface GridPager {
+  /** Page-size choices in menu order (at most 16); absent keeps 10, 25, 50, 100 and, for inline data, All. */
+  readonly lengths?: readonly GridPageLengthChoice[];
+  /** The rows-per-page menu. Default true. */
+  readonly lengthMenu?: boolean;
+  /** Numbered page buttons: 0 for none (default), or 5 to 15. */
+  readonly numbers?: number;
+  /** The page number field. Absent shows it unless numbered pages show. */
+  readonly pageInput?: boolean;
+  /** The first-page and last-page buttons. Default true. */
+  readonly firstLast?: boolean;
+  /** The result text: the compact range (default), a sentence with the unfiltered total while filtered, or none. */
+  readonly info?: "range" | "sentence" | "none";
 }
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
@@ -246,6 +265,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   /** Presentation only; pageSize remains the source fetch size. */
   presentation?: "continuous" | "paged";
   pageLength?: number;
+  /** Pager settings of a paged view, read by the pager part (canopyx-pager.js); absent keeps the built-in pager. */
+  pager?: GridPager;
   selection: "none" | "single" | "multiple";
   search: boolean;
   /** Search-input debounce (0..5000). Absent uses 0 for inline and 300 for host sources. */
@@ -630,5 +651,5 @@ export function configure(viewId: string, options: HostOptions | GridHostOptions
 /** Mounts tree and flat-grid fragments below root. Narrow a controller before using view-specific methods. */
 export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
 
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
