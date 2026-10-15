@@ -7,6 +7,23 @@
     button.onclick = event => { button.focus({ preventScroll: true }); run(event); }; return button;
   }
 
+  // A drawer that takes focus shows the focus ring after a key press only. Engines infer different rings for focus
+  // moved by script, so the drawers state it from the last input. A title that keeps focus while a key repaints it
+  // refocuses to show the ring; WebKit rings script focus whatever focusVisible says, so after a pointer the ring is
+  // hidden (data-cx-pointer-focus) until the title loses focus.
+  let keyboardInput = false;
+  // The module also loads without a document (server-side imports); the drawers never open there.
+  if (typeof document !== "undefined") {
+    document.addEventListener("keydown", () => { keyboardInput = true; }, true);
+    document.addEventListener("pointerdown", () => { keyboardInput = false; }, true);
+  }
+  const focusDrawerTitle = title => {
+    if (keyboardInput && title === document.activeElement && !title.matches(":focus-visible")) title.blur();
+    title.toggleAttribute("data-cx-pointer-focus", !keyboardInput);
+    if (!keyboardInput) title.addEventListener("blur", () => title.removeAttribute("data-cx-pointer-focus"), { once: true });
+    title.focus({ preventScroll: true, focusVisible: keyboardInput });
+  };
+
   function gridInputLabel(text, input) {
     const label = h("label", "cx-grid-field"); label.appendChild(document.createTextNode(text)); label.appendChild(input); return label;
   }
@@ -25,8 +42,17 @@
       this.controlFlyouts = [];
       this.disposeControls = () => this.controlFlyouts.forEach(flyout => flyout.dispose());
       // A menu event without a source closes every menu of the views inside its target (the document holds them all).
-      for (const type of ["pointerdown", "focusin", MENU_EVENT]) document.addEventListener(type, event =>
-        (type !== MENU_EVENT || event.target.contains(this.host)) && this.closeMenusOutside(event.detail?.source || event.target), { signal: this.lifetime.signal });
+      // WebKit does not focus a pressed button: focus moves to its nearest focusable ancestor, which can hold the menu
+      // without being inside it. A focus that lands on an ancestor of the pressed node during the press is the press.
+      // Touch focuses after pointerup but before its compatibility mouseup, so the press ends there (or with its click, a key,
+      // or a cancelled pointer).
+      let pressed = null;
+      for (const type of ["mouseup", "click", "keydown", "pointercancel"]) document.addEventListener(type, () => { pressed = null; }, { capture: true, signal: this.lifetime.signal });
+      for (const type of ["pointerdown", "focusin", MENU_EVENT]) document.addEventListener(type, event => {
+        if (type === "pointerdown") pressed = event.target;
+        const node = type === "focusin" && pressed?.isConnected && event.target.contains(pressed) ? pressed : event.detail?.source || event.target;
+        if (type !== MENU_EVENT || event.target.contains(this.host)) this.closeMenusOutside(node);
+      }, { signal: this.lifetime.signal });
     },
     // Closes the toolbar menus (and the menus inside them, such as Views and Export in the phone more menu) and the column
     // popover that do not hold the node (the document closes every one).

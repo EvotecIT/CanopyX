@@ -1,5 +1,7 @@
   // ---------- read-only host hooks, clipboard and record details ----------
   Object.assign(DataGrid.prototype, {
+    // The record drawer (filter editor part) focuses its title through this, with the ring after a key press only.
+    focusRing: focusDrawerTitle,
     scrollToRow(index) {
       if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) ||
           index < (this.cursor ? this.pageOffset : 0) || index >= this.rowCount())

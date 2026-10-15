@@ -30,7 +30,7 @@
       dialog._navigating=true;previous.disabled=next.disabled=true;
       try{await this.focusResult(position,false);if(this.destroyed||this.pendingQuery||gridResultShape(this.acceptedQuery)!==shape)return;
         const row=this.rowCache.get(position);if(!row)return;
-        if(dialog.isConnected){paint(row.h,position);title.focus({preventScroll:true});}else if(retiredForNavigation)await this.openDetails(row.key);
+        if(dialog.isConnected){paint(row.h,position);this.focusRing(title);}else if(retiredForNavigation)await this.openDetails(row.key);
       }catch(error){if(error.name!=="AbortError")this.emit("error",{error});}
       finally{dialog._navigating=false;if(dialog.isConnected)paint(record,index);}
     };
@@ -41,5 +41,5 @@
     const abort=()=>{retiredForNavigation=dialog._navigating;dialog.close();};owner.signal.addEventListener("abort",abort,{once:true});
     dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
       if(!this.recordDrawer&&!dialog._navigating&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
-    paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();title.focus({preventScroll:true});
+    paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();this.focusRing(title);
   };
