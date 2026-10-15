@@ -56,7 +56,7 @@
     dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
       if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
-    for(const {hook} of DataGrid.drawerHooks)hook.call(this,dialog);
+    for(const {hook} of DataGrid.drawerHooks){try{hook.call(this,dialog);}catch(error){this.emit("error",{error});}}
     paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();this.focusRing(title);
     return dialog;
   };

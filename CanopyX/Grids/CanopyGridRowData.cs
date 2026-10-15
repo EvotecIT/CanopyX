@@ -34,7 +34,7 @@ public sealed class CanopyGridRowData {
     /// <param name="view">The grid. Its source must be inline.</param>
     /// <param name="options">Chunk size and compression; defaults to chunks of 5,000 uncompressed rows.</param>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
-    /// <exception cref="InvalidOperationException">The grid has a host source, or its definition is invalid.</exception>
+    /// <exception cref="InvalidOperationException">The grid has a host source, its definition is invalid, or a row carries a detail payload or record fields, which compact rows have no place for.</exception>
     public CanopyGridRowData(CanopyDataGridView view, CanopyRowDataOptions? options = null) {
         View = view ?? throw new ArgumentNullException(nameof(view));
         if (view.Source.Kind != CanopyGridSourceKind.Inline) throw new InvalidOperationException("Row data holds the rows of an inline grid.");
@@ -43,6 +43,9 @@ public sealed class CanopyGridRowData {
         _chunkSize = settings.ChunkSize;
         Compression = settings.Compression;
         _rows = view.Rows.ToArray();
+        // A compact row is its key and its cells: detail payloads and record fields would be lost, so such rows stay row objects.
+        var carried = _rows.FirstOrDefault(row => row.Detail != null || row.HasFields);
+        if (carried != null) throw new InvalidOperationException("Row data cannot carry the detail payload or record fields of row '" + carried.Id + "'; write these rows as row objects.");
         Array.Sort(_rows, (left, right) => string.CompareOrdinal(left.Id, right.Id));
         Columns = view.Columns.Select(column => column.Id).ToList().AsReadOnly();
     }

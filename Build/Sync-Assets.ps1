@@ -251,8 +251,8 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
 '@
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
-const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart } = CanopyX;
-export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart };
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce };
 export default CanopyX;
 '@
     # Parts load from files beside the module (Build/parts.json), as they do beside a classic runtime script.

@@ -28,19 +28,25 @@
     },
 
     // Turns the drawer's editable fields into editors, in the order the drawer lists them (drawerFields: the plain drawer's
-    // sections, or the record panel's tabs and sections); record-only fields and structured blocks stay read-only.
+    // sections, or the record panel's tabs and sections); record-only fields and structured blocks stay read-only. A repaint
+    // of the same record (a tab, details that arrive, the empty-field switch) moves the editors it has into the new fields, so
+    // the reader's unsaved input stays, also on tabs out of view; another record starts a new form.
     editForm(dialog, body, id) {
       const state = this.edit, record = this.editRecord(id), labels = state.labels;
-      this.editFormDispose();
-      if (!record || this.editReadOnly || this.destroyed) return;
-      const form = state.form = { dialog, record, fields: [] };
+      const kept = state.form && state.form.dialog === dialog && state.form.record.id === id && record ? state.form : null;
+      if (!kept) this.editFormDispose();
+      if (!record || this.editReadOnly || this.destroyed) { this.editFormDispose(); return; }
+      const form = kept || (state.form = { dialog, record, fields: [] }), existing = new Map(form.fields.map(field => [field.spec.id, field]));
       for (const { column, term, value } of this.drawerFields(dialog)) {
         if (!column || value.tagName !== "DD" || !state.specs.has(column.id) || !this.canEditCell(record, column.id)) continue;
-        const field = this.editCreate(record, state.specs.get(column.id), "form"), message = h("div", "cx-edit-message");
-        message.id = this.id + "-em" + ++state.sequence; message.hidden = true;
-        field.message = message; field.label = term;
-        value.replaceChildren(field.host, message);
-        form.fields.push(field);
+        let field = existing.get(column.id);
+        if (!field) {
+          field = this.editCreate(record, state.specs.get(column.id), "form");
+          field.message = h("div", "cx-edit-message"); field.message.id = this.id + "-em" + ++state.sequence; field.message.hidden = true;
+          form.fields.push(field);
+        }
+        field.label = term;
+        value.replaceChildren(field.host, field.message);
       }
       dialog.classList.toggle("cx-edit-form", form.fields.length > 0);
       let foot = dialog.querySelector(".cx-drawer-f");

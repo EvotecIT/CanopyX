@@ -49,6 +49,17 @@ public sealed class GridRowDataTests {
     }
 
     [Fact]
+    public void Constructor_RowWithRecordFields_ThrowsBecauseCompactRowsHaveNoPlaceForThem() {
+        var view = Grid();
+        view.Record = new CanopyRecordPanel();
+        view.Record.Fields.Add(new CanopyColumn("serial", "Serial number"));
+        view.Rows[1].Fields["serial"] = "SN-1";
+
+        var error = Assert.Throws<InvalidOperationException>(() => new CanopyGridRowData(view));
+        Assert.Contains("'r0001'", error.Message);
+    }
+
+    [Fact]
     public void ToJson_WritesTheDescriptorInPlaceOfRows_AndMatchesTheSchema() {
         var data = new CanopyGridRowData(Grid(250), new CanopyRowDataOptions { ChunkSize = 100 });
         var json = data.ToJson();

@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "176ae0f82836e779",
+      "version": "e88dba4d36800113",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -77,7 +77,7 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "version": "23b306218f3238e9",
+      "version": "b5de13756d16d4b8",
       "script": "canopyx-enhance.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "b471abfa2950463e",
+      "version": "0c773f3b1bd57040",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "6dafb80b6a86129d",
+      "version": "6dc60c4e7815ca19",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

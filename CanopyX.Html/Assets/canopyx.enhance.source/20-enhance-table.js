@@ -88,11 +88,11 @@
     let identity = false;
     for (let index = 0; index < width; index++) {
       const cell = bottom[index] || null, groups = [];
-      for (let r = 0; r < slots.length - 1; r++) if (slots[r][index] && slots[r][index] !== cell && !groups.includes(slots[r][index])) groups.push(slots[r][index]);
+      for (let r = 0; r < slots.length - 1; r++) if (slots[r][index] && slots[r][index] !== cell && !groups.some(group => group.cell === slots[r][index])) groups.push({ cell: slots[r][index], row: r });
       // Body header cells (<th scope="row">) mark the identity column; a grid has one, so the first such column is it.
       const rowHeader = !identity && rows.length > 0 && rows.every(row => row.values[index] && row.values[index].header);
       identity ||= rowHeader;
-      columns.push({ title: cell ? enhanceText(cell) : "", cell, groups: groups.map(group => ({ cell: group, title: enhanceText(group) })),
+      columns.push({ title: cell ? enhanceText(cell) : "", cell, groups: groups.map(group => ({ cell: group.cell, row: group.row, title: enhanceText(group.cell) })),
         options: enhanceAttributes(cell, ENHANCE_COLUMN_OPTIONS), rowHeader });
     }
     const footer = table.tFoot ? enhanceReadRows([...table.tFoot.rows]).map(row => row.values.map(value => typeof value === "string" ? value : value.text)) : [];
@@ -112,23 +112,31 @@
   }
 
   /**
-   * Header groups as the grid's column groups ({ id, title, columns?, groups? }, nested by level): each group of a lower row
-   * nests under the group above whose columns hold all of its own, and lists only the columns no nested group takes. Column
-   * groups draw at most three levels, so a deeper header keeps the three rows nearest the columns.
+   * Header groups as the grid's column groups ({ id, title, columns?, groups? }): every header cell above the bottom row is a
+   * group of the columns below it, nested under the nearest group of an earlier header row that holds all of its columns, and
+   * listing only the columns no nested group takes. Column groups draw at most three levels, so a deeper header keeps the
+   * three rows nearest the columns; a cell without text groups nothing (its nested groups take its place).
    */
-  function enhanceColumnGroups(levels) {
-    const kept = levels.slice(-3);
-    const nodes = kept.map((row, level) => row.map((group, index) => ({ id: "group-" + level + "-" + index, title: group.title, all: group.columns, groups: [] })));
-    for (let level = nodes.length - 1; level > 0; level--) {
-      for (const node of nodes[level]) nodes[level - 1].find(parent => node.all.every(id => parent.all.includes(id)))?.groups.push(node);
-    }
-    // A header cell without text groups nothing: its nested groups take its place.
+  function enhanceColumnGroups(read, ids) {
+    const cells = new Map();
+    read.columns.forEach((column, index) => column.groups.forEach(group => {
+      let node = cells.get(group.cell);
+      if (!node) cells.set(group.cell, node = { row: group.row, title: group.title.trim().slice(0, 256), all: [], groups: [] });
+      node.all.push(ids[index]);
+    }));
+    const rows = [...new Set([...cells.values()].map(node => node.row))].sort((a, b) => a - b).slice(-3);
+    const kept = [...cells.values()].filter(node => rows.includes(node.row)).sort((a, b) => a.row - b.row), top = [];
+    kept.forEach((node, index) => {
+      node.id = "group-" + rows.indexOf(node.row) + "-" + index;
+      const parents = kept.filter(parent => parent.row < node.row && node.all.every(id => parent.all.includes(id)));
+      (parents.length ? parents[parents.length - 1].groups : top).push(node);
+    });
     const writeAll = list => list.flatMap(node => node.title ? [write(node)] : writeAll(node.groups));
     const write = node => {
       const nested = new Set(node.groups.flatMap(group => group.all)), columns = node.all.filter(id => !nested.has(id)), groups = writeAll(node.groups);
       return { id: node.id, title: node.title, ...(columns.length ? { columns } : {}), ...(groups.length ? { groups } : {}) };
     };
-    return writeAll(nodes[0] || []).filter(group => group.columns || group.groups);
+    return writeAll(top).filter(group => group.columns || group.groups);
   }
 
   /** The columns of a table: the header gives titles and attributes; script column options at the same index win. Header groups become column groups. */

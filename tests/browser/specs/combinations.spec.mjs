@@ -59,6 +59,20 @@ test("the record drawer is an edit form whose fields keep their formatting, also
   await expect(drawer(page).locator('dd[data-cx-field="name"] input')).toHaveValue("Laptop 13");
 });
 
+test("the edit form keeps unsaved input when the record panel paints the same record again", async ({ page }) => {
+  await serveGrid(page, { view: combinedView() });
+  await page.evaluate(`${grid}.openDetails("a8")`);
+  const name = drawer(page).locator('dd[data-cx-field="name"] input');
+  await name.fill("Typed but not saved");
+  // A tab switch paints the panel's fields anew; the form moves its editors into them instead of starting over.
+  await drawer(page).getByRole("tab", { name: "Related" }).click();
+  await drawer(page).getByRole("tab", { name: "Overview" }).click();
+  await expect(name).toHaveValue("Typed but not saved");
+  // Save still covers the field, applied as the reader typed it.
+  await drawer(page).getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator('.cx-canvas .cx-row[data-cx-id="a8"]')).toContainText("Typed but not saved");
+});
+
 test("Open all in grid filters through the external filter API once the link part is in", async ({ page }) => {
   await serveGrid(page, { view: combinedView() });
   // Any link method loads the link part; until then Open all replaces the query's filters (record-panel-navigation spec).

@@ -242,6 +242,12 @@ export type LabelName =
   | "formatAddBand" | "formatRemoveBand" | "formatSave" | "formatCancel" | "formatShowLegend" | "formatInvalid" | "formatMatchCase" | "formatToneDanger"
   | "formatToneWarning" | "formatToneSuccess" | "formatToneInfo" | "formatToneNeutral" | "formatToneMuted" | "formatNotContains" | "formatEndsWith" | "formatNotIn"
   | "formatBetween" | "formatLike" | "formatMatches" | "formatOlderThan" | "formatWithinLast" | "formatNotLike" | "formatNotMatches" | "formatBetweenExclusive"
+  /** Cell ranges and the clipboard (docs/cell-ranges.md). */
+  | "gridCellRangeSelected" | "gridCellRangesSelected" | "gridCellRangeCleared" | "gridCopyCells" | "gridCopyCellsWithHeaders" | "gridPasteCells"
+  | "gridSelectAllCells" | "gridCellsCopied" | "gridCellsPasted" | "gridPasteRefused" | "gridPasteReadOnly" | "gridPasteType" | "gridPasteReport"
+  | "gridPasteCell" | "gridFillHandle" | "gridCellsFilled" | "gridCellMenu" | "gridClearCellRanges"
+  /** Linked views (docs/linked-views.md). */
+  | "linkFilteredBy" | "linkRemoveFilter" | "linkFiltered" | "linkHighlighted" | "linkHighlightedRows" | "linkCleared"
   /** The record panel (docs/record-panel.md). */
   | "recordBack" | "recordBackTo" | "recordTrail" | "recordShowing" | "recordTabs" | "recordSections" | "recordOtherFields" | "recordShowEmpty" | "recordHideEmpty" | "recordActions" | "recordCopyValues" | "recordCopyJson" | "recordCopyLink" | "recordCopied" | "recordPrint" | "recordExportCsv" | "recordExportJson" | "recordOpenAll" | "recordLoadMore" | "recordCount" | "recordItems" | "recordMore" | "recordShowAll" | "recordRetry" | "recordLoadFailed" | "recordUnavailable" | "recordField" | "recordValue" | "recordSection" | "recordBefore" | "recordAfter" | "recordAdded" | "recordRemoved" | "recordChanged";
 export type CanopyLabels = Partial<Record<LabelName, string>>;

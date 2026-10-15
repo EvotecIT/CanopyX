@@ -75,7 +75,7 @@ The context is frozen and the same object for every hook and handler of a plugin
 
 **Editors.** `editors` maps an editor name to `{ create(context) }`. An editable flat-grid column chooses one by name (`"editor": { "type": "stars" }`, `CanopyCellEditor.Custom("stars")` in .NET); a host's `editing.editors` for the grid wins, and a plugin editor replaces a built-in one with the same name. See [Custom editors](editing.md#custom-editors) for the contract.
 
-**Column types.** `columnTypes` is a map a plugin can register today; CanopyX validates that it is an object and keeps it on the plugin. Later features read it.
+**Column types.** `columnTypes` is a map a plugin can register today; CanopyX validates that it is an object and keeps it on the plugin. Later features read it.
 
 **Drawer sections and record actions.** `drawerSections` maps a name to `renderer(record, element, context)`, which draws content (a chart, for example) into a record panel section whose `renderer` names it; `context` has `section`, `view`, `api`, `labels`, `signal`, `payload`, `values` (every field's value by id), `print`, `width` and `onDispose(cleanup)`. `recordActions` are entries `{ label, run }` of the record panel's actions menu, after the built-in ones and the host's; `run` receives `{ record, view, api, payload, signal }`. See [record-panel.md](record-panel.md).
 
@@ -131,7 +131,7 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `filter-editor` | a grid opens a column menu, filter editor, drawer or selected aggregate | grid menus, editors, record drawer, text dialogs |
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
 | `pager` | a paged grid whose view has pager settings starts, or `CanopyX.enhance`/`CanopyX.grid` runs | numbered pages, page-size choices and the result sentence ([paging.md](paging.md)) |
-| `enhance` | `CanopyX.enhance` or `CanopyX.grid` runs | reading tables, records and URL sources into a grid, state saving and the controller ([enhance.md](enhance.md)); it loads the pager part itself |
+| `enhance` | `CanopyX.enhance` or `CanopyX.grid` runs | reading tables, records and URL sources into a grid, state saving and the controller ([enhance.md](enhance.md)); it loads the pager part itself |
 | `data` | a grid with compact row data (`rowData`) runs its first query | decoding row data chunks, gzip inflation and the first windows before the last chunk ([large-data.md](large-data.md)) |
 | `column-groups` | a grid that declares `columnGroups` starts, or calls a column group method | multi-level headers, group pins, moves and resizing, the nested Columns menu ([column-groups.md](column-groups.md)) |
 | `cell-range` | a grid with `rangeSelection` starts, or calls a cell range method | cell ranges by mouse, keyboard and touch, copy, paste, the fill handle and the cell menu ([cell-ranges.md](cell-ranges.md)) |
@@ -142,7 +142,7 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `format-editor` | the rule editor opens | the rule editor, on the filter editor part's condition rows |
 | `link` | a host calls a link method (`setExternalFilter`, `setHighlight`, …) or creates a view with `linkEvents` | external filter chips, highlights and `canopyx:linkchange` ([Linked views](linked-views.md)) |
 | `detail-rows` | a reporting grid with detail rows or grouping requests its first page | the row projection shared by headings and detail rows; detail rows, their keys, export and print |
-| `grouping` | a reporting grid with grouping or aggregates requests its first page (requires `detail-rows`) | summaries, nested headings, aggregates, the group-by bar, group outlines in exports |
+| `grouping` | a reporting grid with grouping or aggregates requests its first page (requires `detail-rows`) | summaries, nested headings, aggregates, the group-by bar, group outlines in exports |
 | `highlight` | a tree or grid with `searchHighlight` starts, or its highlight API is first called | search-hit marks, the match count and navigator, the Highlight matches switch ([search highlighting](search-highlight.md)) |
 | `layouts` | a tree or grid with `layout` starts, or `setLayout` is first called | the Layout menu, the card layout and tree densities ([layout modes](layout-modes.md)) |
 | `record-panel` | a grid or tree whose view has a record panel opens a drawer (with record deep links, when it is created), a grid with a structured summary column requests its first page, or a drawer shows structured values | the record panel: record fields, sections and tabs, structured values, collections, related records and the back stack, timelines and changes, record deep links, record actions and details loaded on demand |

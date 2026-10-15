@@ -142,11 +142,17 @@
     // With the link part in, a one-column list goes through the grid's external filter API (linked views): a removable chip
     // that names the record and the field, combined with the reader's own conditions. Without it, and for filter groups the
     // host declared, the list replaces the query's filters and search.
-    const values = !Array.isArray(target.filters) && target.column && filters[0].values, external = RECORD_IMPL.grid?.DataGrid?.prototype.setExternalFilter;
-    if (values && typeof external === "function" && !external.linkStub && typeof api.setExternalFilter === "function") {
-      const sourceLabel = (ctx.dialog.querySelector(".cx-drawer-h h4")?.textContent || ctx.record.id) + " · " + (field.title || field.id);
-      await api.setExternalFilter("record-" + field.id, { field: target.column, values, sourceLabel, label: fill(ctx.labels.recordItems, { count: recordCount(ctx, values.length) }) });
-    } else {
+    const values = !Array.isArray(target.filters) && target.column && filters[0].values, linked = RECORD_IMPL.grid?.DataGrid?.prototype.setExternalFilter;
+    let external;
+    if (values && typeof linked === "function" && !linked.linkStub && typeof api.setExternalFilter === "function") {
+      // A chip names its source in at most 128 characters.
+      let sourceLabel = (ctx.dialog.querySelector(".cx-drawer-h h4")?.textContent || ctx.record.id) + " · " + (field.title || field.id);
+      if (sourceLabel.length > 128) sourceLabel = sourceLabel.slice(0, 127) + "…";
+      // A list the link part refuses (beyond its limits) falls back to the query's filters below.
+      external = await Promise.resolve().then(() => api.setExternalFilter("record-" + field.id, { field: target.column, values, sourceLabel, label: fill(ctx.labels.recordItems, { count: recordCount(ctx, values.length) }) }))
+        .then(() => true, () => false);
+    } else external = false;
+    if (!external) {
       const query = api.getQuery() || {};
       await api.setQuery({ sort: query.sort || [], search: "", filters });
     }
