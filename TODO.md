@@ -77,7 +77,7 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
 - [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
 - [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
-- [ ] A screen-reader pass over the tree grid, including DOM order during scrolling and cell navigation: run `docs/screen-reader-test.md`. NVDA and Narrator are omitted from this release qualification by maintainer decision. Automated checks cover roles, states, focus, and order; spoken announcements remain unverified.
+- [ ] A screen-reader pass over trees, flat grids, menus and the record drawer, including DOM order during scrolling and cell navigation: run the `docs/screen-reader-test.md` checklist with NVDA and Narrator. NVDA and Narrator are omitted from this release qualification by maintainer decision. Automated checks cover roles, states, focus, and order; spoken announcements remain unverified.
 
 Gate:
 
@@ -280,7 +280,7 @@ Gate: a host example rejects unauthorized and stale proposals, returns validatio
 Consumers: every CanopyX host, especially standalone .NET/JavaScript users and the HtmlForgeX inventory bridge. These gates apply across stages rather than becoming a separate feature engine.
 
 - [ ] Investigate the retained roughly 55 Hz Edge scrolling failures with a concrete environment hypothesis. Keep every domain/round/outlier, browser/cadence/asset provenance and the unchanged 6% target. Extend proof to search/sort/state/selection/export latency and browser memory where new work affects them; do not replace a failed run with a favorable refresh-rate sample.
-- [ ] Complete actual screen-reader speech checks alongside automated ARIA/axe, keyboard, zoom, forced-colors, RTL/localization and reduced-motion checks. Keep logical row/column counts and focus observable with virtualization, loading, pinned content and details. Automated accessibility checks alone do not establish speech behavior.
+- [ ] Complete actual screen-reader speech checks; the automated ARIA/axe (every example, desktop and phone, light and dark), keyboard, zoom reflow, forced-colors, reduced-motion and target-size checks are in place (`docs/accessibility.md`), RTL is not. Keep logical row/column counts and focus observable with virtualization, loading, pinned content and details. Automated accessibility checks alone do not establish speech behavior.
 - [ ] Exercise request failure/timeout/cancellation, stale revisions, invalid state, source count changes, empty datasets, multiple grids, tab/hidden-container sizing and disposal. Export and selection must preserve accepted-query identity through these transitions.
 - [ ] Maintain source/protocol/schema/native/browser/package contracts together, all four .NET targets, strict JavaScript consumers and core asset budgets. Keep optional interaction/presentation parts out of the ordinary tree runtime where practical. Audit unsafe text/links, renderer lifetime, CSP-compatible hosting and prototype-shaped IDs at the owning boundaries.
 - [ ] Publish a documented HtmlForgeX grid builder and migration map for existing table authoring calls, after owner acceptance and package readiness. The bridge remains thin; database work belongs to DbaClientX, Office formats to OfficeIMO, report layout/forms/details to HtmlForgeX, and charts/static visual blocks to ChartForgeX.

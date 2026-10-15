@@ -11,6 +11,11 @@ const translatedNote: string = polishStatic.fullReport;
 CanopyX.configure("polish", { labels: polish });
 CanopyX.configure("german", { labels: { ...german, columns: "Host columns" } });
 CanopyX.configure("spanish", { labels: spanish });
+// A strict Content Security Policy: the page nonce for inserted parts, and host markup through a sanitiser.
+CanopyX.setNonce("rAnd0m+N/once_-==");
+CanopyX.configure("sanitized", { sanitizeHtml: (html, { kind }) => kind === "icon" ? html : document.createRange().createContextualFragment(html) });
+// @ts-expect-error The sanitiser returns markup or a node.
+CanopyX.configure("unsanitized", { sanitizeHtml: () => 1 });
 // @ts-expect-error Shipped packs are immutable; use a host override.
 polish.columns = translatedNote;
 
