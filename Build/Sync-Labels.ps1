@@ -22,7 +22,8 @@ function Write-Generated([string] $Path, [string] $Content) {
     }
 }
 
-$languages = @(@{ Id = 'pl'; Name = 'Polish'; Index = 0 }, @{ Id = 'de'; Name = 'German'; Index = 1 }, @{ Id = 'es'; Name = 'Spanish'; Index = 2 })
+$languages = @(@{ Id = 'pl'; Name = 'Polish'; Index = 0 }, @{ Id = 'de'; Name = 'German'; Index = 1 }, @{ Id = 'es'; Name = 'Spanish'; Index = 2 },
+    @{ Id = 'fr'; Name = 'French'; Index = 3 }, @{ Id = 'it'; Name = 'Italian'; Index = 4 })
 foreach ($language in $languages) {
     $browser = [System.Collections.Generic.List[string]]::new()
     $static = [System.Collections.Generic.List[string]]::new()
@@ -30,8 +31,8 @@ foreach ($language in $languages) {
     foreach ($entry in $defaults) {
         $name = $entry.Groups[1].Value
         $values = $source.$name
-        if ($values.Count -ne 3 -or @($values | Where-Object { $_ -isnot [string] -or -not $_.Trim() }).Count) {
-            throw "The label $name needs visible text in all three languages."
+        if ($values.Count -ne $languages.Count -or @($values | Where-Object { $_ -isnot [string] -or -not $_.Trim() }).Count) {
+            throw "The label $name needs visible text in every language."
         }
         $text = $values[$language.Index]
         $english = $entry.Groups[2].Value | ConvertFrom-Json

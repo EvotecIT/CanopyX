@@ -1,13 +1,13 @@
 # Label packs
 
-CanopyX ships complete Polish, German and Spanish labels for search, filtering, grouping, selection, column controls, saved views, paging, export, host interactions and the static fallback. Host data and column titles remain the host's own text. Set the page language as well: it controls number and date formatting independently of the UI labels.
+CanopyX ships complete Polish, German, Spanish, French and Italian labels for search, filtering, grouping, selection, column controls, saved views, paging, export, host interactions and the static fallback. Host data and column titles remain the host's own text. Set the page language as well: it controls number and date formatting independently of the UI labels.
 
 ## .NET
 
 Each factory returns an independent editable `CanopyLabels` instance:
 
 ```csharp
-view.Labels = CanopyLabels.Polish(); // Also German() and Spanish().
+view.Labels = CanopyLabels.Polish(); // Also German(), Spanish(), French() and Italian().
 view.Labels.Columns = "Pola raportu";
 view.SaveHtmlPage("report.html", new CanopyHtmlOptions { Language = "pl" });
 ```
@@ -27,11 +27,11 @@ const grid = createDataGrid(host, {
 });
 ```
 
-Use `/locales/de` for German and `/locales/es` for Spanish. The default export and named `labels` export contain every browser key, including the optional interaction/reporting strings. They are frozen. The ordinary `@evotecit/canopyx/grid` entry only knows the labels of the controls it draws: pass a complete pack to the reporting entry, or pick the keys you need. The tree entries (`core.js`, and `classic.js` and `@evotecit/canopyx` with the interaction texts) know the core texts and the tree toolbar menus' `grid*` labels (`CanopyX.labels` lists them); pick those keys from a pack for a tree. In .NET, setting a reporting-only label (`CanopyLabels.RequiresReportingRuntime`) on a flat grid selects the reporting entry automatically; a tree leaves flat-grid labels out instead. The named `staticLabels` export contains the four static-only keys (`overflowNote`, `unknownTotal`, `hiddenRows`, `fullReport`); a host rendering its own fallback can consume these separately. Static-only keys are not browser view fields.
+Use `/locales/de` for German, `/locales/es` for Spanish, `/locales/fr` for French and `/locales/it` for Italian. The default export and named `labels` export contain every browser key, including the optional interaction/reporting strings. They are frozen. The ordinary `@evotecit/canopyx/grid` entry only knows the labels of the controls it draws: pass a complete pack to the reporting entry, or pick the keys you need. The tree entries (`core.js`, and `classic.js` and `@evotecit/canopyx` with the interaction texts) know the core texts and the tree toolbar menus' `grid*` labels (`CanopyX.labels` lists them); pick those keys from a pack for a tree. In .NET, setting a reporting-only label (`CanopyLabels.RequiresReportingRuntime`) on a flat grid selects the reporting entry automatically; a tree leaves flat-grid labels out instead. The named `staticLabels` export contains the four static-only keys (`overflowNote`, `unknownTotal`, `hiddenRows`, `fullReport`); a host rendering its own fallback can consume these separately. Static-only keys are not browser view fields.
 
 ## Offline classic scripts
 
-Load the matching `canopyx-labels-pl.js`, `canopyx-labels-de.js` or `canopyx-labels-es.js` asset alongside the chosen runtime. These assets are also exported as `/locales/pl.js`, `/de.js` and `/es.js` in the JavaScript package.
+Load the matching `canopyx-labels-pl.js`, `canopyx-labels-de.js`, `canopyx-labels-es.js`, `canopyx-labels-fr.js` or `canopyx-labels-it.js` asset alongside the chosen runtime. These assets are also exported as `/locales/pl.js`, `/de.js`, `/es.js`, `/fr.js` and `/it.js` in the JavaScript package.
 
 ```html
 <script src="canopyx-reporting.js"></script>
@@ -45,6 +45,6 @@ Configure an automatically mounted fragment before `DOMContentLoaded`. Each clas
 
 ## Maintaining translations
 
-`CanopyX/Views/Locales/labels.json` is the shared source, with Polish, German and Spanish values in that order. `Build/Sync-Assets.ps1` generates the .NET factories, JavaScript modules and classic assets. Edit the table and regenerate; do not edit generated files. The build rejects missing/extra keys and missing or changed placeholders. Coverage tests compare all `CanopyLabels` properties with every generated pack.
+`CanopyX/Views/Locales/labels.json` is the shared source, with Polish, German, Spanish, French and Italian values in that order. `Build/Sync-Assets.ps1` generates the .NET factories, JavaScript modules and classic assets. Edit the table and regenerate; do not edit generated files. The build rejects missing/extra keys and missing or changed placeholders. Coverage tests compare all `CanopyLabels` properties with every generated pack.
 
 Keep placeholders such as `{count}`, `{total}`, `{column}` and `{time}` intact. Polish count labels use forms such as “Wyniki: {count}” so they work with any number. Host overrides apply after view labels; omitted custom labels continue to use English defaults.

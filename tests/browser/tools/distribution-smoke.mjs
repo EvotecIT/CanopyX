@@ -27,7 +27,7 @@ try {
     "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css",
     "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css",
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js",
-    ...['pl','de','es'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
+    ...['pl','de','es','fr','it'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
   assert.equal(metadata.repository?.url, "git+https://github.com/EvotecIT/CanopyX.git", "npm provenance identifies the publishing repository.");
@@ -49,7 +49,9 @@ try {
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
     import spanish from '@evotecit/canopyx/locales/es';
-    assert.equal(polish.columns, 'Kolumny'); assert.equal(german.columns, 'Spalten'); assert.equal(spanish.columns, 'Columnas');
+    import french from '@evotecit/canopyx/locales/fr';
+    import italian from '@evotecit/canopyx/locales/it';
+    assert.equal(polish.columns, 'Kolumny'); assert.equal(german.columns, 'Spalten'); assert.equal(spanish.columns, 'Columnas'); assert.equal(french.columns, 'Colonnes'); assert.equal(italian.columns, 'Colonne');
     assert.equal(staticLabels.fullReport, 'Otwórz pełny raport');
     assert.equal(Object.hasOwn(globalThis, 'CanopyXLocales'), false);
     assert.equal(runtime.protocol, 'canopyx/2');
@@ -62,7 +64,7 @@ try {
     const view = { pageSize: 2, roots: [{id:'a',label:'Atlas'}] };
     const page = await runtime.sources.inline(view).page(null, null);
     assert.deepEqual(page.items, view.roots);
-    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','export.js','history.js','tree-tools.js','tree-tools.css','links.js','search.js','locales/pl.js','locales/de.js','locales/es.js']) {
+    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','export.js','history.js','tree-tools.js','tree-tools.css','links.js','search.js','locales/pl.js','locales/de.js','locales/es.js','locales/fr.js','locales/it.js']) {
       assert.ok(import.meta.resolve('@evotecit/canopyx/' + name).startsWith('file:'));
     }`;
   await fs.writeFile(path.join(consumer, "import-check.mjs"), importCheck);

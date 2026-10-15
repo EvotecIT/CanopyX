@@ -190,7 +190,7 @@ Module imports are safe on the server; mounting a view requires a browser. The i
 
 ### Translate the controls
 
-Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de` or `/locales/es` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()` or `Spanish()` before writing the page.
+Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de`, `/locales/es`, `/locales/fr` or `/locales/it` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()` or `Italian()` before writing the page.
 
 ## Working with larger datasets
 
