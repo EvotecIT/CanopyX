@@ -46,7 +46,8 @@ foreach (var grid in grids) {
     // What a caller may read; real hosts restrict it per user (for example .Where(machine => machine.TeamId == teamOfUser)).
     IQueryable<Machine> Readable(HttpContext http) => http.RequestServices.GetRequiredService<FleetDb>().Machines;
     // With a record map, record lookups compose on the same Readable query, so a machine the caller cannot read is not found.
-    if (grid.View.Record != null) app.MapCanopyRemote(grid.Endpoint, Readable, map, FleetRecords.Map(map), Configure);
+    var records = grid.View.Record != null ? FleetRecords.Map(map) : null;
+    if (records != null) app.MapCanopyRemote(grid.Endpoint, Readable, records, Configure);
     else app.MapCanopyRemote(grid.Endpoint, Readable, map, Configure);
     void Configure(CanopyRemoteEndpointOptions options) {
         options.Query.Executor = new EfCoreExecutor();
@@ -70,8 +71,8 @@ foreach (var grid in grids) {
         // Real hosts name the policy that may write (options.WriteAuthorizationPolicy = "Inventory.Write"); the sample has no sign-in.
         options.AllowAnonymousWrites = true;
     }
-    var light = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Light, grid.Note?.Invoke(CanopyTheme.Light));
-    var dark = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Dark, grid.Note?.Invoke(CanopyTheme.Dark));
+    var light = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Light, grid.Note?.Invoke(CanopyTheme.Light), records?.Schema);
+    var dark = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Dark, grid.Note?.Invoke(CanopyTheme.Dark), records?.Schema);
     app.MapGet(grid.Path, (HttpContext http) => Results.Content(http.Request.Query["theme"] == "dark" ? dark : light, "text/html; charset=utf-8"));
 }
 
