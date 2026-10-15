@@ -242,7 +242,8 @@
       if (source == null) continue;
       if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
       Object.keys(source).forEach((name) => {
-        if (!Object.hasOwn(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        // The conditional formatting parts carry the English defaults of their format* labels themselves.
+        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^format[A-Z]\w{0,63}$/.test(name)) throw new Error("CanopyX: there is no label '" + name + "'.");
         if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
         if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
         labels[name] = source[name];

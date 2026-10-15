@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "583e3e19a2caa9d1",
+      "version": "6fe632586ab766a7",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -86,6 +86,38 @@
       ],
       "sources": [
         "sidecar"
+      ]
+    },
+    {
+      "name": "formatting",
+      "label": "conditional formatting",
+      "version": "538981150f94c1d0",
+      "script": "canopyx-formatting.js",
+      "style": "canopyx-formatting.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "feature": "formatting"
+    },
+    {
+      "name": "format-editor",
+      "label": "formatting rule editor",
+      "version": "df0d35bf16debf32",
+      "script": "canopyx-format-editor.js",
+      "style": "canopyx-format-editor.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "feature": "formatEditor",
+      "requires": [
+        "filter-editor",
+        "formatting"
       ]
     }
   ]

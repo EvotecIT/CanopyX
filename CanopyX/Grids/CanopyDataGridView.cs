@@ -196,6 +196,7 @@ public sealed partial class CanopyDataGridView {
             foreach (var rule in HighlightRules) rule.WriteJson(writer);
             writer.EndArray();
         }
+        WriteFormattingJson(writer);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
@@ -269,6 +270,7 @@ public sealed partial class CanopyDataGridView {
             if (rule == null || conditionColumn == null) throw new InvalidOperationException("Highlight rules require a declared condition column.");
             rule.Condition.Validate(conditionColumn);
         }
+        ValidateFormatting();
         Reporting?.Validate(Columns);
         if ((Reporting?.Grouping != null || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");

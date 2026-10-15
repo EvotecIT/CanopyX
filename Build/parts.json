@@ -117,6 +117,31 @@
       "scripts": [
         "CanopyX.Html/Assets/canopyx.search.source/10-search-index.js"
       ]
+    },
+    {
+      "name": "formatting",
+      "label": "conditional formatting",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "feature": "formatting",
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
+        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
+    },
+    {
+      "name": "format-editor",
+      "label": "formatting rule editor",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "feature": "formatEditor",
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
+        "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS"],
+      "requires": ["filter-editor", "formatting"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.format-editor.source/format-editor.css"]
     }
   ]
 }

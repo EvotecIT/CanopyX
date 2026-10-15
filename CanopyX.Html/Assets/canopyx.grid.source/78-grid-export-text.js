@@ -43,9 +43,11 @@
             if (seen.has(row.id)) throw new Error("CanopyX: repeated export row ID.");
             seen.add(row.id);
             if (scope !== "selected" || remaining.delete(row.id)) {
-              yield GRID_REPORTING.exportRecord ? GRID_REPORTING.exportRecord(this, request, row) : gridFreeze({ id: row.id,
+              const record = GRID_REPORTING.exportRecord ? GRID_REPORTING.exportRecord(this, request, row) : gridFreeze({ id: row.id,
                 cells: Object.fromEntries(request.columns.map(column => [column.id,
                   { value: cellValue(row.cells[column.id]) ?? null, text: cellText(row.cells[column.id], column, fmt) }])) });
+              // The formatting part adds each cell's resolved format (canopyx-formatting.js).
+              yield GRID_REPORTING.formatRecord ? GRID_REPORTING.formatRecord(this, row, record) : record;
             }
           }
           offset += this.cursor ? page.items.length : request.query.limit;

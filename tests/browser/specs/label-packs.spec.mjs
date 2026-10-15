@@ -28,7 +28,8 @@ for (const [language,labels,staticLabels] of packs) {
       `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridCopy:'Host copy'}});</script></head>`);
     await page.route('http://canopyx.test/translated',route=>route.fulfill({contentType:'text/html',body:html}));
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
-    expect(Object.keys(labels).sort()).toEqual(await page.evaluate(()=>Object.keys(CanopyX.labels).sort()));
+    // The formatting parts carry the English texts of the format* labels themselves; the entry point lists the rest.
+    expect(Object.keys(labels).filter(name=>!/^format[A-Z]/.test(name)).sort()).toEqual(await page.evaluate(()=>Object.keys(CanopyX.labels).sort()));
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});
     await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await expect(page.locator('.cx-grid-columns > summary')).toHaveText(labels.columns);

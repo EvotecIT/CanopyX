@@ -77,29 +77,40 @@ public static partial class CanopyStaticHtml {
         html.Append("<thead><tr>");
         foreach (var column in columns) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append(Align(column)).Append("\">").Append(Encode(column.Title)).Append("</th>");
         html.Append("</tr></thead><tbody>");
+        // Formatting rules evaluate as in the browser; automatic bounds come from the supplied rows.
+        var formats = view.FormatRules.Count > 0 ? new CanopyFormatEvaluator(view, supplied) : null;
         foreach (var row in rows) {
+            var outcome = formats?.Evaluate(row);
             var printedCells = new List<string>(columns.Length);
             var rowRule = CanopyGridHighlights.Find(view, row, null);
             var rowTone = rowRule != null && rowRule.Tone != CanopyTone.None ? rowRule.Tone : row.Tone;
-            var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
+            var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName, outcome?.Row?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
             html.Append("<tr");
             if (rowClasses.Length != 0) html.Append(" class=\"").Append(Encode(rowClasses)).Append('"');
-            if (rowTone != CanopyTone.None) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append('"');
+            var rowFormat = FormatRowStyle(outcome, styles);
+            if (rowTone != CanopyTone.None || rowFormat.Length != 0) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append(Encode(rowFormat)).Append('"');
             html.Append('>');
+            var first = true;
             foreach (var column in columns) {
+                var paint = outcome?.Cell(column.Id);
                 row.Cells.TryGetValue(column.Id, out var cell);
                 var rule = CanopyGridHighlights.Find(view, row, column.Id);
                 var tone = rule != null && rule.Tone != CanopyTone.None ? rule.Tone : cell?.Tone ?? CanopyTone.None;
-                html.Append("<td style=\"").Append(styles.Cell).Append(Align(column)).Append(styles.ToneColor(tone));
+                html.Append("<td style=\"").Append(styles.Cell).Append(Align(column)).Append(styles.ToneColor(tone)).Append(Encode(FormatCellStyle(paint, outcome?.Row, first, styles)));
                 if (column.Wrap) html.Append("white-space:pre-wrap;overflow-wrap:anywhere;");
                 html.Append('"');
-                if (rule?.ClassName != null) html.Append(" class=\"").Append(Encode(rule.ClassName)).Append('"');
-                if (!string.IsNullOrEmpty(cell?.Title)) html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
+                var classes = string.Join(" ", new[] { rule?.ClassName, FormatClasses(paint) }.Where(value => value != null));
+                if (classes.Length != 0) html.Append(" class=\"").Append(Encode(classes)).Append('"');
+                var title = FormatTitle(cell?.Title, paint, outcome?.Row, first);
+                if (title != null) html.Append(" title=\"").Append(Encode(title)).Append('"');
                 var text = new StringBuilder();
                 html.Append('>');
+                AppendFormatBefore(html, paint, outcome?.Row, first, styles);
                 AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
                 if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
+                AppendFormatAfter(html, paint, outcome?.Row, first, styles);
                 html.Append("</td>");
+                first = false;
                 printedCells.Add(text.ToString());
             }
             html.Append("</tr>");
@@ -114,6 +125,7 @@ public static partial class CanopyStaticHtml {
                 .Append(styles.Link).Append("\">").Append(Encode(settings.FullReportText ?? view.Labels.FullReport)).Append("</a>");
             html.Append("</td></tr></tbody>");
         }
+        AppendFormatLegend(html, view, columns.Length, styles, settings.Culture);
         return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
             matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue);
     }
