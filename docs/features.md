@@ -15,6 +15,8 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 |---|---|---|---|
 | Inline records in the page | Grid, Tree | `rows` / `roots` in the definition; C# `Rows`, `Roots` | [Flat data grid](authoring.md#flat-data-grid) |
 | Typed record mapping in C# | Grid | `CanopyGridMapper<T>` with selectors, no reflection | [Flat data grid](authoring.md#flat-data-grid) |
+| Columns from member expressions and rows from typed records in C# | Grid | `CanopyDataGridView<T>`: `Column(x => x.Owner)`, `Field`, `AddRows` | [typed-grids.md](typed-grids.md) |
+| Typed rows in TypeScript: columns, rows, facets, events and the live API checked against a row type | Grid | `createDataGrid<Row>(…)`, `GridColumnId<Row>` | [typed-grids.md](typed-grids.md#typescript-a-row-type) |
 | Your own query function (server-side sort, filter, search and paging) | Grid | `source.query(query, { signal })` returns a `gridPage`; C# `CanopyGridSource.HostedOffset()` | [Protocol](data-protocol.md#flat-grid-documents) |
 | Cursor (keyset) navigation with unknown totals | Grid | `CanopyGridSource.HostedCursor()`, `source: { kind: "host", navigation: "cursor" }` | [Sequential sources](data-protocol.md#sequential-sources-and-unknown-counts) |
 | Lazy children from an HTTP endpoint | Tree | `source: { kind: "remote", children, search, counts }` URL templates | [Remote](data-protocol.md#remote) |
@@ -219,6 +221,7 @@ Spoken screen-reader output has not been recorded for a release yet, and right-t
 |---|---|---|
 | .NET packages with no third-party runtime dependencies (net472, netstandard2.0, net8.0, net10.0) | `CanopyX`, `CanopyX.Html` | [README](../README.md#installation) |
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
+| Public API baselines for C# and TypeScript, checked on every build, and a versioning and deprecation policy | `api/`, `ApiSurfaceTests`, `npm run test:api` | [versioning.md](versioning.md) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
 | Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
 | A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |

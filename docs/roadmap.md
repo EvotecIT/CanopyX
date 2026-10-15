@@ -30,6 +30,7 @@ These Tier 1 items have landed; each has its own page.
 | | **Security and accessibility modes:** strict CSP and Trusted Types, forced colours, reduced motion, target sizes | [security.md](security.md), [accessibility.md](accessibility.md) |
 | M | **Live data:** rows that change in place with a stable order, flashing cells, a batched update rate, polling and revision-aware refresh | [live-data.md](live-data.md) |
 | L | **Facet panel:** value lists with counts and range histograms beside or above the grid, filtering each other; a sheet on phones | [facets.md](facets.md) |
+| S | **Typed rows and API safety:** grids from typed C# records and TypeScript row types, checked public API baselines, a versioning and deprecation policy | [typed-grids.md](typed-grids.md), [versioning.md](versioning.md) |
 
 ## Tier 1: in progress
 
