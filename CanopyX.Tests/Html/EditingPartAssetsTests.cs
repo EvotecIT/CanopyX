@@ -15,7 +15,8 @@ public sealed class EditingPartAssetsTests {
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         var size = Gzip(part.Script) + Gzip(part.Style!);
-        Assert.True(size <= 20 * 1024, "The editing part is " + size + " bytes gzip; the guard is 20 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(size <= 20480, "The editing part is " + size + " bytes gzip; the guard is 20 KiB.");
     }
 
     [Fact]

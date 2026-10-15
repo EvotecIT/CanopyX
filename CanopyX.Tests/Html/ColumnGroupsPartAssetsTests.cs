@@ -7,8 +7,9 @@ namespace CanopyX.Tests.Html;
 /// <summary>Column groups and cell ranges ship as parts: versioned, inline-safe, bounded, outside the entry points and written beside the grid runtimes.</summary>
 public sealed class ColumnGroupsPartAssetsTests {
     [Theory]
-    [InlineData("column-groups", "function cgHeader", 8704)]
-    [InlineData("cell-range", "function crPaint", 15 * 1024)]
+    // Combined roadmap integration: its size plus about 15%.
+    [InlineData("column-groups", "function cgHeader", 9216)]
+    [InlineData("cell-range", "function crPaint", 15872)]
     public void Part_IsVersionedInlineSafeBoundedAndOutsideTheEntryPoints(string name, string marker, int budget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);

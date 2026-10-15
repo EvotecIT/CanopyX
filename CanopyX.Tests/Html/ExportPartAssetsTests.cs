@@ -12,7 +12,8 @@ public sealed class ExportPartAssetsTests {
         Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid));
         Assert.DoesNotContain("</script", CanopyHtmlAssets.ExportScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain('\r', CanopyHtmlAssets.ExportScript);
-        Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 8 * 1024, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 8 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 5120, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 5 KiB.");
         var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
         var fragment = view.ToHtmlFragment();
         Assert.Contains("<script type=\"application/x-canopyx-export\" data-cx-version=\"" + CanopyHtmlAssets.ExportVersion + "\">", fragment);

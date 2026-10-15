@@ -216,5 +216,5 @@ Spoken screen-reader output has not been recorded for a release yet, and right-t
 | .NET packages with no third-party runtime dependencies (net472, netstandard2.0, net8.0, net10.0) | `CanopyX`, `CanopyX.Html` | [README](../README.md#installation) |
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
-| Size budgets per entry point (gzip): tree 48 KiB, interactive tree 64 KiB, grid 96 KiB, reporting 128 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
+| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
 | A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |

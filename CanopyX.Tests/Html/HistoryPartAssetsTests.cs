@@ -18,7 +18,8 @@ public sealed class HistoryPartAssetsTests {
         Assert.Contains("function gridRenderHistory", CanopyHtmlAssets.HistoryScript);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.HistoryScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain('\r', CanopyHtmlAssets.HistoryScript);
-        Assert.True(Gzip(CanopyHtmlAssets.HistoryScript) <= 4 * 1024, "The history part is " + Gzip(CanopyHtmlAssets.HistoryScript) + " bytes gzip; the guard is 4 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(CanopyHtmlAssets.HistoryScript) <= 2048, "The history part is " + Gzip(CanopyHtmlAssets.HistoryScript) + " bytes gzip; the guard is 2 KiB.");
     }
 
     [Fact]

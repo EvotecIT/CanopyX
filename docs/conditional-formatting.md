@@ -181,8 +181,8 @@ single-file pages, and the rule editor part when the editor is on.
 
 The formatting part (`canopyx-formatting.js` and `.css`) loads with a grid that has rules or formatting options, and with
 the API methods; the rule editor part (`canopyx-format-editor.js` and `.css`) loads when the editor opens and requires the
-filter editor part, whose condition rows it reuses. Each part has its own gzip guard: 12 KiB for the formatting part and
-11 KiB for the editor, script and stylesheet together. The grid entry points carry only the loaders, the state hooks and the
+filter editor part, whose condition rows it reuses. Each part has its own gzip guard: 13 KiB for the formatting part and
+12.5 KiB for the editor, script and stylesheet together. The grid entry points carry only the loaders, the state hooks and the
 manifest entries.
 
 The editor's labels (`format*`) are in the label packs; their English texts ship with the parts, so every entry point

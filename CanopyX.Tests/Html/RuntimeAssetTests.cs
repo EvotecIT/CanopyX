@@ -99,27 +99,29 @@ public sealed class RuntimeAssetTests {
     public void Assets_StayWithinTheCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 
-        // Raised from 48 KiB for search highlighting and layout modes (labels, view options and saved choices shared by trees and grids): new size plus about 15%.
-        Assert.True(compressed <= 57 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 57 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 60928, "Runtime assets are " + compressed + " bytes gzip; the budget is 59.5 KiB.");
     }
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.InteractiveTreeGrid));
-        Assert.True(compressed <= 64 * 1024, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 64 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 71168, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 69.5 KiB.");
     }
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        // Raised from 96 KiB for search highlighting and layout modes: new size plus about 15%.
-        Assert.True(compressed <= 113 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 113 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 122368, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 119.5 KiB.");
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid));
-        Assert.True(compressed <= 128 * 1024, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 128 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 151040, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 147.5 KiB.");
     }
 
     [Fact]

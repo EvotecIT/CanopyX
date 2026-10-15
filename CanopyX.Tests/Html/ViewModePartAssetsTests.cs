@@ -7,9 +7,10 @@ namespace CanopyX.Tests.Html;
 /// <summary>Search highlighting and layout modes ship as two parts: bounded, outside the entry points, and carried by the views that declare them.</summary>
 public sealed class ViewModePartAssetsTests {
     [Theory]
-    [InlineData("highlight", "function hlMarkCell", 10)]
-    [InlineData("layouts", "function cardGeometry", 7)]
-    public void Part_IsBoundedAndOutsideTheEntryPoints(string name, string marker, int guardKiB) {
+    // Combined roadmap integration: each part's size plus about 15%.
+    [InlineData("highlight", "function hlMarkCell", 9.5)]
+    [InlineData("layouts", "function cardGeometry", 6.5)]
+    public void Part_IsBoundedAndOutsideTheEntryPoints(string name, string marker, double guardKiB) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Contains(marker, part.Script);
         Assert.NotNull(part.Style);

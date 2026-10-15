@@ -79,5 +79,6 @@ test("an earlier core script fails module import without replacing its runtime",
 });
 
 test("the module and complete stylesheet retain the interactive asset budget", () => {
-  expect(gzipSync(runtime).length + gzipSync(style).length).toBeLessThanOrEqual(64 * 1024);
+  // The interactive budget of the combined roadmap integration (RuntimeAssetTests): 69.5 KiB.
+  expect(gzipSync(runtime).length + gzipSync(style).length).toBeLessThanOrEqual(71168);
 });

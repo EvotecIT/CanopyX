@@ -24,7 +24,8 @@ public sealed class LinkPartAssetsTests {
         Assert.Contains("function linkFilter(", part.Script);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain('\r', part.Script);
-        Assert.True(Gzip(part.Script) <= 8 * 1024, "The link part is " + Gzip(part.Script) + " bytes gzip; the guard is 8 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(part.Script) <= 7168, "The link part is " + Gzip(part.Script) + " bytes gzip; the guard is 7 KiB.");
         Assert.True(Gzip(part.Style!) <= 1024, "The link stylesheet is " + Gzip(part.Style!) + " bytes gzip; the guard is 1 KiB.");
     }
 

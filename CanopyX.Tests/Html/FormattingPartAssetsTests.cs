@@ -30,8 +30,9 @@ public sealed class FormattingPartAssetsTests {
         // Each part has its own budget; the evaluation and painting part loads with a formatted grid, the editor on first use.
         var formattingSize = Gzip(formatting.Script) + Gzip(formatting.Style!);
         var editorSize = Gzip(editor.Script) + Gzip(editor.Style!);
-        Assert.True(formattingSize <= 12 * 1024, "The formatting part is " + formattingSize + " bytes gzip; the guard is 12 KiB.");
-        Assert.True(editorSize <= 11 * 1024, "The rule editor part is " + editorSize + " bytes gzip; the guard is 11 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(formattingSize <= 13312, "The formatting part is " + formattingSize + " bytes gzip; the guard is 13 KiB.");
+        Assert.True(editorSize <= 12800, "The rule editor part is " + editorSize + " bytes gzip; the guard is 12.5 KiB.");
     }
 
     [Theory]

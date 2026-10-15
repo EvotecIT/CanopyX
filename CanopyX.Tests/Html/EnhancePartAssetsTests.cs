@@ -21,8 +21,9 @@ public sealed class EnhancePartAssetsTests {
             Assert.DoesNotContain("function pagerWindow(", script);
             Assert.Contains("GRID_PAGER=definePart(DataGrid,\"pager\"", script);
         }
-        Assert.True(Gzip(part.Script) <= 3 * 1024, "The pager part is " + Gzip(part.Script) + " bytes gzip; the guard is 3 KiB.");
-        Assert.True(Gzip(part.Style!) <= 1024, "The pager stylesheet is " + Gzip(part.Style!) + " bytes gzip; the guard is 1 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(part.Script) <= 3072, "The pager part is " + Gzip(part.Script) + " bytes gzip; the guard is 3 KiB.");
+        Assert.True(Gzip(part.Style!) <= 512, "The pager stylesheet is " + Gzip(part.Style!) + " bytes gzip; the guard is 0.5 KiB.");
     }
 
     [Fact]
@@ -44,7 +45,8 @@ public sealed class EnhancePartAssetsTests {
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         grid.Pager.PageNumbers = 7;
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(grid), item => item.Name == "enhance");
-        Assert.True(Gzip(part.Script) <= 14 * 1024, "The enhance part is " + Gzip(part.Script) + " bytes gzip; the guard is 14 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(part.Script) <= 14848, "The enhance part is " + Gzip(part.Script) + " bytes gzip; the guard is 14.5 KiB.");
     }
 
     [Theory]

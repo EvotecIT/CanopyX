@@ -54,8 +54,9 @@ public sealed class RuntimePartTests {
         }
         Assert.Contains("function entryFile(", CanopyHtmlAssets.GetPart("search").Script);
         Assert.Contains("writeDeepLink(w,revision=this.selectionRevision)", CanopyHtmlAssets.GetPart("links").Script);
-        Assert.True(Gzip(CanopyHtmlAssets.GetPart("search").Script) <= 8 * 1024, "The search part exceeds its 8 KiB guard.");
-        Assert.True(Gzip(CanopyHtmlAssets.GetPart("links").Script) <= 4 * 1024, "The links part exceeds its 4 KiB guard.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(CanopyHtmlAssets.GetPart("search").Script) <= 3584, "The search part exceeds its 3.5 KiB guard.");
+        Assert.True(Gzip(CanopyHtmlAssets.GetPart("links").Script) <= 1536, "The links part exceeds its 1.5 KiB guard.");
     }
 
     [Fact]

@@ -66,7 +66,8 @@ public sealed class LargeDataHtmlTests {
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, part.Runtimes);
         Assert.DoesNotContain(part, CanopyHtmlAssets.GetRequiredParts(Grid(1)));
         Assert.DoesNotContain(part, CanopyHtmlAssets.GetRequiredParts(SampleDocuments.FullView()));
-        Assert.True(Gzip(part.Script) <= 4 * 1024, "The data part is " + Gzip(part.Script) + " bytes gzip; the guard is 4 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(Gzip(part.Script) <= 2560, "The data part is " + Gzip(part.Script) + " bytes gzip; the guard is 2.5 KiB.");
     }
 
     [Fact]
