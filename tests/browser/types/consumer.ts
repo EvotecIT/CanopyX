@@ -7,10 +7,14 @@ import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
 import spanish from "@evotecit/canopyx/locales/es";
+import french from "@evotecit/canopyx/locales/fr";
+import italian from "@evotecit/canopyx/locales/it";
 const translatedNote: string = polishStatic.fullReport;
 CanopyX.configure("polish", { labels: polish });
 CanopyX.configure("german", { labels: { ...german, columns: "Host columns" } });
 CanopyX.configure("spanish", { labels: spanish });
+CanopyX.configure("french", { labels: french });
+CanopyX.configure("italian", { labels: { ...italian, columns: "Colonne host" } });
 // @ts-expect-error Shipped packs are immutable; use a host override.
 polish.columns = translatedNote;
 

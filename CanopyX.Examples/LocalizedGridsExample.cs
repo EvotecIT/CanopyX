@@ -5,12 +5,12 @@ namespace CanopyX.Examples;
 /// <summary>Portable report grids using complete shipped labels and host-supplied translated data.</summary>
 internal static class LocalizedGridsExample {
     internal static void Write(string output) {
-        var languages = new[] { "pl", "de", "es" };
-        var packs = new[] { CanopyLabels.Polish(), CanopyLabels.German(), CanopyLabels.Spanish() };
-        var titles = new[] { "Rejestr raportów", "Berichtsübersicht", "Lista de informes" };
-        var columns = new[] { new[] { "Raport", "Stan", "Uwagi" }, new[] { "Bericht", "Status", "Hinweise" }, new[] { "Informe", "Estado", "Notas" } };
-        var complete = new[] { "Zakończony", "Abgeschlossen", "Completado" };
-        var review = new[] { "Do sprawdzenia", "Zu prüfen", "Pendiente de revisión" };
+        var languages = new[] { "pl", "de", "es", "fr", "it" };
+        var packs = new[] { CanopyLabels.Polish(), CanopyLabels.German(), CanopyLabels.Spanish(), CanopyLabels.French(), CanopyLabels.Italian() };
+        var titles = new[] { "Rejestr raportów", "Berichtsübersicht", "Lista de informes", "Liste des rapports", "Elenco dei report" };
+        var columns = new[] { new[] { "Raport", "Stan", "Uwagi" }, new[] { "Bericht", "Status", "Hinweise" }, new[] { "Informe", "Estado", "Notas" }, new[] { "Rapport", "État", "Remarques" }, new[] { "Report", "Stato", "Note" } };
+        var complete = new[] { "Zakończony", "Abgeschlossen", "Completado", "Terminé", "Completato" };
+        var review = new[] { "Do sprawdzenia", "Zu prüfen", "Pendiente de revisión", "À vérifier", "Da verificare" };
         for (var language = 0; language < languages.Length; language++) {
             var view = new CanopyDataGridView("localized-" + languages[language], titles[language]) {
                 Labels = packs[language], AutoRowHeight = true, Selection = CanopySelectionMode.Multiple,

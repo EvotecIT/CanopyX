@@ -5,9 +5,11 @@ import axe from 'axe-core';
 import polish, { staticLabels as polishStatic } from '../../../JavaScript/locales/pl.mjs';
 import german, { staticLabels as germanStatic } from '../../../JavaScript/locales/de.mjs';
 import spanish, { staticLabels as spanishStatic } from '../../../JavaScript/locales/es.mjs';
+import french, { staticLabels as frenchStatic } from '../../../JavaScript/locales/fr.mjs';
+import italian, { staticLabels as italianStatic } from '../../../JavaScript/locales/it.mjs';
 import { repo, viewPage, nextFrames, openExample } from './support.mjs';
 
-const packs = [['pl',polish,polishStatic],['de',german,germanStatic],['es',spanish,spanishStatic]];
+const packs = [['pl',polish,polishStatic],['de',german,germanStatic],['es',spanish,spanishStatic],['fr',french,frenchStatic],['it',italian,italianStatic]];
 const canonical = JSON.parse(fs.readFileSync(path.join(repo,'CanopyX/Views/Locales/labels.json'),'utf8'));
 const wire = name => name[0].toLowerCase()+name.slice(1);
 for (const [language,labels,staticLabels] of packs) {

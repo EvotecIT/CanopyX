@@ -23,7 +23,7 @@ In .NET, add `new CanopyGridHighlightRule(new CanopyGridFilter("status", CanopyG
 
 ### Shipped languages
 
-Polish, German and Spanish packs cover all browser controls and static-fallback labels. Set `view.Labels = CanopyLabels.Polish()` (or `German()` / `Spanish()`) in .NET. JavaScript hosts import labels from `@evotecit/canopyx/locales/pl`, `/de` or `/es` and pass them as `labels` on the definition or host options. Individual host overrides still take precedence. The packs are optional assets; the runtime bundles retain their English defaults and existing size budgets. See [label packs](labels.md) for offline classic scripts, placeholders and page language, and the generated `localized-grid-pl.html`, `localized-grid-de.html` and `localized-grid-es.html` examples.
+Polish, German, Spanish, French and Italian packs cover all browser controls and static-fallback labels. Set `view.Labels = CanopyLabels.Polish()` (or `German()`, `Spanish()`, `French()` / `Italian()`) in .NET. JavaScript hosts import labels from `@evotecit/canopyx/locales/pl`, `/de`, `/es`, `/fr` or `/it` and pass them as `labels` on the definition or host options. Individual host overrides still take precedence. The packs are optional assets; the runtime bundles retain their English defaults and existing size budgets. See [label packs](labels.md) for offline classic scripts, placeholders and page language, and the generated `localized-grid-pl.html`, `localized-grid-de.html`, `localized-grid-es.html`, `localized-grid-fr.html` and `localized-grid-it.html` examples.
 
 ### JavaScript Hosts
 
