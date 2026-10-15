@@ -50,6 +50,13 @@ public sealed class RecordContractTests {
         Assert.Throws<ArgumentException>(() => new CanopyRecordSchema(data, new[] { CanopyRecordField.Value("serial"), CanopyRecordField.Value("serial") }));
         Assert.Throws<ArgumentException>(() => new CanopyRecordSchema(data, Array.Empty<CanopyRecordField>(), new[] { "nothing" }));
         Assert.Throws<ArgumentException>(() => new CanopyRecordSchema(Fleet.Map(Fleet.View()).Schema, Array.Empty<CanopyRecordField>()));
+        // One read check covers record fields and drawer values by identity, so a hand-built schema cannot share one either,
+        // even when the record panel changed after the column schema checked the view.
+        var clash = Assets.View();
+        var clashing = Assets.Columns(clash).Schema;
+        clash.Record!.Fields.Add(new CanopyColumn("site", "Site again"));
+        Assert.Throws<ArgumentException>(() => new CanopyRecordSchema(clashing, new[] { CanopyRecordField.Value("site") }));
+        Assert.Equal(new[] { "serial" }, new CanopyRecordSchema(clashing, new[] { CanopyRecordField.Value("serial") }).Fields.Select(field => field.Id));
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyRecordField.Collection("parts", 0));
         var schema = new CanopyRecordSchema(data, new[] { CanopyRecordField.Collection("parts", 25) }, new[] { "display" });
         Assert.True(schema.TryGetField("parts", out var parts) && parts.IsCollection && parts.PageSize == 25);

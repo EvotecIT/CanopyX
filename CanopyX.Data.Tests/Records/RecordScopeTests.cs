@@ -52,7 +52,7 @@ public sealed class RecordScopeTests {
         var asset = Assets.Scoped(All).First(item => item.Notes != null && item.Notes.Length > 16 && item.Replaces != null && item.Replaces.Site != "Hidden");
         using var document = JsonDocument.Parse(await handler.RecordAsync(Assets.Query(Id(asset), ",\"row\":true")));
         var fields = document.RootElement.GetProperty("fields");
-        Assert.Equal(asset.Notes!.Substring(0, 16) + "…", fields.GetProperty("notes").GetString());
+        Assert.Equal(asset.Notes!.Substring(0, 15) + "…", fields.GetProperty("notes").GetString());
         Assert.Equal(Id(asset.Replaces!), fields.GetProperty("replaces").GetProperty("ref").GetProperty("id").GetString());
         // The row is the page row, never shortened.
         Assert.Equal(asset.Name, document.RootElement.GetProperty("row").GetProperty("cells").GetProperty("name").GetString());
@@ -63,7 +63,7 @@ public sealed class RecordScopeTests {
             var tagHandler = Tag.Handler(false, tags, queryable, caseInsensitive: false, tagOptions);
             using var tag = JsonDocument.Parse(await tagHandler.RecordAsync(Tag.Query(tags[0].Code)));
             Assert.Equal(tags[0].Code, tag.RootElement.GetProperty("id").GetString());
-            Assert.Equal(new string('n', 16) + "…", tag.RootElement.GetProperty("fields").GetProperty("note").GetString());
+            Assert.Equal(new string('n', 15) + "…", tag.RootElement.GetProperty("fields").GetProperty("note").GetString());
         }
     }
 
@@ -82,6 +82,22 @@ public sealed class RecordScopeTests {
         }
     }
 
+    [Theory]
+    [MemberData(nameof(Kinds))]
+    public async Task Unscoped_ShowsRecordsOutsideTheScopeOnlyWhenNamed(ProviderKind kind) {
+        var map = new CanopyRecordMap<Asset>(Assets.Columns(Assets.View()))
+            .Link("replaces", asset => asset.ReplacesId, asset => asset.Replaces!.Name, withinGrid: false)
+            .Collection("peers", asset => asset.Group!.Members, list => list.Key(m => m.Id).OrderBy(m => m.Name)
+                .Column(new CanopyColumn("name", "Name"), m => m.Name).Target("assets").Unscoped().PageSize(200));
+        var handler = Handler(kind, map: map);
+        var asset = Assets.Scoped(All).First(item => item.Group != null && item.Group.Members.Any(member => member.Site == "Hidden"));
+        using var whole = JsonDocument.Parse(await handler.RecordAsync(Assets.Query(Id(asset))));
+        var peers = whole.RootElement.GetProperty("fields").GetProperty("peers").GetProperty("records");
+        Assert.Equal(asset.Group!.Members.Count, peers.GetProperty("total").GetInt32());
+        var hiddenLink = Assets.Scoped(All).First(item => item.Replaces != null && item.Replaces.Site == "Hidden");
+        Assert.Contains(hiddenLink.Replaces!.Name, await handler.RecordAsync(Assets.Query(Id(hiddenLink))));
+    }
+
     [Fact]
     public void Map_KeepsWithinGridToTheGridsTypeAndKey() {
         var columns = Assets.Columns(Assets.View());
@@ -89,6 +105,14 @@ public sealed class RecordScopeTests {
             .Column(new CanopyColumn("name", "Name"), part => part.Name).WithinGrid()));
         Assert.Throws<ArgumentException>(() => new CanopyRecordMap<Asset>(columns).Link("replaces", asset => asset.ReplacesId, view: "other", withinGrid: true));
         Assert.Throws<InvalidOperationException>(() => new CanopyRecordMap<Asset>(columns).Link("replaces", asset => asset.Serial, withinGrid: true).Schema);
+        // A link into this grid is kept within it by default, so its key must be the grid key's type unless the host opts out.
+        Assert.Throws<InvalidOperationException>(() => new CanopyRecordMap<Asset>(columns).Link("replaces", asset => asset.Serial).Schema);
+        Assert.Throws<InvalidOperationException>(() => new CanopyRecordMap<Asset>(columns).Link("replaces", asset => asset.Serial, view: "assets").Schema);
+        _ = new CanopyRecordMap<Asset>(columns).Link("replaces", asset => asset.Serial, withinGrid: false).Schema;
+        // Links into other grids and collections of other types keep showing what they reach, and need no grid key.
+        _ = new CanopyRecordMap<Asset>(columns).Link("replaces", asset => asset.Serial, view: "other").Schema;
+        _ = new CanopyRecordMap<Asset>(columns).Collection("parts", asset => asset.Parts, list => list.Key(part => part.Id)
+            .Column(new CanopyColumn("name", "Name"), part => part.Name).Unscoped()).Schema;
         var clash = Assets.View();
         clash.Record!.Fields.Add(new CanopyColumn("site", "Site again"));
         Assert.Throws<ArgumentException>(() => new CanopyRecordMap<Asset>(Assets.Columns(clash)));

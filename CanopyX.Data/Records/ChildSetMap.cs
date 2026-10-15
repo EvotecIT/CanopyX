@@ -10,7 +10,8 @@ namespace CanopyX.Data;
 /// <summary>
 /// A field read through the child rows a navigation of the record reaches. Child rows are always read through the record the
 /// caller's scoped query found (<c>scoped.SelectMany(items)</c>), never from a table of their own, so they cannot bypass the scope.
-/// Rows of the grid's own record type can also be kept to the records the caller's query reads (<c>WithinGrid</c>). Rows
+/// Rows of the grid's own record type are also kept to the records the caller's query reads unless the map opts out
+/// (<c>Unscoped</c>). Rows
 /// without a key are left out, and text values are bounded.
 /// </summary>
 internal sealed class ChildSetMap<T, TChild> : RecordChildMap<T> {

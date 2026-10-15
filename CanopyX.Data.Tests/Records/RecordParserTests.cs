@@ -128,6 +128,6 @@ public sealed class RecordParserTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordRequestBytes = 1023 });
         var defaults = new CanopyRemoteLimits();
         Assert.Equal((200, 200, 1048576), (defaults.MaxRecordPageSize, defaults.MaxRecordItems, defaults.MaxRecordBytes));
-        Assert.Equal((65536, 10000, 16384), (defaults.MaxRecordTextLength, defaults.MaxRecordOffset, defaults.MaxRecordRequestBytes));
+        Assert.Equal((8192, 10000, 16384), (defaults.MaxRecordTextLength, defaults.MaxRecordOffset, defaults.MaxRecordRequestBytes));
     }
 }

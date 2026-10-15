@@ -24,6 +24,13 @@ namespace CanopyX.Data;
 /// The endpoint checks the revision before calling, sets the answer's revision, and checks the answer: it fails the request
 /// rather than send a field or cell that was not asked for, more rows than allowed, or a row of another record.
 /// </para>
+/// <para>
+/// The endpoint also holds every answer to <see cref="CanopyRecordRequest.MaxTextLength"/>: text in fields, drawer values,
+/// collection rows, list items, object fields, timelines and changes (values, display text, tooltips and badges) that is
+/// longer is shortened, ellipsis included, to that many UTF-16 code units, never inside a surrogate pair. Identities, link
+/// keys and the record's row are never shortened. An implementation should still read long text only to the bound (one
+/// character more tells longer text apart), since the answer is built in memory before the endpoint clips and measures it.
+/// </para>
 /// </remarks>
 public interface ICanopyRecordProvider {
     /// <summary>Gets the record allow-list the provider serves.</summary>

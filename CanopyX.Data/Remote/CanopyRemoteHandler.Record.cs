@@ -38,7 +38,9 @@ public sealed partial class CanopyRemoteHandler {
     /// that is missing, outside the caller's scope, or whose identity cannot be a key answers alike with
     /// <see cref="CanopyRequestError.RecordNotFound"/>. The provider's answer is checked: a field or drawer value that was not
     /// asked for, more collection rows or items than allowed, or a row of another record fails the request as a server error
-    /// instead of reaching the caller. An answer larger than <see cref="CanopyRemoteLimits.MaxRecordBytes"/> is refused.
+    /// instead of reaching the caller. Text longer than <see cref="CanopyRecordRequest.MaxTextLength"/> is then shortened, ellipsis
+    /// included, to that length whatever the provider (identities, link keys and the record's row never are). An answer larger
+    /// than <see cref="CanopyRemoteLimits.MaxRecordBytes"/> is refused.
     /// </remarks>
     public async Task<string> RecordAsync(CanopyRecordRequest request, CancellationToken cancellationToken = default) {
         if (request == null) throw new ArgumentNullException(nameof(request));
@@ -53,9 +55,12 @@ public sealed partial class CanopyRemoteHandler {
         var record = await records.GetRecordAsync(request, cancellationToken).ConfigureAwait(false);
         if (record == null) throw new CanopyRequestException(CanopyRequestError.RecordNotFound, "The record is not available.");
         CheckRecord(record, request, limits.MaxRecordPageSize);
+        // Every provider is held to the text bound, custom ones included; an answer whose text alone exceeds the byte limit is
+        // refused before it is serialized.
+        if (RecordAnswerText.Clip(record, request.MaxTextLength) > limits.MaxRecordBytes) throw CanopyRequestException.Limit("The record is larger than this endpoint answers.");
         record.Revision = revision;
         var json = record.ToJson(Schema.View);
-        if (Encoding.UTF8.GetByteCount(json) > Options.Limits.MaxRecordBytes) throw CanopyRequestException.Limit("The record is larger than this endpoint answers.");
+        if (Encoding.UTF8.GetByteCount(json) > limits.MaxRecordBytes) throw CanopyRequestException.Limit("The record is larger than this endpoint answers.");
         return json;
     }
 

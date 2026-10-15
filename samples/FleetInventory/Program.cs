@@ -56,7 +56,10 @@ foreach (var grid in grids) {
         options.Limits.MaxExportRows = 250000;
         // The sample has no sign-in. Real hosts keep the default, which requires authorization, or name a policy.
         options.AllowAnonymous = true;
-        // Rate limiting belongs to the host: options.RecordEndpoint = route => route.RequireRateLimiting("records");
+        // RATE LIMITING: every record request reads a record and its collections, so production hosts limit the record route
+        // (services.AddRateLimiter(...) with a "records" policy, app.UseRateLimiter(), then):
+        //     options.RecordEndpoint = route => route.RequireRateLimiting("records");
+        // The sample leaves it out so its browser tests can open many records quickly.
         if (!editable) return;
         options.Writer = http => {
             var db = http.RequestServices.GetRequiredService<FleetDb>();

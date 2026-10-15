@@ -57,6 +57,8 @@ public sealed class CanopyRemoteEndpointOptions {
 
     /// <summary>Gets or sets conventions applied to the record route alone, for example
     /// <c>route =&gt; route.RequireRateLimiting("records")</c>; conventions on the returned group apply to every route.</summary>
+    /// <remarks>Rate-limit the record route in production: each request builds a bounded answer on demand (a key lookup plus
+    /// a count and a window per collection), so an unthrottled caller can make the server build many of them.</remarks>
     public Action<IEndpointConventionBuilder>? RecordEndpoint { get; set; }
 
     /// <summary>Gets or sets whether a <c>GET</c> route also answers queries given in the query string. Default false.</summary>

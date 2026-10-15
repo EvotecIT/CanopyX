@@ -17,7 +17,8 @@ public sealed class CanopyRecordRequest {
     }
 
     /// <summary>Gets the longest text value the answer carries (<see cref="CanopyRemoteLimits.MaxRecordTextLength"/>); longer
-    /// text is shortened to it and ends with an ellipsis. Identities and the row are never shortened.</summary>
+    /// text is shortened so that it ends with an ellipsis and, ellipsis included, fits this length. The endpoint applies it
+    /// to every provider's answer. Identities, link keys and the row are never shortened.</summary>
     public int MaxTextLength { get; }
 
     /// <summary>Gets the record allow-list the request was validated against.</summary>

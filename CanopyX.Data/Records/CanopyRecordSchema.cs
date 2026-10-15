@@ -17,23 +17,27 @@ public sealed class CanopyRecordSchema {
     /// <param name="data">The grid's column allow-list; its view must declare a record panel.</param>
     /// <param name="fields">The record panel fields the endpoint serves.</param>
     /// <param name="cells">The view columns whose fuller drawer values the endpoint serves; null serves none.</param>
-    /// <exception cref="ArgumentException">The view has no record panel, or a field or column is undeclared or listed twice.</exception>
+    /// <exception cref="ArgumentException">The view has no record panel, a field or column is undeclared or listed twice, or a
+    /// field has the identity of a view column.</exception>
+    /// <remarks>Record field identities never equal column identities: one read check (<c>canRead</c>) covers record fields and
+    /// columns' drawer values by identity, so a shared identity would let one decision answer for both.</remarks>
     public CanopyRecordSchema(CanopyDataSchema data, IEnumerable<CanopyRecordField> fields, IEnumerable<string>? cells = null) {
         Data = data ?? throw new ArgumentNullException(nameof(data));
         if (fields == null) throw new ArgumentNullException(nameof(fields));
         var panel = data.View.Record ?? throw new ArgumentException("View '" + data.ViewId + "' declares no record panel (Record).", nameof(data));
         var declared = new HashSet<string>(StringComparer.Ordinal);
         foreach (var field in panel.Fields) if (field != null) declared.Add(field.Id);
+        var columns = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var column in data.View.Columns) columns.Add(column.Id);
         var list = new List<CanopyRecordField>();
         foreach (var field in fields) {
             if (field == null) throw new ArgumentException("A record schema cannot list a null field.", nameof(fields));
             if (!declared.Contains(field.Id)) throw new ArgumentException("Field '" + field.Id + "' is not a record field of view '" + data.ViewId + "'.", nameof(fields));
+            if (columns.Contains(field.Id)) throw new ArgumentException("Record field '" + field.Id + "' has the identity of a column.", nameof(fields));
             if (_byId.ContainsKey(field.Id)) throw new ArgumentException("Field '" + field.Id + "' is listed twice.", nameof(fields));
             _byId.Add(field.Id, field);
             list.Add(field);
         }
-        var columns = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var column in data.View.Columns) columns.Add(column.Id);
         var cellList = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         if (cells != null) foreach (var id in cells) {

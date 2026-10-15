@@ -26,9 +26,11 @@ namespace CanopyX.Data;
 /// </code>
 /// <para>
 /// Collections, timelines and change lists read the child rows a navigation of the record reaches, always through the record
-/// the caller's query found. A navigation that reaches other records (related records, peers) shows what it reaches: when
-/// those records have a scope of their own, restrict the navigation in its expression or leave such fields out of the map.
-/// The map is frozen when <see cref="Schema"/> is first read.
+/// the caller's query found. A navigation that reaches other records of this grid is kept within the caller's grid query by
+/// default: a link into this grid, and a collection of the grid's own record type, show only records that query reads
+/// (opt out by name with <c>withinGrid: false</c> or <see cref="CanopyRecordListMap{TChild}.Unscoped"/>). A navigation that
+/// reaches records of another kind shows what it reaches: when those records have a scope of their own, restrict the
+/// navigation in its expression or leave such fields out of the map. The map is frozen when <see cref="Schema"/> is first read.
 /// </para>
 /// </remarks>
 public sealed class CanopyRecordMap<T> {
@@ -55,7 +57,8 @@ public sealed class CanopyRecordMap<T> {
     public CanopyColumnMap<T> Columns { get; }
 
     /// <summary>Gets the record allow-list of the mapped fields, freezing the map.</summary>
-    /// <exception cref="InvalidOperationException">The column map has no key, or its key type cannot be looked up from text.</exception>
+    /// <exception cref="InvalidOperationException">The column map has no key, its key type cannot be looked up from text, or a
+    /// link kept within the grid has a key of another type.</exception>
     public CanopyRecordSchema Schema {
         get {
             if (_schema != null) return _schema;
@@ -63,7 +66,7 @@ public sealed class CanopyRecordMap<T> {
             if (!RecordKeys.Supported(Columns.KeyExpression!.ReturnType)) throw new InvalidOperationException("Records are looked up by the column map's key, which must be text, a GUID or an integer.");
             foreach (var link in _fields.OfType<RecordValueMap<T>>()) {
                 if (link.ScopeTarget != null && !RecordScope.Comparable(link.ScopeTarget.ReturnType, Columns.KeyExpression.ReturnType))
-                    throw new InvalidOperationException("Link '" + link.Id + "' kept within the grid needs a key of the grid key's type.");
+                    throw new InvalidOperationException("Link '" + link.Id + "' into this grid is kept within it and needs a key of the grid key's type.");
             }
             var schema = new CanopyRecordSchema(data, _fields.Select(item => item is RecordChildMap<T> child && child.Collection
                 ? CanopyRecordField.Collection(item.Id, child.Size) : CanopyRecordField.Value(item.Id)), _cells.Select(cell => cell.Id));
@@ -101,19 +104,27 @@ public sealed class CanopyRecordMap<T> {
     /// <param name="id">The record panel field identity (a text field).</param>
     /// <param name="target">The related record's key; null is an empty field.</param>
     /// <param name="text">The link's text; null or empty shows the related record's identity.</param>
-    /// <param name="view">The grid that holds the related record; null for this grid.</param>
-    /// <param name="withinGrid">True shows the link (key and text) only when the related record belongs to the caller's grid
-    /// query (<c>source.Any(visible =&gt; visible.Key == key)</c>), so a link never reveals a record outside the caller's scope;
-    /// otherwise the field is empty. Only for links into this grid, with a key of the grid key's type.</param>
+    /// <param name="view">The grid that holds the related record; null (or this grid's identity) for this grid.</param>
+    /// <param name="withinGrid">Whether the link (key and text) shows only when the related record belongs to the caller's
+    /// grid query (<c>source.Any(visible =&gt; visible.Key == key)</c>); otherwise the field is empty. Null, the default, keeps
+    /// a link into this grid within it and leaves a link into another grid as it is. True requires a link into this grid.
+    /// False is an explicit opt-out for a link into this grid: it answers the related record's identity and text even when
+    /// the caller's query cannot read that record, which reveals records outside the caller's scope; use it only when every
+    /// caller may know every related record.</param>
     /// <returns>This map.</returns>
-    public CanopyRecordMap<T> Link<TKey>(string id, Expression<Func<T, TKey>> target, Expression<Func<T, string?>>? text = null, string? view = null, bool withinGrid = false) {
+    /// <exception cref="ArgumentException">The field is undeclared, already mapped or not a text field, the key type is not
+    /// supported, or <paramref name="withinGrid"/> is true for a link into another grid.</exception>
+    /// <remarks>A link kept within this grid needs a key of the grid key's type; reading <see cref="Schema"/> throws otherwise.</remarks>
+    public CanopyRecordMap<T> Link<TKey>(string id, Expression<Func<T, TKey>> target, Expression<Func<T, string?>>? text = null, string? view = null, bool? withinGrid = null) {
         var declared = Declared(id);
         if (target == null) throw new ArgumentNullException(nameof(target));
         if (declared.Kind != CanopyColumnKind.Text) throw new ArgumentException("A link field is a text field.", nameof(id));
         if (!RecordKeys.Supported(typeof(TKey))) throw new ArgumentException("A related record's key is text, a GUID or an integer.", nameof(target));
         if (view != null) _ = new CanopyRecordRef("x", view);
-        if (withinGrid && view != null && view != Columns.View.Id) throw new ArgumentException("Only links into this grid can be kept within it.", nameof(withinGrid));
-        _fields.Add(new LinkMap<T>(id, target, text, view, withinGrid));
+        var thisGrid = view == null || view == Columns.View.Id;
+        if (withinGrid == true && !thisGrid) throw new ArgumentException("Only links into this grid can be kept within it.", nameof(withinGrid));
+        // Links into this grid are scoped unless the host opts out by name; links into other grids answer what they reach.
+        _fields.Add(new LinkMap<T>(id, target, text, view, withinGrid ?? thisGrid));
         return this;
     }
 
@@ -139,11 +150,16 @@ public sealed class CanopyRecordMap<T> {
     /// <param name="items">The navigation from the record to its child rows, for example <c>m =&gt; m.Software</c>.</param>
     /// <param name="configure">Maps the child key, columns, order and page size.</param>
     /// <returns>This map.</returns>
+    /// <remarks>Rows of the grid's own record type (related records, peers) are kept to the records the caller's grid query
+    /// reads, unless <see cref="CanopyRecordListMap{TChild}.Unscoped"/> opts out. Rows of other types are shown as the
+    /// navigation reaches them.</remarks>
     public CanopyRecordMap<T> Collection<TChild>(string id, Expression<Func<T, IEnumerable<TChild>>> items, Action<CanopyRecordListMap<TChild>> configure) {
         Declared(id);
         var map = new CanopyRecordListMap<TChild>();
         (configure ?? throw new ArgumentNullException(nameof(configure)))(map);
-        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id), map.Within));
+        // Records of this grid reached through a navigation stay within the caller's query unless the host opts out by name.
+        var within = map.Within ?? typeof(TChild) == typeof(T);
+        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id), within));
         return this;
     }
 

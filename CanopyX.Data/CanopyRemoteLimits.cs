@@ -27,7 +27,7 @@ public sealed class CanopyRemoteLimits {
     private int _maxRecordPageSize = 200;
     private int _maxRecordItems = 200;
     private int _maxRecordBytes = 1048576;
-    private int _maxRecordTextLength = 65536;
+    private int _maxRecordTextLength = 8192;
     private int _maxRecordOffset = 10000;
     private int _maxRecordRequestBytes = 16384;
 
@@ -94,10 +94,13 @@ public sealed class CanopyRemoteLimits {
     /// a truncated record would look complete.</remarks>
     public int MaxRecordBytes { get => _maxRecordBytes; set => _maxRecordBytes = Check(value, 1024, 67108864, nameof(MaxRecordBytes)); }
 
-    /// <summary>Gets or sets the longest text value a record answer carries, in UTF-16 code units, from 16 to 1,048,576. Default 65,536.</summary>
-    /// <remarks>Longer text in record fields, drawer values, collection cells, timelines and changes is shortened to this length
-    /// and ends with an ellipsis (…); databases read at most one character more than the limit. Identities and the record's
-    /// row (written as page rows are) are never shortened. <see cref="MaxRecordBytes"/> still bounds the whole answer.</remarks>
+    /// <summary>Gets or sets the longest text value a record answer carries, in UTF-16 code units, from 16 to 1,048,576. Default 8,192.</summary>
+    /// <remarks>Longer text in record fields, drawer values, collection cells, timelines and changes is shortened so that it
+    /// ends with an ellipsis (…) and, ellipsis included, fits this length, never inside a surrogate pair; databases read at
+    /// most one character more than the limit. The endpoint applies the bound to every record provider's answer, custom ones
+    /// included. Identities, link keys and the record's row (written as page rows are) are never shortened.
+    /// <see cref="MaxRecordBytes"/> still bounds the whole answer: answers are built before they are measured, so the largest
+    /// answer a record endpoint builds grows with this length times the mapped collections' rows and columns.</remarks>
     public int MaxRecordTextLength { get => _maxRecordTextLength; set => _maxRecordTextLength = Check(value, 16, 1048576, nameof(MaxRecordTextLength)); }
 
     /// <summary>Gets or sets the largest offset of a collection page, from 0 to 10,000,000. Default 10,000.</summary>

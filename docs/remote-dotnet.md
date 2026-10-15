@@ -305,7 +305,7 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxRecordPageSize` (rows of a collection page, and first rows of each collection in a whole record) | 200 | 10,000 |
 | `MaxRecordItems` (timeline events or changes of one record field) | 200 | 10,000 (changes 512) |
 | `MaxRecordBytes` (one serialized record answer; refused, never cut short) | 1 MiB | — |
-| `MaxRecordTextLength` (one text value of a record answer; longer text ends with an ellipsis) | 65,536 | — |
+| `MaxRecordTextLength` (one text value of a record answer, held for every provider; longer text ends with an ellipsis and fits the limit) | 8,192 | — |
 | `MaxRecordOffset` (offset of a collection page) | 10,000 | — |
 | `MaxRecordRequestBytes` (one record request body, within `MaxRequestBytes`) | 16 KiB | — |
 
@@ -533,7 +533,7 @@ panel.Fields.Add(new CanopyColumn("rack", "Machines in the same rack"));
 var records = new CanopyRecordMap<Machine>(map)
     .Field("serial", m => m.SerialNumber)
     .Field("purchased", m => m.PurchasedOn)
-    .Link("replaces", m => m.ReplacesId, m => m.Replaces!.Name, withinGrid: true)   // empty when the caller cannot read it
+    .Link("replaces", m => m.ReplacesId, m => m.Replaces!.Name)   // a link into this grid: empty when the caller cannot read it
     .Collection("software", m => m.Software, list => list.Key(s => s.Id).OrderBy(s => s.Name)
         .Column(new CanopyColumn("name", "Program"), s => s.Name)
         .Column(new CanopyColumn("installed", "Installed") { Kind = CanopyColumnKind.DateTime }, s => s.InstalledOn)
@@ -542,16 +542,16 @@ var records = new CanopyRecordMap<Machine>(map)
         .Summary(e => e.Summary).Actor(e => e.Technician).Kind(e => e.Kind, kind => kind == "Failure" ? CanopyTone.Danger : CanopyTone.Neutral))
     .Changes("changes", m => m.Changes, changes => changes.Key(c => c.Id).Name(c => c.Setting)
         .Before(c => c.Before).After(c => c.After).OrderBy(c => c.At, descending: true))
+    // Machines of this grid: by default only those the caller's query reads are shown (and counted).
     .Collection("rack", m => m.Rack!.Machines, list => list.Key(peer => peer.Id).OrderBy(peer => peer.Name)
-        .Column(new CanopyColumn("name", "Machine"), peer => peer.Name).Target("machines")
-        .WithinGrid());                                                             // only machines the caller can read
+        .Column(new CanopyColumn("name", "Machine"), peer => peer.Name).Target("machines"));
 
 // 3. The endpoints: the record map carries the column map, and the record route looks records up through the same query
 //    callback as the grid.
 app.MapCanopyRemote("/api/machines", Readable, records, options => {
     options.AuthorizationPolicy = "Inventory.Read";
     options.CanReadRecordField = (http, field) => field != "serial" || http.User.IsInRole("Inventory.Assets");
-    options.RecordEndpoint = route => route.RequireRateLimiting("records");
+    options.RecordEndpoint = route => route.RequireRateLimiting("records");   // limit the record route (see Safety)
 });
 
 // 4. The page script: a record schema wires the grid source's record hook to the route.
@@ -564,9 +564,9 @@ declared view column; nothing else is reachable.
 | Method | Answer | Notes |
 | --- | --- | --- |
 | `Field(id, value, format?)` | a scalar field | Text, booleans, enumerations, numbers and dates, whose kind fits the field's as column values do; `format` builds the cell (display text, tone, badges). |
-| `Link(id, key, text?, view?, withinGrid?)` | `CanopyCell.Link` | A related record: no key is an empty field, no text shows the identity; `view` names another grid on the page. `withinGrid: true` (links into this grid) shows the link only when the related record belongs to the caller's query, otherwise an empty field. |
+| `Link(id, key, text?, view?, withinGrid?)` | `CanopyCell.Link` | A related record: no key is an empty field, no text shows the identity; `view` names another grid on the page. A link into this grid (no `view`, or this grid's) shows only when the related record belongs to the caller's query, otherwise it is an empty field, and its key must have the grid key's type. `withinGrid: false` opts out and reveals related records outside the caller's scope; links into other grids show what they reach. |
 | `Cell(column, value, format?)` | `cells` | A fuller value of a grid column for the drawer, for example a whole list whose grid cell shows a count. |
-| `Collection(id, items, list => …)` | `CanopyRecordList` | `Key` (unique among the rows, the row identity and the last order key), `Column(column, value, format?)`, `OrderBy` (missing values last), `PageSize` (default 50), `PageLength`, `Target(view, column?)` so rows open their records and "Open all in grid" filters that grid, `WithinGrid()` to keep rows of the grid's own record type to those the caller's query reads. Rows without a key are left out. |
+| `Collection(id, items, list => …)` | `CanopyRecordList` | `Key` (unique among the rows, the row identity and the last order key), `Column(column, value, format?)`, `OrderBy` (missing values last), `PageSize` (default 50), `PageLength`, `Target(view, column?)` so rows open their records and "Open all in grid" filters that grid. Rows of the grid's own record type are kept to those the caller's query reads (and so is the total); `Unscoped()` opts out and reveals records outside the caller's scope. Rows of other types show what the navigation reaches. Rows without a key are left out. |
 | `Timeline(id, items, events => …)` | `CanopyCell.Timeline` | `Key`, `Time`, `Summary` (blank shows an em dash), `Actor`, `Kind` with a tone, newest first unless `OldestFirst`, missing times last, `Limit` (default 50). |
 | `Changes(id, items, changes => …)` | `CanopyCell.Diff` | `Key`, `Name`, `Before`, `After`, `OrderBy`, `Limit` (default 50, at most 512). |
 
@@ -604,8 +604,11 @@ Records are found by the column map's key, which must be text, a GUID or an inte
    by the column's collation in a database and ordinally in memory; the child key decides every tie. Child rows without a key
    (null, or empty text) are left out of the rows and the total.
 6. **Text.** Text in record fields, drawer values, collection cells, timelines and changes longer than `MaxRecordTextLength`
-   is shortened to it and ends with an ellipsis (…); a database reads at most one character more. Identities and the row
-   are never shortened.
+   (8,192 by default) is shortened so that it ends with an ellipsis (…) and, ellipsis included, fits the limit, never inside
+   a surrogate pair; a database reads at most one character more, enough to tell longer text apart. The handler applies the
+   same bound to every provider's answer, custom `ICanopyRecordProvider` implementations included (values, display text,
+   tooltips, badges, list items, object fields, collection rows, events and changes). Identities, link keys and the row are
+   never shortened.
 7. **Answer.** The handler checks the provider's answer and fails the request (500) instead of sending a field or drawer
    value that was not asked for, more rows or items than allowed, a collection whose total is below its rows or whose page
    size the endpoint would refuse, or a row of another record; then it writes the document with
@@ -624,27 +627,37 @@ rejects, so the drawer shows the message with Retry; a failed Load more says so 
 
 - **Scope.** The lookup composes on the query callback, so a record a caller cannot see in the grid cannot be opened, and
   child rows come only through it. A navigation that reaches *other* records of the grid (related records, rack peers, a
-  replaced record's name) would show what it reaches, so keep it within the grid: `WithinGrid()` on such a collection keeps
-  its rows (and its total) to records the caller's query reads, and `Link(..., withinGrid: true)` answers an empty field for
-  a related record outside it. Both test `source.Any(visible => visible.Key == key)` on the query callback (an `EXISTS` key
-  lookup in a database). Navigations to records of other kinds with a scope of their own need the restriction in their
-  expression, `CanReadRecordField`, or leaving the field out of the map.
+  replaced record's name) is kept within the grid by default: a collection of the grid's own record type keeps its rows
+  (and its total) to records the caller's query reads, and a link into this grid answers an empty field for a related
+  record outside it. Both test `source.Any(visible => visible.Key == key)` on the query callback (an `EXISTS` key lookup per
+  row or link in a database). Opting out is explicit and named: `Unscoped()` on a collection and `withinGrid: false` on a
+  link answer records outside the caller's scope, so use them only when every caller may see every record they reach.
+  Navigations to records of other kinds (links into other grids, collections of other types) show what they reach: when
+  those records have a scope of their own, restrict them in their expression, with `CanReadRecordField`, or leave the field
+  out of the map.
 - **Keys.** The column map's key must be unique under the store's own comparison: a text key in a case-insensitive column
   needs values that differ beyond case, or two records answer one identity and the request fails as a server error.
 - **Fields.** Only mapped fields are read; `CanReadRecordField` hides whole fields and drawer values per caller (record
   field identities never equal column identities). Grid columns, and so the record's `row`, follow the column map exactly
   as page rows do: leave out of the map what a caller must not read.
 - **Bounds.** Record request bodies are bounded by `MaxRecordRequestBytes` (16 KiB); answers by `MaxRecordPageSize`,
-  `MaxRecordItems`, `MaxRecordTextLength` and `MaxRecordBytes`, so the largest answer the endpoint builds is the mapped
-  collections' rows times their columns of bounded text. A record request is a key lookup plus one count and one window per
+  `MaxRecordItems`, `MaxRecordTextLength` and `MaxRecordBytes`. An answer is built in memory before `MaxRecordBytes` is
+  checked, so the largest answer the endpoint builds is the mapped collections' rows times their columns of bounded text
+  (an answer whose text alone exceeds `MaxRecordBytes` is refused before it is serialized). Keep `MaxRecordTextLength`
+  and `MaxRecordPageSize` near what the drawer shows. A record request is a key lookup plus one count and one window per
   collection, so its cost does not grow with the table; offsets into one record's collection cost their distance, up to
-  `MaxRecordOffset`. Limit the request rate with `options.RecordEndpoint = route => route.RequireRateLimiting(...)`.
+  `MaxRecordOffset`.
+- **Rate limiting.** Rate-limit the record route in production: it is cheap per request but answers on demand, so an
+  unthrottled caller can make the server build many bounded answers. Register a policy with `AddRateLimiter` and
+  `UseRateLimiter`, then apply it with `options.RecordEndpoint = route => route.RequireRateLimiting("records")`.
 - **Errors** never echo the identity, the field or other request text.
 
 **Other back ends.** `ICanopyRecordProvider` is the seam for stores without a LINQ provider: describe the served fields with
 a `CanopyRecordSchema` and answer each `CanopyRecordRequest` with a `CanopyGridRecord` (null when the caller has no such
 record), following the contract above; `CanopyInMemoryRecordProvider<T>` is the reference implementation the tests compare
-EF Core and LINQ to objects with.
+EF Core and LINQ to objects with. The handler checks the answer's shape and shortens its text to `MaxTextLength` whatever
+the provider, but it cannot scope it: a custom provider keeps related records within the caller's scope itself. A
+hand-built `CanopyRecordSchema` refuses a record field whose identity is a column's, as the record map does.
 
 ```csharp
 var schema = new CanopyRecordSchema(map.Schema, new[] { CanopyRecordField.Value("serial"), CanopyRecordField.Collection("software", 10) });

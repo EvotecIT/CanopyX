@@ -92,8 +92,9 @@ public sealed class CanopyRecordListMap<TChild> {
         return this;
     }
 
-    /// <summary>Keeps the rows to records the caller's grid query reads: for a collection of the grid's own record type (related
-    /// records, peers), so a navigation never shows a record outside the caller's scope. Its total counts only those rows.</summary>
+    /// <summary>Keeps the rows to records the caller's grid query reads, so a navigation never shows a record outside the
+    /// caller's scope; its total counts only those rows. This is the default for a collection of the grid's own record type
+    /// (related records, peers); calling it states the default explicitly or undoes <see cref="Unscoped"/>.</summary>
     /// <returns>This map.</returns>
     /// <remarks>Each row is tested with <c>source.Any(visible =&gt; visible.Key == row.Key)</c> on the query callback, a key lookup
     /// per row in a database. Mapping it on a collection of another type throws.</remarks>
@@ -102,7 +103,20 @@ public sealed class CanopyRecordListMap<TChild> {
         return this;
     }
 
-    internal bool Within { get; private set; }
+    /// <summary>Shows every row the navigation reaches, including records of the grid's own type that the caller's grid query
+    /// does not read. An explicit opt-out of the default scoping of a collection of the grid's own record type.</summary>
+    /// <returns>This map.</returns>
+    /// <remarks>Dangerous: the rows (their identities, columns and the total) reveal records outside the caller's scope. Use
+    /// it only when every caller may see every record the navigation reaches, or when the navigation's expression already
+    /// restricts it to the caller's scope and the per-row key lookup is not wanted. It changes nothing for a collection of
+    /// another type, whose rows are always shown as the navigation reaches them.</remarks>
+    public CanopyRecordListMap<TChild> Unscoped() {
+        Within = false;
+        return this;
+    }
+
+    /// <summary>Whether the rows are kept within the grid: true or false when set, null for the default (scoped for the grid's own type).</summary>
+    internal bool? Within { get; private set; }
 
     internal ChildSpec<TChild> Build(string field) {
         var key = _key ?? throw new InvalidOperationException("Collection '" + field + "' needs a child key (Key).");
