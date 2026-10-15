@@ -178,8 +178,7 @@ public static partial class CanopyStaticHtml {
         for (var index = 0; index < columns.Count; index++) {
             var text = new StringBuilder();
             var column = columns[index];
-            CanopyCell? cell = null;
-            var hasCell = node.HasCells && node.Cells.TryGetValue(column.Id, out cell);
+            var display = TreeCellText(node, column, index == 0, labels, out var cell);
 
             var style = styles.Cell + Align(column);
             if (index == 0) {
@@ -200,7 +199,7 @@ public static partial class CanopyStaticHtml {
                 AppendVisibleText(html, checkState == "mixed" ? "▣" : checkState == "true" ? "☑" : "☐", text);
                 html.Append("</span> "); text.Append(' ');
             }
-            AppendVisibleText(html, index == 0 && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty, text);
+            AppendVisibleText(html, display, text);
             if (index == 0 && node.HasBadges) {
                 AppendBadges(html, node.Badges, styles, text);
             }
@@ -223,6 +222,13 @@ public static partial class CanopyStaticHtml {
 
         html.Append("</tr>");
         return printedCells.AsReadOnly();
+    }
+
+    /// <summary>Resolves a tree cell once, using its label only for an absent identity cell; explicit null stays empty.</summary>
+    private static string TreeCellText(CanopyNode node, CanopyColumn column, bool first, CanopyLabels labels, out CanopyCell? cell) {
+        cell = null;
+        var hasCell = node.HasCells && node.Cells.TryGetValue(column.Id, out cell);
+        return first && !hasCell ? node.Label : cell?.DisplayText(column.Kind, labels) ?? string.Empty;
     }
 
     private static void AppendBadges(StringBuilder html, IEnumerable<CanopyBadge> badges, CanopyStaticStyles styles, StringBuilder? text = null) {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -75,6 +76,7 @@ public sealed partial class CanopyRemoteHandler {
         Own(request);
         var revision = await RevisionAsync(request.Revision, cancellationToken).ConfigureAwait(false);
         var result = await Provider.QueryAsync(request, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         if (request.Offset > result.Matched) throw new CanopyRequestException(CanopyRequestError.OffsetOutOfRange, "The page starts beyond the matching rows.");
         var expected = Math.Min(request.Limit, result.Matched - request.Offset);
         // Records written between the count and the read change the window; the client reloads instead of mixing snapshots.
@@ -100,6 +102,7 @@ public sealed partial class CanopyRemoteHandler {
         Own(request.Query);
         var revision = await RevisionAsync(request.Query.Revision, cancellationToken).ConfigureAwait(false);
         var result = await Provider.FacetAsync(request, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         var page = new CanopyGridFacetPage(Schema.ViewId, revision, request.Column.Id, result.Matched, result.TotalValues) {
             Search = request.Search, IncludeCurrentFilter = request.IncludeCurrentFilter
         };
@@ -131,8 +134,9 @@ public sealed partial class CanopyRemoteHandler {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
         if (format == null || !_formats.TryGetValue(format, out var writer)) throw new CanopyRequestException(CanopyRequestError.UnknownFormat, "The export format is not available.");
-        await RevisionAsync(request.Revision, cancellationToken).ConfigureAwait(false);
+        var revision = await RevisionAsync(request.Revision, cancellationToken).ConfigureAwait(false);
         var count = await Provider.CountAsync(request.Query, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         if (count > Options.Limits.MaxExportRows) throw CanopyRequestException.Limit("The export has more rows than this endpoint allows.");
         if (request.Query.Ids != null && count != request.Query.Ids.Count)
             throw new CanopyRequestException(CanopyRequestError.InvalidExport, "Some selected records are not in the dataset.");
@@ -141,15 +145,19 @@ public sealed partial class CanopyRemoteHandler {
         var query = request.Query.WithWindow(0, count);
         var bound = request.WithQuery(query);
         return new CanopyExportJob(bound, writer, count, async (output, token) => {
+            // A prepared job may be written later, after its captured revision has already changed.
+            await RevisionAsync(revision, token).ConfigureAwait(false);
             var read = new int[1];
-            await writer.WriteAsync(new CanopyExportContext(bound, Counted(Provider.ReadAsync(query, token), read), count), output, token).ConfigureAwait(false);
-            // A store that changed after counting yields fewer records; the file is then incomplete and must not look finished.
+            await writer.WriteAsync(new CanopyExportContext(bound, Counted(Provider.ReadAsync(query, token), read, token), count), output, token).ConfigureAwait(false);
+            // Changes can retain the same count. Fail an already streaming file rather than report it as complete.
+            await RevisionAsync(revision, token).ConfigureAwait(false);
             if (read[0] != count) throw new CanopyRequestException(CanopyRequestError.StaleRevision, "The records changed while the export was written.");
         });
     }
 
-    private static async IAsyncEnumerable<CanopyGridRow> Counted(IAsyncEnumerable<CanopyGridRow> rows, int[] read) {
-        await foreach (var row in rows.ConfigureAwait(false)) {
+    private static async IAsyncEnumerable<CanopyGridRow> Counted(IAsyncEnumerable<CanopyGridRow> rows, int[] read, [EnumeratorCancellation] CancellationToken cancellationToken) {
+        await foreach (var row in rows.WithCancellation(cancellationToken).ConfigureAwait(false)) {
+            cancellationToken.ThrowIfCancellationRequested();
             read[0]++;
             yield return row;
         }
@@ -160,7 +168,9 @@ public sealed partial class CanopyRemoteHandler {
     }
 
     private async Task<string> RevisionAsync(string? expected, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
         var revision = await Provider.GetRevisionAsync(cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(revision)) throw new InvalidOperationException("The data provider returned an empty revision.");
         if (expected != null && expected != revision) throw new CanopyRequestException(CanopyRequestError.StaleRevision, "The data changed; reload the grid.");
         return revision;

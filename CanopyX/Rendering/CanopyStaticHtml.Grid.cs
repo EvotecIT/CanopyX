@@ -147,8 +147,10 @@ public static partial class CanopyStaticHtml {
         if (detail is CanopyGridRowsDetail rows && definition.View != null) {
             var columns = definition.View.Columns.Where(column => !column.Hidden).ToArray();
             var table = new CanopyTableDetail(definition.Label).AddColumns(columns.Select(column => column.Title).ToArray());
-            foreach (var row in rows.Rows.Take(remaining)) table.AddRow(columns.Select(column => row.Cells.TryGetValue(column.Id, out var cell) && cell != null ?
-                new CanopyCell(cell.DisplayText(column.Kind, labels)) { Tone = cell.Tone } : new CanopyCell()).ToArray());
+            foreach (var row in rows.Rows.Take(remaining)) table.AddRow(columns.Select(column => {
+                row.Cells.TryGetValue(column.Id, out var cell);
+                return ProjectStaticCell(cell, cell?.DisplayText(column.Kind, labels) ?? string.Empty);
+            }).ToArray());
             remaining -= table.Rows.Count;
             if (table.Rows.Count < rows.Rows.Count) overflow = DetailOverflow(table.Rows.Count, rows.Rows.Count, settings, labels);
             return table;
@@ -162,8 +164,10 @@ public static partial class CanopyStaticHtml {
             while (pending.Count > 0) {
                 var (node, level) = pending.Pop();
                 total++;
-                if (table.Rows.Count < remaining) table.AddRow(columns.Select((column, index) => index == 0 ? new CanopyCell(new string('\u00A0', level * 2) + node.Label) :
-                    node.Cells.TryGetValue(column.Id, out var cell) && cell != null ? new CanopyCell(cell.DisplayText(column.Kind, labels)) : new CanopyCell()).ToArray());
+                if (table.Rows.Count < remaining) table.AddRow(columns.Select((column, index) => {
+                    var text = TreeCellText(node, column, index == 0, labels, out var cell);
+                    return ProjectStaticCell(cell, (index == 0 ? new string('\u00A0', level * 2) : string.Empty) + text);
+                }).ToArray());
                 for (var child = node.Children.Count - 1; child >= 0; child--) pending.Push((node.Children[child], level + 1));
             }
             remaining -= table.Rows.Count;
@@ -171,6 +175,13 @@ public static partial class CanopyStaticHtml {
             return table;
         }
         return detail is CanopyTableDetail || detail is CanopyPropertiesDetail || detail is CanopyHtmlDetail ? detail : null;
+    }
+
+    /// <summary>Keeps an ordinary cell's presentation while its typed value becomes formatted nested-table text.</summary>
+    private static CanopyCell ProjectStaticCell(CanopyCell? cell, string text) {
+        var projected = new CanopyCell(text) { Tone = cell?.Tone ?? CanopyTone.None, Title = cell?.Title };
+        if (cell != null && cell.HasBadges) foreach (var badge in cell.Badges) projected.Badges.Add(badge);
+        return projected;
     }
 
     private static string DetailOverflow(int shown, int total, CanopyStaticHtmlOptions settings, CanopyLabels labels) =>

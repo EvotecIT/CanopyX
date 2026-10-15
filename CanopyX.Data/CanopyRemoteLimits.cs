@@ -56,7 +56,8 @@ public sealed class CanopyRemoteLimits {
     /// <summary>Gets or sets the longest text operand in UTF-16 code units, from 1 to 65,536. Default 4,096.</summary>
     public int MaxOperandLength { get => _maxOperandLength; set => _maxOperandLength = Check(value, 1, 65536, nameof(MaxOperandLength)); }
 
-    /// <summary>Gets or sets the largest request body in bytes, from 1 KiB to 16 MiB. Default 1 MiB.</summary>
+    /// <summary>Gets or sets the largest UTF-8 request body in bytes, from 1 KiB to 16 MiB. Default 1 MiB.</summary>
+    /// <remarks>Decoded query parameter keys and values share the same UTF-8 byte budget.</remarks>
     public int MaxRequestBytes { get => _maxRequestBytes; set => _maxRequestBytes = Check(value, 1024, 16777216, nameof(MaxRequestBytes)); }
 
     /// <summary>Gets or sets the most explicit record identities in a selected export or exclusion list, from 1 to 10,000. Default 10,000.</summary>

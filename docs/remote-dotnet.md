@@ -187,6 +187,9 @@ returned by the column descriptors do not change the endpoint contract; create a
 | Exports | export request → file | Full: `filtered`, `selected` (ids or all-matching with exclusions) and `all` scopes, chosen columns, raw or display values, streamed. |
 | Cursor navigation | `gridCursorQuery` | Not served; rejected with `unsupported`. Offset navigation covers the protocol's hosted grids. |
 
+Return a stable revision that changes when the dataset changes, and keep its lookup cheap. The handler reads it before
+and after pages, facets and summaries, and checks exports after counting and around streaming. A provider that always
+returns the same revision, such as `live`, does not provide a snapshot guarantee.
 ## Text, numbers and dates
 
 The protocol defines exact rules (see [Filter semantics](data-protocol.md#flat-grid-documents)): text matching is
@@ -259,6 +262,9 @@ view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
   its revision. The offset is zero; the accepted limit, search, predicate shape and operands are retained, and the
   effective grouping levels lead the sort. For code-built requests, an unused summary limit outside 1–10,000 is echoed
   as the view's page size. Ignored input fields do not become part of the response.
+  Typed summaries return `unsupported` before provider access for constant filters, identity restrictions, or grouping
+  overrides that a fixed or ungrouped view cannot express. These shapes remain supported in ordinary typed queries and
+  direct provider requests; use runtime grouping for query-owned grouping levels.
 
 ## Safety
 
@@ -391,6 +397,8 @@ records from the provider straight to the response, never materializing the resu
   and are added to `CanopyRemoteOptions.ExportFormats`. `CanopyExportContext` supplies the ordered records and
   `GetValue`/`GetText` helpers that respect the request's value mode.
 
+A prepared export is checked again before writing. If the revision changes while streaming, the job fails and the
+ASP.NET Core host aborts a response that has already started. Other hosts must discard a file whose `WriteAsync` fails.
 ## Saving edits
 
 A grid with editable columns (`CanopyColumn.Editable`, with an optional `Editor` and `Validation`) keeps changes in its

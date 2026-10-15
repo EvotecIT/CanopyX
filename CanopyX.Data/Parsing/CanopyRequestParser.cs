@@ -49,11 +49,13 @@ public static partial class CanopyRequestParser {
         if (schema == null) throw new ArgumentNullException(nameof(schema));
         limits ??= new CanopyRemoteLimits();
         var values = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        long length = 0;
+        long bytes = 0;
         foreach (var pair in parameters) {
             if (pair.Key == null || pair.Value == null) continue;
-            length += pair.Key.Length + pair.Value.Length;
-            if (length > limits.MaxRequestBytes) throw CanopyRequestException.Limit("The query string is too long.");
+            // UTF-16 length is a lower bound on UTF-8 bytes; reject oversized inputs before scanning them.
+            if (bytes + pair.Key.Length + pair.Value.Length > limits.MaxRequestBytes) throw CanopyRequestException.Limit("The query string is too long.");
+            bytes += Encoding.UTF8.GetByteCount(pair.Key) + (long)Encoding.UTF8.GetByteCount(pair.Value);
+            if (bytes > limits.MaxRequestBytes) throw CanopyRequestException.Limit("The query string is too long.");
             if (!values.TryGetValue(pair.Key, out var list)) values[pair.Key] = list = new List<string>();
             list.Add(pair.Value);
         }
@@ -121,7 +123,8 @@ public static partial class CanopyRequestParser {
 
     internal static JsonDocument Open(string json, CanopyRemoteLimits limits) {
         if (json == null) throw new ArgumentNullException(nameof(json));
-        if (json.Length > limits.MaxRequestBytes) throw CanopyRequestException.Limit("The request is too large.");
+        if (json.Length > limits.MaxRequestBytes || Encoding.UTF8.GetByteCount(json) > limits.MaxRequestBytes)
+            throw CanopyRequestException.Limit("The request is too large.");
         try {
             return JsonDocument.Parse(json, DocumentOptions);
         } catch (JsonException) {

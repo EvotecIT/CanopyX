@@ -18,12 +18,16 @@ public sealed partial class CanopyRemoteHandler {
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>The summary document. Groups are ordered by each level's order, nested level by level and given contiguous
     /// absolute ranges; their keys are unique across levels.</returns>
+    /// <exception cref="CanopyRequestException">The request contains constant filters, identity restrictions or grouping
+    /// levels that cannot be represented by this view's wire query; the error is <see cref="CanopyRequestError.Unsupported"/>.</exception>
     public async Task<string> SummaryAsync(CanopySummaryRequest request, CancellationToken cancellationToken = default) {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
         if (!Schema.HasSummary) throw new CanopyRequestException(CanopyRequestError.Unsupported, "This view declares no grouping or aggregates.");
+        RequireSummaryWireQuery(request.Query);
         var revision = await RevisionAsync(request.Query.Revision, cancellationToken).ConfigureAwait(false);
         var result = await Provider.SummarizeAsync(request, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         if (request.Levels.Count == 0 && result.Groups.Count != 0) throw new InvalidOperationException("An ungrouped summary cannot return groups.");
         var counter = new int[1];
         var groups = request.Levels.Count == 0 ? new List<OrderedGroup>() : OrderLevel(request, result.Groups, 0, result.Matched, new List<string>(), counter);
@@ -118,6 +122,29 @@ public sealed partial class CanopyRemoteHandler {
             offset += group.Count;
         }
         writer.WriteEndArray();
+    }
+
+    /// <summary>Rejects typed provider queries that the summary's owned gridQuery cannot faithfully represent.</summary>
+    private static void RequireSummaryWireQuery(CanopyDataRequest query) {
+        if (query.Ids != null || query.ExcludedIds.Count != 0)
+            throw new CanopyRequestException(CanopyRequestError.Unsupported, "The summary wire query cannot represent identity restrictions; call the data provider directly.");
+        if (!query.Schema.DynamicGrouping) {
+            var grouping = query.Schema.Grouping;
+            var matches = grouping == null ? query.Levels.Count == 0 : query.Levels.Count == 1 &&
+                query.Levels[0].Column.Id == grouping.Column && query.Levels[0].Descending == grouping.Descending && query.Levels[0].Aggregate == null;
+            if (!matches)
+                throw new CanopyRequestException(CanopyRequestError.Unsupported, "The summary wire query cannot represent these grouping levels; use runtime grouping or call the data provider directly.");
+        }
+        if (query.Filter == null) return;
+        var pending = new Stack<CanopyFilterNode>();
+        pending.Push(query.Filter);
+        while (pending.Count != 0) {
+            var node = pending.Pop();
+            if (node is CanopyFilterConstant)
+                throw new CanopyRequestException(CanopyRequestError.Unsupported, "The summary wire query cannot represent constant filters; call the data provider directly.");
+            if (node is CanopyFilterGroup group)
+                foreach (var child in group.Children) pending.Push(child);
+        }
     }
 
     private static void WriteQueryEcho(Utf8JsonWriter writer, CanopyDataRequest query, string revision) {
