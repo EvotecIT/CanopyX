@@ -198,7 +198,7 @@
     // Plugins for the grids and trees created afterwards, and the registration lazily loaded parts call (docs/plugins.md).
     use,
     registerPart
-  }, typeof createDataGrid === "function" ? { createDataGrid } : {}));
+  }, typeof GRID_API === "object" ? GRID_API : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it

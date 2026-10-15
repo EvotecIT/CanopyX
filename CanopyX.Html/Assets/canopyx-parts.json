@@ -59,6 +59,30 @@
       ]
     },
     {
+      "name": "pager",
+      "label": "pager controls",
+      "version": "cf3c1a3f74ecc62f",
+      "script": "canopyx-pager.js",
+      "style": "canopyx-pager.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "pager": true
+    },
+    {
+      "name": "enhance",
+      "label": "table enhancement",
+      "version": "edf52e5aaf59b59f",
+      "script": "canopyx-enhance.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": []
+    },
+    {
       "name": "links",
       "label": "deep links",
       "version": "4531e2678de320f2",

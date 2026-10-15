@@ -77,6 +77,13 @@ public sealed partial class CanopyDataGridView {
         }
     }
 
+    /// <summary>Gets the pager settings of a paged grid: page-size choices, which controls show, numbered pages and the result text.</summary>
+    /// <remarks>Left at their defaults they keep the built-in pager. Continuous grids ignore them.</remarks>
+    public CanopyGridPager Pager { get; } = new CanopyGridPager();
+
+    /// <summary>Whether the view writes pager settings, which the browser's pager part reads.</summary>
+    internal bool HasPager => Presentation == CanopyGridPresentation.Paged && !Pager.IsDefault;
+
     /// <summary>Gets or sets the visible page length, from 1 to 10,000. Defaults to 50 and is independent of <see cref="PageSize"/>.</summary>
     public int PageLength {
         get => _pageLength;
@@ -202,6 +209,7 @@ public sealed partial class CanopyDataGridView {
         }
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
+        if (HasPager) { writer.Name("pager"); Pager.WriteJson(writer); }
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
         if (SearchColumns.Count > 0) {
             writer.Name("searchColumns").BeginArray();
@@ -250,6 +258,7 @@ public sealed partial class CanopyDataGridView {
             throw new InvalidOperationException("Cursor navigation requires a hosted, paged grid.");
         CanopyJsonNames.TimeZone(TimeZone);
         Editing.Validate();
+        if (Presentation == CanopyGridPresentation.Paged) Pager.Validate(Source.Kind);
         ValidateRowPresentation();
         var columnIds = new HashSet<string>(StringComparer.Ordinal);
         var visible = 0; var rowHeaders = 0;

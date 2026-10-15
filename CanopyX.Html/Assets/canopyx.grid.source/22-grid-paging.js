@@ -3,7 +3,9 @@
     gridPaging: "Result pages", gridPageRange: "{first}–{last} of {count} rows",
     gridPageNumber: "Page", gridPageLength: "Rows per page", gridFirstPage: "First page",
     gridPreviousPage: "Previous page", gridNextPage: "Next page", gridLastPage: "Last page",
-    gridUnknownCount: "Result count unavailable", gridMatchedCount: "{count} matching rows", gridCursorRange: "Rows {first}–{last}"
+    gridUnknownCount: "Result count unavailable", gridMatchedCount: "{count} matching rows", gridCursorRange: "Rows {first}–{last}",
+    gridPageInfo: "Showing {first} to {last} of {count} rows", gridPageInfoFiltered: "Showing {first} to {last} of {count} rows (filtered from {total})",
+    gridPageButton: "Page {page}"
   }));
   function gridResultShape(query) { return JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]); }
 
@@ -78,7 +80,8 @@
     buildPager() {
       if (!this.paged) return;
       const pager = this.pager = h("form", "cx-grid-pager"), signal = this.lifetime.signal;
-      pager.hidden = this.opts.toolbar === false;
+      // A view with pager settings shows its pager once the pager part has rebuilt it (52-grid-pager-part.js).
+      pager.hidden = this.opts.toolbar === false || !!this.view.pager;
       pager.setAttribute("aria-label", this.labels.gridPaging);
       this.pageRange = h("span", "cx-grid-page-range"); this.pageRange.setAttribute("role", "status");
       const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error }); } };

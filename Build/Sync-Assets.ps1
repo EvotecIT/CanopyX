@@ -253,7 +253,7 @@ export default CanopyX;
     if ($Grid) {
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, enhance, grid, configure')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
@@ -358,6 +358,7 @@ $partIndex = [ordered]@{ parts = @(foreach ($build in $partBuilds) {
     if ($build.Part.sources) { $entry.sources = @($build.Part.sources) }
     if ($build.Part.presenters) { $entry.presenters = @($build.Part.presenters) }
     if ($build.Part.deepLink) { $entry.deepLink = $true }
+    if ($build.Part.pager) { $entry.pager = $true }
     if ($build.Part.requires) { $entry.requires = @($build.Part.requires) }
     $entry
 }) }

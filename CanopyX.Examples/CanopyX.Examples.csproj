@@ -25,5 +25,8 @@
     <EmbeddedResource Include="Templates\contained-grids.html" LogicalName="CanopyX.Examples.Templates.contained-grids.html" />
     <EmbeddedResource Include="Templates\column-layout.html" LogicalName="CanopyX.Examples.Templates.column-layout.html" />
     <EmbeddedResource Include="Templates\tree-parity.html" LogicalName="CanopyX.Examples.Templates.tree-parity.html" />
+    <EmbeddedResource Include="Templates\enhance-table.html" LogicalName="CanopyX.Examples.Templates.enhance-table.html" />
+    <EmbeddedResource Include="Templates\enhance-data.html" LogicalName="CanopyX.Examples.Templates.enhance-data.html" />
+    <EmbeddedResource Include="Templates\enhance-server.html" LogicalName="CanopyX.Examples.Templates.enhance-server.html" />
   </ItemGroup>
 </Project>

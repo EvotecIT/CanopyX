@@ -39,7 +39,7 @@ public static partial class CanopyHtmlAssets {
     }
 
     /// <summary>Gets the parts a flat grid loads, whose payloads a single-file page carries: the filter editor and export parts, and
-    /// the history part for status strips and sparklines.</summary>
+    /// the history part for status strips and sparklines, and the pager part for a paged view with pager settings.</summary>
     /// <param name="view">The grid definition.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
