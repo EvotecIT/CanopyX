@@ -44,6 +44,7 @@ test("readers regroup from the API, the column menu and the chips; levels travel
   await page.locator('.cx-gchip[data-cx-level="2"] .cx-gchip-direction').click();
   await expect.poll(() => page.evaluate(api + ".getGroupBy()[1].direction")).toBe("desc");
   await page.evaluate(api + ".saveView('By status')");
+  await expect(page.locator('.cx-gchip[data-cx-level="1"] .cx-gchip-order option')).toHaveText(["by value", "by Total amount", "by Average amount", "by Orders"]);
   await page.locator('.cx-gchip[data-cx-level="1"] .cx-gchip-order').selectOption("total");
   await expect.poll(() => page.evaluate(api + ".getGroupBy()[0].aggregate")).toBe("total");
   const byTotal = (await page.evaluate(api + ".getSummary()")).groups.map(group => group.aggregates.total);
@@ -125,6 +126,17 @@ test("distinct counts and plugin aggregates are computed for inline data and lab
   expect(String(failure)).toContain("no plugin computes the aggregate 'spread'");
 });
 
+test("every aggregate of one function in a column keeps the same decimals, trailing zeros included", async ({ page }) => {
+  const view = definition();
+  view.reporting.groupBy = [{ column: "region", direction: "asc" }];
+  view.rows = [["North", 2], ["North", 4], ["South", 1], ["South", 2], ["West", 2.5], ["West", 3.25]].map(([region, amount], i) =>
+    ({ id: "r" + i, cells: { order: "SO-" + i, customer: "C", region, status: "Open", amount, items: 1, placed: "2026-01-01T00:00:00Z" } }));
+  await open(page, view);
+  // The column's loaded values carry two decimals, so averages show three and sums two, in headings and in the totals row alike.
+  const texts = await page.locator(".cx-grid-group [role='gridcell']:last-child, .cx-summary-row [role='gridcell']:last-child").allTextContents();
+  expect(texts).toEqual(["sum 6.00 · avg 3.000", "sum 3.00 · avg 1.500", "sum 5.75 · avg 2.875", "sum 14.75 · avg 2.458"]);
+});
+
 test("runtime grouping keeps the inline source's facet counts", async ({ page }) => {
   const view = definition(); view.reporting.facetColumns = ["region"];
   await open(page, view);
@@ -148,9 +160,14 @@ test(`grouped orders read well at ${width} in ${theme} with no accessibility vio
   await page.setViewportSize({ width, height: width < 600 ? 844 : 900 });
   await open(page, definition(), "", theme);
   if (width < 600) {
-    // Phones keep the bar on one line and show the aggregates of columns out of view after the heading.
-    const bar = page.locator(".cx-groupbar");
-    expect(await bar.evaluate(element => element.getBoundingClientRect().height)).toBeLessThan(48);
+    // Phones wrap the bar inside its container, every chip and button in view, and show the aggregates of columns out of view after the heading.
+    const fit = await page.locator(".cx-groupbar").evaluate(bar => {
+      const box = bar.getBoundingClientRect(), host = bar.closest("[data-canopyx-host]").getBoundingClientRect();
+      const inside = [...bar.querySelectorAll(".cx-gchip,.cx-groupbar-all")].every(item => { const own = item.getBoundingClientRect();
+        return own.left >= box.left - 0.5 && own.right <= box.right + 0.5 && own.width > 0; });
+      return { scroll: bar.scrollWidth - bar.clientWidth, right: box.right - host.right, inside, chips: bar.querySelectorAll(".cx-gchip").length };
+    });
+    expect(fit).toEqual({ scroll: 0, right: expect.any(Number), inside: true, chips: 2 }); expect(fit.right).toBeLessThanOrEqual(0.5);
     await expect(headings(page).first().locator(".cx-grid-group-aggregates")).toContainText("Amount sum");
   }
   await page.locator(".cx-grid-group").first().focus();

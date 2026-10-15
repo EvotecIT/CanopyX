@@ -153,7 +153,7 @@ export type LabelName =
   | "gridRenameView" | "gridDefaultView" | "gridClearDefaultView" | "gridDefaultViewName" | "gridNoDefaultView" | "gridDefaultViewOption"
   | "gridSelection" | "gridSelectPage" | "gridSelectMatching" | "gridClearSelection" | "gridSelectionCount"
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
-  | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder" | "gridAggregateCount" | "gridAggregateSum" | "gridAggregateAverage" | "gridAggregateMinimum" | "gridAggregateMaximum" | "gridGroupBy" | "gridUngroup" | "gridGroupDrop" | "gridExpandAll" | "gridCollapseAll" | "gridExpandLevel" | "gridCollapseLevel" | "gridGroupMove" | "gridGroupSortBy" | "gridGroupSortValue" | "gridSelectGroup" | "gridAggregateDistinct" | "gridShowDetail" | "gridHideDetail" | "gridDetailOf" | "gridDetailFailed"
+  | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder" | "gridAggregateCount" | "gridAggregateSum" | "gridAggregateAverage" | "gridAggregateMinimum" | "gridAggregateMaximum" | "gridGroupBy" | "gridUngroup" | "gridGroupDrop" | "gridExpandAll" | "gridCollapseAll" | "gridExpandLevel" | "gridCollapseLevel" | "gridGroupMove" | "gridGroupSortBy" | "gridGroupSortValue" | "gridGroupSortAggregate" | "gridSelectGroup" | "gridAggregateDistinct" | "gridShowDetail" | "gridHideDetail" | "gridDetailOf" | "gridDetailFailed"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint"
   | "gridFitContent"
   | "gridUnpin"

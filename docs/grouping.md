@@ -64,8 +64,8 @@ stay together by value, so its sort entry in the query is ascending. Missing val
 
 - **The group-by bar** shows a chip per level: the column, its direction, the group order (value or an aggregate),
   collapse or expand of that level, and removal. Alt+Left and Alt+Right move a level; chips can be dragged. Expand all and
-  Collapse all close the bar. An empty bar asks the reader to drag a column header onto it. On phones the bar is one
-  scrolling line with the column, direction and removal of each level.
+  Collapse all close the bar. An empty bar asks the reader to drag a column header onto it. On phones the bar wraps and each chip keeps
+  its column, direction and removal.
 - **Column menus** offer *Group by this column* (the new innermost level) and *Stop grouping by this column*.
 - **Headers** dragged onto the bar add a level when the definition has `columnReorder` (whose move handles start the drag).
 - **Sorting** a grouped column (its header or its menu) turns its groups around.
@@ -224,6 +224,5 @@ keeping HTML payloads as text.
 ## Labels
 
 `gridGroupBy`, `gridUngroup`, `gridGroupDrop`, `gridExpandAll`, `gridCollapseAll`, `gridExpandLevel`, `gridCollapseLevel`,
-`gridGroupMove`, `gridGroupSortBy`, `gridGroupSortValue`, `gridSelectGroup`, `gridAggregateDistinct`, `gridShowDetail`,
-`gridHideDetail`, `gridDetailOf` and `gridDetailFailed` join the existing grouping and aggregate labels, with Polish, German
-and Spanish translations in the shipped packs.
+`gridGroupMove`, `gridGroupSortBy`, `gridGroupSortValue`, `gridGroupSortAggregate`, `gridSelectGroup`, `gridAggregateDistinct`, `gridShowDetail`,
+`gridHideDetail`, `gridDetailOf` and `gridDetailFailed` join the existing grouping and aggregate labels, with Polish, German, Spanish, French and Italian translations in the shipped packs.

@@ -21,6 +21,8 @@ public sealed partial class CanopyLabels {
     public string GridGroupSortBy { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the group order choice that orders groups by their value.</summary>
     public string GridGroupSortValue { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the group order choice that orders groups by an aggregate, with the aggregate's <c>{aggregate}</c> label.</summary>
+    public string GridGroupSortAggregate { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the name of a group heading's selection checkbox, with the group's <c>{group}</c> value.</summary>
     public string GridSelectGroup { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text of a distinct-count aggregate cell, with the formatted <c>{value}</c>.</summary>

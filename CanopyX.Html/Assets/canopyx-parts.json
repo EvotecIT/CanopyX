@@ -108,7 +108,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "65b85d0dbc866b43",
+      "version": "9d292c68656478fd",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [

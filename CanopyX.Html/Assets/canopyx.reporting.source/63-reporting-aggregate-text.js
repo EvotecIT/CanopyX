@@ -3,11 +3,14 @@
     distinctCount: "gridAggregateDistinct" };
   const reportingCounting = operation => operation === "count" || operation === "distinctCount";
   const AGGREGATE_FORMATS = new Map();
-  function reportingAggregateFormat(lang, digits, compact) {
-    const key = (lang || "") + "|" + digits + "|" + compact;
+  // Cell text keeps a fixed number of decimals, trailing zeros included, so every value of one function in a column (footer,
+  // headings, every level) lines up; tooltips (fixed false) show the full value without trailing zeros.
+  function reportingAggregateFormat(lang, digits, compact, fixed = true) {
+    const key = (lang || "") + "|" + digits + "|" + compact + "|" + fixed;
     let format = AGGREGATE_FORMATS.get(key);
     if (!format) {
-      const options = compact ? { notation: "compact", maximumFractionDigits: 1 } : { maximumFractionDigits: digits };
+      const options = compact ? { notation: "compact", minimumFractionDigits: 1, maximumFractionDigits: 1 } :
+        { minimumFractionDigits: fixed ? digits : 0, maximumFractionDigits: digits };
       // A value that rounds to zero shows 0, not -0; engines without signDisplay fall back to the plain options.
       try { format = new Intl.NumberFormat(lang || undefined, { ...options, signDisplay: "negative" }); }
       catch (e) { try { format = new Intl.NumberFormat(lang || undefined, options); } catch (f) { format = new Intl.NumberFormat(undefined, options); } }
@@ -32,8 +35,9 @@
       if (text.includes("e")) digits = 3; else if (dot >= 0) digits = Math.max(digits, Math.min(3, text.length - dot - 1));
       if (digits === 3) break;
     }
-    // Without loaded numbers, keep three digits and look again on the next render.
-    if (!numbers) return 3;
+    // Without loaded numbers the precision is unknown (null): values keep up to three digits without trailing zeros, and the
+    // next render looks again.
+    if (!numbers) return null;
     grid.aggregatePrecision.columns.set(column.id, digits);
     return digits;
   }
@@ -45,11 +49,11 @@
     for (const aggregate of aggregates) {
       const value = values[aggregate.id];
       if (value === null || value === undefined) continue;
-      const digits = reportingCounting(aggregate.operation) ? 0 : aggregate.operation === "average" ? Math.min(3, precision + 1) : precision;
-      const shown = reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6).format(value);
+      const known = precision !== null, digits = reportingCounting(aggregate.operation) ? 0 : !known ? 3 : aggregate.operation === "average" ? Math.min(3, precision + 1) : precision;
+      const shown = reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6, known || reportingCounting(aggregate.operation)).format(value);
       const label = AGGREGATE_LABELS[aggregate.operation];
       text.push(fill(label ? grid.labels[label] : grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", { value: shown }));
-      titles.push(aggregate.label + ": " + reportingAggregateFormat(grid.lang, 3, false).format(value));
+      titles.push(aggregate.label + ": " + reportingAggregateFormat(grid.lang, 3, false, false).format(value));
     }
     return { text: text.join(" · "), title: titles.join(" · ") };
   }

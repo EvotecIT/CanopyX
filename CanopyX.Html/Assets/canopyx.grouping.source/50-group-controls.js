@@ -104,7 +104,7 @@
       if (aggregates.length) {
         const order = h("select", "cx-gchip-order"); order.setAttribute("aria-label", column.title + ": " + this.labels.gridGroupSortBy);
         const option = (value, text) => { const item = h("option"); item.value = value; setText(item, text); order.appendChild(item); };
-        option("", this.labels.gridGroupSortValue); aggregates.forEach(item => option(item.id, item.label));
+        option("", this.labels.gridGroupSortValue); aggregates.forEach(item => option(item.id, fill(this.labels.gridGroupSortAggregate, { aggregate: item.label })));
         order.value = level.aggregate || "";
         order.addEventListener("change", () => change(levels.map(item => {
           if (item !== level) return item;

@@ -8,7 +8,7 @@
     gridGroupOrder: "Group order is fixed by this report", gridGroupBy: "Group by this column", gridUngroup: "Stop grouping by this column",
     gridGroupDrop: "Drag a column header here to group rows", gridExpandAll: "Expand all", gridCollapseAll: "Collapse all",
     gridExpandLevel: "Expand level {level}", gridCollapseLevel: "Collapse level {level}", gridGroupMove: "Alt+Left and Alt+Right move this level",
-    gridGroupSortBy: "Sort groups by", gridGroupSortValue: "Value", gridSelectGroup: "Select the records of {group}",
+    gridGroupSortBy: "Sort groups by", gridGroupSortValue: "by value", gridGroupSortAggregate: "by {aggregate}", gridSelectGroup: "Select the records of {group}",
     gridAggregateCount: "count {value}", gridAggregateSum: "sum {value}", gridAggregateAverage: "avg {value}", gridAggregateMinimum: "min {value}",
     gridAggregateMaximum: "max {value}", gridAggregateDistinct: "distinct {value}", gridShowDetail: "Show details", gridHideDetail: "Hide details", gridDetailOf: "Details of {record}",
     gridDetailFailed: "Details could not load: {error}"

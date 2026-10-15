@@ -34,7 +34,7 @@ export function definition(extra = {}) {
     columns: [{ id: "order", title: "Order", kind: "text", sortable: true }, { id: "customer", title: "Customer", kind: "text", sortable: true },
       { id: "region", title: "Region", kind: "text", sortable: true }, { id: "status", title: "Status", kind: "text", sortable: true },
       { id: "placed", title: "Placed", kind: "datetime", sortable: true }, { id: "items", title: "Lines", kind: "number", sortable: true },
-      { id: "amount", title: "Amount", kind: "number", sortable: true, numberFormat: { decimals: 1 } }],
+      { id: "amount", title: "Amount", kind: "number", sortable: true }],
     rows: orders(), ...extra };
 }
 

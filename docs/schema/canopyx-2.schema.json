@@ -1331,6 +1331,7 @@
             "gridGroupMove": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupSortBy": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupSortValue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupSortAggregate": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectGroup": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateDistinct": { "$ref": "#/$defs/accessibleLabel" },
             "gridShowDetail": { "$ref": "#/$defs/accessibleLabel" },
