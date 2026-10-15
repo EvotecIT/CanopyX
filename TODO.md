@@ -51,7 +51,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 
-Consumers: the TestimoX GPO explorer (both views, the GPO list and the scope tree; TestimoX plan section 10.2) and the replacement for the HtmlForgeX `FancyTree` component (jQuery plus the fancytree plugin today).
+Consumers: the TestimoX GPO explorer (both views, the GPO list and the scope tree; TestimoX plan section 10.2), and HtmlForgeX, where the CanopyX tree is offered as a second tree choice next to the existing `FancyTree` component (jQuery plus the fancytree plugin), which stays.
 
 Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 
@@ -84,7 +84,7 @@ Gate:
 - In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within 48 KB gzip.
 - With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was patched Wunderbaum's median in the spike (56 of about 900).
 - In TestimoX, measured there on its own fixture: the GPO explorer design packet renders both views on CanopyX with the L fixture (5 domains, 5,000 GPOs, 200,000 links) within the TestimoX plan section 7.2 budgets.
-- Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) renders on CanopyX with the same content.
+- Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) can also be rendered on CanopyX with the same content, so authors can choose either tree.
 
 If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the TestimoX plan. Its fallback, patched Wunderbaum, would live in the consumer behind its own API; CanopyX does not vendor a third-party grid.
 
@@ -173,16 +173,18 @@ Consumer: the TestimoX Monitoring service, which serves the GPO explorer live fr
 
 Gate: the live GPO explorer answers each expand and search within 400 ms round trip at L (TestimoX plan section 7.2).
 
-## HtmlForgeX Bridge and FancyTree Removal
+## HtmlForgeX Bridge: CanopyX as a Tree Choice
 
-Consumers: HtmlForgeX documents that use `FancyTree` today, and TestimoX reports that HtmlForgeX renders. The work happens in HtmlForgeX and needs CanopyX 0.1; this entry tracks it because it is the first external consumer of `CanopyX.Html`.
+Consumers: HtmlForgeX documents and the TestimoX reports that HtmlForgeX renders. The work happens in HtmlForgeX and needs CanopyX 0.1; this entry tracks it because it is the first external consumer of `CanopyX.Html`.
+
+Owner decision (2026-10-15): HtmlForgeX offers choices. `FancyTree` stays and the CanopyX tree is added beside it; nothing is deprecated or removed.
 
 - [ ] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX): registers the CanopyX assets as a library, maps HtmlForgeX design tokens onto the CanopyX base colours, and emits the fragment.
-- [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) and host-specific hooks, so inventory those contracts before migration.
-- [ ] Delete the component and its jQuery and fancytree assets.
+- [ ] Offer the CanopyX tree alongside `FancyTree`, so authors can pick either. Document where each fits; for example, `FancyTree`'s `SelectMode` and free-form `Extensions` reach fancytree features (tri-state checkboxes, drag and drop, editing) that CanopyX may not cover yet.
+- [ ] Keep `FancyTree` and its jQuery and fancytree assets maintained, and load them only on pages that use it.
 - [ ] Qualify the bridge's `StaticOutline.Only` output for email and Office delivery. HtmlForgeX has no separate `HtmlForgeX.Email` project; the bridge emits a script-free outline table through CanopyX's static renderer. Actual email-client rendering remains a separate consumer check.
 
-Gate: HtmlForgeX ships no fancytree asset, and a tree authored through the bridge has a script-free outline table with literal colours and inline styles for email and Office delivery. Actual email-client rendering requires that consumer's checks.
+Gate: both trees work side by side on one page without asset conflicts, and a tree authored through the bridge has a script-free outline table with literal colours and inline styles for email and Office delivery. Actual email-client rendering requires that consumer's checks.
 
 ## 0.3 Data Grid View
 
