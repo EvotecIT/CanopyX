@@ -62,7 +62,7 @@
       this.rowProjection = projection; this.groupProjectionKey = key;
       if (this.autoRows) this.syncRowOffsets();
       else { this.total = count * this.rowH; this.syncScrollRange(this.logicalTop()); }
-      this.grid.setAttribute("aria-rowcount", String(count + 1));
+      this.grid.setAttribute("aria-rowcount", String(count + 1 + (this.headDepth || 0)));
     },
     setGroupCollapsed(key, collapsed) {
       if (this.destroyed || this.pendingQuery || !this.summary || !this.view.reporting.grouping || typeof collapsed !== "boolean" ||

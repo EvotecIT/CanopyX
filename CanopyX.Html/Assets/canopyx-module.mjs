@@ -236,7 +236,7 @@ return false}};Object.assign(TreeGrid.prototype,ROW_SCROLLING);const ROW_VIEWPOR
 const tabRow=visibleFocus||rows.rowItem(n?rows.rowAt(top):0)||null;const fragment=document.createDocumentFragment();for(const w of want){const index=rows.indexOf(w);if(index<0)continue;let rowEl=this.rendered.get(w);if(!rowEl){rowEl=free.pop()||this.pool.pop()||h("div");fragment.appendChild(rowEl);this.rendered.set(w,rowEl)}
 if(w._v!==this.version||rowEl._w!==w){this.fillRow(rowEl,w);w._v=this.version}else if(!w.status)this.refreshRowState(rowEl,w);const y=this.scaledScroll&&(index<first||index>last)?
 (index<first?-w.hpx-viewHeight:NATIVE_HEIGHT+viewHeight):rows.rowTop(index)- shift;if(rowEl._top!==y){rowEl.style.transform="translateY("+y+"px)";rowEl._top=y}
-if(rowEl._index!==index){rowEl.setAttribute("aria-rowindex",index+2);rowEl._index=index}
+if(rowEl._index!==index){rowEl.setAttribute("aria-rowindex",index+2 +(this.headDepth||0));rowEl._index=index}
 const alt=index%2===1&&!w.status&&!w.h.detail&&(this.view.type!=="grid"||!!this.view.zebra);if(rowEl._alt!==alt){rowEl.classList.toggle("cx-alt",alt);rowEl._alt=alt}
 const tab=w===tabRow?0:-1;if(rowEl._tab!==tab){rowEl.tabIndex=tab;rowEl._tab=tab}}
 for(const rowEl of free){rowEl._w=null;this.observeDetail(rowEl,false);if(this.pool.length<200)this.pool.push(rowEl)}

@@ -71,7 +71,7 @@
           rowEl._top = y;
         }
         if (rowEl._index !== index) {
-          rowEl.setAttribute("aria-rowindex", index + 2);
+          rowEl.setAttribute("aria-rowindex", index + 2 + (this.headDepth || 0));
           rowEl._index = index;
         }
         const alt = index % 2 === 1 && !w.status && !w.h.detail && (this.view.type !== "grid" || !!this.view.zebra);

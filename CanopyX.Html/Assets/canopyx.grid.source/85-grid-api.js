@@ -17,7 +17,11 @@
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
       "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "openDetails", "scrollToRow", "retry", "closeMenus"])
-      api[name] = grid[name].bind(grid);
+      api[name] = (...args) => grid[name](...args);
+    for (const [, read, ...names] of GRID_PART_API) {
+      api[read] = (...args) => grid[read](...args);
+      for (const name of names) api[name] = (...args) => { try { return Promise.resolve(grid[name](...args)); } catch (error) { return Promise.reject(error); } };
+    }
     GRID_REPORTING.api?.(api, grid);
     Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;

@@ -59,6 +59,34 @@
       ]
     },
     {
+      "name": "column-groups",
+      "label": "column groups",
+      "version": "30a94e3fe8d50239",
+      "script": "canopyx-column-groups.js",
+      "style": "canopyx-column-groups.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "feature": "columnGroups"
+    },
+    {
+      "name": "cell-range",
+      "label": "cell ranges",
+      "version": "03ed4fb442ab5901",
+      "script": "canopyx-cell-range.js",
+      "style": "canopyx-cell-range.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "feature": "rangeSelection"
+    },
+    {
       "name": "links",
       "label": "deep links",
       "version": "4531e2678de320f2",

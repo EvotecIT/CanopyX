@@ -1,5 +1,5 @@
 {
-  "$comment": "Lazy runtime parts. Build/Sync-Assets.ps1 assembles each into canopyx-<name>.js (and .css), registers it with CanopyX.registerPart, writes the build manifest every entry point reads, and writes canopyx-parts.json, which CanopyX.Html reads to write and embed the parts. Entry points leave out every script a part lists, unless the part lists it under shared too. See docs/plugins.md.",
+  "$comment": "Lazy runtime parts. Build/Sync-Assets.ps1 assembles each into canopyx-<name>.js (and .css), registers it with CanopyX.registerPart, writes the build manifest every entry point reads, and writes canopyx-parts.json, which CanopyX.Html reads to write and embed the parts. Entry points leave out every script a part lists, unless the part lists it under shared too. feature names the view setting that makes a grid load the part (columnGroups, rangeSelection), so only those fragments carry its payload. See docs/plugins.md.",
   "parts": [
     {
       "name": "tree-tools",
@@ -90,6 +90,38 @@
       "end": "GRID_HISTORY_IMPL.render = gridRenderHistory;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/37-grid-history.js"
+      ]
+    },
+    {
+      "name": "column-groups",
+      "label": "column groups",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "feature": "columnGroups",
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
+        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.column-groups.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.column-groups.source/groups.css"
+      ]
+    },
+    {
+      "name": "cell-range",
+      "label": "cell ranges",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "feature": "rangeSelection",
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
+        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.cell-range.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.cell-range.source/range.css"
       ]
     },
     {

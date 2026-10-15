@@ -74,9 +74,9 @@ public static partial class CanopyStaticHtml {
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
         var caption = settings.Caption ?? view.Label;
         if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
-        html.Append("<thead><tr>");
-        foreach (var column in columns) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append(Align(column)).Append("\">").Append(Encode(column.Title)).Append("</th>");
-        html.Append("</tr></thead><tbody>");
+        html.Append("<thead>");
+        AppendGridHeader(html, view, columns, styles);
+        html.Append("</thead><tbody>");
         foreach (var row in rows) {
             var printedCells = new List<string>(columns.Length);
             var rowRule = CanopyGridHighlights.Find(view, row, null);
@@ -116,5 +116,36 @@ public static partial class CanopyStaticHtml {
         }
         return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
             matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue);
+    }
+
+    /// <summary>
+    /// The header rows: one row per column-group level above the column titles. A group spans its visible columns; a column
+    /// outside a group, or in a shallower one, spans down to the bottom row, as the browser draws it. Group cells are column
+    /// headers with colspan, which the table model associates with every column they cover.
+    /// </summary>
+    private static void AppendGridHeader(StringBuilder html, CanopyDataGridView view, CanopyColumn[] columns, CanopyStaticStyles styles) {
+        var paths = columns.Select(column => view.ColumnGroupPath(column.Id)).ToArray();
+        var depth = paths.Length == 0 ? 0 : paths.Max(path => path.Count);
+        for (var level = 0; level <= depth; level++) {
+            html.Append("<tr>");
+            for (var index = 0; index < columns.Length;) {
+                var path = paths[index];
+                if (level < path.Count) {
+                    var group = path[level];
+                    var end = index + 1;
+                    while (end < columns.Length && paths[end].Count > level && paths[end][level] == group) end++;
+                    html.Append("<th scope=\"col\" colspan=\"").Append(end - index).Append("\" style=\"").Append(styles.Header).Append("\">").Append(Encode(group.Title)).Append("</th>");
+                    index = end;
+                    continue;
+                }
+                if (level == path.Count) {
+                    html.Append("<th scope=\"col\"");
+                    if (depth > level) html.Append(" rowspan=\"").Append(depth - level + 1).Append('"');
+                    html.Append(" style=\"").Append(styles.Header).Append(Align(columns[index])).Append("\">").Append(Encode(columns[index].Title)).Append("</th>");
+                }
+                index++;
+            }
+            html.Append("</tr>");
+        }
     }
 }

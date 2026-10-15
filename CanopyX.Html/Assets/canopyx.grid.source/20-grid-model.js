@@ -106,7 +106,7 @@
         this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
         const hasRows = this.cursor ? page.items.length : page.matched;
         this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
-        this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1));
+        this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1 + (this.headDepth || 0)));
         this.grid.tabIndex = hasRows ? -1 : 0;
         this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader(); this.syncColumnControls();
         this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
