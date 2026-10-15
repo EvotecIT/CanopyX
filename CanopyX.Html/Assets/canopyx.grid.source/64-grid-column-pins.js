@@ -3,10 +3,13 @@
     const width=column=>column.renderWidth??column.width;
     const budget=Math.max(0,grid.grid.clientWidth-(grid.view.reporting?.minimumCenterWidth||128));
     for(const column of grid.columns)column.effectivePin="none";
-    const left=grid.cols.filter(column=>column.pin==="left"),right=grid.cols.filter(column=>column.pin==="right").reverse();
+    // The scroll layout (87-view-modes.js) pins the identity column too, when it follows the columns pinned left.
+    const pinned=grid.cols.filter(column=>column.pin==="left"),identity=grid.layoutMode==="scroll"&&grid.cols[pinned.length];
+    const left=identity?.identity&&identity.pin==="none"?[...pinned,identity]:pinned,right=grid.cols.filter(column=>column.pin==="right").reverse();
+    const pinOf=column=>left.includes(column)?"left":column.pin;
     let used=0;const stopped=[false,false];
     for(let index=0;index<Math.max(left.length,right.length);index++)for(const [side,column]of [left[index],right[index]].entries())if(column&&!stopped[side]){
-      if(used+width(column)>budget)stopped[side]=true;else{used+=width(column);column.effectivePin=column.pin;}}
+      if(used+width(column)>budget)stopped[side]=true;else{used+=width(column);column.effectivePin=pinOf(column);}}
     let start=0,end=0;
     for(const column of grid.cols){column.pinOffset=column.effectivePin==="left"?start:0;if(column.effectivePin==="left")start+=width(column);}
     for(const column of [...grid.cols].reverse())if(column.effectivePin==="right"){column.pinOffset=end;end+=width(column);}

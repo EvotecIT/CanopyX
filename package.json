@@ -53,6 +53,10 @@
     "./detail-rows.css": "./CanopyX.Html/Assets/canopyx-detail-rows.css",
     "./grouping.js": "./CanopyX.Html/Assets/canopyx-grouping.js",
     "./grouping.css": "./CanopyX.Html/Assets/canopyx-grouping.css",
+    "./highlight.js": "./CanopyX.Html/Assets/canopyx-highlight.js",
+    "./highlight.css": "./CanopyX.Html/Assets/canopyx-highlight.css",
+    "./layouts.js": "./CanopyX.Html/Assets/canopyx-layouts.js",
+    "./layouts.css": "./CanopyX.Html/Assets/canopyx-layouts.css",
     "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
     "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
     "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
@@ -103,7 +107,11 @@
     "CanopyX.Html/Assets/canopyx-detail-rows.js",
     "CanopyX.Html/Assets/canopyx-detail-rows.css",
     "CanopyX.Html/Assets/canopyx-grouping.js",
-    "CanopyX.Html/Assets/canopyx-grouping.css"
+    "CanopyX.Html/Assets/canopyx-grouping.css",
+    "CanopyX.Html/Assets/canopyx-highlight.js",
+    "CanopyX.Html/Assets/canopyx-highlight.css",
+    "CanopyX.Html/Assets/canopyx-layouts.js",
+    "CanopyX.Html/Assets/canopyx-layouts.css"
   ],
   "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

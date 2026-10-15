@@ -15,6 +15,7 @@ internal static class CanopyTreeViewValidator {
     /// </param>
     internal static void Validate(CanopyTreeView view, bool requireCompleteTree = false) {
         var columns = ValidateDefinition(view, requireCompleteTree);
+        view.ValidateViewModes();
         var inline = view.Source.Kind == CanopySourceKind.Inline;
         // Sidecar views keep the original in-memory roots after bundling, but serialize only a manifest reference.
         var replacingInlineRefs = requireCompleteTree || view.Source.Kind == CanopySourceKind.Sidecar;

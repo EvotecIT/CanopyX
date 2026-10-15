@@ -124,14 +124,16 @@ public sealed class CanopyHtmlPart {
     public bool IsShippedWith(CanopyRuntime runtime) => Runtimes.Contains(runtime);
 
     /// <summary>Whether a tree loads this part: a part for trees, limited to the source kinds and deep links it names.</summary>
-    internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 && !_pager && _feature == null &&
-        (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink);
+    internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 && !_pager &&
+        (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink) &&
+        (_feature == null || _feature == "searchHighlight" && view.SearchHighlight != null || _feature == "layout" && view.Layout != null);
 
     /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters and features it names.</summary>
     internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink && (!_pager || view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault) &&
         (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
         (!_editable || view.Columns.Any(column => column.Editable)) &&
-        (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true) &&
+        (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true ||
+            _feature == "searchHighlight" && view.SearchHighlight != null || _feature == "layout" && view.Layout != null) &&
         (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
 
     /// <summary>Whether a grid uses a reporting feature a part serves: <c>grouping</c> (fixed or runtime grouping, or aggregates) or <c>detail</c> rows.</summary>

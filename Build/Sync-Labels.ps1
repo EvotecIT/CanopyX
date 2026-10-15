@@ -39,6 +39,12 @@ foreach ($language in $languages) {
         $expected = @([regex]::Matches($english, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)
         $provided = @([regex]::Matches($text, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)
         if (@(Compare-Object $expected $provided).Count) { throw "The $($language.Id) label $name must preserve its placeholders." }
+        # Plural texts ([one]...[other]...) name known categories, end with an other form, and keep the placeholders in every form.
+        if ($text.StartsWith('[', [StringComparison]::Ordinal)) {
+            $forms = [regex]::Matches($text, '\[(zero|one|two|few|many|other)\]([^\[]*)')
+            if (-not $forms.Count -or ($forms | ForEach-Object Length | Measure-Object -Sum).Sum -ne $text.Length -or -not ($forms | Where-Object { $_.Groups[1].Value -eq 'other' })) { throw "The $($language.Id) label $name has malformed plural forms." }
+            foreach ($form in $forms) { if (@(Compare-Object $expected @([regex]::Matches($form.Groups[2].Value, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)).Count) { throw "The $($language.Id) label $name must keep its placeholders in every plural form." } }
+        }
         $literal = ConvertTo-Json -InputObject $text -Compress
         $wire = $name.Substring(0, 1).ToLowerInvariant() + $name.Substring(1)
         $line = "  ${wire}: $literal,"

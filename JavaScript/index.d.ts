@@ -1,6 +1,6 @@
 import type {
   CanopyBadge, CanopyNode, CanopyView, CanopyLabels, CellValue, CheckIntent, CheckState,
-  CountsDocument, SortDirection, TimeZone, ViewQuery, ViewState, LegacyViewState, SearchResult, LabelName
+  CountsDocument, SortDirection, TimeZone, ViewQuery, ViewState, LegacyViewState, SearchResult, LabelName, ViewModeMethods
 } from "./protocol.js";
 import type {
   TreeGridOptions, HostOptions, Sources, ExpandPathOptions, NodeFilter, FilterOptions,
@@ -12,7 +12,7 @@ export * from "./hosts.js";
 export * from "./plugins.js";
 
 /** One mounted grid. Every method owns presentation only; host hooks own domain writes. */
-export interface TreeGrid extends LinkedView {
+export interface TreeGrid extends LinkedView, ViewModeMethods {
   readonly element: HTMLElement;
   readonly view: CanopyView;
   readonly ready: Promise<void>;

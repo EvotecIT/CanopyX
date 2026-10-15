@@ -40,7 +40,7 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Grouping and details | Nested branches and detail rows | Multi-level row groups with labelled aggregates, and expandable detail rows holding a template, HTML or a nested grid or tree |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
+Both views use virtual rows and support keyboard navigation. Both can mark search and filter matches with a match count and next/previous navigation ([search highlighting](docs/search-highlight.md)), and let readers switch between fitting the width, scrolling sideways and (on grids) cards, in three densities ([layout modes](docs/layout-modes.md)). Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
 ## Installation
 

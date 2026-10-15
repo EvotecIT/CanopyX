@@ -1,6 +1,6 @@
 import CanopyX from "./index.js";
 import type { TreeGrid } from "./index.js";
-import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
+import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, ViewModeMethods } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, LinkedView } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
 import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
@@ -207,6 +207,10 @@ export interface GridToolbarControls {
   columnMenus?: boolean;
   /** Result count shown with the query chips. */
   count?: boolean;
+  /** The match navigator and the Highlight matches switch of a grid with searchHighlight. */
+  matches?: boolean;
+  /** The Layout menu of a grid with layout options. */
+  layout?: boolean;
 }
 /** Runtime switches add the search box; documents keep it in the view's search property. */
 export interface GridToolbarOptions extends GridToolbarControls {
@@ -291,6 +295,10 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   rowAccents?: boolean;
   /** How editable columns edit; the host's editing option overrides these. */
   editing?: GridEditingSettings;
+  /** Marks search and column-filter matches in cells and the drawer, with a match count and next/previous (docs/search-highlight.md). */
+  searchHighlight?: boolean | SearchHighlightOptions;
+  /** The Layout menu: fit, scroll and cards, and the density (docs/layout-modes.md); layout.density starts the grid at that density. */
+  layout?: LayoutOptions;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
@@ -584,6 +592,10 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   paging?: { pageLength: number; offset: number; allRows?: boolean };
   /** Formatting rules edited at run time, when they differ from the view's; restored with the view. */
   formatRules?: GridFormatRule[];
+  /** The reader's layout, in a grid with layout options. */
+  layout?: LayoutState;
+  /** The reader's Highlight matches switch, in a grid with searchHighlight. */
+  highlight?: boolean;
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -636,7 +648,12 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
     reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
   /** Reporting runtime only. Render the complete snapshot through a host-owned renderer; honor cancellation before delivery. */
-  onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
+  /** After a layout or density switch; the canopyx:layout event carries the same detail. */
+  onLayout?: (detail: LayoutState) => void | boolean;
+  /** After each finished match count and each move between matches; the canopyx:matches event carries the same detail. */
+  onMatches?: (detail: { total: number; current: number; complete: boolean }) => void | boolean;
+  /** layout asks for stacked records from a grid in the card layout and a table otherwise; print never scrolls. */
+  onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal; layout: "table" | "stacked" }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: Readonly<GridRow>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
   /** Row activation: a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, or a click with rowAction (or on a
@@ -681,7 +698,7 @@ export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGri
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods {
   readonly element: HTMLElement;
   readonly view: GridView;
   readonly ready: Promise<Q>;

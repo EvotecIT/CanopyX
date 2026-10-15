@@ -38,7 +38,9 @@
       const expanded = [], walk = parent => this.modelChildren(parent).forEach(w => { if (w.h.expanded && this.expandable(w)) { expanded.push(this.pathOf(w)); walk(w); } });
       walk(this.root);
       return { version: 1, expanded, selection: [], columns: this.declaredColumns(), sort: null, filters: [], timeZone: this.view.timeZone === "local" ? "local" : "utc",
-        pinTreeColumn: !!this.view.pinTreeColumn || this.columns[0].pinned !== null, focus: null, anchor: null };
+        pinTreeColumn: !!this.view.pinTreeColumn || this.columns[0].pinned !== null, focus: null, anchor: null,
+        ...this.layoutOptions && { layout: { mode: this.layoutOptions.mode, density: this.layoutOptions.density } },
+        ...this.highlightOptions && { highlight: this.highlightOptions.enabled } };
     },
     declaredColumns() {
       return this.view.columns.map((declared, index) => ({ id: declared.id, width: columnWidth(this.columns.find(column => column.id === declared.id), declared.width ?? 160),

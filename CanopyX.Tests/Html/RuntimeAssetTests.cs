@@ -99,7 +99,8 @@ public sealed class RuntimeAssetTests {
     public void Assets_StayWithinTheCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 
-        Assert.True(compressed <= 48 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 48 KB.");
+        // Raised from 48 KiB for search highlighting and layout modes (labels, view options and saved choices shared by trees and grids): new size plus about 15%.
+        Assert.True(compressed <= 57 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 57 KiB.");
     }
 
     [Fact]
@@ -111,7 +112,8 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        Assert.True(compressed <= 96 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 96 KiB.");
+        // Raised from 96 KiB for search highlighting and layout modes: new size plus about 15%.
+        Assert.True(compressed <= 113 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 113 KiB.");
     }
 
     [Fact]
@@ -179,8 +181,9 @@ public sealed class RuntimeAssetTests {
 
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
-            // The runtime and its stylesheet, the tree tools part every tree loads beside them, and the export, links, search and link parts (the link part with its stylesheet).
-            Assert.Equal(9, Directory.GetFiles(directory).Length);
+            // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
+            // the link part and the highlight and layout mode parts, each with its stylesheet.
+            Assert.Equal(13, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

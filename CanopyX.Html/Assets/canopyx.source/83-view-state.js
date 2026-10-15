@@ -21,7 +21,7 @@
         sort: this.sortState && Object.assign({}, this.sortState), filters: Array.from(this.activeFilters),
         timeZone: this.local ? "local" : "utc", pinTreeColumn: this.host.classList.contains("cx-pin-tree"),
         focus: this.focused && !this.focused.status && !this.focused._invalidated ? this.pathOf(this.focused) : null,
-        anchor: anchorNode ? { path: this.pathOf(anchorNode), offset: anchor.offset } : null };
+        anchor: anchorNode ? { path: this.pathOf(anchorNode), offset: anchor.offset } : null, ...this.modeState({}) };
     },
 
     /** Validates the complete snapshot before changing the view; legacy expansion-only state is accepted. */
@@ -54,6 +54,7 @@
           if (!Number.isFinite(state.anchor.offset) || state.anchor.offset < 0 || state.anchor.offset > MAX_PROTOCOL_INTEGER) return null;
           result.anchor = { path: statePaths([state.anchor.path])[0], offset: state.anchor.offset };
         }
+        Object.assign(result, readModeState(this, state));
         return result;
       } catch (error) { return null; }
     },
@@ -73,6 +74,7 @@
       this.buildHeader();
       this.applySort(this.root, true);
       if (!this.queryAware) this.setActiveFilters(state.filters);
+      this.applyModeState(state);
     },
 
     /** Loads saved paths within restoration ownership, without selecting, revealing, or taking DOM focus. */

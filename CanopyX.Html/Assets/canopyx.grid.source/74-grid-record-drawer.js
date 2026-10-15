@@ -11,7 +11,7 @@
     document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false;
     const paint=(row,position)=>{
-      record=row;index=position;setText(title,cellText(row.cells[primary.id],primary,this.fmt)||row.id);
+      record=row;index=position;dialog._cxRecord=row;setText(title,cellText(row.cells[primary.id],primary,this.fmt)||row.id);
       const options=primary.presenter;
       // The subtitle is the secondary text the host configures (a cell's secondary text or the presenter's secondaryColumn), never the raw row id.
       const secondary=row.cells[primary.id]?.secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||"";
