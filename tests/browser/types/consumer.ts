@@ -616,6 +616,36 @@ const liveState: GridLiveState = liveGrid.getLiveState();
 void [liveState.orderChanged, liveState.pending, liveState.polling, liveState.revision];
 // @ts-expect-error A transaction lists rows to add, not a single row.
 void liveGrid.applyTransaction({ add: { id: "x", cells: {} } });
+// Typed rows (docs/typed-grids.md): a named row type checks column ids, rows, facets, events and the live API.
+import type { GridRow as TypedGridRow, GridColumnId, InlineGridView as TypedInlineView } from "@evotecit/canopyx/grid";
+interface ServerRow extends TypedGridRow { cells: { host: string; load: number; site: string | null } }
+const serverView: TypedInlineView<ServerRow> = { protocol: "canopyx/2", type: "grid", id: "servers", label: "Servers", pageSize: 100, selection: "multiple", search: true,
+  source: { kind: "inline" }, columns: [{ id: "host", title: "Host", kind: "text" }, { id: "load", title: "Load", kind: "number" }, { id: "site", title: "Site", kind: "text" }],
+  rows: [{ id: "s1", cells: { host: "web-01", load: 0.4, site: "Oslo" } }], facets: { columns: ["site", { column: "load", kind: "range" }] }, searchColumns: ["host"] };
+const servers = createDataGrid<ServerRow>(document.createElement("div"), { view: serverView,
+  onDetails: event => void event.row.cells.host.toUpperCase(), onColumnResize: event => void (event.column satisfies GridColumnId<ServerRow>) });
+servers.setColumnVisible("load", false);
+void servers.addRows([{ id: "s2", cells: { host: "db-01", load: 2, site: null } }]);
+void servers.updateRows([{ id: "s2", cells: { load: 3 } }]);
+const typedColumn: GridColumnId<ServerRow> = "site";
+void typedColumn;
+// @ts-expect-error A typed grid knows its columns.
+servers.setColumnVisible("owner", false);
+// @ts-expect-error Rows carry the row type's cells.
+void servers.addRows([{ id: "s3", cells: { host: "x", load: "high", site: null } }]);
+// @ts-expect-error Columns name the row type's cells.
+const badServerView: TypedInlineView<ServerRow> = { ...serverView, columns: [{ id: "owner", title: "Owner", kind: "text" }] };
+void badServerView;
+// Without a row type, rows stay plain GridRow and any column id goes.
+// The rows and columns here are literals, so a grid that inferred its row type from them would refuse the calls below.
+const plainGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "plain", label: "Plain", pageSize: 100, selection: "none", search: false,
+  source: { kind: "inline" }, columns: [{ id: "any", title: "Any", kind: "text" }], rows: [{ id: "p0", cells: { any: "x" } }] } });
+plainGrid.setColumnVisible("anything", true);
+void plainGrid.addRows([{ id: "p1", cells: { other: 1 } }]);
+// Row activation, links and detail callbacks carry the row type too.
+createDataGrid<ServerRow>(document.createElement("div"), { view: serverView,
+  onRowActivate: event => void event.row.cells.load.toFixed(1), onLink: event => void (event.column satisfies GridColumnId<ServerRow>),
+  detail: { hasDetail: row => row.cells.site !== null } });
 // The facet panel (docs/facets.md): a definition in the view, host options and the panel API.
 import type { GridFacetPanelDefinition, GridFacetPanelState } from "@evotecit/canopyx/grid";
 const facetPanel: GridFacetPanelDefinition = { columns: ["region", { column: "load", kind: "range", bins: 12, sort: "value", collapsed: false }], position: "side", open: true, collapsible: true, width: 280, label: "Refine" };
