@@ -34,8 +34,10 @@
       return state;
     },
     applyStatePresentation(state) {
-      FACET_STATE.apply.call(this, state);
-      if (state.facets && state.facets.open !== this.facetOpen) { if (this.facetPanel) this.setFacetPanelOpen(state.facets.open).catch(error => this.emit("error", { error })); else this.facetOpen = state.facets.open; }
+      // The base answers a promise when presentation work is asynchronous (formatting rules); setState waits for it.
+      const applied = FACET_STATE.apply.call(this, state);
+      if (state.facets && state.facets.open !== this.facetOpen && !this.destroyed) { if (this.facetPanel) this.setFacetPanelOpen(state.facets.open).catch(error => this.emit("error", { error })); else this.facetOpen = state.facets.open; }
+      return applied;
     },
     initializeState() {
       if (this.initialState?.facets) this.facetOpen = this.initialState.facets.open;
