@@ -182,6 +182,7 @@ Consumers: ASP.NET Core and other .NET hosts that serve hosted flat grids from a
 - [x] Fleet inventory sample over SQLite and EF Core with an end-to-end browser test and `--bench` measurements at 100,000 and 1,000,000 rows (`docs/remote-dotnet.md`).
 - [x] Batch commit of grid edits: `POST commit` with a separate write policy, server-side validation of editable columns, `ICanopyDataWriter` and the `CanopyQueryableWriter<T>` reference writer with conflict detection; the sample's editable page.
 - [x] Multi-level grouping (up to four `groupBy` levels, aggregate-ordered levels, nested summaries) and `distinctCount`; the sample's two-level page.
+- [x] Record details on demand: `POST record` with `CanopyRecordMap<T>` (fields, links, drawer values, paged collections, timelines, changes) looked up by key through the grid's scoped query, a per-request field read check, `ICanopyRecordProvider` and the in-memory reference; the sample's machine record panel.
 - [ ] Custom aggregates in the built-in providers (today a provider of your own computes them).
 - [ ] Cursor (keyset) navigation for very deep pages over large tables.
 

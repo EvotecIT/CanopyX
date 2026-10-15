@@ -112,6 +112,7 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Detail rows with a table, a property list or trusted HTML | Tree | `detail` on a node, `renderDetail` | [Detail rows](data-protocol.md#detail-rows) |
 | Row links and link cells the host can route | Grid | `rowAction: "link"`, `onLink`, `canopyx:link` | [Flat data grid](authoring.md#flat-data-grid) |
 | Record panel: record-only fields, sections, tabs, related records, history, deep links and details on demand | Grid, Tree | `record`; C# `CanopyRecordPanel` | [record-panel.md](record-panel.md) |
+| Record details served from .NET: fields, paged collections, timelines, changes and links, by key through the grid's own scoped query | Grid | `CanopyRecordMap<T>`, `POST {pattern}/record`; `ICanopyRecordProvider` for other back ends | [Record details](remote-dotnet.md#record-details) |
 
 ## Editing and host actions
 

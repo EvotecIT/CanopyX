@@ -15,7 +15,7 @@ These Tier 1 items have landed; each has its own page.
 | | Feature | Documentation |
 |---|---|---|
 | A | **Plugin API** on one registry of lazy parts | [plugins.md](plugins.md) |
-| B | **.NET query adapter** (`CanopyX.Data`, `CanopyX.AspNetCore`), including saving edits and multi-level grouping | [remote-dotnet.md](remote-dotnet.md) |
+| B | **.NET query adapter** (`CanopyX.Data`, `CanopyX.AspNetCore`), including saving edits, multi-level grouping and record details on demand | [remote-dotnet.md](remote-dotnet.md) |
 | C | **Feature overview, recipes and this roadmap** | [features.md](features.md), [recipes.md](recipes.md) |
 | D | **Editing:** typed editors, validation, change marks, row and batch commit, undo and redo, the phone edit form | [editing.md](editing.md) |
 | E | **Grouping and detail rows:** up to four levels with labelled aggregates, and expandable detail rows | [grouping.md](grouping.md) |

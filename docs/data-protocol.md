@@ -424,8 +424,8 @@ sidecar files, `[viewId, "r<n>", document]` with a `gridRecordPack`:
 
 #### What a server adapter implements for gridRecord
 
-A remote adapter (such as `CanopyX.Data`, which serves `gridQuery` today) adds a record endpoint and routes the browser
-source's `record` hook to it:
+A remote adapter adds a record endpoint and routes the browser source's `record` hook to it (`CanopyX.Data` does, see
+[Record details](remote-dotnet.md#record-details)):
 
 1. **Request parsing.** Read `gridRecordQuery`: `view` (a configured grid), `id` (a record identity; bounded, not interpreted
    as a key expression), optional `revision`, `field` with `offset` and `limit` (1 to 10,000), and `row`.

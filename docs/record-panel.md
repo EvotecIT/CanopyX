@@ -222,7 +222,8 @@ grid cell carries only "4 names") and, when asked, `row`.
 - **The host** (`CanopyRecordSource.Host()`, or any source): the `loadRecord(request, { signal })` option answers each
   `gridRecordQuery`.
 - **The remote protocol**: a hosted grid source's `record(request, { signal })` hook, which a remote client implements by
-  sending the request to its server (see [data-protocol.md](data-protocol.md#record-details)).
+  sending the request to its server (see [data-protocol.md](data-protocol.md#record-details)). `CanopyX.Data` and
+  `CanopyX.AspNetCore` serve it from .NET, by key through the grid's own query ([Record details](remote-dotnet.md#record-details)).
 
 ```csharp
 var view = CertificateInventoryExample.View(CanopyRecordSource.Sidecar("records/", 1250));
