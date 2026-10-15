@@ -32,6 +32,7 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `gridRecordQuery` | The browser; `CanopyGridRecordQuery.ToJson()` | A record's drawer opens and its details load on demand ([Record details](#record-details)) |
 | `gridRecord` | `CanopyGridRecord.ToJson(view)` | A host answers a record request |
 | `gridRecordPack` | `CanopyRecordSidecar.Write` | A record's drawer opens and its details are in a record pack beside the page |
+| `gridTransaction` | `CanopyGridTransaction.ToJson(view)` | A host sends rows to add, update or remove to an open grid ([Live data](#live-data)) |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -328,6 +329,32 @@ A row is `[key, cell, cell, ...]`. `key` is the row id, or `{ "id": "...", "tone
 The order of the rows in the data never changes what the grid shows: it orders rows by their sort keys and then by id. `CanopyGridRowData` (the C# writer) therefore writes them in id order and declares `ordered`. While chunks are decoding, `view.rows` of the grid's API holds the rows decoded so far; reporting grids (which total and group the complete rows) and every sorted, filtered or searched query wait until all rows are decoded. Destroying the grid stops the decoding. A chunk that fails to load or decode fails the queries waiting for it, and a retry decodes from the first chunk again; the host request deadline (`requestTimeoutMs`) does not bound decoding unless the host sets it. The value lists of column filters and the facets of reporting grids wait for all rows.
 
 C# hosts write row data through `CanopyHtmlOptions.RowData` (fragments and pages carry the chunks inside the host element and the row data part, `canopyx-data.js`), `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
+
+### Live data
+
+A grid's optional `live` object turns on live data ([live-data.md](live-data.md)): `{ stableOrder?, flash?, batchMs?,
+pollMs?, announce?, pauseWhenHidden? }`. `stableOrder` (default true) keeps rows whose sort keys change in their places until
+the reader re-sorts; `flash` is `true` or `{ durationMs }` (100 to 10,000); `batchMs` (0 to 60,000) applies changes arriving
+within that time together; `pollMs` (0, or 250 to 86,400,000) polls the source; `announce` and `pauseWhenHidden` default to
+true. A view with `live` loads the `live` part (payload `application/x-canopyx-live`, or `canopyx-live.js` and `.css`); the
+browser API loads it on first use in any grid.
+
+A `gridTransaction` carries changes to an open grid: `add` (complete rows; a row whose id the grid has replaces it), `update`
+(rows whose cells are merged into the existing row's; a `null` cell clears it, and `tone`, `className`, `fields` and
+`detail` replace the row's when given) and `remove` (row ids), at most 100,000 rows in all. Removes apply first, then adds,
+then updates; an update or removal of an id the grid lacks is skipped and reported as missing. Rows are validated against the
+grid's columns as inline rows are, and a transaction with an invalid row changes nothing.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridTransaction", "view": "endpoints",
+  "add": [{ "id": "ep-41", "cells": { "name": "edge-41", "latency": 88 } }],
+  "update": [{ "id": "ep-07", "cells": { "latency": 212, "errors": null } }], "remove": ["ep-12"] }
+```
+
+Hosted grids keep the existing revision contract: a refresh asks for its pages without a revision and compares the answer's
+revision with the accepted one, so a source that changes its revision when its data changes needs nothing new. A hosted grid
+applies only updates of loaded rows; its rows are added and removed at the source. The wire format of queries and pages does
+not change.
 
 ### Record panel
 

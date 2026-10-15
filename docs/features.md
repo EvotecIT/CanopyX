@@ -21,10 +21,12 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Bundles that load branches on demand from disk or a file share | Tree | `SaveHtmlBundle` (sidecar files and a search index) | [Quick start](authoring.md#quick-start), [Sidecar](data-protocol.md#sidecar) |
 | Revisioned results, stale responses rejected, cancellation and timeouts | Grid, Tree | `revision`, `signal`, `requestTimeoutMs` | [Protocol](data-protocol.md#flat-grid-documents) |
 | Loading, empty, error and retry states | Grid, Tree | Built in; accepted rows stay visible while a new query loads | [Flat data grid](authoring.md#flat-data-grid) |
-| Reload with the current query | Grid, Tree | `reload()`; `refresh()` repaints | [Flat data grid](authoring.md#flat-data-grid) |
+| Reload with the current query | Grid, Tree | `reload()`; `refresh()` repaints; `refreshRows()` updates rows in place | [Flat data grid](authoring.md#flat-data-grid) |
 | Enhance an existing `<table>`, or build a grid from records or a URL in one call | Grid | `CanopyX.enhance(table, options)`, `CanopyX.grid(element, options)` | [enhance.md](enhance.md) |
 | Compact row data, views that mount when visible, and grid bundles for large reports | Grid | `rowData`, `MountWhenVisible`, `SaveHtmlBundle` | [large-data.md](large-data.md) |
 | Server-side data for .NET over `IQueryable<T>` or a provider, with saving edits | Grid | `CanopyX.Data`, `MapCanopyRemote` | [remote-dotnet.md](remote-dotnet.md) |
+| Rows added, changed and removed in place with a stable order, flashing cells, batching and polling | Grid | `applyTransaction`, `addRows`, `updateRows`, `removeRows`, `setRows`, `poll`, `live`; C# `CanopyGridLive`, `CanopyGridTransaction` | [live-data.md](live-data.md) |
+| Revision-aware refresh of hosted grids | Grid | `refreshRows()`, `live.pollMs` | [live-data.md](live-data.md#hosted-grids) |
 
 ## Values, rendering and formatting
 
