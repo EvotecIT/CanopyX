@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using CanopyX.Data;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+
+namespace CanopyX.AspNetCore;
+
+/// <summary>Maps the CanopyX remote grid protocol to minimal-API endpoints.</summary>
+/// <remarks>
+/// The returned route group serves, below its pattern:
+/// <list type="bullet">
+/// <item><c>POST query</c>: a <c>gridQuery</c> body, answered with a <c>gridPage</c>; with <see cref="CanopyRemoteEndpointOptions.AllowGetQueries"/>, <c>GET query</c> reads the same query from the query string.</item>
+/// <item><c>POST facet</c>: a <c>gridFacetQuery</c> body, answered with a <c>gridFacetPage</c> (value lists).</item>
+/// <item><c>POST summary</c>: a <c>gridQuery</c> body with its revision, answered with a <c>gridSummary</c> (groups and aggregates).</item>
+/// <item><c>POST export/{format}</c>: the grid's export request, answered with a streamed file.</item>
+/// <item><c>GET view</c>: the grid definition document.</item>
+/// </list>
+/// POST bodies must be JSON (<c>application/json</c>), which makes cross-origin pages go through a CORS preflight. Client
+/// errors return 400 (409 for a stale revision, 413 for an oversized body, 415 for another content type) with
+/// <c>{ "error": code, "message": text }</c>; server failures return a generic 500 body and are logged, never echoed.
+/// Requests observe <see cref="HttpContext.RequestAborted"/>. The group requires authorization (the default policy, or
+/// <see cref="CanopyRemoteEndpointOptions.AuthorizationPolicy"/>) unless <see cref="CanopyRemoteEndpointOptions.AllowAnonymous"/> is set;
+/// apply rate limiting and CORS to the returned group as well.
+/// </remarks>
+public static class CanopyRemoteEndpointExtensions {
+    /// <summary>Maps remote grid endpoints over an <see cref="IQueryable{T}"/>.</summary>
+    /// <typeparam name="T">The record type.</typeparam>
+    /// <param name="endpoints">The route builder.</param>
+    /// <param name="pattern">The route prefix, for example <c>/api/hosts</c>.</param>
+    /// <param name="query">Returns the base query for a request, already restricted to what the caller may see.</param>
+    /// <param name="map">The column allow-list.</param>
+    /// <param name="configure">Adjusts limits, export formats and query options.</param>
+    /// <returns>The route group, for authorization and other conventions.</returns>
+    public static RouteGroupBuilder MapCanopyRemote<T>(this IEndpointRouteBuilder endpoints, string pattern, Func<HttpContext, IQueryable<T>> query,
+        CanopyColumnMap<T> map, Action<CanopyRemoteEndpointOptions>? configure = null) {
+        if (query == null) throw new ArgumentNullException(nameof(query));
+        if (map == null) throw new ArgumentNullException(nameof(map));
+        var options = new CanopyRemoteEndpointOptions();
+        configure?.Invoke(options);
+        var queryOptions = options.Query;
+        return Map(endpoints, pattern, map.Schema, context => new CanopyQueryableProvider<T>(() => query(context), map, queryOptions), options);
+    }
+
+    /// <summary>Maps remote grid endpoints over a custom data provider, for example raw SQL.</summary>
+    /// <param name="endpoints">The route builder.</param>
+    /// <param name="pattern">The route prefix.</param>
+    /// <param name="schema">The column allow-list.</param>
+    /// <param name="provider">Returns the provider for a request.</param>
+    /// <param name="configure">Adjusts limits and export formats.</param>
+    /// <returns>The route group, for authorization and other conventions.</returns>
+    public static RouteGroupBuilder MapCanopyRemote(this IEndpointRouteBuilder endpoints, string pattern, CanopyDataSchema schema,
+        Func<HttpContext, ICanopyDataProvider> provider, Action<CanopyRemoteEndpointOptions>? configure = null) {
+        if (provider == null) throw new ArgumentNullException(nameof(provider));
+        var options = new CanopyRemoteEndpointOptions();
+        configure?.Invoke(options);
+        return Map(endpoints, pattern, schema, provider, options);
+    }
+
+    private static RouteGroupBuilder Map(IEndpointRouteBuilder endpoints, string pattern, CanopyDataSchema schema, Func<HttpContext, ICanopyDataProvider> provider,
+        CanopyRemoteEndpointOptions options) {
+        if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
+        if (schema == null) throw new ArgumentNullException(nameof(schema));
+        if (string.IsNullOrEmpty(pattern)) throw new ArgumentException("A route pattern is required.", nameof(pattern));
+        var group = endpoints.MapGroup(pattern);
+        if (!options.AllowAnonymous) {
+            if (options.AuthorizationPolicy == null) group.RequireAuthorization(); else group.RequireAuthorization(options.AuthorizationPolicy);
+        }
+        var view = schema.View.ToJson();
+        CanopyRemoteHandler Handler(HttpContext context) => new CanopyRemoteHandler(schema, provider(context), options.Remote);
+
+        group.MapPost("/query", Json(Handler, options.Limits, QueryAnswer));
+        if (options.AllowGetQueries) {
+            group.MapGet("/query", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, async token => {
+                var parameters = context.Request.Query.SelectMany(pair => pair.Value.Select(value => new KeyValuePair<string, string?>(pair.Key, value)));
+                await CanopyRemoteHttp.WriteJsonAsync(context, await Handler(context).QueryAsync(parameters, token).ConfigureAwait(false), token).ConfigureAwait(false);
+            })));
+        }
+        group.MapPost("/facet", Json(Handler, options.Limits, FacetAnswer));
+        group.MapPost("/summary", Json(Handler, options.Limits, SummaryAnswer));
+        group.MapPost("/export/{format}", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, async token => {
+            var body = await CanopyRemoteHttp.ReadJsonBodyAsync(context, options.Limits, token).ConfigureAwait(false);
+            if (body == null) return;
+            var format = context.Request.RouteValues["format"] as string ?? string.Empty;
+            var job = await Handler(context).PrepareExportAsync(body, format, token).ConfigureAwait(false);
+            await CanopyRemoteHttp.WriteExportAsync(context, job, token).ConfigureAwait(false);
+        })));
+        group.MapGet("/view", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, token => CanopyRemoteHttp.WriteJsonAsync(context, view, token))));
+        return group;
+    }
+
+    private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> QueryAnswer = (handler, body, token) => handler.QueryAsync(body, token);
+    private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> FacetAnswer = (handler, body, token) => handler.FacetAsync(body, token);
+    private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> SummaryAnswer = (handler, body, token) => handler.SummaryAsync(body, token);
+
+    private static RequestDelegate Json(Func<HttpContext, CanopyRemoteHandler> handler, CanopyRemoteLimits limits,
+        Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> answer) =>
+        context => CanopyRemoteHttp.RunJsonAsync(context, limits, handler, answer);
+}
