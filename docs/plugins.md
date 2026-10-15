@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, deep links, the sidecar search, detail rows and row grouping. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (editing, column groups, range selection) arrive as parts.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, deep links, the sidecar search, detail rows, row grouping and the record panel. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (editing, column groups, range selection) arrive as parts.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -73,6 +73,8 @@ The context is frozen and the same object for every hook and handler of a plugin
 
 **Detail renderers.** `detailRenderers` maps a name to `renderer(row, element, context)`, which draws a reporting grid's detail row into `element` when the definition names it (`reporting.detail.renderer`). `context` has `id`, `signal` (aborted when the detail is disposed), `onDispose(cleanup)`, `api` and `labels`. See [grouping.md](grouping.md#detail-rows).
 
+**Drawer sections and record actions.** `drawerSections` maps a name to `renderer(record, element, context)`, which draws content (a chart, for example) into a record panel section whose `renderer` names it; `context` has `section`, `view`, `api`, `labels`, `signal`, `payload`, `values` (every field's value by id), `print`, `width` and `onDispose(cleanup)`. `recordActions` are entries `{ label, run }` of the record panel's actions menu, after the built-in ones and the host's; `run` receives `{ record, view, api, payload, signal }`. See [record-panel.md](record-panel.md).
+
 **Editors and column types.** `editors` and `columnTypes` are maps a plugin can register today; CanopyX validates that they are objects and keeps them on the plugin. The editing feature reads `editors` (typed cell editors), and later features read `columnTypes`. Nothing reads them yet.
 
 ## Example: a third-party cell renderer
@@ -130,6 +132,7 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
 | `detail-rows` | a reporting grid with detail rows or grouping requests its first page | the row projection shared by headings and detail rows; detail rows, their keys, export and print |
 | `grouping` | a reporting grid with grouping or aggregates requests its first page (requires `detail-rows`) | summaries, nested headings, aggregates, the group-by bar, group outlines in exports |
+| `record-panel` | a grid or tree whose view has a record panel opens a drawer (with record deep links, when it is created), a grid with a structured summary column requests its first page, or a drawer shows structured values | the record panel: record fields, sections and tabs, structured values, collections, related records and the back stack, timelines and changes, record deep links, record actions and details loaded on demand |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 

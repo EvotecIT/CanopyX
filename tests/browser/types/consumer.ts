@@ -449,3 +449,34 @@ void groupedApi.setGroupLevelCollapsed?.(1, true); void groupedApi.expandAllGrou
 const expanded: string[] = groupedApi.getExpandedDetails?.() ?? [];
 const nestedGroups: readonly GridGroup[] | undefined = groupedApi.getSummary?.()?.groups[0]?.groups;
 void expanded; void nestedGroups;
+// The record panel: structured cells, record fields, sections and tabs, details on demand, drawer sections and record actions.
+import type { GridRecordQuery, GridRecord, RecordPanelDefinition, RecordSectionRenderer } from "@evotecit/canopyx/grid";
+const recordPanel: RecordPanelDefinition = {
+  fields: [{ id: "thumbprint", title: "Thumbprint" }, { id: "contacts", title: "Contacts", section: "People" }, { id: "trend", title: "Trend", kind: "number", presenter: { kind: "sparklineLine" } }],
+  header: { status: "status", facts: ["cn"] },
+  sections: [{ id: "identity", label: "Identity", fields: ["thumbprint", "names"], renderer: "key-chart", sections: [{ id: "dates", label: "Dates", collapsed: true }] }],
+  tabs: [{ id: "overview", label: "Overview", sections: ["identity"] }],
+  hideEmpty: true, deepLink: { key: "cert" }, source: { kind: "sidecar", base: "records/", shards: 16 }, actions: { export: false }
+};
+const keyChart: RecordSectionRenderer = (record, element, context) => { element.textContent = record.id + " " + context.width; context.onDispose(() => undefined); };
+ReportingRuntime.use({ name: "record-extras", drawerSections: { "key-chart": keyChart }, recordActions: [{ label: "Renew", run: ({ record, view }) => { void (record.id + view); } }] });
+const loadRecord = async (request: GridRecordQuery, options: { signal: AbortSignal }): Promise<GridRecord | null> =>
+  options.signal.aborted ? null : { protocol: "canopyx/2", type: "gridRecord", view: request.view, id: request.id, fields: { thumbprint: "AB12" } };
+const recordGrid = ReportingRuntime.createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "certs", label: "Certificates", rowHeight: 34, pageSize: 100, selection: "single", search: true, source: { kind: "inline" },
+    columns: [{ id: "cn", title: "Common name", kind: "text", sortable: true }, { id: "status", title: "Status", kind: "text", presenter: { kind: "state" } },
+      { id: "names", title: "Names", kind: "text", presenter: { kind: "structured", display: "chips", limit: 2, countText: "{count} names" } },
+      { id: "serial", title: "Serial", kind: "text", hidden: true, drawer: false }],
+    rows: [{ id: "c1", cells: { cn: { value: "app", ref: { id: "c2" } }, status: "Valid", names: { value: "a, b", items: ["a", { value: "b", tone: "info" }] } },
+      fields: { contacts: { records: { columns: [{ id: "role", title: "Role" }], rows: [{ id: "o", cells: { role: "Owner" } }], total: 3, target: { view: "people", column: "role" } } },
+        trend: { value: 3, series: [{ period: "2026-01", value: 3 }] } } }],
+    record: recordPanel },
+  loadRecord, recordActions: [{ label: "Open", run: () => undefined }], onOpenAll: event => event.ids.length > 0, onRecordPrint: event => void event.element });
+void recordGrid.openRecord("c1", { tab: "overview" });
+const recordTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "tree", label: "Tree", rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", width: 200, kind: "text" }, { id: "state", title: "State", width: 120, kind: "text", section: "Health", drawer: true }], source: { kind: "inline" },
+  roots: [{ id: "a", label: "A", fields: { owner: { value: "Team", events: [{ time: "2026-01-01T00:00:00Z", summary: "Created", changes: [{ name: "Owner", before: null, after: "Team" }] }] } } }],
+  record: { fields: [{ id: "owner", title: "Owner" }], deepLink: true } }, onDetails: ({ node, signal }) => { void node.label; void signal; } });
+void recordTree.openRecord("a", { path: ["a"] });
+// @ts-expect-error A structured presenter displays a count, chips or the first item.
+ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "bad", label: "Bad", rowHeight: 34, pageSize: 100, selection: "single", search: false, source: { kind: "inline" }, rows: [], columns: [{ id: "a", title: "A", kind: "text", presenter: { kind: "structured", display: "table" } }] } });

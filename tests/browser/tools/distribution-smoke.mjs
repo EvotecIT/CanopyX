@@ -20,12 +20,12 @@ try {
   const run = (file, args, cwd) => execute(file, args, { cwd, timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
   const result = await run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", output], repo);
   const [packed] = JSON.parse(result.stdout);
-  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts",
+  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/records.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
     "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css",
-    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css", "CanopyX.Html/Assets/canopyx-detail-rows.js", "CanopyX.Html/Assets/canopyx-detail-rows.css", "CanopyX.Html/Assets/canopyx-grouping.js", "CanopyX.Html/Assets/canopyx-grouping.css",
+    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css", "CanopyX.Html/Assets/canopyx-detail-rows.js", "CanopyX.Html/Assets/canopyx-detail-rows.css", "CanopyX.Html/Assets/canopyx-grouping.js", "CanopyX.Html/Assets/canopyx-grouping.css", "CanopyX.Html/Assets/canopyx-record-panel.js", "CanopyX.Html/Assets/canopyx-record-panel.css",
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js",
     ...['pl','de','es','fr','it'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");

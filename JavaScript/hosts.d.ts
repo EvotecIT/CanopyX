@@ -3,6 +3,7 @@ import type {
   CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
 } from "./protocol.js";
 import type { CanopyPlugin } from "./plugins.js";
+import type { RecordPanelOptions } from "./records.js";
 import type { TreeGrid } from "./index.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
@@ -137,7 +138,7 @@ export interface TreeExport extends ExportCapture {
   rows(options?: { signal?: AbortSignal }): AsyncIterable<TreeExportRow>;
 }
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */
-interface HostOptionsBase {
+interface HostOptionsBase extends RecordPanelOptions {
   source?: DataSource;
   labels?: CanopyLabels;
   requestTimeoutMs?: number;
@@ -156,6 +157,8 @@ interface HostOptionsBase {
   interactionTimeoutMs?: number;
   renderers?: Record<string, (node: CanopyNode, element: HTMLElement, context: CellContext) => boolean>;
   renderDetail?: (node: CanopyNode, element: HTMLElement) => boolean;
+  /** Replaces the tree's record drawer with the host's own view of the node (a frozen copy); restore returnFocus when it closes. */
+  onDetails?: (event: { node: Readonly<CanopyNode>; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
   onSelect?: (node: CanopyNode | null, nodes: CanopyNode[]) => void;
   onToggle?: (node: CanopyNode, expanded: boolean) => void;
   onLoad?: (node: CanopyNode | null, info: LoadInfo) => void;

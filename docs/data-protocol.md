@@ -27,6 +27,9 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridRecordQuery` | The browser; `CanopyGridRecordQuery.ToJson()` | A record's drawer opens and its details load on demand ([Record details](#record-details)) |
+| `gridRecord` | `CanopyGridRecord.ToJson(view)` | A host answers a record request |
+| `gridRecordPack` | `CanopyRecordSidecar.Write` | A record's drawer opens and its details are in a record pack beside the page |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -78,7 +81,7 @@ The reporting runtime also captures `fileName`, `locale` and an optional `timeZo
 
 Export controls expose progress and cancellation for CSV, copy, export formats and, on the reporting runtime, an optional host print action; CSV and copy report record progress on the reporting runtime. Hosted Office generation receives an optional `reportProgress(phase, completed)` callback; its counts and phases must advance monotonically. Retired callbacks cannot update UI after cancellation, timeout or destruction. Offline reports retain bounded CSV/copy, and may link host-prepared Office files or script-free print artifacts. An offline report does not imply that an HTTP export service exists.
 
-Enter on a row, double click, the Record details overflow action, and Ctrl/Command+Enter open a record drawer. F2 enters cell navigation. The built-in drawer shows every declared field using its cell presenter, supports previous/next records with Up/Down, and restores focus when Escape closes it. Its title is the identity column's text; its subtitle is that column's secondary text (a cell's `secondary`, or the presenter's `secondaryColumn`), and without one the drawer has no subtitle (it never shows the raw row id). Focus moves to the title; its focus ring shows when the drawer was opened from the keyboard, not by pointer. It docks beside the grid on wide screens and becomes a modal full-screen sheet on phones. Configure `onDetails` to supply a host-owned record view instead; its context retains an immutable raw row, accepted query, cancellation signal and `returnFocus`. A newer details request or query cancels an unfinished opening operation. Hosts own their completed view and focus restoration. On phones a plain row click also opens the drawer.
+Enter on a row, double click, the Record details overflow action, and Ctrl/Command+Enter open a record drawer. F2 enters cell navigation. The built-in drawer shows every declared field (except columns with `drawer: false`) as its cell shows it: its presenter, its host or plugin renderer, or its text with tone, tooltip and badges; a view's [record panel](#record-panel) structures it further. It supports previous/next records with Up/Down, and restores focus when Escape closes it. Its title is the identity column's text; its subtitle is that column's secondary text (a cell's `secondary`, or the presenter's `secondaryColumn`), and without one the drawer has no subtitle (it never shows the raw row id). Focus moves to the title; its focus ring shows when the drawer was opened from the keyboard, not by pointer. It docks beside the grid on wide screens and becomes a modal full-screen sheet on phones. Configure `onDetails` to supply a host-owned record view instead; its context retains an immutable raw row, accepted query, cancellation signal and `returnFocus`. A newer details request or query cancels an unfinished opening operation. Hosts own their completed view and focus restoration. On phones a plain row click also opens the drawer.
 
 Row activation (a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, and a plain click when `rowAction` is `details` or `link` or on a phone) first dispatches the cancelable `canopyx:rowActivate` event on the host element with `{ id, row, keyboard }` (`row` a frozen copy of the loaded record, `keyboard` true for Enter) and calls the `onRowActivate(detail)` option. Calling `preventDefault()` on the event, or returning `false` from the callback, keeps the row's own action (the drawer or `onDetails`, or the row's link) from running, so a host can open its own drawer for the row; otherwise the action runs as before. The Record details action, the phone "+N" button and `openDetails(id)` open details directly. On a row whose `rowAction` is `link`, Enter follows the link like a click (Ctrl/Command+Enter still opens details). Trees offer the same activation hook (see [View](#view)).
 
@@ -272,6 +275,88 @@ A grid row's optional `detail` is a table, properties or html payload (as on tre
 `{ "type": "tree", "roots": [...] }` for the nested tree. Detail payloads never join queries, sorting, search or record
 counts. Exports that include details add `details: true` to the request, and each exported record a `detail` table,
 properties or html payload (nested rows become a table of the nested view's visible columns).
+
+### Record panel
+
+A grid's or tree view's optional `record` is its record panel ([record-panel.md](record-panel.md)): the record drawer with
+record-only fields, sections, tabs, a pinned summary, structured values, related records, deep links and record actions. A view
+that declares one, a column with a `structured` presenter, or a structured cell loads the `record-panel` part (payload
+`application/x-canopyx-record-panel`, or `canopyx-record-panel.js` and `.css` beside the runtime).
+
+| Field | Meaning |
+| --- | --- |
+| `fields` | Record-only fields `{ id, title, kind?, presenter?, wrap?, section? }`; ids differ from the column ids. Rows carry their values in `fields` (nodes too); they never join queries, search, sorting, the Columns menu, exports or saved views. Presenters apply on flat grids. |
+| `header` | `{ status?, facts? }`: the field shown first in the pinned summary, and up to six key facts. |
+| `sections` | `{ id, label, fields?, collapsed?, renderer?, sections? }`, nested up to three levels. A field shows in the first section that lists it; every other field joins a trailing "Other fields" section. Without sections, fields group by their section label. `renderer` names a plugin's `drawerSections` entry or the host's `recordSections`. |
+| `tabs` | `{ id, label, sections }` listing top-level sections; unlisted sections join the last tab. |
+| `hideEmpty` | Empty fields hide until the reader shows them. Default true. |
+| `jumpList` | A jump list of a tab's sections; absent shows it from four sections. |
+| `deepLink` | `true` or `{ key }`: the open record is written to the address as `#<key>=<view>:<id>` (key `record`; a tree writes the node's id path joined by `/`) and opened from it. |
+| `source` | `{ kind: "inline" }` (default), `{ kind: "host" }` or `{ kind: "sidecar", base, shards }`: where record details load from (below). |
+| `actions` | `{ copy?, print?, export?, link? }`: `false` switches a built-in record action off. |
+
+Columns accept `drawer: false`, which keeps a column out of the drawer and the record panel. Tree columns accept `section`,
+the drawer section of the column. Writers and readers check that every id is unique and that sections, tabs and the summary
+name declared fields and sections.
+
+#### Record details
+
+A record's details load when its drawer opens: from the host's `loadRecord(request, { signal })` option (whatever the
+declared source), from a hosted grid source's `record(request, { signal })` hook, or from record packs. The request is a
+`gridRecordQuery`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "revision": "r7" }
+{ "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "field": "sameName", "offset": 5, "limit": 50 }
+{ "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "row": true }
+```
+
+`revision` is the accepted dataset revision of a hosted grid (inline grids send none). `field`, `offset` and `limit` ask for
+the next rows of a collection field ("Load more"); `row: true` asks for the record's row too, because the browser has not
+loaded it (a deep link or a related record outside the loaded rows). The answer is a `gridRecord` (a plain object with the same
+members is accepted from browser hooks; `null` means no details):
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRecord", "view": "certificates", "id": "cert-0042", "revision": "r7",
+  "fields": { "thumbprint": "A1B2…", "contacts": { "records": { "columns": [...], "rows": [...], "total": 4 } } },
+  "cells": { "names": { "value": "a, b, c", "items": ["a", "b", "c"] } },
+  "row": { "id": "cert-0042", "cells": { ... } } }
+```
+
+`fields` holds record field values; `cells` holds values of grid columns that replace the row's cells in the drawer only;
+`row` is the record's row. An answer to a field page holds that field alone: `{ "fields": { "sameName": { "records": { "rows":
+[...], "total": 12 } } } }`, whose rows the panel appends (an empty page ends the list). The panel caches 64 records per view;
+a failed load shows Retry and reports the error.
+
+Record packs (`kind: "sidecar"`) are scripts beside the page, `<base>r<n>.js`, where `n` is the FNV-1a hash of the record id's
+UTF-16 code units (from 2166136261, multiplying by 16777619, unsigned 32-bit) modulo `shards`. Each registers, like the tree
+sidecar files, `[viewId, "r<n>", document]` with a `gridRecordPack`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRecordPack", "view": "certificates", "shard": 3,
+  "records": [{ "id": "cert-0042", "fields": { ... }, "cells": { ... } }] }
+```
+
+`CanopyRecordSidecar.Write(pageFolder, view, records)` writes them, streaming one record at a time; `CanopyGridRecord` and
+`CanopyGridRecordQuery` write the two exchange documents. Packs load from `file://`; the browser keeps 16 of them.
+
+#### What a server adapter implements for gridRecord
+
+A remote adapter (such as `CanopyX.Data`, which serves `gridQuery` today) adds a record endpoint and routes the browser
+source's `record` hook to it:
+
+1. **Request parsing.** Read `gridRecordQuery`: `view` (a configured grid), `id` (a record identity; bounded, not interpreted
+   as a key expression), optional `revision`, `field` with `offset` and `limit` (1 to 10,000), and `row`.
+2. **Authorization.** Check the caller may read the record and every field it returns; leave out fields the caller may not
+   see (a missing field is an empty field) and apply the field allow-list the adapter has for columns to record fields too.
+3. **Revision.** Answer from the requested revision or reject a stale one, as page requests do; echo `revision`.
+4. **Record lookup.** Find the record by its stable identity (an indexed key lookup, never a scan of the query result), map its
+   detail columns or joined tables to `fields` and fuller column values to `cells`, and include `row` when asked.
+5. **Collection pages.** For `field`, page that collection with the same ordering every time (a stable key last), return the
+   rows from `offset` (at most `limit`) and the collection's `total`; reject a field that is not a collection.
+6. **Limits.** Bound the answer's size (rows per page, serialized bytes) and the request rate per caller, and stream large
+   answers. Write the answer with `CanopyGridRecord.ToJson(view)`, which checks it against the definition.
+
 ### Safe cell presenters
 
 Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
@@ -295,6 +380,7 @@ Cell objects optionally include `secondary` and up to 4096 ordered `series` peri
 | `missing` | None | Empty values use a muted em dash. |
 | `list` | Required literal `separator`, 1–16 code units, and integer `limit`, 1–16 | Text column with a bounded delimiter-separated preview and a complete-text dialog when truncated. |
 | `longText` | Optional `mono` | Wrapped text is clamped to four lines with a fade and Show more; explicit fixed-height rows retain a one-line preview. The complete text opens in a dialog. |
+| `structured` | Optional `display` (`count`, `chips`, `first`), `limit` (1–16) and `countText` (with `{count}`, at most 256 code units) | A structured value's summary ([Cell](#cell)): a count, the first chips and +N, or the first item and +N; without `display` a list shows chips, an object its first value and the rest a count, and a cell's own `text` wins. Comes with the record panel part. |
 
 Links are limited to 8,192 code units and reject control characters. Long-text previews use a bounded estimate of five lines at the current column width and preserve surrogate pairs. Complete values remain available to queries and exports. Long-text and list dialogs retain text literally, return focus on ordinary close, and close when the accepted query retires or the grid is destroyed. The dialog follows the grid's resolved theme. `gridExpandCell` and `gridCloseCell` provide translated control labels; boolean values reuse `yes` and `no`.
 
@@ -506,6 +592,15 @@ A cell is either a bare value (string, number, boolean, or null) or an object:
 - Every string is inserted as text, never as HTML.
 
 A badge has `text`, an optional `tone`, and an optional `title` (tooltip).
+
+A cell object may hold one structured value, which the record panel shows whole and the `structured` presenter summarises
+([record-panel.md](record-panel.md#structured-values)): `items` (a list of cells: values with their own tone, tooltip or link;
+at most 4,096), `fields` (an object: `{ name, value, kind? }` entries, at most 512), `records` (a collection: `{ columns, rows
+| roots, total?, pageLength?, pageSize?, target? }`), `events` (a timeline: `{ time?, summary, actor?, kind?, tone?, ref?,
+changes? }`, at most 10,000) or `changes` (`{ name, before, after, kind? }`, at most 512). Values nest up to eight levels;
+list items are plain values. Any cell may carry `ref`, a link `{ id, view?, path? }` to another record of its own view or of the
+grid or tree whose view id it names (`path` is a tree record's id path). Search, sorting, filters and exports keep reading
+`value` and `text`; structured members never join queries.
 
 ### Tones
 

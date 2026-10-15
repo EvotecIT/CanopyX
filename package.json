@@ -42,6 +42,8 @@
     "./detail-rows.css": "./CanopyX.Html/Assets/canopyx-detail-rows.css",
     "./grouping.js": "./CanopyX.Html/Assets/canopyx-grouping.js",
     "./grouping.css": "./CanopyX.Html/Assets/canopyx-grouping.css",
+    "./record-panel.js": "./CanopyX.Html/Assets/canopyx-record-panel.js",
+    "./record-panel.css": "./CanopyX.Html/Assets/canopyx-record-panel.css",
     "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
     "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
     "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
@@ -81,7 +83,9 @@
     "CanopyX.Html/Assets/canopyx-detail-rows.js",
     "CanopyX.Html/Assets/canopyx-detail-rows.css",
     "CanopyX.Html/Assets/canopyx-grouping.js",
-    "CanopyX.Html/Assets/canopyx-grouping.css"
+    "CanopyX.Html/Assets/canopyx-grouping.css",
+    "CanopyX.Html/Assets/canopyx-record-panel.js",
+    "CanopyX.Html/Assets/canopyx-record-panel.css"
   ],
   "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

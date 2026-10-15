@@ -10,6 +10,8 @@ import type { CanopyPlugin, CanopyPartDefinition } from "./plugins.js";
 export * from "./protocol.js";
 export * from "./hosts.js";
 export * from "./plugins.js";
+export * from "./records.js";
+import type { OpenRecordOptions } from "./records.js";
 
 /** One mounted grid. Every method owns presentation only; host hooks own domain writes. */
 export interface TreeGrid {
@@ -67,6 +69,8 @@ export interface TreeGrid {
   setColumnPinned(columnId: string, pin: "left" | "right" | "none"): void;
   /** Once ready: opens the record drawer of a visible node, its label and every other column (the phone "+N" button opens it too). */
   openDetails(id: string): Promise<void>;
+  /** Opens a node in the record drawer, also one in a collapsed branch, or one the id path in options leads to. */
+  openRecord(id: string, options?: OpenRecordOptions): Promise<void>;
   getState(): ViewState;
   setState(state: ViewState | LegacyViewState): Promise<boolean>;
   search(query: string, limit?: number): Promise<SearchResult>;

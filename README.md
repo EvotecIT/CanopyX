@@ -40,7 +40,7 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Grouping and details | Nested branches and detail rows | Multi-level row groups with labelled aggregates, and expandable detail rows holding a template, HTML or a nested grid or tree |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). English labels are built in; Polish, German and Spanish packs are included.
+Both views use virtual rows and support keyboard navigation. Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). Grids and trees can open each record in a record panel: record-only fields in tabs and sections, lists, objects and nested collections, links between records, timelines, record deep links, and copy, print and export of one record, with details loaded on demand for large reports (see [docs/record-panel.md](docs/record-panel.md)). English labels are built in; Polish, German and Spanish packs are included.
 
 ## Installation
 
