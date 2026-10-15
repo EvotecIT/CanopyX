@@ -594,7 +594,28 @@ CanopyX.configure("linked-tree", { linkEvents: true });
 void linked.setExternalFilter("open", { field: "load", range: [null, null] });
 // @ts-expect-error An external filter has values or a range, not both.
 void linked.setExternalFilter("both", { field: "load", values: [1], range: [1, 2] });
-// Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
+// Live data: transactions, the batched update rate, polling and the revision-aware refresh (docs/live-data.md).
+import type { GridLiveResult, GridLiveState, GridPoller, GridTransaction } from "@evotecit/canopyx/grid";
+const liveGrid = createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "live", label: "Live", pageSize: 100, selection: "multiple", search: true, source: { kind: "inline" },
+    columns: [{ id: "name", title: "Name", kind: "text" }, { id: "load", title: "Load", kind: "number" }], rows: [],
+    live: { stableOrder: true, flash: { durationMs: 900 }, batchMs: 250, announce: true } },
+  live: { load: ({ signal }) => signal.aborted ? null : [{ id: "a", cells: { name: "A", load: 1 } }] },
+  onRowsChanged: (event: GridLiveResult) => void [event.added, event.updated, event.removed, event.missing, event.orderChanged, event.source] });
+const liveChange: GridTransaction = { add: [{ id: "b", cells: { name: "B", load: 2 } }], update: [{ id: "a", cells: { load: null } }], remove: ["c", { id: "d" }] };
+void liveGrid.applyTransaction(liveChange).then((result: GridLiveResult) => result.updated.length);
+void liveGrid.addRows([{ id: "e", cells: { name: "E" } }]);
+void liveGrid.updateRows([{ id: "e", cells: { load: 4 }, tone: null }]);
+void liveGrid.removeRows(["e"]);
+void liveGrid.setRows([]);
+void liveGrid.flushTransactions();
+void liveGrid.refreshRows();
+void liveGrid.resort();
+void liveGrid.poll({ intervalMs: 5000, immediate: true }).then((poller: GridPoller) => { poller.pause(); poller.resume(); void poller.refresh(); poller.stop(); return poller.active && !poller.paused; });
+const liveState: GridLiveState = liveGrid.getLiveState();
+void [liveState.orderChanged, liveState.pending, liveState.polling, liveState.revision];
+// @ts-expect-error A transaction lists rows to add, not a single row.
+void liveGrid.applyTransaction({ add: { id: "x", cells: {} } });// Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
 ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });
 const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "orders", label: "Orders",
