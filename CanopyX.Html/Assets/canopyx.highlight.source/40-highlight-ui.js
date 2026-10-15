@@ -20,7 +20,7 @@
   function hlRefresh(view) {
     const state = view.hl, compiled = hlCompile(view);
     state.active = !!view.highlightOn && (compiled.terms.length > 0 || compiled.wholes.length > 0);
-    if (compiled.key !== state.key) state.current = null;
+    if (compiled.key !== state.key) { state.current = null; state.announced = null; }
     state.key = compiled.key; state.text = view.searchInput?.value;
     state.columns = new Map();
     for (const column of view.columns) { const applicable = hlColumnTerms(compiled, column); if (applicable) state.columns.set(column.id, applicable); }

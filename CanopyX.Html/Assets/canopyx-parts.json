@@ -265,7 +265,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "c8627d7e1c629936",
+      "version": "6ee8af90585c6e5f",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [

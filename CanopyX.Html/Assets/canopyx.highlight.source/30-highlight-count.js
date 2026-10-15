@@ -77,7 +77,11 @@
       hlSync(view);
       // The finished count is announced once typing pauses; the count itself is not a live region.
       clearTimeout(state.announceTimer);
-      state.announceTimer = setTimeout(() => !view.destroyed && state.active && hlAnnounce(view, hlCountText(view)), 700);
+      // A recount that changes nothing (a layout switch, a repaint) leaves the live region to the other announcements.
+      state.announceTimer = setTimeout(() => {
+        const text = !view.destroyed && state.active && hlCountText(view);
+        if (text && text !== state.announced) { state.announced = text; hlAnnounce(view, text); }
+      }, 700);
       view.emit("matches", { total, current: hlPosition(view), complete });
     })().catch(error => { if (error.name !== "AbortError") view.emit("error", { error }); });
   }
