@@ -45,7 +45,7 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"]]) {
     await expect(page.locator(".cx-editbar-text")).toHaveText("Unsaved changes: 6 · Errors: 1");
     await shot(page, `editing-${theme}-${width}-changes`);
     // Undo takes the invalid name back; Save sends the rest in one gridCommit.
-    await page.keyboard.press("Control+z");
+    await page.keyboard.press("ControlOrMeta+z");
     await expect(name).not.toHaveAttribute("aria-invalid", "true");
     await page.locator(".cx-editbar").getByRole("button", { name: "Save" }).click();
     await expect(page.locator("#register-log")).toContainText("Mock service answered at revision r2: 3 saved, 2 not saved.");

@@ -28,7 +28,7 @@ test("a paste applies editable cells through editing, refuses read-only and inva
   await serveGrid(page, editableBudget(), { options: "{ editing: { isEditable: (row, column) => !(row.id === 'r0001' && column === 'feb') } }" });
   await bodyCell(page, 0, 1).click();
   await page.evaluate(() => navigator.clipboard.writeText("Sales\t500\t600\n\t700\t-5\n"));
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press("ControlOrMeta+v");
   await expect(page.locator(".cx-live")).toHaveText("Pasted 3 cells. 3 cells were not pasted");
   expect(await value(page, 0, "jan")).toBe(500);
   expect(await value(page, 0, "feb")).toBe(600);

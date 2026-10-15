@@ -4,7 +4,17 @@
   const GROUP_QUERY = DataGrid.prototype.setQuery;
   Object.assign(DataGrid.prototype, {
     projectedRowKey(event, row) {
-      if (!row.group || !["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) return false;
+      if (!row.group) return false;
+      const cell = event.target.closest(".cx-cell");
+      if (cell && event.target === cell && ["Enter", " "].includes(event.key)) {
+        if (event.key === "Enter") this.focusCell(row, this.rowCells(cell.parentElement).indexOf(cell), 0, true);
+        event.preventDefault(); return true;
+      }
+      // Group rows use synthetic ordinals: the shared cell keys move within the heading without focusing a record.
+      if (cell && (["ArrowLeft", "ArrowRight", "Home", "End", "Escape", "F2"].includes(event.key) ||
+          event.target !== cell && ["Enter", " "].includes(event.key))) return TreeGrid.prototype.onCellKey.call(this, event);
+      if (event.key === "F2") { this.focusCell(row, 0, 0, true); event.preventDefault(); return true; }
+      if (!["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) return false;
       if (event.target.closest("button,input,select") && ["Enter", " "].includes(event.key)) return true;
       event.preventDefault();
       if (this.pendingQuery) return true;

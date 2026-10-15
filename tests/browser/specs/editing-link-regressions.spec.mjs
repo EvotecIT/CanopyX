@@ -42,12 +42,16 @@ for (const [editor, value] of [["date", "2026-10-15"], ["time", "13:45"], ["date
     const data = view(); data.columns[0].editor = editor; data.rows[0].cells.name = "legacy date text";
     await serveGrid(page, { view: data });
     await page.evaluate(`${api}.beginEdit('a0','name')`);
-    await expect(cell(page, "a0", 0).locator("input")).toHaveValue("");
+    const input = cell(page, "a0", 0).locator("input");
+    await expect(input).toBeVisible();
+    await expect(input).toHaveAttribute("type", editor === "datetime" ? "datetime-local" : editor);
     expect(await page.evaluate(`${api}.endEdit()`)).toBe(true);
+    await expect(cell(page, "a0", 0)).toHaveText("legacy date text");
+    expect(await page.evaluate(`${api}.view.rows[0].cells.name`)).toBe("legacy date text");
     expect(await page.evaluate(`${api}.getChanges()`)).toEqual([]);
     await page.evaluate(`${api}.beginEdit('a0','name')`);
     await cell(page, "a0", 0).locator("input").fill(value);
-    await page.evaluate(`${api}.endEdit()`);
+    expect(await page.evaluate(`${api}.endEdit()`)).toBe(true);
     expect((await page.evaluate(`${api}.getChanges()`))[0].values.name).toBe(value);
   });
 

@@ -16,9 +16,10 @@
   function gridOptions(column) { return column.presenter || {}; }
 
   // Canvas font strings do not carry font-variant-numeric. OpenType tabular substitutions affect digits and numeric
-  // punctuation (including date hyphens and spaces). One native batch per effective font/variant captures their advances;
-  // row samples still use canvas, and fonts without different advances keep its ordinary fast path.
-  const COLUMN_DIGITS = new Map(), COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_DIGITS = /[0-9\s.,:;+\-−/()\[\]]/;
+  // punctuation (including date hyphens and spaces). Some engines shape these only within a numeric run, so one native
+  // batch per effective font/variant captures numeric and plain advances. Row samples still use canvas, and fonts without
+  // different advances keep its ordinary fast path.
+  const COLUMN_DIGITS = new Map(), COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
   function gridNumericVariant(grid) {
     let sample = grid.querySelector(".cx-cell"), owned = !sample;
     if (owned) { sample = document.createElement("span"); sample.className = "cx-cell"; sample.style.display = "none"; grid.appendChild(sample); }
@@ -28,7 +29,7 @@
   }
   function gridMeasureText(context, value, variant = "normal") {
     const text = String(value).slice(0, 512), measured = context.measureText(text).width;
-    if (!variant.includes("tabular-nums") || !COLUMN_HAS_DIGITS.test(text)) return measured;
+    if (!variant.includes("tabular-nums") || !COLUMN_HAS_NUMERIC.test(text)) return measured;
     const font = context.font;
     let variants = COLUMN_DIGITS.get(font);
     if (!variants) {
@@ -39,21 +40,26 @@
       const probe = document.createElement("span"), glyphs = [];
       probe.style.cssText = "all:initial;position:absolute;visibility:hidden;display:flex;white-space:pre;padding:0;border:0;max-width:none;";
       probe.style.font = font; probe.style.fontVariantNumeric = variant;
-      for (const character of COLUMN_NUMERIC_CHARS) {
-        const glyph = document.createElement("span"); glyph.textContent = character; glyph.style.cssText = "flex:none;white-space:pre;";
-        probe.appendChild(glyph); glyphs.push(glyph);
+      for (const character of COLUMN_NUMERIC_CHARS) for (const numeric of [true, false]) {
+        const glyph = document.createElement("span"); glyph.textContent = (numeric ? "00" + character + "00" : character).repeat(10);
+        glyph.style.cssText = "flex:none;white-space:pre;"; probe.appendChild(glyph); glyphs.push(glyph);
       }
       document.body.appendChild(probe);
       // Read every glyph after the single insertion, so the batch requires one layout rather than one per character.
-      const digits = new Map();
-      glyphs.forEach((glyph, index) => {
-        const character = COLUMN_NUMERIC_CHARS[index], delta = glyph.getBoundingClientRect().width - context.measureText(character).width;
-        if (Math.abs(delta) > 0.02) digits.set(character.charCodeAt(0), delta);
-      });
+      // Two digits on either side activate contextual punctuation substitutions without single-pair kerning. Repeating
+      // also avoids engines' single-character shaping shortcut and reduces fractional layout rounding.
+      const zero = glyphs[0].getBoundingClientRect().width / 50, numeric = new Map(), plain = new Map();
+      for (let index = 0; index < COLUMN_NUMERIC_CHARS.length; index++) {
+        const character = COLUMN_NUMERIC_CHARS[index], canvas = context.measureText(character).width;
+        for (let mode = 0; mode < 2; mode++) {
+          const delta = glyphs[index * 2 + mode].getBoundingClientRect().width / 10 - (mode ? 0 : 4 * zero) - canvas;
+          if (Math.abs(delta) > 0.02) (mode ? plain : numeric).set(character.charCodeAt(0), delta);
+        }
+      }
       probe.remove();
-      variants.set(variant, digits.size ? digits : null);
+      variants.set(variant, { numeric: numeric.size ? numeric : null, plain: plain.size ? plain : null });
     }
-    const digits = variants.get(variant);
+    const advances = variants.get(variant), digits = /[0-9]/.test(text) ? advances.numeric : advances.plain;
     if (!digits) return measured;
     let width = measured;
     for (let index = 0; index < text.length; index++) {

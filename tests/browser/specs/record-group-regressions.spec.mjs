@@ -134,6 +134,62 @@ test("grouping keeps first-column aggregates and clears collapse keys after regr
   await expect(page.locator(".cx-row[data-cx-id]").first()).toBeVisible();
 });
 
+for (const depth of [1, 2]) test(`phone group totals use cell navigation and preserve row keys with ${depth} grouping levels`, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const view = groupedDefinition(); view.reporting.groupBy.length = depth;
+  await openGroups(page, view);
+  const heading = page.locator(".cx-grid-group").first(), toggle = heading.locator(".cx-grid-group-toggle");
+  const selection = heading.locator(".cx-grid-group-select"), totals = heading.locator(".cx-grid-group-aggregates");
+  const full = await totals.textContent();
+  expect(await page.locator(".cx-grid-group").evaluateAll(rows => rows.flatMap(row => [...row.querySelectorAll("button,input,a[href]")]
+    .filter(control => control.tabIndex >= 0)))).toEqual([]);
+  await heading.focus(); await page.keyboard.press("F2"); await expect(toggle).toBeFocused();
+  await page.keyboard.press("ArrowRight"); await expect(selection).toBeFocused();
+  await page.keyboard.press("ArrowRight"); await expect(totals).toBeFocused();
+  await page.keyboard.press("Enter");
+  const dialog = page.locator("dialog.cx-reporting-text");
+  await expect(dialog).toBeVisible(); await expect(dialog.locator("h4")).toContainText("Region:");
+  for (const part of full.split(" · ")) await expect(dialog.locator("pre")).toContainText(part);
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(totals).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  const plain = heading.getByRole("gridcell").nth(1); await expect(plain).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(plain).toBeFocused(); await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("ArrowLeft"); await expect(totals).toBeFocused();
+  await page.keyboard.press("ArrowLeft"); await expect(selection).toBeFocused();
+  await page.keyboard.press("ArrowLeft"); await expect(toggle).toBeFocused();
+  await page.keyboard.press("ArrowLeft"); await expect(heading).toBeFocused();
+  await page.keyboard.press("ArrowLeft"); await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await page.keyboard.press("ArrowRight"); await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  if (depth === 2) {
+    await page.keyboard.press("ArrowRight"); await expect(page.locator(".cx-grid-group").nth(1)).toBeFocused();
+    await heading.focus();
+  }
+  await nextFrames(page); await page.keyboard.press("Tab");
+  const summary = page.locator(".cx-summary-row .cx-grid-group-aggregates");
+  await expect(summary).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Query totals");
+  await page.keyboard.press("Escape"); await expect(summary).toBeFocused();
+});
+
+test("group controls finish held pointer actions across a public refresh", async ({ page }) => {
+  await openGroups(page);
+  const heading = page.locator(".cx-grid-group").first(), toggle = heading.locator(".cx-grid-group-toggle");
+  const heldRefresh = async control => {
+    await control.click({ trial: true }); const box = await control.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+    await page.evaluate(api + ".refresh()"); await nextFrames(page); await page.mouse.up();
+  };
+  await heldRefresh(toggle); await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  const selection = heading.locator(".cx-grid-group-select");
+  await selection.click(); await expect.poll(() => page.evaluate(api + ".getSelection().length")).toBe(12);
+  await expect(selection).toBeChecked();
+  await selection.click(); await expect.poll(() => page.evaluate(api + ".getSelection().length")).toBe(0);
+  await expect(selection).not.toBeChecked();
+  await heldRefresh(heading.locator(".cx-grid-group-aggregates"));
+  await expect(page.locator("dialog.cx-reporting-text h4")).toContainText("Region: East");
+});
+
 test("declared grouping without groupable does not offer or accept header grouping drops", async ({ page }) => {
   const view = groupedDefinition(); view.reporting.groupable = false; view.reporting.groupBy = [{ column: "region", direction: "asc" }];
   await openGroups(page, view);

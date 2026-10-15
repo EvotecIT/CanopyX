@@ -192,7 +192,7 @@
       const w = rowEl && rowEl._w;
       const cells = this.rowCells(rowEl);
       const index = cells.findIndex((cell) => cell.contains(e.target));
-      if (!w || w.status || index < 0 || e.isComposing || e.defaultPrevented) return index >= 0;
+      if (!w || w.status && !w.group || index < 0 || e.isComposing || e.defaultPrevented) return index >= 0;
       const cell = cells[index];
       const control = e.target !== cell ? e.target : null;
       if (control && control.matches(OWN_ARROWS)) {

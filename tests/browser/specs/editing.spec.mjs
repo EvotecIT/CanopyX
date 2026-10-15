@@ -201,16 +201,16 @@ test("undo and redo follow Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z, the edit bar and the
   }
   await expect(name).toHaveText("Second");
   await name.click();
-  await page.keyboard.press("Control+z");
+  await page.keyboard.press("ControlOrMeta+z");
   await expect(name).toHaveText("First");
   await expect(page.locator(".cx-live")).toContainText("Undone: Name");
-  await page.keyboard.press("Control+z");
+  await page.keyboard.press("ControlOrMeta+z");
   await expect(name).toHaveText("Laptop 0");
   await expect(name).not.toHaveClass(/cx-dirty/);
   expect(await changes(page)).toEqual([]);
-  await page.keyboard.press("Control+y");
+  await page.keyboard.press("ControlOrMeta+y");
   await expect(name).toHaveText("First");
-  await page.keyboard.press("Control+Shift+Z");
+  await page.keyboard.press("ControlOrMeta+Shift+Z");
   await expect(name).toHaveText("Second");
   // Discard reverts every change as one step that undo brings back.
   await page.locator(".cx-editbar").getByRole("button", { name: "Discard" }).click();
@@ -281,6 +281,6 @@ test("columns whose source text the host formats keep that format when edited, t
   await page.keyboard.press("Enter");
   await expect(edited).toHaveText("€1,002.00");
   // Undo restores the source cell, text included.
-  await edited.click(); await page.keyboard.press("Control+z");
+  await edited.click(); await page.keyboard.press("ControlOrMeta+z");
   await expect(edited).toHaveText("€900.00");
 });

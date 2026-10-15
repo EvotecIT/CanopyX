@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "8e4e7e4b96163db1",
+      "version": "05150dd43dc5adec",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -246,7 +246,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "07dcfc52705b12dd",
+      "version": "d3dcc662fc3dd11f",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [

@@ -85,10 +85,10 @@ test("large host exports receive frozen accepted metadata without client materia
 test("clipboard denial is observable and keyboard copying leaves native controls in charge",async({page})=>{
   await open(page,definition(),`window.copies=[];window.copyErrors=[];CanopyX.configure('records',{onError:event=>window.copyErrors.push(event.error.message)});
 Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copies.push(text);if(window.deny)throw new Error('Permission denied');}}});`);
-  const row=page.locator('.cx-row[data-cx-id="000"]');await row.focus();await page.keyboard.press('Control+c');
+  const row=page.locator('.cx-row[data-cx-id="000"]');await row.focus();await page.keyboard.press('ControlOrMeta+c');
   await expect.poll(()=>page.evaluate(()=>window.copies.length)).toBe(1);
-  await page.getByRole('searchbox').focus();await page.keyboard.press('Control+c');expect(await page.evaluate(()=>window.copies.length)).toBe(1);
-  await page.evaluate(()=>window.deny=true);await row.focus();await page.keyboard.press('Control+c');
+  await page.getByRole('searchbox').focus();await page.keyboard.press('ControlOrMeta+c');expect(await page.evaluate(()=>window.copies.length)).toBe(1);
+  await page.evaluate(()=>window.deny=true);await row.focus();await page.keyboard.press('ControlOrMeta+c');
   await expect.poll(()=>page.evaluate(()=>window.copyErrors)).toEqual(['Permission denied']);
 });
 test("record details use immutable raw records and cancel older hooks on navigation or query change",async({page})=>{
@@ -154,7 +154,7 @@ test("export cancellation applies between fetched records and before an empty se
 test("focused cell clipboard fields retain formula protection and tab escaping", async ({page}) => {
   const view = definition(); view.rows[0].cells.name = '=SUM(1,2)\tvalue\nnext';
   await open(page,view,"window.copies=[];Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>window.copies.push(text)}});");
-  const row = page.locator('.cx-row[data-cx-id="000"]'); await row.focus(); await page.keyboard.press('F2'); await page.keyboard.press('Control+c');
+  const row = page.locator('.cx-row[data-cx-id="000"]'); await row.focus(); await page.keyboard.press('F2'); await page.keyboard.press('ControlOrMeta+c');
   await expect.poll(() => page.evaluate(() => window.copies)).toEqual(['"\'=SUM(1,2)\tvalue\nnext"']);
 });
 
