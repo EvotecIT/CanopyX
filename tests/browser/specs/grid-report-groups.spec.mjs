@@ -321,3 +321,18 @@ test('record export does not request or replace presentation summaries for a dif
   expect(first).toBe('host-0');expect(await page.evaluate('summaryCalls.length')).toBe(calls);
   expect(await page.evaluate(api+'.getSummary()')).toEqual(summary);
 });
+
+test('aggregate cells name their function and use the column precision, compact for large values and translatable',async({page})=>{
+  await open(page);
+  const footer=page.locator('.cx-summary-row [role="gridcell"]');
+  await expect(footer.nth(0)).toHaveText('Query totals');await expect(footer.nth(0)).toHaveClass(/cx-summary-caption/);await expect(footer.nth(2)).not.toHaveClass(/cx-summary-caption/);
+  await expect(footer.nth(2)).toHaveText('count 19 · sum 226 · avg 11.9 · min 1 · max 23');
+  await expect(footer.nth(2)).toHaveAttribute('title','Amounts present: 19 · Total amount: 226 · Average amount: 11.895 · Minimum amount: 1 · Maximum amount: 23');
+  await expect(page.locator('.cx-grid-group').first().locator('[role="gridcell"]').nth(2)).toHaveText('count 6 · sum 23 · avg 3.8 · min 1 · max 7');
+  const large=definition({reporting:{aggregates:aggregates.filter(item=>['sum','average'].includes(item.id))},
+    rows:[1500000.25,2000000.5,12.75].map((amount,i)=>({id:'big'+i,cells:{name:'Big '+i,category:'A',amount}}))});
+  await open(page,large,"document.documentElement.lang='de';CanopyX.configure('groups',{labels:{gridAggregateSum:'Summe {value}',gridAggregateAverage:'Ø {value}'}});");
+  const cell=page.locator('.cx-summary-row [role="gridcell"]').nth(2);
+  await expect(cell).toHaveText(/^Summe 3,5\s?Mio\. · Ø 1,2\s?Mio\.$/);
+  await expect(cell).toHaveAttribute('title',/^Total amount: 3\.500\.013,5 · Average amount: 1\.166\.671,167$/);
+});

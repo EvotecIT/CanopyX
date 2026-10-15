@@ -2,7 +2,8 @@
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridGroupHeading: "{column}: {value} ({count} records)", gridGroupMissing: "Missing value",
     gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals",
-    gridGroupOrder: "Group order is fixed by this report"
+    gridGroupOrder: "Group order is fixed by this report", gridAggregateCount: "count {value}", gridAggregateSum: "sum {value}",
+    gridAggregateAverage: "avg {value}", gridAggregateMinimum: "min {value}", gridAggregateMaximum: "max {value}"
   }));
   const GROUP_BASE = {}, GROUP_API = GRID_REPORTING.api;
   for (const name of ["buildGridControls", "buildHeader", "fillRow", "setFocus", "onKey", "setQuery"]) GROUP_BASE[name] = DataGrid.prototype[name];
@@ -50,8 +51,8 @@
       if(this.summaryRenderKey?.every((value,index)=>value===key[index]))return;this.summaryRenderKey=key;
       this.summaryControls.replaceChildren();const row=h("div","cx-summary-row");row.setAttribute("role","row");row.setAttribute("aria-rowindex",String(count+2));row.style.width=this.rowWidth+"px";
       this.cols.forEach((column,index)=>{const cell=this.newCell(index,column.width,column.kind);cell.setAttribute("role","gridcell");cell.style.width=column.renderWidth+"px";
-        const aggregates=this.view.reporting.aggregates.filter(item=>item.column===column.id),value=aggregates.map(item=>formatValue(this.summary.aggregates[item.id],"number",this.fmt)).join(" · ");
-        setText(cell,value||index===0?value||this.labels.gridSummary:"");cell.title=aggregates.map(item=>item.label+": "+formatValue(this.summary.aggregates[item.id],"number",this.fmt)).join(" · ");row.appendChild(cell);});
+        const parts=reportingAggregateParts(this,column,this.view.reporting.aggregates.filter(item=>item.column===column.id),this.summary.aggregates);
+        setText(cell,parts.text||(index===0?this.labels.gridSummary:""));cell.classList.toggle("cx-summary-caption",!parts.text&&index===0);cell.title=parts.title;row.appendChild(cell);});
       this.summaryControls.appendChild(row);
     },
     fillRow(element, row) {
@@ -73,7 +74,7 @@
             const options=column.presenter||this.view.reporting.presenters?.[column.id];
             if(options)gridCellRenderer(this,column,options)({id:row.group.key,cells:row.group.cells},cell);
             else setText(cell,cellText(row.group.cells[column.id],column,this.fmt));
-          }else{setText(cell,aggregates.map(item=>formatValue(row.group.aggregates[item.id],"number",this.fmt)).join(" · "));cell.title=aggregates.map(item=>item.label+": "+formatValue(row.group.aggregates[item.id],"number",this.fmt)).join(" · ");}}
+          }else{const parts=reportingAggregateParts(this,column,aggregates,row.group.aggregates);setText(cell,parts.text);cell.title=parts.title;}}
       });
       element._cells = cells;
       this.paintGridHighlights(element, row);
