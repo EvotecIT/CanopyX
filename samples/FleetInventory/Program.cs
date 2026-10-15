@@ -39,7 +39,9 @@ var grids = new[] {
 foreach (var grid in grids) {
     var map = FleetGrid.Map(grid.View);
     var editable = map.Schema.EditableColumns.Count > 0;
-    app.MapCanopyRemote(grid.Endpoint, http => http.RequestServices.GetRequiredService<FleetDb>().Machines, map, options => {
+    // What a caller may read; real hosts restrict it per user (for example .Where(machine => machine.TeamId == teamOfUser)).
+    IQueryable<Machine> Readable(HttpContext http) => http.RequestServices.GetRequiredService<FleetDb>().Machines;
+    app.MapCanopyRemote(grid.Endpoint, Readable, map, options => {
         options.Query.Executor = new EfCoreExecutor();
         options.Query.Revision = revision.ReadAsync;
         options.Limits.MaxPageSize = 1000;
@@ -50,6 +52,8 @@ foreach (var grid in grids) {
         options.Writer = http => {
             var db = http.RequestServices.GetRequiredService<FleetDb>();
             return new CanopyQueryableWriter<Machine>(map, new EfCoreWriteStore<Machine>(db), new CanopyQueryableWriterOptions<Machine> {
+                // Commits change only records the caller can read through the same query as the grid.
+                Scope = () => Readable(http),
                 Revision = revision.ReadAsync,
                 Saving = async (_, token) => { await FleetRevision.IncrementAsync(db, token); return null; },
                 Failed = (row, error) => http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("FleetInventory").LogError(error, "Machine {Id} was not saved.", row.Id)
@@ -63,8 +67,11 @@ foreach (var grid in grids) {
     app.MapGet(grid.Path, (HttpContext http) => Results.Content(http.Request.Query["theme"] == "dark" ? dark : light, "text/html; charset=utf-8"));
 }
 
-// The conflict demonstration of the editable page. The custom header keeps other sites' forms from calling it.
+// The conflict demonstration of the editable page: it answers callers on this machine only, and the custom header keeps
+// other sites' forms from calling it.
 app.MapPost("/api/demo/other-user/{id:int}", async (int id, HttpContext http, FleetDb db) => {
+    var caller = http.Connection.RemoteIpAddress;
+    if (caller == null || !System.Net.IPAddress.IsLoopback(caller)) return Results.NotFound();
     if (http.Request.Headers["X-Fleet-Demo"] != "1") return Results.BadRequest();
     return await FleetDemo.OtherUserAsync(db, id, http.RequestAborted) ? Results.NoContent() : Results.NotFound();
 });

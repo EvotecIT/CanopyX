@@ -284,7 +284,9 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 - **Authorization.** Endpoints require authorization by default (the default policy, or `AuthorizationPolicy`); set
   `AllowAnonymous` only for public data. Row-level restrictions belong in the query callback, which runs per request.
   The commit route requires `WriteAuthorizationPolicy` on top of the read authorization, and mapping a writer without
-  one fails: the default policy would let every reader write. `AllowAnonymousWrites` exists for local samples.
+  one (or with a blank name) fails: the default policy would let every reader write. `AllowAnonymousWrites` exists for
+  local samples. A route group opened with `.AllowAnonymous()` makes ASP.NET Core skip every policy, so the commit route
+  then refuses with 403 `writeNotAllowed` unless `AllowAnonymousWrites` is set.
 - **Writes.** Only columns the view declares editable and the schema allows can be written; any other column fails the
   whole batch with `columnNotEditable`. Every value is checked again (kind, the view's validation, the editor's step and
   choices) before a writer sees it, so a modified client cannot write what the grid would refuse. The reference writer
@@ -381,13 +383,18 @@ change set until the reader saves; it then posts one `gridCommit` document with 
 values and the revision it read ([data-protocol.md](data-protocol.md#editing-and-commit)). Map a writer to save them:
 
 ```csharp
-app.MapCanopyRemote("/api/machines", http => http.RequestServices.GetRequiredService<FleetDb>().Machines, map, options => {
+// What this caller may read: the grid's query, and also the records a commit may change.
+IQueryable<Machine> Readable(HttpContext http) => http.RequestServices.GetRequiredService<FleetDb>().Machines
+    .Where(machine => machine.Team!.Members.Any(member => member.Login == http.User.Identity!.Name));
+
+app.MapCanopyRemote("/api/machines", Readable, map, options => {
     options.Query.Revision = store.GetRevisionAsync;
     options.AuthorizationPolicy = "Inventory.Read";
     options.WriteAuthorizationPolicy = "Inventory.Write";           // required with a writer, on top of the read policy
     options.Writer = http => {
         var db = http.RequestServices.GetRequiredService<FleetDb>();
         return new CanopyQueryableWriter<Machine>(map, new EfCoreWriteStore<Machine>(db), new CanopyQueryableWriterOptions<Machine> {
+            Scope = () => Readable(http),                           // a commit changes only records the caller can read
             Revision = store.GetRevisionAsync,
             Saving = async (context, token) => { await store.BumpRevisionAsync(db, token); return null; } // inside the row's transaction
         });
@@ -402,8 +409,11 @@ with a time zone, text or booleans) and the view's rules (`Required`, `Minimum`/
 `MinLength`/`MaxLength`, `Pattern` anchored as in the browser), the editor's `Step` and its select choices; a row that
 fails answers `error` with messages by column (`CanopyCommitMessages`, or the column's `Validation.Message`) and does not
 reach the writer. The writer gets typed values (text, booleans, `double`, UTC `DateTime`) and the revision the endpoint
-read. Its answer is checked too: rows of the batch only, once each, canonical cells of allowed columns that pass the page
-rules, and only on saved rows.
+read. Its answer is checked too, but because the writer may already have committed its rows, a faulty answer never fails
+the request: rows the writer was not asked about or answered twice, cells that break the page rules or belong to columns
+outside the schema, messages for other columns and an invalid revision are left out and reported to
+`CanopyRemoteOptions.WriterProblem` (the ASP.NET Core endpoints log them), and messages longer than 4,096 characters
+are shortened.
 
 **`ICanopyDataWriter`** is the seam: `ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision,
 CancellationToken token)` answers per row with `CanopyCommitRowResult.Saved(id, cells)`, `Failed(id, error, errors)` or
@@ -413,11 +423,19 @@ result leaves out was not saved.
 **`CanopyQueryableWriter<T>`** is the reference writer over the column map:
 
 - It writes only editable columns mapped to a member of the record itself (`x => x.Cores`); creating it fails when an
-  editable column maps a navigation chain such as `x => x.Team!.Name`.
-- Per row it loads the record by the map's key, and when the batch revision is not the current one (read inside the
-  transaction through `Options.Revision`) compares each changed column's original value with the stored one at protocol
-  precision: a difference is a `conflict` and nothing is written. `AlwaysCompareOriginals` compares on every commit. A
-  record that no longer exists is a conflict too.
+  editable column maps a navigation chain such as `x => x.Team!.Name`, the record key, or a member marked
+  `[ConcurrencyCheck]` or `[Timestamp]` (tokens configured fluently are not visible to it: keep those columns read-only).
+- **Scope.** It changes any record `ICanopyWriteStore<T>.Records` returns. Set `Options.Scope` to the endpoint's query
+  callback, as above, so that a row whose record the caller cannot read answers as missing and is not written; or
+  restrict `Records` itself.
+- Per row it loads the record by the map's key and compares each changed column's original value with the stored one at
+  protocol precision: a difference is a `conflict` and nothing is written. A record that no longer exists is a conflict
+  too. With a revision source (`Options.Revision`, read inside the row's transaction), the comparison is skipped while the
+  revision still equals the batch's; `AlwaysCompareOriginals` compares regardless. Without one, every row is compared.
+- **Concurrency.** The comparison is only as strong as the store's transaction: it must serialize the load, the comparison
+  and the save (serializable or snapshot isolation, or row locks), or another writer can change the record in between.
+  Give the record a concurrency token (EF Core `IsRowVersion()` or `IsConcurrencyToken()`); the store then refuses a save
+  over a newer version and the row answers a conflict.
 - It converts values to the member types: whole numbers in range for integer members, enumeration members by their raw
   text (`[EnumMember]` value or name), null only for nullable members; a value a member cannot hold answers a cell error.
 - It runs `Saving` (stamp an audit column, change the revision, or refuse the row with a message) and saves. A store
@@ -425,7 +443,9 @@ result leaves out was not saved.
   logging), or a conflict when the store reports a concurrency failure (EF Core's `DbUpdateConcurrencyException` for
   concurrency tokens).
 - `Transaction = CanopyCommitTransaction.PerRow` (default) saves each row in its own transaction; `PerBatch` writes all
-  rows in one transaction and nothing when any row fails, answering the others with `BatchNotSaved`.
+  rows in one transaction and nothing when any row fails: the first failing row stops the batch, and the others answer
+  `BatchNotSaved`; a failed commit of the batch answers every row as not saved. After any row that is not saved the
+  writer rolls back (a failing rollback does not hide the row's answer) and discards the store's unsaved changes.
 - A saved row answers canonical cells of its changed columns, formatted by the map like page rows.
 
 The writer reaches the store through `ICanopyWriteStore<T>`, so `CanopyX.Data` stays free of EF Core. The EF Core adapter:
@@ -488,12 +508,13 @@ Notes:
 - **Large parameter lists.** Selected exports send up to 10,000 identities and a membership filter up to 1,000 values as
   one parameterized collection. On SQL Server, whose limit is 2,100 parameters per command, configure EF Core to send
   parameterized collections as one JSON parameter, or lower `MaxSelectedIds` and `MaxInValues`.
-- **Grouped views** read the innermost group counts with each page request (one grouped scan over all levels, with the
-  counts, minimums and maximums an aggregate-ordered level needs; a level ordered by a sum, average or distinct count adds
-  one scan over its prefix) and then fetch the window: up to eight innermost groups slice by slice through
+- **Grouped views** read the group counts with each page request (one grouped scan per level over each prefix of the
+  grouping columns, with the aggregate a level orders by; summaries and pages build the same group tree, so they agree
+  also under case-insensitive collations) and then fetch the window: up to eight innermost groups slice by slice through
   `WHERE level1 = value AND level2 = value …` (an index on the grouping columns and the sort column serves it), more in
-  queries ordered by a rank over at most 64 groups each. Exports read the same way, so their rows follow the group ranges.
-  Summaries run one grouped scan per level, plus one for complete-query totals when a distinct count is declared.
+  queries ordered by a rank over at most 64 groups each; a page may span at most 1,000 groups. Exports read the same way,
+  so their rows follow the group ranges. Summaries run one grouped scan per level, plus one for complete-query totals
+  when a distinct count is declared.
   Grouping values must be distinct at protocol precision (instants that differ below a millisecond cannot be two groups).
 - **Commits** load each changed record by key and save it in its own transaction (or one for the batch); a batch is
   bounded by `MaxCommitRows`.
