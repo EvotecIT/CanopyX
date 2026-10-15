@@ -158,7 +158,7 @@ function Invoke-PackageSmoke {
 
 function Assert-RuntimeLineBudget {
     param([string] $Root)
-    foreach ($source in @('canopyx.source', 'canopyx.interactive.source', 'canopyx.grid.source', 'canopyx.reporting.source', 'canopyx.tree-tools.source')) {
+    foreach ($source in @('canopyx.source', 'canopyx.interactive.source', 'canopyx.grid.source', 'canopyx.reporting.source', 'canopyx.tree-tools.source', 'canopyx.data.source')) {
         $parts = Join-Path $Root "CanopyX.Html/Assets/$source"
         if (!(Test-Path -LiteralPath $parts)) { continue }
         foreach ($part in Get-ChildItem -LiteralPath $parts -Filter '*.js' -File) {

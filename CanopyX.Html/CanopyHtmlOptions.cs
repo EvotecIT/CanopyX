@@ -55,6 +55,25 @@ public sealed class CanopyHtmlOptions {
     public bool AutoMount { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets whether the runtime mounts the view only when it comes near the visible part of the page: within half a
+    /// window height of it, when a hidden tab or a closed panel that holds it opens, or when printing starts (a browser may print such a view before its rows have rendered). Until then
+    /// the view's configuration and rows are not even parsed, so a page with many views, most of them in tabs or below the
+    /// fold, shows its first view sooner and keeps less in memory. Defaults to false. Applies when <see cref="AutoMount"/>
+    /// is true; the fragment is marked <c>data-cx-mount="visible"</c>. A host script reaches such a view after it has mounted
+    /// (<c>host.canopyx</c>), or mounts it at once with <c>CanopyX.mount(host)</c>.
+    /// </summary>
+    public bool MountWhenVisible { get; set; }
+
+    /// <summary>
+    /// Gets or sets how a flat grid with an inline source carries its rows. Null (the default) writes them as objects in the
+    /// grid document. Options write them as compact row data (<see cref="CanopyGridRowData"/>): arrays in column order, in
+    /// chunks inside the grid's host element that the browser decodes one at a time after the first rows have painted,
+    /// optionally gzip-compressed. Single-file fragments then also carry the row data part (<c>canopyx-data.js</c>). Trees
+    /// and hosted grids ignore it.
+    /// </summary>
+    public CanopyRowDataOptions? RowData { get; set; }
+
+    /// <summary>
     /// Gets the ids of the view's filters whose switch the toolbar leaves out on this page, because the host draws its
     /// own control for them (see <see cref="CanopyFilter.Hidden"/>). The view is not changed, so one view can be written
     /// for hosts with and without their own filter bar at the same time. Writing the page fails when an id is not one of

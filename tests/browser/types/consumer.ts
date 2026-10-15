@@ -2,7 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
@@ -25,6 +25,18 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
 reportingApi.autoFitColumns();
+// Compact row data in place of rows: chunks inline in the document, as host scripts (a count) or as sidecar files.
+const compactRows: GridCompactRow[] = [["r1", "Item 1", 10], [{ id: "r2", tone: "warning" }, "Item 2", null, { value: 3, text: "three" }]];
+const compactView: CompactGridView = { protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact rows",
+  source: { kind: "inline" }, pageSize: 100, selection: "none", search: true, rowHeight: 32,
+  columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }, { id: "notes", title: "Notes", kind: "text" }],
+  rowData: { version: 1, columns: ["name", "size", "notes"], count: 2, ordered: true, chunks: [compactRows] } };
+createDataGrid(document.createElement("div"), { view: compactView });
+const sidecarRows: CompactGridView["rowData"] = { version: 1, columns: ["name"], count: 10000, encoding: "gzip", base: "data/compact/", chunks: 2 };
+// @ts-expect-error A compact grid has no rows beside its row data.
+const bothRows: CompactGridView = { ...compactView, rows: [] };
+mountViews(document.querySelector("[data-canopyx-host]") ?? document);
+void sidecarRows; void bothRows;
 const measuredWireView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "measured", label: "Measured records",
   source: { kind: "inline" }, rows: [], pageSize: 100, selection: "none", search: false, rowHeight: 32, autoRowHeight: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 160, autoWidth: true, wrap: true }] };

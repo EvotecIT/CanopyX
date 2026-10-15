@@ -258,14 +258,40 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   labels?: Partial<CanopyLabels>;
   query?: Q;
 }
-export interface InlineGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rows: GridRow[]; }
+export interface InlineGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rows: GridRow[]; rowData?: never; }
+/**
+ * A compact row: the row id (or `{ id, tone?, className? }`) followed by its cells in the order of `GridRowData.columns`.
+ * Trailing empty cells may be left out; `null` is an empty cell.
+ */
+export type GridCompactRow = [string | { id: string; tone?: string; className?: string }, ...Cell[]];
+/** Compact row data of an inline grid, in place of `rows` (docs/data-protocol.md, "Row data"). */
+export interface GridRowData {
+  version: 1;
+  /** Declared column ids, unique, in the order of each compact row's cells. */
+  columns: string[];
+  /** The number of rows in all chunks. */
+  count: number;
+  /** The rows are in ordinal identity order, so the first rows show before the last chunk is decoded. */
+  ordered?: boolean;
+  /** Each string chunk is base64 text of gzip-compressed JSON, inflated with DecompressionStream. */
+  encoding?: "gzip";
+  /** Folder of the sidecar files `rows/<n>.js`, relative to the page; requires a chunk count. */
+  base?: string;
+  /**
+   * A count of `application/x-canopyx-rows` scripts inside the host element (or of sidecar files under `base`), or the chunks
+   * themselves: arrays of compact rows, or strings of chunk JSON (base64 gzip with `encoding`).
+   */
+  chunks: number | Array<GridCompactRow[] | string>;
+}
+/** An inline grid whose rows the data part decodes from compact row data, chunk by chunk, after the first paint. */
+export interface CompactGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rowData: GridRowData; rows?: never; }
 export interface HostGridView extends GridDefinition { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
 export interface CursorGridView extends GridDefinition<GridCursorQuery> {
   source: { kind: "host"; navigation: "cursor" };
   presentation: "paged";
   rows?: never;
 }
-export type GridView = InlineGridView | HostGridView | CursorGridView;
+export type GridView = InlineGridView | CompactGridView | HostGridView | CursorGridView;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
 export interface GridPage {
@@ -519,10 +545,10 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (
   { viewStore?: never } | {
     viewStore: GridViewStore<Q>;
-    view: (Q extends GridCursorQuery ? CursorGridView : InlineGridView | HostGridView) & { stateKey: string; reporting: GridReporting };
+    view: (Q extends GridCursorQuery ? CursorGridView : InlineGridView | CompactGridView | HostGridView) & { stateKey: string; reporting: GridReporting };
   }
 );
-export type GridOptions = GridHostOptions & ({ view: InlineGridView } | { view: HostGridView; source: GridSource });
+export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGridView } | { view: HostGridView; source: GridSource });
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
@@ -627,7 +653,11 @@ export function createDataGrid(host: HTMLElement, options: GridOptions): DataGri
 export function createDataGrid(host: HTMLElement, options: CursorGridOptions): DataGrid<GridCursorQuery>;
 /** Registers options before either a tree or flat-grid fragment mounts. */
 export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery>): () => void;
-/** Mounts tree and flat-grid fragments below root. Narrow a controller before using view-specific methods. */
+/**
+ * Mounts tree and flat-grid fragments below root, or root itself when it is a fragment. Fragments marked
+ * `data-cx-mount="visible"` below root wait until they come near the viewport; passing such a fragment as root mounts it at once.
+ * Narrow a controller before using view-specific methods.
+ */
 export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
 
 declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; configure: typeof configure; mount: typeof mount };

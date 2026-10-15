@@ -226,6 +226,34 @@ Summaries require known-count offset sources; cursor sources reject them. Paging
 
 `getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)` and `getCollapsedGroups()` manage presentation. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
 
+### Row data
+
+An inline grid can carry its rows as compact row data, `rowData`, instead of `rows` (never both; host grids have neither). Each row is an array in a declared column order rather than an object with repeated keys, and the rows come in chunks that the runtime decodes one at a time, so a large dataset costs fewer bytes and the page stays responsive while it loads. Use [large-data.md](large-data.md) to choose between row objects, row data and a bundle.
+
+```json
+"rowData": { "version": 1, "columns": ["name", "size", "status"], "count": 250000, "ordered": true, "encoding": "gzip", "chunks": 50 }
+```
+
+| Field | Meaning |
+| --- | --- |
+| `version` | `1`. The runtime rejects other values. |
+| `columns` | Declared column ids, unique, in the order of each row's cells. Columns not listed have no cells. |
+| `count` | The number of rows in all chunks; the runtime fails the load when the chunks hold another number. |
+| `ordered` | Optional. `true` declares the rows in ordinal order of their ids (UTF-16 code units), the order the grid shows when no sort applies. The runtime then answers the windows of an unsorted, unfiltered query without search as soon as the chunks that hold them are decoded, and fails the load when a row breaks the order. Without it, every query waits for all rows. |
+| `encoding` | Optional. `gzip`: each chunk given as a string is the base64 text of the gzip-compressed UTF-8 JSON of the chunk. The runtime inflates it with `DecompressionStream` (every current browser); a browser without it fails the load with a message. |
+| `base` | Optional. The folder, relative to the page, of the chunk files of a bundle; requires a chunk count. |
+| `chunks` | A count, or the chunks themselves. With a count and no `base`, the chunks are that many `<script type="application/x-canopyx-rows">` elements that are direct children of the grid's host element, in order. With `base`, they are the sidecar files `rows/0.js`, `rows/1.js` and so on under it, which register `[view id, "rows/<n>", chunk text]` as other sidecar files do (see [Sidecar](#sidecar)). As an array, each item is a chunk: an array of rows, or a string (the chunk's JSON text, or base64 gzip text with `encoding`). |
+
+A row is `[key, cell, cell, ...]`. `key` is the row id, or `{ "id": "...", "tone": "...", "className": "..." }` for a row with a tone or classes. The cells follow in the order of `columns`, in the cell format of [Cell](#cell); `null` is an empty cell, as is a cell after the end of a shorter array, so writers leave trailing empty cells out. A decoded row is exactly the row object with the same id, cells, tone and class; the runtime validates every chunk as it validates `rows`, including unique ids across chunks.
+
+```json
+[["a0000001", "Asset 1", 120, { "value": "Faulty", "tone": "danger" }], [{ "id": "a0000002", "tone": "warning" }, "Asset 2"]]
+```
+
+The order of the rows in the data never changes what the grid shows: it orders rows by their sort keys and then by id. `CanopyGridRowData` (the C# writer) therefore writes them in id order and declares `ordered`. While chunks are decoding, `view.rows` of the grid's API holds the rows decoded so far; reporting grids (which total and group the complete rows) and every sorted, filtered or searched query wait until all rows are decoded. Destroying the grid stops the decoding. A chunk that fails to load or decode fails the queries waiting for it, and a retry decodes from the first chunk again; the host request deadline (`requestTimeoutMs`) does not bound decoding unless the host sets it. The value lists of column filters and the facets of reporting grids wait for all rows.
+
+C# hosts write row data through `CanopyHtmlOptions.RowData` (fragments and pages carry the chunks inside the host element and the row data part, `canopyx-data.js`), `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
+
 ### Safe cell presenters
 
 Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:

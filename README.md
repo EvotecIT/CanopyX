@@ -196,6 +196,8 @@ Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de` or `/locales/es
 
 Virtual rows keep the rendered DOM small. Tree bundles split data into sidecar files, and hosted sources let your application fetch records as the reader navigates. Flat-grid queries filter and sort the complete dataset before paging; loading one page does not mean the rest of the results are available in the browser.
 
+Large single-file reports have three more choices: views that mount only when they come into view (`MountWhenVisible`), compact row data that the browser decodes chunk by chunk after the first rows have painted, optionally gzip-compressed (`RowData`), and grid bundles whose rows load from sidecar files (`SaveHtmlBundle`). See [docs/large-data.md](docs/large-data.md) for when to use which, with measured numbers.
+
 CSV export and copying distinguish filtered results, selected records and all records. Register your own export formats, such as an Excel or PDF writer, with `CanopyX.registerExportFormat`, and they join the grid's Export menu with the same scope choice, progress and cancellation; tree grids export their visible, selected or all rows through the same writers. For application actions, connect your own callbacks to the view.
 
 ## Community and license

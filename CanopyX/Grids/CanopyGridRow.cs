@@ -50,4 +50,21 @@ public sealed class CanopyGridRow {
         }
         writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
     }
+
+    /// <summary>Writes the compact row of <c>rowData</c>: the id (or an object with the id, tone and class) and the cells in column order, without trailing empty cells.</summary>
+    internal void WriteCompactJson(CanopyJsonWriter writer, IReadOnlyList<string> columns) {
+        Validate();
+        writer.BeginArray();
+        if (Tone.Name == null && ClassName == null) writer.String(Id);
+        else writer.BeginObject().Property("id", Id).OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
+        var last = -1;
+        for (var i = 0; i < columns.Count; i++) {
+            if (Cells.TryGetValue(columns[i], out var cell) && cell != null) last = i;
+        }
+        for (var i = 0; i <= last; i++) {
+            if (Cells.TryGetValue(columns[i], out var cell) && cell != null) cell.WriteJson(writer);
+            else writer.Null();
+        }
+        writer.EndArray();
+    }
 }
