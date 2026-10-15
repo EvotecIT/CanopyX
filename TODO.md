@@ -323,6 +323,17 @@ Consumers: an Active Directory users and computers browser (ADPlayground and Tes
 
 Gate: the directory browser runs on the TestimoX L directory fixture (1.5 million objects) and the certificates overview on 1 million issued certificates from the TestimoX scale fixtures, both without product code in CanopyX, and every write goes through a host hook.
 
+### Linked Views
+
+Consumers: HtmlForgeX reports that link charts, grids, trees and tables declaratively, and pages that link a CanopyX view to their own controls ([Linked views](docs/linked-views.md)).
+
+- [x] External filters with removable chips, combined with the reader's filters, carried in a host source's query and left out of saved state unless they persist.
+- [x] Highlights that mark rows without filtering and reveal the first, on grids and trees.
+- [x] Neutral `canopyx:linkchange` payloads for the reader's selection and own conditions, in the lazy `link` part.
+- [ ] Server-side external filters for lazy, query-aware trees (today they match loaded nodes).
+
+Gate: the linked views example and HtmlForgeX's linked report pass the browser suites at desktop and phone widths in both palettes, with the link part under its gzip guard.
+
 ## 1.0 Public-Grade
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.

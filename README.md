@@ -188,6 +188,10 @@ Module imports are safe on the server; mounting a view requires a browser. The i
 
 `CanopyX.use(plugin)` adds cell renderers that columns choose by name, toolbar buttons, menu entries, export formats and event handlers to every grid and tree on the page; the `plugins` option adds them to one view. Optional features load as separate parts only when a view needs them, so serve the `canopyx-*.js` files beside the runtime (the .NET writers do). See [docs/plugins.md](docs/plugins.md).
 
+### Link views together
+
+A chart, a list or another grid can filter a grid or tree (`setExternalFilter`, shown as a removable chip and sent to a host source in its query) or highlight its rows (`setHighlight`), and a view with `linkEvents` reports its selection and own conditions as neutral `canopyx:linkchange` payloads. See [docs/linked-views.md](docs/linked-views.md).
+
 ### Translate the controls
 
 Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de`, `/locales/es`, `/locales/fr` or `/locales/it` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()` or `Italian()` before writing the page.
