@@ -65,21 +65,32 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
         var scoped = source.Where(Expression.Lambda<Func<T, bool>>(Expression.Equal(translator.Key, parameter), translator.Row));
         var record = new CanopyGridRecord(request.Id);
         var boxedKey = Expression.Convert(translator.Key, typeof(object));
+        var context = new RecordReadContext<T>(source, null, Map.Columns.KeyExpression!, memory, Executor, request.MaxTextLength);
 
         if (request.Field != null) {
             var keys = await Executor.ToListAsync(scoped.Select(Expression.Lambda<Func<T, object?>>(boxedKey, translator.Row)).Take(2), cancellationToken).ConfigureAwait(false);
             if (!Single(keys, request.Id)) return null;
             var child = (RecordChildMap<T>)Map.Field(request.Field.Id);
-            record.Fields[request.Field.Id] = (await child.QueryAsync(scoped, memory, request.Offset, request.Limit, request.FirstRows(request.Field), true, Executor, cancellationToken).ConfigureAwait(false))!;
+            record.Fields[request.Field.Id] = (await child.QueryAsync(scoped, context, request.Offset, request.Limit, request.FirstRows(request.Field), true, cancellationToken).ConfigureAwait(false))!;
             return record;
         }
 
-        // One projection reads the key, every readable value field and drawer value, and the row's columns when asked.
+        // One projection reads the key, every readable value field and drawer value (text read to its bound), whether linked
+        // records kept within the grid belong to the caller's query, and the row's columns when asked.
         var parts = new List<Expression> { boxedKey };
-        var values = new List<(RecordValueMap<T> Map, int Start, bool Cell)>();
+        var values = new List<(RecordValueMap<T> Map, int Start, bool Cell, int Scope)>();
         void Add(RecordValueMap<T> map, bool cell) {
-            values.Add((map, parts.Count, cell));
-            foreach (var part in map.Parts) parts.Add(Expression.Convert(ExpressionTools.Bind(part, translator.Row, memory), typeof(object)));
+            var start = parts.Count;
+            for (var i = 0; i < map.Parts.Count; i++) {
+                var body = ExpressionTools.Bind(map.Parts[i], translator.Row, memory);
+                parts.Add(Expression.Convert(map.IsText(i) ? RecordText.Truncate(body, request.MaxTextLength) : body, typeof(object)));
+            }
+            var scope = -1;
+            if (map.ScopeTarget != null) {
+                scope = parts.Count;
+                parts.Add(Expression.Convert(context.Exists(ExpressionTools.Bind(map.ScopeTarget, translator.Row, memory)), typeof(object)));
+            }
+            values.Add((map, start, cell, scope));
         }
         foreach (var field in request.Fields) if (Map.Field(field.Id) is RecordValueMap<T> value) Add(value, false);
         foreach (var column in request.Cells) Add(Map.Cell(column), true);
@@ -90,7 +101,9 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
         var rows = await Executor.ToListAsync(scoped.Select(projection).Take(2), cancellationToken).ConfigureAwait(false);
         if (!Single(rows.Select(row => row[0]).ToList(), request.Id)) return null;
         var found = rows[0];
-        foreach (var (map, start, cell) in values) {
+        foreach (var (map, start, cell, scope) in values) {
+            if (scope >= 0 && !(found[scope] is true)) continue;
+            for (var i = 0; i < map.Parts.Count; i++) if (map.IsText(i)) found[start + i] = RecordText.Clip(found[start + i], request.MaxTextLength);
             var built = map.Build(found, start);
             if (built == null) continue;
             if (cell) record.Cells[map.Id] = built; else record.Fields[map.Id] = built;
@@ -104,7 +117,7 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
         foreach (var field in request.Fields) {
             if (!(Map.Field(field.Id) is RecordChildMap<T> child)) continue;
             var take = child.Collection ? request.FirstRows(field) : Math.Min(child.Size, request.MaxItems);
-            var cell = await child.QueryAsync(scoped, memory, 0, take, take, false, Executor, cancellationToken).ConfigureAwait(false);
+            var cell = await child.QueryAsync(scoped, context, 0, take, take, false, cancellationToken).ConfigureAwait(false);
             if (cell != null) record.Fields[field.Id] = cell;
         }
         return record;

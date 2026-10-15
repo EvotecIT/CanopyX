@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 
 namespace CanopyX.Data;
@@ -11,7 +12,8 @@ public static partial class CanopyRequestParser {
     /// <param name="limits">Safety limits; null uses the defaults.</param>
     /// <param name="canRead">Decides whether the caller may read a record field or a column's drawer value, by identity
     /// (record field identities always differ from column identities); false leaves it out of the answer, and a page of such a
-    /// field answers as an unknown field. Null allows every served field.</param>
+    /// field answers as an unknown field. It hides whole fields only, never single collection rows, events or changes. Null
+    /// allows every served field.</param>
     /// <returns>The validated request.</returns>
     /// <exception cref="CanopyRequestException">The document is malformed, targets another view, names a field the endpoint
     /// does not serve or the caller may not read (<see cref="CanopyRequestError.UnknownField"/>), pages a field that is not a
@@ -19,6 +21,9 @@ public static partial class CanopyRequestParser {
     public static CanopyRecordRequest ParseRecord(string json, CanopyRecordSchema schema, CanopyRemoteLimits? limits = null, Func<string, bool>? canRead = null) {
         if (schema == null) throw new ArgumentNullException(nameof(schema));
         limits ??= new CanopyRemoteLimits();
+        if (json == null) throw new ArgumentNullException(nameof(json));
+        var bound = Math.Min(limits.MaxRequestBytes, limits.MaxRecordRequestBytes);
+        if (json.Length > bound || json.Length * 3L > bound && Encoding.UTF8.GetByteCount(json) > bound) throw CanopyRequestException.Limit("The request is too large.");
         using var document = Open(json, limits);
         var root = RequireObject(document.RootElement, "record request");
         Envelope(root, "gridRecordQuery");
@@ -37,7 +42,7 @@ public static partial class CanopyRequestParser {
             foreach (var field in schema.Fields) if (canRead == null || canRead(field.Id)) fields.Add(field);
             var cells = new List<string>();
             foreach (var column in schema.Cells) if (canRead == null || canRead(column)) cells.Add(column);
-            return new CanopyRecordRequest(schema, id, revision, null, 0, 0, row, fields, cells, limits.MaxRecordPageSize, limits.MaxRecordItems);
+            return new CanopyRecordRequest(schema, id, revision, null, 0, 0, row, fields, cells, limits.MaxRecordPageSize, limits.MaxRecordItems, limits.MaxRecordTextLength);
         }
         // A field the caller may not read answers exactly as one the endpoint does not serve.
         if (!schema.TryGetField(fieldId, out var page) || canRead != null && !canRead(page.Id))
@@ -46,11 +51,12 @@ public static partial class CanopyRequestParser {
         if (row) throw CanopyRequestException.Document("A collection page does not carry the record's row.");
         var offset = offsetValue ?? 0;
         if (offset < 0) throw CanopyRequestException.Document("The offset must not be negative.");
+        if (offset > limits.MaxRecordOffset) throw CanopyRequestException.Limit("The collection page starts deeper than this endpoint allows.");
         var limit = limitValue ?? Math.Min(page.PageSize, limits.MaxRecordPageSize);
         if (limit < 1 || limit > 10000) throw CanopyRequestException.Document("A collection page holds 1 to 10,000 rows.");
         if (limit > limits.MaxRecordPageSize) throw CanopyRequestException.Limit("The collection page is larger than this endpoint allows.");
         return new CanopyRecordRequest(schema, id, revision, page, offset, limit, false, Array.Empty<CanopyRecordField>(), Array.Empty<string>(),
-            limits.MaxRecordPageSize, limits.MaxRecordItems);
+            limits.MaxRecordPageSize, limits.MaxRecordItems, limits.MaxRecordTextLength);
     }
 
     /// <summary>Validates a typed record request built in C#, applying the same allow-list and limits as wire requests.</summary>

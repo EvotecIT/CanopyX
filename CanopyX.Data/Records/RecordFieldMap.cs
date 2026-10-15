@@ -23,6 +23,12 @@ internal abstract class RecordValueMap<T> : RecordFieldMap<T> {
 
     /// <summary>The cell from the projected values of <see cref="Parts"/>, starting at <paramref name="start"/>; null for an empty value.</summary>
     internal abstract CanopyCell? Build(IReadOnlyList<object?> values, int start);
+
+    /// <summary>Whether a part is text the answer bounds (<see cref="CanopyRemoteLimits.MaxRecordTextLength"/>); keys are not.</summary>
+    internal virtual bool IsText(int part) => true;
+
+    /// <summary>A key that must belong to a record of the caller's scoped query for the value to show, or null.</summary>
+    internal virtual LambdaExpression? ScopeTarget => null;
 }
 
 /// <summary>A scalar value: text, a boolean, an enumeration, a number or a date, converted as column values are.</summary>
@@ -45,13 +51,19 @@ internal sealed class ScalarMap<T> : RecordValueMap<T> {
 internal sealed class LinkMap<T> : RecordValueMap<T> {
     private readonly LambdaExpression[] _parts;
     private readonly string? _view;
+    private readonly bool _withinGrid;
 
-    internal LinkMap(string id, LambdaExpression target, LambdaExpression? text, string? view) : base(id) {
+    internal LinkMap(string id, LambdaExpression target, LambdaExpression? text, string? view, bool withinGrid) : base(id) {
         _parts = text == null ? new[] { target } : new[] { target, text };
         _view = view;
+        _withinGrid = withinGrid;
     }
 
     internal override IReadOnlyList<LambdaExpression> Parts => _parts;
+
+    internal override bool IsText(int part) => part == 1;
+
+    internal override LambdaExpression? ScopeTarget => _withinGrid ? _parts[0] : null;
 
     internal override CanopyCell? Build(IReadOnlyList<object?> values, int start) {
         var id = RecordKeys.Format(values[start]);
@@ -74,8 +86,8 @@ internal abstract class RecordChildMap<T> : RecordFieldMap<T> {
     /// <summary>Reads the child rows of the one record <paramref name="scoped"/> holds: a window of them (and for collections the
     /// total). A whole-record answer gets null for no rows; a page always gets its (possibly empty) rows. A collection says
     /// <paramref name="pageSize"/> rows per Load more, its page size within the endpoint's limit.</summary>
-    internal abstract Task<CanopyCell?> QueryAsync(IQueryable<T> scoped, bool memory, int offset, int take, int pageSize, bool page, CanopyQueryExecutor executor, CancellationToken cancellationToken);
+    internal abstract Task<CanopyCell?> QueryAsync(IQueryable<T> scoped, RecordReadContext<T> context, int offset, int take, int pageSize, bool page, CancellationToken cancellationToken);
 
     /// <summary>The same rows evaluated in memory over one record, for the reference provider.</summary>
-    internal abstract CanopyCell? Evaluate(T record, int offset, int take, int pageSize, bool page);
+    internal abstract CanopyCell? Evaluate(T record, RecordReadContext<T> context, int offset, int take, int pageSize, bool page);
 }

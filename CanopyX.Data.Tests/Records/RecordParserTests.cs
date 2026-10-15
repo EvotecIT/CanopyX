@@ -76,6 +76,7 @@ public sealed class RecordParserTests {
     [InlineData("{\"view\":\"assets\",\"id\":\"1\",\"field\":\"parts\",\"limit\":10001}", CanopyRequestError.InvalidDocument)]
     [InlineData("{\"view\":\"assets\",\"id\":\"1\",\"field\":\"parts\",\"limit\":201}", CanopyRequestError.LimitExceeded)]
     [InlineData("{\"view\":\"assets\",\"id\":\"1\",\"field\":7}", CanopyRequestError.InvalidJson)]
+    [InlineData("{\"view\":\"assets\",\"id\":\"1\",\"field\":\"parts\",\"offset\":10001}", CanopyRequestError.LimitExceeded)]
     public void ParseRecord_InvalidShapes_AreRejectedWithTypedErrors(string json, CanopyRequestError error) {
         var exception = Assert.Throws<CanopyRequestException>(() => CanopyRequestParser.ParseRecord(json, Schema));
         Assert.Equal(error, exception.Error);
@@ -90,6 +91,12 @@ public sealed class RecordParserTests {
         Assert.Equal(CanopyRequestError.InvalidDocument, Assert.Throws<CanopyRequestException>(() => CanopyRequestParser.ParseRecord(Assets.Query(new string('7', 4097)), Schema)).Error);
         var limits = new CanopyRemoteLimits { MaxRequestBytes = 1024 };
         Assert.Equal(CanopyRequestError.LimitExceeded, Assert.Throws<CanopyRequestException>(() => CanopyRequestParser.ParseRecord(Assets.Query(new string('7', 2000)), Schema, limits)).Error);
+        // A record request has its own, smaller bound (16 KiB by default), counted in UTF-8 bytes.
+        var padded = Assets.Query("1", ",\"padding\":\"" + new string('x', 17000) + "\"");
+        Assert.Equal(CanopyRequestError.LimitExceeded, Assert.Throws<CanopyRequestException>(() => CanopyRequestParser.ParseRecord(padded, Schema)).Error);
+        var wide = Assets.Query("1", ",\"padding\":\"" + new string('é', 9000) + "\"");
+        Assert.Equal(CanopyRequestError.LimitExceeded, Assert.Throws<CanopyRequestException>(() => CanopyRequestParser.ParseRecord(wide, Schema)).Error);
+        Assert.Equal("1", CanopyRequestParser.ParseRecord(padded, Schema, new CanopyRemoteLimits { MaxRecordRequestBytes = 32768 }).Id);
     }
 
     [Fact]
@@ -116,7 +123,11 @@ public sealed class RecordParserTests {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordItems = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordBytes = 1023 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordBytes = 67108865 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordTextLength = 15 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordOffset = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRemoteLimits { MaxRecordRequestBytes = 1023 });
         var defaults = new CanopyRemoteLimits();
         Assert.Equal((200, 200, 1048576), (defaults.MaxRecordPageSize, defaults.MaxRecordItems, defaults.MaxRecordBytes));
+        Assert.Equal((65536, 10000, 16384), (defaults.MaxRecordTextLength, defaults.MaxRecordOffset, defaults.MaxRecordRequestBytes));
     }
 }

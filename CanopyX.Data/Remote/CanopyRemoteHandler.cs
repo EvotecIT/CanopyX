@@ -26,10 +26,17 @@ public sealed partial class CanopyRemoteHandler {
     /// <param name="provider">The data provider.</param>
     /// <param name="options">Limits and export formats; null uses the defaults.</param>
     /// <param name="writer">Saves commits; null serves reads only, and commits answer <see cref="CanopyRequestError.Unsupported"/>.</param>
+    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options = null, ICanopyDataWriter? writer = null)
+        : this(schema, provider, options, writer, null) { }
+
+    /// <summary>Creates a handler that also serves record details.</summary>
+    /// <param name="schema">The column allow-list.</param>
+    /// <param name="provider">The data provider.</param>
+    /// <param name="options">Limits and export formats; null uses the defaults.</param>
+    /// <param name="writer">Saves commits; null serves reads only.</param>
     /// <param name="records">Loads record details; null serves no records, and record requests answer <see cref="CanopyRequestError.Unsupported"/>.</param>
     /// <exception cref="ArgumentException">The record provider serves another grid's schema.</exception>
-    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options = null, ICanopyDataWriter? writer = null,
-        ICanopyRecordProvider? records = null) {
+    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options, ICanopyDataWriter? writer, ICanopyRecordProvider? records) {
         Schema = schema ?? throw new ArgumentNullException(nameof(schema));
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         Options = options ?? new CanopyRemoteOptions();

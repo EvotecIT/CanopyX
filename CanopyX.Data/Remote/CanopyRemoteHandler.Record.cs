@@ -45,12 +45,14 @@ public sealed partial class CanopyRemoteHandler {
         var records = Records ?? throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not serve record details.");
         if (!ReferenceEquals(request.Schema, records.Schema)) throw new ArgumentException("The request belongs to another record schema.", nameof(request));
         // A request parsed with other limits keeps this endpoint's bounds.
-        if (request.Limit > Options.Limits.MaxRecordPageSize || request.CollectionRows > Options.Limits.MaxRecordPageSize || request.MaxItems > Options.Limits.MaxRecordItems)
-            throw CanopyRequestException.Limit("The request allows more rows than this endpoint does.");
+        var limits = Options.Limits;
+        if (request.Limit > limits.MaxRecordPageSize || request.CollectionRows > limits.MaxRecordPageSize || request.MaxItems > limits.MaxRecordItems ||
+            request.MaxTextLength > limits.MaxRecordTextLength || request.Offset > limits.MaxRecordOffset)
+            throw CanopyRequestException.Limit("The request allows more than this endpoint does.");
         var revision = await RevisionAsync(request.Revision, cancellationToken).ConfigureAwait(false);
         var record = await records.GetRecordAsync(request, cancellationToken).ConfigureAwait(false);
         if (record == null) throw new CanopyRequestException(CanopyRequestError.RecordNotFound, "The record is not available.");
-        CheckRecord(record, request);
+        CheckRecord(record, request, limits.MaxRecordPageSize);
         record.Revision = revision;
         var json = record.ToJson(Schema.View);
         if (Encoding.UTF8.GetByteCount(json) > Options.Limits.MaxRecordBytes) throw CanopyRequestException.Limit("The record is larger than this endpoint answers.");
@@ -58,13 +60,13 @@ public sealed partial class CanopyRemoteHandler {
     }
 
     /// <summary>Fails closed when a provider answers more than the request allows: other fields, other cells, too many rows or items, another row.</summary>
-    private static void CheckRecord(CanopyGridRecord record, CanopyRecordRequest request) {
+    private static void CheckRecord(CanopyGridRecord record, CanopyRecordRequest request, int maxPageSize) {
         if (record.Id != request.Id) throw new InvalidOperationException("The record provider answered another record.");
         if (request.Field != null) {
             if (record.Cells.Count != 0 || record.Row != null || record.Fields.Count != 1 || !record.Fields.TryGetValue(request.Field.Id, out var page))
                 throw new InvalidOperationException("The record provider answered a collection page with other values than its field.");
             var list = page?.Records ?? throw new InvalidOperationException("The record provider answered a collection page without its rows.");
-            if (list.Rows.Count > request.Limit || list.Roots.Count != 0 || list.Total == null || page.Events.Count != 0 || page.Changes.Count != 0)
+            if (list.Rows.Count > request.Limit || list.Roots.Count != 0 || list.Total == null || page.Events.Count != 0 || page.Changes.Count != 0 || !Bounded(list, maxPageSize))
                 throw new InvalidOperationException("The record provider answered a collection page with more rows than asked for, tree roots or no total.");
             return;
         }
@@ -75,7 +77,7 @@ public sealed partial class CanopyRemoteHandler {
             var cell = pair.Value;
             if (cell == null) continue;
             if (field.IsCollection) {
-                if (cell.Records != null && (cell.Records.Rows.Count > request.FirstRows(field) || cell.Records.Roots.Count != 0) || cell.Events.Count != 0 || cell.Changes.Count != 0)
+                if (cell.Records != null && (cell.Records.Rows.Count > request.FirstRows(field) || cell.Records.Roots.Count != 0 || !Bounded(cell.Records, maxPageSize)) || cell.Events.Count != 0 || cell.Changes.Count != 0)
                     throw new InvalidOperationException("The record provider answered a collection with more rows than allowed, or with other items.");
             } else if (cell.Records != null || cell.Events.Count > request.MaxItems || cell.Changes.Count > request.MaxItems) {
                 throw new InvalidOperationException("The record provider answered a value field with a collection or too many items.");
@@ -85,4 +87,8 @@ public sealed partial class CanopyRemoteHandler {
         foreach (var key in record.Cells.Keys) if (!cells.Contains(key)) throw new InvalidOperationException("The record provider answered a drawer value that was not asked for.");
         if (request.Row != (record.Row != null)) throw new InvalidOperationException(request.Row ? "The record provider answered without the record's row." : "The record provider answered a row that was not asked for.");
     }
+
+    /// <summary>A collection whose total covers its rows and whose page size (what Load more asks for) the endpoint accepts.</summary>
+    private static bool Bounded(CanopyRecordList list, int maxPageSize) =>
+        (list.Total == null || list.Total >= list.Rows.Count) && (list.PageSize == null || list.PageSize <= maxPageSize);
 }

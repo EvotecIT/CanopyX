@@ -20,13 +20,33 @@ public sealed class EfCoreRecordTests : IClassFixture<EfCoreRecordTests.Database
         public void Dispose() => Sqlite.Dispose();
     }
 
-    private (CanopyRemoteHandler Reference, CanopyRemoteHandler Linq, CanopyRemoteHandler Ef, AssetDb Db) Handlers(bool log = false) {
+    private (CanopyRemoteHandler Reference, CanopyRemoteHandler Linq, CanopyRemoteHandler Ef, AssetDb Db) Handlers(bool log = false, CanopyRemoteOptions? options = null) {
         var records = Assets.Records(Assets.Columns(Assets.View()));
         var db = _database.Sqlite.Create(log);
         var ef = new CanopyQueryableRecordProvider<Asset>(() => db.Assets.Where(asset => asset.Site != "Hidden"), records, new CanopyQueryOptions { Executor = new EfExecutor() });
-        return (Assets.Handler(records, new CanopyInMemoryRecordProvider<Asset>(records, () => Assets.Scoped(_database.Assets))),
-            Assets.Handler(records, new CanopyQueryableRecordProvider<Asset>(() => Assets.Scoped(_database.Assets).AsQueryable(), records)),
-            Assets.Handler(records, ef), db);
+        return (Assets.Handler(records, new CanopyInMemoryRecordProvider<Asset>(records, () => Assets.Scoped(_database.Assets)), options),
+            Assets.Handler(records, new CanopyQueryableRecordProvider<Asset>(() => Assets.Scoped(_database.Assets).AsQueryable(), records), options),
+            Assets.Handler(records, ef, options), db);
+    }
+
+    [Fact]
+    public async Task ShortTextBound_EfCoreMatchesLinqAndReference() {
+        var options = new CanopyRemoteOptions();
+        options.Limits.MaxRecordTextLength = 16;
+        var (reference, linq, ef, db) = Handlers(log: true, options: options);
+        using (db) {
+            var requests = new RandomRecordRequests(_database.Assets, 43);
+            for (var i = 0; i < 150; i++) {
+                var (json, canRead) = requests.Next();
+                var expected = await RecordOracleTests.Answer(() => reference.RecordAsync(json, canRead));
+                Assert.True(expected == await RecordOracleTests.Answer(() => linq.RecordAsync(json, canRead)), "LINQ request " + i + " differs: " + json);
+                Assert.True(expected == await RecordOracleTests.Answer(() => ef.RecordAsync(json, canRead)), "EF Core request " + i + " differs: " + json);
+            }
+            // The store reads text to its bound, and peers and links are tested against the caller's query in the database.
+            var sql = string.Join("\n", _database.Sqlite.Sql);
+            Assert.Contains("substr(", sql, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("EXISTS (", sql, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]

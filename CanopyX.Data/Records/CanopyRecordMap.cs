@@ -43,7 +43,12 @@ public sealed class CanopyRecordMap<T> {
     public CanopyRecordMap(CanopyColumnMap<T> columns) {
         Columns = columns ?? throw new ArgumentNullException(nameof(columns));
         var panel = columns.View.Record ?? throw new ArgumentException("View '" + columns.View.Id + "' declares no record panel (Record).", nameof(columns));
-        foreach (var field in panel.Fields) if (field != null && !_declared.ContainsKey(field.Id)) _declared.Add(field.Id, field);
+        foreach (var field in panel.Fields) {
+            if (field == null || _declared.ContainsKey(field.Id)) continue;
+            // One read check covers record fields and column drawer values by identity, so the two never share one.
+            if (columns.View.Columns.Any(column => column.Id == field.Id)) throw new ArgumentException("Record field '" + field.Id + "' has the identity of a column.", nameof(columns));
+            _declared.Add(field.Id, field);
+        }
     }
 
     /// <summary>Gets the grid's column allow-list, whose key finds records and whose columns write the record's row.</summary>
@@ -56,6 +61,10 @@ public sealed class CanopyRecordMap<T> {
             if (_schema != null) return _schema;
             var data = Columns.Schema;
             if (!RecordKeys.Supported(Columns.KeyExpression!.ReturnType)) throw new InvalidOperationException("Records are looked up by the column map's key, which must be text, a GUID or an integer.");
+            foreach (var link in _fields.OfType<RecordValueMap<T>>()) {
+                if (link.ScopeTarget != null && !RecordScope.Comparable(link.ScopeTarget.ReturnType, Columns.KeyExpression.ReturnType))
+                    throw new InvalidOperationException("Link '" + link.Id + "' kept within the grid needs a key of the grid key's type.");
+            }
             var schema = new CanopyRecordSchema(data, _fields.Select(item => item is RecordChildMap<T> child && child.Collection
                 ? CanopyRecordField.Collection(item.Id, child.Size) : CanopyRecordField.Value(item.Id)), _cells.Select(cell => cell.Id));
             // Concurrent first reads keep one schema, which providers and requests compare by reference.
@@ -93,14 +102,18 @@ public sealed class CanopyRecordMap<T> {
     /// <param name="target">The related record's key; null is an empty field.</param>
     /// <param name="text">The link's text; null or empty shows the related record's identity.</param>
     /// <param name="view">The grid that holds the related record; null for this grid.</param>
+    /// <param name="withinGrid">True shows the link (key and text) only when the related record belongs to the caller's grid
+    /// query (<c>source.Any(visible =&gt; visible.Key == key)</c>), so a link never reveals a record outside the caller's scope;
+    /// otherwise the field is empty. Only for links into this grid, with a key of the grid key's type.</param>
     /// <returns>This map.</returns>
-    public CanopyRecordMap<T> Link<TKey>(string id, Expression<Func<T, TKey>> target, Expression<Func<T, string?>>? text = null, string? view = null) {
+    public CanopyRecordMap<T> Link<TKey>(string id, Expression<Func<T, TKey>> target, Expression<Func<T, string?>>? text = null, string? view = null, bool withinGrid = false) {
         var declared = Declared(id);
         if (target == null) throw new ArgumentNullException(nameof(target));
         if (declared.Kind != CanopyColumnKind.Text) throw new ArgumentException("A link field is a text field.", nameof(id));
         if (!RecordKeys.Supported(typeof(TKey))) throw new ArgumentException("A related record's key is text, a GUID or an integer.", nameof(target));
         if (view != null) _ = new CanopyRecordRef("x", view);
-        _fields.Add(new LinkMap<T>(id, target, text, view));
+        if (withinGrid && view != null && view != Columns.View.Id) throw new ArgumentException("Only links into this grid can be kept within it.", nameof(withinGrid));
+        _fields.Add(new LinkMap<T>(id, target, text, view, withinGrid));
         return this;
     }
 
@@ -130,7 +143,7 @@ public sealed class CanopyRecordMap<T> {
         Declared(id);
         var map = new CanopyRecordListMap<TChild>();
         (configure ?? throw new ArgumentNullException(nameof(configure)))(map);
-        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id)));
+        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id), map.Within));
         return this;
     }
 
@@ -144,7 +157,7 @@ public sealed class CanopyRecordMap<T> {
         Declared(id);
         var map = new CanopyRecordTimelineMap<TChild>();
         (configure ?? throw new ArgumentNullException(nameof(configure)))(map);
-        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id)));
+        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id), false));
         return this;
     }
 
@@ -158,7 +171,7 @@ public sealed class CanopyRecordMap<T> {
         Declared(id);
         var map = new CanopyRecordChangesMap<TChild>();
         (configure ?? throw new ArgumentNullException(nameof(configure)))(map);
-        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id)));
+        _fields.Add(new ChildSetMap<T, TChild>(id, items ?? throw new ArgumentNullException(nameof(items)), map.Build(id), false));
         return this;
     }
 

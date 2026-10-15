@@ -92,6 +92,18 @@ public sealed class CanopyRecordListMap<TChild> {
         return this;
     }
 
+    /// <summary>Keeps the rows to records the caller's grid query reads: for a collection of the grid's own record type (related
+    /// records, peers), so a navigation never shows a record outside the caller's scope. Its total counts only those rows.</summary>
+    /// <returns>This map.</returns>
+    /// <remarks>Each row is tested with <c>source.Any(visible =&gt; visible.Key == row.Key)</c> on the query callback, a key lookup
+    /// per row in a database. Mapping it on a collection of another type throws.</remarks>
+    public CanopyRecordListMap<TChild> WithinGrid() {
+        Within = true;
+        return this;
+    }
+
+    internal bool Within { get; private set; }
+
     internal ChildSpec<TChild> Build(string field) {
         var key = _key ?? throw new InvalidOperationException("Collection '" + field + "' needs a child key (Key).");
         if (_columns.Count == 0) throw new InvalidOperationException("Collection '" + field + "' needs at least one column.");
@@ -106,7 +118,10 @@ public sealed class CanopyRecordListMap<TChild> {
             foreach (var column in columns) list.Columns.Add(column);
             if (targetView != null) list.Target = new CanopyRecordTarget(targetView) { Column = targetColumn };
             foreach (var values in rows) {
-                var row = new CanopyGridRow(RecordKeys.Format(values[0]) ?? throw new InvalidOperationException("Collection '" + field + "' has a row without a key."));
+                // Providers leave rows without a key out; one that still arrives is skipped rather than failing the record.
+                var rowId = RecordKeys.Format(values[0]);
+                if (rowId == null) continue;
+                var row = new CanopyGridRow(rowId);
                 for (var i = 0; i < columns.Count; i++) {
                     var cell = formats[i] != null ? formats[i]!(values[i + 1]) : CanopyDataValues.ToCell(values[i + 1]);
                     if (cell != null) row.Cells[columns[i].Id] = cell;

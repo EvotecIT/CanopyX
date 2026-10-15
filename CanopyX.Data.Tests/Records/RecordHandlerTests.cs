@@ -28,7 +28,7 @@ public sealed class RecordHandlerTests {
     [Theory]
     [MemberData(nameof(Kinds))]
     public async Task WholeRecord_MapsEveryKindOfField(ProviderKind kind) {
-        var asset = Visible(item => item.Parts.Count > 20 && item.ReplacesId != null && item.Events.Count > 0 && item.Changes.Count > 0 && item.Serial != null && item.Weight != null);
+        var asset = Visible(item => item.Parts.Count > 10 && item.ReplacesId != null && item.Replaces!.Site != "Hidden" && item.Events.Count > 0 && item.Changes.Count > 0 && item.Serial != null && item.Weight != null);
         var root = await Record(Handler(kind), asset.Id.ToString(System.Globalization.CultureInfo.InvariantCulture));
         Assert.Equal("gridRecord", root.GetProperty("type").GetString());
         Assert.Equal("r1", root.GetProperty("revision").GetString());

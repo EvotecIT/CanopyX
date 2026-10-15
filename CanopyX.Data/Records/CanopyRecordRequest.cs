@@ -11,10 +11,14 @@ namespace CanopyX.Data;
 /// </remarks>
 public sealed class CanopyRecordRequest {
     internal CanopyRecordRequest(CanopyRecordSchema schema, string id, string? revision, CanopyRecordField? field, int offset, int limit, bool row,
-        IReadOnlyList<CanopyRecordField> fields, IReadOnlyList<string> cells, int collectionRows, int maxItems) {
+        IReadOnlyList<CanopyRecordField> fields, IReadOnlyList<string> cells, int collectionRows, int maxItems, int maxTextLength) {
         Schema = schema; Id = id; Revision = revision; Field = field; Offset = offset; Limit = limit; Row = row;
-        Fields = fields; Cells = cells; CollectionRows = collectionRows; MaxItems = maxItems;
+        Fields = fields; Cells = cells; CollectionRows = collectionRows; MaxItems = maxItems; MaxTextLength = maxTextLength;
     }
+
+    /// <summary>Gets the longest text value the answer carries (<see cref="CanopyRemoteLimits.MaxRecordTextLength"/>); longer
+    /// text is shortened to it and ends with an ellipsis. Identities and the row are never shortened.</summary>
+    public int MaxTextLength { get; }
 
     /// <summary>Gets the record allow-list the request was validated against.</summary>
     public CanopyRecordSchema Schema { get; }

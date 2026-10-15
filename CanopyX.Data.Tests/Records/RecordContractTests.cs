@@ -74,6 +74,9 @@ public sealed class RecordContractTests {
         new object[] { "too many collection rows", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] = Rows(11, 30))) },
         new object[] { "too many events", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["events"] =
             CanopyCell.Timeline(Enumerable.Range(0, 201).Select(i => new CanopyRecordEvent(DateTime.UtcNow, "e" + i))))) },
+        new object[] { "a total below the rows", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] = Rows(3, 1))) },
+        new object[] { "a page size the endpoint refuses", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] = Rows(2, 2, 500))) },
+        new object[] { "a page with a page size the endpoint refuses", ",\"field\":\"parts\",\"limit\":5", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] = Rows(2, 2, 201))) },
         new object[] { "events in a collection field", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] =
             CanopyCell.Timeline(new[] { new CanopyRecordEvent(DateTime.UtcNow, "e") }))) },
         new object[] { "a collection in a value field", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["serial"] = Rows(1, 1))) },
@@ -98,8 +101,8 @@ public sealed class RecordContractTests {
         return record;
     }
 
-    private static CanopyCell Rows(int count, int? total) {
-        var list = new CanopyRecordList { Total = total };
+    private static CanopyCell Rows(int count, int? total, int? pageSize = null) {
+        var list = new CanopyRecordList { Total = total, PageSize = pageSize };
         list.Columns.Add(new CanopyColumn("name", "Name"));
         for (var i = 0; i < count; i++) { var row = new CanopyGridRow("p" + i); row.Cells["name"] = "part"; list.Rows.Add(row); }
         return CanopyCell.Collection(list);
