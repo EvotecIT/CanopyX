@@ -20,12 +20,12 @@ try {
   const run = (file, args, cwd) => execute(file, args, { cwd, timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
   const result = await run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", output], repo);
   const [packed] = JSON.parse(result.stdout);
-  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts",
+  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
     "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css",
-    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css",
+    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-pager.js", "CanopyX.Html/Assets/canopyx-pager.css", "CanopyX.Html/Assets/canopyx-enhance.js", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css",
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js",
     ...['pl','de','es'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
@@ -44,7 +44,7 @@ try {
     "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--lib", "ES2022,DOM", "consumer.ts"], consumer);
   const importCheck = `import assert from 'node:assert/strict';
     import CanopyX, * as runtime from '@evotecit/canopyx';
-    import GridRuntime, { createDataGrid } from '@evotecit/canopyx/grid';
+    import GridRuntime, { createDataGrid, enhance, grid } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
@@ -55,6 +55,7 @@ try {
     assert.equal(runtime.protocol, 'canopyx/2');
     assert.equal(runtime.createTreeGrid, CanopyX.createTreeGrid);
     assert.equal(createDataGrid, GridRuntime.createDataGrid);
+    assert.equal(enhance, GridRuntime.enhance); assert.equal(grid, GridRuntime.grid); assert.equal(typeof ReportingRuntime.enhance, 'function');
     assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
     assert.equal(typeof runtime.use, 'function'); assert.equal(runtime.registerPart, CanopyX.registerPart);
     assert.equal(Object.hasOwn(globalThis, 'CanopyX'), false);

@@ -3,6 +3,7 @@ import CanopyX, {
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
 import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
+import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
@@ -427,3 +428,28 @@ registerPart("custom", { version: "0123456789abcdef", install() {} });
 use({ init() {} });
 // @ts-expect-error The views are tree and grid.
 use({ name: "bad", views: ["matrix"] });
+
+// Pager settings, progressive enhancement and simple init.
+const pagerSettings: GridPager = { lengths: [10, 25, { value: 50, label: "Fifty" }, "all"], numbers: 7, info: "sentence", lengthMenu: true, pageInput: false, firstLast: true };
+const pagedView: InlineGridView = { ...measuredWireView, id: "paged", presentation: "paged", pageLength: 25, pager: pagerSettings };
+createDataGrid(document.createElement("div"), { view: pagedView });
+void enhance("#servers", { pageLength: 10, order: [[1, "desc"]], stateSave: { storage: "local", duration: 0, url: "hash" }, texts: { search: "Find" },
+  on: { draw: (detail, table) => table.getPaging() } }).then((table: EnhancedGrid<string[]>) => {
+  table.on("draw", ({ paging }) => paging.pageIndex).on("select", detail => detail.ids);
+  const firstPage: string[] | undefined = table.getRows("page")[0];
+  const groups: readonly string[] | undefined = table.headerGroups[0]?.[0]?.columns;
+  void firstPage; void groups;
+  // @ts-expect-error getRows takes all, filtered or page
+  table.getRows("visible");
+  table.destroy();
+});
+interface ServerRecord { name: string; site: { city: string }; load: number }
+const recordOptions: GridInitOptions<ServerRecord> = { data: [{ name: "alpha", site: { city: "Warsaw" }, load: 12 }], rowId: "name", selection: "multiple",
+  columns: [{ data: "name", title: "Server" }, { data: "site.city", title: "Site" },
+    { data: "load", type: "number", render: (value, purpose) => purpose === "display" ? value + " %" : value }],
+  pageLengths: [10, "all"], pageNumbers: 5, info: "range" };
+void gridInit(document.createElement("div"), recordOptions).then(records => records.addRows([{ name: "beta", site: { city: "Berlin" }, load: 40 }]));
+void gridInit("#remote", { url: { url: "/api/servers/query", serverSide: true, headers: { "X-Key": "1" }, facetUrl: "/api/servers/facet" },
+  columns: [{ data: "name", type: "text" }, { data: "load", type: "number" }], rowId: "name" });
+// @ts-expect-error a column type is text, number, datetime, date or auto
+void gridInit("#bad", { data: [], columns: [{ data: "name", type: "html" }] });
