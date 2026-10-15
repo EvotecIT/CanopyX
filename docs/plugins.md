@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, column groups, cell ranges, conditional formatting, deep links, the sidecar search, linked views, detail rows, row grouping, search highlighting, layout modes and the record panel. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (column groups, range selection) arrive as parts.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, column groups, cell ranges, conditional formatting, deep links, the sidecar search, linked views, detail rows, row grouping, search highlighting, layout modes and the record panel. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -131,7 +131,8 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `filter-editor` | a grid opens a column menu, filter editor, drawer or selected aggregate | grid menus, editors, record drawer, text dialogs |
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
 | `pager` | a paged grid whose view has pager settings starts, or `CanopyX.enhance`/`CanopyX.grid` runs | numbered pages, page-size choices and the result sentence ([paging.md](paging.md)) |
-| `enhance` | `CanopyX.enhance` or `CanopyX.grid` runs | reading tables, records and URL sources into a grid, state saving and the controller ([enhance.md](enhance.md)); it loads the pager part itself |
+| `enhance` | `CanopyX.enhance` or `CanopyX.grid` runs | reading tables, records and URL sources into a grid, state saving and the controller ([enhance.md](enhance.md)); it loads the pager part itself |
+| `data` | a grid with compact row data (`rowData`) runs its first query | decoding row data chunks, gzip inflation and the first windows before the last chunk ([large-data.md](large-data.md)) |
 | `column-groups` | a grid that declares `columnGroups` starts, or calls a column group method | multi-level headers, group pins, moves and resizing, the nested Columns menu ([column-groups.md](column-groups.md)) |
 | `cell-range` | a grid with `rangeSelection` starts, or calls a cell range method | cell ranges by mouse, keyboard and touch, copy, paste, the fill handle and the cell menu ([cell-ranges.md](cell-ranges.md)) |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
@@ -141,7 +142,9 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `format-editor` | the rule editor opens | the rule editor, on the filter editor part's condition rows |
 | `link` | a host calls a link method (`setExternalFilter`, `setHighlight`, …) or creates a view with `linkEvents` | external filter chips, highlights and `canopyx:linkchange` ([Linked views](linked-views.md)) |
 | `detail-rows` | a reporting grid with detail rows or grouping requests its first page | the row projection shared by headings and detail rows; detail rows, their keys, export and print |
-| `grouping` | a reporting grid with grouping or aggregates requests its first page (requires `detail-rows`) | summaries, nested headings, aggregates, the group-by bar, group outlines in exports |
+| `grouping` | a reporting grid with grouping or aggregates requests its first page (requires `detail-rows`) | summaries, nested headings, aggregates, the group-by bar, group outlines in exports |
+| `highlight` | a tree or grid with `searchHighlight` starts, or its highlight API is first called | search-hit marks, the match count and navigator, the Highlight matches switch ([search highlighting](search-highlight.md)) |
+| `layouts` | a tree or grid with `layout` starts, or `setLayout` is first called | the Layout menu, the card layout and tree densities ([layout modes](layout-modes.md)) |
 | `record-panel` | a grid or tree whose view has a record panel opens a drawer (with record deep links, when it is created), a grid with a structured summary column requests its first page, or a drawer shows structured values | the record panel: record fields, sections and tabs, structured values, collections, related records and the back stack, timelines and changes, record deep links, record actions and details loaded on demand |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.

@@ -319,4 +319,4 @@ view.Labels = CanopyLabels.German();
 view.Labels.GridResultCount = "{count} von {total}";
 ```
 
-Polish, German and Spanish packs are included; every other label can be set by name. See [label packs](labels.md).
+Polish, German, Spanish, French and Italian packs are included; every other label can be set by name. See [label packs](labels.md).

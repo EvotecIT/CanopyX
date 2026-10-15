@@ -22,6 +22,9 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Revisioned results, stale responses rejected, cancellation and timeouts | Grid, Tree | `revision`, `signal`, `requestTimeoutMs` | [Protocol](data-protocol.md#flat-grid-documents) |
 | Loading, empty, error and retry states | Grid, Tree | Built in; accepted rows stay visible while a new query loads | [Flat data grid](authoring.md#flat-data-grid) |
 | Reload with the current query | Grid, Tree | `reload()`; `refresh()` repaints | [Flat data grid](authoring.md#flat-data-grid) |
+| Enhance an existing `<table>`, or build a grid from records or a URL in one call | Grid | `CanopyX.enhance(table, options)`, `CanopyX.grid(element, options)` | [enhance.md](enhance.md) |
+| Compact row data, views that mount when visible, and grid bundles for large reports | Grid | `rowData`, `MountWhenVisible`, `SaveHtmlBundle` | [large-data.md](large-data.md) |
+| Server-side data for .NET over `IQueryable<T>` or a provider, with saving edits | Grid | `CanopyX.Data`, `MapCanopyRemote` | [remote-dotnet.md](remote-dotnet.md) |
 
 ## Values, rendering and formatting
 
@@ -37,6 +40,8 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Tooltips for cut-off text or from another column | Grid, Tree | `tooltip: "auto"` or a column id | [Tooltips](column-layout.md#tooltips-and-header-room) |
 | Dates in UTC or the reader's time zone, switchable | Grid, Tree | `timeZone`, `setTimeZone()` | [Default formatting and sorting](data-protocol.md#default-formatting-and-sorting) |
 | Density and zebra rows | Grid | `density`, `zebra` | [Flat data grid](authoring.md#flat-data-grid) |
+| Conditional formatting: tones, icons, badges, data bars, colour scales and bands, with a rule editor | Grid | `formatRules`, `formatting`; C# `CanopyFormatRule` | [conditional-formatting.md](conditional-formatting.md) |
+| Structured values (lists, objects, timelines, changes) and links to other records | Grid, Tree | the `structured` presenter, structured cells | [record-panel.md](record-panel.md) |
 
 ## Sorting, search and filters
 
@@ -54,6 +59,8 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Condition builder with nested All/Any groups and date presets | Grid | Filters menu, `query.filterGroup`; C# `CanopyGridFilterGroup` | [Flat data grid](authoring.md#flat-data-grid) |
 | Active search and filter chips, result count, clear all | Grid | Built in | [Flat data grid](authoring.md#flat-data-grid) |
 | Named filters that keep the ancestors of matches | Tree | `filters`, `ancestorFlag`, `setFilter({ match, keep })` | [Hosted filtering](authoring.md#hosted-filtering) |
+| Search-hit highlighting with a match count and next/previous | Grid, Tree | `searchHighlight` | [search-highlight.md](search-highlight.md) |
+| External filters from other views, shown as removable chips | Grid, Tree | `setExternalFilter()`, `linkEvents` | [linked-views.md](linked-views.md) |
 
 ## Columns
 
@@ -67,6 +74,7 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Priorities that decide what hides first at narrow widths | Grid, Tree | `priority`, `alwaysVisible` | [How a width is chosen](column-layout.md#how-a-width-is-chosen) |
 | Header menu per column: sort, filter, pin, fit, hide | Grid | Built in; `toolbar.columnMenus` switches it off | [Tooltips and header room](column-layout.md#tooltips-and-header-room) |
 | Sticky header | Grid, Tree | The header stays visible while the rows scroll inside the view | [Flat data grid](authoring.md#flat-data-grid) |
+| Column groups: up to three header levels, kept whole by pins, moves and resizing | Grid | `columnGroups`; C# `CanopyColumnGroup` | [column-groups.md](column-groups.md) |
 
 ## Paging and scrolling
 
@@ -78,6 +86,7 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | "Show more" for long child lists | Tree | Paged children | [Tree grid features](authoring.md#tree-grid-features) |
 | Auto height when the rows fit | Grid, Tree | `autoHeight` (default on) | [Flat data grid](authoring.md#flat-data-grid) |
 | Works in hidden tabs and accordions | Grid, Tree | Renders when first shown | [Assets and caching](architecture.md#assets-and-caching) |
+| Numbered pages, page-size choices with All, and the result sentence | Grid | `pager`; C# `CanopyGridPager` | [paging.md](paging.md) |
 
 ## Selection
 
@@ -88,6 +97,8 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Selection vetoes and eligibility | Tree | `isSelectable`, `beforeSelect`, `canopyx:beforeselect` | [Quick start](authoring.md#quick-start) |
 | Hierarchical checkboxes that cover unloaded children | Tree | `checkboxes: "hierarchical"`, `setCheckIntents` | [Checking lazy branches](authoring.md#checking-lazy-branches) |
 | Selected-value sums and status bar | Grid | `statusBar`, `aggregatable` | [Flat data grid](authoring.md#flat-data-grid) |
+| Cell ranges with copy, paste and an optional fill handle | Grid | `rangeSelection`, `clipboard` | [cell-ranges.md](cell-ranges.md) |
+| Rows highlighted from another view | Grid, Tree | `setHighlight()` | [linked-views.md](linked-views.md) |
 
 ## Record details
 
@@ -97,6 +108,7 @@ but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [re
 | Your own details view | Grid | `onDetails`, `onRowActivate`, `canopyx:rowActivate` | [Flat data grid](authoring.md#flat-data-grid) |
 | Detail rows with a table, a property list or trusted HTML | Tree | `detail` on a node, `renderDetail` | [Detail rows](data-protocol.md#detail-rows) |
 | Row links and link cells the host can route | Grid | `rowAction: "link"`, `onLink`, `canopyx:link` | [Flat data grid](authoring.md#flat-data-grid) |
+| Record panel: record-only fields, sections, tabs, related records, history, deep links and details on demand | Grid, Tree | `record`; C# `CanopyRecordPanel` | [record-panel.md](record-panel.md) |
 
 ## Editing and host actions
 
@@ -109,8 +121,7 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Context actions | Tree | `contextActions`, `onAction`, right-click, Shift+F10 | [Host actions, editing, and moving nodes](authoring.md#host-actions-editing-and-moving-nodes) |
 | More-menu actions and host content | Grid, Tree | `actions: [{ label, run }]`; reporting adds `{ label, render }` | [Toolbar controls](authoring.md#toolbar-controls-slots-and-menu-entries) |
 | Chart action from the selection bar | Grid | `onChart`; the host draws the chart | [Flat data grid](authoring.md#flat-data-grid) |
-
-Flat-grid editing is not available yet; see the [roadmap](roadmap.md).
+| Flat-grid editing: typed editors, validation, change marks, undo and redo, row and batch commit, the phone edit form | Grid | `editable`, `editor`, `validation`, `editing` | [editing.md](editing.md) |
 
 ## Grouping and summaries
 
@@ -119,6 +130,8 @@ Flat-grid editing is not available yet; see the [roadmap](roadmap.md).
 | Group rows by one column, with counts and collapse | Reporting | `reporting.grouping`; C# `CanopyGridGrouping` | [Flat groups](data-protocol.md#flat-groups-and-complete-query-totals) |
 | Aggregates (count, sum, average, minimum, maximum) in group rows and a pinned summary row | Reporting | `reporting.aggregates`; hosted sources add `source.summary` | [Flat groups](data-protocol.md#flat-groups-and-complete-query-totals) |
 | Hierarchies of any depth | Tree | `CanopyTreeView`, inline or lazy children | [Tree grid features](authoring.md#tree-grid-features) |
+| Grouping by up to four columns, from the column menus or a group-by bar, with labelled aggregates | Reporting | `reporting.groupBy`, `reporting.groupable`, `setGroupBy()` | [grouping.md](grouping.md) |
+| Expandable detail rows: a template, HTML, or a nested grid or tree | Reporting | `reporting.detail` | [grouping.md](grouping.md#detail-rows) |
 
 ## Export, copy and print
 
@@ -144,6 +157,7 @@ Flat-grid editing is not available yet; see the [roadmap](roadmap.md).
 | Your own preference storage | Reporting | `viewStore: { load, save }`, `flushViewSettings()` | [Flat data grid](authoring.md#flat-data-grid) |
 | Shareable layout without searches, filters or selection | Reporting | `getShareState()` | [Flat data grid](authoring.md#flat-data-grid) |
 | Deep links that open a path | Tree | `deepLink`, `formatLink`, `parseLink` | [Deep links](data-protocol.md#deep-links) |
+| State saving in session or local storage, or in the address for shareable links | Grid | `stateSave` | [enhance.md](enhance.md) |
 
 ## Phones and narrow widths
 
@@ -152,6 +166,7 @@ Flat-grid editing is not available yet; see the [roadmap](roadmap.md).
 | Columns give way by priority as the width shrinks | Grid, Tree | `priority`, `alwaysVisible` | [How a width is chosen](column-layout.md#how-a-width-is-chosen) |
 | Phone layout at 640 px and below: "+N" hidden fields, full-screen record drawer | Grid, Tree | Built in | [Flat data grid](authoring.md#flat-data-grid) |
 | Toolbar menus fold into the more menu; the filter builder becomes a full-screen sheet | Grid, Tree | Built in | [Flat data grid](authoring.md#flat-data-grid) |
+| Layout modes (fit, scroll sideways, cards) and three densities | Grid, Tree | `layout` | [layout-modes.md](layout-modes.md) |
 
 ## Accessibility
 
@@ -162,6 +177,7 @@ Flat-grid editing is not available yet; see the [roadmap](roadmap.md).
 | One Tab stop per view, focus kept across virtual scrolling | Grid, Tree | Built in | [Rendering model](architecture.md#rendering-model) |
 | Automated axe checks in light and dark themes | Grid, Tree | Browser test suite | [Tests](architecture.md#tests) |
 | Manual screen-reader script | Grid, Tree | NVDA and Narrator steps | [Screen-reader test](screen-reader-test.md) |
+| Forced colours, reduced motion, 24 px pointer targets (44 px on phones) | Grid, Tree | built in | [accessibility.md](accessibility.md) |
 
 Spoken screen-reader output has not been recorded for a release yet, and right-to-left layout is not supported yet.
 
@@ -179,7 +195,7 @@ Spoken screen-reader output has not been recorded for a release yet, and right-t
 | Feature | Views | How | Reference |
 |---|---|---|---|
 | Every built-in text is a named label | Grid, Tree | `labels`; C# `CanopyLabels` | [Labels](data-protocol.md#labels) |
-| Polish, German and Spanish packs | Grid, Tree | `@evotecit/canopyx/locales/pl`, `/de`, `/es`; `CanopyLabels.Polish()`, `German()`, `Spanish()` | [Label packs](labels.md) |
+| Polish, German, Spanish, French and Italian packs, with plural forms where a label counts | Grid, Tree | `@evotecit/canopyx/locales/pl`, `/de`, `/es`, `/fr`, `/it`; `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()`, `Italian()` | [Label packs](labels.md) |
 | Locale-aware number and date formatting | Grid, Tree | Browser `Intl` | [Default formatting and sorting](data-protocol.md#default-formatting-and-sorting) |
 
 ## Extension points
@@ -201,3 +217,4 @@ Spoken screen-reader output has not been recorded for a release yet, and right-t
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
 | Size budgets per entry point (gzip): tree 48 KiB, interactive tree 64 KiB, grid 96 KiB, reporting 128 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
+| A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |
