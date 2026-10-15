@@ -59,6 +59,23 @@
       ]
     },
     {
+      "name": "editing",
+      "label": "editing",
+      "version": "a25a4f81ebd3a712",
+      "script": "canopyx-editing.js",
+      "style": "canopyx-editing.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "editable": true,
+      "requires": [
+        "filter-editor"
+      ]
+    },
+    {
       "name": "links",
       "label": "deep links",
       "version": "4531e2678de320f2",

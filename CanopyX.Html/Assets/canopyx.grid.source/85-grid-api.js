@@ -18,6 +18,7 @@
       "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "openDetails", "scrollToRow", "retry", "closeMenus"])
       api[name] = grid[name].bind(grid);
+    for (const name of GRID_EDIT_API) api[name] = (...args) => grid[name](...args);
     GRID_REPORTING.api?.(api, grid);
     Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
