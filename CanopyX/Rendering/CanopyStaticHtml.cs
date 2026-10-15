@@ -69,7 +69,7 @@ public static partial class CanopyStaticHtml {
                 path.Add(node.Id);
             }
             if (node.Detail != null) {
-                printedRows.Add(AppendDetail(html, node, level, columns.Count, styles, view.Labels));
+                printedRows.Add(AppendDetail(html, node.Detail, level, columns.Count, styles, view.Labels));
             } else {
                 printedRows.Add(AppendRow(html, node, level, columns, hiddenBelow.TryGetValue(node, out var hidden) ? hidden : 0, o, styles, view.Labels, checks?.State(path)));
             }
@@ -236,11 +236,11 @@ public static partial class CanopyStaticHtml {
         }
     }
 
-    private static IReadOnlyList<string> AppendDetail(StringBuilder html, CanopyNode node, int level, int columnCount, CanopyStaticStyles styles, CanopyLabels labels) {
+    private static IReadOnlyList<string> AppendDetail(StringBuilder html, CanopyDetail? detail, int level, int columnCount, CanopyStaticStyles styles, CanopyLabels labels) {
         var text = new StringBuilder();
         html.Append("<tr><td colspan=\"").Append(columnCount).Append("\" style=\"").Append(styles.Detail)
             .Append("padding-left:").Append((level - 1) * IndentPixels + 8).Append("px;\">");
-        switch (node.Detail) {
+        switch (detail) {
             case CanopyTableDetail table:
                 html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.InnerTable).Append("\">");
                 if (!string.IsNullOrEmpty(table.Caption)) {
