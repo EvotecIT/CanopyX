@@ -26,11 +26,16 @@ public sealed partial class CanopyRemoteHandler {
     /// <param name="provider">The data provider.</param>
     /// <param name="options">Limits and export formats; null uses the defaults.</param>
     /// <param name="writer">Saves commits; null serves reads only, and commits answer <see cref="CanopyRequestError.Unsupported"/>.</param>
-    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options = null, ICanopyDataWriter? writer = null) {
+    /// <param name="records">Loads record details; null serves no records, and record requests answer <see cref="CanopyRequestError.Unsupported"/>.</param>
+    /// <exception cref="ArgumentException">The record provider serves another grid's schema.</exception>
+    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options = null, ICanopyDataWriter? writer = null,
+        ICanopyRecordProvider? records = null) {
         Schema = schema ?? throw new ArgumentNullException(nameof(schema));
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         Options = options ?? new CanopyRemoteOptions();
         Writer = writer;
+        if (records != null && !ReferenceEquals(records.Schema?.Data, schema)) throw new ArgumentException("The record provider serves another schema.", nameof(records));
+        Records = records;
         foreach (var format in Options.ExportFormats) {
             if (format == null || !ValidFormatId(format.Id)) throw new ArgumentException("Export format identities are 1 to 32 lowercase ASCII letters, digits and hyphens.", nameof(options));
             _formats[format.Id] = format;
