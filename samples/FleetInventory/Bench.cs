@@ -10,28 +10,32 @@ public static class Bench {
     public static async Task RunAsync(IServiceProvider services) {
         var view = FleetGrid.View("machines", "Machines", grouped: false);
         var grouped = FleetGrid.View("machines-by-site", "Machines by site", grouped: true);
-        var cases = new (string Name, bool Grouped, Func<CanopyRemoteHandler, Task<string>> Run)[] {
-            ("first page, default order", false, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200}")),
-            ("first page, sorted by name (indexed)", false, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"sort\":[{\"column\":\"name\",\"direction\":\"asc\"}]}")),
-            ("middle page, sorted by name", false, handler => handler.QueryAsync(Offset(handler, 0.5, "name"))),
-            ("last page, sorted by name", false, handler => handler.QueryAsync(Offset(handler, 1, "name"))),
-            ("first page, sorted by memory (no index)", false, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"sort\":[{\"column\":\"memory\",\"direction\":\"desc\"}]}")),
-            ("quick search \"war-w\"", false, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"search\":\"war-w\"}")),
-            ("filter group (cores >= 64 or no site)", false, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"filterGroup\":{\"operator\":\"or\",\"filters\":[{\"column\":\"cores\",\"operator\":\"ge\",\"values\":[64]},{\"column\":\"site\",\"operator\":\"isNull\",\"values\":[]}],\"groups\":[]}}")),
-            ("value list: site", false, handler => handler.FacetAsync("{\"column\":\"site\",\"query\":{\"revision\":\"bench\"}}")),
-            ("value list: model, filtered", false, handler => handler.FacetAsync("{\"column\":\"model\",\"query\":{\"revision\":\"bench\",\"filters\":[{\"column\":\"online\",\"operator\":\"eq\",\"values\":[true]}]}}")),
-            ("summary (3 aggregates)", false, handler => handler.SummaryAsync("{\"revision\":\"bench\"}")),
-            ("grouped summary by site", true, handler => handler.SummaryAsync("{\"revision\":\"bench\"}")),
-            ("grouped page in the middle", true, handler => handler.QueryAsync(Offset(handler, 0.5, "name")))
+        var levels = FleetGrid.GroupedView();
+        var cases = new (string Name, CanopyX.CanopyDataGridView View, Func<CanopyRemoteHandler, Task<string>> Run)[] {
+            ("first page, default order", view, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200}")),
+            ("first page, sorted by name (indexed)", view, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"sort\":[{\"column\":\"name\",\"direction\":\"asc\"}]}")),
+            ("middle page, sorted by name", view, handler => handler.QueryAsync(Offset(handler, 0.5, "name"))),
+            ("last page, sorted by name", view, handler => handler.QueryAsync(Offset(handler, 1, "name"))),
+            ("first page, sorted by memory (no index)", view, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"sort\":[{\"column\":\"memory\",\"direction\":\"desc\"}]}")),
+            ("quick search \"war-w\"", view, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"search\":\"war-w\"}")),
+            ("filter group (cores >= 64 or no site)", view, handler => handler.QueryAsync("{\"offset\":0,\"limit\":200,\"filterGroup\":{\"operator\":\"or\",\"filters\":[{\"column\":\"cores\",\"operator\":\"ge\",\"values\":[64]},{\"column\":\"site\",\"operator\":\"isNull\",\"values\":[]}],\"groups\":[]}}")),
+            ("value list: site", view, handler => handler.FacetAsync("{\"column\":\"site\",\"query\":{\"revision\":\"bench\"}}")),
+            ("value list: model, filtered", view, handler => handler.FacetAsync("{\"column\":\"model\",\"query\":{\"revision\":\"bench\",\"filters\":[{\"column\":\"online\",\"operator\":\"eq\",\"values\":[true]}]}}")),
+            ("summary (3 aggregates)", view, handler => handler.SummaryAsync("{\"revision\":\"bench\"}")),
+            ("grouped summary by site", grouped, handler => handler.SummaryAsync("{\"revision\":\"bench\"}")),
+            ("grouped page in the middle", grouped, handler => handler.QueryAsync(Offset(handler, 0.5, "name"))),
+            ("two-level summary: site by machines, then os", levels, handler => handler.SummaryAsync("{\"revision\":\"bench\"}")),
+            ("two-level page in the middle", levels, handler => handler.QueryAsync(Offset(handler, 0.5, "name"))),
+            ("three-level summary with distinct models", levels, handler => handler.SummaryAsync("{\"revision\":\"bench\",\"groupBy\":[{\"column\":\"site\",\"direction\":\"asc\"},{\"column\":\"os\",\"direction\":\"asc\"},{\"column\":\"model\",\"direction\":\"asc\"}]}"))
         };
         Console.WriteLine("| Request | Median (ms) |");
         Console.WriteLine("| --- | ---: |");
-        foreach (var (name, isGrouped, run) in cases) {
+        foreach (var (name, definition, run) in cases) {
             var times = new List<double>();
             for (var i = 0; i < 6; i++) {
                 using var scope = services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<FleetDb>();
-                var map = FleetGrid.Map(isGrouped ? grouped : view);
+                var map = FleetGrid.Map(definition);
                 var provider = new CanopyQueryableProvider<Machine>(() => db.Machines, map,
                     new CanopyQueryOptions { Executor = new EfCoreExecutor(), Revision = _ => new ValueTask<string>("bench") });
                 var handler = new CanopyRemoteHandler(map.Schema, provider);
