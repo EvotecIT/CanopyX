@@ -5,7 +5,7 @@
    * @param {HTMLElement} host The element that receives the grid.
    * @param {{ view: object, source?: object, labels?: Object<string, string>, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function, isSelectable?: Function, beforeSelect?: Function,
-   *           formatLink?: Function, parseLink?: Function, requestTimeoutMs?: number, retainedNodeLimit?: number, inactiveNodeLimit?: number }} options
+   *           formatLink?: Function, parseLink?: Function, sanitizeHtml?: Function, requestTimeoutMs?: number, retainedNodeLimit?: number, inactiveNodeLimit?: number }} options
    *   `view` is a canopyx/2 view document. `labels` translates the texts the grid writes itself, on top of the view's
    *   own `labels` (names and placeholders as in docs/data-protocol.md). Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
@@ -23,6 +23,8 @@
    *   element is dropped, with any listener put on it: put listeners on content the renderer adds, or on the grid).
    *   renderDetail(node, element) returns true when it drew the detail row;
    *   element is the body of the row, which stays inside the visible width of the grid.
+   *   Html details and the view's icons are markup the host trusts; sanitizeHtml(html, { kind }) ("detail" or "icon") sees
+   *   it first and returns a string, TrustedHTML, or a Node (docs/security.md).
    *   With deepLink on the view, formatLink(path, node) returns the URL fragment for a selected row (without "#";
    *   null leaves the URL alone; with nothing selected path is empty and node null) and parseLink(fragment) returns
    *   the id path it names, a promise of it, or null. The two are given together. The grid follows hashchange and
@@ -197,7 +199,9 @@
     registerExportFormat,
     // Plugins for the grids and trees created afterwards, and the registration lazily loaded parts call (docs/plugins.md).
     use,
-    registerPart
+    registerPart,
+    // The Content Security Policy nonce for the scripts and stylesheets the runtime inserts (docs/security.md).
+    setNonce
   }, typeof GRID_API === "object" ? GRID_API : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and

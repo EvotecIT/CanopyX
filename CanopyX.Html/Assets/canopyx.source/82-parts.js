@@ -25,15 +25,18 @@
       part.version = version;
       if (!version) throw new Error("CanopyX: this runtime has no " + part.label + ".");
       if (PART_CODE.get(part.name)?.version !== part.version) {
-        const find = type => document.querySelector('script[type="application/x-canopyx-'+type+'"][data-cx-version="'+part.version+'"]');
+        // An embedded part runs with its payload's own nonce. When the page nonce is known (CanopyX.setNonce, or the runtime
+        // script's own nonce), only a payload that carries it counts, so markup injected into the page cannot run as a part,
+        // also under 'strict-dynamic' and Trusted Types.
+        const find = type => [...document.querySelectorAll('script[type="application/x-canopyx-'+type+'"][data-cx-version="'+part.version+'"]')].find(item => !pageNonce || item.nonce === pageNonce);
         const payload = find(part.name), script = h("script"), embeddedStyle = styleFile && find(part.name + "-style");
         if (payload) {
-          if (embeddedStyle) { const style = h("style"); setText(style, embeddedStyle.textContent); if (payload.nonce) style.nonce = payload.nonce; document.head.appendChild(style); }
-          setText(script, payload.textContent); if (payload.nonce) script.nonce = payload.nonce; document.head.appendChild(script); script.remove();
+          if (embeddedStyle) { const style = h("style"); style.nonce = payload.nonce; setText(style, embeddedStyle.textContent); document.head.appendChild(style); }
+          script.textContent = trusted("Script", payload.textContent); script.nonce = payload.nonce; document.head.appendChild(script); script.remove();
         } else {
-          const runtime = PART_URL || global.CanopyXFilterEditorBase || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
-          const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { element[attribute] = new URL(file, runtime).href; element.onload = resolve;
-            element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(element); });
+          const base = global.CanopyXFilterEditorBase, runtime = PART_URL || typeof base === "string" && base || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
+          const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
+            element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
           const link = h("link"); link.rel = "stylesheet";
           await Promise.all([styleFile && load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet"),
             load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")]); script.remove();

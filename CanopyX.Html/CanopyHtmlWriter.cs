@@ -29,7 +29,7 @@ internal static class CanopyHtmlWriter {
     /// <summary>The payloads of the parts a view needs, leaving out those the fragment's document already carries.</summary>
     private static string SharedParts(CanopyHtmlOptions options, IEnumerable<CanopyHtmlPart> parts) {
         var builder = new StringBuilder();
-        foreach (var part in parts) builder.Append(options.Document == null ? part.Markup : options.Document.EmbedOnce(part));
+        foreach (var part in parts) builder.Append(options.Document == null ? part.GetMarkup(options.Nonce) : options.Document.EmbedOnce(part, options.Nonce));
         return builder.ToString();
     }
 
@@ -40,17 +40,26 @@ internal static class CanopyHtmlWriter {
             builder.Append(" data-cx-mount=\"manual\"");
         }
 
-        if (!string.IsNullOrEmpty(options.Height)) {
-            builder.Append(" style=\"height:").Append(WebUtility.HtmlEncode(ValidateCssLength(options.Height!))).Append('"');
+        var height = string.IsNullOrEmpty(options.Height) ? null : ValidateCssLength(options.Height!);
+        if (height != null && options.Nonce == null) {
+            builder.Append(" style=\"height:").Append(WebUtility.HtmlEncode(height)).Append('"');
+        } else if (height != null) {
+            // A strict policy blocks style attributes; a nonced rule matched by the attribute gives the host its height instead.
+            builder.Append(" data-cx-height=\"").Append(WebUtility.HtmlEncode(height)).Append('"');
         }
 
         // The JSON writer escapes <, > and &, so the document cannot close the script element early.
         builder.Append("><script type=\"application/json\" class=\"cx-config\">").Append(json).Append("</script></div>");
+        if (height != null && options.Nonce != null) {
+            builder.Append("<style").Append(CanopyContentSecurity.Attribute(options.Nonce)).Append(">[data-cx-height=\"").Append(height)
+                .Append("\"]{height:").Append(height).Append("}</style>");
+        }
+
         return builder.ToString();
     }
 
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, Runtime = options.Runtime, AssetMode = options.AssetMode };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
@@ -80,19 +89,21 @@ internal static class CanopyHtmlWriter {
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
-            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, AssetMode = options.AssetMode })
+            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, AssetMode = options.AssetMode, Nonce = options.Nonce })
         };
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 
     private static string Head(CanopyRuntime runtime, CanopyHtmlOptions options) {
+        // With a nonce, every element a strict Content Security Policy checks carries it (docs/security.md).
+        var nonce = CanopyContentSecurity.Attribute(options.Nonce);
         if (options.AssetMode == CanopyAssetMode.External) {
-            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming, runtime)) + "\">\n"
-                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming, runtime)) + "\" defer></script>";
+            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming, runtime)) + "\"" + nonce + ">\n"
+                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming, runtime)) + "\"" + nonce + " defer></script>";
         }
 
-        return "<style>\n" + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script>\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>";
+        return "<style" + nonce + ">\n" + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script" + nonce + ">\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>";
     }
 
     private static string ThemeName(CanopyTheme theme) => theme switch {
@@ -102,7 +113,7 @@ internal static class CanopyHtmlWriter {
     };
 
     private static string ValidateCssLength(string value) {
-        if (value.IndexOfAny(new[] { ';', '{', '}', '"', '\'', '<', '>' }) >= 0) {
+        if (value.IndexOfAny(new[] { ';', '{', '}', '"', '\'', '<', '>', '\\', '\r', '\n' }) >= 0) {
             throw new ArgumentException("Height must be a single CSS length such as 600px or 70vh.", nameof(value));
         }
 

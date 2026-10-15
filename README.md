@@ -206,6 +206,10 @@ A page that already has an HTML table needs one call. The table's headers, rows,
 
 Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de`, `/locales/es`, `/locales/fr` or `/locales/it` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()` or `Italian()` before writing the page.
 
+### Strict security policies and accessibility
+
+CanopyX runs under a Content Security Policy without `'unsafe-inline'` or `'unsafe-eval'`: set `CanopyHtmlOptions.Nonce` in C#, or give the runtime script a nonce, and the parts the runtime loads later carry it too. It also works with Trusted Types (`trusted-types canopyx`), writes host strings as text, and escapes CSV fields that could start a spreadsheet formula. See [docs/security.md](docs/security.md). The keyboard model, ARIA roles, forced colours, reduced motion, zoom reflow and target sizes, and what the tests check, are in [docs/accessibility.md](docs/accessibility.md).
+
 ## Working with larger datasets
 
 Virtual rows keep the rendered DOM small. Tree bundles split data into sidecar files, and hosted sources let your application fetch records as the reader navigates. Flat-grid queries filter and sort the complete dataset before paging; loading one page does not mean the rest of the results are available in the browser.

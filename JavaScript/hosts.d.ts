@@ -136,6 +136,8 @@ export interface TreeExport extends ExportCapture {
   readonly request: TreeExportRequest;
   rows(options?: { signal?: AbortSignal }): AsyncIterable<TreeExportRow>;
 }
+/** The TrustedHTML type of the DOM library when it declares Trusted Types; otherwise never. */
+export type HostTrustedHTML = typeof globalThis extends { TrustedHTML: { prototype: infer T } } ? T : never;
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */
 interface HostOptionsBase {
   source?: DataSource;
@@ -156,6 +158,11 @@ interface HostOptionsBase {
   interactionTimeoutMs?: number;
   renderers?: Record<string, (node: CanopyNode, element: HTMLElement, context: CellContext) => boolean>;
   renderDetail?: (node: CanopyNode, element: HTMLElement) => boolean;
+  /**
+   * Sees the markup the host declared trusted before it is written: an html detail ("detail") or a view icon ("icon").
+   * Return a string, a TrustedHTML from the host's own Trusted Types policy, or a Node, which is inserted as it is (docs/security.md).
+   */
+  sanitizeHtml?: (html: string, context: { readonly kind: "detail" | "icon" }) => string | HostTrustedHTML | Node;
   onSelect?: (node: CanopyNode | null, nodes: CanopyNode[]) => void;
   onToggle?: (node: CanopyNode, expanded: boolean) => void;
   onLoad?: (node: CanopyNode | null, info: LoadInfo) => void;

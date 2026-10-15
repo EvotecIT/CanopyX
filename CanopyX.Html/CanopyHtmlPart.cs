@@ -86,8 +86,21 @@ public sealed class CanopyHtmlPart {
     /// and the script (type <c>application/x-canopyx-&lt;name&gt;</c>), marked with the version. The runtime finds the payload
     /// anywhere in the document and runs it on first use.
     /// </summary>
-    public string Markup => (Style == null ? string.Empty : "<script type=\"application/x-canopyx-" + Name + "-style\" data-cx-version=\"" + Version + "\">" + Style + "</script>")
-        + "<script type=\"application/x-canopyx-" + Name + "\" data-cx-version=\"" + Version + "\">" + Script + "</script>";
+    public string Markup => GetMarkup(null);
+
+    /// <summary>
+    /// Returns the inert payload markup (<see cref="Markup"/>) marked with a Content Security Policy nonce. The payloads are
+    /// data blocks, which a policy does not run; the runtime inserts the stylesheet and the script with the payload's nonce
+    /// when the part loads, so a strict policy (<c>script-src 'nonce-…'; style-src 'nonce-…'</c>) allows them.
+    /// </summary>
+    /// <param name="nonce">The response's nonce, or null for none (the same as <see cref="Markup"/>).</param>
+    /// <returns>The payload markup.</returns>
+    /// <exception cref="ArgumentException"><paramref name="nonce"/> is not a valid nonce.</exception>
+    public string GetMarkup(string? nonce) {
+        var attribute = CanopyContentSecurity.Attribute(nonce);
+        return (Style == null ? string.Empty : "<script type=\"application/x-canopyx-" + Name + "-style\" data-cx-version=\"" + Version + "\"" + attribute + ">" + Style + "</script>")
+            + "<script type=\"application/x-canopyx-" + Name + "\" data-cx-version=\"" + Version + "\"" + attribute + ">" + Script + "</script>";
+    }
 
     /// <summary>Returns the script file name under a naming.</summary>
     /// <param name="naming">Content-hashed or plain; the naming of the runtime file that loads the part.</param>

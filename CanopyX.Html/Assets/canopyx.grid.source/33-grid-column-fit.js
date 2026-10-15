@@ -58,8 +58,8 @@
       this.fitHide(shown, width, phone);
       // On phones the first shown column also holds the "+N" button of the hidden fields (76-grid-phone.js). Its width is
       // reserved beside the column's content, and the columns are hidden again so the reserved width fits.
-      // The button's text is measured again once the count is final.
-      const first = shown.find(column => !column.fitHidden), reserve = () => first.reserve = Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width) + 8;
+      // The button's text is measured again once the count is final; the button is at least 24 pixels wide (its target size).
+      const first = shown.find(column => !column.fitHidden), reserve = () => first.reserve = Math.max(24, Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width)) + 8;
       if (phone && first && this.hiddenFieldCount()) { this.fitContext.font = this.fitFont[1]; reserve(); this.fitHide(shown, width, phone); reserve(); }
     },
     measureGridColumn(column) {

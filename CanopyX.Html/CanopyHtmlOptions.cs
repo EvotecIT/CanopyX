@@ -9,6 +9,7 @@ namespace CanopyX.Html;
 public sealed class CanopyHtmlOptions {
     private string _assetBaseUrl = "assets/";
     private string _language = "en";
+    private string? _nonce;
 
     /// <summary>
     /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
@@ -71,6 +72,22 @@ public sealed class CanopyHtmlOptions {
 
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Content Security Policy nonce of the response the markup is served in, or null (the default) for
+    /// none. With a nonce, every element CanopyX writes that a strict policy
+    /// (<c>script-src 'self' 'nonce-…'; style-src 'self' 'nonce-…'</c>) would otherwise block carries it: the inline
+    /// runtime script and stylesheet of a page, the script and stylesheet references of a page with external assets, the
+    /// inert payloads of the optional parts, which the runtime inserts with the same nonce when it loads them, and the rule
+    /// that gives a fragment its <see cref="Height"/> in place of a <c>style</c> attribute. The view document is a JSON data
+    /// block, which a policy does not restrict. A nonce must be new for every response, so write the markup per response,
+    /// or put a placeholder here and replace it per response. See <c>docs/security.md</c>.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is not a valid nonce: base64 or base64url characters, optionally followed by up to two <c>=</c>.</exception>
+    public string? Nonce {
+        get => _nonce;
+        set => _nonce = value == null ? null : CanopyContentSecurity.Validate(value, nameof(value));
+    }
 
     /// <summary>
     /// Gets or sets the height of the view as a CSS length, for example <c>600px</c> or <c>70vh</c>. Fragments without

@@ -15,10 +15,16 @@
     previous: '<path d="m14 7-5 5 5 5"/>', next: '<path d="m10 7 5 5-5 5"/>',
     first: '<path d="m13 7-5 5 5 5M17 7l-5 5 5 5"/>', last: '<path d="m11 7 5 5-5 5M7 7l5 5-5 5"/>'
   };
-  function gridIcon(name) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  // The icon's shapes (GRID_ICONS, or the constant shapes a menu passes) are built as elements, not parsed as markup, so
+  // icons need no HTML sink (docs/security.md).
+  function gridIcon(name, shapes) {
+    const svgNs = "http://www.w3.org/2000/svg", svg = document.createElementNS(svgNs, "svg");
     svg.classList.add("cx-ico"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = GRID_ICONS[name] || GRID_ICONS.more; return svg;
+    for (const [, tag, attributes] of (shapes || GRID_ICONS[name] || GRID_ICONS.more).matchAll(/<(\w+)([^>]*)\/>/g)) {
+      const shape = svg.appendChild(document.createElementNS(svgNs, tag));
+      for (const [, attribute, value] of attributes.matchAll(/([\w-]+)="([^"]*)"/g)) shape.setAttribute(attribute, value);
+    }
+    return svg;
   }
   function gridDecorateButton(button, icon, ghost) {
     button.classList.add("cx-btn"); if (ghost) button.classList.add("ghost");

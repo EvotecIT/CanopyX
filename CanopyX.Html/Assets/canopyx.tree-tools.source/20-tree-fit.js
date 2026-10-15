@@ -100,7 +100,7 @@
       // On phones the tree column also holds the "+N" button of the hidden fields (48-tree-details.js): its width is reserved
       // beside the column's content, and the columns are hidden again so it fits, as on a flat grid.
       identity.reserve = 0; this.fitHide(shown, width, phone);
-      const reserve = () => { this.fitContext.font = "700 12.5px" + this.fitFamily; identity.reserve = Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width) + 8; };
+      const reserve = () => { this.fitContext.font = "700 12.5px" + this.fitFamily; identity.reserve = Math.max(24, Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width)) + 8; };
       if (phone && this.fitContext && this.hiddenFieldCount()) { reserve(); this.fitHide(shown, width, phone); reserve(); }
     },
 
@@ -115,8 +115,8 @@
       this.fitCh = Math.ceil(text("00000000000"));
       const rows = [];
       for (const w of this.rows) { if (rows.length === TREE_FIT_ROWS) break; if (!w.status && !w.h.detail) rows.push(w); }
-      // A checkbox (interactive runtime) and an icon sit between the expander and the label.
-      const check = this.checkMode ? 22 : 0;
+      // A checkbox (interactive runtime, 16 pixels with its 6 pixel spacing from the expander) and an icon sit between the expander and the label.
+      const check = this.checkMode ? 28 : 0;
       this.columns.forEach((column, index) => {
         const headNeed = Math.ceil(text(column.title, headFont) + 2 * pad + (column.sortable ? 22 : 8));
         let values = 0, indent = 0;

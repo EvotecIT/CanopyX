@@ -614,7 +614,7 @@ A detail row sits under its parent and holds one of three payloads:
 - The content of a detail row stays inside the visible width of the grid. It does not scroll away sideways with the columns, however wide they are together.
 - A table's `widths` are optional: one share of the table width per column, each 1 to 1,000 (`[2, 3, 3]` makes the first column a quarter). Without them the columns are equally wide. Text that does not fit its column wraps.
 
-Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail(node, element)` callback; `element` is the body of the row, which has the visible width of the grid, and a row without `height` takes the height of what the host puts into it. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
+Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup, inserted without sanitising unless the host gives a `sanitizeHtml` option; hosts must encode any user-supplied text in it (see [security.md](security.md)). The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail(node, element)` callback; `element` is the body of the row, which has the visible width of the grid, and a row without `height` takes the height of what the host puts into it. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
 
 ## Page
 
@@ -833,7 +833,7 @@ Loaded roots and complete inline descendants preserve surviving identities. Old 
 ## Security Notes
 
 - Labels, cells, badges, tooltips, search context, and table and property values are inserted with `textContent`, never as HTML.
-- Icon SVG and `html` detail payloads are trusted host markup. Do not build them from user input without encoding.
+- Icon SVG and `html` detail payloads are trusted host markup. Do not build them from user input without encoding. The `sanitizeHtml` host option and Trusted Types handling are described in [security.md](security.md).
 - Sidecar files are scripts. Serve a bundle only from a location the host controls, the same as the page itself.
 
 Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires an explicit lazy-child declaration and cannot accompany inline children. The search placeholder is also its accessible name and must contain non-whitespace text.

@@ -173,7 +173,9 @@
      * An indented outline table of the rows that are open, for print and hosts that export what the user sees. The tree
      * tools part draws it (canopyx.tree-tools.source/47-tree-outline.js); until it is installed the outline is empty.
      */
-    toOutline() { return this.outlineMarkup ? this.outlineMarkup() : ""; },
+    toOutline() { return this.outlineElement()?.outerHTML || ""; },
+    /** The outline as a table element, or null until the tree tools part is installed. */
+    outlineElement() { return this.outlineTable ? this.outlineTable() : null; },
 
     /** Retires loaded descendants and their requests, including inactive cache membership. */
     invalidateChildren(w) {

@@ -75,7 +75,7 @@
         body.appendChild(list);
       } else if (detail.type === "html") {
         if (plainHtml) setText(body, detail.html || "");
-        else body.innerHTML = detail.html; // trusted host markup, see docs/data-protocol.md
+        else hostHtml(body, detail.html, this.opts.sanitizeHtml, "detail"); // trusted host markup, see docs/security.md
       }
     },
 

@@ -37,7 +37,7 @@
       host.appendChild(this.outline);
       this.buildHeader();
       this.onScroll = () => { this.scheduleRender(); this.stateChanged(); };
-      this.onPrint = () => { this.outline.innerHTML = this.toOutline(); };
+      this.onPrint = () => { const table = this.outlineElement(); this.outline.replaceChildren(...table ? [table] : []); };
       grid.addEventListener("scroll", this.onScroll, { passive: true });
       grid.addEventListener("click", (e) => this.onClick(e));
       grid.addEventListener("dblclick", (e) => this.onDblClick(e));

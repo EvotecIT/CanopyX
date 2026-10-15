@@ -10,7 +10,7 @@
       this.host = host;
       this.view = view;
       this.opts = options;
-      for (const name of ["isSelectable", "beforeSelect"]) {
+      for (const name of ["isSelectable", "beforeSelect", "sanitizeHtml"]) {
         if (options[name] !== undefined && typeof options[name] !== "function") throw new Error("CanopyX: " + name + " must be a function.");
       }
       this.id = "cx" + ++instanceSeq;
@@ -96,7 +96,7 @@
       Object.keys(icons).forEach((key) => {
         const holder = h("span", "cx-icon");
         holder.setAttribute("aria-hidden", "true");
-        holder.innerHTML = icons[key]; // trusted host SVG, declared once per view
+        hostHtml(holder, icons[key], this.opts.sanitizeHtml, "icon"); // trusted host SVG, declared once per view
         templates.set(key, holder);
       });
       return templates;
