@@ -204,13 +204,15 @@ Selected exports add `request.querySelection` when this mode is active. They ret
 
 ### Flat groups and complete-query totals
 
-Reporting definitions opt in through `grouping: { column, direction }`, `aggregates`, or both. Grouping uses one declared sortable raw column. Its key leads every query sort; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. These are flat-grid headings, with no tree hierarchy or tree keyboard semantics.
+Reporting definitions opt in through a fixed `grouping: { column, direction }`, runtime grouping (`groupBy` and/or `groupable`), `aggregates`, or a combination of grouping and aggregates; a fixed grouping cannot be combined with `groupBy` or `groupable`. A fixed grouping uses one declared sortable raw column. Runtime grouping uses up to four ordered levels `{ column, direction, aggregate? }` of declared sortable columns, declared in `groupBy` and changed by readers when `groupable` is true (see [grouping.md](grouping.md)). Grouping keys lead every query sort, outermost first; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. One level gives flat-grid headings, with no tree hierarchy or tree keyboard semantics; two or more levels make the grid a `treegrid` whose rows carry `aria-level`.
 
-Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
+Queries of a runtime-grouping definition always carry `groupBy`, the ordered levels (an empty array when ungrouped); input without it takes the declared levels. The levels' columns lead `sort`, each with its level's direction, or ascending for a level ordered by an aggregate; a sort entry for a grouped column that the reader sets turns that level's groups around. A level with `aggregate` orders its groups by that declared aggregate's value in `direction`, missing values last and equal values by raw value ascending; its records stay contiguous by value. Fixed-grouping queries keep their earlier shape, without `groupBy`.
+
+Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells and `distinctCount` distinct nonmissing raw values in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Any other operation name (a lowercase letter and up to 31 letters and digits) is a custom aggregate: a browser plugin computes it for inline data and a host source computes it itself; its value is a finite number or null. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
 
 Groups optionally carry `cells`, a map of declared column IDs to ordinary display cells. These cells use the column presenter; numeric aggregates and the first-column group label take precedence. Hosts supply complete-group states or other display facts. Inline summaries choose the worst semantic tone from each group's `state` and `enum` columns across the complete query, including records outside the current page. The severity order is danger, warning, info, success, neutral; unknown host tones rank with info. Display cells never become records or alter filtering, sorting, selection or export.
 
-Hosted sources provide `source.summary(query, { signal })`. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
+Hosted sources provide `source.summary(query, { signal })`. A source's `query` hook receives the same `groupBy` and must return records in the level order, as the summary describes it. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
 
 ```json
 { "protocol": "canopyx/2", "type": "gridSummary", "view": "inventory", "revision": "r1",
@@ -220,12 +222,56 @@ Hosted sources provide `source.summary(query, { signal })`. The request is the c
   "groups": [{ "key": "category-a", "value": "A", "offset": 0, "count": 3, "aggregates": { "total": 12 } }] }
 ```
 
-Groups cover every matching record in contiguous declared order. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges, aggregate bindings and page-to-group membership before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
+With several levels, every group of an outer level lists the next level's groups in `groups`, covering its records in contiguous ranges (absolute `offset`s into the complete query); groups of the innermost level omit `groups`:
 
-Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Each aggregate cell names its function through the `gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum` and `gridAggregateMaximum` labels (`{value}` is the formatted number, for example `avg 36.2`). Values use the column's precision (the most fraction digits among its loaded raw values, at most three; averages one more, counts none) and a compact form from one million (`sum 12.7M`); the cell's tooltip gives the aggregate's label and the full value. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+```json
+"groups": [{ "key": "north", "value": "North", "offset": 0, "count": 3, "aggregates": { "total": 30 },
+  "groups": [{ "key": "north/open", "value": "Open", "offset": 0, "count": 2, "aggregates": { "total": 20 } },
+             { "key": "north/closed", "value": "Closed", "offset": 2, "count": 1, "aggregates": { "total": 10 } }] }]
+```
 
-`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)` and `getCollapsedGroups()` manage presentation. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+Groups cover every matching record in contiguous declared order, level by level. Keys are unique across the whole summary (an inner key usually extends its outer group's key), so collapse state names a group of any level. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups across all levels and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges at every level, level order, aggregate bindings and page-to-group membership (each record's value at each level) before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
 
+Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Each aggregate cell names its function through the `gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum`, `gridAggregateMaximum` and `gridAggregateDistinct` labels (a custom aggregate through the `{value}` label its plugin registers) (`{value}` is the formatted number, for example `avg 36.2`). Values use the column's precision (the most fraction digits among its loaded raw values, at most three; averages one more, counts none) and a compact form from one million (`sum 12.7M`); the cell's tooltip gives the aggregate's label and the full value. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+
+`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)`, `setGroupLevelCollapsed(level, boolean)`, `expandAllGroups()`, `collapseAllGroups()` and `getCollapsedGroups()` manage presentation; `setGroupBy(levels)` and `getGroupBy()` change and read runtime levels. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Exports of the filtered result add `request.grouping` (`levels` with titles, `aggregates`, `totals` and the nested `groups` with ranges, values, display `text` and aggregates) so a format writer can produce outline levels; selected and all-record exports carry none. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+
+#### What a server adapter implements for multi-level grouping
+
+A summary endpoint that serves only a fixed grouping keeps working for definitions that declare `grouping`. For runtime
+grouping, an adapter such as `CanopyX.Data` (which serves single-level `gridSummary` today) adds:
+
+1. **Request parsing.** Read `groupBy` from `gridQuery` (absent for fixed-grouping definitions, always present otherwise):
+   up to four `{ column, direction, aggregate? }` levels of distinct declared sortable columns, allowed by the column
+   allow-list, with `aggregate` naming a declared aggregate. Reject a `groupBy` the definition does not allow.
+   `CanopySummaryRequest` exposes the ordered levels (for example `IReadOnlyList<CanopySummaryLevel> Levels` with the column,
+   descending flag and optional aggregate) in place of the single `GroupColumn`/`GroupDescending`.
+2. **Record order.** Page queries order records level by level before the remaining sorts and identity: by the level's
+   value, missing values last, with the protocol's raw-value ties (`CanopyGridGrouping.CreateComparer` for each level), or,
+   for an aggregate level, by the group's aggregate (a grouped subquery or window aggregate joined back to the records),
+   missing aggregates last and ties by value ascending.
+3. **Nested summaries.** The provider groups by every level prefix (for example `GROUP BY region` and
+   `GROUP BY region, status`, or one `GROUP BY` with rollup) and returns each group's count and aggregates; the handler
+   orders sibling groups by the level's order, assigns contiguous absolute offsets parent by parent, nests inner groups
+   under `groups`, and emits keys unique across levels (`GroupKey` of the outer key and the value, for example
+   `s:North/s:Open`). The 10,000-group limit counts every level; ungrouped requests (`groupBy: []`) return no groups.
+4. **Aggregates.** Add `distinctCount` (count of distinct nonmissing values in any column) and accept custom operation names
+   only when a registered provider computes them; reject unknown ones as unsupported.
+5. **Echo and checks.** Echo the normalized query including `groupBy`; validate sibling order, contiguity and
+   `sum(count) == matched` at every level before writing, as `CanopyGridSummary.ToJson` does for native responses.
+
+### Grid detail rows
+
+`reporting.detail` gives reporting grids expandable detail rows (see [grouping.md](grouping.md#detail-rows)). It holds at
+most one content source: `template` (the id of a page `<template>`), `renderer` (a plugin detail renderer name) or `view`
+(a nested `grid` or tree `view` document whose inline data comes from each record). Without one, records carry their own
+payloads. `print: false` leaves details out of exports and print snapshots; `label` describes the content.
+
+A grid row's optional `detail` is a table, properties or html payload (as on tree [detail rows](#detail-rows), without
+`height`: grid detail rows always measure their content), `{ "type": "grid", "rows": [...] }` for the nested grid or
+`{ "type": "tree", "roots": [...] }` for the nested tree. Detail payloads never join queries, sorting, search or record
+counts. Exports that include details add `details: true` to the request, and each exported record a `detail` table,
+properties or html payload (nested rows become a table of the nested view's visible columns).
 ### Safe cell presenters
 
 Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
