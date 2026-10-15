@@ -146,14 +146,20 @@
     if (view.kind === "grid" && typeof view.source?.record === "function") return (request, options) => view.source.record(request, options);
     return source?.kind === "sidecar" ? "sidecar" : null;
   }
-  const recordRevision = view => view.snapshot?.revision ?? null;
+  function recordRevision(view) {
+    if (view.kind === "grid") {
+      if (!view.opts.source && view.view.source.kind === "inline") return null;
+      return view.snapshot?.revision ?? null;
+    }
+    return view.datasetRevision ?? null;
+  }
   const recordCacheKey = (view, id, revision = recordRevision(view)) => JSON.stringify([revision, id]);
   const recordEntry = (view, id) => view._recordPayloads?.get(recordCacheKey(view, id));
   function recordPayload(view, id, doc, revision) {
     if (doc == null) return null;
     if (typeof doc !== "object" || Array.isArray(doc) || doc.protocol !== undefined && doc.protocol !== PROTOCOL || doc.type !== undefined && doc.type !== "gridRecord" ||
         doc.view !== undefined && doc.view !== view.view.id || doc.id !== undefined && doc.id !== id ||
-        revision && revision !== "inline" && doc.revision !== undefined && doc.revision !== revision) recordFail("a record source answers with the gridRecord of the requested record and revision.");
+        revision != null && doc.revision !== undefined && doc.revision !== revision) recordFail("a record source answers with the gridRecord of the requested record and revision.");
     for (const name of ["cells", "fields"]) if (doc[name] !== undefined && (!doc[name] || typeof doc[name] !== "object" || Array.isArray(doc[name]) || Object.hasOwn(doc[name], "__proto__")))
       recordFail("record " + name + " are an object of ids.");
     if (doc.row !== undefined && (!doc.row || doc.row.id !== id || !doc.row.cells || typeof doc.row.cells !== "object")) recordFail("a record's row is the requested record.");
@@ -178,7 +184,7 @@
       return pack.then(records => recordPayload(view, id, records.get(id) || null, revision));
     }
     const request = { protocol: PROTOCOL, type: "gridRecordQuery", view: view.view.id, id,
-      ...(revision && revision !== "inline" ? { revision } : {}), ...extra };
+      ...(revision != null ? { revision } : {}), ...extra };
     const run = signal => Promise.resolve(loader(request, { signal }));
     return (view.runGridHook ? view.runGridHook(run, signal || view.dataLifetime?.signal) : run(signal || view.lifetime.signal)).then(doc => recordPayload(view, id, doc, revision));
   }

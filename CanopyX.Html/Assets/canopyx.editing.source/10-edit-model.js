@@ -123,7 +123,8 @@
       const state = this.edit, cells = record.cells, previous = cellValue(cells[spec.id]);
       if (editSame(previous, value)) return true;
       const detail = { id, column: spec.id, value, previous, row: editCopy(record), source };
-      if (!this.emit("cellValueChanging", detail)) return false;
+      // Range batches preflight their changing hooks before their final validation and any mutation.
+      if (!checked?.prepared && !this.emit("cellValueChanging", detail)) return false;
       const entry = state.changes.get(id) || { id, original: Object.create(null), values: Object.create(null), errors: Object.create(null), error: null };
       if (!Object.hasOwn(entry.original, spec.id)) entry.original[spec.id] = cells[spec.id];
       const original = entry.original[spec.id];

@@ -364,9 +364,9 @@ declared source), from a hosted grid source's `record(request, { signal })` hook
 { "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "row": true }
 ```
 
-`revision` is the accepted dataset revision of a hosted grid (inline grids send none). `field`, `offset` and `limit` ask for
-the next rows of a collection field ("Load more"); `row: true` asks for the record's row too, because the browser has not
-loaded it (a deep link or a related record outside the loaded rows). The answer is a `gridRecord` (a plain object with the same
+`revision` is the accepted dataset revision of a hosted grid or query-aware tree; ordinary inline sources omit it.
+`field`, `offset` and `limit` ask for the next rows of a collection field ("Load more"); `row: true` asks for the record's row
+too, because the browser has not loaded it (a deep link or a related record outside the loaded rows). The answer is a `gridRecord` (a plain object with the same
 members is accepted from browser hooks; `null` means no details):
 
 ```json

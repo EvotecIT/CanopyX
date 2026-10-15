@@ -121,23 +121,27 @@ public sealed partial class CanopyRemoteHandler {
     }
 
     private static void WriteQueryEcho(Utf8JsonWriter writer, CanopyDataRequest query, string revision) {
-        if (query.RawQuery != null) {
-            using var raw = JsonDocument.Parse(query.RawQuery);
-            raw.RootElement.WriteTo(writer);
-            return;
-        }
-        // A request built in code has no wire form; echo its normalized equivalent.
+        using var raw = query.RawQuery == null ? null : JsonDocument.Parse(query.RawQuery);
+        // Parsing accepts shorthand and additive input fields. A summary always owns a complete protocol query,
+        // with the effective grouping/sort and a zero offset because its ranges cover the complete result.
         writer.WriteStartObject();
         writer.WriteString("protocol", "canopyx/2");
         writer.WriteString("type", "gridQuery");
         writer.WriteString("view", query.Schema.ViewId);
         writer.WriteString("revision", revision);
         writer.WriteNumber("offset", 0);
-        writer.WriteNumber("limit", query.Schema.ProtocolView.PageSize);
+        writer.WriteNumber("limit", query.Limit);
         writer.WriteString("search", query.Search);
-        if (query.SearchMode == CanopyGridSearchMode.Words) writer.WriteString("searchMode", "words");
+        if (query.SearchMode == CanopyGridSearchMode.Words || raw != null && raw.RootElement.TryGetProperty("searchMode", out var mode) && mode.ValueKind == JsonValueKind.String)
+            writer.WriteString("searchMode", query.SearchMode == CanopyGridSearchMode.Words ? "words" : "substring");
         writer.WriteStartArray("sort");
-        foreach (var key in query.Sort) {
+        foreach (var level in query.Levels) {
+            writer.WriteStartObject();
+            writer.WriteString("column", level.Column.Id);
+            writer.WriteString("direction", level.Aggregate == null && level.Descending ? "desc" : "asc");
+            writer.WriteEndObject();
+        }
+        foreach (var key in query.InnerSort) {
             writer.WriteStartObject();
             writer.WriteString("column", key.Column.Id);
             writer.WriteString("direction", key.Descending ? "desc" : "asc");
@@ -145,8 +149,17 @@ public sealed partial class CanopyRemoteHandler {
         }
         writer.WriteEndArray();
         writer.WriteStartArray("filters");
+        if (raw != null && raw.RootElement.TryGetProperty("filters", out var filters) && filters.ValueKind == JsonValueKind.Array)
+            foreach (var filter in filters.EnumerateArray()) WriteWireFilter(writer, filter);
         writer.WriteEndArray();
-        if (query.Filter != null) {
+        if (raw != null) {
+            // Preserve accepted predicate shape and operand text: the browser compares the normalized query's
+            // ownership, and equivalent date spellings or moving a flat predicate into a group changes that shape.
+            if (raw.RootElement.TryGetProperty("filterGroup", out var group) && group.ValueKind == JsonValueKind.Object) {
+                writer.WritePropertyName("filterGroup");
+                WriteWireFilterGroup(writer, group);
+            }
+        } else if (query.Filter != null) {
             writer.WritePropertyName("filterGroup");
             WriteFilter(writer, query.Filter is CanopyFilterGroup ? query.Filter : new CanopyFilterGroup(CanopyGridFilterJunction.All, new[] { query.Filter }));
         }
@@ -161,6 +174,31 @@ public sealed partial class CanopyRemoteHandler {
             }
             writer.WriteEndArray();
         }
+        writer.WriteEndObject();
+    }
+
+    /// <summary>Writes only accepted predicate fields, retaining the original operands.</summary>
+    private static void WriteWireFilter(Utf8JsonWriter writer, JsonElement filter) {
+        writer.WriteStartObject();
+        foreach (var name in new[] { "column", "operator", "values" }) {
+            writer.WritePropertyName(name);
+            filter.GetProperty(name).WriteTo(writer);
+        }
+        writer.WriteEndObject();
+    }
+
+    /// <summary>Fills optional group arrays and leaves ignored additive input fields out of the owned query.</summary>
+    private static void WriteWireFilterGroup(Utf8JsonWriter writer, JsonElement group) {
+        writer.WriteStartObject();
+        writer.WriteString("operator", group.GetProperty("operator").GetString());
+        writer.WriteStartArray("filters");
+        if (group.TryGetProperty("filters", out var filters) && filters.ValueKind == JsonValueKind.Array)
+            foreach (var filter in filters.EnumerateArray()) WriteWireFilter(writer, filter);
+        writer.WriteEndArray();
+        writer.WriteStartArray("groups");
+        if (group.TryGetProperty("groups", out var groups) && groups.ValueKind == JsonValueKind.Array)
+            foreach (var child in groups.EnumerateArray()) WriteWireFilterGroup(writer, child);
+        writer.WriteEndArray();
         writer.WriteEndObject();
     }
 

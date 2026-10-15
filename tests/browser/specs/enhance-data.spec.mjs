@@ -27,7 +27,10 @@ test("a state kept in the address restores the sort, search and page of a shared
   await ready(page, "projectsGrid");
   await page.evaluate(() => projectsGrid.sort([{ column: "owner.name", direction: "asc" }]));
   await page.evaluate(() => projectsGrid.goToPage(2));
-  await page.waitForFunction(() => location.hash.includes("projects="));
+  await page.waitForFunction(() => {
+    const text = new URLSearchParams(location.hash.slice(1)).get("projects"), state = text && JSON.parse(text);
+    return state?.s?.length === 1 && state.s[0][0] === "owner.name" && state.s[0][1] === "asc" && state.o === 20;
+  });
   const shared = await page.evaluate(() => location.href);
   expect(decodeURIComponent(new URL(shared).hash)).toContain('"s":[["owner.name","asc"]]');
   const fresh = await page.context().newPage();

@@ -115,6 +115,12 @@ cells it refuses are reported and left alone. Pasted lines go to data rows only:
 - **Without it**, the grid applies nothing. A handler that applies the values to its data answers with the cells it refused
   and reloads the grid; the cells it did not refuse count as applied.
 
+Column validators see the completed proposed row. When a value is refused, the remaining proposals in that row are checked
+again against the values that would be retained. Independent valid cells and other rows can still apply. Each row gets at
+most eight validation passes; if refusals still change its proposed result, the remaining proposals in that row are refused
+with the reported refusal reason. If a row changes while its asynchronous checks are pending, the paste rejects with
+`AbortError` and preserves that edit.
+
 The live region announces what changed ("Pasted 4 cells. 2 cells were not pasted"), and a report above the grid lists every
 refused cell with its row, column and reason until it is dismissed (`gridPasteReport`, `gridPasteCell`).
 

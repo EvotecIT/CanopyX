@@ -110,7 +110,7 @@ public sealed class CanopyDataRequest {
     /// <summary>Gets record identities excluded from the result.</summary>
     public IReadOnlyCollection<string> ExcludedIds { get; private set; }
 
-    /// <summary>The query object exactly as the client sent it, echoed by summary documents.</summary>
+    /// <summary>The original validated predicate shape and operands, retained when normalizing a summary query echo.</summary>
     internal string? RawQuery { get; private set; }
 
     /// <summary>Returns a copy with another window.</summary>
@@ -135,10 +135,10 @@ public sealed class CanopyDataRequest {
     /// <summary>Returns a copy without search and filters, keeping the sort keys and window.</summary>
     /// <returns>The copy.</returns>
     public CanopyDataRequest WithoutCriteria() => new CanopyDataRequest(this) {
-        Filter = null, Search = string.Empty, SearchTerms = Array.Empty<string>()
+        Filter = null, Search = string.Empty, SearchTerms = Array.Empty<string>(), RawQuery = null
     };
 
-    internal CanopyDataRequest WithFilter(CanopyFilterNode? filter) => new CanopyDataRequest(this) { Filter = filter };
+    internal CanopyDataRequest WithFilter(CanopyFilterNode? filter) => new CanopyDataRequest(this) { Filter = filter, RawQuery = null };
 
     internal CanopyDataRequest WithRaw(string raw) => new CanopyDataRequest(this) { RawQuery = raw };
 

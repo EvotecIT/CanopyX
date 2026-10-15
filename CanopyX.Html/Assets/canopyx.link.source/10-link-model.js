@@ -61,15 +61,19 @@
     return grid.kind === "tree" && field === grid.view.columns[0].id && !Object.hasOwn(record.cells || {}, field) ? record.label : cellValue((record.cells || {})[field]);
   }
 
-  /** Whether a record matches every external filter; dates compare by instant, everything else by its raw value. */
-  function linkMatches(grid, record) {
-    return grid.linkFilters.every(filter => {
-      const value = linkCell(grid, record, filter.field), date = linkColumn(grid, filter.field).kind === "datetime";
-      if (value == null) return false;
-      const at = item => date ? Date.parse(item) : item, key = at(value);
-      if (filter.values) return filter.values.some(item => at(item) === key || String(item) === String(value));
-      return (filter.range[0] == null || key >= at(filter.range[0])) && (filter.range[1] == null || key <= at(filter.range[1]));
+  /** The ordinary predicates of external filters, shared by grid queries and trees' loaded records. */
+  function linkPredicates(filters) {
+    return filters.flatMap(filter => filter.values ? [{ column: filter.field, operator: filter.values.length === 1 ? "eq" : "in", values: filter.values.slice() }] :
+      [filter.range[0] == null ? null : { column: filter.field, operator: "ge", values: [filter.range[0]] }, filter.range[1] == null ? null : { column: filter.field, operator: "le", values: [filter.range[1]] }].filter(Boolean));
+  }
+
+  /** Compiles the linked tree's filters once; matching uses the same typed cell predicates as a flat grid. */
+  function linkMatcher(grid) {
+    const predicates = linkPredicates(grid.linkFilters).map(predicate => {
+      const column = linkColumn(grid, predicate.column);
+      return [predicate, column.kind === undefined ? { ...column, kind: "text" } : column];
     });
+    return record => predicates.every(([predicate, column]) => cellMatches(linkCell(grid, record, column.id), predicate, column));
   }
 
   const LINK_COMMON = {

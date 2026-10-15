@@ -45,6 +45,69 @@ test("record payloads follow accepted revisions and reject a mismatched response
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator(".cx-record-error")).toContainText("requested record and revision");
   await expect(drawer(page)).not.toContainText("Details at r3");
+  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await page.evaluate("revision = 'inline'; wrongRevision = false; " + api + ".reload()");
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Details at inline");
+  expect(await page.evaluate("requests.at(-1).revision")).toBe("inline");
+});
+
+for (const source of ["host", "URL"]) test(`query-aware tree record payloads follow accepted revisions from a ${source} source`, async ({ page }) => {
+  const view = recordView(), node = { ...view.rows[0], label: "Alpha" }; delete view.rows; delete view.record.header;
+  view.type = "view"; view.rowHeight = 28; view.roots = []; view.record.sections[0].fields = ["note"];
+  let revision = "r1";
+  if (source === "URL") {
+    delete view.roots;
+    view.source = { kind: "remote", queryAware: true, children: "/tree-record-roots?ref={ref}&cursor={cursor}&query={viewQuery}&revision={revision}" };
+    await page.route("http://canopyx.test/tree-record-roots?*", route => route.fulfill({ contentType: "application/json",
+      body: JSON.stringify({ protocol: "canopyx/2", type: "page", parent: null, offset: 0, items: [node], next: null, revision }) }));
+  }
+  await openView(page, view, `window.revision = 'r1'; window.recordRequests = []; window.wrongRevision = false; window.omitRevision = false;
+    CanopyX.configure('records', {
+      ${source === "host" ? `source: { queryAware: true, page: () => ({ items: [${JSON.stringify(node)}], next: null, revision }) },` : ""}
+      loadRecord(request) { recordRequests.push(request); return { protocol: 'canopyx/2', type: 'gridRecord', view: request.view, id: request.id,
+        ...(!omitRevision ? { revision: wrongRevision ? 'another-revision' : revision } : {}), fields: { note: 'Tree details at ' + revision } }; }
+    });`);
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r1");
+  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r1");
+  expect(await page.evaluate("recordRequests.length")).toBe(1);
+  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  revision = "r2"; await page.evaluate("revision = 'r2'; " + api + ".reload()");
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r2");
+  expect(await page.evaluate("recordRequests.map(request => request.revision)")).toEqual(["r1", "r2"]);
+  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  revision = "r3"; await page.evaluate("revision = 'r3'; wrongRevision = true; " + api + ".reload()");
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator(".cx-record-error")).toContainText("requested record and revision");
+  await expect(drawer(page)).not.toContainText("Tree details at r3");
+  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  revision = "r4"; await page.evaluate("revision = 'r4'; wrongRevision = false; omitRevision = true; " + api + ".reload()");
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r4");
+  expect(await page.evaluate("recordRequests.map(request => request.revision)")).toEqual(["r1", "r2", "r3", "r4"]);
+  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  revision = "inline"; await page.evaluate("revision = 'inline'; wrongRevision = true; omitRevision = false; " + api + ".reload()");
+  await page.evaluate(api + ".openRecord('a')");
+  await expect(drawer(page).locator(".cx-record-error")).toContainText("requested record and revision");
+  expect(await page.evaluate("recordRequests.at(-1).revision")).toBe("inline");
+});
+
+test("inline tree record requests keep revision optional and reuse accepted details", async ({ page }) => {
+  const view = recordView(); view.type = "view"; view.rowHeight = 28; view.roots = view.rows.map(row => ({ ...row, label: row.cells.name })); delete view.rows;
+  delete view.record.header; view.record.sections[0].fields = ["note"];
+  await openView(page, view, `window.recordRequests = []; CanopyX.configure('records', { loadRecord(request) {
+    recordRequests.push(request); return { id: request.id, fields: { note: 'Inline details' } };
+  } });`);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.evaluate(api + ".openRecord('a')");
+    await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Inline details");
+    await drawer(page).getByRole("button", { name: "Close record" }).click();
+  }
+  expect(await page.evaluate("recordRequests")).toEqual([{ protocol: "canopyx/2", type: "gridRecordQuery", view: "records", id: "a" }]);
 });
 
 test("record exports retain header-only fields and protect spreadsheet formulas", async ({ page }) => {
@@ -137,6 +200,8 @@ test("grouping keeps first-column aggregates and clears collapse keys after regr
 for (const depth of [1, 2]) test(`phone group totals use cell navigation and preserve row keys with ${depth} grouping levels`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const view = groupedDefinition(); view.reporting.groupBy.length = depth;
+  // Cell navigation needs a second cell even when the platform font makes fewer columns fit.
+  view.columns[1].priority = "essential";
   await openGroups(page, view);
   const heading = page.locator(".cx-grid-group").first(), toggle = heading.locator(".cx-grid-group-toggle");
   const selection = heading.locator(".cx-grid-group-select"), totals = heading.locator(".cx-grid-group-aggregates");

@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CanopyX\CanopyX.csproj" />
     <ProjectReference Include="..\CanopyX.Html\CanopyX.Html.csproj" />
+    <ProjectReference Include="..\CanopyX.Data\CanopyX.Data.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" PrivateAssets="all" />

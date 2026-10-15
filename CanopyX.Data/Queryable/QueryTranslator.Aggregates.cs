@@ -158,6 +158,16 @@ internal sealed partial class QueryTranslator<T> {
             ? Expression.Convert(value, ExpressionTools.IsNullable(value.Type) ? typeof(double?) : typeof(double)) : value;
     }
 
+    /// <summary>Streams raw text groups without a store-folded search or prefix. The caller applies canonical folding,
+    /// search and ordering without buffering the grouped records or relying on the store's Unicode support.</summary>
+    internal async IAsyncEnumerable<StoreBucket> TextBucketsAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor,
+        [EnumeratorCancellation] CancellationToken cancellationToken) {
+        var value = _values[column];
+        var query = BucketsQuery<string, string>(source, value, value, false, null);
+        await foreach (var row in executor.StreamAsync(query, cancellationToken).ConfigureAwait(false))
+            yield return new StoreBucket(row.Key, row.Value, row.Count);
+    }
+
     /// <summary>Streams raw date buckets in instant order so protocol-equivalent instants can merge without retaining the full distinct set.</summary>
     internal IAsyncEnumerable<StoreBucket> DateBucketsAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
         var value = _values[column];

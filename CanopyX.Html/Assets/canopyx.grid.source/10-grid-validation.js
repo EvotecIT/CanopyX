@@ -1,24 +1,6 @@
   // ---------- flat-grid wire boundaries ----------
   function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
 
-  function gridScalar(cell, column) {
-    const value = cellValue(cell);
-    if (value == null) return null;
-    if (column.kind === "number") {
-      if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)
-        throw new Error("CanopyX: numeric grid cells need finite values within the safe integer magnitude.");
-      return value;
-    }
-    if (column.kind === "datetime") {
-      const date = typeof value === "string" && /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) ? Date.parse(value) : NaN;
-      if (!Number.isFinite(date))
-        throw new Error("CanopyX: date grid cells need ISO dates with an explicit time zone.");
-      return date;
-    }
-    if (typeof value !== "string" && typeof value !== "boolean") throw new Error("CanopyX: text grid cells need strings or booleans.");
-    return value;
-  }
-
   // ids carries the identities of the earlier chunks of the same rows (the data part validates rowData chunk by chunk).
   function validateGridRows(rows, columns, ids = new Set()) {
     if (!Array.isArray(rows)) throw new Error("CanopyX: grid rows must be an array.");

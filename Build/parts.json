@@ -240,7 +240,7 @@
       "runtimes": ["tree", "grid"],
       "views": [],
       "key": "LINK_IMPL",
-      "context": ["LINK_IMPL", "h", "setText", "fill", "numberFormat", "cellValue", "setAttr"],
+      "context": ["LINK_IMPL", "h", "setText", "fill", "numberFormat", "cellValue", "setAttr", "cellMatches"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.link.source"
       ],

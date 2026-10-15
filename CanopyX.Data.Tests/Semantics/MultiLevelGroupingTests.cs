@@ -126,7 +126,8 @@ public sealed class MultiLevelGroupingTests {
             var (ids, _, _) = await harness.Ids(query.Replace("\"revision\":\"r1\",", ""));
             Assert.Equal(new[] { "3", "5", "6", "2", "1", "4" }, ids);
             // The aggregate level's sort entry is ascending; the sort the reader set stays inside the groups.
-            Assert.Contains("\"sort\":[{\"column\":\"name\",\"direction\":\"desc\"}]", summary.GetProperty("query").GetRawText());
+            Assert.Equal(new[] { "site", "name" }, summary.GetProperty("query").GetProperty("sort").EnumerateArray().Select(key => key.GetProperty("column").GetString()));
+            Assert.Equal(new[] { "asc", "desc" }, summary.GetProperty("query").GetProperty("sort").EnumerateArray().Select(key => key.GetProperty("direction").GetString()));
         }
     }
 

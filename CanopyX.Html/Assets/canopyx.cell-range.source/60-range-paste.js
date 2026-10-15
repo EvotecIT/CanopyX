@@ -125,31 +125,67 @@
   /** Applies cells through the editing part: one undo step, each cell's rules and checks; returns how many it applied. */
   async function crApplyEditing(grid, cells, source, refused) {
     let applied = 0;
-    const approved = [], candidates = [], proposals = new Map(), epoch = grid.queryEpoch;
+    const candidates = [], proposals = new Map(), epoch = grid.queryEpoch;
+    const current = proposed => {
+      if (grid.destroyed || epoch !== grid.queryEpoch || JSON.stringify(proposed.record.cells) !== proposed.original)
+        throw new DOMException("The paste row or query changed during validation.", "AbortError");
+    };
+    const reject = (candidate, reason) => { refused.push({ ...candidate.cell, reason }); candidate.refused = true; };
     grid.cancelEdit?.();
     for (const cell of cells) {
       const spec = grid.edit.specs.get(cell.column), record = grid.editRecord(cell.id);
       if (!spec || !record || !grid.canEditCell(record, cell.column)) { refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly }); continue; }
-      const proposed = proposals.get(cell.id) || { record, values: [] };
-      proposed.values.push([spec, cell.value]); proposals.set(cell.id, proposed);
-      candidates.push({ cell, spec, record });
+      const proposed = proposals.get(cell.id) || { record, original: JSON.stringify(record.cells), pending: [], rounds: 0, dirty: true };
+      const candidate = { cell, spec, proposed };
+      proposed.pending.push(candidate); proposals.set(cell.id, proposed); candidates.push(candidate);
     }
-    for (const proposed of proposals.values()) {
-      proposed.preview = grid.editPreview(proposed.record, proposed.values);
-      proposed.checked = { result: null, row: JSON.stringify(proposed.preview.cells) };
+    // A rejected proposal can invalidate another cell in its row. Shrink and recheck that row, never checking a value
+    // against one that will not be applied. At most eight rounds per row (and never more than its candidate count) keep
+    // a 200,000-cell paste linear in validator calls; a longer dependency chain conservatively refuses its remainder.
+    for (const proposed of proposals.values()) proposed.limit = Math.min(8, proposed.pending.length);
+    while ([...proposals.values()].some(proposed => proposed.dirty && proposed.pending.length)) {
+      for (const proposed of proposals.values()) {
+        while (proposed.dirty && proposed.pending.length) {
+          current(proposed);
+          if (proposed.rounds++ === proposed.limit) {
+            for (const candidate of proposed.pending) reject(candidate, proposed.reason || grid.labels.gridPasteReadOnly);
+            proposed.pending = []; break;
+          }
+          proposed.dirty = false;
+          proposed.preview = grid.editPreview(proposed.record, proposed.pending.map(({ spec, cell }) => [spec, cell.value]));
+          proposed.checked = { result: null, row: JSON.stringify(proposed.preview.cells), prepared: true };
+          for (const candidate of proposed.pending) {
+            let message = grid.editRules(candidate.spec, candidate.cell.value, proposed.preview);
+            if (message && typeof message.then === "function") { message = await message; current(proposed); }
+            if (message) { reject(candidate, message); proposed.reason = message; proposed.dirty = true; }
+          }
+          current(proposed);
+          proposed.pending = proposed.pending.filter(candidate => !candidate.refused);
+        }
+      }
+      // Guards and cancelable changing hooks see each row's accepted prefix in the offered order. They all run before
+      // any real mutation; a veto therefore joins the same shrinking validation pass without undoing escaped changes.
+      const prefixes = new Map();
+      for (const candidate of candidates) {
+        if (candidate.refused) continue;
+        const { cell, spec, proposed } = candidate;
+        let prefix = prefixes.get(proposed);
+        if (!prefix) { prefix = grid.editPreview(proposed.record, []); prefixes.set(proposed, prefix); }
+        const previous = cellValue(prefix.cells[cell.column]);
+        let accepted = grid.canEditCell(prefix, cell.column);
+        if (accepted && !candidate.prepared && !(previous === cell.value || previous == null && cell.value == null))
+          accepted = grid.emit("cellValueChanging", { id: cell.id, column: cell.column, value: cell.value, previous,
+            row: gridFreeze(JSON.parse(JSON.stringify(prefix))), source });
+        if (!accepted) { reject(candidate, grid.labels.gridPasteReadOnly); proposed.dirty = true; }
+        else { candidate.prepared = true; prefix.cells[cell.column] = proposed.preview.cells[cell.column]; }
+      }
+      for (const proposed of proposals.values()) { current(proposed); proposed.pending = proposed.pending.filter(candidate => !candidate.refused); }
     }
-    for (const candidate of candidates) {
-      const { cell, spec } = candidate, proposed = proposals.get(cell.id);
-      let message = grid.editRules(spec, cell.value, proposed.preview);
-      if (message && typeof message.then === "function") message = await message;
-      if (grid.destroyed || epoch !== grid.queryEpoch) throw new DOMException("The paste query changed during validation.", "AbortError");
-      if (message) refused.push({ ...cell, reason: message });
-      else approved.push({ ...candidate, checked: proposed.checked });
-    }
+    for (const proposed of proposals.values()) current(proposed);
     grid.editGroup(() => {
-      for (const { cell, spec, record, checked } of approved) {
-        if (!grid.canEditCell(record, cell.column)) { refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly }); continue; }
-        if (grid.editApply(cell.id, spec, cell.value, source, record, checked)) applied++;
+      for (const { cell, spec, proposed, refused: rejected } of candidates) {
+        if (rejected) continue;
+        if (grid.editApply(cell.id, spec, cell.value, source, proposed.record, proposed.checked)) applied++;
         else refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly });
       }
     });

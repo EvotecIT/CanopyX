@@ -8,7 +8,7 @@
   function linkTreeFilter(grid) {
     const base = grid.linkBase || null, external = grid.linkFilters && grid.linkFilters.length;
     if (!external) return base;
-    const matches = node => linkMatches(grid, node);
+    const matches = linkMatcher(grid);
     return {
       match: node => matches(node) && (!base || base.match(node)),
       keep: base && base.keep ? node => matches(node) && (base.match(node) || base.keep(node)) : undefined,

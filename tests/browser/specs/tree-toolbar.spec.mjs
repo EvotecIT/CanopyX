@@ -171,9 +171,13 @@ for (const theme of ["light", "dark"]) test(`columns fill the width and the deep
 test("optional columns give way first at narrow widths and the phone layout keeps the essentials", async ({ page }) => {
   await open(page);
   expect(await headers(org(page))).toEqual(["name", "title", "department", "location", "email", "reports", "started"]);
-  // Narrower containers first take the slack above content; at 700 pixels the optional Email column hides.
+  // Email gives way first; the platform font may make other optional columns hide at this width too.
   await page.setViewportSize({ width: 700, height: 900 });
-  await expect.poll(() => headers(org(page))).toEqual(["name", "title", "department", "location", "reports", "started"]);
+  await expect.poll(async () => {
+    const shown = await headers(org(page));
+    return ["name", "title", "department", "reports"].every(id => shown.includes(id)) && !shown.includes("email") &&
+      (shown.includes("location") || !shown.includes("started"));
+  }).toBe(true);
   await org(page).locator(".cx-grid-columns > summary").click();
   await expect(org(page).locator('.cx-grid-column-choice[data-cx-column="email"] .cx-grid-column-note')).toHaveText("Hidden at this width");
   await page.keyboard.press("Escape");

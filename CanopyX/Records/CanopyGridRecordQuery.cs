@@ -30,7 +30,10 @@ public sealed class CanopyGridRecordQuery {
     /// <summary>Gets the record's identity.</summary>
     public string Id { get; }
 
-    /// <summary>Gets or sets the accepted dataset revision of a hosted grid, which the answer must match; null for inline data.</summary>
+    /// <summary>
+    /// Gets or sets the accepted dataset revision of a hosted grid or query-aware tree; null for ordinary inline sources.
+    /// An answer that includes a revision must match it.
+    /// </summary>
     public string? Revision { get; set; }
 
     /// <summary>Gets or sets the collection field whose next rows the request asks for; null asks for the whole record.</summary>

@@ -161,6 +161,23 @@ test("grouped pages follow the server summary's group ranges", async ({ page }) 
   await nextFrames(page);
 });
 
+test("the server expands shorthand summaries into the complete query the grouping reader accepts", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.route("**/api/machines-by-site/summary", async route => {
+    const query = route.request().postDataJSON();
+    await route.continue({ postData: JSON.stringify({ revision: query.revision }) });
+  });
+  await open(page, "/by-site");
+  const summary = await page.evaluate(api => eval(api).getSummary(), api);
+  expect(summary.matched).toBe(rows);
+  expect(summary.query).toEqual({ protocol: "canopyx/2", type: "gridQuery", view: "machines-by-site", revision: summary.revision,
+    offset: 0, limit: 200, search: "", sort: [{ column: "site", direction: "asc" }], filters: [] });
+  expect(summary.groups.reduce((sum, group) => sum + group.count, 0)).toBe(rows);
+  await expect(page.locator(".cx-row").filter({ hasText: "Amsterdam" }).first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("rejects invalid requests with typed client errors", async ({ page }) => {
   await page.goto(base + "/");
   const answer = await page.evaluate(async () => {

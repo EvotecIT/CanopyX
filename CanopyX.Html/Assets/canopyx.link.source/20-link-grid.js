@@ -7,9 +7,6 @@
     const { gridQueryStart } = LINK_IMPL;
     const proto = DataGrid.prototype, SET_QUERY = proto.setQuery, FOR_CHANGE = proto.queryForChange, GET_STATE = proto.getState;
     const SUMMARY = proto.syncQuerySummary, CHROME = proto.syncGridChrome, NOTICE = proto.setNotice, DESTROY = proto.destroy;
-    /** The grid predicates of external filters: eq or in for values, ge and le for a range. */
-    const linkPredicates = filters => filters.flatMap(filter => filter.values ? [{ column: filter.field, operator: filter.values.length === 1 ? "eq" : "in", values: filter.values.slice() }] :
-      [filter.range[0] == null ? null : { column: filter.field, operator: "ge", values: [filter.range[0]] }, filter.range[1] == null ? null : { column: filter.field, operator: "le", values: [filter.range[1]] }].filter(Boolean));
     const same = (a, b) => JSON.stringify(a) === JSON.stringify(b), LINK_OWN = LINK_IMPL.queryOwn;
     /** Filters without the external predicates a query carries at its end; a reader condition equal to one stays. */
     const strip = (filters, tail) => {

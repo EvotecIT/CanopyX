@@ -209,10 +209,12 @@ test.describe("under require-trusted-types-for 'script'", () => {
     await page.waitForSelector("[data-cx-ready]");
     const result = await page.evaluate(async () => {
       const policy = trustedTypes.createPolicy("host", { createHTML: text => text.replace(/<strong>/g, "<em>").replace(/<\/strong>/g, "</em>") });
+      const seed = document.querySelector("[data-canopyx-host]"), view = JSON.parse(seed.querySelector("script.cx-config").textContent);
+      // A repaint of the original tree must not contribute to this host's policy counter.
+      await seed.canopyx.ready; seed.canopyx.destroy(); seed.remove();
       const host = document.createElement("div");
       host.style.height = "300px";
       document.body.appendChild(host);
-      const view = JSON.parse(document.querySelector("script.cx-config").textContent);
       const calls = [], before = window.__canopyxHtml;
       const api = CanopyX.createTreeGrid(host, { view: { ...view, id: "sanitized", stateKey: undefined, deepLink: false },
         sanitizeHtml: (html, context) => { calls.push(context.kind); return policy.createHTML(html); } });

@@ -114,8 +114,10 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var translator = Translator(source);
         var filtered = translator.Apply(source, request.Query);
         var matched = await Executor.CountAsync(filtered, cancellationToken).ConfigureAwait(false);
-        var searched = translator.ValueSearch(filtered, request.Column.Id, request.Search);
         var shape = Map.Get(request.Column.Id).Shape;
+        if (shape == ValueShape.Text)
+            return await TextFacetAsync(translator, filtered, request, matched, cancellationToken).ConfigureAwait(false);
+        var searched = translator.ValueSearch(filtered, request.Column.Id, request.Search);
         if (shape == ValueShape.DateTime || shape == ValueShape.DateTimeOffset)
             return await DateFacetAsync(translator, searched, request, matched, cancellationToken).ConfigureAwait(false);
         var small = shape == ValueShape.Boolean || shape == ValueShape.Enum;
@@ -134,6 +136,36 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var complete = small || distinct <= request.Limit;
         var totalValues = complete ? ordered.Count : distinct;
         return new CanopyFacetResult(matched, totalValues, ordered.Take(request.Limit).Select(item => new CanopyFacetBucket(item.Value, item.Count)));
+    }
+
+    /// <summary>Streams raw text groups, retaining canonical keys for exact totals and only the requested ordered prefix
+    /// for values/counts. Database order and Unicode folding need not agree, so equivalent groups can be nonadjacent.</summary>
+    private async ValueTask<CanopyFacetResult> TextFacetAsync(QueryTranslator<T> translator, IQueryable<T> source, CanopyFacetRequest request,
+        int matched, CancellationToken cancellationToken) {
+        var term = CanopyTextFolding.Fold(request.Search)!;
+        var distinct = new HashSet<string>(StringComparer.Ordinal);
+        var order = Comparer<string>.Create((left, right) => left == "null" ? right == "null" ? 0 : 1 : right == "null" ? -1 : string.CompareOrdinal(left, right));
+        var prefix = new SortedList<string, (string? Value, int Count)>(order);
+        await foreach (var bucket in translator.TextBucketsAsync(source, request.Column.Id, Executor, cancellationToken).ConfigureAwait(false)) {
+            var value = (string?)bucket.Value;
+            var folded = CanopyTextFolding.Fold(value);
+            // Store LOWER may fold only ASCII. Search the canonical value before retaining or merging its bucket.
+            if (term.Length > 0 && (folded == null || folded.IndexOf(term, StringComparison.Ordinal) < 0)) continue;
+            var key = folded == null ? "null" : "s:" + folded;
+            distinct.Add(key);
+            if (prefix.TryGetValue(key, out var current)) {
+                prefix[key] = (string.CompareOrdinal(current.Value, value) <= 0 ? current.Value : value, current.Count + bucket.Count);
+                continue;
+            }
+            if (prefix.Count == request.Limit) {
+                var last = prefix.Count - 1;
+                if (order.Compare(key, prefix.Keys[last]) >= 0) continue;
+                prefix.RemoveAt(last);
+            }
+            // The prefix's largest key only decreases: a discarded key can never reenter and need its old count.
+            prefix.Add(key, (value, bucket.Count));
+        }
+        return new CanopyFacetResult(matched, distinct.Count, prefix.Values.Select(item => new CanopyFacetBucket(item.Value, item.Count)));
     }
 
     /// <summary>Date functions differ between SQL stores (some round fractional milliseconds). Merge ordered raw groups

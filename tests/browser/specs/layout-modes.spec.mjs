@@ -20,6 +20,8 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     await page.setViewportSize({ width, height: 900 });
     await openExample(page, theme === "dark" ? "support-tickets-dark.html" : "support-tickets.html");
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.ready); await nextFrames(page);
+    // The initial search count shares this live region and announces after its count settles.
+    await expect(page.locator(".cx-live")).toHaveText(/matches$/);
     const summary = page.locator(".cx-grid-layout > summary");
     await expect(summary).toHaveAttribute("role", "button");
     await summary.click();

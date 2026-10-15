@@ -202,6 +202,10 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
 - **Text order.** Sorting uses the store's order. SQLite's default binary collation matches the protocol's ordinal order;
   a case-insensitive collation interleaves case. Grouping columns need a binary (case-sensitive) collation, because groups
   are exact values.
+- **Text value lists.** After applying the effective query, facets search and merge text with the protocol's frozen folding
+  table before choosing their ordered prefix and counting distinct values. This includes Unicode spellings the database's
+  `LOWER` keeps apart. Query filters and quick search still follow `TextComparison` above. Use a binary collation when raw
+  spelling matters: the adapter cannot recover spellings the store already merged into one group.
 - **Enumerations and booleans** evaluate every member against the exact rule and send the matching members as an `IN`
   test, so `contains "ux"` on an enumeration becomes `os IN (Linux)`. Enumerations sort by their raw text (an `[EnumMember]` value or the member name).
   Flags include unnamed combinations of up to eight declared bits (at most 256 values). Map larger flag domains to host-projected text.
@@ -251,8 +255,9 @@ view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
   database; dates at protocol precision in memory). Custom aggregate operations (a `CanopyGridAggregate` with an operation
   name) reach a provider as `CanopySummaryAggregate.CustomOperation`; the built-in providers answer `unsupported`, so a
   view with a custom aggregate needs an `ICanopyDataProvider` that computes it.
-- **Echo.** The summary echoes the query as the client sent it, `groupBy` included; a request built in code echoes its
-  normalized levels.
+- **Echo.** The summary includes a complete normalized `gridQuery`, even when a direct handler request contains only
+  its revision. The offset is zero; the accepted limit, search, predicate shape and operands are retained, and the
+  effective grouping levels lead the sort. Ignored input fields do not become part of the response.
 
 ## Safety
 
@@ -516,8 +521,10 @@ Notes:
 - **Search and lowercased comparisons scan.** `LOWER(column)` prevents plain index use; with a case-insensitive collation
   choose `TextComparison.Collation`. Consider full-text search behind `SearchBy` for large text columns.
 - **Value lists and summaries group the complete query**; they run when a reader opens a value list or the query changes.
-  A truncated value list is the store's first buckets in its own collation, re-sorted in the protocol's order, so with a
-  case-insensitive collation its prefix can differ slightly from an in-memory list.
+  Text value lists stream every raw text group so nonadjacent Unicode spellings can merge before search, counts and the
+  prefix are finalized. They retain one canonical key per distinct matching value and at most the requested prefix's
+  values and counts; they do not buffer records or the complete grouped result. For high-cardinality columns, consider
+  host-normalized text with suitable indexes, or a host provider that groups and counts indexed canonical keys in the store.
 - **Large parameter lists.** Selected exports send up to 10,000 identities and a membership filter up to 1,000 values as
   one parameterized collection. On SQL Server, whose limit is 2,100 parameters per command, configure EF Core to send
   parameterized collections as one JSON parameter, or lower `MaxSelectedIds` and `MaxInValues`.

@@ -142,6 +142,10 @@ values. The edit bar (toggle with `editBar`) shows the number of unsaved changes
 | `canopyx:rowCommit` (cancelable) | `onRowCommit` | `{ id, values, original, row, revision, respondWith(result) }` |
 | `canopyx:commit` | `onCommit` | the result of `commitChanges` |
 
+Paste and fill offer their cancelable `cellValueChanging` callbacks before applying any values. An offered cell receives
+at most one callback; its `row` includes preceding proposals accepted at that point. Only actual changes from the final
+accepted batch emit `cellValueChanged`, and a single undo restores the batch.
+
 Plugins subscribe with `events: { cellValueChanged(event, context) { … } }`.
 
 ## Committing
