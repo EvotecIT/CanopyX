@@ -48,6 +48,12 @@ public sealed class CommitEndpointTests : IAsyncLifetime {
             options.AllowAnonymousWrites = true;
             options.Writer = _ => new FailingWriter();
         });
+        // A host that opens the whole group to anonymous callers must not open its writes by accident.
+        _app.MapCanopyRemote("/api/open", _ => _hosts.AsQueryable(), Fleet.Map(Fleet.EditableView()), options => {
+            options.Query.Revision = _ => new ValueTask<string>("r1");
+            options.WriteAuthorizationPolicy = "Inventory.Write";
+            options.Writer = _ => new SavingWriter();
+        }).AllowAnonymous();
         await _app.StartAsync();
         _client = _app.GetTestClient();
     }
@@ -127,6 +133,27 @@ public sealed class CommitEndpointTests : IAsyncLifetime {
             options.Writer = _ => new SavingWriter();
         }));
         Assert.Contains("WriteAuthorizationPolicy", error.Message);
+    }
+
+    [Fact]
+    public async Task AnonymousGroups_DoNotOpenWritesByAccident() {
+        Assert.Equal(HttpStatusCode.OK, (await Post("/api/open/query", "{}")).StatusCode);
+        var response = await Post("/api/open/commit", Batch);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal("writeNotAllowed", JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("error").GetString());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void BlankWritePolicies_CountAsMissing(string policy) {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        using var app = builder.Build();
+        Assert.Throws<InvalidOperationException>(() => app.MapCanopyRemote("/api/x", _ => _hosts.AsQueryable(), Fleet.Map(Fleet.EditableView()), options => {
+            options.WriteAuthorizationPolicy = policy;
+            options.Writer = _ => new SavingWriter();
+        }));
     }
 
     [Fact]

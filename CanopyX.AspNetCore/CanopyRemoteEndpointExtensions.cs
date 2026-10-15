@@ -4,9 +4,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CanopyX.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CanopyX.AspNetCore;
 
@@ -68,17 +71,28 @@ public static class CanopyRemoteEndpointExtensions {
         if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
         if (schema == null) throw new ArgumentNullException(nameof(schema));
         if (string.IsNullOrEmpty(pattern)) throw new ArgumentException("A route pattern is required.", nameof(pattern));
-        if (options.Writer != null && options.WriteAuthorizationPolicy == null && !options.AllowAnonymousWrites)
+        var writePolicy = string.IsNullOrWhiteSpace(options.WriteAuthorizationPolicy) ? null : options.WriteAuthorizationPolicy;
+        if (options.Writer != null && writePolicy == null && !options.AllowAnonymousWrites)
             throw new InvalidOperationException("Name the WriteAuthorizationPolicy the commit route requires. The default policy would let every reader write; AllowAnonymousWrites is for local samples only.");
+        if (options.Writer != null && options.Remote.WriterProblem == null) {
+            var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("CanopyX.AspNetCore");
+            if (logger != null) options.Remote.WriterProblem = problem => logger.LogWarning("A CanopyX commit answer was corrected: {Problem}", problem);
+        }
         var group = endpoints.MapGroup(pattern);
         if (!options.AllowAnonymous) {
             if (options.AuthorizationPolicy == null) group.RequireAuthorization(); else group.RequireAuthorization(options.AuthorizationPolicy);
         }
         if (options.Writer != null) {
             var writer = options.Writer;
-            var commit = group.MapPost("/commit", (RequestDelegate)(context => CanopyRemoteHttp.RunJsonAsync(context, options.Limits,
-                http => new CanopyRemoteHandler(schema, provider(http), options.Remote, writer(http)), CommitAnswer)));
-            if (options.WriteAuthorizationPolicy != null) commit.RequireAuthorization(options.WriteAuthorizationPolicy);
+            var anonymousWrites = options.AllowAnonymousWrites;
+            var commit = group.MapPost("/commit", (RequestDelegate)(context => {
+                // AllowAnonymous on the group (or the route) makes authorization skip the write policy; writes then refuse
+                // unless anonymous writes were chosen explicitly.
+                if (!anonymousWrites && context.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() != null)
+                    return CanopyRemoteHttp.WriteErrorAsync(context, StatusCodes.Status403Forbidden, "writeNotAllowed", "This endpoint does not accept anonymous changes.");
+                return CanopyRemoteHttp.RunJsonAsync(context, options.Limits, http => new CanopyRemoteHandler(schema, provider(http), options.Remote, writer(http)), CommitAnswer);
+            }));
+            if (writePolicy != null) commit.RequireAuthorization(writePolicy);
         }
         var view = schema.View.ToJson();
         CanopyRemoteHandler Handler(HttpContext context) => new CanopyRemoteHandler(schema, provider(context), options.Remote);
