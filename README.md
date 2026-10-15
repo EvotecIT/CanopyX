@@ -194,6 +194,13 @@ Virtual rows keep the rendered DOM small. Tree bundles split data into sidecar f
 
 CSV export and copying distinguish filtered results, selected records and all records. Register your own export formats, such as an Excel or PDF writer, with `CanopyX.registerExportFormat`, and they join the grid's Export menu with the same scope choice, progress and cancellation; tree grids export their visible, selected or all rows through the same writers. For application actions, connect your own callbacks to the view.
 
+## Documentation
+
+- [Features](docs/features.md): everything the tree and data grids do, grouped by capability.
+- [Recipes](docs/recipes.md): short how-tos for server data, cell values, export, phones, grouping, saved views and translations.
+- [Authoring reference](docs/authoring.md), [column layout](docs/column-layout.md), [label packs](docs/labels.md) and the [data protocol](docs/data-protocol.md).
+- [Roadmap](docs/roadmap.md): what is planned next.
+
 ## Community and license
 
 CanopyX is an Evotec project, licensed under MIT. Questions and feedback are welcome in the [Evotec community on Discord](https://evo.yt/discord). You can find more Evotec projects and articles at [evotec.xyz](https://evotec.xyz/hub).
