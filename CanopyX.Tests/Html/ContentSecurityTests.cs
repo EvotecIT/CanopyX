@@ -19,6 +19,7 @@ public sealed class ContentSecurityTests {
     [InlineData("<script>")]
     [InlineData("abc===")]
     [InlineData("=abc")]
+    [InlineData("abc\n")]
     public void Nonce_RejectsValuesOutsideTheNonceGrammar(string value) {
         Assert.Throws<ArgumentException>(() => new CanopyHtmlOptions { Nonce = value });
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("export").GetMarkup(value));

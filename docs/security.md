@@ -26,14 +26,17 @@ The view document is a `<script type="application/json">` data block, and a part
 
 ### The page nonce
 
-When the runtime inserts a part's script or stylesheet, or a sidecar script, it gives the element the first of:
+When the runtime loads a part from a file beside it, or a bundle's sidecar script, it gives the `<script>` or `<link>` element the first of:
 
 1. the nonce a host set with `CanopyX.setNonce(nonce)`;
 2. the nonce of the `<script>` element that loaded the runtime (a classic script; a module has no current script);
-3. the nonce of a nonced `<script>` already on the page;
-4. the nonce of the part's own payload, which the C# writers mark with `CanopyHtmlOptions.Nonce`.
+3. the nonce of a nonced `<script>` already on the page.
+
+A part embedded in the page runs with the nonce of its own payload, which the C# writers mark with `CanopyHtmlOptions.Nonce`. When the page nonce is known (1 or 2), the runtime only takes a payload that carries it: a payload injected into the page without the response's nonce is never run, even under `'strict-dynamic'` or Trusted Types, and the runtime then loads the part from its file instead. Mark every payload with the response's nonce (`CanopyHtmlPart.GetMarkup(nonce)`), or the part does not load from the page.
 
 So a page whose runtime script carries the nonce needs nothing else. A host that loads the ES module, or that inserts the runtime from its own code, calls `CanopyX.setNonce` before the first view mounts.
+
+A nonce lets a script in whatever its address, so the addresses the runtime loads scripts from are part of what the host vouches for: the part files beside the runtime script (or below the page's base URL when the runtime is inline), and the `base` of a sidecar source in the view document. Keep `base-uri 'none'` (or `'self'`) in the policy, so injected markup cannot move the base URL.
 
 ### C# hosts
 
@@ -79,7 +82,7 @@ The runtime creates one policy, named `canopyx`, on first use, and hands sinks v
 
 | Sink | Value | Where it comes from |
 | --- | --- | --- |
-| `script.textContent` | A part's script | The inert payload already in the page, for the part's version |
+| `script.textContent` | A part's script | The inert payload in the page for the part's version, and, when the page nonce is known, only a payload that carries it |
 | `script.src` | A part file or a sidecar file | A file name beside the runtime or the bundle, resolved by the runtime |
 | `innerHTML` | Host-trusted markup (below) | An `html` detail or a view icon, after the host's `sanitizeHtml` when there is one |
 

@@ -40,8 +40,10 @@
 .cx-phone .cx-grid-pager .cx-grid-page-range { display:none; }
 @media (forced-colors:active) {
   .cx-data-grid.cx-row-accents .cx-row[data-cx-tone] > .cx-cell:first-child::after { forced-color-adjust:none;background:Highlight; }
-  :is(.cx-data-grid,.cx-grid-overlay) .p-dot { forced-color-adjust:none;background:CanvasText; }
-  .cx-row[aria-selected="true"] .p-dot { background:HighlightText!important; }
+  .cx-data-grid.cx-row-accents .cx-row[aria-selected="true"][data-cx-tone] > .cx-cell:first-child::after { background:HighlightText; }
+  :is(.cx-data-grid,.cx-grid-overlay) :is(.p-dot,.p-progress .fill,.p-spark i,.p-strip i) { forced-color-adjust:none;background:CanvasText; }
+  :is(.cx-data-grid,.cx-grid-overlay) .p-progress .track { outline:var(--cx-size-1px) solid; }
+  .cx-data-grid .cx-row[aria-selected="true"] :is(.p-dot,.p-progress .fill,.p-spark i,.p-strip i) { background:HighlightText!important; }
   :is(.cx-data-grid,.cx-grid-overlay) .p-pill { outline:var(--cx-size-1px) solid;outline-offset:calc(-1 * var(--cx-size-1px)); }
 }
 

@@ -39,7 +39,7 @@ for (const name of all) {
       const page = await context.newPage();
       await page.goto(exampleUrl(name));
       // Pages with views wait for them; the index and outline pages have none.
-      if (await page.locator("[data-canopyx-host]").count()) await page.waitForSelector("[data-cx-ready]", { timeout: 15000 }).catch(() => {});
+      if (await page.locator("[data-canopyx-host]").count()) await page.waitForSelector("[data-cx-ready]", { state: "attached", timeout: 15000 });
       await page.addScriptTag({ content: AXE });
       for (const colorScheme of schemes) {
         await page.emulateMedia({ colorScheme });

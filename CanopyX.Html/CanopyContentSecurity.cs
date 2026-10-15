@@ -9,7 +9,7 @@ namespace CanopyX.Html;
 /// </summary>
 internal static class CanopyContentSecurity {
     // The nonce-source grammar of CSP Level 3: base64 or base64url characters with up to two trailing '='.
-    private static readonly Regex NonceValue = new Regex("^[A-Za-z0-9+/_-]+={0,2}$", RegexOptions.CultureInvariant);
+    private static readonly Regex NonceValue = new Regex("\\A[A-Za-z0-9+/_-]+={0,2}\\z", RegexOptions.CultureInvariant);
 
     /// <summary>Returns the nonce when it is a valid CSP nonce value, and throws otherwise.</summary>
     internal static string Validate(string value, string parameterName) {

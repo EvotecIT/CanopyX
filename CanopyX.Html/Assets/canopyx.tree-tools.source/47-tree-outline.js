@@ -25,7 +25,7 @@
           const index = this.columns.indexOf(column);
           const value = this.cellOf(w.h, column, index);
           const text = cellText(value, column, this.fmt);
-          const td = tr.appendChild(h("td")), content = td.appendChild(h("span"));
+          const td = tr.appendChild(h("td")), content = h("span");
           if (i === 0) indent(td);
           const slot = {};
           try {
@@ -33,10 +33,11 @@
               const badges = (i === 0 ? w.h.badges || [] : []).concat(isCellObject(value) ? value.badges || [] : []);
               content.appendChild(detailCell("span", Object.assign({}, isCellObject(value) ? value : {}, { text, badges }), this.fmt));
             }
+            // A copy of what the renderer drew, taken before its cell lifetime ends and its cleanups run.
+            td.appendChild(content.cloneNode(true));
           } finally { disposeHostSlot(slot); }
         });
       });
       return table;
-    },
-    outlineMarkup() { return this.outlineTable().outerHTML; }
+    }
   });

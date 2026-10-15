@@ -81,7 +81,7 @@ public sealed class TreeToolsAssetsTests {
         // document, so the views of a page share one payload whatever their order.
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             var script = CanopyHtmlAssets.GetScript(runtime);
-            Assert.Contains("document.querySelector('script[type=\"application/x-canopyx-'+type+'\"][data-cx-version=\"'+part.version+'\"]')", script);
+            Assert.Contains("document.querySelectorAll('script[type=\"application/x-canopyx-'+type+'\"][data-cx-version=\"'+part.version+'\"]')", script);
         }
         Assert.StartsWith("<script type=\"application/x-canopyx-tree-tools-style\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);
         Assert.Contains("<script type=\"application/x-canopyx-tree-tools\" data-cx-version=\"" + CanopyHtmlAssets.TreeToolsVersion + "\">", CanopyHtmlAssets.TreeToolsMarkup);

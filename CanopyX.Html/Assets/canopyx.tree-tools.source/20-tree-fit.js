@@ -115,8 +115,8 @@
       this.fitCh = Math.ceil(text("00000000000"));
       const rows = [];
       for (const w of this.rows) { if (rows.length === TREE_FIT_ROWS) break; if (!w.status && !w.h.detail) rows.push(w); }
-      // A checkbox (interactive runtime) and an icon sit between the expander and the label.
-      const check = this.checkMode ? 22 : 0;
+      // A checkbox (interactive runtime, 16 pixels with its 6 pixel spacing from the expander) and an icon sit between the expander and the label.
+      const check = this.checkMode ? 28 : 0;
       this.columns.forEach((column, index) => {
         const headNeed = Math.ceil(text(column.title, headFont) + 2 * pad + (column.sortable ? 22 : 8));
         let values = 0, indent = 0;

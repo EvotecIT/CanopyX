@@ -104,9 +104,9 @@ export function use(plugin: CanopyPlugin): () => void;
 /** Registers the code of a part of the runtime; part scripts call it as they run (docs/plugins.md). */
 export function registerPart(name: string, part: CanopyPartDefinition): void;
 /**
- * Sets the Content Security Policy nonce the runtime gives the part scripts, part stylesheets and sidecar scripts it inserts
- * from now on. Without it the runtime uses the nonce of its own script element, then that of a nonced script on the page,
- * then that of the part's payload. Throws for a value outside the nonce grammar (docs/security.md).
+ * Sets the Content Security Policy nonce the runtime gives the part files and sidecar scripts it loads from now on, and that
+ * an embedded part's payload must carry to run. Without it the runtime uses the nonce of its own script element, then (for
+ * files) that of a nonced script on the page. Throws for a value that is not a nonempty string (docs/security.md).
  */
 export function setNonce(nonce: string): void;
 

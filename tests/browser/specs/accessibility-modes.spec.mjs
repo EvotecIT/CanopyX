@@ -162,8 +162,17 @@ const undersizedTargets = page => page.evaluate(() => {
   }).map(element => ({ element, box: element.getBoundingClientRect() }));
   const centre = box => [box.left + box.width / 2, box.top + box.height / 2];
   const owns = (element, hit) => !!hit && (hit === element || element.contains(hit) || !!element.labels && [...element.labels].some(label => label.contains(hit)));
-  // A control another element covers at its centre (a row under a sticky header) is not a target where it is now.
-  const live = targets.filter(target => owns(target.element, document.elementFromPoint(...centre(target.box))));
+  // A control another element covers at its centre (a row scrolled under a sticky header or the pager) is not a target where
+  // it is now; one that another target of its own row, header row or toolbar covers is a failure, since that target takes its clicks.
+  const group = element => element.closest(".cx-row,.cx-hrow,.cx-toolbar");
+  const failures = [];
+  const live = targets.filter(target => {
+    const hit = document.elementFromPoint(...centre(target.box));
+    if (owns(target.element, hit)) return true;
+    const cover = targets.find(other => other !== target && owns(other.element, hit) && !other.element.contains(target.element) && group(other.element) && group(other.element) === group(target.element));
+    if (cover) failures.push(target.element.tagName.toLowerCase() + "." + [...target.element.classList].join(".") + " covered by " + cover.element.className);
+    return false;
+  });
   // The target's area: its box, or the 24 x 24 square on its centre when a hit area (a pseudo element or a label) covers it.
   for (const target of live) {
     const [x, y] = centre(target.box), square = [[-11.5, -11.5], [11.5, -11.5], [-11.5, 11.5], [11.5, 11.5], [0, -11.5], [0, 11.5], [-11.5, 0], [11.5, 0]];
@@ -171,7 +180,6 @@ const undersizedTargets = page => page.evaluate(() => {
     target.area = target.small || target.box.width >= 24 && target.box.height >= 24 ? target.box :
       { left: Math.min(target.box.left, x - 12), right: Math.max(target.box.right, x + 12), top: Math.min(target.box.top, y - 12), bottom: Math.max(target.box.bottom, y + 12) };
   }
-  const failures = [];
   for (const target of live.filter(item => item.small)) {
     const [x, y] = centre(target.box);
     const meets = live.some(other => {
@@ -214,5 +222,10 @@ test("phone toolbars, pagers and header menus use 44 pixel targets", async ({ br
       .filter(element => element.getBoundingClientRect().height < 44).map(element => (element.textContent.trim() || element.className).slice(0, 30)));
     expect(short, name).toEqual([]);
   }
+  // The record drawer's buttons on a phone.
+  await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.openDetails(document.querySelector(".cx-row[data-cx-id]").getAttribute("data-cx-id")));
+  await expect(page.locator(".cx-drawer")).toBeVisible();
+  expect(await page.locator(".cx-drawer button").evaluateAll(buttons => buttons.filter(button => button.getBoundingClientRect().width > 0)
+    .map(button => [Math.round(button.getBoundingClientRect().width), Math.round(button.getBoundingClientRect().height)]).filter(([width, height]) => width < 44 || height < 44))).toEqual([]);
   await context.close();
 });

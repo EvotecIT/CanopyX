@@ -43,8 +43,14 @@ test("tree labels, titles, badges, tooltips, filters, search, details and the pr
   await expect(host.locator(".cx-badge").first()).toHaveAttribute("title", X);
   await expect(host.locator("caption")).toHaveText(X);
   await expect(host.locator(".cx-props dt")).toHaveText(X);
+  await expect(host.getByRole("checkbox", { name: X })).toBeAttached();
   await host.getByRole("combobox").fill("img");
+  await expect(page.getByRole("option").first()).toContainText("<img src=x");
   await host.getByRole("combobox").press("Escape");
+  // The tree's record drawer shows the label and cells as text.
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.openDetails("a"));
+  await expect(page.locator(".cx-drawer")).toContainText("<img src=x");
+  await page.keyboard.press("Escape");
   await host.getByText("Columns", { exact: true }).click();
   await expect(page.getByRole("checkbox", { name: X }).first()).toBeAttached();
   await page.keyboard.press("Escape");
@@ -117,6 +123,13 @@ test("CSV and clipboard fields that could start a spreadsheet formula are escape
   expect(records.map(record => field(record[3]))).toEqual(["'=1+1", "'+SUM(A1)", "'-2+3", "'@cmd", "'\tTAB", "'\rCR", "'  =padded", "'＝1+1", "'＋1", "'－1", "'＠1", "plain", "a=b"]);
   // Formatted text of a negative number is text too; zero is not touched.
   expect(records.map(record => record[4])).toEqual(notes.map((_, i) => i ? "'-" + i : "0"));
+  // The clipboard copy (tab separated) escapes the same fields.
+  const copied = await page.evaluate(async () => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async text => { window.__clipboard = text; } } });
+    await document.querySelector(".cx-host").canopyx.copy({ scope: "filtered" });
+    return window.__clipboard;
+  });
+  expect(copied.split("\r\n").slice(1, 4).map(line => line.split("\t")[3])).toEqual(["'=1+1", "'+SUM(A1)", "'-2+3"]);
   // A column title is escaped too.
   const titled = await page.evaluate(async () => {
     const host = document.createElement("div"); host.style.height = "200px"; document.body.appendChild(host);
@@ -130,10 +143,15 @@ test("CSV and clipboard fields that could start a spreadsheet formula are escape
 test("an export format's file name is saved as a basename", async ({ page }) => {
   await open(page, gridView([{ id: "r", cells: { name: "n", state: "ok", tags: "t", note: "n", amount: 1, href: "" } }]),
     `CanopyX.registerExportFormat({id:"evil",label:"Download evil",extension:"txt",mimeType:"text/plain",write(){return new File(["x"],"../..\\\\evil<script>:name?.txt",{type:"text/plain"});}});`);
-  const download = page.waitForEvent("download");
-  await page.evaluate(() => document.querySelector(".cx-host").canopyx.exportAs("evil", { scope: "filtered" }));
-  const name = (await download).suggestedFilename();
-  expect(name).not.toMatch(/[\\/<>:?]/);
-  expect(name).toContain("evil");
+  // The name CanopyX gives the download link, before the browser applies its own rules.
+  const name = await page.evaluate(async () => {
+    let saved = null;
+    const click = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () { saved = this.download; };
+    try { await document.querySelector(".cx-host").canopyx.exportAs("evil", { scope: "filtered" }); } finally { HTMLAnchorElement.prototype.click = click; }
+    return saved;
+  });
+  expect(name).not.toMatch(/[\\/<>:*?"|]|^[. ]|[. ]$/);
+  expect(name).toMatch(/^_+[._]*evil_script__name_\.txt$/);
   await expectInert(page);
 });

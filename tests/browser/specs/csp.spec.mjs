@@ -20,7 +20,7 @@ const POLICIES = {
 const TRUSTED_TYPES = nonce => POLICIES["nonce only"](nonce) + "; require-trusted-types-for 'script'; trusted-types canopyx";
 
 /** Serves the examples folder at ORIGIN with the policy; returns what the page reported. */
-async function serve(page, policy, { nonceInMarkup = true } = {}) {
+async function serve(page, policy, { nonceInMarkup = true, transform = html => html } = {}) {
   const report = { console: [], errors: [] };
   await page.route(ORIGIN + "/**", async route => {
     const url = new URL(route.request().url());
@@ -31,7 +31,7 @@ async function serve(page, policy, { nonceInMarkup = true } = {}) {
     let body = fs.readFileSync(file);
     if (extension === ".html") {
       const nonce = crypto.randomBytes(18).toString("base64");
-      body = body.toString("utf8").replaceAll(PLACEHOLDER, nonceInMarkup ? nonce : crypto.randomBytes(18).toString("base64"));
+      body = transform(body.toString("utf8").replaceAll(PLACEHOLDER, nonceInMarkup ? nonce : crypto.randomBytes(18).toString("base64")));
       headers["content-security-policy"] = policy(nonce);
     }
     return route.fulfill({ status: 200, headers, body });
@@ -149,6 +149,29 @@ test("the harness reports a violation when the markup's nonce is not the respons
   await expect.poll(async () => (await report.violations()).length).toBeGreaterThan(0);
 });
 
+test("a part file inserted with a wrong page nonce is refused, so the runtime's own nonce is what lets part files in", async ({ page }) => {
+  const report = await serve(page, POLICIES["nonce only"]);
+  // CanopyX.setNonce runs as the runtime defines its global, before the first view mounts and loads the tree tools file.
+  await page.addInitScript(() => {
+    let value;
+    Object.defineProperty(window, "CanopyX", { configurable: true, get: () => value, set: runtime => { value = runtime; runtime.setNonce("d3JvbmdOb25jZQ=="); } });
+  });
+  await page.goto(ORIGIN + "/csp/bundle/index.html");
+  await expect.poll(async () => (await report.violations()).join("\n")).toContain("canopyx-tree-tools");
+});
+
+test("a part payload injected into the page without the nonce never runs, also under 'strict-dynamic'", async ({ page }) => {
+  // The injected payload comes first in the document and has the export part's real version.
+  const inject = html => html.replace('<main class="cx-main">', '<main class="cx-main"><script type="application/x-canopyx-export" data-cx-version="' +
+    (html.match(/type="application\/x-canopyx-export" data-cx-version="([a-f0-9]{16})"/) || [])[1] + '">window.__injected = true;</script>');
+  const report = await serve(page, nonce => POLICIES["nonce only"](nonce).replace("script-src", "script-src 'strict-dynamic'"), { transform: inject });
+  await open(page, "tree.html");
+  await page.locator(".cx-host").getByText("Export", { exact: true }).click();
+  await expect(page.getByRole("button", { name: /CSV/ }).first()).toBeVisible();
+  expect(await page.evaluate(() => window.__injected)).toBeUndefined();
+  await expectClean(page, report);
+});
+
 test.describe("under require-trusted-types-for 'script'", () => {
   test("a tree writes its html detail, icons and parts through the canopyx policy", async ({ page }) => {
     const report = await serve(page, TRUSTED_TYPES);
@@ -174,8 +197,14 @@ test.describe("under require-trusted-types-for 'script'", () => {
     await expectClean(page, report);
   });
 
-  test("a sanitizeHtml host option that returns TrustedHTML from its own policy needs no canopyx policy for details", async ({ page }) => {
+  test("a sanitizeHtml host option that returns TrustedHTML from its own policy is written without the canopyx policy", async ({ page }) => {
     const report = await serve(page, nonce => POLICIES["nonce only"](nonce) + "; require-trusted-types-for 'script'; trusted-types canopyx host");
+    // Counts the HTML the canopyx policy is asked for.
+    await page.addInitScript(() => {
+      window.__canopyxHtml = 0;
+      const create = trustedTypes.createPolicy.bind(trustedTypes);
+      trustedTypes.createPolicy = (name, rules) => create(name, name === "canopyx" ? { ...rules, createHTML: text => (window.__canopyxHtml++, rules.createHTML(text)) } : rules);
+    });
     await page.goto(ORIGIN + "/csp/tree.html");
     await page.waitForSelector("[data-cx-ready]");
     const result = await page.evaluate(async () => {
@@ -184,14 +213,14 @@ test.describe("under require-trusted-types-for 'script'", () => {
       host.style.height = "300px";
       document.body.appendChild(host);
       const view = JSON.parse(document.querySelector("script.cx-config").textContent);
-      const calls = [];
+      const calls = [], before = window.__canopyxHtml;
       const api = CanopyX.createTreeGrid(host, { view: { ...view, id: "sanitized", stateKey: undefined, deepLink: false },
         sanitizeHtml: (html, context) => { calls.push(context.kind); return policy.createHTML(html); } });
       await api.ready;
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      return { calls: [...new Set(calls)].sort(), em: host.querySelector(".csp-note em")?.textContent, strong: !!host.querySelector(".csp-note strong") };
+      return { calls: [...new Set(calls)].sort(), em: host.querySelector(".csp-note em")?.textContent, strong: !!host.querySelector(".csp-note strong"), canopyxHtml: window.__canopyxHtml - before };
     });
-    expect(result).toEqual({ calls: ["detail", "icon"], em: "host", strong: false });
+    expect(result).toEqual({ calls: ["detail", "icon"], em: "host", strong: false, canopyxHtml: 0 });
     await expectClean(page, report);
   });
 });
