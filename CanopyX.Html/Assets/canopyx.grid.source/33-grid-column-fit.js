@@ -73,7 +73,8 @@
       }
       const [, small, headFont, pad] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0]) => { context.font = font; return context.measureText(String(value).slice(0, 512)).width; };
-      const head = Math.ceil(text(column.title, headFont) + 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 24 : 0) +
+      // The title is a 24 px pointer target at least, and a move handle takes its 24 px target plus the gap beside it.
+      const head = Math.ceil(Math.max(24, text(column.title, headFont)) + 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0));
       // The header holds the column menu button (wider on phones) unless the toolbar switches column menus off.
       let values = 0, sampled = 0;

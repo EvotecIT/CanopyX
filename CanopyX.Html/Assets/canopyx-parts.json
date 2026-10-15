@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "75f2c0bab65c9787",
+      "version": "e1c486f62343f7fd",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [

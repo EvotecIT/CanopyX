@@ -27,7 +27,7 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools .cx-hcell::after{content:"";position:absolute;right:0;top:var(--cx-size-9px);bottom:var(--cx-size-9px);width:var(--cx-size-1px);background:var(--cx-line);}
 .cx-tree-tools .cx-hcell:last-child::after{display:none;}
 .cx-tree-tools .cx-hcell:last-child .cx-resize{right:0;}
-.cx-tree-tools .cx-hcell .cx-sort{min-width:0;overflow:hidden;}
+.cx-tree-tools .cx-hcell .cx-sort{min-width:var(--cx-size-24px);overflow:hidden;}
 .cx-tree-tools .cx-htext{overflow:hidden;text-overflow:ellipsis;}
 .cx-tree-tools .cx-cell{padding:0 var(--cx-cell-px);font-variant-numeric:tabular-nums;}
 .cx-tree-tools .cx-row > .cx-cell:first-child:not([data-cx-pin]){position:relative;}
