@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, deep links and the sidecar search. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (editing, grouping, column groups, range selection) arrive as parts.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, conditional formatting, deep links, the sidecar search and linked views. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (editing, grouping, column groups, range selection) arrive as parts.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -131,6 +131,7 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `editing` | a grid with an editable column starts, or an editing method runs | typed editors, validation, the change set, row and batch commit, undo and redo, the phone edit form ([editing.md](editing.md)); it requires the filter editor |
 | `formatting` | a grid with `formatRules` or `formatting` starts, or a formatting API method runs | rule evaluation, painting, the legend, saved-view rules and export record formats ([conditional formatting](conditional-formatting.md)) |
 | `format-editor` | the rule editor opens | the rule editor, on the filter editor part's condition rows |
+| `link` | a host calls a link method (`setExternalFilter`, `setHighlight`, …) or creates a view with `linkEvents` | external filter chips, highlights and `canopyx:linkchange` ([Linked views](linked-views.md)) |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 

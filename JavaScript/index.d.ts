@@ -4,7 +4,7 @@ import type {
 } from "./protocol.js";
 import type {
   TreeGridOptions, HostOptions, Sources, ExpandPathOptions, NodeFilter, FilterOptions,
-  InteractionOptions, DropPlacement, ExportFormat, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions
+  InteractionOptions, DropPlacement, ExportFormat, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions, LinkedView
 } from "./hosts.js";
 import type { CanopyPlugin, CanopyPartDefinition } from "./plugins.js";
 export * from "./protocol.js";
@@ -12,7 +12,7 @@ export * from "./hosts.js";
 export * from "./plugins.js";
 
 /** One mounted grid. Every method owns presentation only; host hooks own domain writes. */
-export interface TreeGrid {
+export interface TreeGrid extends LinkedView {
   readonly element: HTMLElement;
   readonly view: CanopyView;
   readonly ready: Promise<void>;

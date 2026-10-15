@@ -24,7 +24,8 @@ internal static class CanopyHtmlWriter {
         // its Export menu and exports load on first use, and the search and links parts when it needs them. Fragments that share
         // a document carry each part once.
         var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
-        return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, CanopyHtmlAssets.GetRequiredParts(view));
+        var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(view), options, RuntimeFor(view, options));
+        return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
     }
 
     /// <summary>The payloads of the parts a view needs, leaving out those the fragment's document already carries.</summary>
@@ -32,6 +33,27 @@ internal static class CanopyHtmlWriter {
         var builder = new StringBuilder();
         foreach (var part in parts) builder.Append(options.Document == null ? part.GetMarkup(options.Nonce) : options.Document.EmbedOnce(part, options.Nonce));
         return builder.ToString();
+    }
+
+    /// <summary>The parts a view needs, then the parts the host asked for (<see cref="CanopyHtmlOptions.Parts"/>), in manifest order.</summary>
+    private static List<CanopyHtmlPart> WithRequested(IReadOnlyList<CanopyHtmlPart> required, CanopyHtmlOptions options, CanopyRuntime runtime) {
+        var parts = new List<CanopyHtmlPart>(required);
+        foreach (var name in options.Parts) {
+            var part = CanopyHtmlAssets.GetPart(name);
+            if (!part.IsShippedWith(runtime)) throw new InvalidOperationException("The CanopyX part '" + name + "' does not ship with the " + runtime + " runtime.");
+        }
+        foreach (var part in CanopyHtmlAssets.Parts) {
+            if (options.Parts.Contains(part.Name) && !parts.Contains(part)) parts.Add(part);
+        }
+        return parts;
+    }
+
+    /// <summary>The options of the fragment inside a grid page.</summary>
+    private static CanopyHtmlOptions PageFragmentOptions(CanopyHtmlOptions options) {
+        var fragment = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible,
+            AssetMode = options.AssetMode, RowData = options.RowData, Nonce = options.Nonce };
+        fragment.Parts.UnionWith(options.Parts);
+        return fragment;
     }
 
     private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null) {
@@ -64,6 +86,7 @@ internal static class CanopyHtmlWriter {
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
         var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
+        fragmentOptions.Parts.UnionWith(options.Parts);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
@@ -100,7 +123,7 @@ internal static class CanopyHtmlWriter {
         // A single-file grid carries the filter editor and export parts, the history part when it draws history presenters, and
         // the row data part when its rows are compact.
         if (options.AssetMode != CanopyAssetMode.Inline) return html;
-        var required = CanopyHtmlAssets.GetRequiredParts(view);
+        var required = WithRequested(CanopyHtmlAssets.GetRequiredParts(view), options, CanopyHtmlAssets.GetRuntime(view));
         return html + SharedParts(options, CanopyHtmlAssets.Parts.Where(part => required.Contains(part) || data != null && part.Name == "data"));
     }
 
@@ -111,8 +134,7 @@ internal static class CanopyHtmlWriter {
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
-            ["body"] = Fragment(view, new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible,
-                AssetMode = options.AssetMode, RowData = options.RowData, Nonce = options.Nonce }, bundled, bundleBase)
+            ["body"] = Fragment(view, PageFragmentOptions(options), bundled, bundleBase)
         };
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);

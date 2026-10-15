@@ -278,6 +278,12 @@ public sealed partial class CanopyLabels {
         [nameof(GridEditUndone)] = "Undone: {column}",
         [nameof(GridEditRedone)] = "Redone: {column}",
         [nameof(GridEditNone)] = "(none)",
+        [nameof(LinkFilteredBy)] = "Filtered by {source}: {values}",
+        [nameof(LinkRemoveFilter)] = "Remove the filter from {source}: {values}",
+        [nameof(LinkFiltered)] = "Filtered by {source}: {count} rows",
+        [nameof(LinkHighlighted)] = "{count} rows highlighted from {source}",
+        [nameof(LinkHighlightedRows)] = "{count} rows highlighted",
+        [nameof(LinkCleared)] = "Linked filters removed",
         [nameof(OverflowNote)] = "Showing {shown} of {total} rows.",
         [nameof(UnknownTotal)] = "unknown",
         [nameof(HiddenRows)] = "{count} rows below are not shown",
@@ -394,7 +400,8 @@ public sealed partial class CanopyLabels {
         nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError),
         nameof(Actions), nameof(EditValue), nameof(SaveEdit), nameof(CancelEdit), nameof(InvalidEdit), nameof(InteractionPending),
         nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove),
-        nameof(FormatRules), nameof(FormatLegend), nameof(FormatUpTo), nameof(FormatAbove), nameof(FormatHiddenFlagged), nameof(FormatRule), nameof(FormatAddRule), nameof(FormatEditRule), nameof(FormatDeleteRule), nameof(FormatMoveUp), nameof(FormatMoveDown), nameof(FormatEnableRule), nameof(FormatNoRules), nameof(FormatName), nameof(FormatDescription), nameof(FormatOnlyRowsWhere), nameof(FormatEveryRow), nameof(FormatNone), nameof(FormatApplyTo), nameof(FormatTargetCell), nameof(FormatTargetRow), nameof(FormatTargetColumns), nameof(FormatStyle), nameof(FormatHighlight), nameof(FormatDataBar), nameof(FormatColorScale), nameof(FormatBands), nameof(FormatTone), nameof(FormatEmphasis), nameof(FormatFill), nameof(FormatTextOnly), nameof(FormatStrong), nameof(FormatIcon), nameof(FormatNoIcon), nameof(FormatAutomatic), nameof(FormatBadge), nameof(FormatCue), nameof(FormatLowest), nameof(FormatMidpoint), nameof(FormatHighest), nameof(FormatAddBand), nameof(FormatRemoveBand), nameof(FormatSave), nameof(FormatCancel), nameof(FormatShowLegend), nameof(FormatInvalid), nameof(FormatMatchCase), nameof(FormatToneDanger), nameof(FormatToneWarning), nameof(FormatToneSuccess), nameof(FormatToneInfo), nameof(FormatToneNeutral), nameof(FormatToneMuted), nameof(FormatNotContains), nameof(FormatEndsWith), nameof(FormatNotIn), nameof(FormatBetween), nameof(FormatLike), nameof(FormatMatches), nameof(FormatOlderThan), nameof(FormatWithinLast), nameof(FormatNotLike), nameof(FormatNotMatches), nameof(FormatBetweenExclusive)
+        nameof(FormatRules), nameof(FormatLegend), nameof(FormatUpTo), nameof(FormatAbove), nameof(FormatHiddenFlagged), nameof(FormatRule), nameof(FormatAddRule), nameof(FormatEditRule), nameof(FormatDeleteRule), nameof(FormatMoveUp), nameof(FormatMoveDown), nameof(FormatEnableRule), nameof(FormatNoRules), nameof(FormatName), nameof(FormatDescription), nameof(FormatOnlyRowsWhere), nameof(FormatEveryRow), nameof(FormatNone), nameof(FormatApplyTo), nameof(FormatTargetCell), nameof(FormatTargetRow), nameof(FormatTargetColumns), nameof(FormatStyle), nameof(FormatHighlight), nameof(FormatDataBar), nameof(FormatColorScale), nameof(FormatBands), nameof(FormatTone), nameof(FormatEmphasis), nameof(FormatFill), nameof(FormatTextOnly), nameof(FormatStrong), nameof(FormatIcon), nameof(FormatNoIcon), nameof(FormatAutomatic), nameof(FormatBadge), nameof(FormatCue), nameof(FormatLowest), nameof(FormatMidpoint), nameof(FormatHighest), nameof(FormatAddBand), nameof(FormatRemoveBand), nameof(FormatSave), nameof(FormatCancel), nameof(FormatShowLegend), nameof(FormatInvalid), nameof(FormatMatchCase), nameof(FormatToneDanger), nameof(FormatToneWarning), nameof(FormatToneSuccess), nameof(FormatToneInfo), nameof(FormatToneNeutral), nameof(FormatToneMuted), nameof(FormatNotContains), nameof(FormatEndsWith), nameof(FormatNotIn), nameof(FormatBetween), nameof(FormatLike), nameof(FormatMatches), nameof(FormatOlderThan), nameof(FormatWithinLast), nameof(FormatNotLike), nameof(FormatNotMatches), nameof(FormatBetweenExclusive),
+        nameof(LinkFilteredBy), nameof(LinkRemoveFilter), nameof(LinkFiltered), nameof(LinkHighlighted), nameof(LinkHighlightedRows), nameof(LinkCleared)
     };
 
     private static readonly string[] InteractionNames = {

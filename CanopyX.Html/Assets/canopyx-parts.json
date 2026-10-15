@@ -170,6 +170,18 @@
         "filter-editor",
         "formatting"
       ]
+    },
+    {
+      "name": "link",
+      "label": "linked views",
+      "version": "6f432fb224e2ac8d",
+      "script": "canopyx-link.js",
+      "style": "canopyx-link.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": []
     }
   ]
 }

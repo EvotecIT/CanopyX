@@ -198,6 +198,20 @@
       "requires": ["filter-editor", "formatting"],
       "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.format-editor.source/format-editor.css"]
+    },
+    {
+      "name": "link",
+      "label": "linked views",
+      "runtimes": ["tree", "grid"],
+      "views": [],
+      "key": "LINK_IMPL",
+      "context": ["LINK_IMPL", "h", "setText", "fill", "numberFormat", "cellValue", "setAttr"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.link.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.link.source/link.css"
+      ]
     }
   ]
 }

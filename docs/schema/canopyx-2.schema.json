@@ -1600,7 +1600,13 @@
             "no": { "$ref": "#/$defs/accessibleLabel" },
             "utcTime": { "type": "string", "pattern": "\\{time\\}" },
             "localTime": { "type": "string", "pattern": "\\{time\\}" },
-            "mountError": { "$ref": "#/$defs/accessibleLabel" }
+            "mountError": { "$ref": "#/$defs/accessibleLabel" },
+            "linkFilteredBy": { "$ref": "#/$defs/accessibleLabel" },
+            "linkRemoveFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "linkFiltered": { "$ref": "#/$defs/accessibleLabel" },
+            "linkHighlighted": { "$ref": "#/$defs/accessibleLabel" },
+            "linkHighlightedRows": { "$ref": "#/$defs/accessibleLabel" },
+            "linkCleared": { "$ref": "#/$defs/accessibleLabel" }
           }
         },
         "source": { "$ref": "#/$defs/source" },

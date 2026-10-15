@@ -89,7 +89,7 @@
         if (activeGrids.get(host) === api) activeGrids.delete(host);
         if (host.canopyx === api) delete host.canopyx;
       }
-    }, grid.interactionApi && grid.interactionApi());
+    }, grid.interactionApi && grid.interactionApi(), linkApi(grid));
     // Exports, named views and column order come with the tree tools part: they work once ready has resolved. Before that the
     // methods that return a promise reject it, and the others throw.
     for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned", "openDetails"])

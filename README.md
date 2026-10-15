@@ -210,6 +210,10 @@ Mark flat-grid columns `editable` and give them typed editors (text, number, dat
 
 `formatRules` (in .NET, `CanopyDataGridView.FormatRules`) tints cells and rows, adds icons, badges and cues, and draws data bars, colour scales and threshold bands, with conditions from the filter builder. Readers can change the rules in a rule editor, and their rules are kept in saved views. See [docs/conditional-formatting.md](docs/conditional-formatting.md).
 
+### Link views together
+
+A chart, a list or another grid can filter a grid or tree (`setExternalFilter`, shown as a removable chip and sent to a host source in its query) or highlight its rows (`setHighlight`), and a view with `linkEvents` reports its selection and own conditions as neutral `canopyx:linkchange` payloads. See [docs/linked-views.md](docs/linked-views.md).
+
 ### Translate the controls
 
 Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de`, `/locales/es`, `/locales/fr` or `/locales/it` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()` or `Italian()` before writing the page.
