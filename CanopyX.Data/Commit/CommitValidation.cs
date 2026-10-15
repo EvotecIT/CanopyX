@@ -41,6 +41,12 @@ internal static class CommitValidation {
             if (rules?.Required == true) return Say(messages.Required);
             // An emptied number or date is a missing value; emptied text stays the empty string, which is a value.
             if (column.Kind != CanopyColumnKind.Text) typed = null;
+            // A select offers only its choices: an empty value passes only when one of them is empty.
+            if (editor?.Kind == CanopyCellEditorKind.Select && editor.Options.Count > 0) {
+                var blank = false;
+                foreach (var option in editor.Options) blank |= option.Value is string choice && choice.Length == 0 && typed != null;
+                if (!blank) return Say(messages.Choice);
+            }
             return null;
         }
         switch (column.Kind) {
@@ -126,7 +132,7 @@ internal static class CommitValidation {
 
     /// <summary>Whether the whole text matches the pattern in the syntax JavaScript and .NET share; a match that runs too long fails.</summary>
     private static bool Matches(string pattern, string text) {
-        var regex = Patterns.GetOrAdd(pattern, value => new Regex("^(?:" + value + ")$", RegexOptions.ECMAScript, TimeSpan.FromMilliseconds(250)));
+        var regex = Compile(pattern);
         try {
             var match = regex.Match(text);
             // .NET's $ also matches before a final line feed; JavaScript's does not.
@@ -135,6 +141,10 @@ internal static class CommitValidation {
             return false;
         }
     }
+
+    /// <summary>The anchored pattern of a column, compiled once; throws <see cref="ArgumentException"/> when it does not compile.</summary>
+    internal static Regex Compile(string pattern) =>
+        Patterns.GetOrAdd(pattern, value => new Regex("^(?:" + value + ")$", RegexOptions.ECMAScript, TimeSpan.FromMilliseconds(250)));
 
     private static bool Same(object option, object? value) => option switch {
         string text => value is string other && string.Equals(text, other, StringComparison.Ordinal),

@@ -58,14 +58,27 @@ public sealed class CanopyDataSchema {
         Aggregates = new ReadOnlyCollection<CanopyGridAggregate>(aggregates);
         SummaryAggregates = new ReadOnlyCollection<CanopySummaryAggregate>(bindings);
         var levels = new List<CanopyGridGroupLevel>();
+        var leading = new HashSet<string>(StringComparer.Ordinal);
         if (view.Reporting != null) foreach (var level in view.Reporting.GroupBy) {
-            if (!_byId.ContainsKey(level.Column)) throw new ArgumentException("The grouping level column '" + level.Column + "' must be allowed.", nameof(columns));
+            if (level == null || !_byId.TryGetValue(level.Column, out var column)) throw new ArgumentException("The grouping level column '" + level?.Column + "' must be allowed.", nameof(columns));
+            if (!column.Sortable || !leading.Add(column.Id) || level.Aggregate != null && FindAggregateIn(bindings, level.Aggregate) == null)
+                throw new ArgumentException("Grouping levels need distinct sortable columns and declared aggregates.", nameof(view));
             levels.Add(level);
         }
+        if (levels.Count > 4) throw new ArgumentException("At most four grouping levels are supported.", nameof(view));
         GroupBy = new ReadOnlyCollection<CanopyGridGroupLevel>(levels);
         Groupable = view.Reporting?.Groupable == true;
+        if (Grouping != null && DynamicGrouping) throw new ArgumentException("A fixed grouping cannot be combined with runtime grouping.", nameof(view));
         var editable = new List<CanopyDataColumn>();
-        foreach (var column in list) if (column.Editable) editable.Add(column);
+        foreach (var column in list) {
+            if (!column.Editable) continue;
+            editable.Add(column);
+            // The server checks patterns with .NET's ECMAScript syntax; one it cannot compile fails here, not on the first commit.
+            if (column.Validation?.Pattern != null) {
+                try { CommitValidation.Compile(column.Validation.Pattern); }
+                catch (ArgumentException error) { throw new ArgumentException("Column '" + column.Id + "' has a pattern the server cannot check.", nameof(view), error); }
+            }
+        }
         EditableColumns = new ReadOnlyCollection<CanopyDataColumn>(editable);
     }
 
@@ -112,8 +125,10 @@ public sealed class CanopyDataSchema {
     public CanopySummaryAggregate GetAggregate(string id) =>
         FindAggregate(id ?? throw new ArgumentNullException(nameof(id))) ?? throw new ArgumentException("The view declares no aggregate '" + id + "'.", nameof(id));
 
-    internal CanopySummaryAggregate? FindAggregate(string id) {
-        foreach (var aggregate in SummaryAggregates) if (aggregate.Id == id) return aggregate;
+    internal CanopySummaryAggregate? FindAggregate(string id) => FindAggregateIn(SummaryAggregates, id);
+
+    private static CanopySummaryAggregate? FindAggregateIn(IEnumerable<CanopySummaryAggregate> aggregates, string id) {
+        foreach (var aggregate in aggregates) if (aggregate.Id == id) return aggregate;
         return null;
     }
 

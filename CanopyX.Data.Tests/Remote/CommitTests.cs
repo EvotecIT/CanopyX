@@ -143,17 +143,53 @@ public sealed class CommitTests {
     }
 
     [Fact]
-    public async Task WriterAnswers_ThatDoNotFitTheBatch_AreServerFailures() {
-        var unknown = Handler((_, _) => new CanopyCommitResult(new[] { CanopyCommitRowResult.Saved("99") })).Handler;
-        await Assert.ThrowsAsync<InvalidOperationException>(() => unknown.CommitAsync(Commit("{\"id\":\"1\",\"values\":{\"memory\":1},\"original\":{\"memory\":2}}")));
-        var twice = Handler((_, _) => new CanopyCommitResult(new[] { CanopyCommitRowResult.Saved("1"), CanopyCommitRowResult.Saved("1") })).Handler;
-        await Assert.ThrowsAsync<InvalidOperationException>(() => twice.CommitAsync(Commit("{\"id\":\"1\",\"values\":{\"memory\":1},\"original\":{\"memory\":2}}")));
-        var badCell = Handler((_, _) => new CanopyCommitResult(new[] { CanopyCommitRowResult.Saved("1", new Dictionary<string, CanopyCell> { ["memory"] = new CanopyCell("lots") }) })).Handler;
-        await Assert.ThrowsAnyAsync<Exception>(() => badCell.CommitAsync(Commit("{\"id\":\"1\",\"values\":{\"memory\":1},\"original\":{\"memory\":2}}")));
-        var hidden = Handler((_, _) => new CanopyCommitResult(new[] { CanopyCommitRowResult.Saved("1", new Dictionary<string, CanopyCell> { ["password"] = new CanopyCell("x") }) })).Handler;
-        await Assert.ThrowsAsync<InvalidOperationException>(() => hidden.CommitAsync(Commit("{\"id\":\"1\",\"values\":{\"memory\":1},\"original\":{\"memory\":2}}")));
+    public async Task WriterAnswers_ThatDoNotFitTheBatch_AreLeftOutAndReported_NeverFailingTheRequest() {
+        var problems = new List<string>();
+        var options = new CanopyRemoteOptions { WriterProblem = problems.Add };
+        var lone = "Bad \uD800 surrogate " + new string('x', 5000);
+        var (handler, _) = Handler((_, _) => new CanopyCommitResult(new[] {
+            CanopyCommitRowResult.Saved("99"),
+            CanopyCommitRowResult.Saved("1", new Dictionary<string, CanopyCell> { ["memory"] = new CanopyCell("lots") }),
+            CanopyCommitRowResult.Saved("1"),
+            CanopyCommitRowResult.Saved("2", new Dictionary<string, CanopyCell> { ["password"] = new CanopyCell("x") }),
+            CanopyCommitRowResult.Failed("3", lone, new Dictionary<string, string> { ["password"] = "no", ["memory"] = "Too much." })
+        }, "bad\uD800revision"), options);
+        var rows = string.Join(",", new[] { 1, 2, 3, 4 }.Select(i => "{\"id\":\"" + i + "\",\"values\":{\"memory\":1},\"original\":{\"memory\":2}}"));
+        var json = await handler.CommitAsync(Commit(rows));
+        var root = JsonDocument.Parse(json).RootElement;
+        Assert.Equal("r5", root.GetProperty("revision").GetString());
+        var answers = Rows(json);
+        Assert.Equal(new[] { "1", "2", "3" }, answers.Select(row => row.GetProperty("id").GetString()));
+        Assert.Equal("saved", answers[0].GetProperty("status").GetString());
+        Assert.False(answers[0].TryGetProperty("cells", out _));
+        Assert.False(answers[1].TryGetProperty("cells", out _));
+        var error = answers[2].GetProperty("error").GetString()!;
+        Assert.Equal(4096, error.Length);
+        Assert.DoesNotContain('\uD800', error);
+        Assert.EndsWith("…", error);
+        Assert.Equal("{\"memory\":\"Too much.\"}", answers[2].GetProperty("errors").GetRawText());
+        Assert.True(problems.Count >= 5, string.Join(" | ", problems));
+        var empty = Handler((_, _) => null!).Handler;
+        var none = JsonDocument.Parse(await empty.CommitAsync(Commit("{\"id\":\"1\",\"values\":{\"memory\":1},\"original\":{\"memory\":2}}"))).RootElement;
+        Assert.Equal(0, none.GetProperty("rows").GetArrayLength());
     }
 
+    [Theory]
+    [InlineData("{\"site\":null}")]
+    [InlineData("{\"site\":\"\"}")]
+    public async Task EmptyValues_StillChooseFromASelectsChoices(string values) {
+        var (handler, writer) = Handler();
+        var json = await handler.CommitAsync(Commit("{\"id\":\"1\",\"values\":" + values + ",\"original\":{\"site\":\"Oslo\"}}"));
+        Assert.Equal("Choose Site from the list.", Rows(json)[0].GetProperty("errors").GetProperty("site").GetString());
+        Assert.Null(writer.Batch);
+    }
+
+    [Fact]
+    public void Schemas_RejectPatternsTheServerCannotCheck() {
+        var view = Fleet.EditableView();
+        view.Columns.First(column => column.Id == "notes").Validation!.Pattern = "(unclosed";
+        Assert.ThrowsAny<Exception>(() => Fleet.Map(view).Schema);
+    }
     [Fact]
     public async Task Messages_CanBeReplaced() {
         var options = new CanopyRemoteOptions();
@@ -172,7 +208,7 @@ public sealed class CommitTests {
         public ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
             Batch = batch;
             Revision = revision;
-            return new ValueTask<CanopyCommitResult>(_answer?.Invoke(batch, revision) ?? new CanopyCommitResult(batch.Rows.Select(row => CanopyCommitRowResult.Saved(row.Id)), "r6"));
+            return new ValueTask<CanopyCommitResult>(_answer != null ? _answer(batch, revision) : new CanopyCommitResult(batch.Rows.Select(row => CanopyCommitRowResult.Saved(row.Id)), "r6"));
         }
     }
 }
