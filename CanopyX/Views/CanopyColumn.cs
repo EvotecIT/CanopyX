@@ -70,6 +70,30 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets the record drawer section label. Null uses the default details section.</summary>
     public string? Section { get; set; }
 
+    /// <summary>
+    /// Gets or sets the name of a cell renderer a browser plugin registers (<c>cellRenderers</c> in docs/plugins.md), which
+    /// draws this column's cells in trees and flat grids. Null, or a name no plugin on the page registers, keeps the built-in
+    /// painter; a host's own renderer for the column wins. The static fallback and exports keep the cell text.
+    /// </summary>
+    /// <exception cref="ArgumentException">The name is not 1 to 64 ASCII letters, digits, hyphens or underscores starting with a letter.</exception>
+    public string? Renderer {
+        get => _renderer;
+        set {
+            if (value != null && !IsRendererName(value)) throw new ArgumentException("A renderer name is 1 to 64 ASCII letters, digits, hyphens or underscores starting with a letter.", nameof(value));
+            _renderer = value;
+        }
+    }
+
+    private string? _renderer;
+
+    private static bool IsRendererName(string value) {
+        if (value.Length == 0 || value.Length > 64 || !((value[0] >= 'a' && value[0] <= 'z') || (value[0] >= 'A' && value[0] <= 'Z'))) return false;
+        foreach (var ch in value) {
+            if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_')) return false;
+        }
+        return true;
+    }
+
     internal void WriteJson(CanopyJsonWriter writer, bool grid = false) {
         writer.BeginObject()
             .Property("id", Id)
@@ -88,6 +112,7 @@ public sealed partial class CanopyColumn {
         if (grid && Aggregatable) writer.Property("aggregatable", true);
         WriteLayoutJson(writer, grid);
         if (grid) writer.OptionalProperty("section", Section);
+        writer.OptionalProperty("renderer", Renderer);
 
         if (Hidden) {
             writer.Property("hidden", true);

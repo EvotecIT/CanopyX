@@ -6,7 +6,7 @@
     if (existing) return existing;
     const grid = new DataGrid(host, options);
     const api = {
-      element: host, view: grid.view, ready: grid.ready,
+      element: host, view: grid.view, ready: startPlugins(grid, () => api),
       getTimeZone: () => grid.local ? "local" : "utc",
       getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
       focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),

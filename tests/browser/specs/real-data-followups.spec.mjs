@@ -293,12 +293,23 @@ for (const theme of ["light", "dark"]) {
 test("a tree loads the export part on first use and offers its Export menu", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 800 });
   page.errors = []; page.on("pageerror", error => page.errors.push(error.message));
+  // Records the parts whose embedded payloads run (the loader runs a payload as a script without a type, while the page's
+  // inert payloads keep theirs): each registers itself with CanopyXParts.push(["<name>", part]).
+  await page.addInitScript(() => {
+    window.__canopyxParts = [];
+    new MutationObserver(records => {
+      for (const record of records) for (const node of record.addedNodes) {
+        const match = node.nodeName === "SCRIPT" && !node.type && /\.push\(\["([a-z-]+)",part\]\)/.exec(node.textContent || "");
+        if (match) window.__canopyxParts.push(match[1]);
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
   await openExample(page, "wide-tree.html");
   // The tree tools part is installed; the export part is not, until the menu opens.
-  expect(await page.evaluate(() => [typeof window.CanopyXTreeTools, typeof window.CanopyXExport])).toEqual(["object", "undefined"]);
+  expect(await page.evaluate(() => window.__canopyxParts)).toEqual(["tree-tools"]);
   await page.locator(".cx-grid-export > summary").click();
   await expect(page.locator(".cx-grid-export").getByRole("button", { name: "Download CSV" })).toBeVisible();
-  expect(await page.evaluate(() => typeof window.CanopyXExport)).toBe("object");
+  expect(await page.evaluate(() => window.__canopyxParts)).toEqual(["tree-tools", "export"]);
   expect(page.errors).toEqual([]);
 });
 // Auto height on trees, as on flat grids: a short tree is as tall as its toolbar, header and rows inside the host's height

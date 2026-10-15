@@ -40,11 +40,14 @@
     return shape;
   }
 
-  function hostRenderers(renderers, columns) {
+  // The host's renderers by column id, then the plugins' cell renderers that columns name in their renderer field.
+  function hostRenderers(renderers, columns, plugins) {
     if (![Object.prototype, null].includes(Object.getPrototypeOf(renderers)) ||
         Object.keys(renderers).some(id => typeof renderers[id] !== "function" || !columns.some(column => column.id === id)))
       throw new Error("CanopyX: invalid column renderers.");
-    return renderers;
+    const named = Object.assign(Object.create(null), ...plugins.map(item => item.cellRenderers));
+    return Object.assign(Object.create(null), ...columns.filter(column => typeof column.renderer === "string" && named[column.renderer])
+      .map(column => ({ [column.id]: named[column.renderer] })), renderers);
   }
 
   function disposeHostSlot(slot) {

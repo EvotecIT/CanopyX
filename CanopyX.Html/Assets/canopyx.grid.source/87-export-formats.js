@@ -7,11 +7,13 @@
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
-  // The host option wins, then the view's declared ids, then every registered format. An id nobody registered is skipped.
+  // The host option wins, then the view's declared ids, then every registered format and the formats of the grid's plugins,
+  // which replace a registered format with the same id on this grid. An id nobody registered is skipped.
   function exportFormatsOf(grid) {
-    const list = grid.opts.exportFormats ?? grid.view.exportFormats;
-    if (list === undefined) return [...EXPORT_FORMATS.values()];
-    const formats = Array.isArray(list) ? list.map(item => typeof item === "string" ? EXPORT_FORMATS.get(item) : exportFormat(item)).filter(Boolean) : null;
+    const list = grid.opts.exportFormats ?? grid.view.exportFormats, known = new Map(EXPORT_FORMATS);
+    for (const format of grid.plugins.flatMap(item => item.exportFormats || [])) known.set(format.id, exportFormat(format));
+    if (list === undefined) return [...known.values()];
+    const formats = Array.isArray(list) ? list.map(item => typeof item === "string" ? known.get(item) : exportFormat(item)).filter(Boolean) : null;
     if (!formats || new Set(formats.map(format => format.id)).size !== formats.length) throw new Error("CanopyX: invalid exportFormats.");
     return formats;
   }

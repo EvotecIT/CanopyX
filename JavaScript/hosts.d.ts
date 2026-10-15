@@ -2,6 +2,8 @@ import type {
   CanopyNode, CanopyColumn, CanopyView, InlineView, SidecarView, RemoteView, CanopyLabels, CellValue, CheckIntent,
   CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
 } from "./protocol.js";
+import type { CanopyPlugin } from "./plugins.js";
+import type { TreeGrid } from "./index.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
 /** Query-aware hosts answer from one accepted dataset revision. */
@@ -145,6 +147,8 @@ interface HostOptionsBase {
   toolbar?: boolean | TreeToolbarOptions;
   /** Host entries of the tree's more menu, run with the selected nodes; the host owns what they do. */
   actions?: readonly TreeAction[];
+  /** Plugins for this tree only, after the page's (CanopyX.use); one replaces a page plugin of the same name. */
+  plugins?: readonly CanopyPlugin[];
   /** Safety timeout for export format writers, 1..2147483647 ms (default 600000). */
   exportTimeoutMs?: number;
   retainedNodeLimit?: number;
@@ -179,7 +183,7 @@ export interface TreeToolbarOptions extends TreeToolbarControls {
 /** A more-menu entry of a tree. */
 export interface TreeAction {
   label: string;
-  run(context: { nodes: CanopyNode[]; signal: AbortSignal }): unknown;
+  run(context: { nodes: CanopyNode[]; signal: AbortSignal; api: TreeGrid }): unknown;
 }
 /** A custom deep-link scheme supplies its formatter and parser together. */
 export type HostOptions = HostOptionsBase & (

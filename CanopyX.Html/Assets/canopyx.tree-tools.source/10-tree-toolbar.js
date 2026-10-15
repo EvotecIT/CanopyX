@@ -18,6 +18,9 @@
       this.startMenus();
       this.lifetime.signal.addEventListener("abort", () => { this.disposeControls(); this.host.classList.remove("cx-chrome", "cx-tree-tools", "cx-phone"); }, { once: true });
       if (tools.columns !== false && this.columns.length > 1) this.controlPanel(labels.columns, "cx-grid-columns", panel => this.renderGridColumns(panel));
+      // Plugin toolbar items ({ label, run }, run like the host actions of the more menu) follow Columns, before Views, as on a
+      // flat grid (the phone layout moves Views, never them).
+      for (const item of pluginItems(this, "toolbarItems")) bar.appendChild(this.treeAction(item));
       // The Views menu needs the remembered state the view's stateKey turns on; the API keeps views for the page without it.
       this.prepareSavedViews();
       if (tools.views !== false && this.stateKey()) {
@@ -33,15 +36,11 @@
       this.startFit();
     },
 
-    // Host actions ({ label, run({ nodes, signal }) }, run with the selected nodes) and Print.
+    // Host actions ({ label, run({ nodes, signal, api }) }, run with the selected nodes), then the plugins' menu items, and Print.
     buildMoreMenu() {
       const overflow = this.overflow = this.controlPanel(this.labels.gridMore, "cx-grid-overflow"), summary = overflow.details.firstChild;
       summary.replaceChildren(gridIcon("more")); summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
-      for (const action of this.opts.actions || []) {
-        if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
-        overflow.panel.appendChild(gridButton(action.label, () => Promise.resolve().then(() =>
-          action.run({ nodes: this.treeSelection(), signal: this.dataLifetime.signal })).catch(error => this.emit("error", { error }))));
-      }
+      for (const action of [...this.opts.actions || [], ...pluginItems(this, "menuItems")]) overflow.panel.appendChild(this.treeAction(action));
       // Record details opens the focused (or else a selected) row's drawer (48-tree-details.js), the keyboard's way to the
       // "+N" fields on phones; a tree with one column has no other fields to show.
       if (this.columns.length > 1) overflow.panel.appendChild(Object.assign(gridButton(this.labels.gridDetails, () =>
@@ -50,6 +49,12 @@
     },
 
     treeSelection() { return Array.from(this.selected, w => w.h); },
+
+    treeAction(action) {
+      if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
+      return gridButton(action.label, () => Promise.resolve().then(() =>
+        action.run({ nodes: this.treeSelection(), signal: this.dataLifetime.signal, api: this.host.canopyx })).catch(error => this.emit("error", { error })));
+    },
 
     // The interactive runtime's actions menu closes with the toolbar menus (an editor keeps its own rules).
     closeMenusOutside(node) {

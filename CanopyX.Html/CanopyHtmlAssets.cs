@@ -33,7 +33,7 @@ public static partial class CanopyHtmlAssets {
     /// <summary>The plain file name of the theme stylesheet, <c>canopyx.css</c>.</summary>
     public const string StyleFileName = "canopyx.css";
 
-    private static readonly UTF8Encoding FileEncoding = new UTF8Encoding(false);
+    internal static readonly UTF8Encoding FileEncoding = new UTF8Encoding(false);
     private static readonly Lazy<string> ScriptResource = new Lazy<string>(() => CanopyHtmlResources.Read("canopyx.js"));
     private static readonly Lazy<string> StyleResource = new Lazy<string>(() => CanopyHtmlResources.Read("canopyx.css"));
     private static readonly Lazy<string> ScriptHashValue = new Lazy<string>(() => Hash(ScriptResource.Value));
@@ -94,12 +94,11 @@ public static partial class CanopyHtmlAssets {
 
     /// <summary>Writes the selected runtime and stylesheet, using the same naming as the page that loads them.</summary>
     /// <remarks>
-    /// The optional parts the runtime loads from files beside it are written too, under the same naming: the tree tools part
-    /// (<see cref="TreeToolsScriptFileName"/>, <see cref="TreeToolsStyleFileName"/>) and the export part
-    /// (<see cref="ExportScriptFileName"/>) for every runtime, and for <see cref="CanopyRuntime.DataGrid"/> and
-    /// <see cref="CanopyRuntime.ReportingGrid"/> also the filter editor and the history presenters
-    /// (<see cref="HistoryScriptFileName"/>). The result lists only the script and the stylesheet; a host that copies or
-    /// uploads the written files elsewhere takes the whole folder.
+    /// The parts the runtime loads from files beside it are written too, under the same naming: every part of
+    /// <see cref="GetParts(CanopyRuntime)"/>, for example the tree tools, export, links and search parts for every runtime, and
+    /// for <see cref="CanopyRuntime.DataGrid"/> and <see cref="CanopyRuntime.ReportingGrid"/> also the filter editor and the
+    /// history presenters. The result lists only the script and the stylesheet; a host that copies or uploads the written files
+    /// elsewhere takes the whole folder.
     /// </remarks>
     /// <param name="directory">The output directory.</param>
     /// <param name="naming">Content-hashed or plain file names.</param>
@@ -125,11 +124,8 @@ public static partial class CanopyHtmlAssets {
             WriteOnce(style, FileEncoding.GetBytes(styleText));
         }
 
-        // Every entry point mounts trees, which load the tree tools part and, for their Export menu and exports, the export part;
-        // the grid entry points also load the editor and history presenter parts.
-        WriteTreeTools(directory, naming);
-        WriteExportPart(directory, naming);
-        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) { WriteFilterEditor(directory, naming); WriteHistoryPart(directory, naming); }
+        // Every part the entry point knows goes beside it (Build/parts.json): the runtime loads a part from there on first use.
+        foreach (var part in GetParts(runtime)) WritePart(part, directory, naming);
         return new[] { script, style };
     }
 
@@ -183,7 +179,7 @@ public static partial class CanopyHtmlAssets {
         }
     }
 
-    private static string Hash(string content) {
+    internal static string Hash(string content) {
         using (var sha = SHA256.Create()) {
             var hash = sha.ComputeHash(FileEncoding.GetBytes(content));
             var hex = new StringBuilder(16);

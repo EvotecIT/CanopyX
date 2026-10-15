@@ -85,6 +85,8 @@ export interface CanopyColumn {
   tooltip?: string;
   /** The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right. */
   pinned?: "left" | "right" | null;
+  /** The name of a cell renderer a plugin registers (cellRenderers); an unregistered name keeps the built-in painter. */
+  renderer?: string;
 }
 /** Per-control tree toolbar switches in the view document; an absent switch keeps its control. */
 export interface TreeToolbarControls {

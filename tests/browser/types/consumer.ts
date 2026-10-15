@@ -403,3 +403,27 @@ pinTree.setColumnPinned("state", "top");
 pinTree.openDetails("node-1");
 // @ts-expect-error A node is named by its id.
 pinTree.openDetails(1);
+
+// Plugins: page-wide with use, per grid with the plugins option; columns name a plugin's cell renderer.
+import { use, registerPart, type CanopyPlugin, type CanopyPluginContext } from "@evotecit/canopyx";
+const meterPlugin: CanopyPlugin = {
+  name: "load-meter",
+  views: ["grid", "tree"],
+  requires: ["export"],
+  cellRenderers: { "load-meter": (row: { cells: Record<string, unknown> }, element: HTMLElement) => { element.textContent = String(row.cells.load); return true; } },
+  toolbarItems: [{ label: "Busiest first", run: ({ api }) => { void api; } }],
+  menuItems: [{ label: "Clear selection", run: ({ api }) => { api.clearSelection(); } }],
+  events: { select: (event: CustomEvent, context: CanopyPluginContext) => { void event.detail; void context.api; } },
+  init(context: CanopyPluginContext) { const signal: AbortSignal = context.signal; void signal; return context.part("export"); },
+  destroy() {}
+};
+const disposePlugin: () => void = use(meterPlugin);
+disposePlugin();
+CanopyX.use({ name: "empty" })();
+GridRuntime.use({ name: "grid-only", views: ["grid"] });
+createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "plugged", label: "Plugged", rowHeight: 28, pageSize: 100, selection: "single", columns: [{ id: "name", title: "Name", width: 200, kind: "text", renderer: "load-meter" }], source: { kind: "inline" }, roots: [] }, plugins: [meterPlugin] });
+registerPart("custom", { version: "0123456789abcdef", install() {} });
+// @ts-expect-error A plugin needs a name.
+use({ init() {} });
+// @ts-expect-error The views are tree and grid.
+use({ name: "bad", views: ["matrix"] });

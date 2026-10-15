@@ -21,10 +21,10 @@ public sealed class ExportPartAssetsTests {
     [Fact]
     public void ExportPart_CarriesEveryExportSourcePart() {
         var root = RepositoryPaths.Root;
-        var parts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "export-parts.json")))!;
+        var parts = PartManifestFile.Scripts("export");
         Assert.NotEmpty(parts);
-        foreach (var part in parts) {
-            var path = Path.Combine(root, part);
+        foreach (var path in parts) {
+            var part = Path.GetFileName(path);
             Assert.True(File.Exists(path), "Missing export part " + part);
             var signature = File.ReadAllLines(path).Select(line => line.Trim()).First(line => line.StartsWith("Object.assign(", StringComparison.Ordinal) || line.StartsWith("function ", StringComparison.Ordinal) || line.StartsWith("DataGrid.prototype.", StringComparison.Ordinal));
             Assert.Contains(signature.Replace(" ", string.Empty), CanopyHtmlAssets.ExportScript.Replace(" ", string.Empty));
@@ -33,7 +33,8 @@ public sealed class ExportPartAssetsTests {
         // Tree captures ship in the tree tools part and their writers in the export part, which trees load on first use.
         Assert.Contains("treeRows", CanopyHtmlAssets.TreeToolsScript);
         Assert.Contains("treeRows", CanopyHtmlAssets.ExportScript);
-        Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.TreeToolsScript);
+        // The tree tools load it through the runtime, whose part manifest names its file.
+        Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.GetScript(CanopyRuntime.TreeGrid));
         Assert.DoesNotContain("function saveExport", CanopyHtmlAssets.TreeToolsScript);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid })
             Assert.DoesNotContain("treeRows", CanopyHtmlAssets.GetScript(runtime));

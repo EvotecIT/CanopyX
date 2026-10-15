@@ -2,6 +2,7 @@ import CanopyX from "./index.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
+import type { CanopyPlugin } from "./plugins.js";
 export * from "./index.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -52,7 +53,7 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   /** Share of spare width (0..100), given before the identity column. */
   flex?: number;
   autoSize?: "content" | "header" | "none";
-  /** How the column gives way when narrow. Integers follow DataTables responsivePriority: 0-1 essential, 10000+ optional. */
+  /** How the column gives way when narrow. Integers rank responsive priority: 0-1 essential, 10000+ optional. */
   priority?: GridColumnPriority;
   /** Requested edge; null unpins. Omitted: the identity column pins left. */
   pinned?: "left" | "right" | null;
@@ -165,7 +166,7 @@ export interface GridToolbarOptions extends GridToolbarControls {
 export type GridToolbarSlot = "start" | "afterSearch" | "afterViews" | "end";
 /** A more-menu entry: a handler, or (reporting runtime) host content disclosed inside the menu. */
 export type GridAction<Q extends AcceptedGridQuery = GridQuery> =
-  | { label: string; run: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>; render?: never }
+  | { label: string; run: (event: { query: Q | null; signal: AbortSignal; api: DataGrid<Q> }) => void | PromiseLike<void>; render?: never }
   /** render fills container on the entry's first open (and again after a render that threw); close() closes the menu and
    * focuses its button; signal aborts when the grid is destroyed. */
   | { label: string; render: (container: HTMLElement, context: { close(): void; signal: AbortSignal }) => void; run?: never };
@@ -509,6 +510,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
    * container on first open, focus moves to its first control, Escape folds it back, and close() closes the menu. */
   actions?: readonly GridAction<Q>[];
+  /** Plugins for this grid only, after the page's (CanopyX.use); one replaces a page plugin of the same name. */
+  plugins?: readonly CanopyPlugin[];
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
 }
