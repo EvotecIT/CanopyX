@@ -23,7 +23,7 @@
         entry.classList.add("cx-grid-format-rules"); entry.setAttribute("aria-haspopup", "dialog");
         this.overflow.panel.insertBefore(entry, this.overflow.panel.querySelector(".cx-grid-details, .cx-grid-print"));
       }
-      this.syncFormatLegend(); this.syncFormatClock(); this.version++; this.scheduleRender();
+      this.syncFormatLegend(); this.syncFormatClock(); this.formatRefit(); this.version++; this.scheduleRender();
     },
     // Relative dates (olderThan, withinLast) move with the clock: rules that use them re-evaluate every minute.
     syncFormatClock() {
@@ -40,7 +40,7 @@
         const json = JSON.stringify(rules), compiled = formatCompile(JSON.parse(json ?? "null"), this);
         if (json !== JSON.stringify(this.formatRules)) {
           this.formatRules = gridFreeze(JSON.parse(json)); this.formatCompiled = compiled; this.formatEdited = json !== JSON.stringify(this.view.formatRules || []);
-          this.formatVersion++; this.formatStatsKey = undefined; this.version++; this.scheduleRender(); this.syncFormatLegend(); this.syncFormatClock();
+          this.formatVersion++; this.formatStatsKey = undefined; this.version++; this.scheduleRender(); this.syncFormatLegend(); this.syncFormatClock(); this.formatRefit();
           this.stateChanged(); this.emit("format", { rules: this.getFormatRules() });
         }
         return Promise.resolve(this.getFormatRules());

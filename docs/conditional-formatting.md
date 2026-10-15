@@ -102,8 +102,13 @@ received so far: give explicit bounds when a host grid's rows arrive in pages.
 
 A cell rule's formatting follows its column into the record drawer, and a row rule marks the drawer's heading, for each
 record the drawer shows. On phones, columns that do not fit hide behind the "+N" button of the first cell: the button
-takes the strongest tone of the flagged fields it hides (a tone, an icon, a badge or a cue; bars and scales are not flags)
-and its accessible name lists them, and the drawer shows them formatted. `details: false` keeps a rule out of both.
+is the flag: it takes the strongest tone of the flagged fields it hides (a tone, an icon, a badge or a cue; bars and scales
+are not flags) with an underline, inside the width the fitting reserves for it, and its accessible name lists them; the
+drawer shows them formatted. `details: false` keeps a rule out of both.
+
+Column fitting counts icons, badges, cues and bars, and a flagged value's full width is its column's floor while the rules
+apply. A narrow grid therefore hides a column by its priority, behind "+N", rather than cut a flagged value short: on a phone
+the server health grid keeps the server name and the whole status ("⚠ Maintenance") and moves CPU into the drawer.
 
 ## The rule editor
 

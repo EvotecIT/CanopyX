@@ -91,7 +91,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "538981150f94c1d0",
+      "version": "fd1a83b70ff2a670",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [

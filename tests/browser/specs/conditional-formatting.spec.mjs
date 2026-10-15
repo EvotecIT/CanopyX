@@ -46,6 +46,16 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
       const more = cell(page, "srv-000", 0).locator(".cx-hidden-fields");
       await expect(more).toHaveClass(/cx-fmt-flag/);
       await expect(more).toHaveAttribute("aria-label", /hidden fields formatted: .*Critical/);
+      // The flag is the button itself (its tone and an underline), inside the width the fitting reserves for it: the identity
+      // column and every flagged value stay whole. A column that cannot fit a flagged value hides behind "+N" instead.
+      expect(await more.evaluate(button => getComputedStyle(button, "::after").content)).toBe("none");
+      const cut = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].flatMap(row => [...row.children]
+        .filter(cell => cell === row.firstElementChild || cell.querySelector(".cx-fmt-icon,.cx-fmt-badge,.cx-fmt-cue"))
+        .flatMap(cell => [...cell.querySelectorAll(".cx-text,.cx-hidden-fields")].filter(item => item.scrollWidth > item.clientWidth + 1 ||
+          item.getBoundingClientRect().right > cell.getBoundingClientRect().right + 0.5).map(item => row.dataset.cxId + ":" + item.textContent))));
+      expect(cut).toEqual([]);
+      const flagged = cell(page, "srv-000", 0);
+      expect(await flagged.locator(".cx-text").evaluate(text => text.textContent)).toBe("srv-north-000");
     }
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(errors).toEqual([]);
