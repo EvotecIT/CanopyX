@@ -257,7 +257,8 @@ view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
   view with a custom aggregate needs an `ICanopyDataProvider` that computes it.
 - **Echo.** The summary includes a complete normalized `gridQuery`, even when a direct handler request contains only
   its revision. The offset is zero; the accepted limit, search, predicate shape and operands are retained, and the
-  effective grouping levels lead the sort. Ignored input fields do not become part of the response.
+  effective grouping levels lead the sort. For code-built requests, an unused summary limit outside 1–10,000 is echoed
+  as the view's page size. Ignored input fields do not become part of the response.
 
 ## Safety
 

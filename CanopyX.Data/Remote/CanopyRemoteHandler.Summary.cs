@@ -130,7 +130,8 @@ public sealed partial class CanopyRemoteHandler {
         writer.WriteString("view", query.Schema.ViewId);
         writer.WriteString("revision", revision);
         writer.WriteNumber("offset", 0);
-        writer.WriteNumber("limit", query.Limit);
+        // Code-built requests allow windows the summary does not use. Its echo must still be a valid gridQuery.
+        writer.WriteNumber("limit", query.Limit >= 1 && query.Limit <= 10000 ? query.Limit : query.Schema.ProtocolView.PageSize);
         writer.WriteString("search", query.Search);
         if (query.SearchMode == CanopyGridSearchMode.Words || raw != null && raw.RootElement.TryGetProperty("searchMode", out var mode) && mode.ValueKind == JsonValueKind.String)
             writer.WriteString("searchMode", query.SearchMode == CanopyGridSearchMode.Words ? "words" : "substring");
