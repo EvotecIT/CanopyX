@@ -25,8 +25,9 @@
 .cx-data-grid .cx-row[data-cx-tone] { color:var(--cx-text); }
 .cx-data-grid.cx-row-accents .cx-row[data-cx-tone] > .cx-cell:first-child::after { content:"";position:absolute;inset:0 auto 0 0;width:var(--cx-size-3px);background:var(--cx-row-tone);pointer-events:none;z-index:4; }
 .cx-data-grid.cx-row-accents .cx-row[data-cx-tone][aria-selected="true"] > .cx-cell:first-child::after { left:var(--cx-size-2px); }
-.cx-data-grid .cx-hcell.cx-kind-number > :is(.cx-grid-column-menu,.cx-grid-header-filter) { order:-1; }
-.cx-data-grid .cx-hcell.cx-kind-number > .cx-grid-column-menu { margin-right:auto; }
+/* A right-aligned header keeps its menu at the start and its filter marker beside the title, never across the cell from it. */
+.cx-data-grid .cx-hcell.cx-kind-number > .cx-grid-header-filter { order:-1; }
+.cx-data-grid .cx-hcell.cx-kind-number > .cx-grid-column-menu { order:-2;margin-right:auto; }
 .cx-data-grid .cx-hcell.cx-kind-number .cx-sort::after { order:-1; }
 /* Where the menu always shows (phones, touch), it follows the title, so a number header never reads as two cells. */
 .cx-data-grid.cx-phone .cx-hcell.cx-kind-number > :is(.cx-grid-column-menu,.cx-grid-header-filter) { order:0; margin-right:0; }
