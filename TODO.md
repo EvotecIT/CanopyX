@@ -180,8 +180,9 @@ Consumers: ASP.NET Core and other .NET hosts that serve hosted flat grids from a
 - [x] `CanopyX.Data`: typed request parsing with an explicit column allow-list and safety limits, `IQueryable<T>` execution (sort, every filter operator, filter groups, quick search, paging with counts, value lists, grouping and aggregates), streamed CSV export with an export-format interface, `ICanopyDataProvider` for raw SQL back ends and the `CanopyInMemoryProvider<T>` reference implementation.
 - [x] `CanopyX.AspNetCore`: `MapCanopyRemote` query, value-list, summary, export and view routes with cancellation, typed client errors, authorization by default and the browser source script.
 - [x] Fleet inventory sample over SQLite and EF Core with an end-to-end browser test and `--bench` measurements at 100,000 and 1,000,000 rows (`docs/remote-dotnet.md`).
-- [ ] Batch commit of grid edits through the same endpoint group once editing lands.
-- [ ] Multi-level grouping and further aggregates as the grid's grouping feature extends `gridSummary`.
+- [x] Batch commit of grid edits: `POST commit` with a separate write policy, server-side validation of editable columns, `ICanopyDataWriter` and the `CanopyQueryableWriter<T>` reference writer with conflict detection; the sample's editable page.
+- [x] Multi-level grouping (up to four `groupBy` levels, aggregate-ordered levels, nested summaries) and `distinctCount`; the sample's two-level page.
+- [ ] Custom aggregates in the built-in providers (today a provider of your own computes them).
 - [ ] Cursor (keyset) navigation for very deep pages over large tables.
 
 Gate: random queries give the same documents from EF Core over SQLite, LINQ to objects and the reference implementation, and the sample grid pages, sorts, filters, searches, lists values and exports against its real endpoints.

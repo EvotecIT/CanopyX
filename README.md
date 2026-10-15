@@ -59,7 +59,7 @@ dotnet add package CanopyX.Html
 
 Neither .NET package adds third-party runtime dependencies. Generating a report from C# needs no Node.js, npm or JavaScript build step.
 
-To serve a hosted grid from your own data, add `CanopyX.Data` (server-side paging, sorting, filtering, value lists, summaries and streamed export over `IQueryable<T>` or your own provider) and, in ASP.NET Core, `CanopyX.AspNetCore` for the endpoints. See [Server-side data for .NET](docs/remote-dotnet.md).
+To serve a hosted grid from your own data, add `CanopyX.Data` (server-side paging, sorting, filtering, value lists, multi-level summaries, streamed export and commits of edited rows over `IQueryable<T>` or your own provider) and, in ASP.NET Core, `CanopyX.AspNetCore` for the endpoints. See [Server-side data for .NET](docs/remote-dotnet.md).
 
 ### JavaScript
 
@@ -194,7 +194,7 @@ Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de` or `/locales/es
 
 Virtual rows keep the rendered DOM small. Tree bundles split data into sidecar files, and hosted sources let your application fetch records as the reader navigates. Flat-grid queries filter and sort the complete dataset before paging; loading one page does not mean the rest of the results are available in the browser.
 
-`CanopyX.Data` answers a hosted grid's queries on the server, so a table over millions of database rows pages, sorts, filters, counts value lists and exports without loading the result into the browser ([docs/remote-dotnet.md](docs/remote-dotnet.md)).
+`CanopyX.Data` answers a hosted grid's queries on the server, so a table over millions of database rows pages, sorts, filters, groups, counts value lists and exports without loading the result into the browser, and saves the rows readers edit through a writer the host controls ([docs/remote-dotnet.md](docs/remote-dotnet.md)).
 
 CSV export and copying distinguish filtered results, selected records and all records. Register your own export formats, such as an Excel or PDF writer, with `CanopyX.registerExportFormat`, and they join the grid's Export menu with the same scope choice, progress and cancellation; tree grids export their visible, selected or all rows through the same writers. For application actions, connect your own callbacks to the view.
 

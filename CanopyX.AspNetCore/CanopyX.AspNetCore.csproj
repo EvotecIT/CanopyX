@@ -14,7 +14,7 @@
     <PackageId>CanopyX.AspNetCore</PackageId>
     <Version>$(CanopyXProductVersion)</Version>
     <Authors>Evotec</Authors>
-    <Description>Minimal-API endpoints for the CanopyX remote grid protocol: query, value-list, summary and streamed export routes over IQueryable or a custom data provider, plus the browser source script.</Description>
+    <Description>Minimal-API endpoints for the CanopyX remote grid protocol: query, value-list, summary, streamed export and commit routes over IQueryable or a custom data provider, with a separate write policy, plus the browser source script.</Description>
     <PackageReleaseNotes>First release: MapCanopyRemote endpoint mapping with cancellation, typed client errors and the browser remote source script.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
