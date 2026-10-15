@@ -11,9 +11,9 @@
     const entry = menu => action => action && typeof action.label === "string" && (fn(action.run) || menu && fn(action.render));
     if (!value || !partName(item.name) || PARTS[item.name] || [item.init, item.destroy].some(hook => hook !== undefined && !fn(hook)) ||
         ["requires", "views", "toolbarItems", "menuItems", "exportFormats"].some(key => item[key] !== undefined && !Array.isArray(item[key])) ||
-        ["cellRenderers", "columnTypes", "editors", "events"].some(key => item[key] !== undefined && Object(item[key]) !== item[key]) ||
+        ["cellRenderers", "columnTypes", "editors", "events", "aggregates", "detailRenderers"].some(key => item[key] !== undefined && Object(item[key]) !== item[key]) ||
         !(item.requires || []).every(partName) || !(item.views || []).every(kind => kind === "tree" || kind === "grid") ||
-        ![...Object.values(item.cellRenderers || {}), ...Object.values(item.events || {})].every(fn) ||
+        ![...Object.values(item.cellRenderers || {}), ...Object.values(item.events || {}), ...Object.values(item.detailRenderers || {})].every(fn) ||
         !(item.toolbarItems || []).every(entry()) || !(item.menuItems || []).every(entry(true)))
       throw new Error("CanopyX: invalid plugin '" + item.name + "'.");
     item.exportFormats?.forEach(exportFormat);

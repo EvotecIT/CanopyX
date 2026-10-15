@@ -1,5 +1,7 @@
   // ---------- aggregate cells: function label, the column's precision and compact large values ----------
-  const AGGREGATE_LABELS = { count: "gridAggregateCount", sum: "gridAggregateSum", average: "gridAggregateAverage", minimum: "gridAggregateMinimum", maximum: "gridAggregateMaximum" };
+  const AGGREGATE_LABELS = { count: "gridAggregateCount", sum: "gridAggregateSum", average: "gridAggregateAverage", minimum: "gridAggregateMinimum", maximum: "gridAggregateMaximum",
+    distinctCount: "gridAggregateDistinct" };
+  const reportingCounting = operation => operation === "count" || operation === "distinctCount";
   const AGGREGATE_FORMATS = new Map();
   function reportingAggregateFormat(lang, digits, compact) {
     const key = (lang || "") + "|" + digits + "|" + compact;
@@ -17,7 +19,7 @@
   // The column's precision is the most fraction digits among its loaded raw values, read once per accepted summary from at
   // most 200 loaded records and capped at three, so headings and the footer agree while the reader scrolls.
   function reportingColumnPrecision(grid, column) {
-    if (grid.aggregatePrecision?.summary !== grid.summary) grid.aggregatePrecision = { summary: grid.summary, columns: new Map() };
+    if (!grid.aggregatePrecision || grid.aggregatePrecision.summary !== grid.summary) grid.aggregatePrecision = { summary: grid.summary, columns: new Map() };
     const known = grid.aggregatePrecision.columns.get(column.id);
     if (known !== undefined) return known;
     let digits = 0, numbers = 0, visited = 0;
@@ -36,15 +38,17 @@
     return digits;
   }
   // Visible text "sum 12.7M" or "avg 36.2" (translatable templates); the tooltip gives the aggregate's label and the full value.
+  // A custom aggregate shows the {value} template its plugin registers (the grouping part keeps them in groupAggregates).
   function reportingAggregateParts(grid, column, aggregates, values) {
-    const precision = aggregates.some(item => item.operation !== "count") ? reportingColumnPrecision(grid, column) : 0;
+    const precision = aggregates.some(item => !reportingCounting(item.operation)) ? reportingColumnPrecision(grid, column) : 0;
     const text = [], titles = [];
     for (const aggregate of aggregates) {
       const value = values[aggregate.id];
       if (value === null || value === undefined) continue;
-      const digits = aggregate.operation === "count" ? 0 : aggregate.operation === "average" ? Math.min(3, precision + 1) : precision;
+      const digits = reportingCounting(aggregate.operation) ? 0 : aggregate.operation === "average" ? Math.min(3, precision + 1) : precision;
       const shown = reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6).format(value);
-      text.push(fill(grid.labels[AGGREGATE_LABELS[aggregate.operation]], { value: shown }));
+      const label = AGGREGATE_LABELS[aggregate.operation];
+      text.push(fill(label ? grid.labels[label] : grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", { value: shown }));
       titles.push(aggregate.label + ": " + reportingAggregateFormat(grid.lang, 3, false).format(value));
     }
     return { text: text.join(" · "), title: titles.join(" · ") };

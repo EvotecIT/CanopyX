@@ -87,6 +87,42 @@
       "sources": [
         "sidecar"
       ]
+    },
+    {
+      "name": "detail-rows",
+      "label": "detail rows",
+      "version": "67ade5ced15317f3",
+      "script": "canopyx-detail-rows.js",
+      "style": "canopyx-detail-rows.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping",
+        "detail"
+      ]
+    },
+    {
+      "name": "grouping",
+      "label": "row grouping",
+      "version": "65b85d0dbc866b43",
+      "script": "canopyx-grouping.js",
+      "style": "canopyx-grouping.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping"
+      ],
+      "requires": [
+        "detail-rows"
+      ]
     }
   ]
 }

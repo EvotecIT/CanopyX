@@ -357,6 +357,7 @@ $partIndex = [ordered]@{ parts = @(foreach ($build in $partBuilds) {
     $entry.runtimes = @($build.Part.runtimes); $entry.views = @($build.Part.views)
     if ($build.Part.sources) { $entry.sources = @($build.Part.sources) }
     if ($build.Part.presenters) { $entry.presenters = @($build.Part.presenters) }
+    if ($build.Part.features) { $entry.features = @($build.Part.features) }
     if ($build.Part.deepLink) { $entry.deepLink = $true }
     if ($build.Part.requires) { $entry.requires = @($build.Part.requires) }
     $entry
