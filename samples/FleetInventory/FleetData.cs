@@ -82,17 +82,23 @@ public static class FleetSeed {
         db.Database.EnsureCreated();
         var connection = (SqliteConnection)db.Database.GetDbConnection();
         connection.Open();
-        // A database from an earlier version of the sample has no record details; the sample rebuilds its own database.
+        // EnsureCreated leaves a database that has tables alone. One without the record details is an earlier sample database,
+        // which the sample rebuilds, or not a sample database at all, which it refuses to touch.
+        var tables = new List<string>();
         using (var probe = connection.CreateCommand()) {
-            probe.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'InstalledSoftware'";
-            if (Convert.ToInt64(probe.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture) == 0) {
-                Console.WriteLine("The sample database predates record details; rebuilding it.");
-                connection.Close();
-                SqliteConnection.ClearPool(connection);
-                db.Database.EnsureDeleted();
-                db.Database.EnsureCreated();
-                connection.Open();
-            }
+            probe.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table'";
+            using var reader = probe.ExecuteReader();
+            while (reader.Read()) tables.Add(reader.GetString(0));
+        }
+        if (!tables.Contains("InstalledSoftware")) {
+            var earlier = tables.Contains("Machines") && tables.Contains("Teams") && tables.All(name => name is "Machines" or "Teams" or "FleetRevisions" or "sqlite_sequence");
+            if (!earlier) throw new InvalidOperationException("The database file is not a fleet sample database; choose another --database path.");
+            Console.WriteLine("The sample database predates record details; rebuilding it.");
+            connection.Close();
+            SqliteConnection.ClearPool(connection);
+            db.Database.EnsureDeleted();
+            db.Database.EnsureCreated();
+            connection.Open();
         }
         if (db.Machines.Any()) return;
         using var transaction = connection.BeginTransaction();

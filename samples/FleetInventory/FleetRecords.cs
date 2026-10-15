@@ -41,8 +41,10 @@ public static class FleetRecords {
     }
 
     /// <summary>The record allow-list: only these fields are read, each through the grid's own query for the caller.</summary>
-    /// <remarks>The rack's machines are reached through the machine's rack; a host whose readers see only some machines
-    /// restricts that navigation the same way (for example <c>m =&gt; m.Rack!.Machines.Where(peer =&gt; peer.TeamId == team)</c>).</remarks>
+    /// <remarks>The rack's machines and the replaced machine are reached through navigations, not through the grid's query.
+    /// The sample's readers see every machine; a host whose readers see only their team's machines restricts the navigation to
+    /// what every reader of the record may read (<c>m =&gt; m.Rack!.Machines.Where(peer =&gt; peer.TeamId == m.TeamId)</c>) or
+    /// leaves such fields out.</remarks>
     public static CanopyRecordMap<Machine> Map(CanopyColumnMap<Machine> columns) => new CanopyRecordMap<Machine>(columns)
         .Field("serial", machine => machine.SerialNumber)
         .Field("purchased", machine => machine.PurchasedOn, Day)
