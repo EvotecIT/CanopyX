@@ -24,6 +24,9 @@ public sealed class CanopyRemoteLimits {
     private int _maxGroups = 10000;
     private int _maxCommitRows = 100;
     private int _maxCommitTextLength = 65536;
+    private int _maxRecordPageSize = 200;
+    private int _maxRecordItems = 200;
+    private int _maxRecordBytes = 1048576;
 
     /// <summary>Gets or sets the largest page a client may request, from 1 to 10,000. Default 1,000.</summary>
     public int MaxPageSize { get => _maxPageSize; set => _maxPageSize = Check(value, 1, 10000, nameof(MaxPageSize)); }
@@ -71,6 +74,22 @@ public sealed class CanopyRemoteLimits {
     /// <summary>Gets or sets the longest text value a commit may write, in UTF-16 code units, from 1 to 1,048,576. Default 65,536.</summary>
     /// <remarks>A column's <see cref="CanopyCellValidation.MaxLength"/> narrows it further; <see cref="MaxRequestBytes"/> bounds the whole body.</remarks>
     public int MaxCommitTextLength { get => _maxCommitTextLength; set => _maxCommitTextLength = Check(value, 1, 1048576, nameof(MaxCommitTextLength)); }
+
+    /// <summary>Gets or sets the most rows of one collection a record answer holds, from 1 to 10,000: the rows of a collection
+    /// page (<c>limit</c>), and the first rows of each collection in a whole record. Default 200.</summary>
+    /// <remarks>A collection page that asks for more is rejected; a collection whose declared page size is larger answers with
+    /// this many first rows and its total, so the record panel offers Load more.</remarks>
+    public int MaxRecordPageSize { get => _maxRecordPageSize; set => _maxRecordPageSize = Check(value, 1, 10000, nameof(MaxRecordPageSize)); }
+
+    /// <summary>Gets or sets the most timeline events or changes one record field holds, from 1 to 10,000. Default 200.</summary>
+    /// <remarks>A timeline or change list answers with its first events (newest first by default) up to the smaller of this
+    /// limit and the field's own limit. Change lists are capped at 512 changes by the protocol.</remarks>
+    public int MaxRecordItems { get => _maxRecordItems; set => _maxRecordItems = Check(value, 1, 10000, nameof(MaxRecordItems)); }
+
+    /// <summary>Gets or sets the largest serialized record answer in UTF-8 bytes, from 1 KiB to 64 MiB. Default 1 MiB.</summary>
+    /// <remarks>An answer that would be larger is refused with <see cref="CanopyRequestError.LimitExceeded"/>, never cut short:
+    /// a truncated record would look complete.</remarks>
+    public int MaxRecordBytes { get => _maxRecordBytes; set => _maxRecordBytes = Check(value, 1024, 67108864, nameof(MaxRecordBytes)); }
 
     private static int Check(int value, int minimum, int maximum, string name) {
         if (value < minimum || value > maximum) throw new ArgumentOutOfRangeException(name, value, "The limit must be from " + minimum + " to " + maximum + ".");
