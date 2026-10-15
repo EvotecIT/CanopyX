@@ -13,7 +13,16 @@ import type { GridExportFormat, GridFormatOptions, GridFormatRule } from "./form
 export * from "./formatting.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
-export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string; }
+export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
+  /** Reporting detail rows: the record's table, properties or trusted HTML payload, or its nested grid rows or tree roots. */
+  detail?: GridRowDetail; }
+/** A record's detail payload: a table, property list or trusted HTML, or the inline data of the definition's nested view. */
+export type GridRowDetail =
+  | { type: "table"; caption?: string; columns: string[]; widths?: number[]; rows: Cell[][] }
+  | { type: "properties"; items: { name: string; value: Cell }[] }
+  | { type: "html"; html: string }
+  | { type: "grid"; rows: GridRow[] }
+  | { type: "tree"; roots: unknown[] };
 /** First match wins separately for the row and each condition-column cell; raw filter semantics apply. */
 export type GridHighlightRule = GridFilter & { target?: "row" | "cell" } &
   ({ tone: string; className?: string } | { tone?: string; className: string });
@@ -34,6 +43,8 @@ export interface GridExportRow {
   readonly tone?: string; readonly diagnostics?: readonly string[];
   /** The record's row formatting, present when a row rule matched it. */
   readonly format?: GridExportFormat;
+  /** Present when the export carries details (request.details): the record's detail as a table, properties or trusted HTML. */
+  readonly detail?: Extract<GridRowDetail, { type: "table" | "properties" | "html" }>;
 }
 /** Captured column intent. Hosts map semantic tones and CSS pixel widths into their output format. */
 export interface GridExportColumn {
@@ -131,6 +142,12 @@ export interface GridPager {
 export interface GridReporting {
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
   readonly grouping?: GridSort;
+  /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
+  readonly groupBy?: readonly GridGroupLevel[];
+  /** Readers group by sortable columns from column menus, the group-by bar and dragged headers. Not combined with grouping. */
+  readonly groupable?: boolean;
+  /** Expandable detail rows under records; content loads on first expand. */
+  readonly detail?: GridDetailDefinition;
   /** At most 32 generic aggregates over raw full-query and full-group values. */
   readonly aggregates?: readonly GridAggregate[];
   /** Adds row checkboxes and explicit page/all-matching selection controls. Requires an enabled selection mode. */
@@ -232,6 +249,8 @@ export interface GridQuery {
   readonly filters: readonly GridFilter[];
   /** Combined with search and flat filters using AND. */
   readonly filterGroup?: GridFilterGroup;
+  /** Runtime grouping levels (reporting groupBy/groupable definitions); omitted input uses the declared levels, [] ungroups. */
+  readonly groupBy?: readonly GridGroupLevel[];
 }
 /** Sequential host query. Tokens require their issuing revision; there is no random-access offset. */
 export interface GridCursorQuery extends Omit<GridQuery, "type" | "offset"> {
@@ -370,15 +389,58 @@ export interface GridSource extends GridFacetSource<GridQuery> {
   /** Saves changed rows (a remote source posts the gridCommit document to its commit endpoint) and answers per row. */
   commit?(batch: GridCommit, options: { signal: AbortSignal }): GridCommitResult | PromiseLike<GridCommitResult>;
 }
+/** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
+export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
 export interface GridAggregate {
   readonly id: string; readonly column: string; readonly label: string;
-  readonly operation: "count" | "sum" | "average" | "minimum" | "maximum";
+  readonly operation: GridAggregateOperation;
+}
+/** One runtime grouping level: groups order by value, or by a declared aggregate (nulls last, ties by value). */
+export interface GridGroupLevel {
+  readonly column: string; readonly direction: "asc" | "desc"; readonly aggregate?: string;
+}
+/** Declared detail rows: one content source (a page template, a plugin detail renderer or a nested view), else record payloads. */
+export interface GridDetailDefinition {
+  /** Id of a page &lt;template&gt;; elements with data-cx-field receive the record's cell text. */
+  readonly template?: string;
+  /** Name of a detail renderer a plugin registers in detailRenderers. */
+  readonly renderer?: string;
+  /** Nested grid or tree document whose inline data is each record's grid or tree payload. */
+  readonly view?: object;
+  /** Exports and print snapshots carry detail payloads; default true. */
+  readonly print?: boolean;
+  readonly label?: string;
+}
+/** The context of a detail callback. The signal aborts when the record collapses, leaves the result or the grid is destroyed. */
+export interface GridDetailContext {
+  readonly id: string; readonly signal: AbortSignal; readonly api: unknown; readonly labels: Readonly<Record<string, string>>;
+  onDispose(cleanup: () => void): void;
+}
+/** A nested view a detail callback returns: a grid or tree document, an optional host source and options for createDataGrid/createTreeGrid. */
+export interface GridNestedDetail {
+  readonly view: object; readonly source?: unknown; readonly options?: Readonly<Record<string, unknown>>;
+}
+/** Host detail rows (the detail option): one callback draws the content; hasDetail limits which records offer it. */
+export interface GridDetailOptions {
+  /** A host template: draws into element (the body inside the visible width). */
+  render?(row: Readonly<GridRow>, element: HTMLElement, context: GridDetailContext): void | PromiseLike<void>;
+  /** Trusted markup inserted as HTML: encode the record text you put into it. */
+  html?(row: Readonly<GridRow>, context: GridDetailContext): string | PromiseLike<string>;
+  grid?(row: Readonly<GridRow>, context: GridDetailContext): GridNestedDetail | PromiseLike<GridNestedDetail>;
+  tree?(row: Readonly<GridRow>, context: GridDetailContext): GridNestedDetail | PromiseLike<GridNestedDetail>;
+  /** A host source for the definition's nested view. */
+  source?(row: Readonly<GridRow>, context: GridDetailContext): unknown;
+  hasDetail?(row: Readonly<GridRow>): boolean;
+  /** The detail exports and print snapshots carry for a record. */
+  export?(row: Readonly<GridRow>): Extract<GridRowDetail, { type: "table" | "properties" | "html" }> | null;
 }
 export interface GridGroup {
   readonly key: string; readonly value: CellValue; readonly offset: number; readonly count: number;
   readonly aggregates: Readonly<Record<string, number | null>>;
   /** Host-owned complete-group display values; rendered with column presenters, excluded from record queries and exports. */
   readonly cells?: Readonly<Record<string, Cell>>;
+  /** The next level's groups inside this one: present on every group of an outer level. Keys are unique across levels. */
+  readonly groups?: readonly GridGroup[];
 }
 export interface GridSummary {
   readonly protocol: "canopyx/2"; readonly type: "gridSummary"; readonly view: string; readonly revision: string;
@@ -443,6 +505,11 @@ export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
   /** Reporting delivery captures the canonical locale and a safe suggested basename without a format extension. */
   readonly locale?: string;
   readonly fileName?: string;
+  /** Filtered exports of a grouped result: levels, totals and nested groups with record ranges for outline levels. */
+  readonly grouping?: { readonly levels: readonly (GridGroupLevel & { readonly title: string })[]; readonly aggregates: readonly GridAggregate[];
+    readonly totals: Readonly<Record<string, number | null>>; readonly groups: readonly (GridGroup & { readonly text: string })[] };
+  /** Records carry their detail payloads. */
+  readonly details?: true;
 }
 /** Record counts refer to the complete captured export scope, including selected-query exclusions. */
 export interface GridExportProgress {
@@ -588,6 +655,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   plugins?: readonly CanopyPlugin[];
   /** Loads the link part when the grid is created and reports its selection and own conditions as canopyx:linkchange (LinkChange). */
   linkEvents?: boolean;
+  /** Reporting detail rows drawn by the host (a template, trusted HTML or a nested grid or tree). */
+  detail?: GridDetailOptions;
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Editing of editable columns: read-only rules, checks, lookups, editors and the batch writer (docs/editing.md). */
@@ -666,9 +735,21 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridE
   getSelectionDescriptor?(): GridSelection<Q>;
   /** Reporting summary capability only; null before acceptance. */
   getSummary?(): GridSummary | null;
-  /** Flat grouping only. Collapse affects display; record query/selection/export scope remain intact. */
+  /** Grouped reporting grids (fixed or runtime). Keys name groups of any level. Collapse affects display; record query/selection/export scope remain intact. */
   setGroupCollapsed?(key: string, collapsed: boolean): void;
   getCollapsedGroups?(): string[];
+  /** Runtime grouping (groupBy or groupable): sets the levels, outermost first; [] ungroups. Resolves with the accepted query. */
+  setGroupBy?(groupBy: readonly GridGroupLevel[]): Promise<Q>;
+  getGroupBy?(): readonly GridGroupLevel[];
+  expandAllGroups?(): Promise<void>;
+  collapseAllGroups?(): Promise<void>;
+  /** Level 1 is the outermost; 0 means every level. */
+  setGroupLevelCollapsed?(level: number, collapsed: boolean): Promise<void>;
+  /** Detail rows: expanding loads the content once and resolves when it is drawn. */
+  expandDetail?(id: string): Promise<void>;
+  collapseDetail?(id: string): Promise<void>;
+  toggleDetail?(id: string): Promise<void>;
+  getExpandedDetails?(): string[];
   /** Requires selection controls and multiple selection. Query/revision changes retire this scope; paging preserves it. */
   selectAllMatching?(): void;
   /** Selects/deselects the full accepted page, including records outside the mounted viewport. */

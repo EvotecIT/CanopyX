@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, conditional formatting, deep links, the sidecar search and linked views. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (editing, grouping, column groups, range selection) arrive as parts.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, conditional formatting, deep links, the sidecar search, linked views, detail rows and row grouping. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (column groups, range selection) arrive as parts.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -69,6 +69,10 @@ The context is frozen and the same object for every hook and handler of a plugin
 
 **Events.** `events` maps an event name without the `canopyx:` prefix to a handler `(event, context)`: `select`, `query`, `load`, `toggle`, `filter`, `state`, `error`, `rowActivate`, `link` and the rest that [the protocol](data-protocol.md) lists. The handler receives the DOM event, so it can read `event.detail` and call `preventDefault()` on a cancelable event such as `rowActivate`.
 
+**Aggregates.** `aggregates` maps an operation name (a lowercase letter and up to 31 letters and digits, not a built-in operation) to `{ label, compute(values, context) }` or to the compute function alone. A reporting aggregate whose `operation` is that name uses it for inline data: `compute` receives the raw nonmissing values of a group or of the whole result and `{ column, aggregate }`, and returns a finite number or null; `label` is the cell template with `{value}` (default `<name> {value}`). See [grouping.md](grouping.md#aggregates).
+
+**Detail renderers.** `detailRenderers` maps a name to `renderer(row, element, context)`, which draws a reporting grid's detail row into `element` when the definition names it (`reporting.detail.renderer`). `context` has `id`, `signal` (aborted when the detail is disposed), `onDispose(cleanup)`, `api` and `labels`. See [grouping.md](grouping.md#detail-rows).
+
 **Editors.** `editors` maps an editor name to `{ create(context) }`. An editable flat-grid column chooses one by name (`"editor": { "type": "stars" }`, `CanopyCellEditor.Custom("stars")` in .NET); a host's `editing.editors` for the grid wins, and a plugin editor replaces a built-in one with the same name. See [Custom editors](editing.md#custom-editors) for the contract.
 
 **Column types.** `columnTypes` is a map a plugin can register today; CanopyX validates that it is an object and keeps it on the plugin. Later features read it.
@@ -132,6 +136,8 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `formatting` | a grid with `formatRules` or `formatting` starts, or a formatting API method runs | rule evaluation, painting, the legend, saved-view rules and export record formats ([conditional formatting](conditional-formatting.md)) |
 | `format-editor` | the rule editor opens | the rule editor, on the filter editor part's condition rows |
 | `link` | a host calls a link method (`setExternalFilter`, `setHighlight`, …) or creates a view with `linkEvents` | external filter chips, highlights and `canopyx:linkchange` ([Linked views](linked-views.md)) |
+| `detail-rows` | a reporting grid with detail rows or grouping requests its first page | the row projection shared by headings and detail rows; detail rows, their keys, export and print |
+| `grouping` | a reporting grid with grouping or aggregates requests its first page (requires `detail-rows`) | summaries, nested headings, aggregates, the group-by bar, group outlines in exports |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 
@@ -150,15 +156,15 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 
 ```json
 {
-  "name": "grouping",
-  "label": "row grouping",
+  "name": "inline-charts",
+  "label": "inline charts",
   "runtimes": ["grid"],
   "views": ["grid"],
   "key": "DataGrid.prototype",
   "context": ["DataGrid", "h", "setText", "gridButton"],
   "requires": ["filter-editor"],
-  "scripts": ["CanopyX.Html/Assets/canopyx.grouping.source"],
-  "styles": ["CanopyX.Html/Assets/canopyx.grouping.source/grouping.css"]
+  "scripts": ["CanopyX.Html/Assets/canopyx.inline-charts.source"],
+  "styles": ["CanopyX.Html/Assets/canopyx.inline-charts.source/inline-charts.css"]
 }
 ```
 
@@ -166,7 +172,7 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 | --- | --- |
 | `name`, `label` | The part's name (file `canopyx-<name>.js`, payload type `application/x-canopyx-<name>`) and the words its errors use. |
 | `runtimes` | `tree` (the two tree entry points) and/or `grid` (the two grid entry points): which manifests name the part and beside which entry points `WriteTo` writes it. |
-| `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds), `deepLink` and `editable` (grids with an editable column) narrow that further. |
+| `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds), `features` (the grid reporting features `grouping` and `detail`), `deepLink` and `editable` (grids with an editable column) narrow that further. |
 | `key`, `context` | The object that marks the part as installed for one runtime context, and the names `install` destructures from the context the runtime hands it. |
 | `start`, `end` | Optional statements before and after the part's scripts inside `install`. |
 | `feature` | Optional: the view feature that makes a grid's single-file fragments carry the part (`formatting`: rules or options; `formatEditor`: the editor option). |
@@ -177,8 +183,8 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 Then, in the runtime, define the part for its view kind with the same context and load it where the view needs it:
 
 ```js
-const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, h, setText, gridButton }));
-DataGrid.prototype.groupBy = function (...args) { return loadPart(GROUPING).then(() => this.groupBy(...args)); };
+const CHARTS = definePart(DataGrid, "inline-charts", "inline charts", () => ({ DataGrid, h, setText, gridButton }));
+DataGrid.prototype.chartRange = function (...args) { return loadPart(CHARTS).then(() => this.chartRange(...args)); };
 ```
 
 `Build/Sync-Assets.ps1` assembles the part, writes its registration and version, adds it to the manifests, and writes `canopyx-parts.json`, which `CanopyHtmlAssets.Parts` reads. Add the files to the npm package's `exports` beside the other parts, keep the part under a gzip guard test like the others, and test the loading paths (payload, plain file, hashed file, module) as the existing parts do.

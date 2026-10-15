@@ -182,6 +182,42 @@
         "grid"
       ],
       "views": []
+    },
+    {
+      "name": "detail-rows",
+      "label": "detail rows",
+      "version": "67ade5ced15317f3",
+      "script": "canopyx-detail-rows.js",
+      "style": "canopyx-detail-rows.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping",
+        "detail"
+      ]
+    },
+    {
+      "name": "grouping",
+      "label": "row grouping",
+      "version": "9d292c68656478fd",
+      "script": "canopyx-grouping.js",
+      "style": "canopyx-grouping.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping"
+      ],
+      "requires": [
+        "detail-rows"
+      ]
     }
   ]
 }

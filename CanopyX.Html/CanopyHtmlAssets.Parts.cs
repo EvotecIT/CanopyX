@@ -38,14 +38,20 @@ public static partial class CanopyHtmlAssets {
         return Parts.Where(part => part.IsNeededBy(view)).ToList().AsReadOnly();
     }
 
-    /// <summary>Gets the parts a flat grid loads, whose payloads a single-file page carries: the filter editor and export parts, and
-    /// the history part for status strips and sparklines, and the pager part for a paged view with pager settings.</summary>
+    /// <summary>Gets the parts a flat grid loads, whose payloads a single-file page carries: the filter editor and export parts, the
+    /// history part for status strips and sparklines, the pager part for a paged view with pager settings, the detail rows and
+    /// grouping parts for grouping, aggregates and detail rows, the parts of the other features the view uses, and the parts of a
+    /// nested detail grid or tree.</summary>
     /// <param name="view">The grid definition.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        return Parts.Where(part => part.IsNeededBy(view)).ToList().AsReadOnly();
+        // A nested detail grid or tree loads its own parts in the same page.
+        var nestedGrid = view.Reporting?.Detail?.View;
+        var nestedTree = view.Reporting?.Detail?.TreeView;
+        return Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree))
+            .ToList().AsReadOnly();
     }
 
     /// <summary>Writes a part's script and stylesheet under a naming; content-hashed files are written once.</summary>

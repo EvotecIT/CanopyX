@@ -2,7 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup } from "@evotecit/canopyx/grid";
 import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
@@ -573,3 +573,20 @@ CanopyX.configure("linked-tree", { linkEvents: true });
 void linked.setExternalFilter("open", { field: "load", range: [null, null] });
 // @ts-expect-error An external filter has values or a range, not both.
 void linked.setExternalFilter("both", { field: "load", values: [1], range: [1, 2] });
+// Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
+ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
+  detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });
+const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "orders", label: "Orders",
+  source: { kind: "inline" }, rows: [{ id: "o1", cells: { region: "North", amount: 10 }, detail: { type: "properties", items: [{ name: "Owner", value: "Ops" }] } }],
+  rowHeight: 32, pageSize: 100, selection: "multiple", search: true,
+  columns: [{ id: "region", title: "Region", kind: "text", sortable: true }, { id: "amount", title: "Amount", kind: "number", sortable: true }],
+  reporting: { groupBy: [{ column: "region", direction: "asc" }], groupable: true, detail: { print: false },
+    aggregates: [{ id: "total", column: "amount", operation: "sum", label: "Total" }, { id: "distinct", column: "region", operation: "distinctCount", label: "Regions" },
+      { id: "median", column: "amount", operation: "median", label: "Median" }] } },
+  detail: { hasDetail: row => !!row.detail, export: row => ({ type: "html", html: row.id }) } });
+const levels: readonly GroupLevel[] = groupedApi.getGroupBy?.() ?? [];
+void groupedApi.setGroupBy?.([...levels, { column: "amount", direction: "desc", aggregate: "total" }]);
+void groupedApi.setGroupLevelCollapsed?.(1, true); void groupedApi.expandAllGroups?.(); void groupedApi.expandDetail?.("o1");
+const expanded: string[] = groupedApi.getExpandedDetails?.() ?? [];
+const nestedGroups: readonly GridGroup[] | undefined = groupedApi.getSummary?.()?.groups[0]?.groups;
+void expanded; void nestedGroups;

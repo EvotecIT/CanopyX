@@ -37,9 +37,10 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Columns | Resize and hide | Resize, hide, reorder, pin and fit to content |
 | Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs |
 | Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting, conditional formatting and light/dark themes |
+| Grouping and details | Nested branches and detail rows | Multi-level row groups with labelled aggregates, and expandable detail rows holding a template, HTML or a nested grid or tree |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German, Spanish, French and Italian packs are included.
+Both views use virtual rows and support keyboard navigation. Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
 ## Installation
 

@@ -212,6 +212,41 @@
       "styles": [
         "CanopyX.Html/Assets/canopyx.link.source/link.css"
       ]
+    },
+    {
+      "name": "detail-rows",
+      "label": "detail rows",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["grouping", "detail"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "gridButton", "gridFreeze", "cellText", "requireIdentifier", "GridRowOffsets",
+        "TreeGrid", "createDataGrid", "createTreeGrid", "disposeRowHostCells", "OWN_ARROWS"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.detail-rows.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.detail-rows.source/detail-rows.css"
+      ]
+    },
+    {
+      "name": "grouping",
+      "label": "row grouping",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["grouping"],
+      "requires": ["detail-rows"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "numberFormat", "formatValue", "cellValue", "cellText", "isCellObject",
+        "gridScalar", "gridQuery", "gridFreeze", "gridOrder", "gridQueryRows", "gridButton", "gridDecorateButton", "gridCellRenderer", "gridPresenterTone",
+        "GRID_TONE_RANK", "validateGridRows", "validateGridPage", "checkDocument", "requireIdentifier", "validStructuralCount", "PROTOCOL", "gridOperationActive",
+        "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grouping.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.grouping.source/grouping.css"
+      ]
     }
   ]
 }

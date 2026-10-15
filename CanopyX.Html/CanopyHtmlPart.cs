@@ -27,6 +27,7 @@ public sealed class CanopyHtmlPart {
     private readonly string[] _views;
     private readonly string[] _sources;
     private readonly string[] _presenters;
+    private readonly string[] _features;
     private readonly bool _deepLink;
     private readonly bool _pager;
     private readonly bool _editable;
@@ -46,6 +47,7 @@ public sealed class CanopyHtmlPart {
         _views = List(entry, "views").ToArray();
         _sources = List(entry, "sources").ToArray();
         _presenters = List(entry, "presenters").ToArray();
+        _features = List(entry, "features").ToArray();
         _deepLink = entry.TryGetValue("deepLink", out var deepLink) && deepLink is bool flag && flag;
         _pager = entry.TryGetValue("pager", out var pager) && pager is bool pagerFlag && pagerFlag;
         _editable = entry.TryGetValue("editable", out var editable) && editable is bool editing && editing;
@@ -125,11 +127,23 @@ public sealed class CanopyHtmlPart {
     internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 && !_pager && _feature == null &&
         (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink);
 
-    /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters it names, or to views with pager settings.</summary>
+    /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters and features it names.</summary>
     internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink && (!_pager || view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault) &&
         (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
         (!_editable || view.Columns.Any(column => column.Editable)) &&
-        (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true);
+        (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true) &&
+        (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
+
+    /// <summary>Whether a grid uses a reporting feature a part serves: <c>grouping</c> (fixed or runtime grouping, or aggregates) or <c>detail</c> rows.</summary>
+    private static bool Uses(CanopyDataGridView view, string feature) {
+        var reporting = view.Reporting;
+        if (reporting == null) return false;
+        return feature switch {
+            "grouping" => reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0,
+            "detail" => reporting.Detail != null,
+            _ => false
+        };
+    }
 
     /// <summary>The wire name of an enum member: its name with a lowercase first letter (<c>StatusStrip</c> is <c>statusStrip</c>).</summary>
     private static string WireName(string name) => name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);

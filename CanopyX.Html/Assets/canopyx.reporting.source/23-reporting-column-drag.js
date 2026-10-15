@@ -33,17 +33,20 @@
         document.body.appendChild(ghost); frame = requestAnimationFrame(scroll);
       }
       ghost.style.left = ev.clientX + 12 + "px"; ghost.style.top = ev.clientY + 12 + "px"; locate();
+      this.groupBar?.classList.toggle("cx-group-drop", !!this.groupDrop && this.groupBar.contains(document.elementFromPoint(ev.clientX, ev.clientY)));
     };
     const stop = () => {
       global.removeEventListener("pointermove", move); global.removeEventListener("pointerup", end);
       global.removeEventListener("pointercancel", cancel); global.removeEventListener("blur", stop); global.removeEventListener("keydown", key);
       this.lifetime.signal.removeEventListener("abort", stop);
-      cancelAnimationFrame(frame); if (ghost) ghost.remove(); clear();
+      cancelAnimationFrame(frame); if (ghost) ghost.remove(); clear(); this.groupBar?.classList.remove("cx-group-drop");
       if (this.cancelColumnDrag === stop) this.cancelColumnDrag = null;
     };
     const end = ev => {
       if (ev.pointerId !== pointer) return;
-      const next = ghost && target, direction = after; stop();
+      const next = ghost && target, direction = after, grouped = ghost && this.groupBar?.contains(document.elementFromPoint(ev.clientX, ev.clientY)); stop();
+      // A header dropped on the group-by bar groups by its column (the grouping part) instead of moving it.
+      if (grouped && !this.destroyed && this.groupDrop?.(column)) return;
       if (next && !this.destroyed) this.moveReportingColumn(column, next, direction);
     };
     const cancel = ev => { if (ev.pointerId === pointer) stop(); };

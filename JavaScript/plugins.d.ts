@@ -34,6 +34,12 @@ export type CanopyCellRenderer =
 
 /** Typed cell editors that editable flat-grid columns choose by name (docs/editing.md). */
 export type { CanopyCellEditor, CanopyEditorContext, CanopyEditorInstance } from "./editing.js";
+/** A custom aggregate: the raw nonmissing values of a group (or the whole result) in, a finite number or null out. */
+export interface CanopyAggregate {
+  compute(values: readonly (string | number | boolean)[], context: { readonly column: string; readonly aggregate: string }): number | null;
+  /** The cell text, a template with {value}, for example "med {value}". Default "<name> {value}". */
+  readonly label?: string;
+}
 
 /** Reserved for named column types: plugins can register them now, and later features read them. */
 export interface CanopyColumnType { readonly [key: string]: unknown; }
@@ -77,6 +83,10 @@ export interface CanopyPlugin {
   readonly columnTypes?: Readonly<Record<string, CanopyColumnType>>;
   /** Typed cell editors by name; an editable flat-grid column chooses one with its editor type. */
   readonly editors?: Readonly<Record<string, import("./editing.js").CanopyCellEditor>>;
+  /** Custom aggregates by operation name: compute(values, context) returns a finite number or null; label is a "{value}" template. */
+  readonly aggregates?: Readonly<Record<string, CanopyAggregate | CanopyAggregate["compute"]>>;
+  /** Detail renderers by name; a reporting definition chooses one with detail.renderer. */
+  readonly detailRenderers?: Readonly<Record<string, (row: Readonly<{ id: string; cells: Readonly<Record<string, unknown>> }>, element: HTMLElement, context: { readonly id: string; readonly signal: AbortSignal; readonly api: unknown; readonly labels: Readonly<Record<string, string>>; onDispose(cleanup: () => void): void }) => void | PromiseLike<void>>>;
   /** Buttons in the toolbar's left-hand group, after Columns and before Views. */
   readonly toolbarItems?: readonly CanopyPluginItem[];
   /** Entries of the more menu, after the host's actions. */
