@@ -29,8 +29,9 @@
       seen.add(facet.column);
       const column = columns.get(facet.column), kind = facet.kind || (column.kind === "text" ? "list" : "range");
       if (kind === "range" && column.kind === "text") throw new Error("CanopyX: range facets need number or date columns.");
+      const order = kind === "list" ? facetDeclaredOrder(grid, column) : null;
       return { column: facet.column, def: column, kind, label: facet.label || column.title, limit: facet.limit || 8, bins: facet.bins || 16,
-        sort: facet.sort || (kind === "list" ? "count" : "value"), collapsed: !!facet.collapsed };
+        sort: facet.sort || (kind === "list" && !order ? "count" : "value"), order, collapsed: !!facet.collapsed };
     });
     if (merged.position !== undefined && !["side", "top"].includes(merged.position) || ["open", "collapsible"].some(key => merged[key] !== undefined && typeof merged[key] !== "boolean") ||
         merged.width !== undefined && (!Number.isInteger(merged.width) || merged.width < 180 || merged.width > 480) ||
@@ -43,6 +44,16 @@
       throw new Error("CanopyX: a hosted grid's facets must be declared reporting facet columns.");
     return { facets, hosted, position: merged.position || "side", open: merged.open !== false, collapsible: merged.collapsible !== false,
       width: merged.width || 260, label: merged.label || null, target: merged.target || null };
+  }
+
+  /**
+   * A column's declared value order, if it has one: its reporting category order, else the values its enum or state
+   * presenter names, in the order it names them. A value list then lists by that order (values it does not name follow).
+   */
+  function facetDeclaredOrder(grid, column) {
+    const presenter = column.presenter, values = grid.view.reporting?.ordering?.[column.id]?.categories ||
+      (presenter && (presenter.kind === "enum" || presenter.kind === "state") && presenter.tones ? Object.keys(presenter.tones) : null);
+    return values && values.length ? new Map(values.map((value, index) => [foldText(String(value)), index])) : null;
   }
 
   /**

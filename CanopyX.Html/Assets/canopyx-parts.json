@@ -301,7 +301,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "d3ca2f95e58dcf8f",
+      "version": "fedbac8a03dd5ab0",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [

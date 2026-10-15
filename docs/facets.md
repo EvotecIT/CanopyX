@@ -49,7 +49,7 @@ Each entry of `columns` (`CanopyFacetPanel.Facets`) is a column id, or an object
 | `label` | `Label` | the column's title | The facet's heading. |
 | `limit` | `Limit` | 8 | Values a list shows before "Show N more" (1 to 200). |
 | `bins` | `Bins` | 16 | Bars in a range's histogram (2 to 60). |
-| `sort` | `Sort` | `count` | `count` (most frequent first) or `value` (as the column's value lists order values). |
+| `sort` | `Sort` | `count`, or `value` when the column declares an order | `count` (most frequent first) or `value` (the column's declared order, else as its value lists order values). |
 | `collapsed` | `Collapsed` | false | Starts the facet collapsed to its heading. |
 
 ### Value lists
@@ -58,6 +58,11 @@ A list shows the column's values with their counts over the result without this 
 column's cells show them (a state presenter's pill, for example); an empty cell is "(Empty)". Ticking values filters the
 column to them (`in`, with `isNull` for the empty value); unticking the last one clears the column. A value the other facets
 exclude stays listed with a zero count while it is ticked, so it can be unticked.
+
+A column declares an order through its reporting category order (`reporting.ordering`, C# `CanopyColumn.Ordering`) or, failing
+that, the values its enum or state presenter names, in the order it names them (a priority presenter naming Urgent, High and
+Normal lists Urgent, High, Normal, then the values it does not name, such as Low). A list facet of such a column lists by that
+order unless its `sort` is `count`; other columns keep the order above.
 
 Above twelve values a search box narrows the list (a hosted grid searches at its source). A hosted grid's list is bounded to
 200 values; when there are more, a note says how many and the search finds the others.

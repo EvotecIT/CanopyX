@@ -37,7 +37,7 @@
       let items = counts.items.filter(item => !needle || item.value !== null && foldText(String(item.value)).includes(needle));
       // A chosen value the other facets exclude stays listed (count 0) so it can be unchosen; not while a hosted search hides it.
       if (!(facet.hosted && state.search)) for (const value of state.chosen) if (!items.some(item => facetKey(item.value, facet.def) === facetKey(value, facet.def))) items.push({ value, count: 0 });
-      items.sort(facet.sort === "count" ? (a, b) => b.count - a.count || facetValueOrder(a.value, b.value, facet.def) : (a, b) => facetValueOrder(a.value, b.value, facet.def));
+      items.sort(facet.sort === "count" ? (a, b) => b.count - a.count || facetValueOrder(a.value, b.value, facet) : (a, b) => facetValueOrder(a.value, b.value, facet));
       // Show more lists at most 200 values; the search finds the others.
       const shown = state.expanded ? items.filter((item, index) => index < FACET_VALUES || chosen.has(facetKey(item.value, facet.def))) : items.filter((item, index) => index < facet.limit || chosen.has(facetKey(item.value, facet.def)));
       const numbers = numberFormat(grid.lang);
@@ -64,9 +64,17 @@
     return { draw, search: () => state.search, update(counts) { state.counts = counts; draw(); } };
   }
 
-  /** Orders facet values as value lists do: booleans first, then text by its folding (numbers by value), the empty bucket last. */
-  function facetValueOrder(a, b, column) {
+  /**
+   * Orders facet values by the column's declared order when it has one, else as value lists do: booleans first, then text
+   * by its folding (numbers by value); the empty bucket last.
+   */
+  function facetValueOrder(a, b, facet) {
+    const column = facet.def;
     if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+    if (facet.order) {
+      const at = facet.order.get(foldText(String(a))) ?? Infinity, bt = facet.order.get(foldText(String(b))) ?? Infinity;
+      if (at !== bt) return at < bt ? -1 : 1;
+    }
     if (column.kind !== "text") return gridOrder(gridScalar(a, column), gridScalar(b, column));
     if (typeof a !== typeof b) return typeof a === "boolean" ? -1 : 1;
     return gridOrder(typeof a === "string" ? foldText(a) : a, typeof b === "string" ? foldText(b) : b);
