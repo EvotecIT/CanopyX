@@ -27,6 +27,8 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridCommit` | The editing part | A grid asks its writer to save changed rows ([Editing and commit](#editing-and-commit)) |
+| `gridCommitResult` | The host's writer | The writer answers per row: saved, error or conflict |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -204,13 +206,15 @@ Selected exports add `request.querySelection` when this mode is active. They ret
 
 ### Flat groups and complete-query totals
 
-Reporting definitions opt in through `grouping: { column, direction }`, `aggregates`, or both. Grouping uses one declared sortable raw column. Its key leads every query sort; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. These are flat-grid headings, with no tree hierarchy or tree keyboard semantics.
+Reporting definitions opt in through a fixed `grouping: { column, direction }`, runtime grouping (`groupBy` and/or `groupable`), `aggregates`, or a combination of grouping and aggregates; a fixed grouping cannot be combined with `groupBy` or `groupable`. A fixed grouping uses one declared sortable raw column. Runtime grouping uses up to four ordered levels `{ column, direction, aggregate? }` of declared sortable columns, declared in `groupBy` and changed by readers when `groupable` is true (see [grouping.md](grouping.md)). Grouping keys lead every query sort, outermost first; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. One level gives flat-grid headings, with no tree hierarchy or tree keyboard semantics; two or more levels make the grid a `treegrid` whose rows carry `aria-level`.
 
-Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
+Queries of a runtime-grouping definition always carry `groupBy`, the ordered levels (an empty array when ungrouped); input without it takes the declared levels. The levels' columns lead `sort`, each with its level's direction, or ascending for a level ordered by an aggregate; a sort entry for a grouped column that the reader sets turns that level's groups around. A level with `aggregate` orders its groups by that declared aggregate's value in `direction`, missing values last and equal values by raw value ascending; its records stay contiguous by value. Fixed-grouping queries keep their earlier shape, without `groupBy`.
+
+Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells and `distinctCount` distinct nonmissing raw values in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Any other operation name (a lowercase letter and up to 31 letters and digits) is a custom aggregate: a browser plugin computes it for inline data and a host source computes it itself; its value is a finite number or null. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
 
 Groups optionally carry `cells`, a map of declared column IDs to ordinary display cells. These cells use the column presenter; numeric aggregates and the first-column group label take precedence. Hosts supply complete-group states or other display facts. Inline summaries choose the worst semantic tone from each group's `state` and `enum` columns across the complete query, including records outside the current page. The severity order is danger, warning, info, success, neutral; unknown host tones rank with info. Display cells never become records or alter filtering, sorting, selection or export.
 
-Hosted sources provide `source.summary(query, { signal })`. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
+Hosted sources provide `source.summary(query, { signal })`. A source's `query` hook receives the same `groupBy` and must return records in the level order, as the summary describes it. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
 
 ```json
 { "protocol": "canopyx/2", "type": "gridSummary", "view": "inventory", "revision": "r1",
@@ -220,12 +224,56 @@ Hosted sources provide `source.summary(query, { signal })`. The request is the c
   "groups": [{ "key": "category-a", "value": "A", "offset": 0, "count": 3, "aggregates": { "total": 12 } }] }
 ```
 
-Groups cover every matching record in contiguous declared order. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges, aggregate bindings and page-to-group membership before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
+With several levels, every group of an outer level lists the next level's groups in `groups`, covering its records in contiguous ranges (absolute `offset`s into the complete query); groups of the innermost level omit `groups`:
 
-Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Each aggregate cell names its function through the `gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum` and `gridAggregateMaximum` labels (`{value}` is the formatted number, for example `avg 36.2`). Values use the column's precision (the most fraction digits among its loaded raw values, at most three; averages one more, counts none) and a compact form from one million (`sum 12.7M`); the cell's tooltip gives the aggregate's label and the full value. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+```json
+"groups": [{ "key": "north", "value": "North", "offset": 0, "count": 3, "aggregates": { "total": 30 },
+  "groups": [{ "key": "north/open", "value": "Open", "offset": 0, "count": 2, "aggregates": { "total": 20 } },
+             { "key": "north/closed", "value": "Closed", "offset": 2, "count": 1, "aggregates": { "total": 10 } }] }]
+```
 
-`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)` and `getCollapsedGroups()` manage presentation. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+Groups cover every matching record in contiguous declared order, level by level. Keys are unique across the whole summary (an inner key usually extends its outer group's key), so collapse state names a group of any level. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups across all levels and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges at every level, level order, aggregate bindings and page-to-group membership (each record's value at each level) before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
 
+Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Each aggregate cell names its function through the `gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum`, `gridAggregateMaximum` and `gridAggregateDistinct` labels (a custom aggregate through the `{value}` label its plugin registers) (`{value}` is the formatted number, for example `avg 36.2`). Values use the column's precision (the most fraction digits among its loaded raw values, at most three; averages one more, counts none) and a compact form from one million (`sum 12.7M`); the cell's tooltip gives the aggregate's label and the full value. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+
+`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)`, `setGroupLevelCollapsed(level, boolean)`, `expandAllGroups()`, `collapseAllGroups()` and `getCollapsedGroups()` manage presentation; `setGroupBy(levels)` and `getGroupBy()` change and read runtime levels. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Exports of the filtered result add `request.grouping` (`levels` with titles, `aggregates`, `totals` and the nested `groups` with ranges, values, display `text` and aggregates) so a format writer can produce outline levels; selected and all-record exports carry none. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+
+#### What a server adapter implements for multi-level grouping
+
+A summary endpoint that serves only a fixed grouping keeps working for definitions that declare `grouping`. For runtime
+grouping, an adapter such as `CanopyX.Data` (which serves single-level `gridSummary` today) adds:
+
+1. **Request parsing.** Read `groupBy` from `gridQuery` (absent for fixed-grouping definitions, always present otherwise):
+   up to four `{ column, direction, aggregate? }` levels of distinct declared sortable columns, allowed by the column
+   allow-list, with `aggregate` naming a declared aggregate. Reject a `groupBy` the definition does not allow.
+   `CanopySummaryRequest` exposes the ordered levels (for example `IReadOnlyList<CanopySummaryLevel> Levels` with the column,
+   descending flag and optional aggregate) in place of the single `GroupColumn`/`GroupDescending`.
+2. **Record order.** Page queries order records level by level before the remaining sorts and identity: by the level's
+   value, missing values last, with the protocol's raw-value ties (`CanopyGridGrouping.CreateComparer` for each level), or,
+   for an aggregate level, by the group's aggregate (a grouped subquery or window aggregate joined back to the records),
+   missing aggregates last and ties by value ascending.
+3. **Nested summaries.** The provider groups by every level prefix (for example `GROUP BY region` and
+   `GROUP BY region, status`, or one `GROUP BY` with rollup) and returns each group's count and aggregates; the handler
+   orders sibling groups by the level's order, assigns contiguous absolute offsets parent by parent, nests inner groups
+   under `groups`, and emits keys unique across levels (`GroupKey` of the outer key and the value, for example
+   `s:North/s:Open`). The 10,000-group limit counts every level; ungrouped requests (`groupBy: []`) return no groups.
+4. **Aggregates.** Add `distinctCount` (count of distinct nonmissing values in any column) and accept custom operation names
+   only when a registered provider computes them; reject unknown ones as unsupported.
+5. **Echo and checks.** Echo the normalized query including `groupBy`; validate sibling order, contiguity and
+   `sum(count) == matched` at every level before writing, as `CanopyGridSummary.ToJson` does for native responses.
+
+### Grid detail rows
+
+`reporting.detail` gives reporting grids expandable detail rows (see [grouping.md](grouping.md#detail-rows)). It holds at
+most one content source: `template` (the id of a page `<template>`), `renderer` (a plugin detail renderer name) or `view`
+(a nested `grid` or tree `view` document whose inline data comes from each record). Without one, records carry their own
+payloads. `print: false` leaves details out of exports and print snapshots; `label` describes the content.
+
+A grid row's optional `detail` is a table, properties or html payload (as on tree [detail rows](#detail-rows), without
+`height`: grid detail rows always measure their content), `{ "type": "grid", "rows": [...] }` for the nested grid or
+`{ "type": "tree", "roots": [...] }` for the nested tree. Detail payloads never join queries, sorting, search or record
+counts. Exports that include details add `details: true` to the request, and each exported record a `detail` table,
+properties or html payload (nested rows become a table of the nested view's visible columns).
 ### Safe cell presenters
 
 Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
@@ -269,6 +317,58 @@ Layout policies also accept `pin: "none" | "left" | "right"`, nonnegative integr
 Effective pins leave `reporting.minimumCenterWidth` CSS pixels (default 128, range 40..4096) for the center. If an edge cannot fit, its pins suspend from that edge's first oversized column inward; requested placement and widths remain saved. `api.getColumnLayout()` distinguishes `requestedPin`, effective `pin`, `visible`, `hiddenReason` (`null`, `"user"`, `"priority"` or `"phone"`), `responsiveHidden` and rendered `width`; `visible` is false for every column out of view, including those hidden by priority or the phone layout (see [column layout](column-layout.md#api-and-events)). Header and cell keyboard focus reveal the scrolling center without being covered by effective pins. Ordinary trees retain their existing pinned-tree behavior.
 
 `reporting.responsive: true` temporarily hides requested columns until their base widths fit, hiding larger priorities first and equal priorities from the end of current order. It retains at least one requested field and all `alwaysVisible` fields; protected fields wider than the viewport use horizontal scrolling. Explicit user visibility remains separate and survives viewport changes. Responsive hiding changes neither search/filter/sort meanings nor full record details. Default export columns include every user-visible column in the grouped display order, including temporarily hidden fields; an explicit export column list retains its caller-defined order. The chooser marks temporarily hidden fields and provides translated pin controls through `gridPinColumn`, `gridPinNone`, `gridPinLeft`, `gridPinRight` and `gridResponsiveHidden`.
+
+### Editing and commit
+
+Grid columns may declare `editable: true`, an `editor` and `validation`; the grid may declare `editing` (`readOnly`, `mode`
+`cell` or `row`, `drawer` `phone`, `always` or `never`, `editBar`). The fields are optional additions to `canopyx/2`;
+[editing.md](editing.md) describes the behaviour and `$defs/gridEditor`, `$defs/gridValidation` the shapes. `editor` is an
+editor name (`text`, `number`, `date`, `datetime`, `time`, `select`, `toggle`, `lookup`, or a name a plugin or the host
+registers) or `{ type, min?, max?, step?, placeholder?, options?, lookup? }`. `validation` is `{ required?, min?, max?,
+minLength?, maxLength?, pattern?, message? }`; `min` and `max` are numbers, or ISO 8601 moments for date-and-time columns.
+Edited values follow the cell rules of this document: numbers within the safe integer magnitude, ISO 8601 moments with an
+explicit time zone (the runtime writes UTC with `Z`), text and booleans.
+
+A grid saves changed rows by sending a `gridCommit` document to its writer: the host's `editing.commit(batch, { signal })`,
+or the source's `commit(batch, { signal })`. A remote source posts it, for example to `POST {pattern}/commit` beside its
+`query` and `facet` endpoints.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridCommit", "view": "assets", "revision": "r41",
+  "rows": [
+    { "id": "asset-003", "values": { "cost": 1250, "status": "Repair" }, "original": { "cost": 1180.5, "status": "In use" } },
+    { "id": "asset-007", "values": { "owner": "Chen Wu" }, "original": { "owner": "Ada Park" } } ] }
+```
+
+- `revision` is the dataset revision the grid read (the accepted query's), or `null` before one was accepted.
+- `rows` holds at least one row: its `id`, the raw `values` of its changed columns, and the raw `original` values the reader
+  started from for those columns (`null` for a missing value). Only rows whose checks passed are sent.
+
+The writer answers with a `gridCommitResult`, one entry per row it handled:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridCommitResult", "view": "assets", "revision": "r42",
+  "rows": [
+    { "id": "asset-003", "status": "saved", "cells": { "cost": { "value": 1250, "text": "1,250.00" } } },
+    { "id": "asset-007", "status": "conflict", "error": "Someone else changed the owner." } ] }
+```
+
+- `status` is `saved`, `error` or `conflict`. A saved row may carry canonical `cells` (grid cells, validated like page rows)
+  that replace the shown ones; other rows may carry an `error` message and `errors` by column. A row the answer leaves out
+  was not saved.
+- `revision` is optional: the dataset revision after the commit. The grid reports it in the commit result and keeps
+  reading pages at the revision it accepted; a host whose source no longer serves that revision reloads the grid.
+- A transport failure (a non-success status, invalid JSON, a document that does not answer the batch: another view, an
+  unknown or repeated row, an unknown status, `cells` on a row that was not saved) fails every row of the batch with the
+  reason. The grid keeps their changes.
+
+**What a writer does.** It authorizes the caller and every changed column (editable columns are a presentation contract,
+not authority), validates the values with its own rules (the view's `validation` mirrors them), and executes each row
+independently, so one row's failure does not discard the others. For concurrency it checks the batch `revision` against
+its current one and, where they differ, compares each row's `original` values with what it stores: a row whose stored
+values differ is a `conflict` and is not written. A writer that cannot check rows individually may answer every row of a
+stale batch with `conflict`. It answers with the revision after the commit. Writes are the writer's own, governed by its
+write policy; CanopyX only raises the request.
 
 ## View
 
@@ -333,7 +433,7 @@ A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or 
 
 ### Host Interaction Proposals
 
-Optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly.
+In tree views, optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly. Flat grids edit through the editing part instead ([Editing and commit](#editing-and-commit)).
 
 | Proposal | Fields |
 | --- | --- |

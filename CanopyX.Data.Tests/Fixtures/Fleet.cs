@@ -59,6 +59,37 @@ public static class Fleet {
     }
 
     /// <summary>The grid definition: every kind, value lists, aggregates, an optional fixed grouping.</summary>
+    /// <summary>The grid definition with runtime grouping: declared levels site then operating system, readers may regroup, and a distinct count.</summary>
+    public static CanopyDataGridView DynamicView() {
+        var view = View();
+        view.Reporting!.Groupable = true;
+        view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("site"));
+        view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os", descending: true));
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("ownerDistinct", "owner", CanopyGridAggregateOperation.DistinctCount, "Owners"));
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("seenDistinct", "lastSeen", CanopyGridAggregateOperation.DistinctCount, "Distinct last seen"));
+        return view;
+    }
+
+    /// <summary>The grid definition with editable columns, typed editors and validation; the owner (a navigation) stays read-only.</summary>
+    public static CanopyDataGridView EditableView() {
+        var view = View();
+        void Edit(string id, CanopyCellEditor? editor = null, CanopyCellValidation? validation = null) {
+            var column = view.Columns.First(item => item.Id == id);
+            column.Editable = true;
+            column.Editor = editor;
+            column.Validation = validation;
+        }
+        Edit("name", null, new CanopyCellValidation { Required = true, MaxLength = 12, Pattern = "[A-Za-z0-9-]+" });
+        Edit("site", CanopyCellEditor.Select("Berlin", "Austin", "Oslo", "Zurich"));
+        Edit("os");
+        Edit("cores", CanopyCellEditor.Number(1, 512, 1));
+        Edit("memory", null, new CanopyCellValidation { Minimum = 0, Maximum = 1024 });
+        Edit("online", CanopyCellEditor.Toggle());
+        Edit("lastSeen", null, new CanopyCellValidation { Earliest = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) });
+        Edit("notes", null, new CanopyCellValidation { MinLength = 2, MaxLength = 64, Message = "Notes take 2 to 64 characters." });
+        return view;
+    }
+
     public static CanopyDataGridView View(bool grouped = false, bool explicitSearch = true, string groupColumn = "site") {
         var view = new CanopyDataGridView("fleet", "Fleet inventory") { Source = CanopyGridSource.HostedOffset(), PageSize = 50, Selection = CanopySelectionMode.Multiple };
         view.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });

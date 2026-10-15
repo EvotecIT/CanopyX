@@ -29,5 +29,9 @@ public enum CanopyRequestError {
     /// <summary>The export scope, selection or column list is invalid, or the record count changed.</summary>
     InvalidExport,
     /// <summary>The export format is not registered.</summary>
-    UnknownFormat
+    UnknownFormat,
+    /// <summary>The <c>groupBy</c> levels are malformed, name a column that is not sortable or an undeclared aggregate, or the view does not group at runtime.</summary>
+    InvalidGroupBy,
+    /// <summary>A commit changes a column that the view does not declare editable or that this endpoint does not write.</summary>
+    ColumnNotEditable
 }

@@ -59,7 +59,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     public ValueTask<CanopyPageResult> QueryAsync(CanopyDataRequest request, CancellationToken cancellationToken) {
         Own(request);
         var all = Load(cancellationToken);
-        var matches = Order(Select(all, request), request.Sort);
+        var matches = Arrange(Select(all, request), request);
         var rows = matches.Skip(request.Offset).Take(request.Limit).Select(Row);
         return new ValueTask<CanopyPageResult>(new CanopyPageResult(all.Count, matches.Count, rows));
     }
@@ -74,7 +74,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     public async IAsyncEnumerable<CanopyGridRow> ReadAsync(CanopyDataRequest request, [EnumeratorCancellation] CancellationToken cancellationToken) {
         Own(request);
         await Task.Yield();
-        foreach (var record in Order(Select(Load(cancellationToken), request), request.Sort).Skip(request.Offset).Take(request.Limit)) {
+        foreach (var record in Arrange(Select(Load(cancellationToken), request), request).Skip(request.Offset).Take(request.Limit)) {
             cancellationToken.ThrowIfCancellationRequested();
             yield return Row(record);
         }
@@ -104,48 +104,67 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     public ValueTask<CanopySummaryResult> SummarizeAsync(CanopySummaryRequest request, CancellationToken cancellationToken) {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
+        foreach (var aggregate in request.Aggregates) Supported(aggregate);
         var matches = Select(Load(cancellationToken), request.Query);
-        var groups = new List<CanopySummaryGroup>();
-        if (request.GroupColumn != null) {
-            var ordinal = request.GroupColumn.Ordinal;
-            foreach (var group in matches.GroupBy(record => CanopyRemoteHandler.GroupKey(record.Values[ordinal]), StringComparer.Ordinal)) {
-                var members = group.ToList();
-                groups.Add(new CanopySummaryGroup(members[0].Values[ordinal], members.Count, Aggregate(request, members)));
-            }
-        }
+        var groups = request.Levels.Count == 0 ? new List<CanopySummaryGroup>() : Groups(request, matches, 0);
         return new ValueTask<CanopySummaryResult>(new CanopySummaryResult(matches.Count, Aggregate(request, matches), groups));
+    }
+
+    /// <summary>The groups of one level over some records, each with the groups of the next level; the handler orders them.</summary>
+    private static List<CanopySummaryGroup> Groups(CanopySummaryRequest request, List<Record> records, int depth) {
+        var ordinal = request.Levels[depth].Column.Ordinal;
+        var groups = new List<CanopySummaryGroup>();
+        foreach (var group in records.GroupBy(record => CanopyRemoteHandler.GroupKey(record.Values[ordinal]), StringComparer.Ordinal)) {
+            var members = group.ToList();
+            var inner = depth + 1 < request.Levels.Count ? Groups(request, members, depth + 1) : null;
+            groups.Add(new CanopySummaryGroup(members[0].Values[ordinal], members.Count, Aggregate(request, members), inner));
+        }
+        return groups;
     }
 
     private static Dictionary<string, double?> Aggregate(CanopySummaryRequest request, IReadOnlyList<Record> records) {
         var values = new Dictionary<string, double?>(StringComparer.Ordinal);
-        foreach (var aggregate in request.Aggregates) {
-            var ordinal = aggregate.Column.Ordinal;
-            int count = 0;
-            double sum = 0, compensation = 0, minimum = double.MaxValue, maximum = double.MinValue;
-            foreach (var record in records) {
-                var raw = record.Values[ordinal];
-                if (raw == null) continue;
-                count++;
-                if (aggregate.Operation == CanopyGridAggregateOperation.Count) continue;
-                var number = CanopyDataValues.ToDouble(raw);
-                // Neumaier's compensated summation, as the browser runtime sums inline groups.
-                var total = sum + number;
-                compensation += Math.Abs(sum) >= Math.Abs(number) ? sum - total + number : number - total + sum;
-                sum = total;
-                minimum = Math.Min(minimum, number);
-                maximum = Math.Max(maximum, number);
-            }
-            values[aggregate.Id] = aggregate.Operation switch {
-                CanopyGridAggregateOperation.Count => count,
-                _ when count == 0 => null,
-                CanopyGridAggregateOperation.Sum => sum + compensation,
-                CanopyGridAggregateOperation.Average => (sum + compensation) / count,
-                CanopyGridAggregateOperation.Minimum => minimum,
-                _ => maximum
-            };
-        }
+        foreach (var aggregate in request.Aggregates) values[aggregate.Id] = Aggregate(aggregate, records);
         return values;
     }
+
+    private static double? Aggregate(CanopySummaryAggregate aggregate, IReadOnlyList<Record> records) {
+        var ordinal = aggregate.Column.Ordinal;
+        int count = 0;
+        double sum = 0, compensation = 0, minimum = double.MaxValue, maximum = double.MinValue;
+        var distinct = aggregate.Operation == CanopyGridAggregateOperation.DistinctCount ? new HashSet<string>(StringComparer.Ordinal) : null;
+        foreach (var record in records) {
+            var raw = record.Values[ordinal];
+            if (raw == null) continue;
+            count++;
+            if (distinct != null) { distinct.Add(CanopyRemoteHandler.GroupKey(raw)); continue; }
+            if (aggregate.Operation == CanopyGridAggregateOperation.Count) continue;
+            var number = CanopyDataValues.ToDouble(raw);
+            // Neumaier's compensated summation, as the browser runtime sums inline groups.
+            var total = sum + number;
+            compensation += Math.Abs(sum) >= Math.Abs(number) ? sum - total + number : number - total + sum;
+            sum = total;
+            minimum = Math.Min(minimum, number);
+            maximum = Math.Max(maximum, number);
+        }
+        return aggregate.Operation switch {
+            CanopyGridAggregateOperation.Count => count,
+            CanopyGridAggregateOperation.DistinctCount => distinct!.Count,
+            _ when count == 0 => null,
+            CanopyGridAggregateOperation.Sum => sum + compensation,
+            CanopyGridAggregateOperation.Average => (sum + compensation) / count,
+            CanopyGridAggregateOperation.Minimum => minimum,
+            CanopyGridAggregateOperation.Maximum => maximum,
+            _ => throw Unsupported(aggregate)
+        };
+    }
+
+    private static void Supported(CanopySummaryAggregate aggregate) {
+        if (aggregate.Operation == CanopyGridAggregateOperation.Custom) throw Unsupported(aggregate);
+    }
+
+    private static CanopyRequestException Unsupported(CanopySummaryAggregate aggregate) =>
+        new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute the custom aggregate '" + aggregate.CustomOperation + "'.");
 
     private List<Record> Load(CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
@@ -180,6 +199,26 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
             : group.Children.Any(child => Matches(record, child)),
         _ => false
     };
+
+    /// <summary>Orders matching records: level by level (each level's groups in their order: by value, or by an aggregate of the
+    /// group), then by the other sort keys inside the innermost groups, and by record identity last.</summary>
+    private List<Record> Arrange(List<Record> records, CanopyDataRequest request) =>
+        request.Levels.Count == 0 ? Order(records, request.Sort) : Arrange(records, request.Levels, 0, request.InnerSort);
+
+    private List<Record> Arrange(List<Record> records, IReadOnlyList<CanopySummaryLevel> levels, int depth, IReadOnlyList<CanopySortKey> inner) {
+        if (depth == levels.Count) return Order(records, inner);
+        var level = levels[depth];
+        var ordinal = level.Column.Ordinal;
+        if (level.Aggregate != null) Supported(level.Aggregate);
+        var groups = records.GroupBy(record => CanopyRemoteHandler.GroupKey(record.Values[ordinal]), StringComparer.Ordinal).Select(group => {
+            var members = group.ToList();
+            return (Value: members[0].Values[ordinal], Members: members, Aggregate: level.Aggregate == null ? null : Aggregate(level.Aggregate, members));
+        }).ToList();
+        groups.Sort(GroupOrdering.Create<(object? Value, List<Record> Members, double? Aggregate)>(Schema, level, group => group.Value, group => group.Aggregate));
+        var ordered = new List<Record>(records.Count);
+        foreach (var group in groups) ordered.AddRange(Arrange(group.Members, levels, depth + 1, inner));
+        return ordered;
+    }
 
     private static List<Record> Order(List<Record> records, IReadOnlyList<CanopySortKey> sort) {
         var ordered = records.ToArray();

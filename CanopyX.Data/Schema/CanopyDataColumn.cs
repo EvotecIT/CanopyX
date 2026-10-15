@@ -48,4 +48,13 @@ public sealed class CanopyDataColumn {
 
     /// <summary>Gets whether the view declares a value list (facet) for this column.</summary>
     public bool Facetable { get; }
+
+    /// <summary>Gets whether the view declares the column editable, so a commit may change it (subject to the writer and its policy).</summary>
+    public bool Editable => Definition.Editable;
+
+    /// <summary>Gets the checks an edited value must pass, as the view declares them, or null.</summary>
+    public CanopyCellValidation? Validation => Definition.Validation;
+
+    /// <summary>Gets the column's typed editor, as the view declares it, or null for the editor of its kind.</summary>
+    public CanopyCellEditor? Editor => Definition.Editor;
 }

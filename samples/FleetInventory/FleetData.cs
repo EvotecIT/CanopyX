@@ -40,9 +40,10 @@ public sealed class FleetDb : DbContext {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         var machine = modelBuilder.Entity<Machine>();
         machine.HasOne(item => item.Team).WithMany().HasForeignKey(item => item.TeamId);
-        // Indexes for the default order, the grouping column and common filters keep windows and counts cheap.
+        // Indexes for the default order, the grouping columns and common filters keep windows and counts cheap.
         machine.HasIndex(item => item.Name);
         machine.HasIndex(item => new { item.Site, item.Name });
+        machine.HasIndex(item => new { item.Site, item.Os, item.Name });
         machine.HasIndex(item => item.Os);
         machine.HasIndex(item => item.LastSeen);
     }

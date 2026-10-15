@@ -27,6 +27,9 @@ public sealed class CanopyGridRow {
     public CanopyTone Tone { get; set; }
     /// <summary>Gets or sets additional row CSS classes, at most 1,024 characters without controls.</summary>
     public string? ClassName { get; set; }
+    /// <summary>Gets or sets the record's detail payload for a reporting grid with <see cref="CanopyGridReporting.Detail"/>: a table,
+    /// properties or trusted HTML, or the data of the definition's nested grid or tree. Null shows no expander for payload details.</summary>
+    public CanopyDetail? Detail { get; set; }
 
     internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null) {
         CanopyCell.ValidateEntries(Cells);
@@ -48,6 +51,8 @@ public sealed class CanopyGridRow {
             if (cell.Value == null) writer.Null();
             else cell.Value.WriteJson(writer);
         }
-        writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
+        writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName);
+        if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
+        writer.EndObject();
     }
 }

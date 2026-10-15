@@ -77,7 +77,7 @@ internal sealed partial class QueryTranslator<T> {
         return ExpressionTools.InList(item, keys);
     }
 
-    private static object? ParseKey(string id, Type type) {
+    internal static object? ParseKey(string id, Type type) {
         if (type == typeof(string)) return id;
         if (type == typeof(Guid)) return Guid.TryParse(id, out var guid) ? guid : (object?)null;
         if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(uint) || type == typeof(ushort) || type == typeof(byte)) {

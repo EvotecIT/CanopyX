@@ -25,10 +25,12 @@ public sealed partial class CanopyRemoteHandler {
     /// <param name="schema">The column allow-list.</param>
     /// <param name="provider">The data provider.</param>
     /// <param name="options">Limits and export formats; null uses the defaults.</param>
-    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options = null) {
+    /// <param name="writer">Saves commits; null serves reads only, and commits answer <see cref="CanopyRequestError.Unsupported"/>.</param>
+    public CanopyRemoteHandler(CanopyDataSchema schema, ICanopyDataProvider provider, CanopyRemoteOptions? options = null, ICanopyDataWriter? writer = null) {
         Schema = schema ?? throw new ArgumentNullException(nameof(schema));
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
         Options = options ?? new CanopyRemoteOptions();
+        Writer = writer;
         foreach (var format in Options.ExportFormats) {
             if (format == null || !ValidFormatId(format.Id)) throw new ArgumentException("Export format identities are 1 to 32 lowercase ASCII letters, digits and hyphens.", nameof(options));
             _formats[format.Id] = format;
@@ -40,6 +42,9 @@ public sealed partial class CanopyRemoteHandler {
 
     /// <summary>Gets the data provider.</summary>
     public ICanopyDataProvider Provider { get; }
+
+    /// <summary>Gets the writer that saves commits, or null for a read-only endpoint.</summary>
+    public ICanopyDataWriter? Writer { get; }
 
     /// <summary>Gets the options.</summary>
     public CanopyRemoteOptions Options { get; }

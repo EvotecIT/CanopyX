@@ -9,7 +9,8 @@ namespace CanopyX.Data;
 /// <remarks>
 /// A provider applies, in this order: the optional identity restriction (<see cref="Ids"/> and <see cref="ExcludedIds"/>),
 /// quick search (<see cref="SearchTerms"/>, every term matching at least one searchable column), the filter expression,
-/// the sort keys followed by stable record identity, and finally the window (<see cref="Offset"/>, <see cref="Limit"/>).
+/// the grouping levels (<see cref="Levels"/>), the other sort keys followed by stable record identity, and finally the
+/// window (<see cref="Offset"/>, <see cref="Limit"/>).
 /// Instances are immutable; the <c>With…</c> methods return copies.
 /// </remarks>
 public sealed class CanopyDataRequest {
@@ -24,9 +25,13 @@ public sealed class CanopyDataRequest {
     /// <param name="offset">The nonnegative offset into the ordered matching records.</param>
     /// <param name="limit">The nonnegative maximum number of records to return.</param>
     /// <param name="revision">The dataset revision the client expects, or null for the current one.</param>
+    /// <param name="levels">The grouping levels, outermost first (at most four, distinct allowed columns). Null uses the schema's
+    /// fixed grouping or declared <c>groupBy</c> levels; an empty sequence is ungrouped.</param>
     public CanopyDataRequest(CanopyDataSchema schema, CanopyFilterNode? filter = null, IEnumerable<CanopySortKey>? sort = null, string? search = null,
-        CanopyGridSearchMode searchMode = CanopyGridSearchMode.Substring, int offset = 0, int limit = 100, string? revision = null) {
+        CanopyGridSearchMode searchMode = CanopyGridSearchMode.Substring, int offset = 0, int limit = 100, string? revision = null,
+        IEnumerable<CanopySummaryLevel>? levels = null) {
         Schema = schema ?? throw new ArgumentNullException(nameof(schema));
+        Levels = levels == null ? DefaultLevels(schema) : CheckLevels(schema, levels);
         if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
         if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit));
         if (searchMode != CanopyGridSearchMode.Substring && searchMode != CanopyGridSearchMode.Words) throw new ArgumentOutOfRangeException(nameof(searchMode));
@@ -46,11 +51,33 @@ public sealed class CanopyDataRequest {
     private CanopyDataRequest(CanopyDataRequest source) {
         Schema = source.Schema; Filter = source.Filter; Sort = source.Sort; Search = source.Search; SearchMode = source.SearchMode;
         SearchTerms = source.SearchTerms; Offset = source.Offset; Limit = source.Limit; Revision = source.Revision;
-        Ids = source.Ids; ExcludedIds = source.ExcludedIds; RawQuery = source.RawQuery;
+        Ids = source.Ids; ExcludedIds = source.ExcludedIds; RawQuery = source.RawQuery; Levels = source.Levels;
     }
 
     /// <summary>Gets the column allow-list.</summary>
     public CanopyDataSchema Schema { get; }
+
+    /// <summary>Gets the grouping levels, outermost first; empty when the request is ungrouped.</summary>
+    /// <remarks>
+    /// Records are ordered level by level before the remaining sort keys: by each level's value, or for a level with an
+    /// aggregate by that aggregate over the group, as <see cref="CanopySummaryLevel"/> describes. The levels' columns also lead
+    /// <see cref="Sort"/>, as they do on the wire; providers order by the levels and then by the sort keys of other columns.
+    /// </remarks>
+    public IReadOnlyList<CanopySummaryLevel> Levels { get; private set; }
+
+    /// <summary>The sort keys that apply inside the innermost groups: <see cref="Sort"/> without the grouping columns.</summary>
+    internal IReadOnlyList<CanopySortKey> InnerSort {
+        get {
+            if (Levels.Count == 0) return Sort;
+            var keys = new List<CanopySortKey>();
+            foreach (var key in Sort) {
+                var grouped = false;
+                foreach (var level in Levels) grouped |= level.Column.Id == key.Column.Id;
+                if (!grouped) keys.Add(key);
+            }
+            return keys;
+        }
+    }
 
     /// <summary>Gets the dataset revision the client expects, or null for the current one.</summary>
     public string? Revision { get; private set; }
@@ -116,6 +143,28 @@ public sealed class CanopyDataRequest {
     internal CanopyDataRequest WithRaw(string raw) => new CanopyDataRequest(this) { RawQuery = raw };
 
     internal CanopyDataRequest WithSort(IReadOnlyList<CanopySortKey> sort) => new CanopyDataRequest(this) { Sort = sort };
+
+    private static IReadOnlyList<CanopySummaryLevel> DefaultLevels(CanopyDataSchema schema) {
+        if (schema.Grouping != null) return new[] { new CanopySummaryLevel(schema.GetColumn(schema.Grouping.Column), schema.Grouping.Descending) };
+        var levels = new List<CanopySummaryLevel>();
+        foreach (var level in schema.GroupBy)
+            levels.Add(new CanopySummaryLevel(schema.GetColumn(level.Column), level.Descending, level.Aggregate == null ? null : schema.FindAggregate(level.Aggregate)));
+        return new ReadOnlyCollection<CanopySummaryLevel>(levels);
+    }
+
+    private static IReadOnlyList<CanopySummaryLevel> CheckLevels(CanopyDataSchema schema, IEnumerable<CanopySummaryLevel> levels) {
+        var list = new List<CanopySummaryLevel>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var level in levels) {
+            if (level == null || !schema.TryGetColumn(level.Column.Id, out var column) || !ReferenceEquals(column, level.Column) || !seen.Add(column.Id))
+                throw new ArgumentException("Grouping levels need distinct columns of this schema.", nameof(levels));
+            if (level.Aggregate != null && !ReferenceEquals(schema.FindAggregate(level.Aggregate.Id), level.Aggregate))
+                throw new ArgumentException("A grouping level orders by a declared aggregate of this schema.", nameof(levels));
+            list.Add(level);
+        }
+        if (list.Count > 4) throw new ArgumentException("At most four grouping levels are supported.", nameof(levels));
+        return new ReadOnlyCollection<CanopySummaryLevel>(list);
+    }
 
     internal static IReadOnlyList<string> SplitTerms(string text, CanopyGridSearchMode mode) {
         if (text.Length == 0) return Array.Empty<string>();

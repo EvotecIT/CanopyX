@@ -5,9 +5,10 @@ filters, opens a value list or exports, and expects revisioned documents back (s
 These two packages answer those queries from .NET:
 
 - **`CanopyX.Data`** (`net472`, `netstandard2.0`, `net8.0`, `net10.0`) parses and validates every request against a column
-  allow-list and safety limits, executes it, and writes the `gridPage`, `gridFacetPage` and `gridSummary` documents the
-  browser runtime accepts. It runs requests over any `IQueryable<T>` (EF Core, LINQ to objects, any LINQ provider), over
-  a provider you write for another back end, and streams exports.
+  allow-list and safety limits, executes it, and writes the `gridPage`, `gridFacetPage`, `gridSummary` and
+  `gridCommitResult` documents the browser runtime accepts. It runs requests over any `IQueryable<T>` (EF Core, LINQ to
+  objects, any LINQ provider), over a provider you write for another back end, streams exports, serves grouping with up to
+  four levels, and saves edited rows through a writer you choose ([Saving edits](#saving-edits)).
 - **`CanopyX.AspNetCore`** (`net8.0`, `net10.0`) maps it to minimal-API endpoints and writes the small browser script that
   connects the grid to them.
 
@@ -18,6 +19,12 @@ browser grid ── gridQuery / gridFacetQuery / export request ──▶ endpoi
                                                                    ICanopyDataProvider
                                                      (CanopyQueryableProvider<T> │ your SQL provider │ CanopyInMemoryProvider<T>)
 browser grid ◀── gridPage / gridFacetPage / gridSummary / file ──────────────────┘
+
+browser grid ── gridCommit ──▶ commit endpoint (write policy) ──▶ CanopyRemoteHandler
+                                                                   │ editable columns + values checked again
+                                                                   ▼
+                                                        ICanopyDataWriter (CanopyQueryableWriter<T> │ your writer)
+browser grid ◀── gridCommitResult (saved │ error │ conflict per row, new revision) ┘
 ```
 
 ## Quick start
@@ -72,8 +79,14 @@ const post = (path, body, signal) => fetch("/api/machines" + path, { method: "PO
 CanopyX.configure("machines", { source: {
   query: (query, { signal }) => post("/query", query, signal).then(r => r.json()),
   facet: (request, { signal }) => post("/facet", request, signal).then(r => r.json()),
-  summary: (query, { signal }) => post("/summary", query, signal).then(r => r.json())
+  summary: (query, { signal }) => post("/summary", query, signal).then(r => r.json()),
+  // Views with editable columns: save through the commit endpoint, and reload once the revision changed.
+  commit: (batch, { signal }) => post("/commit", batch, signal).then(r => r.json())
 } });
+document.addEventListener("canopyx:commit", event => {
+  const grid = event.target.canopyx;
+  if (event.detail.revision && event.detail.revision !== grid.getQuery().revision) grid.reload();
+}, true); // grid events do not bubble, so listen in the capture phase
 ```
 
 The [fleet inventory sample](#sample-application) runs this end to end over 100,000 SQLite rows.
@@ -97,6 +110,9 @@ and export to the server without changing what readers see:
    `CanopyRemoteScript.Element(...)`. The grid's Export menu gains a server CSV entry that downloads every matching row.
 6. **Index for the common orders.** The default order is the key; add indexes for frequently sorted or filtered columns
    (see [Performance](#performance)).
+7. **Let readers edit (optional).** Mark the columns readers may change `Editable` (with an `Editor` and `Validation`),
+   map a writer and name the policy that may write (see [Saving edits](#saving-edits)). The server repeats the checks,
+   writes nothing else, and answers conflicts when another user changed a row first.
 
 ## Endpoints
 
@@ -110,13 +126,15 @@ and export to the server without changing what readers see:
 | `POST {pattern}/summary` | `gridQuery` with its accepted `revision` | `gridSummary` |
 | `POST {pattern}/export/{format}` | the grid's export request (`scope`, `query`, `revision`, `selection`, `querySelection`, `columns`, `values`, …) | the file, streamed |
 | `GET {pattern}/view` | | the `grid` definition document |
+| `POST {pattern}/commit` (with `options.Writer`) | `gridCommit` document | `gridCommitResult` |
 
 The GET form is off by default because query strings reach access logs, proxies and referrers. POST bodies must be `application/json` (or `+json`); other content types get 415, which also means cross-origin pages
 cannot post without passing a CORS preflight. Responses carry `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
 Every handler observes `HttpContext.RequestAborted`; the token flows into the provider and the database command.
 
-Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`
-and `PrepareExportAsync(json, format)` return documents (or an export job) and throw `CanopyRequestException` for client errors.
+Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`,
+`PrepareExportAsync(json, format)` and, with a writer (`new CanopyRemoteHandler(schema, provider, options, writer)`),
+`CommitAsync(json)` return documents (or an export job) and throw `CanopyRequestException` for client errors.
 `CanopyRequestParser` exposes the parsing step on its own, and `CanopyRequestParser.FromQuery(CanopyGridQuery, schema)`
 validates a typed C# query with the same rules.
 
@@ -160,7 +178,8 @@ its `Schema` is first used. Declared view columns that are not mapped remain dis
 | Text comparison | | Case-insensitive; see [Text, numbers and dates](#text-numbers-and-dates). |
 | Quick search | `search`, `searchMode` | Substring and all-words (quoted phrases) over the searchable columns. |
 | Value lists | `gridFacetQuery` → `gridFacetPage` | Full: case-insensitive buckets, counts over the complete query, value search, `includeCurrentFilter: false` projection, deterministic order, ≤ 200 buckets. |
-| Grouping and aggregates | `source.summary` → `gridSummary` | Full: one grouping column, `count`/`sum`/`average`/`minimum`/`maximum`, groups ordered and ranged as the runtime checks; pages read group by group. |
+| Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
+| Editing | `gridCommit` → `gridCommitResult` | Full with a writer: editable columns only, values checked again with the view's validation, rows saved independently (or all or nothing), conflicts from original values, the new revision (see [Saving edits](#saving-edits)). |
 | Revisions | `revision` | Full: a stale revision answers 409 `staleRevision`. |
 | Exports | export request → file | Full: `filtered`, `selected` (ids or all-matching with exclusions) and `all` scopes, chosen columns, raw or display values, streamed. |
 | Cursor navigation | `gridCursorQuery` | Not served; rejected with `unsupported`. Offset navigation covers the protocol's hosted grids. |
@@ -192,6 +211,40 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
   number columns through their text form only when the view lists them in `SearchColumns`, and never search date columns
   (there is no portable text form). Value-list search on a date column answers `unsupported`.
 
+## Grouping levels
+
+A view with a fixed `Reporting.Grouping` groups by one column the reader cannot change. A view with runtime grouping
+(`Reporting.GroupBy` levels and/or `Reporting.Groupable`) carries the levels in every query as `groupBy`, at most four,
+outermost first ([data-protocol.md](data-protocol.md#flat-groups-and-complete-query-totals)):
+
+```csharp
+view.Reporting = new CanopyGridReporting { Groupable = true };
+view.Reporting.Aggregates.Add(new CanopyGridAggregate("machines", "name", CanopyGridAggregateOperation.Count, "Machines"));
+view.Reporting.Aggregates.Add(new CanopyGridAggregate("models", "model", CanopyGridAggregateOperation.DistinctCount, "Models"));
+view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("site", descending: true, aggregate: "machines")); // busiest sites first
+view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
+```
+
+- **Parsing.** `groupBy` levels name allowed sortable columns, once each, with `asc`/`desc` and an optional declared
+  aggregate; anything else answers `invalidGroupBy`, and so does `groupBy` on a view without runtime grouping. A query
+  without `groupBy` takes the declared levels; `[]` is ungrouped. The parser normalizes the query as the browser does: the
+  levels' columns lead the sort (ascending for a level ordered by an aggregate), and a sort entry for a column grouped by
+  value turns that level around. `CanopyDataRequest.Levels` and `CanopySummaryRequest.Levels` hold the result
+  (`CanopySummaryLevel`: column, direction, aggregate); a fixed grouping is one level.
+- **Record order.** Records follow the levels: each level's groups by raw value (ordinal text, numbers and dates, missing
+  last), or by the level's aggregate over the group (missing aggregates last, equal values by value ascending), then the
+  other sort keys inside the innermost groups and the record key. Pages and exports read innermost group by innermost
+  group, so their order always agrees with the summary.
+- **Nested summaries.** Each level's groups nest in their outer group with absolute offsets into the complete query. Keys
+  are unique across the summary: first-level keys keep the single-level form (`s:North`, `n:4`, `null`), inner keys are
+  the depth and the path of level keys (`2:s:North/s:Open`, with `\` and `/` escaped). The 10,000-group limit counts every level.
+- **Aggregates.** `distinctCount` counts distinct nonmissing raw values of any column (`COUNT(DISTINCT …)` in a
+  database; dates at protocol precision in memory). Custom aggregate operations (a `CanopyGridAggregate` with an operation
+  name) reach a provider as `CanopySummaryAggregate.CustomOperation`; the built-in providers answer `unsupported`, so a
+  view with a custom aggregate needs an `ICanopyDataProvider` that computes it.
+- **Echo.** The summary echoes the query as the client sent it, `groupBy` included; a request built in code echoes its
+  normalized levels.
+
 ## Safety
 
 Every request passes through `CanopyRequestParser` before a provider sees it:
@@ -218,17 +271,32 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxOperandLength` | 4,096 | — |
 | `MaxRequestBytes` | 1 MiB | — (JSON nesting is also capped at 64) |
 | `MaxSelectedIds` (selected exports, exclusions) | 10,000 | 10,000 |
-| `MaxGroups` | 10,000 | 10,000 |
+| `MaxGroups` (across all grouping levels) | 10,000 | 10,000 |
+| `MaxCommitRows` | 100 | — |
+| `MaxCommitTextLength` (one written text value) | 65,536 | — |
 
 - **Typed errors.** Rejections throw `CanopyRequestException` and answer `{ "error": code, "message": text }` with status 400
   (409 for `staleRevision`, 413 for an oversized body, 415 for a non-JSON body). Codes: `invalidJson`, `invalidDocument`,
   `unknownColumn`, `invalidSort`, `columnNotFilterable`, `invalidOperator`, `invalidOperand`, `limitExceeded`,
-  `offsetOutOfRange`, `staleRevision`, `unsupported`, `notFacetable`, `invalidExport`, `unknownFormat`. Messages never echo
+  `offsetOutOfRange`, `staleRevision`, `unsupported`, `notFacetable`, `invalidExport`, `unknownFormat`, `invalidGroupBy`,
+  `columnNotEditable`. Messages never echo
   request text or server internals. Any other exception is logged and answered with a generic 500 `serverError`.
 - **Authorization.** Endpoints require authorization by default (the default policy, or `AuthorizationPolicy`); set
   `AllowAnonymous` only for public data. Row-level restrictions belong in the query callback, which runs per request.
+  The commit route requires `WriteAuthorizationPolicy` on top of the read authorization, and mapping a writer without
+  one (or with a blank name) fails: the default policy would let every reader write. `AllowAnonymousWrites` exists for
+  local samples. A route group opened with `.AllowAnonymous()` makes ASP.NET Core skip every policy, so the commit route
+  then refuses with 403 `writeNotAllowed` unless `AllowAnonymousWrites` is set.
+- **Writes.** Only columns the view declares editable and the schema allows can be written; any other column fails the
+  whole batch with `columnNotEditable`. Every value is checked again (kind, the view's validation, the editor's step and
+  choices) before a writer sees it, so a modified client cannot write what the grid would refuse. The reference writer
+  also writes only columns mapped to a member of the record, converts values with range and membership checks, and
+  answers store failures with a generic message (log them with `CanopyQueryableWriterOptions.Failed`). Commit bodies are
+  JSON only, so another site's form cannot post one; cross-origin scripts need a CORS policy you grant.
 - **The column map is the access boundary.** Rows carry every mapped column and exports accept hidden columns; a view's
-  `Hidden` flag is presentation. Leave out of the map whatever a caller must not read.
+  `Hidden` flag is presentation. Leave out of the map whatever a caller must not read, and leave `Editable` off whatever a
+  caller must not write. Commits change the records the writer's store loads by key: restrict that store as you restrict
+  the query callback when callers may change only some records.
 - **Stale data.** A window that no longer matches its counts (records written between the count and the read) answers
   409 `staleRevision`; an export that reads fewer records than it counted fails, and the endpoint aborts the response
   so the download does not look complete.
@@ -271,15 +339,18 @@ string Condition(CanopyFilterCondition condition, DbCommand command) {
 
 Contract details:
 
-- **Order.** Apply the sort keys with missing values last in both directions, then the record key ascending. For a
-  grouped view the first key is the grouping column, and records must follow the group order the endpoint reports
-  (the protocol's order: ordinal text, numbers and dates ascending or descending, missing last).
+- **Order.** Apply the sort keys with missing values last in both directions, then the record key ascending. A grouped
+  request (`request.Levels`: the fixed grouping or the `groupBy` levels) orders records level by level first, as
+  [Grouping levels](#grouping-levels) describes, then by the sort keys of other columns; its levels' columns also lead
+  `request.Sort`, as on the wire.
 - **Counts.** `QueryAsync` returns the unfiltered `Total`, the `Matched` count before the window, and exactly
   `min(limit, matched − offset)` rows.
 - **Value lists.** Buckets are case-insensitive for text (one bucket per folded value), null last, at most `Limit`, with
   `TotalValues` counted after value search.
-- **Summaries.** Return every group (any order; the endpoint orders them and assigns ranges) with its count and the
-  declared aggregates; `count` counts nonmissing values, the others are null for a group without values.
+- **Summaries.** Return every group of the first level (any order; the endpoint orders them and assigns ranges) with its
+  count and the declared aggregates, and inside each group of an outer level the groups of the next level
+  (`new CanopySummaryGroup(value, count, aggregates, innerGroups)`); `count` and `distinctCount` count nonmissing values,
+  the others are null for a group without values. Group by every prefix of the levels (one `GROUP BY` per level, or a rollup).
 - **Rows.** Build `CanopyGridRow`s; `CanopyDataValues.ToCell` converts store values to protocol cells and `FormatId` formats keys.
 - **Unsupported capabilities** throw `CanopyRequestException(CanopyRequestError.Unsupported, …)`.
 
@@ -305,6 +376,99 @@ records from the provider straight to the response, never materializing the resu
   and are added to `CanopyRemoteOptions.ExportFormats`. `CanopyExportContext` supplies the ordered records and
   `GetValue`/`GetText` helpers that respect the request's value mode.
 
+## Saving edits
+
+A grid with editable columns (`CanopyColumn.Editable`, with an optional `Editor` and `Validation`) keeps changes in its
+change set until the reader saves; it then posts one `gridCommit` document with each changed row's new and original
+values and the revision it read ([data-protocol.md](data-protocol.md#editing-and-commit)). Map a writer to save them:
+
+```csharp
+// What this caller may read: the grid's query, and also the records a commit may change.
+IQueryable<Machine> Readable(HttpContext http) => http.RequestServices.GetRequiredService<FleetDb>().Machines
+    .Where(machine => machine.Team!.Members.Any(member => member.Login == http.User.Identity!.Name));
+
+app.MapCanopyRemote("/api/machines", Readable, map, options => {
+    options.Query.Revision = store.GetRevisionAsync;
+    options.AuthorizationPolicy = "Inventory.Read";
+    options.WriteAuthorizationPolicy = "Inventory.Write";           // required with a writer, on top of the read policy
+    options.Writer = http => {
+        var db = http.RequestServices.GetRequiredService<FleetDb>();
+        return new CanopyQueryableWriter<Machine>(map, new EfCoreWriteStore<Machine>(db), new CanopyQueryableWriterOptions<Machine> {
+            Scope = () => Readable(http),                           // a commit changes only records the caller can read
+            Revision = store.GetRevisionAsync,
+            Saving = async (context, token) => { await store.BumpRevisionAsync(db, token); return null; } // inside the row's transaction
+        });
+    };
+});
+```
+
+**What the endpoint does before a writer sees a batch.** It rejects the whole batch when a row changes a column the view
+does not declare editable or the schema does not allow (`columnNotEditable`, `unknownColumn`), when it is malformed or
+larger than `MaxCommitRows`. It checks every value against its column's kind (numbers within ±2^53−1, ISO 8601 moments
+with a time zone, text or booleans) and the view's rules (`Required`, `Minimum`/`Maximum`, `Earliest`/`Latest`,
+`MinLength`/`MaxLength`, `Pattern` anchored as in the browser), the editor's `Step` and its select choices; a row that
+fails answers `error` with messages by column (`CanopyCommitMessages`, or the column's `Validation.Message`) and does not
+reach the writer. The writer gets typed values (text, booleans, `double`, UTC `DateTime`) and the revision the endpoint
+read. Its answer is checked too, but because the writer may already have committed its rows, a faulty answer never fails
+the request: rows the writer was not asked about or answered twice, cells that break the page rules or belong to columns
+outside the schema, messages for other columns and an invalid revision are left out and reported to
+`CanopyRemoteOptions.WriterProblem` (the ASP.NET Core endpoints log them), and messages longer than 4,096 characters
+are shortened.
+
+**`ICanopyDataWriter`** is the seam: `ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision,
+CancellationToken token)` answers per row with `CanopyCommitRowResult.Saved(id, cells)`, `Failed(id, error, errors)` or
+`Conflict(id, error)`, and the revision after the commit (null lets the endpoint read it from the provider). A row the
+result leaves out was not saved.
+
+**`CanopyQueryableWriter<T>`** is the reference writer over the column map:
+
+- It writes only editable columns mapped to a member of the record itself (`x => x.Cores`); creating it fails when an
+  editable column maps a navigation chain such as `x => x.Team!.Name`, the record key, or a member marked
+  `[ConcurrencyCheck]` or `[Timestamp]` (tokens configured fluently are not visible to it: keep those columns read-only).
+- **Scope.** It changes any record `ICanopyWriteStore<T>.Records` returns. Set `Options.Scope` to the endpoint's query
+  callback, as above, so that a row whose record the caller cannot read answers as missing and is not written; or
+  restrict `Records` itself.
+- Per row it loads the record by the map's key and compares each changed column's original value with the stored one at
+  protocol precision: a difference is a `conflict` and nothing is written. A record that no longer exists is a conflict
+  too. With a revision source (`Options.Revision`, read inside the row's transaction), the comparison is skipped while the
+  revision still equals the batch's; `AlwaysCompareOriginals` compares regardless. Without one, every row is compared.
+- **Concurrency.** The comparison is only as strong as the store's transaction: it must serialize the load, the comparison
+  and the save (serializable or snapshot isolation, or row locks), or another writer can change the record in between.
+  Give the record a concurrency token (EF Core `IsRowVersion()` or `IsConcurrencyToken()`); the store then refuses a save
+  over a newer version and the row answers a conflict.
+- It converts values to the member types: whole numbers in range for integer members, enumeration members by their raw
+  text (`[EnumMember]` value or name), null only for nullable members; a value a member cannot hold answers a cell error.
+- It runs `Saving` (stamp an audit column, change the revision, or refuse the row with a message) and saves. A store
+  exception stops its row only: the row answers "The row could not be saved." (the exception goes to `Failed` for
+  logging), or a conflict when the store reports a concurrency failure (EF Core's `DbUpdateConcurrencyException` for
+  concurrency tokens).
+- `Transaction = CanopyCommitTransaction.PerRow` (default) saves each row in its own transaction; `PerBatch` writes all
+  rows in one transaction and nothing when any row fails: the first failing row stops the batch, and the others answer
+  `BatchNotSaved`; a failed commit of the batch answers every row as not saved. After any row that is not saved the
+  writer rolls back (a failing rollback does not hide the row's answer) and discards the store's unsaved changes.
+- A saved row answers canonical cells of its changed columns, formatted by the map like page rows.
+
+The writer reaches the store through `ICanopyWriteStore<T>`, so `CanopyX.Data` stays free of EF Core. The EF Core adapter:
+
+```csharp
+public sealed class EfCoreWriteStore<T>(DbContext db) : ICanopyWriteStore<T> where T : class {
+    public IQueryable<T> Records => db.Set<T>().AsTracking();   // tracked, also when the context reads without tracking
+    public async ValueTask<ICanopyWriteTransaction> BeginTransactionAsync(CancellationToken token) => new Transaction(await db.Database.BeginTransactionAsync(token));
+    public async ValueTask SaveChangesAsync(CancellationToken token) => await db.SaveChangesAsync(token);
+    public void DiscardChanges() => db.ChangeTracker.Clear();
+    sealed class Transaction(IDbContextTransaction transaction) : ICanopyWriteTransaction {
+        public ValueTask CommitAsync(CancellationToken token) => new(transaction.CommitAsync(token));
+        public ValueTask RollbackAsync(CancellationToken token) => new(transaction.RollbackAsync(token));
+        public ValueTask DisposeAsync() => transaction.DisposeAsync();
+    }
+}
+```
+
+**Revisions.** A commit changes the data, so give the dataset a revision the writer changes (`Saving` above, a row
+version, a change counter) and answer it. The grid keeps reading pages at the revision it accepted; once a commit answers
+with a new one, `CanopyRemoteScript` reloads the grid, and readers of an older revision elsewhere get `staleRevision` and
+reload too.
+
 ## Performance
 
 Each page request runs two counts (dataset and matches; one when there are no criteria) and one windowed query that
@@ -323,6 +487,9 @@ five runs after warm-up, on a shared 16-core workstation, so treat the numbers a
 | Summary, three aggregates | 40–70 ms | 310–430 ms |
 | Grouped summary by site (one grouped scan) | 0.3 s | 2–2.8 s |
 | Grouped page in the middle | 20–25 ms | 120–230 ms |
+| Two-level summary (site by machine count, then operating system; five aggregates with a distinct count) | 0.4 s | 4 s |
+| Three-level summary with a distinct count | 0.6 s | 7 s |
+| Two-level page in the middle (index on site, operating system, name) | 15–20 ms | 115–120 ms |
 | CSV export of every row | 0.75 s, 7 MiB | 7 s, 72 MiB, flat 130 MiB working set |
 
 Notes:
@@ -341,10 +508,16 @@ Notes:
 - **Large parameter lists.** Selected exports send up to 10,000 identities and a membership filter up to 1,000 values as
   one parameterized collection. On SQL Server, whose limit is 2,100 parameters per command, configure EF Core to send
   parameterized collections as one JSON parameter, or lower `MaxSelectedIds` and `MaxInValues`.
-- **Grouped views** read the group counts with each page request (one grouped scan) and then fetch the window: up to
-  eight groups slice by slice through `WHERE group = value` (an index on group column and sort column serves it), more in
-  one query ordered by a rank over the groups the window spans. A window that spans more than 1,000 groups is rejected.
+- **Grouped views** read the group counts with each page request (one grouped scan per level over each prefix of the
+  grouping columns, with the aggregate a level orders by; summaries and pages build the same group tree, so they agree
+  also under case-insensitive collations) and then fetch the window: up to eight innermost groups slice by slice through
+  `WHERE level1 = value AND level2 = value …` (an index on the grouping columns and the sort column serves it), more in
+  queries ordered by a rank over at most 64 groups each; a page may span at most 1,000 groups. Exports read the same way,
+  so their rows follow the group ranges. Summaries run one grouped scan per level, plus one for complete-query totals
+  when a distinct count is declared.
   Grouping values must be distinct at protocol precision (instants that differ below a millisecond cannot be two groups).
+- **Commits** load each changed record by key and save it in its own transaction (or one for the batch); a batch is
+  bounded by `MaxCommitRows`.
 - Run the measurements yourself: `FleetInventory --bench --rows 1000000 --database <path>` (`--sql` prints the SQL).
 
 ## Sample application
@@ -357,6 +530,12 @@ dotnet run --project samples/FleetInventory -- --urls http://127.0.0.1:5199 --ro
 ```
 
 `/` shows every machine with value lists, the filter builder, selection, aggregates and the server CSV export;
-`/by-site` shows the same data grouped by site. Add `?theme=dark` for the dark theme. The browser test
-`tests/browser/specs/remote-dotnet.spec.mjs` starts the built sample against a temporary database and checks paging,
-sorting, searching, filtering, value lists, exports, grouping and error answers against the real endpoints.
+`/by-site` shows the same data grouped by site; `/by-site-os` groups by site (busiest sites first, ordered by the machine
+count) and operating system with a distinct count of models, and readers can regroup; `/edit` edits names, sites,
+operating systems, models, cores, memory and the online state and saves them to SQLite through `CanopyQueryableWriter`
+and an EF Core store. Every saved row increments a revision counter in the database inside its transaction, and the
+page's *Simulate another user's change* button changes the selected machine behind the reader's back, so saving shows a
+conflict. Add `?theme=dark` for the dark theme. The browser tests `tests/browser/specs/remote-dotnet.spec.mjs` and
+`remote-dotnet-commit-groups.spec.mjs` start the built sample against a temporary database and check paging, sorting,
+searching, filtering, value lists, exports, grouping (one and two levels), commits, conflicts and error answers against
+the real endpoints.

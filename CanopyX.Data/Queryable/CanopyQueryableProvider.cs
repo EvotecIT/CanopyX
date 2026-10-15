@@ -19,7 +19,9 @@ namespace CanopyX.Data;
 /// <para>
 /// Each request counts the dataset (<c>total</c>) and the matches (<c>matched</c>) and reads one window. Text matching follows
 /// <see cref="CanopyQueryOptions.TextComparison"/>; text sorting follows the store's ordering (database collation). For a
-/// grouped view, pages are read group by group so their order always agrees with the summary's group ranges.
+/// grouped request (a fixed grouping or <c>groupBy</c> levels), pages and exports are read innermost group by innermost
+/// group in the levels' order, so their order always agrees with the summary's group ranges. Summaries run one grouped
+/// scan per level (several columns become one multi-column <c>GROUP BY</c>; <c>distinctCount</c> becomes <c>COUNT(DISTINCT …)</c>).
 /// </para>
 /// </remarks>
 public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
@@ -67,9 +69,13 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var take = Math.Max(0, Math.Min(request.Limit, matched - request.Offset));
         if (take == 0) return new CanopyPageResult(total, matched, Array.Empty<CanopyGridRow>());
         var columns = Map.Columns.Select(column => column.Id).ToList();
-        var rows = Grouped(request)
-            ? await GroupedRowsAsync(translator, filtered, request, take, columns, cancellationToken).ConfigureAwait(false)
-            : await RowsAsync(translator, translator.Order(filtered, request.Sort).Skip(request.Offset).Take(take), columns, cancellationToken).ConfigureAwait(false);
+        List<CanopyGridRow> rows;
+        if (request.Levels.Count > 0) {
+            rows = new List<CanopyGridRow>(take);
+            await foreach (var row in GroupedRowsAsync(translator, filtered, request, request.Offset, take, columns, PageGroups, cancellationToken).ConfigureAwait(false)) rows.Add(row);
+        } else {
+            rows = await RowsAsync(translator, translator.Order(filtered, request.Sort).Skip(request.Offset).Take(take), columns, cancellationToken).ConfigureAwait(false);
+        }
         return new CanopyPageResult(total, matched, rows);
     }
 
@@ -86,7 +92,13 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var source = _source();
         var translator = Translator(source);
         var columns = Map.Columns.Select(column => column.Id).ToList();
-        var query = translator.Order(translator.Apply(source, request), request.Sort).Skip(request.Offset).Take(request.Limit).Select(translator.Projection(columns));
+        var filtered = translator.Apply(source, request);
+        // A grouped export follows the grid's record order, so outline ranges written from the summary fit its rows.
+        if (request.Levels.Count > 0) {
+            await foreach (var row in GroupedRowsAsync(translator, filtered, request, request.Offset, request.Limit, columns, 10000, cancellationToken).ConfigureAwait(false)) yield return row;
+            yield break;
+        }
+        var query = translator.Order(filtered, request.Sort).Skip(request.Offset).Take(request.Limit).Select(translator.Projection(columns));
         await foreach (var values in Executor.StreamAsync(query, cancellationToken).ConfigureAwait(false)) yield return translator.ToRow(values, columns);
     }
 
@@ -125,14 +137,21 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var source = _source();
         var translator = Translator(source);
         var filtered = translator.Apply(source, request.Query);
-        if (request.GroupColumn == null) {
-            var totals = await translator.GroupsAsync(filtered, null, request.Aggregates, 1, Executor, cancellationToken).ConfigureAwait(false);
+        var levels = request.Levels;
+        if (levels.Count == 0) {
+            var totals = await translator.GroupsAsync(filtered, Array.Empty<string>(), request.Aggregates, 1, Executor, cancellationToken).ConfigureAwait(false);
             return new CanopySummaryResult(totals.Count == 0 ? 0 : totals[0].Count, Values(request.Aggregates, totals.Count == 0 ? null : totals[0]), Array.Empty<CanopySummaryGroup>());
         }
-        // One grouped scan: the complete-query values are combined from the groups instead of scanning again.
-        var stored = await translator.GroupsAsync(filtered, request.GroupColumn.Id, request.Aggregates, 10001, Executor, cancellationToken).ConfigureAwait(false);
-        var groups = stored.Select(group => new CanopySummaryGroup(group.Key, group.Count, Values(request.Aggregates, group))).ToList();
+        // One grouped scan per level, over each prefix of the grouping columns, nested as pages nest them.
+        var tree = await TreeAsync(translator, filtered, levels, _ => request.Aggregates, cancellationToken).ConfigureAwait(false);
+        var groups = tree.Select(node => Summary(request.Aggregates, node)).ToList();
+        var stored = tree.Select(node => node.Group).ToList();
         var matched = stored.Sum(group => group.Count);
+        // The complete-query values combine from the first level's groups, except distinct counts, which need their own scan.
+        if (request.Aggregates.Any(aggregate => aggregate.Operation == CanopyGridAggregateOperation.DistinctCount)) {
+            var totals = await translator.GroupsAsync(filtered, Array.Empty<string>(), request.Aggregates, 1, Executor, cancellationToken).ConfigureAwait(false);
+            return new CanopySummaryResult(matched, Values(request.Aggregates, totals.Count == 0 ? null : totals[0]), groups);
+        }
         var aggregates = new Dictionary<string, double?>(StringComparer.Ordinal);
         for (var i = 0; i < request.Aggregates.Count; i++) {
             var present = stored.Where(group => group.Counts[i] > 0).ToList();
@@ -145,59 +164,144 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
                 CanopyGridAggregateOperation.Minimum => present.Min(group => group.Values[i]!.Value),
                 _ => present.Max(group => group.Values[i]!.Value)
             };
-        }        return new CanopySummaryResult(matched, aggregates, groups);
+        }
+        return new CanopySummaryResult(matched, aggregates, groups);
     }
+
+    private static CanopySummaryGroup Summary(IReadOnlyList<CanopySummaryAggregate> aggregates, GroupNode node) =>
+        new CanopySummaryGroup(node.Value, node.Group.Count, Values(aggregates, node.Group), node.Children.Count == 0 && node.Leaf ? null : node.Children.Select(child => Summary(aggregates, child)));
 
     private static Dictionary<string, double?> Values(IReadOnlyList<CanopySummaryAggregate> aggregates, QueryTranslator<T>.StoreGroup? group) {
         var values = new Dictionary<string, double?>(StringComparer.Ordinal);
         for (var i = 0; i < aggregates.Count; i++)
-            values[aggregates[i].Id] = group == null ? aggregates[i].Operation == CanopyGridAggregateOperation.Count ? 0 : (double?)null : group.Values[i];
+            values[aggregates[i].Id] = group == null ? aggregates[i].Counting ? 0 : (double?)null : group.Values[i];
         return values;
     }
 
-    private bool Grouped(CanopyDataRequest request) {
-        var grouping = Schema.Grouping;
-        return grouping != null && request.Sort.Count > 0 && request.Sort[0].Column.Id == grouping.Column;
+    private const int RunSize = 64;
+    private const int PageGroups = 1000;
+
+    /// <summary>A group of the group tree: its store group (value, count, aggregates) and the groups of the next level.</summary>
+    private sealed class GroupNode {
+        internal GroupNode(QueryTranslator<T>.StoreGroup group, int depth, bool leaf) { Group = group; Value = group.KeyValues[depth]; Leaf = leaf; }
+        internal QueryTranslator<T>.StoreGroup Group { get; }
+        internal object? Value { get; }
+        internal bool Leaf { get; }
+        internal List<GroupNode> Children { get; } = new List<GroupNode>();
+        internal Dictionary<string, GroupNode> Exact { get; } = new Dictionary<string, GroupNode>(StringComparer.Ordinal);
+        internal Dictionary<string, GroupNode?> Loose { get; } = new Dictionary<string, GroupNode?>(StringComparer.Ordinal);
     }
 
-    /// <summary>Reads a window of a grouped view group by group, so record order follows the protocol's group order.</summary>
-    private async Task<List<CanopyGridRow>> GroupedRowsAsync(QueryTranslator<T> translator, IQueryable<T> filtered, CanopyDataRequest request, int take,
-        List<string> columns, CancellationToken cancellationToken) {
-        var column = Schema.Grouping!.Column;
-        var groups = await translator.GroupsAsync(filtered, column, Array.Empty<CanopySummaryAggregate>(), 10001, Executor, cancellationToken).ConfigureAwait(false);
-        if (groups.Count > 10000) throw CanopyRequestException.Limit("The result has more groups than the protocol allows.");
-        var compare = Schema.Grouping.CreateComparer(Schema.View);
-        groups.Sort((left, right) => compare.Compare(CanopyDataValues.ToCell(left.Value)!, CanopyDataValues.ToCell(right.Value)!));
-        // The window covers a contiguous run of groups: few groups are read slice by slice, many in one query ranked by group order.
-        var overlapping = new List<(QueryTranslator<T>.StoreGroup Group, int Start)>();
+    /// <summary>
+    /// The group tree of a grouped request: one grouped scan per level, over each prefix of the grouping columns, with the
+    /// aggregates each level needs. A group goes inside the group of the level above whose values its prefix holds: the exact
+    /// raw values, or, where the store's collation joins values the protocol keeps apart (case-insensitive or trailing-space
+    /// comparisons, where a scan may report either spelling), the group whose folded values match. Summaries and pages build
+    /// the same tree, so their groups, counts and order agree. A group without a parent means the records changed between
+    /// the scans, which answers <c>staleRevision</c>.
+    /// </summary>
+    private async Task<List<GroupNode>> TreeAsync(QueryTranslator<T> translator, IQueryable<T> filtered, IReadOnlyList<CanopySummaryLevel> levels,
+        Func<int, IReadOnlyList<CanopySummaryAggregate>> aggregates, CancellationToken cancellationToken) {
+        var columns = levels.Select(level => level.Column.Id).ToList();
+        var root = new List<GroupNode>();
+        var rootExact = new Dictionary<string, GroupNode>(StringComparer.Ordinal);
+        var rootLoose = new Dictionary<string, GroupNode?>(StringComparer.Ordinal);
+        var total = 0;
+        for (var depth = 0; depth < levels.Count; depth++) {
+            var rows = await translator.GroupsAsync(filtered, columns.Take(depth + 1).ToList(), aggregates(depth), 10001, Executor, cancellationToken).ConfigureAwait(false);
+            total += rows.Count;
+            if (rows.Count > 10000 || total > 10000) throw CanopyRequestException.Limit("The result has more groups than the protocol allows.");
+            foreach (var row in rows) {
+                List<GroupNode> siblings = root;
+                Dictionary<string, GroupNode> exact = rootExact;
+                Dictionary<string, GroupNode?> loose = rootLoose;
+                for (var level = 0; level < depth; level++) {
+                    var parent = Find(exact, loose, row.KeyValues[level]) ?? throw Changed();
+                    siblings = parent.Children; exact = parent.Exact; loose = parent.Loose;
+                }
+                var node = new GroupNode(row, depth, depth == levels.Count - 1);
+                // Values the store keeps apart but the protocol treats as one (instants below a millisecond) cannot be served as groups.
+                if (exact.ContainsKey(CanopyRemoteHandler.GroupKey(node.Value)))
+                    throw new InvalidOperationException("The store returned groups that the protocol cannot tell apart; store grouping values at protocol precision.");
+                exact[CanopyRemoteHandler.GroupKey(node.Value)] = node;
+                var folded = LooseKey(node.Value);
+                loose[folded] = loose.ContainsKey(folded) ? null : node;
+                siblings.Add(node);
+            }
+        }
+        return root;
+    }
+
+    private static GroupNode? Find(Dictionary<string, GroupNode> exact, Dictionary<string, GroupNode?> loose, object? value) =>
+        exact.TryGetValue(CanopyRemoteHandler.GroupKey(value), out var node) ? node : loose.TryGetValue(LooseKey(value), out var match) ? match : null;
+
+    /// <summary>A value as a case-insensitive, trailing-space-insensitive collation compares it.</summary>
+    private static string LooseKey(object? value) => value is string text ? "s:" + CanopyTextFolding.Fold(text.TrimEnd(' ')) : CanopyRemoteHandler.GroupKey(value);
+
+    private static CanopyRequestException Changed() => new CanopyRequestException(CanopyRequestError.StaleRevision, "The data changed while its groups were read; reload the grid.");
+
+    /// <summary>
+    /// The innermost groups of a grouped request in record order: level by level, each level's groups in its order (by value,
+    /// or by the level's aggregate over the group, read with that level's scan, exactly as the summary computes it).
+    /// </summary>
+    private async Task<List<(QueryTranslator<T>.StoreGroup Group, int Start)>> OrderedLeavesAsync(QueryTranslator<T> translator, IQueryable<T> filtered,
+        IReadOnlyList<CanopySummaryLevel> levels, CancellationToken cancellationToken) {
+        var tree = await TreeAsync(translator, filtered, levels,
+            depth => levels[depth].Aggregate == null ? Array.Empty<CanopySummaryAggregate>() : new[] { levels[depth].Aggregate! }, cancellationToken).ConfigureAwait(false);
+        var ordered = new List<(QueryTranslator<T>.StoreGroup Group, int Start)>();
         var start = 0;
-        var end = request.Offset + take;
-        foreach (var group in groups) {
-            var stop = start + group.Count;
-            if (stop > request.Offset && start < end) overlapping.Add((group, start));
-            if (stop >= end) break;
-            start = stop;
+        void Walk(List<GroupNode> nodes, int depth) {
+            var list = nodes.ToList();
+            list.Sort(GroupOrdering.Create<GroupNode>(Schema, levels[depth], node => node.Value, node => node.Group.Values.Length == 0 ? null : node.Group.Values[0]));
+            foreach (var node in list) {
+                if (node.Leaf) { ordered.Add((node.Group, start)); start += node.Group.Count; }
+                else Walk(node.Children, depth + 1);
+            }
         }
-        var rest = request.Sort.Skip(1).ToList();
-        var value = translator.Value(column);
-        Expression Match(QueryTranslator<T>.StoreGroup group) => group.Key == null ? ExpressionTools.IsNull(value) : Expression.Equal(value, ExpressionTools.Parameter(group.Key, value.Type));
-        var rows = new List<CanopyGridRow>(take);
-        if (overlapping.Count > 8) {
-            if (overlapping.Count > 1000) throw CanopyRequestException.Limit("The page spans too many groups; request a smaller page.");
-            var tests = overlapping.Select(item => Match(item.Group)).ToList();
-            Expression? any = null;
-            foreach (var test in tests) any = ExpressionTools.Or(any, test);
-            var members = filtered.Where(Expression.Lambda<Func<T, bool>>(any!, translator.Row));
-            var ranked = translator.Order(members, rest, QueryTranslator<T>.Rank(value, tests));
-            return await RowsAsync(translator, ranked.Skip(request.Offset - overlapping[0].Start).Take(take), columns, cancellationToken).ConfigureAwait(false);
+        Walk(tree, 0);
+        return ordered;
+    }
+
+    /// <summary>
+    /// Streams a window of a grouped request in record order. The window covers a contiguous run of innermost groups: up to
+    /// eight are read one by one with <c>WHERE</c> on their values (an index on the grouping and sort columns serves each),
+    /// more in queries ranked by group order, at most 64 groups each so the parameters stay within every database's limit.
+    /// Each read is ordered by the remaining sort keys and the record key.
+    /// </summary>
+    private async IAsyncEnumerable<CanopyGridRow> GroupedRowsAsync(QueryTranslator<T> translator, IQueryable<T> filtered, CanopyDataRequest request, int offset, int take,
+        List<string> columns, int maxGroups, [EnumeratorCancellation] CancellationToken cancellationToken) {
+        var leaves = await OrderedLeavesAsync(translator, filtered, request.Levels, cancellationToken).ConfigureAwait(false);
+        var end = (long)offset + take;
+        var overlapping = leaves.Where(item => item.Start + item.Group.Count > offset && item.Start < end).ToList();
+        // Each run of groups is a query: a page may span at most 1,000 groups (16 queries), an export every group.
+        if (overlapping.Count > maxGroups) throw CanopyRequestException.Limit("The page spans too many groups; request a smaller page.");
+        var rest = request.InnerSort;
+        var values = request.Levels.Select(level => translator.Value(level.Column.Id)).ToArray();
+        Expression Match(QueryTranslator<T>.StoreGroup group) {
+            Expression? test = null;
+            for (var i = 0; i < values.Length; i++)
+                test = ExpressionTools.And(test, group.Keys[i] == null ? ExpressionTools.IsNull(values[i]) : Expression.Equal(values[i], ExpressionTools.Parameter(group.Keys[i], values[i].Type)));
+            return test!;
         }
-        foreach (var (group, first) in overlapping) {
-            var skip = Math.Max(0, request.Offset - first);
-            var count = Math.Min(first + group.Count, end) - (first + skip);
-            var members = filtered.Where(Expression.Lambda<Func<T, bool>>(Match(group), translator.Row));
-            rows.AddRange(await RowsAsync(translator, translator.Order(members, rest).Skip(skip).Take(count), columns, cancellationToken).ConfigureAwait(false));
+        var size = overlapping.Count <= 8 ? 1 : RunSize;
+        for (var first = 0; first < overlapping.Count; first += size) {
+            var run = overlapping.Skip(first).Take(size).ToList();
+            var runStart = run[0].Start;
+            var runEnd = run[run.Count - 1].Start + run[run.Count - 1].Group.Count;
+            var skip = Math.Max(0, offset - runStart);
+            var count = (int)Math.Min(runEnd, end) - (runStart + skip);
+            IQueryable<T> window;
+            if (run.Count == 1) {
+                window = translator.Order(filtered.Where(Expression.Lambda<Func<T, bool>>(Match(run[0].Group), translator.Row)), rest);
+            } else {
+                var tests = run.Select(item => Match(item.Group)).ToList();
+                Expression? any = null;
+                foreach (var test in tests) any = ExpressionTools.Or(any, test);
+                window = translator.Order(filtered.Where(Expression.Lambda<Func<T, bool>>(any!, translator.Row)), rest, QueryTranslator<T>.Rank(values[0], tests));
+            }
+            await foreach (var row in Executor.StreamAsync(window.Skip(skip).Take(count).Select(translator.Projection(columns)), cancellationToken).ConfigureAwait(false))
+                yield return translator.ToRow(row, columns);
         }
-        return rows;
     }
 
     private async Task<List<CanopyGridRow>> RowsAsync(QueryTranslator<T> translator, IQueryable<T> window, List<string> columns, CancellationToken cancellationToken) {

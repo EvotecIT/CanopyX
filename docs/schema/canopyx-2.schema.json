@@ -13,6 +13,8 @@
     { "$ref": "#/$defs/gridFacetQuery" },
     { "$ref": "#/$defs/gridFacetPage" },
     { "$ref": "#/$defs/gridSummary" },
+    { "$ref": "#/$defs/gridCommit" },
+    { "$ref": "#/$defs/gridCommitResult" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -31,8 +33,103 @@
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
-        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
+        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" },
+        "detail": { "$ref": "#/$defs/gridRowDetail" }
       }
+    },
+    "gridEditorName": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "text, number, date, datetime, time, select, toggle, lookup, or an editor a plugin or the host registers." },
+    "gridEditorValue": { "type": ["string", "number", "boolean"], "minimum": -9007199254740991, "maximum": 9007199254740991 },
+    "gridEditor": {
+      "description": "The typed editor of an editable column. A name alone is shorthand for { \"type\": name }; without one the column's kind chooses text, number or datetime.",
+      "oneOf": [
+        { "$ref": "#/$defs/gridEditorName" },
+        { "type": "object", "required": ["type"], "additionalProperties": false, "properties": {
+          "type": { "$ref": "#/$defs/gridEditorName" },
+          "min": { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "Number editors: the smallest value, also the start of step." },
+          "max": { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "Number editors: the largest value." },
+          "step": { "type": "number", "exclusiveMinimum": 0, "description": "Number editors: Up and Down move by it; values keep its multiple." },
+          "placeholder": { "type": "string", "maxLength": 256 },
+          "options": { "type": "array", "maxItems": 1000, "description": "Select choices, or the fixed suggestions of a lookup.",
+            "items": { "oneOf": [{ "$ref": "#/$defs/gridEditorValue" },
+              { "type": "object", "required": ["value"], "additionalProperties": false, "properties": { "value": { "$ref": "#/$defs/gridEditorValue" }, "label": { "type": "string" } } }] } },
+          "lookup": { "type": "object", "additionalProperties": false, "description": "Lookup editors: the column whose values it suggests through the data source, how many and after how many characters.",
+            "properties": { "column": { "$ref": "#/$defs/identifier" }, "limit": { "type": "integer", "minimum": 1, "maximum": 50 }, "minLength": { "type": "integer", "minimum": 0, "maximum": 16 } } }
+        } }
+      ]
+    },
+    "gridValidation": {
+      "description": "Checks an edited value must pass before its row commits; the runtime's messages are the gridEdit… labels unless message replaces them.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean" },
+        "min": { "type": ["number", "string"], "description": "A number, or an ISO 8601 moment with its time zone for date-and-time columns." },
+        "max": { "type": ["number", "string"], "description": "A number, or an ISO 8601 moment with its time zone for date-and-time columns." },
+        "minLength": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "maxLength": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "pattern": { "type": "string", "description": "A regular expression the whole text must match, in the syntax JavaScript and .NET share." },
+        "message": { "type": "string", "minLength": 1, "maxLength": 1024 }
+      }
+    },
+    "gridCommit": {
+      "description": "Changed rows a grid asks its writer to save: the new values and the values the reader started from, with the revision the grid read. The writer authorizes and executes each row (docs/data-protocol.md#editing-and-commit).",
+      "type": "object",
+      "required": ["protocol", "type", "view", "revision", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridCommit" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "revision": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "rows": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id", "values", "original"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" },
+          "values": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } },
+          "original": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } } }
+      }
+    },
+    "gridCommitResult": {
+      "description": "A writer's answer to gridCommit, per row: saved (with optional canonical cells), error (with a message or messages by column) or conflict. A row the answer leaves out was not saved; revision is the dataset's revision after the commit.",
+      "type": "object",
+      "required": ["protocol", "type", "view", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridCommitResult" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" },
+        "rows": { "type": "array", "items": { "type": "object", "required": ["id", "status"], "additionalProperties": false,
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "status": { "enum": ["saved", "error", "conflict"] },
+            "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
+            "error": { "type": "string" },
+            "errors": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "type": "string" } } },
+          "if": { "properties": { "status": { "not": { "const": "saved" } } } },
+          "then": { "not": { "required": ["cells"] } } } }
+      }
+    },
+    "gridRowDetail": {
+      "description": "A record's detail row payload in a reporting grid with detail rows: a table, properties or trusted HTML, or the inline data of the definition's nested grid (rows) or tree (roots).",
+      "anyOf": [
+        { "$ref": "#/$defs/detail" },
+        { "type": "object", "required": ["type", "rows"], "additionalProperties": false, "properties": { "type": { "const": "grid" }, "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } } } },
+        { "type": "object", "required": ["type", "roots"], "additionalProperties": false, "properties": { "type": { "const": "tree" }, "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } } } }
+      ]
+    },
+    "gridDetail": {
+      "type": "object", "additionalProperties": false,
+      "description": "Expandable detail rows. At most one content source: a page template id, a plugin detail renderer, or a nested grid or tree view whose data comes from each record's detail payload; none uses each record's own payload.",
+      "properties": {
+        "template": { "type": "string", "pattern": "^[A-Za-z][\\w:.-]{0,255}$" },
+        "renderer": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+        "view": { "anyOf": [{ "$ref": "#/$defs/grid" }, { "$ref": "#/$defs/view" }] },
+        "print": { "type": "boolean", "description": "Whether exports and print snapshots carry detail payloads. Default true." },
+        "label": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "gridGroupLevel": {
+      "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+      "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] },
+        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." } }
     },
     "gridClasses": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$" },
     "gridHighlightRule": {
@@ -66,6 +163,11 @@
         "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" }, "columnMenus": { "type": "boolean" } } },
         "exportFormats": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "not": { "const": "csv" } }, "description": "Identities of browser-registered export formats the Export menu offers after CSV, in order; an identity the page does not register is skipped. Absent offers every registered format." },
         "rowAction": { "enum": ["none", "details", "link"], "description": "What a plain row click does; a plain click never selects. Default none." },
+        "editing": { "type": "object", "additionalProperties": false, "description": "How editable columns edit (docs/editing.md); a browser host's editing option overrides these.",
+          "properties": { "readOnly": { "type": "boolean", "description": "The whole grid is read-only until the host calls setReadOnly(false)." },
+            "mode": { "enum": ["cell", "row"], "description": "One cell at a time, or every editable cell of a row. Default cell." },
+            "drawer": { "enum": ["phone", "always", "never"], "description": "When the record drawer becomes an edit form. Default phone." },
+            "editBar": { "type": "boolean", "description": "The toolbar shows unsaved changes with Undo, Redo, Discard and Save. Default true." } } },
         "autoHeight": { "type": "boolean", "description": "A grid whose rows fit is as tall as its rows; false keeps the host height. Default true." },
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
@@ -184,6 +286,9 @@
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
         "grouping": { "$ref": "#/$defs/gridGrouping" },
+        "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Initial runtime grouping levels, outermost first. Not combined with grouping." },
+        "groupable": { "type": "boolean", "description": "Readers can group by sortable columns. Not combined with grouping." },
+        "detail": { "$ref": "#/$defs/gridDetail" },
         "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "viewStorage": { "enum": ["session", "local"] },
@@ -205,7 +310,7 @@
     "gridAggregate": {
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
-        "operation": { "enum": ["count", "sum", "average", "minimum", "maximum"] },
+        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
         "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
     },
     "gridAggregateValues": {
@@ -226,7 +331,8 @@
       "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
         "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" } }
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" },
+        "groups": { "type": "array", "minItems": 1, "maxItems": 10000, "items": { "$ref": "#/$defs/gridGroup" }, "description": "The next level's groups inside this group; present on every group of an outer level and absent on the innermost." } }
     },
     "gridColumnLayout": {
       "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
@@ -651,6 +757,7 @@
         "search": { "type": "string" },
         "searchMode": { "enum": ["substring", "words"], "default": "substring" },
         "filterGroup": { "$ref": "#/$defs/gridFilterGroup" },
+        "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Runtime grouping levels of a definition with groupBy or groupable, always present for such definitions; their columns lead sort." },
         "sort": {
           "type": "array",
           "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": {
@@ -958,8 +1065,11 @@
           "type": "boolean"
         },
         "editable": {
-          "const": false
+          "type": "boolean",
+          "description": "Readers can edit the column's cells; the editing part loads with the grid (docs/editing.md)."
         },
+        "editor": { "$ref": "#/$defs/gridEditor" },
+        "validation": { "$ref": "#/$defs/gridValidation" },
         "hidden": {
           "type": "boolean"
         },

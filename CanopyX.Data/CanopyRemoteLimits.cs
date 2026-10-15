@@ -22,6 +22,8 @@ public sealed class CanopyRemoteLimits {
     private int _maxRequestBytes = 1048576;
     private int _maxSelectedIds = 10000;
     private int _maxGroups = 10000;
+    private int _maxCommitRows = 100;
+    private int _maxCommitTextLength = 65536;
 
     /// <summary>Gets or sets the largest page a client may request, from 1 to 10,000. Default 1,000.</summary>
     public int MaxPageSize { get => _maxPageSize; set => _maxPageSize = Check(value, 1, 10000, nameof(MaxPageSize)); }
@@ -60,8 +62,15 @@ public sealed class CanopyRemoteLimits {
     /// <summary>Gets or sets the most explicit record identities in a selected export or exclusion list, from 1 to 10,000. Default 10,000.</summary>
     public int MaxSelectedIds { get => _maxSelectedIds; set => _maxSelectedIds = Check(value, 1, 10000, nameof(MaxSelectedIds)); }
 
-    /// <summary>Gets or sets the most groups one grouped summary may return, from 1 to 10,000. Default 10,000.</summary>
+    /// <summary>Gets or sets the most groups one grouped summary may return, across all its levels, from 1 to 10,000. Default 10,000.</summary>
     public int MaxGroups { get => _maxGroups; set => _maxGroups = Check(value, 1, 10000, nameof(MaxGroups)); }
+
+    /// <summary>Gets or sets the most rows one commit may change, from 1 to 10,000. Larger batches are rejected before any row is written. Default 100.</summary>
+    public int MaxCommitRows { get => _maxCommitRows; set => _maxCommitRows = Check(value, 1, 10000, nameof(MaxCommitRows)); }
+
+    /// <summary>Gets or sets the longest text value a commit may write, in UTF-16 code units, from 1 to 1,048,576. Default 65,536.</summary>
+    /// <remarks>A column's <see cref="CanopyCellValidation.MaxLength"/> narrows it further; <see cref="MaxRequestBytes"/> bounds the whole body.</remarks>
+    public int MaxCommitTextLength { get => _maxCommitTextLength; set => _maxCommitTextLength = Check(value, 1, 1048576, nameof(MaxCommitTextLength)); }
 
     private static int Check(int value, int minimum, int maximum, string name) {
         if (value < minimum || value > maximum) throw new ArgumentOutOfRangeException(name, value, "The limit must be from " + minimum + " to " + maximum + ".");

@@ -31,6 +31,9 @@ public sealed class CanopyGridGroup {
     /// <summary>Gets optional host-owned display cells keyed by declared column identity, such as the worst state of a complete group.</summary>
     /// <remarks>These cells use the column presenter and never participate in record queries, sorting or exports. Numeric aggregates take precedence.</remarks>
     public IDictionary<string, CanopyCell> Cells { get; } = new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
+    /// <summary>Gets the groups of the next grouping level inside this group, covering its records in contiguous ranges.</summary>
+    /// <remarks>Every group of an outer level lists its inner groups; groups of the innermost level list none.</remarks>
+    public IList<CanopyGridGroup> Groups { get; } = new List<CanopyGridGroup>();
     internal void WriteJson(CanopyJsonWriter writer, CanopyDataGridView view) {
         CanopyCell.ValidateEntries(Cells);
         foreach (var entry in Cells) {
@@ -50,6 +53,11 @@ public sealed class CanopyGridGroup {
                 if (entry.Value == null) writer.Null(); else entry.Value.WriteJson(writer);
             }
             writer.EndObject();
+        }
+        if (Groups.Count > 0) {
+            writer.Name("groups").BeginArray();
+            foreach (var group in Groups) group.WriteJson(writer, view);
+            writer.EndArray();
         }
         writer.EndObject();
     }

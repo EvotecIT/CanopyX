@@ -51,8 +51,18 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets whether the column can sort cell values; tree views sort siblings.</summary>
     public bool Sortable { get; set; }
 
-    /// <summary>Gets or sets whether the interactive runtime offers an editor for this column.</summary>
-    /// <remarks>The host edit hook validates and executes proposals. The runtime never changes the node value itself.</remarks>
+    /// <summary>Gets or sets whether readers can edit this column.</summary>
+    /// <remarks>
+    /// <para>
+    /// In a tree view the interactive runtime offers an editor that raises one edit proposal per change; the host edit hook
+    /// validates and executes it, and the runtime never changes the node value itself.
+    /// </para>
+    /// <para>
+    /// In a flat grid the editing part offers the column's typed <see cref="Editor"/> with its <see cref="Validation"/>. Edits
+    /// stay in the grid's change set (marked and undoable) until a row or batch commit hands them to the host, which saves them
+    /// and confirms each row. See docs/editing.md.
+    /// </para>
+    /// </remarks>
     public bool Editable { get; set; }
 
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
@@ -107,6 +117,8 @@ public sealed partial class CanopyColumn {
             writer.Property("sortable", true);
         }
         if (Editable) writer.Property("editable", true);
+        if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
+        if (grid && Validation != null) { writer.Name("validation"); Validation.WriteJson(writer); }
         if (Wrap) writer.Property("wrap", true);
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);

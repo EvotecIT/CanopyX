@@ -20,8 +20,8 @@ public sealed class EfCoreSqliteTests : IClassFixture<EfCoreSqliteTests.Database
         public void Dispose() => Sqlite.Dispose();
     }
 
-    private (CanopyRemoteHandler Reference, CanopyRemoteHandler Ef, FleetDb Db) Handlers(bool grouped = false, bool log = false) {
-        var view = Fleet.View(grouped);
+    private (CanopyRemoteHandler Reference, CanopyRemoteHandler Ef, FleetDb Db) Handlers(bool grouped = false, bool log = false, CanopyDataGridView? definition = null) {
+        var view = definition ?? Fleet.View(grouped);
         var map = Fleet.Map(view);
         var db = _database.Sqlite.Create(log);
         var ef = new CanopyQueryableProvider<Host>(() => db.Hosts, map, new CanopyQueryOptions { Executor = new EfExecutor(), Revision = _ => new ValueTask<string>("r1") });
@@ -72,6 +72,36 @@ public sealed class EfCoreSqliteTests : IClassFixture<EfCoreSqliteTests.Database
                 LinqOracleTests.AssertSameSummary(await LinqOracleTests.Answer(() => reference.SummaryAsync(summary)), await LinqOracleTests.Answer(() => ef.SummaryAsync(summary)), "Summary " + i + " differs: " + summary);
             }
             answers.AssertMostlyAnswered(80);
+        }
+    }
+
+    [Fact]
+    public async Task RandomMultiLevelGrouping_EfCoreMatchesReference() {
+        var (reference, ef, db) = Handlers(log: true, definition: Fleet.DynamicView());
+        using (db) {
+            var queries = new RandomQueries(_database.Hosts, 34);
+            var answers = new Answers();
+            for (var i = 0; i < 120; i++) {
+                var page = queries.GroupedQuery(1200);
+                Assert.True(answers.Note(await LinqOracleTests.Answer(() => reference.QueryAsync(page))) == await LinqOracleTests.Answer(() => ef.QueryAsync(page)), "Grouped page " + i + " differs: " + page);
+                var summary = MultiLevelGroupingTests.WithRevision(page);
+                LinqOracleTests.AssertSameSummary(await LinqOracleTests.Answer(() => reference.SummaryAsync(summary)), await LinqOracleTests.Answer(() => ef.SummaryAsync(summary)), "Summary " + i + " differs: " + summary);
+            }
+            answers.AssertMostlyAnswered(120);
+            // Several grouping columns become one GROUP BY, and distinct counts COUNT(DISTINCT ...), in the database.
+            var sql = string.Join("\n", _database.Sqlite.Sql);
+            Assert.Matches("GROUP BY \"[^\"]+\"\\.\"[^\"]+\", ", sql);
+            Assert.Contains("COUNT(DISTINCT", sql, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public async Task GroupedExport_EfCoreStreamsTheReferenceFile() {
+        var (reference, ef, db) = Handlers(definition: Fleet.DynamicView());
+        using (db) {
+            const string query = "{\"revision\":\"r1\",\"groupBy\":[{\"column\":\"os\",\"direction\":\"asc\",\"aggregate\":\"memoryAvg\"},{\"column\":\"site\",\"direction\":\"desc\"}],\"sort\":[{\"column\":\"lastSeen\",\"direction\":\"desc\"},{\"column\":\"name\",\"direction\":\"asc\"}]}";
+            var request = "{\"scope\":\"filtered\",\"revision\":\"r1\",\"query\":" + query + ",\"values\":\"raw\"}";
+            Assert.Equal(await Export(reference, request), await Export(ef, request));
         }
     }
 

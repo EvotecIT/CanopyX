@@ -104,6 +104,9 @@ public static partial class CanopyStaticHtml {
             }
             html.Append("</tr>");
             printedRows.Add(printedCells.AsReadOnly());
+            // Detail rows print under their record (unless the definition excludes them from print); HTML stays text.
+            var detail = view.Reporting?.Detail is { Print: true } definition ? StaticDetail(definition, row.Detail, settings, view.Labels) : null;
+            if (detail != null) AppendDetail(html, detail, 1, columns.Length, styles, view.Labels);
         }
         html.Append("</tbody>");
         if (!matching.HasValue || rows.Length < matching.Value) {
@@ -116,5 +119,31 @@ public static partial class CanopyStaticHtml {
         }
         return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
             matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue);
+    }
+
+    /// <summary>A record's detail as the static table, property list or text the fallback prints: nested grid rows and tree
+    /// roots become a table with the nested view's visible columns, tree levels indented.</summary>
+    private static CanopyDetail? StaticDetail(CanopyGridDetail definition, CanopyDetail? detail, CanopyStaticHtmlOptions settings, CanopyLabels labels) {
+        if (detail is CanopyGridRowsDetail rows && definition.View != null) {
+            var columns = definition.View.Columns.Where(column => !column.Hidden).ToArray();
+            var table = new CanopyTableDetail(definition.Label).AddColumns(columns.Select(column => column.Title).ToArray());
+            foreach (var row in rows.Rows.Take(settings.MaxRows)) table.AddRow(columns.Select(column => row.Cells.TryGetValue(column.Id, out var cell) && cell != null ?
+                new CanopyCell(cell.DisplayText(column.Kind, labels)) { Tone = cell.Tone } : new CanopyCell()).ToArray());
+            return table;
+        }
+        if (detail is CanopyTreeDetail tree && definition.TreeView != null) {
+            var columns = definition.TreeView.Columns.Where(column => !column.Hidden).ToArray();
+            var table = new CanopyTableDetail(definition.Label).AddColumns(columns.Select(column => column.Title).ToArray());
+            var pending = new Stack<(CanopyNode Node, int Level)>();
+            for (var index = tree.Roots.Count - 1; index >= 0; index--) pending.Push((tree.Roots[index], 0));
+            while (pending.Count > 0 && table.Rows.Count < settings.MaxRows) {
+                var (node, level) = pending.Pop();
+                table.AddRow(columns.Select((column, index) => index == 0 ? new CanopyCell(new string('\u00A0', level * 2) + node.Label) :
+                    node.Cells.TryGetValue(column.Id, out var cell) && cell != null ? new CanopyCell(cell.DisplayText(column.Kind, labels)) : new CanopyCell()).ToArray());
+                for (var child = node.Children.Count - 1; child >= 0; child--) pending.Push((node.Children[child], level + 1));
+            }
+            return table;
+        }
+        return detail is CanopyTableDetail || detail is CanopyPropertiesDetail || detail is CanopyHtmlDetail ? detail : null;
     }
 }

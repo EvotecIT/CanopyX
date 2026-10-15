@@ -43,6 +43,14 @@ public sealed class CanopyGridQuery {
     /// <summary>Gets or sets an optional bounded AND/OR expression, combined with search and flat predicates using AND.</summary>
     public CanopyGridFilterGroup? FilterGroup { get; set; }
 
+    /// <summary>Gets or sets the runtime grouping levels of a definition with <see cref="CanopyGridReporting.GroupBy"/> or
+    /// <see cref="CanopyGridReporting.Groupable"/>. Null uses the definition's declared levels; an empty list is ungrouped.</summary>
+    /// <remarks>The levels' columns lead the written sort (ascending for a level ordered by an aggregate); other sorts follow.</remarks>
+    public IList<CanopyGridGroupLevel>? GroupBy { get; set; }
+
+    /// <summary>The grouping levels this query applies: its own, or the definition's declared levels.</summary>
+    internal IList<CanopyGridGroupLevel> Levels(CanopyDataGridView view) => GroupBy ?? view.Reporting?.GroupBy ?? (IList<CanopyGridGroupLevel>)Array.Empty<CanopyGridGroupLevel>();
+
     /// <summary>Gets the ordered sort keys. The runtime appends stable identity as the final tie-breaker.</summary>
     public IList<CanopyGridSort> Sort { get; } = new List<CanopyGridSort>();
 
@@ -96,6 +104,8 @@ public sealed class CanopyGridQuery {
             if (filter == null || !columns.TryGetValue(filter.Column, out var column)) throw new InvalidOperationException("Grid predicates must identify declared columns.");
             filter.Validate(column);
         }
+        if (GroupBy != null && view.Reporting?.DynamicGrouping != true) throw new InvalidOperationException("Grouping levels need a definition with runtime grouping.");
+        if (GroupBy != null) view.Reporting!.ValidateLevels(GroupBy, view.Columns);
         var predicates = Filters.Count;
         var groups = 0;
         FilterGroup?.Validate(columns, 1, ref predicates, ref groups);
@@ -108,12 +118,16 @@ public sealed class CanopyGridQuery {
         if (cursor) writer.OptionalProperty("cursor", Cursor); else writer.Property("offset", Offset);
         writer.Property("limit", Limit).Property("search", Search ?? string.Empty).OptionalProperty("revision", Revision).Name("sort").BeginArray();
         var grouping = view.Reporting?.Grouping;
-        if (grouping != null) new CanopyGridSort(grouping.Column, grouping.Descending).WriteJson(writer);
-        foreach (var sort in Sort) if (sort.Column != grouping?.Column) sort.WriteJson(writer);
+        var levels = Levels(view);
+        var leading = new HashSet<string>(StringComparer.Ordinal);
+        if (grouping != null) { new CanopyGridSort(grouping.Column, grouping.Descending).WriteJson(writer); leading.Add(grouping.Column); }
+        foreach (var level in levels) { new CanopyGridSort(level.Column, level.Aggregate == null && level.Descending).WriteJson(writer); leading.Add(level.Column); }
+        foreach (var sort in Sort) if (!leading.Contains(sort.Column)) sort.WriteJson(writer);
         writer.EndArray().Name("filters").BeginArray();
         foreach (var filter in Filters) filter.WriteJson(writer);
         writer.EndArray();
         if (SearchMode == CanopyGridSearchMode.Words) writer.Property("searchMode", "words");
+        if (view.Reporting?.DynamicGrouping == true) { writer.Name("groupBy").BeginArray(); foreach (var level in levels) level.WriteJson(writer); writer.EndArray(); }
         if (FilterGroup != null) {
             writer.Name("filterGroup");
             FilterGroup.WriteJson(writer);

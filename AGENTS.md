@@ -6,7 +6,7 @@ CanopyX is a generic, dependency-free engine for large interactive data views. T
 
 - CanopyX knows nothing about Active Directory, PKI, TestimoX, ADPlayground, CertNoob, or any other product. Products map their own data into nodes, cells, badges, flags, and rollup values; CanopyX never computes domain facts.
 - Keep `CanopyX` free of runtime package dependencies. `CanopyX.Html` depends only on `CanopyX`. `CanopyX.Data` depends only on `CanopyX` (plus `System.Text.Json` and `Microsoft.Bcl.AsyncInterfaces` on `net472` and `netstandard2.0`); `CanopyX.AspNetCore` adds only the ASP.NET Core shared framework. EF Core and database drivers stay in hosts and samples.
-- CanopyX never performs writes. Future context actions call hooks that the host provides and governs.
+- CanopyX never performs writes. Future context actions call hooks that the host provides and governs. `CanopyX.Data` saves grid commits only through a writer the host maps (`ICanopyDataWriter`, or `CanopyQueryableWriter<T>` over the host's own `ICanopyWriteStore<T>`), behind a write policy the host names.
 - Keep the static fallback renderer script-free and inline-style friendly so the output survives email clients, print, and Word.
 - Static non-interactive tables, lists, and KPI cards belong to `ChartForgeX.VisualBlocks`. Charts come from ChartForgeX. Do not rebuild either here.
 - HtmlForgeX hosts CanopyX through its own `HtmlForgeX.CanopyX` bridge. Do not reference HtmlForgeX from this repository.
