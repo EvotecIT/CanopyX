@@ -31,7 +31,7 @@
       this.lang = document.documentElement.lang || undefined;
       // Per-control toolbar switches: the document's toolbar object, then the host's options; a missing switch keeps its control.
       this.tools = Object.assign({}, this.view.toolbar, options.toolbar);
-      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|count)$/.test(name) || typeof value !== "boolean"))
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|count|columnMenus)$/.test(name) || typeof value !== "boolean"))
         throw new Error("CanopyX: toolbar options are booleans by control name.");
       this.labels = labelsFor(this.view.labels, options.labels); this.local = this.view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels); this.multi = this.view.selection === "multiple";
@@ -43,12 +43,14 @@
       this.ready = this.initializeState();
     }
 
+    // False when a listener cancelled the event or the callback returned false; only rowActivate has a default to cancel.
     emit(name, detail) {
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail }));
+      let go = this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail, cancelable: true }));
       const callback = this.opts["on" + name[0].toUpperCase() + name.slice(1)];
       if (typeof callback === "function") {
-        try { callback(detail); } catch (error) { if (global.console) global.console.error(error); }
+        try { go = callback(detail) !== false && go; } catch (error) { if (global.console) global.console.error(error); }
       }
+      return go;
     }
 
     stateChanged() {
@@ -210,7 +212,7 @@
       this.resizeObserver.disconnect();
       this.detailObserver?.disconnect(); this.rowHeights?.clear(); this.rowOffsets = null;
       this.restoreHeight();
-      this.host.classList.remove("cx-data-grid","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right","cx-grid-awaiting","cx-pins");
+      this.host.classList.remove("cx-data-grid","cx-chrome","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right","cx-grid-awaiting","cx-pins");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);

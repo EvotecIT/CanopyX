@@ -270,6 +270,13 @@ api.selectAll({ scope: "loaded" });
 await api.updateActiveFilters({ add: ["flagged"], remove: ["other"] });
 // @ts-expect-error Filter changes contain arrays of declared IDs.
 api.updateActiveFilters({ remove: "other" });
+// Tree toolbar switches, host actions, all-rows exports, named views and column order.
+createTreeGrid(document.createElement("div"), { view: { ...view, toolbar: { export: false }, autoHeight: false, exportFormats: ["xlsx"] },
+  toolbar: { columns: false, search: false }, actions: [{ label: "Audit", run: ({ nodes, signal }) => signal.aborted || nodes.length }] });
+const treeScope: "visible" | "selected" | "all" = api.prepareExport({ scope: "all" }).request.scope;
+api.saveView("Mine"); const savedViews: string[] = api.getSavedViews(); await api.resetView(); api.setColumnOrder(["name"]);
+// @ts-expect-error Tree toolbar switches are booleans.
+createTreeGrid(document.createElement("div"), { view, toolbar: { export: "no" } });
 CanopyX.badge({ text: labels.saveEdit, tone: "success" });
 await sources.inline(view).page(null, null);
 
@@ -350,3 +357,49 @@ const lazySource: DataSource = { queryAware: true,
 };
 // Input action definitions remain editable; the runtime freezes its own descriptor snapshot.
 if (view.contextActions?.[0]) view.contextActions[0].label = "Inspect record";
+
+// Export format providers: one writer for tree and flat-grid captures, registered for the page or per grid.
+const workbook: import("@evotecit/canopyx").ExportFormat = { id: "xlsx", label: "Download Excel", extension: "xlsx",
+  mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  async write(capture, { signal, progress, fileName }) {
+    const lines: string[] = [fileName];
+    for await (const row of capture.rows({ signal })) lines.push(capture.request.columns.map(column => row.cells[column.id]?.text ?? "").join("\t"));
+    progress(lines.length - 1);
+    return new Blob(lines);
+  } };
+const disposeWorkbook: () => void = CanopyX.registerExportFormat(workbook);
+disposeWorkbook();
+const exportingTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "export-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "multiple",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], roots: [] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 120000 });
+const treeCapture = exportingTree.prepareExport({ scope: "selected" });
+const treeLevel: number = treeCapture.request.recordCount;
+void exportingTree.exportAs("xlsx", { onProgress: progress => progress.completed, download: false }).then(result => result.blob.size + treeLevel);
+const exportingGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "export-grid", label: "Grid",
+  source: { kind: "inline" }, rows: [], pageSize: 50, selection: "multiple", search: true, exportFormats: ["xlsx", "pdf"],
+  columns: [{ id: "name", title: "Name", kind: "text" }] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 600000 });
+void exportingGrid.exportAs("xlsx", { scope: "filtered", timeoutMs: 30000 }).then(result => result.fileName);
+// Row activation and menu closing, on grids and trees.
+const activatingGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "activate-grid", label: "Grid",
+  source: { kind: "inline" }, rows: [], pageSize: 50, selection: "single", search: false, rowAction: "details", columns: [{ id: "name", title: "Name", kind: "text" }] },
+  onRowActivate: event => { const id: string = event.id; const keyboard: boolean = event.keyboard; return event.row.cells.name === undefined && id.length > 0 && keyboard; } });
+activatingGrid.closeMenus();
+const activatingTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "activate-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], roots: [] }, onRowActivate: (node, context) => node.id === "a" && !context.keyboard ? false : undefined });
+activatingTree.closeMenus();
+// @ts-expect-error A tree's activation hook takes the node and a context.
+createTreeGrid(document.createElement("div"), { view, onRowActivate: (event: { id: number }) => false });
+// @ts-expect-error Format writers return a Blob or bytes.
+CanopyX.registerExportFormat({ id: "bad", label: "Bad", extension: "txt", write: () => 42 });
+
+// Column tooltips, the column menu switch and tree pins.
+const tipGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "tip-grid", label: "Grid", source: { kind: "inline" }, rows: [], pageSize: 50,
+  selection: "none", search: false, toolbar: { columnMenus: false }, columns: [{ id: "name", title: "Name", kind: "text", tooltip: "auto" }, { id: "path", title: "Path", kind: "text", tooltip: "name" }] } });
+void tipGrid;
+const pinTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "pin-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200, tooltip: "auto" }, { id: "state", title: "State", kind: "text", width: 90, pinned: "right" }], roots: [] } });
+pinTree.setColumnPinned("state", "left");
+// @ts-expect-error Pins are left, right or none.
+pinTree.setColumnPinned("state", "top");
+pinTree.openDetails("node-1");
+// @ts-expect-error A node is named by its id.
+pinTree.openDetails(1);

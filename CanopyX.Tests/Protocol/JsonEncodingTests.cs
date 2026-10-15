@@ -44,7 +44,7 @@ public sealed class JsonEncodingTests {
         view.Roots.Add(folder);
 
         const string expected = "{\"protocol\":\"canopyx/2\",\"type\":\"view\",\"id\":\"v\",\"label\":\"Files\",\"rowHeight\":28,\"pageSize\":100,"
-            + "\"selection\":\"single\",\"columns\":[{\"id\":\"name\",\"title\":\"Name\",\"width\":160,\"kind\":\"text\",\"sortable\":true},"
+            + "\"selection\":\"single\",\"columns\":[{\"id\":\"name\",\"title\":\"Name\",\"width\":160,\"autoWidth\":true,\"kind\":\"text\",\"sortable\":true},"
             + "{\"id\":\"size\",\"title\":\"Size\",\"width\":90,\"kind\":\"number\"}],"
             + "\"search\":{\"minLength\":2,\"maxResults\":20},\"source\":{\"kind\":\"inline\"},"
             + "\"roots\":[{\"id\":\"a\",\"label\":\"Folder\",\"cells\":{\"size\":1536},\"hasChildren\":true,\"childCount\":1,\"expanded\":true,"

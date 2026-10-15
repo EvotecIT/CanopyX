@@ -65,10 +65,7 @@
         const column = this.columns.find(c => c.id === saved.id);
         if (column) { column.width = columnWidth(column, saved.width); column.hidden = saved.hidden; }
       }
-      this.toolbar.querySelectorAll("[data-cx-column]").forEach(input => {
-        const column = this.columns.find(c => c.id === input.getAttribute("data-cx-column"));
-        if (column) input.checked = !column.hidden;
-      });
+      this.syncColumnControls();
       this.sortState = state.sort;
       this.inlineOrderVersion = (this.inlineOrderVersion || 0) + 1;
       this.setTreeColumnPinned(state.pinTreeColumn);

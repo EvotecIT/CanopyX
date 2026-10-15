@@ -12,7 +12,7 @@ view.Labels.Columns = "Pola raportu";
 view.SaveHtmlPage("report.html", new CanopyHtmlOptions { Language = "pl" });
 ```
 
-The writer carries browser labels in the view's `labels` object. The same pack supplies the script-free fallback's notes, boolean values and time suffixes. `CanopyStaticHtmlOptions.Culture` controls its number formatting. Cloning or editing a pack does not change another factory result.
+The writer carries browser labels in the view's `labels` object. A tree view carries the labels the tree runtimes read, its toolbar menus' `Grid*` labels (Views, Export, More, …) among them, and leaves the other flat-grid labels out, so a tree with a complete pack stays on a tree runtime (the interactive one, for the interaction texts) with translated menus. The same pack supplies the script-free fallback's notes, boolean values and time suffixes. `CanopyStaticHtmlOptions.Culture` controls its number formatting. Cloning or editing a pack does not change another factory result.
 
 ## JavaScript modules
 
@@ -27,7 +27,7 @@ const grid = createDataGrid(host, {
 });
 ```
 
-Use `/locales/de` for German and `/locales/es` for Spanish. The default export and named `labels` export contain every browser key, including the optional interaction/reporting strings. They are frozen. The ordinary `@evotecit/canopyx/grid` entry only knows the labels of the controls it draws: pass a complete pack to the reporting entry, or pick the keys you need. In .NET, setting a reporting-only label (`CanopyLabels.RequiresReportingRuntime`) selects the reporting entry automatically. The named `staticLabels` export contains the four static-only keys (`overflowNote`, `unknownTotal`, `hiddenRows`, `fullReport`); a host rendering its own fallback can consume these separately. Static-only keys are not browser view fields.
+Use `/locales/de` for German and `/locales/es` for Spanish. The default export and named `labels` export contain every browser key, including the optional interaction/reporting strings. They are frozen. The ordinary `@evotecit/canopyx/grid` entry only knows the labels of the controls it draws: pass a complete pack to the reporting entry, or pick the keys you need. The tree entries (`core.js`, and `classic.js` and `@evotecit/canopyx` with the interaction texts) know the core texts and the tree toolbar menus' `grid*` labels (`CanopyX.labels` lists them); pick those keys from a pack for a tree. In .NET, setting a reporting-only label (`CanopyLabels.RequiresReportingRuntime`) on a flat grid selects the reporting entry automatically; a tree leaves flat-grid labels out instead. The named `staticLabels` export contains the four static-only keys (`overflowNote`, `unknownTotal`, `hiddenRows`, `fullReport`); a host rendering its own fallback can consume these separately. Static-only keys are not browser view fields.
 
 ## Offline classic scripts
 

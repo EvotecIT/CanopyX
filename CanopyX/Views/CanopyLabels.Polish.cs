@@ -95,6 +95,8 @@ public sealed partial class CanopyLabels {
         GridFilteredResults = "Przefiltrowane wyniki",
         GridSelectedRows = "Zaznaczone wiersze",
         GridAllResults = "Wszystkie wyniki",
+        GridVisibleRows = "Widoczne wiersze",
+        GridAllRows = "Wszystkie wiersze",
         GridDownloadCsv = "Pobierz plik CSV",
         GridCopy = "Kopiuj",
         GridDetails = "Szczegóły rekordu",

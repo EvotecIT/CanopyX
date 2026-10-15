@@ -1,7 +1,7 @@
 import CanopyX from "./index.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
-import type { HostOptions } from "./hosts.js";
+import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
 export * from "./index.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -60,6 +60,8 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   rowHeader?: boolean;
   /** Retain this column during responsive fitting; explicit user hiding still applies. */
   alwaysVisible?: boolean;
+  /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
+  tooltip?: string;
 };
 export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
@@ -77,7 +79,7 @@ export type GridPresenter =
   | { readonly kind: "boolean"; readonly inverted?: boolean }
   | { readonly kind: "list"; readonly separator: string; readonly limit: number }
   | { readonly kind: "longText"; readonly mono?: boolean }
-  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain muted text. */ readonly quietTones?: readonly string[] }
+  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain text instead of a chip or dot. */ readonly quietTones?: readonly string[]; /** Quiet values muted (default) or in the normal text colour. */ readonly quietStyle?: "muted" | "plain" }
   | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
@@ -149,6 +151,8 @@ export interface GridToolbarControls {
   export?: boolean;
   /** More menu: host actions, Record details and Print. */
   more?: boolean;
+  /** Each header's column menu button; switched off, column fitting keeps no room for it. */
+  columnMenus?: boolean;
   /** Result count shown with the query chips. */
   count?: boolean;
 }
@@ -223,6 +227,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   statusBar?: boolean;
   /** Per-control toolbar switches (the search box is the search property). */
   toolbar?: GridToolbarControls;
+  /** Ids of browser-registered export formats the Export menu offers after CSV, in order; an id the page does not register is skipped. */
+  exportFormats?: string[];
   /** A grid whose rows fit is as tall as its rows (default true). */
   autoHeight?: boolean;
   /** What a plain row click does; it never selects (default "none"). */
@@ -373,6 +379,24 @@ export interface GridExportProgress {
   readonly completed: number;
   readonly total: number | null;
 }
+/** The detail of canopyx:link and the argument of onLink: a link presenter cell the user follows (by click, Enter or the row's link action). */
+export interface GridLinkActivation {
+  readonly id: string;
+  /** A frozen copy of the loaded row. */
+  readonly row: Readonly<GridRow>;
+  /** The id of the column whose link it is. */
+  readonly column: string;
+  /** The resolved address. */
+  readonly href: string;
+}
+/** The detail of canopyx:rowActivate and the argument of onRowActivate on a flat grid. */
+export interface GridRowActivation {
+  readonly id: string;
+  /** A frozen copy of the loaded row. */
+  readonly row: Readonly<GridRow>;
+  /** True for Enter or Ctrl/Command+Enter, false for a click or double click. */
+  readonly keyboard: boolean;
+}
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
   /** Defaults to visible columns in their current order. */
@@ -455,13 +479,17 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   renderers?: Record<string, (row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void>;
   cachePageLimit?: number;
   requestTimeoutMs?: number;
+  /** Formats the Export menu lists after CSV: ids of registered formats or provider objects, in order. Wins over the view's exportFormats; absent offers every registered format. */
+  exportFormats?: readonly (string | ExportFormat<GridExport<Q>>)[];
+  /** Safety timeout for export format writers and onExport, 1..2147483647 ms (default 600000). Page reads keep requestTimeoutMs. */
+  exportTimeoutMs?: number;
   onQuery?: (event: GridQueryEvent<Q>) => void;
   onSelect?: (event: { ids: string[]; selection?: GridSelection<Q> }) => void;
   onError?: (event: { error: Error }) => void;
   onColumnResize?: (event: { column: string; width: number }) => void;
   onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
-  /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. */
+  /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. Runs under exportTimeoutMs. */
   onExport?: (event: { format: string; request: GridExportRequest<Q>; capture: GridExport<Q>; signal: AbortSignal;
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
     reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
@@ -469,6 +497,13 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: Readonly<GridRow>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  /** Row activation: a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, or a click with rowAction (or on a
+   * phone). Runs before the row's own action (onDetails or the drawer, or the row's link); returning false keeps that from
+   * running, so the host can open its own view of the row. The cancelable canopyx:rowActivate event carries the same detail. */
+  onRowActivate?: (event: GridRowActivation) => boolean | void;
+  /** A link cell being followed. Returning false (or cancelling the canopyx:link event) keeps the browser from following it,
+   * so the host can route the address itself. */
+  onLink?: (event: GridLinkActivation) => boolean | void;
   /** Adds Chart to the selection bar. The host owns chart generation. */
   onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
@@ -562,7 +597,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   prepareExport(options: GridExportOptions): GridExport<Q>;
   toCsv(options: GridExportOptions): Promise<string>;
   copy(options: GridExportOptions): Promise<string>;
-  exportToHost(format: string, options: GridExportOptions): Promise<void>;
+  /** Runs onExport under the export safety timeout (timeoutMs, else exportTimeoutMs); page reads keep requestTimeoutMs. */
+  exportToHost(format: string, options: GridExportOptions & { timeoutMs?: number }): Promise<void>;
+  /** Captures now (invalid capture options throw synchronously), then runs a registered or configured export format (the same writers the Export menu lists) and downloads its file. */
+  exportAs(format: string, options: Omit<GridExportOptions, "onProgress" | "maxRows"> & ExportFormatOptions): Promise<ExportFormatResult>;
   /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
   materializeExport?(options: GridExportOptions): Promise<GridExportSnapshot<Q>>;
   /** Reporting runtime only. Passes the same bounded snapshot to onPrint; never prints viewport DOM. */
@@ -573,6 +611,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
   scrollToRow(index: number): Promise<void>;
   retry(): Promise<Q | void>;
+  /** Closes this grid's toolbar menus and column popover. To close the menus of every view, dispatch canopyx:closemenus on the document. */
+  closeMenus(): void;
   /** Repaints the accepted data without querying the source. */
   refresh(): void;
   /** Requests a fresh source revision with accepted filters and ordering, or initial definition criteria before acceptance. Traversal restarts at the first page. */

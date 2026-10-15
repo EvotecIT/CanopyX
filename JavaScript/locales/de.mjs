@@ -91,6 +91,8 @@ const labels = Object.freeze({
   gridFilteredResults: "Gefilterte Ergebnisse",
   gridSelectedRows: "Ausgewählte Zeilen",
   gridAllResults: "Alle Ergebnisse",
+  gridVisibleRows: "Sichtbare Zeilen",
+  gridAllRows: "Alle Zeilen",
   gridDownloadCsv: "CSV herunterladen",
   gridCopy: "Kopieren",
   gridDetails: "Datensatzdetails",

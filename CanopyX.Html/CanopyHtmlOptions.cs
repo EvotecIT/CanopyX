@@ -10,7 +10,11 @@ public sealed class CanopyHtmlOptions {
     private string _assetBaseUrl = "assets/";
     private string _language = "en";
 
-    /// <summary>Gets or sets how a full page includes the runtime assets. Fragments never include them.</summary>
+    /// <summary>
+    /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
+    /// <see cref="CanopyAssetMode.Inline"/> (the default) a fragment carries the inert payloads of the optional parts its view
+    /// loads (tree tools, export, filter editor, history presenters), once per <see cref="Document"/> when fragments share one.
+    /// </summary>
     public CanopyAssetMode AssetMode { get; set; }
 
     /// <summary>Gets or sets the browser entry point. Views enabling interaction features automatically use the interactive tree.</summary>
@@ -57,6 +61,13 @@ public sealed class CanopyHtmlOptions {
     /// the view's filters.
     /// </summary>
     public ISet<string> HiddenFilterIds { get; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Gets or sets the HTML document the fragment is written into. Inline fragments that share a document embed the tree
+    /// tools part, the grid export part, the filter editor and the history presenters once, in the first fragment that needs each; without one,
+    /// every inline fragment carries its own copies. Pages ignore it. See <see cref="CanopyHtmlDocument"/>.
+    /// </summary>
+    public CanopyHtmlDocument? Document { get; set; }
 
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }

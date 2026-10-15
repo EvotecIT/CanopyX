@@ -75,26 +75,34 @@ public sealed class LabelsTests {
             property.SetValue(labels, "x {time}");
         }
 
-        var view = View();
-        view.Labels = labels;
-        var written = JsonNode.Parse(view.ToJson())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
+        // A flat grid writes them all.
+        var grid = new CanopyDataGridView("labelled", "Labelled") { Labels = labels };
+        grid.Columns.Add(new CanopyColumn("name", "Name"));
+        var written = JsonNode.Parse(grid.ToJson())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
         var outlineOnly = new[] { nameof(CanopyLabels.OverflowNote), nameof(CanopyLabels.UnknownTotal), nameof(CanopyLabels.HiddenRows), nameof(CanopyLabels.FullReport) };
         string Wire(string name) => char.ToLowerInvariant(name[0]) + name.Substring(1);
         var browser = properties.Where(property => !outlineOnly.Contains(property.Name)).ToList();
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 
+        // A tree writes the labels the tree runtimes read: the core and interaction texts and its toolbar menus' grid labels,
+        // the names the tree and interactive runtimes define.
+        var view = View();
+        view.Labels = labels;
+        var tree = JsonNode.Parse(view.ToJson())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
+        Assert.Equal(RuntimeLabelNames(CanopyX.Html.CanopyRuntime.InteractiveTreeGrid), tree);
+        Assert.All(RuntimeLabelNames(CanopyX.Html.CanopyRuntime.TreeGrid), name => Assert.Contains(name, tree));
+        Assert.Contains("gridViews", RuntimeLabelNames(CanopyX.Html.CanopyRuntime.TreeGrid));
+        Assert.DoesNotContain("gridSortAscending", tree);
+
         // The runtime's English texts are the C# defaults, name for name.
-        var script = CanopyX.Html.CanopyHtmlAssets.GetScript(CanopyX.Html.CanopyRuntime.ReportingGrid);
-        var blocks = System.Text.RegularExpressions.Regex.Matches(script,
-            @"DEFAULT_LABELS\s*=\s*Object\.freeze\((?:Object\.assign\(\{\},\s*DEFAULT_LABELS,\s*)?\{(?<body>[\s\S]*?)\}\)?\);");
-        var runtime = blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
-                "(\\w+):\\s*(\"(?:[^\"\\\\]|\\\\.)*\")"))
-            .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
+        var runtime = RuntimeLabels(CanopyX.Html.CanopyRuntime.ReportingGrid);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();
         foreach (var property in browser) {
             Assert.Equal(property.GetValue(english), runtime[Wire(property.Name)]);
         }
+        // The tree runtimes define their toolbar menus' labels with the same English texts.
+        foreach (var (name, text) in RuntimeLabels(CanopyX.Html.CanopyRuntime.InteractiveTreeGrid)) Assert.Equal(runtime[name], text);
 
         // And the schema knows exactly those names.
         var schema = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-2.schema.json")))!;
@@ -142,6 +150,17 @@ public sealed class LabelsTests {
         Assert.Contains("3/nieznanej liczby", once);
         Assert.Contains(">Więcej</a>", once);
     }
+
+    /// <summary>The English labels a runtime defines, by name.</summary>
+    private static Dictionary<string, string?> RuntimeLabels(CanopyX.Html.CanopyRuntime runtime) {
+        var blocks = System.Text.RegularExpressions.Regex.Matches(CanopyX.Html.CanopyHtmlAssets.GetScript(runtime),
+            @"DEFAULT_LABELS\s*=\s*Object\.freeze\((?:Object\.assign\(\{\},\s*DEFAULT_LABELS,\s*)?\{(?<body>[\s\S]*?)\}\)?\);");
+        return blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
+                "(\\w+):\\s*(\"(?:[^\"\\\\]|\\\\.)*\")"))
+            .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
+    }
+
+    private static List<string> RuntimeLabelNames(CanopyX.Html.CanopyRuntime runtime) => RuntimeLabels(runtime).Keys.OrderBy(name => name, StringComparer.Ordinal).ToList();
 
     private static CanopyTreeView View() {
         var view = new CanopyTreeView("labelled", "Labelled") { Search = new CanopySearchOptions() };

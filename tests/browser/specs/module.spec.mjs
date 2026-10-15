@@ -17,6 +17,8 @@ async function serve(page, script, body = '<div id="tree" class="cx-host"></div>
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === "/runtime.mjs") return route.fulfill({ contentType: "text/javascript", body: runtime });
     if (pathname === "/classic.js") return route.fulfill({ contentType: "text/javascript", body: classic });
+    // The tree tools part loads from beside the module, as a host serves it.
+    if (/^\/canopyx-tree-tools\.(js|css)$/.test(pathname)) return route.fulfill({ contentType: pathname.endsWith(".css") ? "text/css" : "text/javascript", body: fs.readFileSync(path.join(assets, pathname.slice(1)), "utf8") });
     return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Module host</title><style>'
       + style + '</style>' + (classic ? '<script src="/classic.js"></script>' : "")
       + '</head><body class="cx-page">' + body + '<script type="module">' + script + '</script></body></html>' });

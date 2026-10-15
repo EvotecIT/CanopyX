@@ -170,7 +170,7 @@
       const model = this.checks, items = this.rows.filter(w => !w.status).map(w =>
         ({ path: this.pathOf(w), label: w.h.label, detail: !!w.h.detail }));
       const markup = super.toOutline();
-      if (!this.checkMode) return markup;
+      if (!this.checkMode || !markup) return markup;
       const holder = h("div");
       holder.innerHTML = markup;
       const rows = holder.querySelector("table").tBodies[0].rows;

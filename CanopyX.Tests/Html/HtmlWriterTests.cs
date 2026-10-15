@@ -19,7 +19,11 @@ public sealed class HtmlWriterTests {
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" style=\"height:70vh\">", html);
         Assert.Equal(view.ToJson(), ConfigOf(html));
         Assert.DoesNotContain("<style", html);
-        Assert.Single(Regex.Matches(html, "<script"));
+        // The configuration, then the inert tree tools payload (its stylesheet and script) and the export part a single-file
+        // page needs.
+        Assert.Equal(4, Regex.Matches(html, "<script").Count);
+        Assert.EndsWith(CanopyHtmlAssets.TreeToolsMarkup + CanopyHtmlAssets.ExportMarkup, html);
+        Assert.DoesNotContain(CanopyHtmlAssets.TreeToolsMarkup, view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }
 
     [Fact]

@@ -349,6 +349,8 @@
   }
   .cx-outline-table { color:var(--cx-text);background:var(--cx-surface);}
   .cx-grid,.cx-toolbar { display:none !important;}
+  /* A tree whose tools part could not install has no outline to print: its rows on screen print instead of a blank page. */
+  .cx-host:has(> .cx-outline:empty) > .cx-grid { display:block !important;}
   .cx-outline { display:block;}
 }
 

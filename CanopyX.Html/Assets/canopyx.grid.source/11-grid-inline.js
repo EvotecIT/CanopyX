@@ -1,11 +1,16 @@
   // ---------- inline full-dataset queries ----------
   function gridOrder(left, right) { return left === right ? 0 : left < right ? -1 : 1; }
 
+  // A cell's sort field (text or a number) orders it; its value stays what filters, value lists and search read.
+  function gridSortScalar(cell, column) { return isCellObject(cell) && cell.sort != null ? cell.sort : gridScalar(cell, column); }
+
   function gridCompare(left, right, column, direction) {
-    const a = gridScalar(left.cells[column.id], column), b = gridScalar(right.cells[column.id], column);
+    const a = gridSortScalar(left.cells[column.id], column), b = gridSortScalar(right.cells[column.id], column);
     // Empty strings are values. Missing/null cells sort last in either direction.
     if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
-    const result = gridOrder(column.kind === "text" ? String(a) : a, column.kind === "text" ? String(b) : b);
+    const x = column.kind === "text" && typeof a !== "number" ? String(a) : a, y = column.kind === "text" && typeof b !== "number" ? String(b) : b;
+    // Keys of different types (a numeric sort key beside text) order by type, numbers first, so the order is consistent.
+    const result = gridOrder(typeof x, typeof y) || gridOrder(x, y);
     return direction === "desc" ? -result : result;
   }
 

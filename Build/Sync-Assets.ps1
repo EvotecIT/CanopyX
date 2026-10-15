@@ -88,7 +88,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css')
+        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx-grid.css'
     }
     @{
@@ -107,7 +107,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css')
+        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx-reporting.css'
     }
     @{
@@ -122,9 +122,18 @@ $assets = @(
 
 $filterEditorParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'filter-editor-parts.json') -Raw | ConvertFrom-Json)
 $filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# Export parts ship in the lazy export file, which flat grids and trees load on first use; the grid runtimes leave them out.
+$exportParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'export-parts.json') -Raw | ConvertFrom-Json)
+$exportPaths = @($exportParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# The history presenters (status strips, sparklines) ship in their own part, loaded by grids with such a column.
+$historyParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'history-parts.json') -Raw | ConvertFrom-Json)
+$historyPaths = @($historyParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# Tree-only core parts define what the grid parts define again for flat grids (the tree menus' labels); grid runtimes leave them out.
+$treeOnlyParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'tree-only-parts.json') -Raw | ConvertFrom-Json)
+$treeOnlyPaths = @($treeOnlyParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 
 function Join-AssetSource {
-    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor)
+    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor, [switch] $GridRuntime)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
@@ -139,6 +148,7 @@ function Join-AssetSource {
     }
 
     if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
+    if ($GridRuntime) { $parts = @($parts | Where-Object { $_.FullName -notin $exportPaths -and $_.FullName -notin $treeOnlyPaths -and $_.FullName -notin $historyPaths }) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -216,12 +226,13 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
 '@
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
-const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels } = CanopyX;
-export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels };
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat };
 export default CanopyX;
 '@
+    # Optional parts load from files beside the module: the tree tools and export parts for every module, the editor part for grids.
+    $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
     if ($Grid) {
-        $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
         $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
@@ -284,7 +295,7 @@ function Get-AssetHash([string] $Content) {
 }
 
 $editorBody = Join-AssetSource -SourcePath $filterEditorPaths[0] -ExtensionPath $filterEditorPaths[1..($filterEditorPaths.Count - 1)] -IncludeFilterEditor
-$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css'))
+$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css') -ExtensionPath @((Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/columns.css'), (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/drawer.css'), (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/overlay.css')))
 $editorVersion = Get-AssetHash ($editorBody + $editorStyle)
 $editorHeader = @'
 (function(global) {
@@ -294,11 +305,11 @@ global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
 if (installed.has(context.DataGrid.prototype)) return;
 const {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
 GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
-reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,reportingRangeRows} = context;
+reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,announceMenu,reportingRangeRows} = context;
 const buildFilters = DataGrid.prototype.buildGridFilters;
 '@
 $editorFooter = @'
-DataGrid.prototype.buildGridFilters = buildFilters;
+Object.assign(DataGrid.prototype, COLUMNS_MENU, {buildGridFilters:buildFilters});
 context.GRID_REPORTING?.installFilters?.({gridDateInput});
 installed.add(DataGrid.prototype);
 }};
@@ -309,13 +320,92 @@ $editorScriptName = 'canopyx-filter-editor.' + (Get-AssetHash $editorScript) + '
 $editorStyleName = 'canopyx-filter-editor.' + (Get-AssetHash $editorStyle) + '.css'
 $assets += @(@{ Generated = $editorScript; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.js' },
     @{ Generated = $editorStyle; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.css' })
+$exportBody = Join-AssetSource -SourcePath $exportPaths[0] -ExtensionPath $exportPaths[1..($exportPaths.Count - 1)]
+$exportVersion = Get-AssetHash $exportBody
+$exportHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXExport = {version:"__VERSION__", install(context) {
+if (installed.has(context.EXPORT_IMPL)) return;
+const {DataGrid,EXPORT_IMPL,h,setText,gridButton,gridOption,fill,numberFormat,gridOperationActive,formatting,gridQuery,
+validateGridCursorPage,validateGridPage,GRID_REPORTING,gridFreeze,cellValue,cellText,isCellObject,exportTimeout,exportFormat,EXPORT_FORMATS} = context;
+'@
+$exportFooter = @'
+DataGrid.prototype.renderGridExport = exportMenu;
+installed.add(EXPORT_IMPL);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$exportScript = Compress-ScriptSpacing (($exportHeader.Replace('__VERSION__', $exportVersion).Replace("`r`n", "`n")) + "`n" + $exportBody + $exportFooter.Replace("`r`n", "`n") + "`n")
+$exportScriptName = 'canopyx-export.' + (Get-AssetHash $exportScript) + '.js'
+$assets += @(@{ Generated = $exportScript; Target = 'CanopyX.Html/Assets/canopyx-export.js' })
+
+$historyBody = Join-AssetSource -SourcePath $historyPaths[0]
+$historyVersion = Get-AssetHash $historyBody
+$historyHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXHistory = {version:"__VERSION__", install(context) {
+if (installed.has(context.GRID_HISTORY_IMPL)) return;
+const {GRID_HISTORY_IMPL,h,setText,fill,gridSeries,gridPresenterTone,toneColors,toneOf,GRID_TONE_RANK} = context;
+'@
+$historyFooter = @'
+GRID_HISTORY_IMPL.render = gridRenderHistory;
+installed.add(GRID_HISTORY_IMPL);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$historyScript = Compress-ScriptSpacing (($historyHeader.Replace('__VERSION__', $historyVersion).Replace("`r`n", "`n")) + "`n" + $historyBody + $historyFooter.Replace("`r`n", "`n") + "`n")
+$historyScriptName = 'canopyx-history.' + (Get-AssetHash $historyScript) + '.js'
+$assets += @(@{ Generated = $historyScript; Target = 'CanopyX.Html/Assets/canopyx-history.js' })
+
+# The tree tools part: the shared toolbar menus and column fitting sources plus the tree's own parts in
+# canopyx.tree-tools.source, with the shared chrome and Columns menu styles. Every tree runtime loads it on mount. A tree loads
+# the export part (the Export menu body and the writers) on first use, into an EXPORT_IMPL of the tree tools' own, so a grid
+# runtime's export part keeps the runtime's writers.
+$toolsParts = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'tree-tools-parts.json') -Raw | ConvertFrom-Json
+$toolsPaths = @($toolsParts.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+$toolsBody = Join-AssetSource -SourcePath $toolsPaths[0] -ExtensionPath $toolsPaths[1..($toolsPaths.Count - 1)] -IncludeFilterEditor
+$toolsStylePaths = @($toolsParts.styles | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+# The shared chrome targets .cx-chrome in the grid stylesheets; this copy targets tree hosts only (.cx-tree-tools), so on a grid
+# runtime page it never overrides a flat grid's own rules that follow the chrome.
+$toolsStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath $toolsStylePaths[0] -ExtensionPath $toolsStylePaths[1..($toolsStylePaths.Count - 1)]).Replace('.cx-chrome', '.cx-tree-tools')
+$toolsVersion = Get-AssetHash ($toolsBody + $toolsStyle + $exportVersion)
+$toolsHeader = @'
+(function(global) {
+"use strict";
+const installed = new WeakSet();
+global.CanopyXTreeTools = {version:"__VERSION__", install(context) {
+if (installed.has(context.TreeGrid.prototype)) return;
+const {TreeGrid,h,setText,fill,numberFormat,watchFlyout,columnWidth,prepareWidth,cellText,cellValue,isCellObject,foldText,formatting,
+sortKey,compareKeys,EXPORT_FORMATS,exportFormat,exportTimeout,INDENT,MAX_PROTOCOL_INTEGER,hostControl,detailCell,HostCellContext,disposeHostSlot,loadPart} = context;
+const EXPORT_IMPL = {};
+'@
+$toolsFooter = @'
+installed.add(TreeGrid.prototype);
+}};
+})(typeof window !== "undefined" ? window : globalThis);
+'@
+$toolsScript = Compress-ScriptSpacing (($toolsHeader.Replace('__VERSION__', $toolsVersion).Replace("`r`n", "`n")) + "`n" + $toolsBody + $toolsFooter.Replace("`r`n", "`n") + "`n")
+# The tree tools load the export part, so its hashed name is part of their content (and of their own hashed name).
+$toolsScript = $toolsScript.Replace('__CX_EXPORT_VERSION__', $exportVersion).Replace('__CX_EXPORT_SCRIPT__', $exportScriptName)
+$toolsScriptName = 'canopyx-tree-tools.' + (Get-AssetHash $toolsScript) + '.js'
+$toolsStyleName = 'canopyx-tree-tools.' + (Get-AssetHash $toolsStyle) + '.css'
+$assets += @(@{ Generated = $toolsScript; Target = 'CanopyX.Html/Assets/canopyx-tree-tools.js' },
+    @{ Generated = $toolsStyle; Target = 'CanopyX.Html/Assets/canopyx-tree-tools.css' })
 
 foreach ($asset in $assets) {
     $sourcePath = if ($asset.Source) { Join-Path $root $asset.Source } else { $null }
     $targetPath = Join-Path $root $asset.Target
     $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
-    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath }
+    $grid = [bool]($asset.Extension | Where-Object { $_ -like '*canopyx.grid.source' })
+    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -GridRuntime:$grid }
     $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
+    $generated = $generated.Replace('__CX_EXPORT_VERSION__', $exportVersion).Replace('__CX_EXPORT_SCRIPT__', $exportScriptName)
+    $generated = $generated.Replace('__CX_HISTORY_VERSION__', $historyVersion).Replace('__CX_HISTORY_SCRIPT__', $historyScriptName)
+    $generated = $generated.Replace('__CX_TOOLS_VERSION__', $toolsVersion).Replace('__CX_TOOLS_SCRIPT__', $toolsScriptName).Replace('__CX_TOOLS_STYLE__', $toolsStyleName)
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)

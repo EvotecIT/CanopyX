@@ -117,6 +117,8 @@ public sealed partial class CanopyLabels {
         [nameof(GridFilteredResults)] = "Filtered results",
         [nameof(GridSelectedRows)] = "Selected rows",
         [nameof(GridAllResults)] = "All results",
+        [nameof(GridVisibleRows)] = "Visible rows",
+        [nameof(GridAllRows)] = "All rows",
         [nameof(GridDownloadCsv)] = "Download CSV",
         [nameof(GridCopy)] = "Copy",
         [nameof(GridDetails)] = "Record details",
@@ -274,7 +276,7 @@ public sealed partial class CanopyLabels {
         nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
         nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
         nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
-        nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
+        nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridVisibleRows), nameof(GridAllRows), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
         nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
         nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
         nameof(SearchNoResults), nameof(SearchTooShort), nameof(SearchWordTooShort), nameof(SearchFailed), nameof(Columns), nameof(VisibleColumns),
@@ -309,6 +311,10 @@ public sealed partial class CanopyLabels {
     public string GridSelectedRows { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the full dataset export scope label. Default "All results".</summary>
     public string GridAllResults { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets a tree's visible-rows export scope label. Default "Visible rows".</summary>
+    public string GridVisibleRows { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets a tree's every-row export scope label. Default "All rows".</summary>
+    public string GridAllRows { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the client CSV action label. Default "Download CSV".</summary>
     public string GridDownloadCsv { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the clipboard action label. Default "Copy".</summary>
@@ -460,7 +466,10 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the flat-grid control text. Default "is present".</summary>
     public string GridIsNotNull { get => Get(); set => Set(value); }
 
-    /// <summary>Gets whether translations require the flat-grid superset runtime.</summary>
+    /// <summary>
+    /// Gets whether a flat-grid label is translated. Flat grids always use a grid runtime; a tree view writes only the
+    /// labels the tree runtimes read (its toolbar menus' grid labels among them), so its translations never require one.
+    /// </summary>
     public bool RequiresDataGridRuntime {
         get {
             foreach (var name in _values.Keys) if (name.StartsWith("Grid", StringComparison.Ordinal)) return true;
@@ -572,23 +581,24 @@ public sealed partial class CanopyLabels {
     }
 
     /// <summary>Whether any label the browser reads differs from English, so the view document carries it.</summary>
-    internal bool HasRuntimeLabels {
-        get {
-            foreach (var name in RuntimeNames) {
-                if (_values.ContainsKey(name)) {
-                    return true;
-                }
+    /// <param name="tree">Count only the labels the tree runtimes read (a tree view's document).</param>
+    internal bool HasRuntimeLabels(bool tree) {
+        foreach (var name in RuntimeNames) {
+            if (_values.ContainsKey(name) && (!tree || ReadByTrees(name))) {
+                return true;
             }
-
-            return false;
         }
+
+        return false;
     }
 
     /// <summary>Writes the view document's <c>labels</c>: the labels the browser reads that differ from English.</summary>
-    internal void WriteJson(CanopyJsonWriter writer) {
+    /// <param name="writer">The view document's writer.</param>
+    /// <param name="tree">Write only the labels the tree runtimes read (a tree view's document).</param>
+    internal void WriteJson(CanopyJsonWriter writer, bool tree) {
         writer.BeginObject();
         foreach (var name in RuntimeNames) {
-            if (_values.TryGetValue(name, out var value)) {
+            if ((!tree || ReadByTrees(name)) && _values.TryGetValue(name, out var value)) {
                 writer.Property(char.ToLowerInvariant(name[0]) + name.Substring(1), value);
             }
         }

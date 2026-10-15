@@ -19,8 +19,17 @@ internal static class CanopyHtmlWriter {
             throw new ArgumentNullException(nameof(view));
         }
 
-        return FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
+        // A single-file tree carries its tree tools part and the export part its Export menu and exports load on first use.
+        // Fragments that share a document carry each part once.
+        var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
+        if (options.AssetMode != CanopyAssetMode.Inline) return html;
+        return html + SharedPart(options, "tree-tools", CanopyHtmlAssets.TreeToolsVersion, () => CanopyHtmlAssets.TreeToolsMarkup)
+            + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup);
     }
+
+    /// <summary>A shared part's payload, unless the fragment's document already carries it.</summary>
+    private static string SharedPart(CanopyHtmlOptions options, string name, string version, Func<string> markup) =>
+        options.Document == null || options.Document.Claim(name, version) ? markup() : string.Empty;
 
     private static string FragmentDocument(string json, CanopyHtmlOptions options) {
         var builder = new StringBuilder(json.Length + 160);
@@ -39,7 +48,7 @@ internal static class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, Runtime = options.Runtime, AssetMode = options.AssetMode };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
@@ -57,7 +66,20 @@ internal static class CanopyHtmlWriter {
     internal static string Fragment(CanopyDataGridView view, CanopyHtmlOptions options) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
-        return FragmentDocument(view.ToJson(), options) + (options.AssetMode == CanopyAssetMode.Inline ? CanopyHtmlAssets.FilterEditorMarkup : string.Empty);
+        var html = FragmentDocument(view.ToJson(), options);
+        return options.AssetMode != CanopyAssetMode.Inline ? html : html
+            + SharedPart(options, "filter-editor", CanopyHtmlAssets.FilterEditorVersion, () => CanopyHtmlAssets.FilterEditorMarkup)
+            + SharedPart(options, "export", CanopyHtmlAssets.ExportVersion, () => CanopyHtmlAssets.ExportMarkup)
+            + (HasHistoryPresenters(view) ? SharedPart(options, "history", CanopyHtmlAssets.HistoryVersion, () => CanopyHtmlAssets.HistoryMarkup) : string.Empty);
+    }
+
+    /// <summary>Whether a grid draws a status strip or a sparkline, whose presenter part its fragment then carries.</summary>
+    private static bool HasHistoryPresenters(CanopyDataGridView view) {
+        foreach (var column in view.Columns) {
+            var kind = column.Presenter?.Kind;
+            if (kind == CanopyGridPresenterKind.StatusStrip || kind == CanopyGridPresenterKind.SparklineBars || kind == CanopyGridPresenterKind.SparklineLine) return true;
+        }
+        return false;
     }
 
     internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options) {

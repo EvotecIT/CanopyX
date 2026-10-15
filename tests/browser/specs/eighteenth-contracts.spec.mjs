@@ -3,7 +3,7 @@ import path from "node:path";
 import { nextFrames, repo, viewPage } from "./support.mjs";
 
 const view = { protocol: "canopyx/2", type: "view", id: "eighteenth", label: "Contracts",
-  columns: [{ id: "name", title: "Name", width: 320 }, { id: "value", title: "Value", width: 180 }],
+  columns: [{ id: "name", title: "Name", width: 320, fixed: true }, { id: "value", title: "Value", width: 180, fixed: true }],
   source: { kind: "inline" }, roots: [] };
 
 async function open(page, data = view) {

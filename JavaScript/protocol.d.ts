@@ -20,6 +20,8 @@ export interface CanopyCell {
   secondary?: string;
   /** At most 4096 ordered periods for a flat-grid history presenter. */
   series?: CellPeriod[];
+  /** Sort key when it differs from the value (text or a number); filters, value lists, search and display keep reading value and text. */
+  sort?: string | number;
 }
 export type Cell = CellValue | CanopyCell;
 
@@ -67,6 +69,30 @@ export interface CanopyColumn {
   sortable?: boolean;
   hidden?: boolean;
   editable?: boolean;
+  /** Fit the visible rows' content (the tree tools part measures it); width is the fallback until then. Otherwise width is preferred. */
+  autoWidth?: boolean;
+  /** The width stays during fitting; the reader can still resize the column. */
+  fixed?: boolean;
+  /** Share of spare width, given before the tree column. */
+  flex?: number;
+  /** What content measuring reads. Default content. */
+  autoSize?: "content" | "header" | "none";
+  /** How the column gives way when narrow: 0-1 essential, 10000+ optional; or the named levels. */
+  priority?: "essential" | "normal" | "optional" | number;
+  /** Retained during responsive fitting. */
+  alwaysVisible?: boolean;
+  /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
+  tooltip?: string;
+  /** The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right. */
+  pinned?: "left" | "right" | null;
+}
+/** Per-control tree toolbar switches in the view document; an absent switch keeps its control. */
+export interface TreeToolbarControls {
+  filters?: boolean;
+  columns?: boolean;
+  views?: boolean;
+  export?: boolean;
+  more?: boolean;
 }
 export interface CanopyFilter {
   id: string;
@@ -107,7 +133,7 @@ export type LabelName =
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
   | "gridResultCount" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
-  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
+  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
   | "searchPlaceholder" | "searchResults" | "searchResultCount" | "searchResultCountOfTotal"
   | "searchResultCountOfMany" | "searchNoResults" | "searchTooShort" | "searchWordTooShort" | "searchFailed"
   | "columns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"
@@ -169,6 +195,12 @@ interface ViewDefinitionBase {
   filters?: CanopyFilter[];
   timeZone?: TimeZone;
   pinTreeColumn?: boolean;
+  /** Per-control toolbar switches (the search box is the search property). */
+  toolbar?: TreeToolbarControls;
+  /** Identities of registered export formats the Export menu offers after CSV, in order. */
+  exportFormats?: string[];
+  /** A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true. */
+  autoHeight?: boolean;
   stateKey?: string;
   deepLink?: boolean;
   labels?: CanopyLabels;

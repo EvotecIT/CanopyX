@@ -81,8 +81,9 @@ public sealed class CanopyTreeView {
 
     /// <summary>
     /// Gets or sets whether the tree column stays in view while the other columns scroll sideways, which keeps rows
-    /// identifiable on a narrow screen. A host can change it at run time with the grid's
-    /// <c>setTreeColumnPinned</c>, for example below a viewport width of its choosing.
+    /// identifiable on a narrow screen. The tree tools part pins the tree column by default; set
+    /// <see cref="CanopyColumn.Pinned"/> to <see cref="CanopyGridColumnPin.None"/> on the tree column to let it scroll. A host
+    /// can change it at run time with the grid's <c>setTreeColumnPinned</c>, for example below a viewport width of its choosing.
     /// </summary>
     public bool PinTreeColumn { get; set; }
 
@@ -117,6 +118,19 @@ public sealed class CanopyTreeView {
 
     /// <summary>Gets the "only matching" switches shown in the toolbar.</summary>
     public IList<CanopyFilter> Filters { get; } = new List<CanopyFilter>();
+
+    /// <summary>Gets the per-control toolbar switches: filter switches, Columns, Views, Export and the more menu. All default to on.</summary>
+    public CanopyTreeToolbar Toolbar { get; } = new CanopyTreeToolbar();
+
+    /// <summary>Gets the identities of the registered export formats the Export menu offers, in order.</summary>
+    /// <remarks>Each identity names a format the page registers in the browser with <c>CanopyX.registerExportFormat</c>; an identity no page registers is skipped. Empty writes nothing, which offers every registered format; a browser host's <c>exportFormats</c> option takes precedence. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
+    public IList<string> ExportFormats { get; } = new List<string>();
+
+    /// <summary>
+    /// Gets or sets whether a tree with few visible rows is only as tall as its toolbar, header and rows. Longer trees keep
+    /// the host's height and scroll inside it; the height follows expanding and collapsing. Defaults to true.
+    /// </summary>
+    public bool AutoHeight { get; set; } = true;
 
     /// <summary>
     /// Gets the icons nodes can refer to by key, as trusted SVG markup declared once per view. Icons are drawn with
@@ -281,6 +295,21 @@ public sealed class CanopyTreeView {
             Search.WriteJson(writer);
         }
 
+        if (!Toolbar.IsDefault) {
+            writer.Name("toolbar");
+            Toolbar.WriteJson(writer);
+        }
+
+        if (ExportFormats.Count > 0) {
+            writer.Name("exportFormats").BeginArray();
+            foreach (var format in ExportFormats) writer.String(format);
+            writer.EndArray();
+        }
+
+        if (!AutoHeight) {
+            writer.Property("autoHeight", false);
+        }
+
         if (Filters.Count > 0) {
             writer.Name("filters").BeginArray();
             foreach (var filter in Filters) {
@@ -295,9 +324,9 @@ public sealed class CanopyTreeView {
             writer.Property("pinTreeColumn", true);
         }
 
-        if (_labels.HasRuntimeLabels) {
+        if (_labels.HasRuntimeLabels(true)) {
             writer.Name("labels");
-            _labels.WriteJson(writer);
+            _labels.WriteJson(writer, true);
         }
 
         writer.OptionalProperty("stateKey", StateKey);

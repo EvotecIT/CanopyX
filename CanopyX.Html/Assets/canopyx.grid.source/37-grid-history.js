@@ -1,4 +1,4 @@
-  const GRID_TONE_RANK={none:0,neutral:0,success:1,info:2,warning:3,danger:4};
+  // ---------- history presenters (the history part, 51-grid-history-part.js): status strips and sparklines ----------
   function gridHistoryTone(point,options) {
     return point.state==null&&point.value==null?"none":gridPresenterTone(options,point.value,point.tone||"success");
   }

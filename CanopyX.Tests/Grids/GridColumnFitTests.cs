@@ -62,5 +62,44 @@ public sealed class GridColumnFitTests {
         Assert.Contains("\"quietTones\":[\"success\",\"up\"]", json);
         Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Link().WithQuietTones(CanopyTone.Success));
         Assert.Throws<ArgumentException>(() => CanopyGridPresenter.State().WithQuietTones(CanopyTone.None));
+
+        // Quiet values in the normal text colour.
+        view.Columns[0].Presenter = CanopyGridPresenter.Enum().WithQuietTones(CanopyTone.Neutral).WithQuietStyle(CanopyGridQuietStyle.Plain);
+        json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "quiet style");
+        Assert.Contains("\"quietStyle\":\"plain\"", json);
+        Assert.DoesNotContain("quietStyle", new CanopyDataGridView("plain", "Plain") { Columns = { new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.Enum().WithQuietStyle(CanopyGridQuietStyle.Muted) } } }.ToJson());
+        Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Link().WithQuietStyle(CanopyGridQuietStyle.Plain));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyGridPresenter.Enum().WithQuietStyle((CanopyGridQuietStyle)7));
+    }
+
+    [Fact]
+    public void Tooltips_ShowTheFullValueOrADeclaredColumn() {
+        var view = new CanopyDataGridView("targets", "Targets");
+        view.Columns.Add(new CanopyColumn("name", "Name") { Tooltip = CanopyColumn.AutoTooltip });
+        view.Columns.Add(new CanopyColumn("site", "Site") { Tooltip = "name" });
+        var json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "column tooltips");
+        Assert.Contains("\"tooltip\":\"auto\"", json);
+        Assert.Contains("\"tooltip\":\"name\"", json);
+        view.Columns[1].Tooltip = "missing";
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        var tree = new CanopyTreeView("tree", "Tree");
+        tree.Columns.Add(new CanopyColumn("name", "Name") { Tooltip = CanopyColumn.AutoTooltip });
+        tree.Columns.Add(new CanopyColumn("path", "Path") { Tooltip = "name" });
+        ProtocolSchema.AssertValid(tree.ToJson(), "tree column tooltips");
+        tree.Columns[1].Tooltip = "missing";
+        Assert.Throws<InvalidOperationException>(() => tree.ToJson());
+    }
+
+    [Fact]
+    public void ColumnMenus_CanBeSwitchedOff() {
+        var view = new CanopyDataGridView("summary", "Summary");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        Assert.DoesNotContain("columnMenus", view.ToJson());
+        view.Toolbar.ColumnMenus = false;
+        var json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "column menus off");
+        Assert.Contains("\"columnMenus\":false", json);
     }
 }

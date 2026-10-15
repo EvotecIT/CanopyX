@@ -187,7 +187,7 @@ The export menu distinguishes filtered results, selected records and all results
 
 `prepareExport()` captures an immutable request and a fresh `rows({ signal })` enumeration factory. Each exported cell contains `value` and resolved `text`. The reporting runtime marks the request as `presentation: "semantic"` and also captures presenter intent, CSS pixel width bounds, wrapping, alignment, first-match highlight tones, safe absolute links and diagnostics for presentation that needs host policy. Ordinary grids mark text-only captures as `presentation: "text"`. `recordCount` includes selected-query exclusions and stays null for unknown counts. The `onExport` event supplies this exact `capture` alongside `request` and its cancellation signal; hosts map semantic tones to their output palette and own format generation. See [export contracts](data-protocol.md#export-clipboard-and-record-details) for precision, unsupported presentation and memory limits.
 
-Enter on a row, double-click or Record details opens a drawer with every field, including hidden columns. The drawer uses the column presenters and optional `CanopyColumn.Section` labels, with previous/next records, Escape and focus return. F2 enters the row's cells. On phones, tapping a row opens the full-screen drawer; a +N indicator shows how many fields are hidden. Configure `onDetails` to use a host-owned record view instead. The hook retains its immutable row, accepted query, cancellation signal and return-focus element. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](data-protocol.md#export-clipboard-and-record-details) for revision checks and limits.
+Enter on a row, double-click or Record details opens a drawer with every field, including hidden columns. The drawer uses the column presenters and optional `CanopyColumn.Section` labels, with previous/next records, Escape and focus return. Its subtitle comes from the identity column's secondary text (a presenter's `SecondaryColumn` or a cell's secondary text) and is left out when there is none. F2 enters the row's cells. On phones, tapping a row opens the full-screen drawer; a +N indicator shows how many fields are hidden. Configure `onDetails` to use a host-owned record view instead. The hook retains its immutable row, accepted query, cancellation signal and return-focus element. To take over row activation itself (a double click, Enter, Ctrl/Command+Enter, a click with `RowAction` `Details` or `Link`, or a tap on a phone), listen for the cancelable `canopyx:rowActivate` event (`{ id, row, keyboard }`) on the host element and call `preventDefault()`, or return `false` from `onRowActivate`; the grid then opens neither its drawer nor the row's link, and the host opens its own drawer for `id`. Trees dispatch the same event for Enter and a double click on a node row, with `{ id, node, keyboard }` and `onRowActivate(node, { keyboard })`. With `RowAction` `Link`, Enter follows the row's link. A link presenter cell asks the host before the browser follows it: the cancelable `canopyx:link` event (`{ id, row, column, href }`) and `onLink` returning `false` let a host route the address itself. A changed query or newer details request cancels an unfinished opening operation. See [export and details contracts](data-protocol.md#export-clipboard-and-record-details) for revision checks and limits.
 
 The generated `inventory-grid.html` example contains 5,000 records and starts with a typed category predicate and numeric descending sort. It exercises the shared viewport, toolbar, saved views and export controls. Consumer adoption and scrolling performance follow-ups remain in [TODO.md](../TODO.md).
 
@@ -228,6 +228,37 @@ view.GetColumn("notes").Presenter = CanopyGridPresenter.LongText();
 
 The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
 
+### Export formats
+
+Register extra export formats, such as an XLSX or PDF writer, and they appear in the grid's own Export menu after Download CSV, with the same scope picker (filtered, selected, all), progress meter, Cancel export action and error status:
+
+```js
+import { registerExportFormat } from "@evotecit/canopyx/reporting"; // also CanopyX.registerExportFormat for classic scripts
+
+registerExportFormat({
+  id: "xlsx",                       // 1–32 lowercase letters, digits and hyphens; "csv" is built in
+  label: "Download Excel",          // the button text
+  extension: "xlsx",
+  mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  async write(capture, { signal, progress, fileName }) {
+    const sheet = startWorkbook(capture.request.columns);
+    for await (const row of capture.rows({ signal })) sheet.add(row.cells); // typed value, display text, tone
+    progress(sheet.length);
+    return sheet.toBlob();          // a Blob, ArrayBuffer or typed array, or a promise of one
+  }
+});
+```
+
+The writer receives the same immutable capture as `prepareExport`: the accepted query and sort, the visible columns in their current order, typed `value`, formatted `text` and, on the reporting runtime, semantic tones, links and column intent. CanopyX names the file `fileName` plus the format's extension (a writer that returns a `File` names it itself) and starts the download; `await api.exportAs("xlsx", { scope: "selected", download: false })` returns `{ blob, fileName, format }` instead, for a host that delivers the file itself.
+
+A registered format is offered by every grid on the page that does not choose its own. A grid chooses with the `exportFormats` option (ids of registered formats or provider objects, in order; `[]` offers none) or, from C#, `inventory.ExportFormats.Add("xlsx")`; an id the page does not register is skipped. The browser option wins over the view's list. Formats registered after a grid mounted appear the next time its Export menu opens.
+
+Page reads keep their own `requestTimeoutMs` deadline. The writer runs under a separate safety timeout, `exportTimeoutMs` (10 minutes by default, also per call as `timeoutMs`; checked when an export runs), so long workbook or PDF generation is not cut off at 30 seconds; Cancel export, the timeout and grid destruction abort its `signal` and settle the menu even when a writer ignores it. A writer error is shown in the menu status and dispatched as the grid's `error` event. `onExport`/`exportToHost` use the same export timeout.
+
+Tree grids list the same formats in their own Export menu, after Download CSV, with the scopes Visible rows, Selected rows and All rows. Hosts capture with `api.prepareExport({ scope: "visible" })` (the rows the reader can see), `{ scope: "selected" }` (the loaded selected nodes in tree order, including collapsed branches) or `{ scope: "all" }` (every node in sort order: the whole inline tree, or the loaded nodes of a lazy source). Each record carries `level` (1 for a root) and `path` (the id path ending with its own id) beside its cells, so a writer can indent or add Level and Path columns; the built-in CSV indents the tree column by level. `api.exportAs("xlsx", { scope: "visible" })` runs the same writers. Every tree runtime has tree exports once the tree is ready (captures come with the tree tools part, the menu body and writers with the export part on first use); `CanopyTreeView.ExportFormats` chooses which registered formats the menu offers. A host that drew its own export buttons above a tree can drop them and use the tree's Export menu.
+
+The Export menu body, CSV, copy and the writers ship in `canopyx-export.js`, loaded on first use (the menu, an export method, Ctrl/Command+C or reading a capture). The .NET page, fragment and asset writers include it automatically; JavaScript hosts serve it beside every runtime or module (trees load it as flat grids do), also when the Export menu is switched off.
+
 ### Toolbar controls, slots and menu entries
 
 Every toolbar control can be switched off; a control switched off is removed from the page (it is not built, or is taken out before the grid appears), and the methods behind it stay available. C# views set `Toolbar` switches (the search box keeps its `Search` switch); browser hosts pass `toolbar` to `createDataGrid` or `CanopyX.configure`, which overrides the definition and also accepts `search`:
@@ -241,7 +272,7 @@ inventory.Toolbar.Count = false;  // the host shows its own count
 createDataGrid(host, { view, toolbar: { views: false, more: true } }); // search, filters, columns, views, export, more, count
 ```
 
-The reporting runtime (`@evotecit/canopyx/reporting`) adds host slots and content entries. Four slots hold host elements in the toolbar: `start`, `afterSearch`, `afterViews` and `end` (the start of the right-hand group, before Export and ⋯). `afterSearch` follows `start` directly when the grid has no search box. `api.toolbarSlot(name)` returns the slot's element (it carries `data-cx-toolbar-slot`), the same one for the grid's lifetime whatever the phone layout moves. Children of the host element marked `data-cx-slot` move into their slot when the grid mounts and return to the host element when it is destroyed, so a remount picks them up again; a misspelt slot name fails the mount and leaves them in place. A replacement grid on another host takes host elements with `next.toolbarSlot("end").append(count)`. Slots add no box of their own; host elements that use the `cx-button` and `cx-grid-field` classes match the grid's controls.
+The reporting runtime (`@evotecit/canopyx/reporting`) adds host slots and content entries. Four slots hold host elements in the toolbar: `start`, `afterSearch`, `afterViews` and `end` (the start of the right-hand group, before Export and ⋯). `afterSearch` follows `start` directly when the grid has no search box. `api.toolbarSlot(name)` returns the slot's element (it carries `data-cx-toolbar-slot`), the same one for the grid's lifetime whatever the phone layout moves. Children of the host element marked `data-cx-slot` move into their slot when the grid mounts and return to the host element when it is destroyed, so a remount picks them up again; a misspelt slot name fails the mount and leaves them in place. A replacement grid on another host takes host elements with `next.toolbarSlot("end").append(count)`. Slots add no box of their own; host elements that use the `cx-button` and `cx-grid-field` classes match the grid's controls. The ordinary grid entry point has no slots, to stay within its budget; use the reporting runtime for slots, and [export formats](#export-formats) rather than extra toolbar buttons for additional file types.
 
 ```html
 <div data-canopyx-host>
@@ -264,21 +295,57 @@ actions: [{ label: "Save view…", render(container, { close }) {
 
 Toolbar menus (Filters, Columns, Views, Export, ⋯ and the header selection menu) open in the browser's top layer as popovers, so a short grid or a host with `overflow: hidden` no longer clips them. They stay inside the grid's DOM, so themes, focus order and events are unchanged, and list menus keep their 320-pixel height cap. Browsers without the popover API give them viewport-fixed positioning instead, which escapes `overflow: hidden` but not an ancestor with a `transform`, `filter` or `contain` that captures fixed positioning.
 
+One CanopyX menu is open at a time, from the mouse or the keyboard. A menu (including a column popover and a tree's actions menu) closes on a pointer press or focus outside it and when another CanopyX menu opens; the opening menu dispatches `canopyx:closemenus` on the document with itself as `detail.source`. Hosts with popovers of their own coordinate through the same event:
+
+```js
+// Before the host opens its popover: close every CanopyX menu on the page (or call grid.closeMenus() for one view;
+// dispatched on an element that holds views, the event needs bubbles: true).
+document.dispatchEvent(new CustomEvent("canopyx:closemenus"));
+// When a CanopyX menu opens: close the host's popover.
+document.addEventListener("canopyx:closemenus", event => { if (event.detail?.source) hostPopover.hidePopover(); });
+```
+
 ## Tree Grid Features
+
+Trees have the flat grid's toolbar: the search box and filter switches on the left, then **Columns** (show, hide and
+reorder; the tree column stays first and shown), **Views** (named session views and Reset view, with `StateKey`), and on
+the right **Export** (Visible rows, Selected rows or All rows as CSV or a registered format, with progress, Cancel export
+and status) and the **⋯** menu (host `actions` run with the selected nodes, and Print). On phones Views and Export move
+into ⋯, as on flat grids. Columns size to their content: the tree column measures each visible row with its indent,
+expander, icon and badges, stays pinned while the others scroll and takes spare width; priorities hide optional columns
+first. A tree with few visible rows is only as tall as its rows (`AutoHeight`), and grows to the host height when expanded.
+The controls, fitting and exports come from the tree tools part every tree runtime loads (`canopyx-tree-tools.js` and
+`.css`; single-file pages embed it).
+
+```csharp
+var view = new CanopyTreeView("org", "Organisation") { StateKey = "org", Search = new CanopySearchOptions() };
+view.Columns.Add(new CanopyColumn("name", "Name"));
+view.Columns.Add(new CanopyColumn("email", "Email") { ResponsivePriority = 10000 }); // optional: hides first
+view.ExportFormats.Add("xlsx");   // a writer the page registers with CanopyX.registerExportFormat
+view.Toolbar.More = false;        // per-control switches: Filters, Columns, Views, Export, More
+view.AutoHeight = true;           // the default
+```
+
+JavaScript hosts pass `toolbar` (`false`, or switches including `search`), `actions` and `exportFormats` to
+`createTreeGrid` or `configure`. Once `ready` has resolved the tree API also has `prepareExport`, `exportAs`,
+`getSavedViews`, `saveView`, `applySavedView`, `removeSavedView`, `resetView`, `setColumnOrder`, `resetColumns`,
+`setColumnPinned`, `openDetails` and a filled `toOutline()`; before that the methods that return a promise reject it and the
+others throw. `closeMenus()` and the `canopyx:closemenus` document event close its menus, and `onRowActivate` (the cancelable
+`canopyx:rowActivate` event) lets a host take over Enter and double-click activation.
 
 - Lazy children from inline data, sidecar script files, or an HTTP endpoint, with long child lists paged behind a "show more" row.
 - Virtual scrolling over a fixed row height; only the rows near the viewport exist in the DOM. Large logical heights map to a bounded native scrollbar, keeping every loaded row reachable through scrolling, keyboard navigation, and saved anchors.
-- Columns with per-level sort, resize, and hide, and a tree column that can stay pinned while the others scroll; dates in UTC or the reader's time zone, switchable at run time.
+- Columns with per-level sort, resize, hide and reorder, content-sized to fill the width, and a tree column that stays pinned while the others scroll; dates in UTC or the reader's time zone, switchable at run time.
 - Search that returns id paths and expands the tree to the match, optionally limited to the node kinds worth finding; the bundle writer stores every node once and files its words in shards by prefix, so a query loads only the shards of its words and the entries of the matches it shows.
 - "Only matching" filters that keep the ancestors of matching rows.
 - Cells with host-supplied values, display text, tones, and badges; icons declared once per view. Six tones are built in, and a host adds its own (a severity scale, a maintenance state) with a name and two theme colours.
 - Detail rows that hold a table, a property list, or host HTML: as tall as their content (measured in the browser) or a fixed number of row slots, and always inside the visible width of the grid.
 - Single and multi-select, selection events for a drawer, deep links that expand a path (in the default scheme or the host's own), and versioned view state remembered for the session.
 - Light and dark themes from a handful of CSS custom properties.
-- Every text CanopyX writes itself (search hints, "show more" and error rows, the column chooser, screen-reader announcements, date marks, the outline's notes) comes from `CanopyTreeView.Labels`: English by default, translated once per view.
+- Every text CanopyX writes itself (search hints, "show more" and error rows, the toolbar menus, screen-reader announcements, date marks, the outline's notes) comes from `CanopyTreeView.Labels`: English by default, translated once per view.
 - A script-free outline table for email, print, and Word, in the light or dark palette or the host's own colours.
 
-JavaScript hosts can save a view with `const state = api.getState()` and restore it with `await api.setState(state)`. The JSON snapshot includes columns, sort, declared filters, selection, expansion, timezone, focus, and a scroll anchor. Existing expansion-only snapshots remain readable. `stateKey` remembers the same settings in session storage. Host predicates and callbacks stay with the host and are not serialized.
+JavaScript hosts can save a view with `const state = api.getState()` and restore it with `await api.setState(state)`. The JSON snapshot includes columns (in their order, with `sized` for widths the reader chose), sort, declared filters, selection, expansion, timezone, focus, and a scroll anchor. Existing expansion-only snapshots remain readable. `stateKey` remembers the same settings in session storage. Host predicates and callbacks stay with the host and are not serialized.
 
 Use `await api.reload()` to reread roots, or `await api.reload(parentId, { signal })` to reread a loaded parent's children. Reload reads through the range already loaded, validates the replacement before applying it, and preserves surviving selection, expansion, focus, and scroll position. A newer reload supersedes an older one. Failed validation retains the old data; cancellation returns `false`. `api.refresh()` repaints the current nodes, and `api.refreshCounts()` updates rollup values and child counts.
 

@@ -63,7 +63,8 @@
         "noun": { "type": "string", "minLength": 1, "maxLength": 256 },
         "emptyReason": { "type": "string", "maxLength": 4096 },
         "statusBar": { "type": "boolean" },
-        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" } } },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" }, "columnMenus": { "type": "boolean" } } },
+        "exportFormats": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "not": { "const": "csv" } }, "description": "Identities of browser-registered export formats the Export menu offers after CSV, in order; an identity the page does not register is skipped. Absent offers every registered format." },
         "rowAction": { "enum": ["none", "details", "link"], "description": "What a plain row click does; a plain click never selects. Default none." },
         "autoHeight": { "type": "boolean", "description": "A grid whose rows fit is as tall as its rows; false keeps the host height. Default true." },
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
@@ -382,6 +383,7 @@
               "const": "enum"
             },
             "quietTones": { "$ref": "#/$defs/quietTones" },
+            "quietStyle": { "enum": ["muted", "plain"] },
             "tones": {
               "type": "object",
               "maxProperties": 512,
@@ -406,6 +408,7 @@
               "const": "state"
             },
             "quietTones": { "$ref": "#/$defs/quietTones" },
+            "quietStyle": { "enum": ["muted", "plain"] },
             "tones": {
               "type": "object",
               "maxProperties": 512,
@@ -774,6 +777,10 @@
               "type": "string",
               "maxLength": 4096
             },
+            "sort": {
+              "anyOf": [{ "type": "string", "maxLength": 4096 }, { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991 }],
+              "description": "Sort key when it differs from the value (orthogonal sort data); filters, value lists, search and display keep reading value and text."
+            },
             "series": {
               "type": "array",
               "maxItems": 4096,
@@ -909,7 +916,15 @@
         "sortable": { "type": "boolean" },
         "editable": { "type": "boolean" },
         "hidden": { "type": "boolean" },
-        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." }
+        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." },
+        "autoWidth": { "type": "boolean", "description": "Tree columns: fit the visible rows' content; width is the fallback until the tree tools part measures." },
+        "fixed": { "type": "boolean", "description": "Tree columns: the width is hard during fitting. Otherwise width is preferred." },
+        "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Tree columns: share of spare width, given before the tree column." },
+        "autoSize": { "enum": ["content", "header", "none"], "description": "Tree columns: what content measuring reads. Default content." },
+        "priority": { "$ref": "#/$defs/gridColumn/properties/priority" },
+        "alwaysVisible": { "type": "boolean", "description": "Tree columns: retained during responsive fitting." },
+        "tooltip": { "$ref": "#/$defs/gridColumn/properties/tooltip" },
+        "pinned": { "enum": ["left", "right", null], "description": "The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right." }
       }
     },
     "gridColumn": {
@@ -964,6 +979,7 @@
         "minWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "maxWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647, "description": "Widest width and the content measuring cap." },
         "alwaysVisible": { "type": "boolean", "description": "Retain this column during responsive fitting. Explicit user hiding still applies." },
+        "tooltip": { "type": "string", "minLength": 1, "maxLength": 256, "description": "auto shows a cell's full value on hover while it is cut off; another value names a declared column whose text the tooltip shows." },
         "fixed": { "type": "boolean", "description": "The width is hard; requires width. Otherwise width is preferred." },
         "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Share of spare width, given before the identity column." },
         "autoSize": { "enum": ["content", "header", "none"], "description": "What content measuring reads. Default content." },
@@ -1082,6 +1098,9 @@
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
         "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
         "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control tree toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" } } },
+        "exportFormats": { "$ref": "#/$defs/grid/properties/exportFormats" },
+        "autoHeight": { "type": "boolean", "description": "A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true." },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
         "labels": {
@@ -1180,6 +1199,8 @@
             "gridFilteredResults": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectedRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridAllResults": { "$ref": "#/$defs/accessibleLabel" },
+            "gridVisibleRows": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAllRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridDownloadCsv": { "$ref": "#/$defs/accessibleLabel" },
             "gridCopy": { "$ref": "#/$defs/accessibleLabel" },
             "gridDetails": { "$ref": "#/$defs/accessibleLabel" },

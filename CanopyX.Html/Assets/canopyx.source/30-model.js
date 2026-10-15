@@ -30,6 +30,10 @@
       this.lang = document.documentElement.lang || undefined;
       // Every text the grid writes itself: English, then the view's translations, then the host's.
       this.labels = labelsFor(view.labels, options.labels);
+      // Per-control toolbar switches, as on flat grids: the view's toolbar object, then the host's; a missing switch keeps its control.
+      this.tools = Object.assign({}, view.toolbar, options.toolbar);
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more)$/.test(name) || typeof value !== "boolean"))
+        throw new Error("CanopyX: toolbar options are booleans by control name.");
       // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels);
@@ -97,6 +101,8 @@
       try {
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
+        // The tree tools part restores column order, user widths and the pin; a failed part leaves the plain tree.
+        await this.toolsReady;
         await this.restoreState();
         // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
         // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.

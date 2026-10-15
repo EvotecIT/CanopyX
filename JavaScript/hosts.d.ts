@@ -1,6 +1,6 @@
 import type {
   CanopyNode, CanopyColumn, CanopyView, InlineView, SidecarView, RemoteView, CanopyLabels, CellValue, CheckIntent,
-  CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction
+  CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
 } from "./protocol.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
@@ -62,11 +62,91 @@ export interface CellContext {
 }
 export interface LoadInfo { node: CanopyNode | null; count: number; total: number | null; ms: number; }
 
+/** One exported cell: the typed value, the display text formatted at capture, and a semantic tone where the data declares one. */
+export interface ExportCell { readonly value: CellValue; readonly text: string; readonly tone?: string; }
+/** What every export capture offers a format writer. Tree captures (request.kind "tree") and flat-grid captures add their own fields. */
+export interface ExportRequest {
+  readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime" }[];
+  /** Exact captured record count, or null when a source cannot know it. */
+  readonly recordCount: number | null;
+  readonly values: "raw" | "display";
+  readonly timeZone: TimeZone;
+  readonly locale?: string;
+  readonly fileName?: string;
+}
+export interface ExportCapture {
+  readonly request: ExportRequest;
+  /** Each enumeration reads the captured rows afresh; the signal links with the writer's own. */
+  rows(options?: { signal?: AbortSignal }): AsyncIterable<{ readonly id: string; readonly cells: Readonly<Record<string, ExportCell>> }>;
+}
+export interface ExportFormatContext {
+  /** Aborts on cancellation, the export safety timeout or grid destruction. */
+  readonly signal: AbortSignal;
+  /** The suggested file name without the extension. */
+  readonly fileName: string;
+  /** The format's id. */
+  readonly format: string;
+  /** Reports written records (a nonnegative integer; other values are ignored); the Export menu shows them as progress. */
+  progress(completed: number): void;
+}
+/** A writer the Export menu lists after CSV, in the grid's own menu with its scope picker, progress and cancellation. */
+export interface ExportFormat<C extends ExportCapture = ExportCapture> {
+  /** 1–32 lowercase letters, digits and hyphens, starting with a letter. "csv" is built in. */
+  readonly id: string;
+  /** The button text in the Export menu, such as "Download Excel". */
+  readonly label: string;
+  /** The file extension without the dot (1–16 letters or digits). */
+  readonly extension: string;
+  /** The Blob type for bytes a writer returns; default application/octet-stream. */
+  readonly mime?: string;
+  /** Returns the file: a Blob (a File names the download itself), or bytes typed with mime. */
+  write(capture: C, context: ExportFormatContext): Blob | ArrayBuffer | ArrayBufferView | PromiseLike<Blob | ArrayBuffer | ArrayBufferView>;
+}
+export interface ExportProgress { readonly phase: "reading" | "generating" | "ready"; readonly completed: number; readonly total: number | null; }
+export interface ExportFormatOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: ExportProgress) => void;
+  /** Safety timeout for the writer, 1..2147483647 ms; overrides the grid's exportTimeoutMs (default 600000). */
+  timeoutMs?: number;
+  /** False returns the file without starting a browser download. Default true. */
+  download?: boolean;
+}
+export interface ExportFormatResult { readonly blob: Blob; readonly fileName: string; readonly format: string; }
+export interface TreeExportOptions {
+  /** "visible" (default): the rows the reader can see, in order. "selected": the loaded selected nodes in tree order, including collapsed ones.
+   * "all": every node in the current sort order, the whole tree of an inline source and the loaded nodes of a lazy one. */
+  scope?: "visible" | "selected" | "all";
+  /** Defaults to the visible columns in their current order. */
+  columns?: string[];
+  values?: "raw" | "display";
+  signal?: AbortSignal;
+}
+export interface TreeExportRequest extends ExportRequest {
+  readonly kind: "tree";
+  readonly scope: "visible" | "selected" | "all";
+  readonly presentation: "text";
+  readonly revision: string | null;
+  readonly recordCount: number;
+}
+/** A record with its depth (level 1 is a root) and the id path from its root, ending with its own id. */
+export interface TreeExportRow { readonly id: string; readonly level: number; readonly path: readonly string[]; readonly cells: Readonly<Record<string, ExportCell>>; }
+export interface TreeExport extends ExportCapture {
+  readonly request: TreeExportRequest;
+  rows(options?: { signal?: AbortSignal }): AsyncIterable<TreeExportRow>;
+}
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */
 interface HostOptionsBase {
   source?: DataSource;
   labels?: CanopyLabels;
   requestTimeoutMs?: number;
+  /** The formats the Export menu and exportAs offer (ids of registered formats or provider objects); absent offers the view's exportFormats, else every registered format. */
+  exportFormats?: readonly (string | ExportFormat)[];
+  /** False hides the tree toolbar; an object switches single controls off, overriding the view's toolbar switches. */
+  toolbar?: boolean | TreeToolbarOptions;
+  /** Host entries of the tree's more menu, run with the selected nodes; the host owns what they do. */
+  actions?: readonly TreeAction[];
+  /** Safety timeout for export format writers, 1..2147483647 ms (default 600000). */
+  exportTimeoutMs?: number;
   retainedNodeLimit?: number;
   inactiveNodeLimit?: number;
   interactionTimeoutMs?: number;
@@ -75,6 +155,9 @@ interface HostOptionsBase {
   onSelect?: (node: CanopyNode | null, nodes: CanopyNode[]) => void;
   onToggle?: (node: CanopyNode, expanded: boolean) => void;
   onLoad?: (node: CanopyNode | null, info: LoadInfo) => void;
+  /** Row activation (Enter on a node row, or a double click), with the tree tools part: runs before the tree's own action
+   * (select and toggle); returning false keeps that from running. The cancelable canopyx:rowActivate event carries { id, node, keyboard }. */
+  onRowActivate?: (node: CanopyNode, context: { readonly keyboard: boolean }) => boolean | void;
   isSelectable?: (node: CanopyNode) => boolean;
   beforeSelect?: (node: CanopyNode | null, nodes: CanopyNode[], context: SelectionContext) => boolean | void;
   isCheckable?: (node: CanopyNode) => boolean;
@@ -87,6 +170,16 @@ interface HostOptionsBase {
   canDrag?: (node: CanopyNode) => boolean;
   canDrop?: (proposal: DropProposal) => boolean;
   isActionEnabled?: (node: CanopyNode, action: Readonly<ContextAction>) => boolean;
+}
+/** Per-control tree toolbar switches; an absent switch keeps its control, and a control switched off is not built. */
+export interface TreeToolbarOptions extends TreeToolbarControls {
+  /** The search box; the view's search options still decide whether there is one. */
+  search?: boolean;
+}
+/** A more-menu entry of a tree. */
+export interface TreeAction {
+  label: string;
+  run(context: { nodes: CanopyNode[]; signal: AbortSignal }): unknown;
 }
 /** A custom deep-link scheme supplies its formatter and parser together. */
 export type HostOptions = HostOptionsBase & (

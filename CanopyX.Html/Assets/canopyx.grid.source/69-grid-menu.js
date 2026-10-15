@@ -16,17 +16,17 @@
       const panel=h("div","cx-host cx-grid-overlay cx-pop "+className),controller=new AbortController(),signal=controller.signal;
       gridOverlayTheme(this,panel);panel.setAttribute("role","dialog");panel.setAttribute("aria-label",title);panel.tabIndex=-1;
       panel.id=this.id+"-popover";anchor.setAttribute("aria-controls",panel.id);anchor.setAttribute("aria-expanded","true");document.body.appendChild(panel);
+      // Other CanopyX menus close; this grid closes the popover on a press, focus or menu event outside it (57-toolbar-panels.js).
+      announceMenu(panel);
       const position=()=>{
         const current=this.headCells.find(cell=>cell.dataset.cxColumn===columnId)||anchor,bounds=current.getBoundingClientRect();
-        panel.classList.toggle("cx-phone",this.host.clientWidth<=640);
-        if(this.host.clientWidth<=640){panel.style.left="0";panel.style.top="auto";panel.style.bottom="0";panel.style.width="100%";panel.style.maxHeight="80vh";}
+        if(panel.classList.toggle("cx-phone",this.host.clientWidth<=640)){panel.style.left="0";panel.style.top="auto";panel.style.bottom="0";panel.style.width="100%";panel.style.maxHeight="80vh";}
         else {panel.style.width="";panel.style.bottom="auto";panel.style.maxHeight=Math.min(500,global.innerHeight-16)+"px";
           panel.style.left=Math.max(8,Math.min(bounds.left,global.innerWidth-panel.offsetWidth-8))+"px";
           panel.style.top=Math.max(8,Math.min(bounds.bottom,global.innerHeight-panel.offsetHeight-8))+"px";}
       };
       this.gridPopover={panel,controller,anchor,columnId,position};
       global.addEventListener("resize",position,{signal});global.addEventListener("scroll",position,{capture:true,signal});
-      document.addEventListener("pointerdown",event=>{if(!panel.contains(event.target)&&!anchor.contains(event.target))this.closeGridPopover(false);},{signal});
       panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopPropagation();this.closeGridPopover();}else gridMenuFocus(panel,event);},{signal});
       this.lifetime.signal.addEventListener("abort",()=>controller.abort(),{once:true,signal});
       signal.addEventListener("abort",()=>panel.remove(),{once:true});queueMicrotask(position);return panel;

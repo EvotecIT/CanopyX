@@ -6,13 +6,13 @@
         throw new Error("CanopyX: invalid accepted row position.");
       return this.focusResult(index, false);
     },
-    async runGridHook(run, signal) {
+    async runGridHook(run, signal, timeout = this.requestTimeoutMs) {
       const controller = new AbortController(); let rejectHook;
       const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
       const abort = () => { controller.abort(); rejectHook(new DOMException("Grid cancelled.", "AbortError")); };
       this.lifetime.signal.addEventListener("abort", abort, { once: true });
       signal?.addEventListener("abort", abort, { once: true });
-      const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: operation timed out.")); }, this.requestTimeoutMs);
+      const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: operation timed out.")); }, timeout);
       try {
         if (this.destroyed || signal?.aborted) abort();
         return await Promise.race([Promise.resolve().then(() => {
@@ -23,26 +23,6 @@
         clearTimeout(timer); controller.abort(); this.lifetime.signal.removeEventListener("abort", abort);
         signal?.removeEventListener("abort", abort);
       }
-    },
-
-    async copy(options) {
-      const exported = this.prepareExport(options);
-      const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t", options.signal);
-      await this.writeClipboard(text, options.signal); return text;
-    },
-    writeClipboard(text, signal) {
-      return this.runGridHook(() => {
-        const clipboard = global.navigator.clipboard;
-        if (typeof clipboard?.writeText !== "function") throw new Error("CanopyX: clipboard unavailable.");
-        return clipboard.writeText(text);
-      }, signal);
-    },
-    copyFocused(row, cell) {
-      if (this.selected.size) return this.copy({ scope: "selected" });
-      const columns = this.visibleColumns(), index = cell ? this.rowCells(this.rendered.get(row)).indexOf(cell) : -1;
-      const text = index >= 0 ? gridExportField(cellText(row.h.cells[columns[index].id], columns[index], this.fmt), "\t") :
-        columns.map(column => gridExportField(cellText(row.h.cells[column.id], column, this.fmt), "\t")).join("\t");
-      return this.writeClipboard(text);
     },
 
     openDetails(id) {

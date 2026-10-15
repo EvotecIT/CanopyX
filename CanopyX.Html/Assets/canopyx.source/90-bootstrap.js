@@ -35,7 +35,7 @@
     const existing = activeGrids.get(host);
     if (existing) return existing;
     const grid = new TreeGrid(host, options);
-    const api = Object.freeze(Object.assign({
+    const api = Object.assign({
       element: host,
       view: grid.view,
       ready: grid.ready,
@@ -79,12 +79,24 @@
       },
       applyCounts: (doc) => grid.applyCounts(doc),
       refreshCounts: (ids) => grid.refreshCounts(ids),
+      // The toolbar and action menus come with the tree tools part; until it is installed there are none to close.
+      closeMenus: () => grid.closeMenus?.(),
       destroy: () => {
         grid.destroy();
         if (activeGrids.get(host) === api) activeGrids.delete(host);
         if (host.canopyx === api) delete host.canopyx;
       }
-    }, grid.interactionApi && grid.interactionApi()));
+    }, grid.interactionApi && grid.interactionApi());
+    // Exports, named views and column order come with the tree tools part: they work once ready has resolved. Before that the
+    // methods that return a promise reject it, and the others throw.
+    for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned", "openDetails"])
+      api[name] = (...args) => {
+        if (grid[name]) return grid[name](...args);
+        const error = new Error("CanopyX: " + name + " needs the tree tools part.");
+        if (/^(exportAs|applySavedView|resetView|openDetails)$/.test(name)) return Promise.reject(error);
+        throw error;
+      };
+    Object.freeze(api);
     activeGrids.set(host, api);
     host.setAttribute("data-canopyx-mounted", "true");
     host.canopyx = api;
@@ -179,7 +191,9 @@
     // A badge ({ text, tone?, title? }) drawn as the grid draws one, for cells and details a host renderer draws.
     badge: hostBadge,
     // The English texts and their names, for a host that builds its translations from them.
-    labels: DEFAULT_LABELS
+    labels: DEFAULT_LABELS,
+    // Export format providers for the Export menus and exportAs of every grid on the page.
+    registerExportFormat
   }, typeof createDataGrid === "function" ? { createDataGrid } : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and

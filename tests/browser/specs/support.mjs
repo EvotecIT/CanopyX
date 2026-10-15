@@ -81,14 +81,23 @@ export function focusedId(page) {
   return page.evaluate(() => document.activeElement && document.activeElement.getAttribute("data-cx-id"));
 }
 
-/** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves. */
+/** The tree tools part every tree runtime loads, as shipped in CanopyX.Html. */
+export function treeToolsAssets() {
+  return { script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-tree-tools.js"), "utf8"),
+    style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-tree-tools.css"), "utf8") };
+}
+
+/** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves; the tree tools part is preloaded. */
 export function runtimeAssets(runtime = "tree") {
   const stem = runtime === "reporting" ? "canopyx-reporting" : runtime === "grid" ? "canopyx-grid" : runtime === "interactive" ? "canopyx-interactive" : "canopyx";
   return {
     script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8") +
-      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") : ""),
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-history.js"),"utf8") : "") +
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script,
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
-      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") : "")
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") : "") +
+      "\n" + treeToolsAssets().style
   };
 }
 
