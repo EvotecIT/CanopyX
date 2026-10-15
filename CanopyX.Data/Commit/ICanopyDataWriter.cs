@@ -16,7 +16,9 @@ namespace CanopyX.Data;
 /// <see cref="CanopyCommitBatch.Revision"/> with its current revision and, where they differ, each row's
 /// <see cref="CanopyCommitRow.Original"/> values with the stored ones: a row whose stored values differ is a
 /// <see cref="CanopyCommitStatus.Conflict"/> and is not written. A writer that cannot compare rows may answer every row of a
-/// stale batch with a conflict. <see cref="CanopyQueryableWriter{T}"/> is the reference writer over a column map.
+/// stale batch with a conflict. The comparison must run in the same serializing transaction as the save. A writer changes
+/// only records its caller may read: the endpoint authorizes the caller, the writer restricts the records.
+/// <see cref="CanopyQueryableWriter{T}"/> is the reference writer over a column map.
 /// </para>
 /// </remarks>
 public interface ICanopyDataWriter {

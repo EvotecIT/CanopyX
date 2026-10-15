@@ -21,7 +21,7 @@ internal static class ValueShapes {
         if (t == typeof(string)) return ValueShape.Text;
         if (t == typeof(bool)) return ValueShape.Boolean;
         if (t.IsEnum) return ValueShape.Enum;
-        if (t == typeof(sbyte) || t == typeof(byte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long)) return ValueShape.Integer;
+        if (t == typeof(sbyte) || t == typeof(byte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong)) return ValueShape.Integer;
         if (t == typeof(float) || t == typeof(double)) return ValueShape.Real;
         if (t == typeof(decimal)) return ValueShape.Decimal;
         if (t == typeof(DateTime)) return ValueShape.DateTime;
@@ -37,6 +37,12 @@ internal static class ValueShapes {
         _ => false
     };
 
+    /// <summary>Whether a type is one of the integer types a column maps.</summary>
+    internal static bool IsInteger(Type type) {
+        var t = ExpressionTools.Underlying(type);
+        return t == typeof(sbyte) || t == typeof(byte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong);
+    }
+
     /// <summary>The inclusive range of an integer type, as binary64.</summary>
     internal static (double Minimum, double Maximum) Range(Type type) {
         var t = ExpressionTools.Underlying(type);
@@ -46,6 +52,7 @@ internal static class ValueShapes {
         if (t == typeof(ushort)) return (ushort.MinValue, ushort.MaxValue);
         if (t == typeof(int)) return (int.MinValue, int.MaxValue);
         if (t == typeof(uint)) return (uint.MinValue, uint.MaxValue);
+        if (t == typeof(ulong)) return (0, 9007199254740991d);
         return (-9007199254740991d, 9007199254740991d);
     }
 }

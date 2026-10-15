@@ -17,6 +17,7 @@ internal sealed class MemberWriter<T> {
     private readonly Dictionary<string, object>? _members;
 
     private MemberWriter(MemberInfo member, Type type, bool nullable) {
+        Member = member;
         _underlying = ExpressionTools.Underlying(type);
         _nullable = nullable;
         var record = Expression.Parameter(typeof(T), "record");
@@ -69,6 +70,9 @@ internal sealed class MemberWriter<T> {
 #endif
     }
 
+    /// <summary>The written member.</summary>
+    internal MemberInfo Member { get; }
+
     /// <summary>Reads the stored value.</summary>
     internal object? Get(T record) => _get(record);
 
@@ -96,9 +100,10 @@ internal sealed class MemberWriter<T> {
             if (t == typeof(double)) { converted = number; return null; }
             if (t == typeof(float)) { converted = (float)number; return null; }
             if (t == typeof(decimal)) { converted = (decimal)number; return null; }
+            if (!ValueShapes.IsInteger(t)) return messages.Type;
             var (minimum, maximum) = ValueShapes.Range(t);
             if (number != Math.Floor(number) || number < minimum || number > maximum) return messages.WholeNumber;
-            converted = System.Convert.ChangeType((long)number, t, CultureInfo.InvariantCulture);
+            converted = t == typeof(ulong) ? (ulong)number : System.Convert.ChangeType((long)number, t, CultureInfo.InvariantCulture);
             return null;
         }
         if (value is DateTime instant) {

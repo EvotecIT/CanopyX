@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,10 +13,19 @@ namespace CanopyX.Data;
 /// <remarks>
 /// <para>
 /// It writes only columns the view declares editable and the map maps to a member of the record itself (<c>x =&gt; x.Cores</c>);
-/// creating it fails when an editable mapped column has another expression, such as a navigation chain. For each row it
-/// loads the record by the map's key, compares the original values with the stored ones when the batch revision is not the
-/// current one (a difference is a conflict and nothing is written), converts and applies the new values, runs
+/// creating it fails when an editable column maps a navigation chain, the record key, or a member marked as a concurrency
+/// token. For each row it checks that the record lies in <see cref="CanopyQueryableWriterOptions{T}.Scope"/> (the records
+/// this caller may read), loads it by the map's key, compares the original values with the stored ones (a difference is a
+/// conflict and nothing is written), converts and applies the new values, runs
 /// <see cref="CanopyQueryableWriterOptions{T}.Saving"/> and saves, in a transaction per row or one for the batch.
+/// </para>
+/// <para>
+/// <b>Concurrency.</b> Originals are compared on every row unless a revision source is configured
+/// (<see cref="CanopyQueryableWriterOptions{T}.Revision"/>) and still equals the batch's revision inside the row's
+/// transaction. The comparison is only as strong as the transaction: the store must serialize the load, compare and save
+/// (a serializable or snapshot isolation level, or row locks), or another writer can change the record between the load
+/// and the save. Give the record a concurrency token (EF Core <c>IsRowVersion</c> or <c>IsConcurrencyToken</c>): the store
+/// then refuses such a save, and the row answers a conflict.
 /// </para>
 /// <para>
 /// A saved row answers with canonical cells of its changed columns, read back from the record and formatted like page rows.
@@ -34,15 +44,20 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
     /// <summary>Creates a writer.</summary>
     /// <param name="map">The column allow-list; its editable columns must map members of the record.</param>
     /// <param name="store">The unit of work of this request.</param>
-    /// <param name="options">Transactions, revision, hooks and messages; null uses the defaults.</param>
-    /// <exception cref="ArgumentException">An editable mapped column cannot be written.</exception>
+    /// <param name="options">Scope, transactions, revision, hooks and messages; null uses the defaults.</param>
+    /// <exception cref="ArgumentException">An editable mapped column cannot be written, or maps the key or a concurrency token.</exception>
     public CanopyQueryableWriter(CanopyColumnMap<T> map, ICanopyWriteStore<T> store, CanopyQueryableWriterOptions<T>? options = null) {
         _map = map ?? throw new ArgumentNullException(nameof(map));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _options = options ?? new CanopyQueryableWriterOptions<T>();
+        var keyMember = Member(map.KeyExpression!);
         foreach (var column in map.Schema.EditableColumns) {
             var writer = MemberWriter<T>.Create(map.Get(column.Id).Value, out var reason)
                 ?? throw new ArgumentException("Column '" + column.Id + "' is editable but cannot be written: " + reason + ". Map it to a member of " + typeof(T).Name + ", or make it read-only.", nameof(map));
+            if (keyMember != null && writer.Member.Name == keyMember.Name && writer.Member.DeclaringType == keyMember.DeclaringType)
+                throw new ArgumentException("Column '" + column.Id + "' maps the record key, which a commit cannot change; make it read-only.", nameof(map));
+            if (writer.Member.GetCustomAttributes(true).Any(attribute => attribute.GetType().Name is "ConcurrencyCheckAttribute" or "TimestampAttribute"))
+                throw new ArgumentException("Column '" + column.Id + "' maps a concurrency token, which only the store changes; make it read-only.", nameof(map));
             _members[column.Id] = writer;
         }
         _key = new Rebinder(map.KeyExpression!.Parameters[0], _row).Visit(map.KeyExpression.Body)!;
@@ -56,28 +71,75 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
     public async ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
         if (batch == null) throw new ArgumentNullException(nameof(batch));
         if (!ReferenceEquals(batch.Schema, _map.Schema)) throw new ArgumentException("The batch belongs to another schema.", nameof(batch));
-        var results = new List<CanopyCommitRowResult>(batch.Rows.Count);
-        if (_options.Transaction == CanopyCommitTransaction.PerBatch) {
-            results.AddRange(await BatchAsync(batch, revision, cancellationToken).ConfigureAwait(false));
-        } else {
-            foreach (var row in batch.Rows) {
-                var transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-                await using (transaction.ConfigureAwait(false)) {
-                    var result = await RowAsync(batch, row, revision, cancellationToken).ConfigureAwait(false);
-                    if (result.Status == CanopyCommitStatus.Saved) result = await CommitRowAsync(transaction, row, result, cancellationToken).ConfigureAwait(false);
-                    if (result.Status != CanopyCommitStatus.Saved) {
-                        await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-                        _store.DiscardChanges();
-                    }
-                    results.Add(result);
-                }
-            }
+        var results = _options.Transaction == CanopyCommitTransaction.PerBatch
+            ? await BatchAsync(batch, revision, cancellationToken).ConfigureAwait(false)
+            : await RowsAsync(batch, revision, cancellationToken).ConfigureAwait(false);
+        string? after = null;
+        if (_options.Revision != null) {
+            // The rows are committed; a revision that cannot be read now leaves it to the endpoint, never fails the answer.
+            try { after = await _options.Revision(cancellationToken).ConfigureAwait(false); } catch (Exception error) when (!(error is OperationCanceledException)) { _options.Failed?.Invoke(batch.Rows[0], error); }
         }
-        var after = _options.Revision == null ? null : await _options.Revision(cancellationToken).ConfigureAwait(false);
         return new CanopyCommitResult(results, after);
     }
 
-    private async Task<CanopyCommitRowResult> CommitRowAsync(ICanopyWriteTransaction transaction, CanopyCommitRow row, CanopyCommitRowResult saved, CancellationToken cancellationToken) {
+    /// <summary>One transaction per row: each row is saved, or rolled back and forgotten, on its own.</summary>
+    private async Task<List<CanopyCommitRowResult>> RowsAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
+        var results = new List<CanopyCommitRowResult>(batch.Rows.Count);
+        foreach (var row in batch.Rows) {
+            var transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            var result = CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
+            try {
+                result = await RowAsync(batch, row, revision, cancellationToken).ConfigureAwait(false);
+                if (result.Status == CanopyCommitStatus.Saved) result = await CommitAsync(transaction, row, result, cancellationToken).ConfigureAwait(false);
+                else await RollbackAsync(transaction, row).ConfigureAwait(false);
+            } finally {
+                if (result.Status != CanopyCommitStatus.Saved) _store.DiscardChanges();
+                await DisposeAsync(transaction, row).ConfigureAwait(false);
+            }
+            results.Add(result);
+        }
+        return results;
+    }
+
+    /// <summary>All or nothing: every row in one transaction, committed only when every row is saved. The first row that
+    /// fails stops the batch; the rows before it answer as not saved, the rows after it are not tried.</summary>
+    private async Task<List<CanopyCommitRowResult>> BatchAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
+        var results = new List<CanopyCommitRowResult>(batch.Rows.Count);
+        var transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        var committed = false;
+        try {
+            foreach (var row in batch.Rows) {
+                var result = await RowAsync(batch, row, revision, cancellationToken).ConfigureAwait(false);
+                results.Add(result);
+                if (result.Status != CanopyCommitStatus.Saved) break;
+            }
+            if (results.Count == batch.Rows.Count && results.All(result => result.Status == CanopyCommitStatus.Saved)) {
+                try {
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                    committed = true;
+                    return results;
+                } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+                    throw;
+                } catch (Exception error) {
+                    _options.Failed?.Invoke(batch.Rows[0], error);
+                    var conflict = Concurrency(error);
+                    return batch.Rows.Select(row => conflict ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved)).ToList();
+                }
+            }
+            await RollbackAsync(transaction, batch.Rows[0]).ConfigureAwait(false);
+        } finally {
+            if (!committed) _store.DiscardChanges();
+            await DisposeAsync(transaction, batch.Rows[0]).ConfigureAwait(false);
+        }
+        var answers = new List<CanopyCommitRowResult>(batch.Rows.Count);
+        for (var i = 0; i < batch.Rows.Count; i++) {
+            var id = batch.Rows[i].Id;
+            answers.Add(i < results.Count && results[i].Status != CanopyCommitStatus.Saved ? results[i] : CanopyCommitRowResult.Failed(id, Messages.BatchNotSaved));
+        }
+        return answers;
+    }
+
+    private async Task<CanopyCommitRowResult> CommitAsync(ICanopyWriteTransaction transaction, CanopyCommitRow row, CanopyCommitRowResult saved, CancellationToken cancellationToken) {
         try {
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             return saved;
@@ -85,24 +147,18 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
             throw;
         } catch (Exception error) {
             _options.Failed?.Invoke(row, error);
+            await RollbackAsync(transaction, row).ConfigureAwait(false);
             return Concurrency(error) ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
         }
     }
 
-    /// <summary>All or nothing: every row in one transaction, committed only when every row is saved.</summary>
-    private async Task<List<CanopyCommitRowResult>> BatchAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
-        var results = new List<CanopyCommitRowResult>(batch.Rows.Count);
-        var transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        await using (transaction.ConfigureAwait(false)) {
-            foreach (var row in batch.Rows) results.Add(await RowAsync(batch, row, revision, cancellationToken).ConfigureAwait(false));
-            if (results.All(result => result.Status == CanopyCommitStatus.Saved)) {
-                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-                return results;
-            }
-            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-            _store.DiscardChanges();
-        }
-        return results.Select(result => result.Status == CanopyCommitStatus.Saved ? CanopyCommitRowResult.Failed(result.Id, Messages.BatchNotSaved) : result).ToList();
+    /// <summary>Rolls back without letting a failed rollback hide the row's own answer.</summary>
+    private async Task RollbackAsync(ICanopyWriteTransaction transaction, CanopyCommitRow row) {
+        try { await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false); } catch (Exception error) { _options.Failed?.Invoke(row, error); }
+    }
+
+    private async Task DisposeAsync(ICanopyWriteTransaction transaction, CanopyCommitRow row) {
+        try { await transaction.DisposeAsync().ConfigureAwait(false); } catch (Exception error) { _options.Failed?.Invoke(row, error); }
     }
 
     /// <summary>Loads, checks, applies and saves one row inside the current transaction.</summary>
@@ -110,8 +166,10 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
         try {
             var record = await LoadAsync(row.Id, cancellationToken).ConfigureAwait(false);
             if (record == null) return CanopyCommitRowResult.Conflict(row.Id, Messages.Missing);
-            var current = _options.Revision == null ? revision : await _options.Revision(cancellationToken).ConfigureAwait(false);
-            if (_options.AlwaysCompareOriginals || batch.Revision == null || batch.Revision != current) {
+            // Without a revision source the endpoint's revision may be older than the row, so originals are always compared.
+            var compare = _options.AlwaysCompareOriginals || _options.Revision == null || batch.Revision == null ||
+                batch.Revision != await _options.Revision(cancellationToken).ConfigureAwait(false);
+            if (compare) {
                 foreach (var pair in row.Original) {
                     if (!_members[pair.Key].Same(record, pair.Value)) return CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict);
                 }
@@ -140,12 +198,14 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
         }
     }
 
+    /// <summary>Loads a record by key, after checking that it lies in the caller's scope; null when it does not exist there.</summary>
     private async Task<T?> LoadAsync(string id, CancellationToken cancellationToken) {
         var type = ExpressionTools.Underlying(_key.Type);
         var key = QueryTranslator<T>.ParseKey(id, type);
         if (key == null) return null;
         var item = _key.Type == type ? _key : Expression.Convert(_key, type);
         var match = Expression.Lambda<Func<T, bool>>(Expression.Equal(item, ExpressionTools.Parameter(key, type)), _row);
+        if (_options.Scope != null && await _options.Executor.CountAsync(_options.Scope().Where(match), cancellationToken).ConfigureAwait(false) == 0) return null;
         var found = await _options.Executor.ToListAsync(_store.Records.Where(match).Take(2), cancellationToken).ConfigureAwait(false);
         if (found.Count > 1) throw new InvalidOperationException("The record key is not unique.");
         return found.Count == 0 ? null : found[0];
@@ -161,6 +221,12 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
             cells[id] = cell!;
         }
         return cells;
+    }
+
+    private static MemberInfo? Member(LambdaExpression expression) {
+        var body = expression.Body;
+        while (body is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.ConvertChecked)) body = unary.Operand;
+        return body is MemberExpression access && access.Expression == expression.Parameters[0] ? access.Member : null;
     }
 
     private static bool Concurrency(Exception error) {

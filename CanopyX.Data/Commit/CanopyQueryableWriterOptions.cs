@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,18 +8,27 @@ namespace CanopyX.Data;
 /// <summary>Options of <see cref="CanopyQueryableWriter{T}"/>.</summary>
 /// <typeparam name="T">The record type.</typeparam>
 public sealed class CanopyQueryableWriterOptions<T> where T : class {
+    /// <summary>Gets or sets the records this caller may read, usually the endpoint's query callback (<c>() =&gt; query(http)</c>).
+    /// A row whose key is not in it answers as a missing record and is not written. Null checks nothing: the writer then
+    /// writes any record <see cref="ICanopyWriteStore{T}.Records"/> holds.</summary>
+    /// <remarks>Set it whenever callers may read only some records, so a caller cannot change a record it cannot see.</remarks>
+    public Func<IQueryable<T>>? Scope { get; set; }
+
     /// <summary>Gets or sets whether rows are written in a transaction each (default) or the batch in one, all or nothing.</summary>
     public CanopyCommitTransaction Transaction { get; set; }
 
-    /// <summary>Gets or sets the dataset revision, read inside each transaction to decide whether a row's original values
-    /// must match the stored ones, and after the commit for the result. Null uses the revision the endpoint read when the
-    /// batch arrived, and lets the endpoint read the revision after the commit from its data provider.</summary>
+    /// <summary>Gets or sets the dataset revision, read inside each transaction: while it equals the batch's revision the
+    /// row's original values are not compared. It is also read after the commit for the result. Null compares the original
+    /// values of every row, and lets the endpoint read the revision after the commit from its data provider.</summary>
     /// <remarks>Use the same revision as the read side (<see cref="CanopyQueryOptions.Revision"/>), and change it in
     /// <see cref="Saving"/> so every write produces a new revision.</remarks>
     public Func<CancellationToken, ValueTask<string>>? Revision { get; set; }
 
-    /// <summary>Gets or sets whether rows are compared with their original values only when the batch revision differs from
-    /// the current one (default), or always. Comparing always also catches writes that did not change the revision.</summary>
+    /// <summary>Gets or sets whether rows are compared with their original values even while a configured
+    /// <see cref="Revision"/> equals the batch's. Comparing always also catches writes that did not change the revision.</summary>
+    /// <remarks>The comparison protects against lost updates only when the store's transaction serializes the load, the
+    /// comparison and the save (serializable or snapshot isolation, or row locks); a concurrency token on the record makes
+    /// the store itself refuse a save over a newer version, which answers a conflict.</remarks>
     public bool AlwaysCompareOriginals { get; set; }
 
     /// <summary>Gets or sets a step that runs after a row's values are applied and before it is saved, inside its transaction:

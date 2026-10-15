@@ -20,9 +20,17 @@ namespace CanopyX.Data;
 /// </remarks>
 public interface ICanopyWriteStore<T> where T : class {
     /// <summary>Gets the records the writer loads by key; changes to loaded records must be tracked, so saving writes them.</summary>
+    /// <remarks>
+    /// <b>Write scope.</b> The writer can change any record this query returns. When callers may read only some records,
+    /// restrict this query to the records the caller may change, or set <see cref="CanopyQueryableWriterOptions{T}.Scope"/>
+    /// to the endpoint's query callback, so that a commit cannot change a record its caller cannot see.
+    /// </remarks>
     IQueryable<T> Records { get; }
 
     /// <summary>Starts a transaction around one row, or around the whole batch (<see cref="CanopyCommitTransaction"/>).</summary>
+    /// <remarks>The transaction must serialize the load, the comparison of original values and the save (a serializable or
+    /// snapshot isolation level, or row locks); otherwise another writer can change a record in between. A concurrency
+    /// token on the record lets the store refuse such a save.</remarks>
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>The transaction.</returns>
     ValueTask<ICanopyWriteTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
