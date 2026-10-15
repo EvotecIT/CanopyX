@@ -133,7 +133,8 @@ public sealed class CanopyHtmlPart {
         (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
         (!_editable || view.Columns.Any(column => column.Editable)) &&
         (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true ||
-            _feature == "searchHighlight" && view.SearchHighlight != null || _feature == "layout" && view.Layout != null) &&
+            _feature == "searchHighlight" && view.SearchHighlight != null || _feature == "layout" && view.Layout != null ||
+            _feature == "columnGroups" && view.ColumnGroups.Count > 0 || _feature == "rangeSelection" && view.RangeSelection != null) &&
         (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
 
     /// <summary>Whether a grid uses a reporting feature a part serves: <c>grouping</c> (fixed or runtime grouping, or aggregates) or <c>detail</c> rows.</summary>

@@ -99,7 +99,7 @@
       this.rowOffsets = offsets; this.rowOffsetOwner = projection; this.rowOffsetFirst = bounds.first;
       this.relocateFocus?.(projection);
       this.total = offsets.top(count);
-      this.grid.setAttribute("aria-rowcount", String(count + (this.summaryControls?.parentElement === this.grid ? 2 : 1)));
+      this.grid.setAttribute("aria-rowcount", String(count + (this.summaryControls?.parentElement === this.grid ? 2 : 1) + (this.headDepth || 0)));
       const index = anchor ? projection.indexOf(anchor.item) : -1;
       this.syncScrollRange(index >= 0 ? projection.rowTop(index) + anchor.offset : top);
     },

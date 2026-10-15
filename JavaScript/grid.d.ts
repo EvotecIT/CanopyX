@@ -11,6 +11,10 @@ import type { enhance, grid } from "./enhance.js";
 export * from "./editing.js";
 import type { GridExportFormat, GridFormatOptions, GridFormatRule } from "./formatting.js";
 export * from "./formatting.js";
+import type { GridColumnGroup, GridColumnGroupApi } from "./column-groups.js";
+import type { GridRangeSelection, GridClipboardSettings, GridCellRange, GridPasteEvent, GridCellRangeApi } from "./cell-ranges.js";
+export * from "./column-groups.js";
+export * from "./cell-ranges.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
@@ -322,6 +326,12 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   /** Unique declared IDs; absent searches every column, including hidden columns. */
   searchColumns?: string[];
   reporting?: GridReporting;
+  /** Header rows above the columns, up to three levels (docs/column-groups.md). */
+  columnGroups?: readonly GridColumnGroup[];
+  /** Cell ranges by mouse, keyboard and touch, the cell menu and the clipboard keys (docs/cell-ranges.md). */
+  rangeSelection?: GridRangeSelection;
+  /** How cell ranges copy and paste. */
+  clipboard?: GridClipboardSettings;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -676,16 +686,14 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   detail?: GridDetailOptions;
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
-  /** Editing of editable columns: read-only rules, checks, lookups, editors and the batch writer (docs/editing.md). */
-  editing?: GridEditingOptions<Q>;
-  /** Before a value changes; returning false (or cancelling canopyx:cellValueChanging) keeps the old value. */
-  onCellValueChanging?: (event: GridCellValueChange) => boolean | void;
-  /** After a value changed. */
-  onCellValueChanged?: (event: GridCellValueChange) => void;
-  /** A row whose edits are complete and valid. Return a result (or true, or a promise) to save it, false to keep editing, nothing to leave it in the batch. */
-  onRowCommit?: (event: GridRowCommit) => GridCommitRowResult | boolean | void | PromiseLike<GridCommitRowResult | true>;
-  /** After commitChanges, with its result. */
-  onCommit?: (event: GridCommitOutcome) => void;
+  /** Overrides the view's rangeSelection. */
+  rangeSelection?: GridRangeSelection;
+  /** Overrides the view's clipboard settings, switch by switch. */
+  clipboard?: GridClipboardSettings;
+  /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
+  onPaste?: (event: GridPasteEvent) => boolean | void;
+  /** After the cell ranges changed. */
+  onCellRangeChange?: (event: { ranges: readonly GridCellRange[] }) => void;
 }
 /** A host store binds to an explicit keyed reporting definition; ordinary grids have no store option. */
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (
@@ -698,7 +706,7 @@ export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGri
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi {
   readonly element: HTMLElement;
   readonly view: GridView;
   readonly ready: Promise<Q>;

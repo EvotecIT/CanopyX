@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, conditional formatting, deep links, the sidecar search, linked views, detail rows and row grouping. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (column groups, range selection) arrive as parts.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, column groups, cell ranges, conditional formatting, deep links, the sidecar search, linked views, detail rows and row grouping. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (column groups, range selection) arrive as parts.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -130,6 +130,8 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
 | `pager` | a paged grid whose view has pager settings starts, or `CanopyX.enhance`/`CanopyX.grid` runs | numbered pages, page-size choices and the result sentence ([paging.md](paging.md)) |
 | `enhance` | `CanopyX.enhance` or `CanopyX.grid` runs | reading tables, records and URL sources into a grid, state saving and the controller ([enhance.md](enhance.md)); it loads the pager part itself |
+| `column-groups` | a grid that declares `columnGroups` starts, or calls a column group method | multi-level headers, group pins, moves and resizing, the nested Columns menu ([column-groups.md](column-groups.md)) |
+| `cell-range` | a grid with `rangeSelection` starts, or calls a cell range method | cell ranges by mouse, keyboard and touch, copy, paste, the fill handle and the cell menu ([cell-ranges.md](cell-ranges.md)) |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
 | `editing` | a grid with an editable column starts, or an editing method runs | typed editors, validation, the change set, row and batch commit, undo and redo, the phone edit form ([editing.md](editing.md)); it requires the filter editor |

@@ -21,6 +21,11 @@
       "getLayout", "setLayout", "getMatches", "setSearchHighlight", "nextMatch", "previousMatch", ...GRID_EDIT_API])
       // Each call looks the method up, so a part installed later (editing, linked views and others) serves the API it replaces.
       api[name] = (...args) => grid[name](...args);
+    // Part actions (column groups, cell ranges) answer with a promise, also when the call throws.
+    for (const [, read, ...names] of GRID_PART_API) {
+      api[read] = (...args) => grid[read](...args);
+      for (const name of names) api[name] = (...args) => { try { return Promise.resolve(grid[name](...args)); } catch (error) { return Promise.reject(error); } };
+    }
     GRID_REPORTING.api?.(api, grid);
     Object.assign(api, linkApi(grid));
     Object.freeze(api);

@@ -205,6 +205,8 @@ public sealed partial class CanopyDataGridView {
             column.WriteJson(writer, grid: true);
         }
         writer.EndArray();
+        WriteColumnGroupsJson(writer);
+        WriteCellRangesJson(writer);
         if (HighlightRules.Count > 0) {
             writer.Name("highlightRules").BeginArray();
             foreach (var rule in HighlightRules) rule.WriteJson(writer);
@@ -285,6 +287,8 @@ public sealed partial class CanopyDataGridView {
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        ValidateColumnGroups();
+        ValidateCellRanges();
         if (HighlightRules.Count > 64) throw new InvalidOperationException("A grid supports at most 64 highlight rules.");
         foreach (var rule in HighlightRules) {
             CanopyColumn? conditionColumn = null;

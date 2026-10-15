@@ -34,8 +34,8 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | --- | --- | --- |
 | Navigation | Expandable branches, path search and lazy children | Continuous or paged records, offset or cursor navigation |
 | Querying | Search, sibling sorting and named filters | Search, multi-column sorting, typed filters and condition groups |
-| Columns | Resize and hide | Resize, hide, reorder, pin and fit to content |
-| Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs |
+| Columns | Resize and hide | Resize, hide, reorder, pin, fit to content and group under multi-level headers |
+| Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs, and cell ranges with copy, paste and a fill handle |
 | Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting, conditional formatting and light/dark themes |
 | Grouping and details | Nested branches and detail rows | Multi-level row groups with labelled aggregates, and expandable detail rows holding a template, HTML or a nested grid or tree |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |

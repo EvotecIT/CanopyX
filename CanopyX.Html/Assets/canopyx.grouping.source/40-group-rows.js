@@ -109,11 +109,11 @@
       this.summaryControls.hidden = !this.summary;
       if (!this.summary) return;
       if (this.summaryControls.parentElement !== this.grid) this.grid.appendChild(this.summaryControls);
-      const count = this.rowProjection ? this.rowProjection.rowCount() : this.rowCount(); this.grid.setAttribute("aria-rowcount", String(count + 2));
+      const count = this.rowProjection ? this.rowProjection.rowCount() : this.rowCount(); this.grid.setAttribute("aria-rowcount", String(count + 2 + (this.headDepth || 0)));
       const key = [this.summary, count, this.layout, this.rowWidth, this.lang, ...this.cols.map(column => column.renderWidth + ":" + column.effectivePin)];
       if (this.summaryRenderKey?.every((value, index) => value === key[index])) return;
       this.summaryRenderKey = key; this.summaryControls.replaceChildren();
-      const row = h("div", "cx-summary-row"); row.setAttribute("role", "row"); row.setAttribute("aria-rowindex", String(count + 2)); row.style.width = this.rowWidth + "px";
+      const row = h("div", "cx-summary-row"); row.setAttribute("role", "row"); row.setAttribute("aria-rowindex", String(count + 2 + (this.headDepth || 0))); row.style.width = this.rowWidth + "px";
       this.cols.forEach((column, index) => {
         const cell = this.newCell(index, column.width, column.kind); cell.setAttribute("role", "gridcell"); cell.style.width = column.renderWidth + "px";
         const aggregates = this.view.reporting.aggregates.filter(item => item.column === column.id);
