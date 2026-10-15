@@ -46,6 +46,7 @@
   VIEW_MODES.layoutsStart = view => {
     // The menu needs the toolbar menus (a tree's tree tools part): it is built on the first start that finds them.
     if (!view.layoutMenu) layoutMenu(view);
+    if (!view.sortMenu) sortMenu(view);
     if (view.layoutStarted) return;
     view.layoutStarted = true;
     view.host.classList.add("cx-layouts");
@@ -64,7 +65,7 @@
     const mode = change.mode ?? view.layoutMode, density = change.density ?? view.density;
     if (mode !== view.layoutMode || density !== view.density) {
       layoutApply(view, mode, density);
-      view.layoutMenu?.render();
+      view.layoutMenu?.render(); view.sortMenu?.sync();
       if (view.live) { setText(view.live, ""); setText(view.live, fill(view.labels.layoutChanged, { mode: layoutModeText(view, mode), density: layoutDensityText(view, density) })); }
       view.stateChanged();
       view.emit("layout", { mode, density });

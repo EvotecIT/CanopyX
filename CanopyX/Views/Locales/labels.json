@@ -218,10 +218,10 @@
   "GridOfThese": ["z tych warunków","dieser Bedingungen","de estas condiciones","de ces conditions","di queste condizioni"],
   "GridGroupCount": ["Grupy: {count}","{count} Gruppen","{count} grupos","Groupes : {count}","Gruppi: {count}"],
   "MatchesHighlight": ["Wyróżniaj dopasowania","Treffer hervorheben","Resaltar coincidencias","Surligner les correspondances","Evidenzia le corrispondenze"],
-  "MatchesCount": ["Dopasowania: {count}","{count} Treffer","{count} coincidencias","Correspondances : {count}","Corrispondenze: {count}"],
+  "MatchesCount": ["[one]{count} dopasowanie[few]{count} dopasowania[many]{count} dopasowań[other]{count} dopasowania","{count} Treffer","[one]{count} coincidencia[other]{count} coincidencias","[one]{count} correspondance[other]{count} correspondances","[one]{count} corrispondenza[other]{count} corrispondenze"],
   "MatchesPosition": ["{current} z {count}","{current} von {count}","{current} de {count}","{current} sur {count}","{current} di {count}"],
   "MatchesNone": ["Brak dopasowań","Keine Treffer","Sin coincidencias","Aucune correspondance","Nessuna corrispondenza"],
-  "MatchesLoaded": ["Dopasowania we wczytanych wierszach: {count}","{count} Treffer in geladenen Zeilen","{count} coincidencias en las filas cargadas","Correspondances dans les lignes chargées : {count}","Corrispondenze nelle righe caricate: {count}"],
+  "MatchesLoaded": ["[one]{count} dopasowanie we wczytanych wierszach[few]{count} dopasowania we wczytanych wierszach[many]{count} dopasowań we wczytanych wierszach[other]{count} dopasowania we wczytanych wierszach","{count} Treffer in geladenen Zeilen","[one]{count} coincidencia en las filas cargadas[other]{count} coincidencias en las filas cargadas","[one]{count} correspondance dans les lignes chargées[other]{count} correspondances dans les lignes chargées","[one]{count} corrispondenza nelle righe caricate[other]{count} corrispondenze nelle righe caricate"],
   "MatchesPrevious": ["Poprzednie dopasowanie","Vorheriger Treffer","Coincidencia anterior","Correspondance précédente","Corrispondenza precedente"],
   "MatchesNext": ["Następne dopasowanie","Nächster Treffer","Coincidencia siguiente","Correspondance suivante","Corrispondenza successiva"],
   "MatchesAnnounce": ["Dopasowanie {current} z {count}, {column}","Treffer {current} von {count}, {column}","Coincidencia {current} de {count}, {column}","Correspondance {current} sur {count}, {column}","Corrispondenza {current} di {count}, {column}"],
@@ -233,5 +233,6 @@
   "LayoutCompact": ["Zwarta","Kompakt","Compacta","Compacte","Compatta"],
   "LayoutNormal": ["Normalna","Normal","Normal","Normale","Normale"],
   "LayoutComfortable": ["Swobodna","Großzügig","Amplia","Aérée","Ampia"],
-  "LayoutChanged": ["Układ: {mode}, {density}","Layout: {mode}, {density}","Diseño: {mode}, {density}","Disposition : {mode}, {density}","Layout: {mode}, {density}"]
+  "LayoutChanged": ["Układ: {mode}, {density}","Layout: {mode}, {density}","Diseño: {mode}, {density}","Disposition : {mode}, {density}","Layout: {mode}, {density}"],
+  "LayoutSort": ["Sortuj według","Sortieren nach","Ordenar por","Trier par","Ordina per"]
 }

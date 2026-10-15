@@ -50,6 +50,9 @@ marks, and only the rows a view paints are marked, whatever the size of the resu
 
 ## The count and navigation
 
+The count uses the plural forms of the page language ("1 match", "2 matches"; in Polish "1 dopasowanie", "2 dopasowania",
+"5 dopasowań"): `matchesCount` and `matchesLoaded` are plural labels ([labels](labels.md#maintaining-translations)).
+
 A match is one hit in a shown cell, in the text the view formats for that cell (host-drawn cells may show other text).
 An inline grid counts its whole result, a tree its visible rows (again whenever they change), and a grid with a host source
 the rows it has loaded ("12 matches in loaded rows" until every row is loaded; pages that arrive as the reader scrolls are

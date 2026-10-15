@@ -125,7 +125,7 @@
       "views": ["tree", "grid"],
       "feature": "searchHighlight",
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES"],
+      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural"],
       "scripts": ["CanopyX.Html/Assets/canopyx.highlight.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.highlight.source/highlight.css"]
     },
@@ -136,7 +136,7 @@
       "views": ["tree", "grid"],
       "feature": "layout",
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES"],
+      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural"],
       "scripts": ["CanopyX.Html/Assets/canopyx.layouts.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
     }

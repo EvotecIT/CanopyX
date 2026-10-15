@@ -30,6 +30,7 @@ const labels = Object.freeze({
   layoutNormal: "Normal",
   layoutComfortable: "Großzügig",
   layoutChanged: "Layout: {mode}, {density}",
+  layoutSort: "Sortieren nach",
   gridWhere: "Wenn",
   gridComplexFilter: "Diese Spalte gehört zu einer gemischten Bedingungsgruppe. Bearbeiten Sie sie unter Filter.",
   gridClearColumnFilter: "Filter löschen",

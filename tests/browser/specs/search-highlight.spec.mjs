@@ -240,7 +240,7 @@ test("a tree marks its search words in the tree column and moves through them", 
   expect(await page.evaluate(() => document.activeElement.closest(".cx-row")?.getAttribute("data-cx-id"))).toBe("kb-1");
   // Collapsing a branch counts the visible rows again.
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setState({ ...document.querySelector("[data-canopyx-host]").canopyx.getState(), expanded: [] }));
-  await expect(countText(page)).toHaveText("1 matches");
+  await expect(countText(page)).toHaveText("1 match");
 });
 
 test("a paged grid moves through matches across pages and keeps the current match on the new page", async ({ page }) => {
@@ -276,6 +276,25 @@ test("a source that cannot count its result counts the loaded rows and keeps cou
   expect(first.complete).toBe(false);
   await page.locator(".cx-grid").evaluate(grid => { grid.scrollTop = grid.scrollHeight; });
   await expect.poll(() => page.evaluate(() => window.grid.getMatches().total)).toBeGreaterThan(first.total);
+});
+
+test("match counts use the plural forms of the page language", async ({ page }) => {
+  const rows = Array.from({ length: 12 }, (_, i) => ({ id: "r" + i, cells: { name: "Item " + i, note: i < 1 ? "alpha" : i < 3 ? "beta" : "gamma" } }));
+  const view = labels => ({ protocol: "canopyx/2", type: "grid", id: "plural", label: "Plural", pageSize: 100, selection: "none", search: true, rowHeight: 34,
+    columns: [{ id: "name", title: "Name", kind: "text" }, { id: "note", title: "Note", kind: "text" }], source: { kind: "inline" }, rows, searchHighlight: true, labels });
+  await open(page, view());
+  for (const [search, text] of [["alpha", "1 match"], ["beta", "2 matches"], ["gamma", "9 matches"], ["zzz", "No matches"]]) {
+    await call(page, "setQuery", { search }); await settle(page);
+    await expect(countText(page)).toHaveText(text);
+  }
+  // Polish has one, few and many forms: 1 dopasowanie, 2 dopasowania, 9 dopasowań.
+  await page.unrouteAll();
+  await open(page, view({ matchesCount: "[one]{count} dopasowanie[few]{count} dopasowania[many]{count} dopasowań[other]{count} dopasowania" }),
+    { script: "document.documentElement.lang = 'pl';" });
+  for (const [search, text] of [["alpha", "1 dopasowanie"], ["beta", "2 dopasowania"], ["gamma", "9 dopasowań"]]) {
+    await call(page, "setQuery", { search }); await settle(page);
+    await expect(countText(page)).toHaveText(text);
+  }
 });
 
 test("search highlighting stays fast at 100,000 rows: painted rows only, with a sliced count", async ({ page }) => {

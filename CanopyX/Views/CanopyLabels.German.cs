@@ -34,6 +34,7 @@ public sealed partial class CanopyLabels {
         LayoutNormal = "Normal",
         LayoutComfortable = "Großzügig",
         LayoutChanged = "Layout: {mode}, {density}",
+        LayoutSort = "Sortieren nach",
         GridWhere = "Wenn",
         GridComplexFilter = "Diese Spalte gehört zu einer gemischten Bedingungsgruppe. Bearbeiten Sie sie unter Filter.",
         GridClearColumnFilter = "Filter löschen",

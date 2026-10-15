@@ -55,6 +55,34 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
   });
 }
 
+for (const width of [1440, 390]) test(`cards hide the header row and offer sorting, column menus and select-all from Sort by (${width})`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await open(page, ticketView(120, { reporting: { selectionControls: true }, layout: { mode: "cards" } }));
+  // No column header is visible: each card labels its fields.
+  expect(await page.locator(".cx-hcell").evaluateAll(cells => cells.filter(cell => cell.checkVisibility()).length)).toBe(0);
+  const sort = page.locator(".cx-grid-sort");
+  await expect(sort).toBeVisible();
+  await sort.locator(":scope > summary").click();
+  const panel = sort.locator(".cx-grid-panel");
+  await expect(panel.getByRole("group", { name: "Sort by" })).toBeVisible();
+  // Sorting by a column applies at once and shows its direction; a second press reverses it.
+  await panel.getByRole("button", { name: "Replies", exact: true }).click();
+  await expect.poll(() => call(page, "getQuery").then(query => query.sort)).toEqual([{ column: "replies", direction: "asc" }]);
+  await expect(panel.locator(".cx-sort-column[aria-pressed='true']")).toHaveText(/Replies/);
+  await panel.locator(".cx-sort-column[aria-pressed='true']").click();
+  await expect.poll(() => call(page, "getQuery").then(query => query.sort)).toEqual([{ column: "replies", direction: "desc" }]);
+  // The select-all commands of the hidden header are at the top of the menu.
+  await expect(panel.getByRole("button", { name: "Select all matching" })).toBeVisible();
+  // A column's menu opens from its row, with the column's actions.
+  await panel.getByRole("button", { name: "Menu for Priority" }).click();
+  await expect(page.locator(".cx-column-menu")).toBeVisible();
+  // The menu belongs to the card layout only; the header comes back in fit.
+  await page.keyboard.press("Escape");
+  await call(page, "setLayout", { mode: "fit" }); await settle(page);
+  await expect(sort).toBeHidden();
+  await expect(page.locator(".cx-hcell").first()).toBeVisible();
+});
+
 test("switching keeps the sort, filters, search, selection, first row in view and the focused cell", async ({ page }) => {
   await open(page, ticketView(3000, { query: { search: "printer", sort: [{ column: "replies", direction: "desc" }], filters: [{ column: "priority", operator: "in", values: ["High", "Urgent"] }] } }));
   const query = await call(page, "getQuery");

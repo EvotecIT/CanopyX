@@ -33,7 +33,7 @@
   function hlCountText(view, counting) {
     const state = view.hl, position = counting ? 0 : hlPosition(view), total = state.total || 0;
     return !total && !counting ? view.labels.matchesNone : position ? fill(view.labels.matchesPosition, { current: hlFormat(view, position), count: hlFormat(view, total) }) :
-      fill(state.complete || counting ? view.labels.matchesCount : view.labels.matchesLoaded, { count: hlFormat(view, total) });
+      fill(plural(state.complete || counting ? view.labels.matchesCount : view.labels.matchesLoaded, total, view.lang), { count: hlFormat(view, total) });
   }
 
   // The count, the buttons and the switch show the current state.

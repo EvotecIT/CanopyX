@@ -1164,6 +1164,7 @@
         "layoutNormal": { "type": "string" },
         "layoutComfortable": { "type": "string" },
         "layoutChanged": { "type": "string" },
+        "layoutSort": { "type": "string" },
         "gridUnpin": { "type": "string" },
         "gridWhere": { "type": "string" },
         "gridComplexFilter": { "type": "string" },

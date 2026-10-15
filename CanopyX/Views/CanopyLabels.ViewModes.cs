@@ -3,13 +3,13 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the more-menu switch that turns search-hit highlighting on and off. Default "Highlight matches".</summary>
     public string MatchesHighlight { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the match count, including <c>{count}</c>. Default "{count} matches".</summary>
+    /// <summary>Gets or sets the match count, including <c>{count}</c>, in plural forms. Default "[one]{count} match[other]{count} matches".</summary>
     public string MatchesCount { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the current match's position, including <c>{current}</c> and <c>{count}</c>. Default "{current} of {count}".</summary>
     public string MatchesPosition { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text shown when nothing matches. Default "No matches".</summary>
     public string MatchesNone { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the match count of a grid that has not loaded every row, including <c>{count}</c>. Default "{count} matches in loaded rows".</summary>
+    /// <summary>Gets or sets the match count of a grid that has not loaded every row, including <c>{count}</c>, in plural forms. Default "[one]{count} match in loaded rows[other]{count} matches in loaded rows".</summary>
     public string MatchesLoaded { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the Previous match button's name. Default "Previous match".</summary>
     public string MatchesPrevious { get => Get(); set => Set(value); }
@@ -35,4 +35,6 @@ public sealed partial class CanopyLabels {
     public string LayoutComfortable { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the announcement of a new layout, including <c>{mode}</c> and <c>{density}</c>. Default "Layout: {mode}, {density}".</summary>
     public string LayoutChanged { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the name of the card layout's Sort by menu. Default "Sort by".</summary>
+    public string LayoutSort { get => Get(); set => Set(value); }
 }

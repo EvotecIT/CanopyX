@@ -56,8 +56,13 @@ A card's height follows the grid's width: the fields flow into as many columns a
 evenly over the fewest lines; free text (wrapping, long text, tags, lists and flexible columns) takes two slots. Every card
 of a grid has the same height, so virtual rows, scroll positions, `scrollToRow` and Page Up/Down keep working on any number
 of records; a wider panel re-flows the cards and keeps the first card in view. Values that do not fit their slot end with an
-ellipsis: the record drawer (a tap on a phone, Enter, or the "+N" button) shows them whole. The header stays above the cards
-as a strip of sort buttons and column menus.
+ellipsis: the record drawer (a tap on a phone, Enter, or the "+N" button) shows them whole.
+
+The header row steps aside in the card layout, since every field carries its column title. A **Sort by** menu appears in the
+toolbar instead (a bottom sheet on phones): a press on a column sorts by it and a second press reverses it (Shift adds it to
+the sort), the active sort shows its direction, the button beside each column opens that column's menu (filter, hide, pin
+and the rest), and a reporting grid's select-all commands (`selectionControls`) sit at the top. The menu leaves with the card
+layout.
 
 Trees keep their rows in cards' place: a tree's levels, expanders and keyboard model belong to rows, and on a phone the fit
 layout already gives the tree column the width while "+N" opens a node's other fields.

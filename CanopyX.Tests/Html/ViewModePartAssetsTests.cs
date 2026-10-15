@@ -8,7 +8,7 @@ namespace CanopyX.Tests.Html;
 public sealed class ViewModePartAssetsTests {
     [Theory]
     [InlineData("highlight", "function hlMarkCell", 10)]
-    [InlineData("layouts", "function cardGeometry", 6)]
+    [InlineData("layouts", "function cardGeometry", 7)]
     public void Part_IsBoundedAndOutsideTheEntryPoints(string name, string marker, int guardKiB) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Contains(marker, part.Script);

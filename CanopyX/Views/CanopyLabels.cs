@@ -16,7 +16,10 @@ namespace CanopyX;
 /// <c>{shown}</c>, <c>{min}</c>, <c>{error}</c>, <c>{column}</c>, <c>{width}</c>, and <c>{time}</c>, as each
 /// property says. Numbers are formatted in the page language (in the browser) or in
 /// <c>CanopyStaticHtmlOptions.Culture</c> (in the outline). For a language with plural forms, phrase the text so the
-/// number stands on its own, for example <c>Wyniki: {count}</c>.
+/// number stands on its own, for example <c>Wyniki: {count}</c>, or give one form per plural category of the page language:
+/// <c>[one]{count} match[other]{count} matches</c> (categories <c>zero</c>, <c>one</c>, <c>two</c>, <c>few</c>, <c>many</c> and
+/// <c>other</c>, which every plural text needs). The browser picks the form with the language's plural rules for the count;
+/// a form cannot contain "[". The match counts use plural forms.
 /// </para>
 /// <para>
 /// Host data is never translated here: node labels, column titles, cells, badges, and the view's accessible name are
@@ -40,10 +43,10 @@ public sealed partial class CanopyLabels {
         [nameof(GridFitContent)] = "Fit to content",
         [nameof(GridUnpin)] = "Unpin",
         [nameof(MatchesHighlight)] = "Highlight matches",
-        [nameof(MatchesCount)] = "{count} matches",
+        [nameof(MatchesCount)] = "[one]{count} match[other]{count} matches",
         [nameof(MatchesPosition)] = "{current} of {count}",
         [nameof(MatchesNone)] = "No matches",
-        [nameof(MatchesLoaded)] = "{count} matches in loaded rows",
+        [nameof(MatchesLoaded)] = "[one]{count} match in loaded rows[other]{count} matches in loaded rows",
         [nameof(MatchesPrevious)] = "Previous match",
         [nameof(MatchesNext)] = "Next match",
         [nameof(MatchesAnnounce)] = "Match {current} of {count}, {column}",
@@ -56,6 +59,7 @@ public sealed partial class CanopyLabels {
         [nameof(LayoutNormal)] = "Normal",
         [nameof(LayoutComfortable)] = "Comfortable",
         [nameof(LayoutChanged)] = "Layout: {mode}, {density}",
+        [nameof(LayoutSort)] = "Sort by",
         [nameof(GridWhere)] = "Where",
         [nameof(GridComplexFilter)] = "This column belongs to a mixed condition group. Edit it in Filters.",
         [nameof(GridClearColumnFilter)] = "Clear filter",
@@ -265,7 +269,7 @@ public sealed partial class CanopyLabels {
 
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
-        nameof(MatchesHighlight), nameof(MatchesCount), nameof(MatchesPosition), nameof(MatchesNone), nameof(MatchesLoaded), nameof(MatchesPrevious), nameof(MatchesNext), nameof(MatchesAnnounce), nameof(LayoutMenu), nameof(LayoutFit), nameof(LayoutScroll), nameof(LayoutCards), nameof(LayoutDensity), nameof(LayoutCompact), nameof(LayoutNormal), nameof(LayoutComfortable), nameof(LayoutChanged),
+        nameof(MatchesHighlight), nameof(MatchesCount), nameof(MatchesPosition), nameof(MatchesNone), nameof(MatchesLoaded), nameof(MatchesPrevious), nameof(MatchesNext), nameof(MatchesAnnounce), nameof(LayoutMenu), nameof(LayoutFit), nameof(LayoutScroll), nameof(LayoutCards), nameof(LayoutDensity), nameof(LayoutCompact), nameof(LayoutNormal), nameof(LayoutComfortable), nameof(LayoutChanged), nameof(LayoutSort),
         nameof(GridGroupCount),
         nameof(GridOfThese),
         nameof(GridOfTheseAreTrue),

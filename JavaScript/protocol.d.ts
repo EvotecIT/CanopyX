@@ -205,7 +205,7 @@ export type LabelName =
   | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint"
   | "matchesHighlight" | "matchesCount" | "matchesPosition" | "matchesNone" | "matchesLoaded" | "matchesPrevious" | "matchesNext" | "matchesAnnounce"
-  | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged"
+  | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged" | "layoutSort"
   | "gridFitContent"
   | "gridUnpin"
   | "gridWhere"

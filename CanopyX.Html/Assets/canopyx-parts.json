@@ -91,7 +91,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "bb1aa4e225d383ed",
+      "version": "d600b9c125252960",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [
@@ -107,7 +107,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "32df2fc729d9666c",
+      "version": "336ce3246e11efd1",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [

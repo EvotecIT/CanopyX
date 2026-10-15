@@ -4,12 +4,12 @@
   // with the highlight and layouts parts, which load when a view declares the feature or the API first asks for it.
   // Scroll mode is honoured by the shared column fitting (33-column-fit-core.js) as soon as the view is built.
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    matchesHighlight: "Highlight matches", matchesCount: "{count} matches", matchesPosition: "{current} of {count}",
-    matchesNone: "No matches", matchesLoaded: "{count} matches in loaded rows", matchesPrevious: "Previous match",
+    matchesHighlight: "Highlight matches", matchesCount: "[one]{count} match[other]{count} matches", matchesPosition: "{current} of {count}",
+    matchesNone: "No matches", matchesLoaded: "[one]{count} match in loaded rows[other]{count} matches in loaded rows", matchesPrevious: "Previous match",
     matchesNext: "Next match", matchesAnnounce: "Match {current} of {count}, {column}",
     layoutMenu: "Layout", layoutFit: "Fit to width", layoutScroll: "All columns, scroll sideways", layoutCards: "Cards",
     layoutDensity: "Density", layoutCompact: "Compact", layoutNormal: "Normal", layoutComfortable: "Comfortable",
-    layoutChanged: "Layout: {mode}, {density}"
+    layoutChanged: "Layout: {mode}, {density}", layoutSort: "Sort by"
   }));
   const LAYOUT_MODES = ["fit", "scroll", "cards"], LAYOUT_DENSITIES = ["compact", "default", "comfortable"];
   // Row height steps per density, relative to the view's own row height and declared density.
@@ -129,7 +129,7 @@
   // Both view kinds load the same two parts; whichever view loads a part first installs it for every view of the runtime.
   // The flat-grid runtimes add their helpers to VIEW_MODES (86-grid-view-modes.js) before any view is created.
   const viewModeContext = () => ({ VIEW_MODES, TreeGrid, h, setText, fill, numberFormat, foldText, cellText, cellValue, isCellObject,
-    setAttr, toneOf, watchFlyout, densityRowHeight, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES });
+    setAttr, toneOf, watchFlyout, densityRowHeight, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural });
   definePart(TreeGrid, "highlight", "search highlighting", viewModeContext);
   definePart(TreeGrid, "layouts", "layout modes", viewModeContext);
   // A tree starts its declared modes once its tree tools part (and so its toolbar menus) is installed.

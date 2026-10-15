@@ -16,10 +16,18 @@
 .cx-layouts:not(.cx-data-grid)[data-cx-layout="scroll"] .cx-row > .cx-tree{background:inherit;}
 .cx-data-grid[data-cx-layout="cards"] .cx-grid{overflow-x:hidden;}
 .cx-data-grid[data-cx-layout="cards"] :is(.cx-canvas,.cx-head){width:100% !important;min-width:0;}
-.cx-data-grid[data-cx-layout="cards"] .cx-head{overflow-x:auto;scrollbar-width:none;}
-.cx-data-grid[data-cx-layout="cards"] .cx-hrow{width:max-content !important;min-width:100%;}
-.cx-data-grid[data-cx-layout="cards"] .cx-hcell{width:auto !important;position:relative !important;left:auto !important;right:auto !important;padding:0 var(--cx-size-12px);}
-.cx-data-grid[data-cx-layout="cards"] .cx-hcell .cx-resize{display:none;}
+.cx-data-grid[data-cx-layout="cards"] .cx-head{display:none;}
+.cx-chrome .cx-grid-sort > .cx-grid-panel{display:block;width:var(--cx-size-280px);padding:var(--cx-size-6px) var(--cx-size-8px);}
+.cx-sort-list{display:flex;flex-direction:column;gap:var(--cx-size-2px);}
+.cx-grid-sort .cx-grid-selection-controls{padding:var(--cx-size-4px) var(--cx-size-6px) var(--cx-size-8px);margin-bottom:var(--cx-size-6px);border-bottom:var(--cx-size-1px) solid var(--cx-line);}
+.cx-sort-choice{display:flex;align-items:center;gap:var(--cx-size-4px);min-height:var(--cx-size-32px);}
+.cx-chrome .cx-sort-choice .cx-sort-column{flex:1;min-width:0;justify-content:start;border:0;border-radius:var(--cx-radius-sm);background:transparent;overflow:hidden;text-overflow:ellipsis;}
+.cx-chrome .cx-sort-choice span.cx-sort-column{padding:0 var(--cx-size-11px);color:var(--cx-muted);}
+.cx-chrome .cx-sort-choice .cx-sort-column[aria-pressed="true"]{color:var(--cx-accent-text);background:var(--cx-accent-soft);font-weight:600;}
+.cx-chrome .cx-sort-choice .cx-sort-menu{flex:none;border:0;background:transparent;color:var(--cx-text-2);}
+.cx-chrome.cx-phone .cx-grid-sort > summary{width:var(--cx-size-44px);font-size:0;padding:0;}
+.cx-chrome.cx-phone .cx-sort-choice{min-height:var(--cx-size-44px);}
+.cx-chrome.cx-phone .cx-sort-choice .cx-button{min-height:var(--cx-size-44px);}
 .cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group){
 width:100% !important;min-width:0;display:grid;grid-template-columns:repeat(var(--cx-card-cols,1),minmax(0,1fr));grid-template-rows:var(--cx-card-title);grid-auto-rows:var(--cx-card-field);
 grid-auto-flow:row dense;align-content:start;column-gap:var(--cx-size-16px);row-gap:var(--cx-card-gap);padding:var(--cx-card-pad) var(--cx-size-16px);
