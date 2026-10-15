@@ -7,7 +7,7 @@
   function gridPriority(value) {
     return ["essential", "normal", "optional"].includes(value) || Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
-  // Numeric priorities follow DataTables' responsivePriority: 0-1 essential, 10000 and above optional, normal between.
+  // Numeric priorities: 0-1 essential, 10000 and above optional, normal between.
   function gridRank(column) {
     const value = column.priority;
     return typeof value === "number" ? value : value === "optional" ? 10000 : value === "essential" || value === undefined && column.identity ? 0 : 5000;

@@ -53,7 +53,7 @@ export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
   /** Share of spare width (0..100), given before the identity column. */
   flex?: number;
   autoSize?: "content" | "header" | "none";
-  /** How the column gives way when narrow. Integers rank responsive priority: 0-1 essential, 10000+ optional. */
+  /** How the column gives way when narrow. Integers: 0-1 essential, 10000+ optional, larger values hide first. */
   priority?: GridColumnPriority;
   /** Requested edge; null unpins. Omitted: the identity column pins left. */
   pinned?: "left" | "right" | null;
