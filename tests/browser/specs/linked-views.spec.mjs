@@ -153,7 +153,7 @@ test.describe("linked views", () => {
     expect(rows.some(id => id.startsWith("site-"))).toBe(true);
     // The tree column links by its label.
     await api(page, "linked-sites", "api => api.setExternalFilter('status-chart', { field: 'name', values: ['auth-1'] })");
-    expect(await ids(page, "linked-sites")).toEqual(["site-berlin", "svc-01"]);
+    await expect.poll(() => ids(page, "linked-sites")).toEqual(["site-berlin", "svc-01"]);
     await tree.locator(".cx-link-chip").click();
     await expect(tree.locator(".cx-link-bar")).toHaveCount(0);
     await expect.poll(() => ids(page, "linked-sites").then(list => list.length)).toBeGreaterThan(4);

@@ -47,11 +47,15 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
       await expect(more).toHaveClass(/cx-fmt-flag/);
       await expect(more).toHaveAttribute("aria-label", /hidden fields formatted: .*Critical/);
       // The flag is the button itself (its tone and an underline), inside the width the fitting reserves for it: the identity
-      // column and every flagged value stay whole. A column that cannot fit a flagged value hides behind "+N" instead.
-      expect(await more.evaluate(button => getComputedStyle(button, "::after").content)).toBe("none");
+      // column and every flagged value stay whole. A column that cannot fit a flagged value hides behind "+N" instead. (The
+      // button's scroll width counts its widened hit area, so it is checked by its box.)
+      // On phones an empty ::after widens the button's hit area to the 44 px target (accessibility modes); it draws nothing.
+      const after = await more.evaluate(button => { const style = getComputedStyle(button, "::after"); return [style.content, style.backgroundColor, style.borderTopStyle]; });
+      expect(["none", "\"\""]).toContain(after[0]);
+      expect(after.slice(1)).toEqual(["rgba(0, 0, 0, 0)", "none"]);
       const cut = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].flatMap(row => [...row.children]
         .filter(cell => cell === row.firstElementChild || cell.querySelector(".cx-fmt-icon,.cx-fmt-badge,.cx-fmt-cue"))
-        .flatMap(cell => [...cell.querySelectorAll(".cx-text,.cx-hidden-fields")].filter(item => item.scrollWidth > item.clientWidth + 1 ||
+        .flatMap(cell => [...cell.querySelectorAll(".cx-text,.cx-hidden-fields")].filter(item => item.matches(".cx-text") && item.scrollWidth > item.clientWidth + 1 ||
           item.getBoundingClientRect().right > cell.getBoundingClientRect().right + 0.5).map(item => row.dataset.cxId + ":" + item.textContent))));
       expect(cut).toEqual([]);
       const flagged = cell(page, "srv-000", 0);
