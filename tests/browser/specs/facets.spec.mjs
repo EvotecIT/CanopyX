@@ -102,6 +102,41 @@ test.describe("facet panel", () => {
     await expect(facet(page, "priority").getByRole("button", { name: /^Priority\s*, 1 selected$/ })).toBeVisible();
   });
 
+  test("values keep the column's declared order and its tones, and headings stay in view while the list scrolls", async ({ page }) => {
+    await open(page);
+    const priority = facet(page, "priority");
+    // The priority presenter names Urgent, High and Normal; Low, which it does not name, follows.
+    expect((await counts(page, "priority")).map(([value]) => value)).toEqual(["Urgent", "High", "Normal", "Low"]);
+    const dot = priority.locator(".cx-facet-val .p-dot.danger").first();
+    await expect(dot).toBeVisible();
+    expect(await dot.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
+    // Scrolled past the priority heading, the heading sticks to the top of the list while its values pass under it.
+    const list = page.locator(".cx-facets-list");
+    await list.evaluate((element, top) => { element.scrollTop = top; }, await priority.evaluate(section => section.offsetTop + 40));
+    const [listTop, headingTop] = await Promise.all([list.evaluate(element => element.getBoundingClientRect().top), priority.locator(".cx-facet-top").evaluate(element => element.getBoundingClientRect().top)]);
+    expect(Math.abs(headingTop - listTop)).toBeLessThan(2);
+  });
+
+  test("a top panel never cuts a row, and a right-aligned header keeps its filter marker beside the title", async ({ page }) => {
+    for (const width of [1440, 1000]) {
+      await open(page, { name: "facets-top.html", width });
+      // Every value row of every cell is wholly inside its cell.
+      const cut = await page.locator(".cx-facet").evaluateAll(sections => sections.flatMap(section => {
+        const box = section.getBoundingClientRect();
+        return [...section.querySelectorAll(".cx-facet-val, .cx-facet-field")].filter(row => { const r = row.getBoundingClientRect(); return r.height && (r.bottom > box.bottom + 0.5 || r.top < box.top - 0.5); })
+          .map(row => section.dataset.cxFacet + ": " + row.textContent);
+      }));
+      expect(cut).toEqual([]);
+    }
+    await facet(page, "age").getByLabel("From").fill("20");
+    await facet(page, "age").getByLabel("From").press("Enter");
+    const header = page.locator('.cx-hcell[data-cx-column="age"]');
+    const marker = header.locator(".cx-grid-header-filter");
+    await expect(marker).toBeVisible();
+    const [markerBox, titleBox] = [await marker.boundingBox(), await header.locator(".cx-sort").boundingBox()];
+    expect(titleBox.x - (markerBox.x + markerBox.width)).toBeLessThan(12);
+  });
+
   test("keyboard: arrows move inside a list, Space ticks, and a condition the panel cannot show is said", async ({ page }) => {
     await open(page);
     const list = facet(page, "category").locator(".cx-facet-values");
