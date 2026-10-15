@@ -58,6 +58,8 @@ body .cx-host.cx-chrome { padding:0; }
 .cx-chrome.cx-phone .cx-grid-panel:has(> [open])::before { display:none; }
 .cx-chrome.cx-phone .cx-hrow { height:var(--cx-size-44px); }
 .cx-grid-column-choice:hover { background:var(--cx-hover-bg); }
+/* The drag handle's width comes from its glyph, which is narrower in some engines; keep the 24 px target size. */
+.cx-grid-column-handle { min-width:var(--cx-size-24px); }
 .cx-grid-column-find { margin-bottom:var(--cx-size-4px); }
 @media (forced-colors:active) {
   .cx-chrome .cx-row[aria-selected="true"] > .cx-cell:first-child::before { forced-color-adjust:none;background:Highlight; }

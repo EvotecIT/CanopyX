@@ -51,7 +51,7 @@
           setText(term, column.title); setText(value, cellText(this.cellOf(node, column, this.columns.indexOf(column)), column, this.fmt) || "—");
           list.append(term, value);
         });
-        body.replaceChildren(section, list); title.focus({ preventScroll: true });
+        body.replaceChildren(section, list); focusDrawerTitle(title);
       };
       dialog.addEventListener("keydown", event => {
         if (event.key === "Escape") { event.preventDefault(); dialog.close(); }

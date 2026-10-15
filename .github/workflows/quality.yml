@@ -12,27 +12,27 @@ permissions:
 
 jobs:
   build-test-pack:
-    name: Build, test, examples, browser tests, pack (${{ matrix.name }})
-    runs-on: ${{ fromJSON(matrix.runner) }}
-    timeout-minutes: 75
+    # Every platform runs the browser suite in all three engines, one engine per job. The Chromium job of each platform
+    # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
+    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }})
+    runs-on: ${{ fromJSON(matrix.platform.runner) }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        include:
+        platform:
           - name: Linux
             runner: '["self-hosted","Linux","X64","root"]'
-            browsers: chromium,firefox,webkit
           - name: Windows
             runner: '["self-hosted","Windows","X64"]'
-            browsers: chromium,firefox
           - name: macOS
             runner: '["self-hosted","macOS","ARM64"]'
-            browsers: chromium,webkit
+        engine: [chromium, firefox, webkit]
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
-      CANOPYX_TEST_BROWSERS: ${{ matrix.browsers }}
+      CANOPYX_TEST_BROWSERS: ${{ matrix.engine }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -57,42 +57,46 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $engines = @($env:CANOPYX_TEST_BROWSERS -split ',')
-          dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- @engines
+          dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- $env:CANOPYX_TEST_BROWSERS
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run quality loop
         shell: pwsh
         run: |
-          # Windows' serial browser suite needs 25 minutes per engine; individual test timeouts stay unchanged.
-          $browserCount = @($env:CANOPYX_TEST_BROWSERS -split ',').Count
-          $secondsPerBrowser = if ('${{ matrix.name }}' -eq 'Windows') { 1500 } else { 1200 }
-          ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds ($secondsPerBrowser * $browserCount)
+          # Windows' serial browser suite needs up to 25 minutes per engine; individual test timeouts stay unchanged.
+          $seconds = if ('${{ matrix.platform.name }}' -eq 'Windows') { 1500 } else { 1200 }
+          if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
+            ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds
+          } else {
+            ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds -SkipPack
+          }
 
       - name: Upload packages
+        if: matrix.engine == 'chromium'
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-packages-${{ matrix.name }}
+          name: canopyx-packages-${{ matrix.platform.name }}
           path: |
             artifacts/packages/Release/*.nupkg
             artifacts/packages/Release/*.snupkg
           if-no-files-found: error
 
       - name: Upload example pages
-        if: always()
+        if: always() && matrix.engine == 'chromium'
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-examples-${{ matrix.name }}
+          name: canopyx-examples-${{ matrix.platform.name }}
           path: |
             CanopyX.Examples/bin/Release/net10.0/output/inline.html
             CanopyX.Examples/bin/Release/net10.0/output/outline.html
           if-no-files-found: warn
 
+      # On failure the report holds the traces, and for the visual baselines the expected, actual and diff images.
       - name: Upload browser test report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-playwright-report-${{ matrix.name }}
+          name: canopyx-playwright-report-${{ matrix.platform.name }}-${{ matrix.engine }}
           path: |
             tests/browser/playwright-report
             tests/browser/test-results
