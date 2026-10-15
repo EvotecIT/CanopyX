@@ -615,7 +615,24 @@ void liveGrid.poll({ intervalMs: 5000, immediate: true }).then((poller: GridPoll
 const liveState: GridLiveState = liveGrid.getLiveState();
 void [liveState.orderChanged, liveState.pending, liveState.polling, liveState.revision];
 // @ts-expect-error A transaction lists rows to add, not a single row.
-void liveGrid.applyTransaction({ add: { id: "x", cells: {} } });// Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
+void liveGrid.applyTransaction({ add: { id: "x", cells: {} } });
+// The facet panel (docs/facets.md): a definition in the view, host options and the panel API.
+import type { GridFacetPanelDefinition, GridFacetPanelState } from "@evotecit/canopyx/grid";
+const facetPanel: GridFacetPanelDefinition = { columns: ["region", { column: "load", kind: "range", bins: 12, sort: "value", collapsed: false }], position: "side", open: true, collapsible: true, width: 280, label: "Refine" };
+const facetGrid = createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "facets", label: "Facets", pageSize: 100, selection: "single", search: true, source: { kind: "inline" },
+    columns: [{ id: "region", title: "Region", kind: "text" }, { id: "load", title: "Load", kind: "number" }], rows: [], facets: facetPanel },
+  facets: { position: "top", target: document.createElement("div") },
+  onFacetPanel: event => void event.open });
+const facetState: GridFacetPanelState = facetGrid.getFacetPanel();
+void [facetState.open, facetState.columns, facetState.active];
+void facetGrid.setFacetPanelOpen(false).then(state => state.open);
+const facetSaved: boolean | undefined = facetGrid.getState().facets?.open;
+void facetSaved;
+// @ts-expect-error A facet is a list or a range.
+const badFacet: GridFacetPanelDefinition = { columns: [{ column: "region", kind: "chart" }] };
+void badFacet;
+// Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
 ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });
 const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "orders", label: "Orders",
