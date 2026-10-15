@@ -103,7 +103,7 @@ test("value lists count the complete query on the server and filter the grid", a
   await open(page);
   const facet = await page.evaluate(api => eval(api).getFacets("os"), api);
   expect(facet.matched).toBe(rows);
-  expect(facet.items.map(item => item.value)).toEqual(["FreeBsd", "Linux", "MacOs", "Windows"]);
+  expect(facet.items.map(item => item.value)).toEqual(["FreeBSD", "Linux", "macOS", "Windows"]);
   expect(facet.items.reduce((sum, item) => sum + item.count, 0)).toBe(rows);
 
   await page.getByRole("button", { name: "Menu for Site", exact: true }).click();

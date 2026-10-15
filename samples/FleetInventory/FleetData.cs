@@ -1,9 +1,16 @@
+using System.Runtime.Serialization;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace FleetInventory;
 
-public enum OperatingSystemFamily { Windows, Linux, MacOs, FreeBsd }
+/// <summary>Display names come from <see cref="EnumMemberAttribute"/>; the grid filters, sorts and lists values by them.</summary>
+public enum OperatingSystemFamily {
+    Windows,
+    Linux,
+    [EnumMember(Value = "macOS")] MacOs,
+    [EnumMember(Value = "FreeBSD")] FreeBsd
+}
 
 public sealed class Team {
     public int Id { get; set; }

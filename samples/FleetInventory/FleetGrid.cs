@@ -16,7 +16,7 @@ public static class FleetGrid {
         view.Columns.Add(new CanopyColumn("site", "Site") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(130, 100, 200) });
         view.Columns.Add(new CanopyColumn("os", "Operating system") {
             Sortable = true, Sizing = CanopyColumnSizing.Preferred(150, 120, 200),
-            Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Windows"] = CanopyTone.Info, ["Linux"] = CanopyTone.Success, ["MacOs"] = CanopyTone.Neutral, ["FreeBsd"] = CanopyTone.Warning })
+            Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Windows"] = CanopyTone.Info, ["Linux"] = CanopyTone.Success, ["macOS"] = CanopyTone.Neutral, ["FreeBSD"] = CanopyTone.Warning })
         });
         view.Columns.Add(new CanopyColumn("model", "Model") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(140, 110, 220) });
         view.Columns.Add(new CanopyColumn("cores", "Cores") { Kind = CanopyColumnKind.Number, Sortable = true, Aggregatable = true, Sizing = CanopyColumnSizing.Preferred(90, 80, 120) });
@@ -28,7 +28,7 @@ public static class FleetGrid {
         view.Reporting = new CanopyGridReporting { HeaderFilters = true, FilterGroups = true, SelectionControls = true };
         foreach (var facet in new[] { "site", "os", "model", "team", "online", "cores" }) view.Reporting.FacetColumns.Add(facet);
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("machines", "name", CanopyGridAggregateOperation.Count, "Machines"));
-        view.Reporting.Aggregates.Add(new CanopyGridAggregate("memory", "memory", CanopyGridAggregateOperation.Sum, "Memory (GB)"));
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("memory", "memory", CanopyGridAggregateOperation.Sum, "Total memory (GB)"));
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("cores", "cores", CanopyGridAggregateOperation.Average, "Average cores"));
         if (grouped) view.Reporting.Grouping = new CanopyGridGrouping("site");
         return view;
