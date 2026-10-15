@@ -82,11 +82,11 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 Gate:
 
 - In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within 48 KB gzip.
-- With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was patched Wunderbaum's median in the spike (56 of about 900).
+- With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was the median of the patched third-party tree measured in the spike (56 of about 900).
 - In TestimoX, measured there on its own fixture: the GPO explorer design packet renders both views on CanopyX with the L fixture (5 domains, 5,000 GPOs, 200,000 links) within the TestimoX plan section 7.2 budgets.
 - Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) can also be rendered on CanopyX with the same content, so authors can choose either tree.
 
-If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the TestimoX plan. Its fallback, patched Wunderbaum, would live in the consumer behind its own API; CanopyX does not vendor a third-party grid.
+If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the TestimoX plan. Its fallback, a patched third-party tree, would live in the consumer behind its own API; CanopyX does not vendor a third-party grid.
 
 Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-30), each as a generic API:
 
@@ -212,7 +212,7 @@ Standalone examples and a separate HtmlForgeX inventory host have contract, brow
 
 Report-engine foundations include hidden-container layout, wrapped automatic rows, stable measured scroll anchoring, pixel-based keyboard paging, bounded first-load content sizing and ordered raw-value row/cell highlight rules. Columns offers per-column and full-grid fitting while saved widths retain precedence. Complete Polish, German and Spanish packs cover browser and static labels. The standalone contained, wrapped, content and localized examples exercise these paths. Consumer: portable inventory reports and TestimoX tables. Host migration still needs each report's workflow qualification.
 
-The replacement target is a complete reporting workflow: readers can find records, change their layout, inspect content, select a defined scope, and export the same accepted results. Existing DataTables callers also depend on formatting, paging controls, responsive hidden-column details, grouping and print behavior. Replacing a table must preserve those outcomes, not merely its row renderer.
+The replacement target is a complete reporting workflow: readers can find records, change their layout, inspect content, select a defined scope, and export the same accepted results. Existing table callers also depend on formatting, paging controls, responsive hidden-column details, grouping and print behavior. Replacing a table must preserve those outcomes, not merely its row renderer.
 
 The following assessment uses the current CanopyX source and the primary reference documentation linked below. It is a product backlog; unchecked capabilities are not implemented. Delivery stages express order rather than promised versions or dates.
 
@@ -239,7 +239,7 @@ The following assessment uses the current CanopyX source and the primary referen
 
 ### Stage A: Finish Everyday Table Interaction
 
-Consumers: standalone CanopyX examples, HtmlForgeX inventory reports and the existing `DataTablesTable` paging/search/column-control workflows. CanopyX owns generic query and interaction behavior; HtmlForgeX owns report authoring and composition.
+Consumers: standalone CanopyX examples, HtmlForgeX inventory reports and the paging/search/column-control workflows of HtmlForgeX's existing table component, which stays available as a choice. CanopyX owns generic query and interaction behavior; HtmlForgeX owns report authoring and composition.
 
 - [x] Add an optional paged presentation alongside continuous virtual scrolling. Source fetch size and visible page size are independent. Accepted filtered/total counts, page ranges, first/previous/next/last controls and page jump share the existing query, revision, selection and export contracts. Query changes reset or clamp the page.
 - [x] Declare offset and cursor source navigation capabilities. Known-total offset sources offer numbered pages; cursor-only sources offer supported next/previous navigation with independently nullable counts, without fake random access. Database traversal stays in the host/DbaClientX owner. Exports validate contiguous traversal, captured revisions and complete known totals.
@@ -319,14 +319,13 @@ The first replacement gate is Stages A and B plus the relevant reliability check
 
 ### Reference Capabilities
 
-Primary documentation checked 2026-10-04. These references describe comparison behavior, not dependencies or implementation to copy:
+Reviewed 2026-10-04 and kept as candidates, not dependencies or implementation to copy: reporting controls and nested conditions,
+word and phrase search with a separate remote request rate, separate presentation and query values, complete-result ordering and
+filtering before page windows, export and print controls with a host path for full exports, narrow layouts, direct column
+changes, report grouping, pinning, cell selection, durable layout state, distinct page controls, and full-dataset processing kept
+apart from viewport virtualization. Existing grids having a feature does not prove every combination works; our combination gates are
+explicit, and the larger analytical surface some grids offer is a source of candidates, not an obligation.
 
-- [DataTables extensions](https://datatables.net/manual/extensions/) and [ColumnControl](https://datatables.net/manual/extensions/columncontrol/) establish the reporting-control surface; [SearchBuilder](https://datatables.net/manual/extensions/searchbuilder/) covers nested conditions.
-- [DataTables search](https://datatables.net/ref/core/api/search()) covers word/phrase behavior; [search delay](https://datatables.net/ref/core/option/searchDelay) distinguishes local response from remote request frequency. [Orthogonal data](https://datatables.net/manual/core/data/orthogonal-data) and [renderers](https://datatables.net/manual/core/data/renderers) distinguish presentation from query values.
-- [DataTables server-side processing](https://datatables.net/manual/server-side) defines complete-result ordering/filtering before page windows. [Buttons](https://datatables.net/manual/extensions/buttons/) covers export/print controls; [the server-side export FAQ](https://datatables.net/support/faqs) explains why a client with only a result window needs a host path for full exports.
-- [Responsive](https://datatables.net/manual/extensions/responsive/), [ColReorder](https://datatables.net/manual/extensions/colreorder/) and [RowGroup](https://datatables.net/manual/extensions/rowgroup/) cover narrow layouts, direct column changes and report grouping. Their existence does not prove every combination is supported; our combination gates are explicit.
-- [AG Grid key features](https://www.ag-grid.com/javascript-data-grid/key-features/), [column pinning](https://www.ag-grid.com/javascript-data-grid/column-pinning/), [cell selection](https://www.ag-grid.com/javascript-data-grid/cell-selection/) and [grid state](https://www.ag-grid.com/javascript-data-grid/grid-state/) describe useful advanced-grid workflows. Their larger commercial/analytical surface is a source of candidates, not an obligation to ship them all.
-- [Tabulator pagination](https://www.tabulator.info/docs/6.x/page/) and [persistence](https://www.tabulator.info/docs/6.x/persist/) illustrate distinct page controls and durable layout state. [TanStack's data/rendering distinction](https://tanstack.com/table/latest/docs/guide/client-side-vs-server-side) separates full-dataset processing from viewport virtualization.
 - [WAI-ARIA grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) defines accessible interactive-grid behavior; real assistive-technology qualification remains necessary.
 
 ## 0.4 Matrix View

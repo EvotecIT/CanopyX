@@ -169,7 +169,8 @@ export interface GridCellValueChange {
   readonly value: CellValue;
   readonly previous: CellValue;
   readonly row: Readonly<GridRow>;
-  readonly source: "edit" | "form" | "api" | "undo" | "redo" | "revert";
+  /** paste and fill come from the cell range part (docs/cell-ranges.md): pasted cells and the fill handle go through editing. */
+  readonly source: "edit" | "form" | "api" | "undo" | "redo" | "revert" | "paste" | "fill";
 }
 
 /** canopyx:rowCommit and onRowCommit: a row whose edits are complete and valid. */

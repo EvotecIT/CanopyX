@@ -134,7 +134,7 @@ values. The edit bar (toggle with `editBar`) shows the number of unsaved changes
 
 | Event | Callback | Detail |
 | --- | --- | --- |
-| `canopyx:cellValueChanging` (cancelable) | `onCellValueChanging` (return `false` to refuse) | `{ id, column, value, previous, row, source }` with `source` `edit`, `form`, `api`, `undo`, `redo` or `revert` |
+| `canopyx:cellValueChanging` (cancelable) | `onCellValueChanging` (return `false` to refuse) | `{ id, column, value, previous, row, source }` with `source` `edit`, `form`, `api`, `undo`, `redo`, `revert`, or `paste` and `fill` for cell ranges ([cell-ranges.md](cell-ranges.md)) |
 | `canopyx:cellValueChanged` | `onCellValueChanged` | the same, with `row` as it is after the change (`cellValueChanging` gets it as it was) |
 | `canopyx:rowCommit` (cancelable) | `onRowCommit` | `{ id, values, original, row, revision, respondWith(result) }` |
 | `canopyx:commit` | `onCommit` | the result of `commitChanges` |
