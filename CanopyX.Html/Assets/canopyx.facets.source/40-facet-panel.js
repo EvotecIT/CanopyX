@@ -75,7 +75,9 @@
         toggle.title = fill(this.labels[closed ? "gridFacetExpand" : "gridFacetCollapse"], { column: facet.label }); };
       toggle.addEventListener("click", () => { facet.collapsed = !facet.collapsed; collapsed(); });
       collapsed();
-      section.append(head, clear, body); list.appendChild(section);
+      // The heading and its Clear stay in view while the section's values scroll under them.
+      const top = h("div", "cx-facet-top"); top.append(head, clear);
+      section.append(top, body); list.appendChild(section);
       return { facet, section, badge, spoken, clear, custom, failure, content, generation: 0, controller: null };
     },
     /** Applies a facet's choice after a short pause, so several quick choices make one query. */
