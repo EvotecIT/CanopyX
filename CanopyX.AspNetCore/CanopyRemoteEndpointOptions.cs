@@ -41,7 +41,8 @@ public sealed class CanopyRemoteEndpointOptions {
 
     /// <summary>Gets or sets the provider that loads record details, created per request; null maps no record route.</summary>
     /// <remarks>
-    /// With records, <c>POST record</c> answers <c>gridRecordQuery</c> documents under the same authorization as the reads. The
+    /// With records, <c>POST record</c> answers <c>gridRecordQuery</c> documents under the same authorization as the reads, with
+    /// bodies bounded by <see cref="CanopyRemoteLimits.MaxRecordRequestBytes"/>. The
     /// provider must find records only among those the caller may read, as the query callback does: the
     /// <c>MapCanopyRemote</c> overload that takes a <see cref="CanopyRecordMap{T}"/> sets this to the grid's own query callback.
     /// </remarks>
@@ -49,8 +50,9 @@ public sealed class CanopyRemoteEndpointOptions {
 
     /// <summary>Gets or sets the per-request read check of record fields and columns' drawer values (by identity); false leaves
     /// the field out of the answer, as an empty field. Null serves every mapped field.</summary>
-    /// <remarks>Grid columns, and so the record's row, follow the column map as page rows do: leave out of the map what a caller
-    /// must not read.</remarks>
+    /// <remarks>It hides whole fields only, never single collection rows, timeline events or changes: restrict those in the
+    /// field's mapping. Grid columns, and so the record's row, follow the column map as page rows do: leave out of the map what
+    /// a caller must not read.</remarks>
     public Func<HttpContext, string, bool>? CanReadRecordField { get; set; }
 
     /// <summary>Gets or sets conventions applied to the record route alone, for example

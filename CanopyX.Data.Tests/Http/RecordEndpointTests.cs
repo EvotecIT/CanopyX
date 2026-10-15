@@ -32,7 +32,7 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         _app.UseAuthentication();
         _app.UseAuthorization();
         var columns = Assets.Columns(Assets.View());
-        _app.MapCanopyRemote("/api/assets", _ => Assets.Scoped(_assets).AsQueryable(), columns, Assets.Records(columns), options => {
+        _app.MapCanopyRemote("/api/assets", _ => Assets.Scoped(_assets).AsQueryable(), Assets.Records(columns), options => {
             options.Limits.MaxRequestBytes = 4096;
             options.Query.Revision = _ => new ValueTask<string>("r1");
             options.AllowAnonymous = true;
@@ -40,7 +40,7 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
             options.RecordEndpoint = route => route.Add(endpoint => endpoint.Metadata.Add(new RecordMarker()));
         });
         var secured = Assets.Columns(Assets.View());
-        _app.MapCanopyRemote("/api/secured", _ => Assets.Scoped(_assets).AsQueryable(), secured, Assets.Records(secured));
+        _app.MapCanopyRemote("/api/secured", _ => Assets.Scoped(_assets).AsQueryable(), Assets.Records(secured));
         var plain = Assets.Columns(Assets.View());
         _app.MapCanopyRemote("/api/plain", _ => _assets.AsQueryable(), plain, options => options.AllowAnonymous = true);
         await _app.StartAsync();
@@ -137,29 +137,43 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
     }
 
     [Fact]
-    public void Mapping_RefusesAnotherColumnMapOrTwoRecordProviders() {
+    public async Task Record_BodiesHaveTheirOwnSmallerBound() {
+        var id = VisibleId();
+        // Within the record bound (16 KiB) but carrying padding, then beyond it while the query route still accepts the size.
+        var padded = Assets.Query(id, ",\"padding\":\"" + new string('x', 8000) + "\"");
+        Assert.Equal(HttpStatusCode.OK, (await Post("/api/secured/record", padded, user: "reader")).StatusCode);
+        var large = Assets.Query(id, ",\"padding\":\"" + new string('x', 20000) + "\"");
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, (await Post("/api/secured/record", large, user: "reader")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Post("/api/secured/query", "{\"padding\":\"" + new string('x', 20000) + "\"}", user: "reader")).StatusCode);
+    }
+
+    [Fact]
+    public void Mapping_RefusesTwoRecordProviders_AndKeepsEarlierCallsUnambiguous() {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         using var app = builder.Build();
         var columns = Assets.Columns(Assets.View());
-        var other = Assets.Records(Assets.Columns(Assets.View()));
-        Assert.Throws<ArgumentException>(() => app.MapCanopyRemote("/a", _ => _assets.AsQueryable(), columns, other));
         var records = Assets.Records(columns);
-        Assert.Throws<InvalidOperationException>(() => app.MapCanopyRemote("/b", _ => _assets.AsQueryable(), columns, records,
+        Assert.Throws<InvalidOperationException>(() => app.MapCanopyRemote("/b", _ => _assets.AsQueryable(), records,
             options => options.Records = _ => new CanopyInMemoryRecordProvider<Asset>(records, () => _assets)));
+        // Calls written before records existed still compile and bind to the overloads they meant.
+        app.MapCanopyRemote("/c", _ => _assets.AsQueryable(), Assets.Columns(Assets.View()), null);
+        Assert.Contains("\"records\":false", CanopyRemoteScript.Element(columns.Schema, "/c", null));
+        Assert.Contains("\"records\":false", CanopyRemoteScript.Script(columns.Schema, "/c", null));
+        _ = new CanopyRemoteHandler(columns.Schema, new CanopyQueryableProvider<Asset>(_assets.AsQueryable(), columns), null);
+        _ = new CanopyRemoteHandler(columns.Schema, new CanopyQueryableProvider<Asset>(_assets.AsQueryable(), columns), null, null);
     }
 
     [Fact]
-    public void Script_WiresRecordsOnlyWhenAsked() {
-        var schema = Assets.Columns(Assets.View()).Schema;
-        var options = new CanopyRemoteScriptOptions { Records = true };
-        options.ExportFormats.Add(("csv", "CSV </script>"));
-        var element = CanopyRemoteScript.Element(schema, "/api/assets", options);
+    public void Script_WiresRecordsForARecordSchemaOnly() {
+        var columns = Assets.Columns(Assets.View());
+        var records = Assets.Records(columns);
+        var element = CanopyRemoteScript.Element(records.Schema, "/api/assets", ("csv", "CSV </script>"));
         Assert.Contains("\"records\":true", element);
         Assert.Contains("source.record", element);
+        Assert.Contains("staleRevision", element);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(element, "</script>").Cast<System.Text.RegularExpressions.Match>());
-        Assert.Contains("\"records\":false", CanopyRemoteScript.Element(schema, "/api/assets"));
-        Assert.Throws<ArgumentException>(() => CanopyRemoteScript.Script(Fleet.Map(Fleet.View()).Schema, "/api/hosts", new CanopyRemoteScriptOptions { Records = true }));
+        Assert.Contains("\"records\":false", CanopyRemoteScript.Element(columns.Schema, "/api/assets"));
     }
 
     private sealed class RecordMarker { }

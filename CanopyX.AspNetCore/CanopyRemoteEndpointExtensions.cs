@@ -60,18 +60,16 @@ public static class CanopyRemoteEndpointExtensions {
     /// <param name="pattern">The route prefix, for example <c>/api/hosts</c>.</param>
     /// <param name="query">Returns the base query for a request, already restricted to what the caller may see. Record
     /// lookups compose on it too, so a record outside the caller's scope is not found.</param>
-    /// <param name="map">The column allow-list.</param>
-    /// <param name="records">The record allow-list, built over <paramref name="map"/>.</param>
+    /// <param name="records">The record allow-list; its <see cref="CanopyRecordMap{T}.Columns"/> is the column allow-list of the
+    /// grid routes.</param>
     /// <param name="configure">Adjusts limits, export formats, query options and the record read check.</param>
     /// <returns>The route group, for authorization and other conventions.</returns>
-    /// <exception cref="ArgumentException">The record map belongs to another column map.</exception>
     /// <exception cref="InvalidOperationException"><paramref name="configure"/> also sets <see cref="CanopyRemoteEndpointOptions.Records"/>.</exception>
     public static RouteGroupBuilder MapCanopyRemote<T>(this IEndpointRouteBuilder endpoints, string pattern, Func<HttpContext, IQueryable<T>> query,
-        CanopyColumnMap<T> map, CanopyRecordMap<T> records, Action<CanopyRemoteEndpointOptions>? configure = null) {
+        CanopyRecordMap<T> records, Action<CanopyRemoteEndpointOptions>? configure = null) {
         if (query == null) throw new ArgumentNullException(nameof(query));
-        if (map == null) throw new ArgumentNullException(nameof(map));
         if (records == null) throw new ArgumentNullException(nameof(records));
-        if (!ReferenceEquals(records.Columns, map)) throw new ArgumentException("The record map must be built over the same column map.", nameof(records));
+        var map = records.Columns;
         var options = new CanopyRemoteEndpointOptions();
         configure?.Invoke(options);
         if (options.Records != null) throw new InvalidOperationException("The record map already supplies the record provider; do not set Records as well.");
@@ -130,7 +128,9 @@ public static class CanopyRemoteEndpointExtensions {
             Task Record(HttpContext context) {
                 Func<string, bool>? check = canRead == null ? null : id => canRead(context, id);
                 Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> answer = (handler, body, token) => handler.RecordAsync(body, check, token);
-                return CanopyRemoteHttp.RunJsonAsync(context, options.Limits, http => new CanopyRemoteHandler(schema, provider(http), options.Remote, null, records(http)), answer);
+                // A record request is small: its body is bounded by MaxRecordRequestBytes, within MaxRequestBytes.
+                return CanopyRemoteHttp.RunJsonAsync(context, options.Limits, http => new CanopyRemoteHandler(schema, provider(http), options.Remote, null, records(http)), answer,
+                    Math.Min(options.Limits.MaxRequestBytes, options.Limits.MaxRecordRequestBytes));
             }
             var route = group.MapPost("/record", (RequestDelegate)Record);
             options.RecordEndpoint?.Invoke(route);
