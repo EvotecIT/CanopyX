@@ -105,6 +105,7 @@ EditingExample.Write(output);
 ConditionalFormattingExample.Write(output);
 LinkedViewsExample.Write(output);
 LiveDataExample.Write(output);
+FacetPanelExample.Write(output);
 OrdersByRegionExample.Write(output);
 SupportTicketsExample.Write(output);
 QuarterlyBudgetExample.Write(output);
