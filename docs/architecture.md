@@ -142,6 +142,7 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | Part | Responsibility |
 | --- | --- |
 | `00-core.js` | Closure start, constants, tones, text, number and date formatting, DOM helpers |
+| `01-labels.js` | The English labels, label validation (with the label names parts bring), placeholders and plural forms |
 | `05-search-folding.js` | Search text folding shared with the C# bundle writer |
 | `10-sidecar.js` | Sidecar registry: sidecar files push into a queue, so they work whether they load before or after the runtime |
 | `15-search-index.js` | The manifest's search index check, the shared document cache, and the query front of a bundle's search (the search part reads the index) |
