@@ -619,8 +619,9 @@ Records are found by the column map's key, which must be text, a GUID or an inte
 wires the source's `record` hook to `{endpoint}/record`; rejected requests carry the HTTP `status` and the error `code`. A
 404 `recordNotFound` answers `null`: the drawer shows the row without details, and a deep link or related record the grid
 has not loaded stays unopened (the runtime rejects `openRecord` with "not available"). A 409 `staleRevision` (the data
-changed since the grid read its rows, for example after a save here or elsewhere) loads the details again at the current
-revision, and the grid reloads once the drawer closes, so its rows and later requests use that revision. Any other error
+changed since the grid read its rows, for example after a save here or elsewhere) reloads the grid at the current revision
+and opens the same record again there: details always belong to the rows they open from, so the drawer never mixes two
+revisions. Any other error
 rejects, so the drawer shows the message with Retry; a failed Load more says so and keeps its button.
 
 **Safety.**

@@ -54,9 +54,9 @@ public static class CanopyRemoteScript {
     /// <remarks>
     /// The source's <c>record</c> hook posts to <c>{endpoint}/record</c>. A 404 <c>recordNotFound</c> answers null: the drawer
     /// shows the row without details, and a record the grid has not loaded stays unopened. A 409 <c>staleRevision</c> (the data
-    /// changed since the grid read its rows, for example after a save) loads the details again at the current revision and
-    /// reloads the grid once the drawer closes (reloading replaces the rows the drawer belongs to). Other errors reject, so the
-    /// drawer shows the message with Retry.
+    /// changed since the grid read its rows, for example after a save) reloads the grid at the current revision and opens the
+    /// same record again there, because details always belong to the rows they open from. Other errors reject, so the drawer
+    /// shows the message with Retry.
     /// </remarks>
     public static string Script(CanopyRecordSchema records, string endpoint, params (string Id, string Label)[]? exportFormats) =>
         Write((records ?? throw new ArgumentNullException(nameof(records))).Data, endpoint, exportFormats, true);
@@ -119,29 +119,22 @@ if (settings.records) {
   // A record that is not available answers null: no details, and a record the grid has not loaded stays unopened.
   const read = (request, signal) => post("/record", request, signal, true).then(response => response && response.json());
   source.record = (request, options) => read(request, options.signal).catch(error => {
-    // The data changed since the grid read its rows (a save, here or elsewhere): load the details at the current revision,
-    // then reload the grid once so its rows and later requests use that revision too.
-    if (error.code !== "staleRevision" || !request.revision) throw error;
-    const current = Object.assign({}, request);
-    delete current.revision;
-    return read(current, options.signal).then(answer => { reloadGrid(); return answer; });
+    // The data changed since the grid read its rows (a save, here or elsewhere). Details belong to the rows they open from,
+    // so the grid reloads at the current revision and opens the same record again there.
+    if (error.code === "staleRevision" && request.revision) reopenAtCurrentRevision(request.id);
+    throw error;
   });
 }
 let reloading = false;
-function reloadGrid() {
+function reopenAtCurrentRevision(id) {
   if (reloading) return;
-  reloading = true;
-  const run = () => {
-    // Reloading replaces the rows the open drawer belongs to, so it waits until the reader closes the drawer.
-    const open = document.querySelector("dialog.cx-drawer[open]");
-    if (open) { open.addEventListener("close", () => setTimeout(run, 0), { once: true }); return; }
-    reloading = false;
-    for (const host of document.querySelectorAll("[data-canopyx-mounted]")) {
-      const grid = host.canopyx;
-      if (grid && grid.view && grid.view.id === settings.view) { Promise.resolve(grid.reload()).catch(() => { }); return; }
-    }
-  };
-  setTimeout(run, 0);
+  for (const host of document.querySelectorAll("[data-canopyx-mounted]")) {
+    const grid = host.canopyx;
+    if (!grid || !grid.view || grid.view.id !== settings.view) continue;
+    reloading = true;
+    setTimeout(() => Promise.resolve(grid.reload()).then(() => grid.openRecord(id)).catch(() => { }).then(() => { reloading = false; }), 0);
+    return;
+  }
 }
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());

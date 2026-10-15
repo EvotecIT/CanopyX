@@ -235,17 +235,15 @@ test("after another user's save, a record loads at the current revision and the 
   await expect(page.locator('.cx-row[data-cx-id="5"]')).toBeVisible();
   const status = await page.evaluate(async () => (await fetch("/api/demo/other-user/6", { method: "POST", headers: { "X-Fleet-Demo": "1" } })).status);
   expect(status).toBe(204);
-  await openMachine(page, "5");
-  await expect(drawer(page).locator(".cx-record-error")).toHaveCount(0);
-  expect(requests.filter(request => request.id === "5").map(request => request.revision ?? null)).toEqual(["r1", null]);
-  // The open drawer keeps its rows; the grid reloads once at the new revision when the drawer closes, and later records ask at it.
-  await page.waitForTimeout(300);
-  await expect(drawer(page).locator('dd[data-cx-field="serial"]')).toHaveText(/^SN-\d{8}$/);
-  expect(queries.length).toBe(0);
-  await page.keyboard.press("Escape");
-  await expect(drawer(page)).toHaveCount(0);
+  await page.locator('.cx-row[data-cx-id="5"] .cx-cell').first().click();
+  // The details belong to the rows they open from: the grid reloads at the new revision and opens the record again there.
   await expect.poll(() => queries.length).toBeGreaterThan(0);
   await expect.poll(() => page.evaluate(api => eval(api).getQuery().revision, api)).toBe("r2");
+  await expect(drawer(page).locator('dd[data-cx-field="serial"]')).toHaveText(/^SN-\d{8}$/);
+  await expect(drawer(page).locator(".cx-record-error")).toHaveCount(0);
+  expect(requests.filter(request => request.id === "5").map(request => request.revision ?? null)).toEqual(["r1", "r2"]);
+  await page.keyboard.press("Escape");
+  await expect(drawer(page)).toHaveCount(0);
   await openMachine(page, "7");
   expect(requests.filter(request => request.id === "7").map(request => request.revision)).toEqual(["r2"]);
 });
