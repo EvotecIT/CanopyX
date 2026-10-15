@@ -10,7 +10,7 @@ References to "the TestimoX plan" mean `docs/roadmaps/Reporting-Platform-EndToEn
 - Static, non-interactive tables, lists, and KPI cards stay in `ChartForgeX.VisualBlocks`. CanopyX's static renderer exists only as the fallback for its own interactive views.
 - Grid cells provide miniature bar, line and period-strip presenters for host-supplied histories. Full charts and richer visualizations come from ChartForgeX through host-owned rendering and chart actions. Neither CanopyX package references ChartForgeX.
 - CanopyX never performs writes. Context actions (0.5), edits, and drops (1.0) are raised to hooks that the host provides and governs; CanopyX applies nothing on its own.
-- Packages: stay with `CanopyX` and `CanopyX.Html` until size or dependency evidence says otherwise (see [Package Split Policy](#package-split-policy)).
+- Packages: `CanopyX` and `CanopyX.Html` for views and rendering; `CanopyX.Data` and `CanopyX.AspNetCore` for server-side execution of the hosted grid protocol. Further splits need size or dependency evidence (see [Package Split Policy](#package-split-policy)).
 
 ## Contract And Authoring Consolidation
 
@@ -172,6 +172,19 @@ Consumer: the TestimoX Monitoring service, which serves the GPO explorer live fr
 - [ ] Remote search hits carry no location hints, so a hosted path opens one level after another (one round trip each). The remote source can implement the runtime's optional `prefetch(opens, finds)` once the search document says where a hit's pages are; the bundle index already does (see "Search Index" in data-protocol.md).
 
 Gate: the live GPO explorer answers each expand and search within 400 ms round trip at L (TestimoX plan section 7.2).
+
+### Hosted Grid Server
+
+Consumers: ASP.NET Core and other .NET hosts that serve hosted flat grids from a database or a service, starting with the fleet inventory sample and the TestimoX Monitoring grids.
+
+- [x] `CanopyX.Data`: typed request parsing with an explicit column allow-list and safety limits, `IQueryable<T>` execution (sort, every filter operator, filter groups, quick search, paging with counts, value lists, grouping and aggregates), streamed CSV export with an export-format interface, `ICanopyDataProvider` for raw SQL back ends and the `CanopyInMemoryProvider<T>` reference implementation.
+- [x] `CanopyX.AspNetCore`: `MapCanopyRemote` query, value-list, summary, export and view routes with cancellation, typed client errors, authorization by default and the browser source script.
+- [x] Fleet inventory sample over SQLite and EF Core with an end-to-end browser test and `--bench` measurements at 100,000 and 1,000,000 rows (`docs/remote-dotnet.md`).
+- [ ] Batch commit of grid edits through the same endpoint group once editing lands.
+- [ ] Multi-level grouping and further aggregates as the grid's grouping feature extends `gridSummary`.
+- [ ] Cursor (keyset) navigation for very deep pages over large tables.
+
+Gate: random queries give the same documents from EF Core over SQLite, LINQ to objects and the reference implementation, and the sample grid pages, sorts, filters, searches, lists values and exports against its real endpoints.
 
 ## HtmlForgeX Bridge and FancyTree Removal
 
@@ -339,4 +352,5 @@ Gate: no breaking changes to the public API or to `canopyx/2` during 1.x, and th
 - Stay with `CanopyX` and `CanopyX.Html`.
 - When the runtime grows with new views, prefer separate JavaScript entry points (for example a tree grid script and a matrix script) inside `CanopyX.Html` before splitting packages.
 - Split views into separate packages only when package size or dependency evidence requires it, and record that evidence here first.
-- The one planned exception is `CanopyX.AspNetCore` (0.2). Its evidence is the dependency: it needs the ASP.NET Core shared framework, which `CanopyX` must not take, so it targets `net8.0` and `net10.0` only.
+- `CanopyX.AspNetCore` is split by dependency: it needs the ASP.NET Core shared framework, which `CanopyX` must not take, so it targets `net8.0` and `net10.0` only. It serves hosted flat grids today; the tree endpoints of 0.2 belong in it too.
+- `CanopyX.Data` is split by dependency and responsibility: it parses requests with `System.Text.Json` (a package on `net472` and `netstandard2.0`) and translates them to expression trees, which the dependency-free `CanopyX` must not carry. It depends only on `CanopyX`; EF Core and database drivers stay in the host.
