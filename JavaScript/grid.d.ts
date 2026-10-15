@@ -708,6 +708,16 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   linkEvents?: boolean;
   /** Reporting detail rows drawn by the host (a template, trusted HTML or a nested grid or tree). */
   detail?: GridDetailOptions;
+  /** Editing of editable columns: read-only rules, checks, lookups, editors and the batch writer (docs/editing.md). */
+  editing?: GridEditingOptions<Q>;
+  /** Before a value changes; returning false (or cancelling canopyx:cellValueChanging) keeps the old value. */
+  onCellValueChanging?: (event: GridCellValueChange) => boolean | void;
+  /** After a value changed. */
+  onCellValueChanged?: (event: GridCellValueChange) => void;
+  /** A row whose edits are complete and valid. Return a result (or true, or a promise) to save it, false to keep editing, nothing to leave it in the batch. */
+  onRowCommit?: (event: GridRowCommit) => GridCommitRowResult | boolean | void | PromiseLike<GridCommitRowResult | true>;
+  /** After commitChanges, with its result. */
+  onCommit?: (event: GridCommitOutcome) => void;
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Overrides the view's rangeSelection. */
