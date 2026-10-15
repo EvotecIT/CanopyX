@@ -36,10 +36,10 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Querying | Search, sibling sorting and named filters | Search, multi-column sorting, typed filters and condition groups |
 | Columns | Resize and hide | Resize, hide, reorder, pin and fit to content |
 | Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs |
-| Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting and light/dark themes |
+| Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting, conditional formatting and light/dark themes |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German and Spanish packs are included.
+Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
 ## Installation
 
@@ -187,6 +187,10 @@ Module imports are safe on the server; mounting a view requires a browser. The i
 ### Extend it with plugins
 
 `CanopyX.use(plugin)` adds cell renderers that columns choose by name, toolbar buttons, menu entries, export formats and event handlers to every grid and tree on the page; the `plugins` option adds them to one view. Optional features load as separate parts only when a view needs them, so serve the `canopyx-*.js` files beside the runtime (the .NET writers do). See [docs/plugins.md](docs/plugins.md).
+
+### Format cells by rule
+
+`formatRules` (in .NET, `CanopyDataGridView.FormatRules`) tints cells and rows, adds icons, badges and cues, and draws data bars, colour scales and threshold bands, with conditions from the filter builder. Readers can change the rules in a rule editor, and their rules are kept in saved views. See [docs/conditional-formatting.md](docs/conditional-formatting.md).
 
 ### Translate the controls
 

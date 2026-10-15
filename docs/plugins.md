@@ -124,6 +124,8 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
+| `formatting` | a grid with `formatRules` or `formatting` starts, or a formatting API method runs | rule evaluation, painting, the legend, saved-view rules and export record formats ([conditional formatting](conditional-formatting.md)) |
+| `format-editor` | the rule editor opens | the rule editor, on the filter editor part's condition rows |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 
@@ -161,6 +163,7 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 | `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds) and `deepLink` narrow that further. |
 | `key`, `context` | The object that marks the part as installed for one runtime context, and the names `install` destructures from the context the runtime hands it. |
 | `start`, `end` | Optional statements before and after the part's scripts inside `install`. |
+| `feature` | Optional: the view feature that makes a grid's single-file fragments carry the part (`formatting`: rules or options; `formatEditor`: the editor option). |
 | `requires` | Parts that load and install first. The assembly refuses a name that is not a part of every entry point and view this part has, and requires that form a cycle. |
 | `scripts`, `shared` | Source files or folders in order. Entry points leave out every script a part lists, unless the part also lists it under `shared` (the tree tools share the toolbar panels with the grid entry points). |
 | `styles`, `styleScope` | Stylesheets in order, and an optional selector rename for this copy. |
