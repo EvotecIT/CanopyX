@@ -100,7 +100,7 @@
       // On phones the tree column also holds the "+N" button of the hidden fields (48-tree-details.js): its width is reserved
       // beside the column's content, and the columns are hidden again so it fits, as on a flat grid.
       identity.reserve = 0; this.fitHide(shown, width, phone);
-      const reserve = () => { this.fitContext.font = "700 12.5px" + this.fitFamily; identity.reserve = Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width) + 8; };
+      const reserve = () => { this.fitContext.font = "700 12.5px" + this.fitFamily; identity.reserve = Math.max(24, Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width)) + 8; };
       if (phone && this.fitContext && this.hiddenFieldCount()) { reserve(); this.fitHide(shown, width, phone); reserve(); }
     },
 

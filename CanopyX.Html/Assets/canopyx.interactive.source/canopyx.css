@@ -1,5 +1,5 @@
 /* Optional checking controls; the standard tree stylesheet remains independent of interaction features. */
-.cx-check { flex:none; margin:0; width:var(--cx-size-16px); height:var(--cx-size-16px); accent-color:var(--cx-accent); }
+.cx-check { flex:none; margin:0 0 0 var(--cx-size-6px); width:var(--cx-size-16px); height:var(--cx-size-16px); accent-color:var(--cx-accent); }
 .cx-check:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent); outline-offset:var(--cx-size-1px); }
 
 .cx-interaction-panel { position:fixed; z-index:20; box-sizing:border-box; width:min(var(--cx-size-340px), calc(var(--cx-size-100vw) - var(--cx-size-16px))); max-height:calc(var(--cx-size-100vh) - var(--cx-size-16px)); overflow:auto; padding:var(--cx-size-12px); border:var(--cx-size-1px) solid var(--cx-line-strong); border-radius:var(--cx-size-10px); background:var(--cx-surface); color:var(--cx-text); box-shadow:var(--cx-panel-shadow); font:inherit; }
