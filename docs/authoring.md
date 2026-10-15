@@ -305,6 +305,19 @@ document.dispatchEvent(new CustomEvent("canopyx:closemenus"));
 document.addEventListener("canopyx:closemenus", event => { if (event.detail?.source) hostPopover.hidePopover(); });
 ```
 
+### Column groups and cell ranges
+
+`CanopyDataGridView.ColumnGroups` draws up to three levels of header rows above the columns, and `RangeSelection` with
+`Clipboard` turns on cell ranges, copy, paste and the fill handle. Each loads its own part only on the grids that use it.
+
+```csharp
+grid.ColumnGroups.Add(new CanopyColumnGroup("q1", "Q1", "jan", "feb", "mar") { Pinned = CanopyGridColumnPin.Left });
+grid.RangeSelection = new CanopyGridRangeSelection { FillHandle = true };
+grid.Clipboard.CopyHeaders = true;
+```
+
+See [column-groups.md](column-groups.md) and [cell-ranges.md](cell-ranges.md).
+
 ## Tree Grid Features
 
 Trees have the flat grid's toolbar: the search box and filter switches on the left, then **Columns** (show, hide and

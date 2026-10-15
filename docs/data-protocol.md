@@ -270,6 +270,18 @@ Effective pins leave `reporting.minimumCenterWidth` CSS pixels (default 128, ran
 
 `reporting.responsive: true` temporarily hides requested columns until their base widths fit, hiding larger priorities first and equal priorities from the end of current order. It retains at least one requested field and all `alwaysVisible` fields; protected fields wider than the viewport use horizontal scrolling. Explicit user visibility remains separate and survives viewport changes. Responsive hiding changes neither search/filter/sort meanings nor full record details. Default export columns include every user-visible column in the grouped display order, including temporarily hidden fields; an explicit export column list retains its caller-defined order. The chooser marks temporarily hidden fields and provides translated pin controls through `gridPinColumn`, `gridPinNone`, `gridPinLeft`, `gridPinRight` and `gridResponsiveHidden`.
 
+### Column groups
+
+Optional `columnGroups` draws header rows above a grid's columns ([column-groups.md](column-groups.md)). Each group is `{ id, title, columns?, groups?, pinned? }`: a unique identifier, a title of 1 to 256 characters, the declared columns directly below it and nested groups, at least one of the two. Groups nest at most three levels; a column belongs to one group at most; `pinned` (`left`, `right` or `null`) is the initial pin of every column of a top-level group and is refused on nested groups. The .NET writer requires a group's columns to be adjacent in `columns`; the runtime gathers scattered ones where most of them are. Grid state needs no new field: saved column order and pins restore the groups.
+
+The header holds one `row` per group level above the column headers. Group cells are `columnheader`s with `aria-colindex` and `aria-colspan` over their visible columns; body rows' `aria-rowindex` and the grid's `aria-rowcount` count the extra header rows. `getColumnGroups()` returns `{ id, title, columns, visibleColumns, pin, groups }` in the current order and `setColumnGroupVisible(id, visible)` shows or hides a group's columns. The script-free fallback writes the same rows with `colspan` and `rowspan`.
+
+### Cell ranges and the clipboard
+
+Optional `rangeSelection` (`true`, or `{ enabled?, multiple?, fillHandle? }`) and `clipboard` (`{ copyHeaders?, copyValues?: "display" | "raw", paste? }`) turn on cell ranges ([cell-ranges.md](cell-ranges.md)); the host options of the same names override them. A range is `{ startRow, endRow, startColumn, endColumn }`: inclusive row positions in the shown order and column ids. `canopyx:cellRangeChange` reports `{ ranges }`. A new query clears the ranges; a reload of the same query keeps them.
+
+Copies write tab-separated text (with spreadsheet formula protection for text, as CSV) and an HTML table with typed cells. Pastes and fills raise the cancelable `canopyx:paste` with `{ source: "clipboard" | "api" | "fill", cells, refused, respondWith(result) }`, where each cell is `{ id, column, row, text, value, previous }` and `value` is the text read as the column's kind. A grid with the editing part applies the cells through editing (read-only rules, checks, one undo step); without it the grid applies nothing and a host answers with `respondWith({ refused: [{ id, column, reason }] })` or `false`. A copy or paste covers at most 200,000 cells.
+
 ## View
 
 Every tree runtime loads the **tree tools part** (`canopyx-tree-tools.js` and `.css`) when a tree mounts: the toolbar's

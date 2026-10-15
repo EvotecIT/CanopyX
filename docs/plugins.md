@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, deep links and the sidecar search. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and later features (editing, grouping, column groups, range selection) arrive as parts.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, deep links and the sidecar search. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part, and features such as column groups and cell ranges arrive as parts.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -122,6 +122,8 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `export` | an Export menu opens, an export method runs, or a grid copies | the Export menu body, CSV and clipboard text, record enumeration and format writers |
 | `filter-editor` | a grid opens a column menu, filter editor, drawer or selected aggregate | grid menus, editors, record drawer, text dialogs |
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
+| `column-groups` | a grid that declares `columnGroups` starts, or calls a column group method | multi-level headers, group pins, moves and resizing, the nested Columns menu ([column-groups.md](column-groups.md)) |
+| `cell-range` | a grid with `rangeSelection` starts, or calls a cell range method | cell ranges by mouse, keyboard and touch, copy, paste, the fill handle and the cell menu ([cell-ranges.md](cell-ranges.md)) |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
 
