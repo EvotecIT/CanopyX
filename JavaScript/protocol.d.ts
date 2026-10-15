@@ -168,7 +168,16 @@ export type LabelName =
   | "gridOfTheseAreTrue"
   | "gridOfThese"
   | "gridGroupCount"
-  | "gridMore" | "gridDone" | "gridClearAll" | "gridRows" | "gridResultNoun" | "gridSearchNoun" | "gridChart" | "gridColumnMenu" | "gridSortAscending" | "gridSortDescending" | "gridClearSort" | "gridFilterColumn" | "gridHideColumn" | "gridGroupedBy" | "gridRemoveGrouping" | "gridSelectAllValues" | "gridFilterValues" | "gridAddCondition" | "gridAddGroup" | "gridAnd" | "gridOr" | "gridEditAsText" | "gridFilterText" | "gridDeepFilters" | "gridToday" | "gridYesterday" | "gridLastSevenDays" | "gridLastThirtyDays" | "gridThisMonth" | "gridDateRange" | "gridEmpty" | "gridEmptyReason" | "gridNoMatches" | "gridNoMatchesReason" | "gridRetry" | "gridLoadFailed" | "gridAll" | "gridPageOf" | "gridStatusCount" | "gridDetailsSection" | "gridPreviousRecord" | "gridNextRecord" | "gridShowMore" | "gridNoData" | "gridPeriodRange" | "gridHealthy";
+  | "gridMore" | "gridDone" | "gridClearAll" | "gridRows" | "gridResultNoun" | "gridSearchNoun" | "gridChart" | "gridColumnMenu" | "gridSortAscending" | "gridSortDescending" | "gridClearSort" | "gridFilterColumn" | "gridHideColumn" | "gridGroupedBy" | "gridRemoveGrouping" | "gridSelectAllValues" | "gridFilterValues" | "gridAddCondition" | "gridAddGroup" | "gridAnd" | "gridOr" | "gridEditAsText" | "gridFilterText" | "gridDeepFilters" | "gridToday" | "gridYesterday" | "gridLastSevenDays" | "gridLastThirtyDays" | "gridThisMonth" | "gridDateRange" | "gridEmpty" | "gridEmptyReason" | "gridNoMatches" | "gridNoMatchesReason" | "gridRetry" | "gridLoadFailed" | "gridAll" | "gridPageOf" | "gridStatusCount" | "gridDetailsSection" | "gridPreviousRecord" | "gridNextRecord" | "gridShowMore" | "gridNoData" | "gridPeriodRange" | "gridHealthy"
+  /** Conditional formatting (the formatting and rule editor parts of flat grids); trees ignore them. */
+  | "formatRules" | "formatLegend" | "formatUpTo" | "formatAbove" | "formatHiddenFlagged" | "formatRule" | "formatAddRule" | "formatEditRule"
+  | "formatDeleteRule" | "formatMoveUp" | "formatMoveDown" | "formatEnableRule" | "formatNoRules" | "formatName" | "formatDescription" | "formatOnlyRowsWhere"
+  | "formatEveryRow" | "formatNone" | "formatApplyTo" | "formatTargetCell" | "formatTargetRow" | "formatTargetColumns" | "formatStyle" | "formatHighlight"
+  | "formatDataBar" | "formatColorScale" | "formatBands" | "formatTone" | "formatEmphasis" | "formatFill" | "formatTextOnly" | "formatStrong"
+  | "formatIcon" | "formatNoIcon" | "formatAutomatic" | "formatBadge" | "formatCue" | "formatLowest" | "formatMidpoint" | "formatHighest"
+  | "formatAddBand" | "formatRemoveBand" | "formatSave" | "formatCancel" | "formatShowLegend" | "formatInvalid" | "formatMatchCase" | "formatToneDanger"
+  | "formatToneWarning" | "formatToneSuccess" | "formatToneInfo" | "formatToneNeutral" | "formatToneMuted" | "formatNotContains" | "formatEndsWith" | "formatNotIn"
+  | "formatBetween" | "formatLike" | "formatMatches" | "formatOlderThan" | "formatWithinLast" | "formatNotLike" | "formatNotMatches" | "formatBetweenExclusive";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

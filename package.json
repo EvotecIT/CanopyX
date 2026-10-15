@@ -38,6 +38,10 @@
     "./tree-tools.css": "./CanopyX.Html/Assets/canopyx-tree-tools.css",
     "./links.js": "./CanopyX.Html/Assets/canopyx-links.js",
     "./search.js": "./CanopyX.Html/Assets/canopyx-search.js",
+    "./formatting.js": "./CanopyX.Html/Assets/canopyx-formatting.js",
+    "./formatting.css": "./CanopyX.Html/Assets/canopyx-formatting.css",
+    "./format-editor.js": "./CanopyX.Html/Assets/canopyx-format-editor.js",
+    "./format-editor.css": "./CanopyX.Html/Assets/canopyx-format-editor.css",
     "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
     "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
     "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
@@ -73,7 +77,11 @@
     "CanopyX.Html/Assets/canopyx-tree-tools.js",
     "CanopyX.Html/Assets/canopyx-tree-tools.css",
     "CanopyX.Html/Assets/canopyx-links.js",
-    "CanopyX.Html/Assets/canopyx-search.js"
+    "CanopyX.Html/Assets/canopyx-search.js",
+    "CanopyX.Html/Assets/canopyx-formatting.js",
+    "CanopyX.Html/Assets/canopyx-formatting.css",
+    "CanopyX.Html/Assets/canopyx-format-editor.js",
+    "CanopyX.Html/Assets/canopyx-format-editor.css"
   ],
   "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

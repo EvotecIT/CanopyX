@@ -3,7 +3,9 @@ import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
+import type { GridExportFormat, GridFormatOptions, GridFormatRule } from "./formatting.js";
 export * from "./index.js";
+export * from "./formatting.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string; }
@@ -16,6 +18,8 @@ export interface GridExportCell {
   readonly text: string;
   readonly tone?: string;
   readonly link?: { readonly target: string; readonly tooltip?: string };
+  /** The cell's conditional formatting, present when the grid has rules that format it. CSV reads only value and text. */
+  readonly format?: GridExportFormat;
   /** Unsupported presentation must be rejected by strict adapters or explicitly accepted as text-only. */
   readonly diagnostics?: readonly string[];
 }
@@ -23,6 +27,8 @@ export interface GridExportCell {
 export interface GridExportRow {
   readonly id: string; readonly cells: Readonly<Record<string, GridExportCell>>;
   readonly tone?: string; readonly diagnostics?: readonly string[];
+  /** The record's row formatting, present when a row rule matched it. */
+  readonly format?: GridExportFormat;
 }
 /** Captured column intent. Hosts map semantic tones and CSS pixel widths into their output format. */
 export interface GridExportColumn {
@@ -242,6 +248,10 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   estimatedRowHeight?: number;
   /** At most 64 ordered rules; a tone or className is required on each rule. */
   highlightRules?: readonly GridHighlightRule[];
+  /** At most 64 conditional formatting rules in priority order; the formatting part evaluates them (docs/conditional-formatting.md). */
+  formatRules?: readonly GridFormatRule[];
+  /** The legend and the rule editor. */
+  formatting?: GridFormatOptions;
   pageSize: number;
   /** Presentation only; pageSize remains the source fetch size. */
   presentation?: "continuous" | "paged";
@@ -445,6 +455,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   collapsedGroups?: string[];
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
   paging?: { pageLength: number; offset: number; allRows?: boolean };
+  /** Formatting rules edited at run time, when they differ from the view's; restored with the view. */
+  formatRules?: GridFormatRule[];
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -490,6 +502,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onColumnResize?: (event: { column: string; width: number }) => void;
   onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
+  /** The grid's formatting rules changed (setFormatRules, the rule editor or a restored view); canopyx:format carries the same detail. */
+  onFormat?: (event: { rules: readonly GridFormatRule[] }) => void;
   /** Hosts govern Office generation, authorization and delivery. CanopyX performs no domain write. Runs under exportTimeoutMs. */
   onExport?: (event: { format: string; request: GridExportRequest<Q>; capture: GridExport<Q>; signal: AbortSignal;
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
@@ -610,6 +624,12 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
   print?(options: GridExportOptions): Promise<void>;
   /** Details are opened for loaded records, by toolbar, double click or Ctrl/Command+Enter. */
   openDetails(id: string): Promise<void>;
+  /** The current formatting rules: the view's, or the ones set since. */
+  getFormatRules(): readonly GridFormatRule[];
+  /** Replaces the formatting rules after validating them as a whole (a bad set changes nothing); loads the formatting part on first use. */
+  setFormatRules(rules: readonly GridFormatRule[]): Promise<readonly GridFormatRule[]>;
+  /** Opens the rule editor; loads the formatting and rule editor parts on first use. */
+  openFormatRules(): Promise<void>;
   focus(): void;
   /** Reveals a zero-based position in the accepted result without taking DOM focus from a host drawer. */
   scrollToRow(index: number): Promise<void>;

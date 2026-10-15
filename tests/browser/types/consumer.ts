@@ -2,7 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery, GridFormatRule, GridExportFormat } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
@@ -431,3 +431,27 @@ registerPart("custom", { version: "0123456789abcdef", install() {} });
 use({ init() {} });
 // @ts-expect-error The views are tree and grid.
 use({ name: "bad", views: ["matrix"] });
+
+// Conditional formatting: typed rules, the API, the export format and the format labels.
+const healthRules: GridFormatRule[] = [
+  { id: "down", label: "Server down", target: "row", when: { operator: "and", filters: [{ column: "status", operator: "eq", values: ["Down"] }] }, style: { tone: "danger" } },
+  { id: "cpu", column: "cpu", style: { bar: { minimum: 0, maximum: 100, tone: "info" } } },
+  { id: "latency", column: "latency", style: { scale: { stops: [{ type: "min", tone: "success" }, { type: "percent", value: 50, tone: "warning" }, { type: "max", tone: "danger" }] } } },
+  { id: "disk", column: "disk", when: { operator: "none", filters: [{ column: "disk", operator: "gt", values: [20] }] },
+    style: { bands: [{ upperBound: 10, tone: "danger", label: "Critical" }, { tone: "warning", label: "Low" }] } },
+  { id: "name", column: "name", when: { operator: "or", filters: [{ column: "name", operator: "like", values: ["web-*"], caseSensitive: true, culture: "pl-PL" },
+    { column: "name", operator: "notIn", values: ["a", "b"] }] }, style: { tone: "info", icon: "flag", badge: "web", cue: "front end", emphasis: "strong" } }
+];
+// @ts-expect-error A scale has two or three stops.
+const badScale: GridFormatRule = { id: "bad", column: "cpu", style: { scale: { stops: [{ type: "min", tone: "success" }] } } };
+const formatted: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "health", label: "Health", pageSize: 100, selection: "none", search: false,
+  columns: [{ id: "name", title: "Name", kind: "text" }, { id: "status", title: "Status", kind: "text" }, { id: "cpu", title: "CPU", kind: "number" },
+    { id: "latency", title: "Latency", kind: "number" }, { id: "disk", title: "Disk", kind: "number" }],
+  source: { kind: "inline" }, rows: [], formatRules: healthRules, formatting: { legend: true, editor: true },
+  labels: { formatRules: "Formatowanie warunkowe", formatLegend: "Legenda" } };
+const formattedGrid = createDataGrid(document.createElement("div"), { view: formatted, onFormat: ({ rules }) => rules.length });
+const currentRules: readonly GridFormatRule[] = formattedGrid.getFormatRules();
+void formattedGrid.setFormatRules([...currentRules, { id: "extra", column: "cpu", style: { tone: "warning" } }]).then(rules => rules[0].id);
+void formattedGrid.openFormatRules();
+const exportedFormat: GridExportFormat | undefined = undefined as unknown as GridExportFormat | undefined;
+void [badScale, exportedFormat?.bar?.fraction];
