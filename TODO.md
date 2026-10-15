@@ -286,9 +286,9 @@ Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bou
 
 Consumers: a later HtmlForgeX editable inventory or administrative explorer that actually needs governed changes. TestimoX and other product adoption require their own later scope; existing tree editing is not proof of flat-grid editing.
 
-- [ ] Extend the existing proposal pattern to flat cell editors and row/context actions. Include typed validation, cancellation, busy states, an accessible error surface and host-returned canonical values/revisions. CanopyX raises intent; the host authorizes and executes changes.
-- [ ] Define batch editing/paste and record drag reorder only for a named host workflow. Support partial failure, conflict and cancellation policies; do not silently overwrite newer records or mutate cached rows as an assumed database commit.
-- [ ] Keep undo/redo, audit, conflict resolution and write transactions host-owned. Spreadsheet formulas, automatic fill and merged body cells need separate consumer and design justification before entering the library.
+- [x] Flat cell editors: the editing part (docs/editing.md) has typed editors, validation, cancellation, saving states, an accessible error surface and host-returned canonical cells and revisions. CanopyX raises intent; the host authorizes and executes changes. Row/context actions on flat grids remain open.
+- [ ] Paste into editable ranges (with range selection) and record drag reorder, only for a named host workflow. Batch commit already reports partial failure and conflicts per row (`gridCommit`); keep not overwriting newer records or treating cached rows as a database commit.
+- [ ] Undo and redo cover uncommitted edits in the browser; audit, conflict resolution and write transactions stay host-owned. Spreadsheet formulas, automatic fill and merged body cells need separate consumer and design justification before entering the library.
 
 Gate: a host example rejects unauthorized and stale proposals, returns validation/partial-failure results, and refreshes the accepted data without losing focus or applying an unconfirmed write. Reordering is tested independently of column reordering and current sort order.
 

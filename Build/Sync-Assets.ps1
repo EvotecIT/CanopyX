@@ -359,6 +359,7 @@ $partIndex = [ordered]@{ parts = @(foreach ($build in $partBuilds) {
     if ($build.Part.presenters) { $entry.presenters = @($build.Part.presenters) }
     if ($build.Part.deepLink) { $entry.deepLink = $true }
     if ($build.Part.pager) { $entry.pager = $true }
+    if ($build.Part.editable) { $entry.editable = $true }
     if ($build.Part.requires) { $entry.requires = @($build.Part.requires) }
     $entry
 }) }

@@ -305,6 +305,27 @@ document.dispatchEvent(new CustomEvent("canopyx:closemenus"));
 document.addEventListener("canopyx:closemenus", event => { if (event.detail?.source) hostPopover.hidePopover(); });
 ```
 
+### Editable grids
+
+`Editable = true` on a flat-grid column loads the editing part: typed editors, checks, a change set with marks, undo and
+redo, and row and batch commits the host saves. Editors and validation are typed:
+
+```csharp
+grid.Columns.Add(new CanopyColumn("cost", "Cost") { Kind = CanopyColumnKind.Number, Editable = true,
+    Editor = CanopyCellEditor.Number(minimum: 0, step: 0.01), Validation = new CanopyCellValidation { Required = true } });
+grid.Columns.Add(new CanopyColumn("owner", "Owner") { Editable = true, Editor = CanopyCellEditor.Lookup() });
+grid.Columns.Add(new CanopyColumn("tag", "Tag") { Editable = true, Validation = new CanopyCellValidation { Pattern = "[A-Z]{2}-\\d{4}", MaxLength = 7 } });
+grid.Editing.Mode = CanopyGridEditMode.Row;   // ReadOnly, Drawer and EditBar too
+```
+
+`CanopyCellEditor` offers `Text()`, `Number(minimum, maximum, step)`, `Date()`, `DateTime()`, `Time()`, `Select(...)`,
+`Toggle()`, `Lookup(column)` and `Custom(name)` for an editor a page plugin registers. `CanopyCellValidation` has
+`Required`, `Minimum`/`Maximum` (number columns), `Earliest`/`Latest` (date-and-time columns), `MinLength`/`MaxLength`
+and `Pattern` (text columns) and `Message`. The definition is checked when the grid is written: an editor must fit its
+column's kind and validation needs an editable column. The browser mirrors the same checks; the host's writer still
+validates and authorizes every change. See [editing.md](editing.md) for the browser options, events, commit protocol and
+keyboard model.
+
 ## Tree Grid Features
 
 Trees have the flat grid's toolbar: the search box and filter switches on the left, then **Columns** (show, hide and
@@ -479,7 +500,7 @@ The generated `checkboxes.html` example demonstrates lazy branches, paging, exce
 
 ## Host Actions, Editing, and Moving Nodes
 
-The interactive runtime presents operations to hooks supplied by the host. It sends immutable IDs, complete paths, and proposed values; the host validates authorization and executes the operation against its own data.
+The interactive runtime presents operations to hooks supplied by the host. It sends immutable IDs, complete paths, and proposed values; the host validates authorization and executes the operation against its own data. (Flat grids edit through the editing part instead; see [Editable grids](#editable-grids).)
 
 ```csharp
 view.Columns[0].Editable = true;

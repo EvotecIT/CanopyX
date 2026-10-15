@@ -15,7 +15,7 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "links", "search" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "links", "search" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
         Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[2]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
@@ -39,7 +39,7 @@ public sealed class RuntimePartTests {
             }
         }
         Assert.Equal(new[] { "tree-tools", "export", "links", "search" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "links", "search" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "links", "search" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
     }
 
     [Fact]
@@ -73,6 +73,11 @@ public sealed class RuntimePartTests {
         Assert.Equal(new[] { "filter-editor", "export" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         grid.Columns.Add(new CanopyColumn("trend", "Trend") { Presenter = CanopyGridPresenter.StatusStrip() });
         Assert.Equal(new[] { "filter-editor", "export", "history" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        // An editable column brings the editing part; a tree's editable column keeps the tree's own proposals.
+        grid.Columns[0].Editable = true;
+        Assert.Equal(new[] { "filter-editor", "export", "history", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        tree.Columns[0].Editable = true;
+        Assert.DoesNotContain("editing", Names(CanopyHtmlAssets.GetRequiredParts(tree)));
     }
 
     [Fact]

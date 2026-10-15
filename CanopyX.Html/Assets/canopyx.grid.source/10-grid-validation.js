@@ -58,9 +58,9 @@
     const ids = new Set();
     for (const column of view.columns) {
       requireIdentifier(column && column.id, "grid column ID");
-      if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
+      if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) ||
           column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) ||
-          ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
+          ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible", "editable"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
           column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
           column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
           column.fixed && column.width === undefined || column.tooltip !== undefined && column.tooltip !== "auto" && !view.columns.some(item => item.id === column.tooltip))

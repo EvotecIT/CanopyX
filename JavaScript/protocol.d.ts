@@ -168,6 +168,11 @@ export type LabelName =
   | "gridOfTheseAreTrue"
   | "gridOfThese"
   | "gridGroupCount"
+  // The editing part's labels (docs/editing.md).
+  | "gridEditCell" | "gridEditSave" | "gridEditCancel" | "gridEditDiscard" | "gridEditUndo" | "gridEditRedo" | "gridEditEdited" | "gridEditChanges"
+  | "gridEditErrors" | "gridEditSaving" | "gridEditSaved" | "gridEditFailed" | "gridEditRequired" | "gridEditNumber" | "gridEditDate" | "gridEditMin"
+  | "gridEditMax" | "gridEditStep" | "gridEditMinLength" | "gridEditMaxLength" | "gridEditPattern" | "gridEditChoice" | "gridEditConflict" | "gridEditRejected"
+  | "gridEditNotSaved" | "gridEditNoMatches" | "gridEditSearching" | "gridEditUndone" | "gridEditRedone" | "gridEditNone"
   | "gridMore" | "gridDone" | "gridClearAll" | "gridRows" | "gridResultNoun" | "gridSearchNoun" | "gridChart" | "gridColumnMenu" | "gridSortAscending" | "gridSortDescending" | "gridClearSort" | "gridFilterColumn" | "gridHideColumn" | "gridGroupedBy" | "gridRemoveGrouping" | "gridSelectAllValues" | "gridFilterValues" | "gridAddCondition" | "gridAddGroup" | "gridAnd" | "gridOr" | "gridEditAsText" | "gridFilterText" | "gridDeepFilters" | "gridToday" | "gridYesterday" | "gridLastSevenDays" | "gridLastThirtyDays" | "gridThisMonth" | "gridDateRange" | "gridEmpty" | "gridEmptyReason" | "gridNoMatches" | "gridNoMatchesReason" | "gridRetry" | "gridLoadFailed" | "gridAll" | "gridPageOf" | "gridStatusCount" | "gridDetailsSection" | "gridPreviousRecord" | "gridNextRecord" | "gridShowMore" | "gridNoData" | "gridPeriodRange" | "gridHealthy";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 

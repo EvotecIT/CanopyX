@@ -48,3 +48,5 @@ Configure an automatically mounted fragment before `DOMContentLoaded`. Each clas
 `CanopyX/Views/Locales/labels.json` is the shared source, with Polish, German, Spanish, French and Italian values in that order. `Build/Sync-Assets.ps1` generates the .NET factories, JavaScript modules and classic assets. Edit the table and regenerate; do not edit generated files. The build rejects missing/extra keys and missing or changed placeholders. Coverage tests compare all `CanopyLabels` properties with every generated pack.
 
 Keep placeholders such as `{count}`, `{total}`, `{column}` and `{time}` intact. Polish count labels use forms such as “Wyniki: {count}” so they work with any number. Host overrides apply after view labels; omitted custom labels continue to use English defaults.
+
+The editing labels (`gridEdit…`, see [editing.md](editing.md#labels)) are in every pack too. The grid's editing part brings their English texts when it loads; the grid entry points accept those names before it does, so a pack set on the view or passed by the host translates the editors, messages and edit bar.

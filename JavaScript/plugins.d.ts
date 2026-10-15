@@ -32,8 +32,8 @@ export type CanopyCellRenderer =
   | ((node: CanopyNode, element: HTMLElement, context: CellContext) => boolean)
   | ((row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void);
 
-/** Reserved for typed cell editors: plugins can register them now, and the editing feature reads them. */
-export interface CanopyCellEditor { readonly [key: string]: unknown; }
+/** Typed cell editors that editable flat-grid columns choose by name (docs/editing.md). */
+export type { CanopyCellEditor, CanopyEditorContext, CanopyEditorInstance } from "./editing.js";
 
 /** Reserved for named column types: plugins can register them now, and later features read them. */
 export interface CanopyColumnType { readonly [key: string]: unknown; }
@@ -75,8 +75,8 @@ export interface CanopyPlugin {
   readonly cellRenderers?: Readonly<Record<string, CanopyCellRenderer>>;
   /** Reserved: named column types. */
   readonly columnTypes?: Readonly<Record<string, CanopyColumnType>>;
-  /** Reserved: typed cell editors. */
-  readonly editors?: Readonly<Record<string, CanopyCellEditor>>;
+  /** Typed cell editors by name; an editable flat-grid column chooses one with its editor type. */
+  readonly editors?: Readonly<Record<string, import("./editing.js").CanopyCellEditor>>;
   /** Buttons in the toolbar's left-hand group, after Columns and before Views. */
   readonly toolbarItems?: readonly CanopyPluginItem[];
   /** Entries of the more menu, after the host's actions. */

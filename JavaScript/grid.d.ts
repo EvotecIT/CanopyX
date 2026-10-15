@@ -3,9 +3,12 @@ import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
+import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
+  GridRowCommit, GridCommitRowResult, GridCommitOutcome, GridCommit, GridCommitResult } from "./editing.js";
 export * from "./index.js";
 export * from "./enhance.js";
 import type { enhance, grid } from "./enhance.js";
+export * from "./editing.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string; }
@@ -36,7 +39,13 @@ export interface GridExportColumn {
   readonly diagnostics?: readonly string[];
 }
 export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
-  editable?: false; wrap?: boolean;
+  /** Readers can edit the column's cells; the editing part loads with the grid (docs/editing.md). */
+  editable?: boolean;
+  /** The column's typed editor; without one the column's kind chooses text, number or datetime. */
+  editor?: GridEditorDefinition;
+  /** Checks an edited value must pass before its row commits. */
+  validation?: GridValidation;
+  wrap?: boolean;
   /** Declarative presentation; explicit host renderers take precedence. */
   presenter?: GridPresenter;
   /** Include selected numeric values in the optional status bar. */
@@ -255,6 +264,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   rowAction?: "none" | "details" | "link";
   /** Draw a row tone as a bar at the row start (default false). */
   rowAccents?: boolean;
+  /** How editable columns edit; the host's editing option overrides these. */
+  editing?: GridEditingSettings;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
@@ -346,6 +357,8 @@ export interface GridSource extends GridFacetSource<GridQuery> {
   query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>;
   /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
   summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
+  /** Saves changed rows (a remote source posts the gridCommit document to its commit endpoint) and answers per row. */
+  commit?(batch: GridCommit, options: { signal: AbortSignal }): GridCommitResult | PromiseLike<GridCommitResult>;
 }
 export interface GridAggregate {
   readonly id: string; readonly column: string; readonly label: string;
@@ -561,6 +574,16 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   plugins?: readonly CanopyPlugin[];
   /** Optional host-governed removal of the report's fixed grouping. */
   onUngroup?: (event: { query: Q | null; signal: AbortSignal }) => void | PromiseLike<void>;
+  /** Editing of editable columns: read-only rules, checks, lookups, editors and the batch writer (docs/editing.md). */
+  editing?: GridEditingOptions<Q>;
+  /** Before a value changes; returning false (or cancelling canopyx:cellValueChanging) keeps the old value. */
+  onCellValueChanging?: (event: GridCellValueChange) => boolean | void;
+  /** After a value changed. */
+  onCellValueChanged?: (event: GridCellValueChange) => void;
+  /** A row whose edits are complete and valid. Return a result (or true, or a promise) to save it, false to keep editing, nothing to leave it in the batch. */
+  onRowCommit?: (event: GridRowCommit) => GridCommitRowResult | boolean | void | PromiseLike<GridCommitRowResult | true>;
+  /** After commitChanges, with its result. */
+  onCommit?: (event: GridCommitOutcome) => void;
 }
 /** A host store binds to an explicit keyed reporting definition; ordinary grids have no store option. */
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (
@@ -573,7 +596,7 @@ export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGri
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi {
   readonly element: HTMLElement;
   readonly view: GridView;
   readonly ready: Promise<Q>;

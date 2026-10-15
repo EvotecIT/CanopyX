@@ -132,6 +132,23 @@
       ]
     },
     {
+      "name": "editing",
+      "label": "editing",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "editable": true,
+      "key": "DataGrid.prototype",
+      "requires": ["filter-editor"],
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
+        "gridFreeze", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.editing.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.editing.source/editing.css"
+      ]
+    },
+    {
       "name": "links",
       "label": "deep links",
       "runtimes": ["tree", "grid"],
