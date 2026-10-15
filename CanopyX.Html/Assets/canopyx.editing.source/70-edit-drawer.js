@@ -12,7 +12,8 @@
       const body = dialog.querySelector(".cx-drawer-body");
       if (body && dialog.isConnected && editDrawerOn(this)) this.editForm(dialog, body, dialog._cxRecord?.id);
     });
-    dialog.addEventListener("close", () => this.editFormDispose(), { once: true });
+    // A drawer replaced by another (a related record) closes after the new one has built its form: dispose only its own.
+    dialog.addEventListener("close", () => { if (this.edit?.form?.dialog === dialog) this.editFormDispose(); }, { once: true });
   });
 
   Object.assign(DataGrid.prototype, {

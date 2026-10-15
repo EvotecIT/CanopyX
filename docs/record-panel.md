@@ -259,7 +259,7 @@ Parts that extend the drawer (editing, conditional formatting) can rely on:
 - every field's `<dt>` and `<dd>` carrying `data-cx-field` (the column or record field id), and `drawerFields(dialog)`
   listing the painted fields as `{ id, column, term, value }`;
 - the dialog carrying `data-cx-record` and `data-cx-view`, and `dialog._cxRecord` being the raw record shown;
-- a `cx-drawer-paint` event (`{ id, index }`) on the dialog after every paint, also after details arrive;
+- a `cx-drawer-paint` event (`{ id, index }`) on the dialog after every paint, also after details arrive and when a tab paints its fields;
 - `openGridDrawer(record, index, returnFocus, options)`, where `index` is null for a record outside the accepted result;
 - `recordKeepField(id, record)`: a grid method a part defines to keep a field visible though it is empty (an editable field);
 - summary facts carrying `data-cx-fact`.

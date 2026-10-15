@@ -180,7 +180,10 @@
         const on = button.id === recordId(dialog, "t", id); button.setAttribute("aria-selected", String(on)); button.tabIndex = on ? 0 : -1;
         if (on) button.setAttribute("aria-controls", recordId(dialog, "p", id)); else button.removeAttribute("aria-controls");
       }
-      paintTab(); recordMount(ctx, panel); if (focus) tools.querySelector("[aria-selected=true]")?.focus();
+      paintTab(); recordMount(ctx, panel);
+      // A tab paints its fields anew: parts that follow the drawer (editing, formatting, highlighting) see it as a paint.
+      dialog.dispatchEvent(new CustomEvent("cx-drawer-paint", { detail: { id: record.id, index: context.index ?? null } }));
+      if (focus) tools.querySelector("[aria-selected=true]")?.focus();
     };
     if (tabs.length > 1) tools.appendChild(recordTabs(ctx, layout, state, tabs, select));
     tools.appendChild(sub);

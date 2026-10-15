@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "517e3e524c1576fb",
+      "version": "b471abfa2950463e",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "f81db654a7c6f25e",
+      "version": "6dafb80b6a86129d",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
