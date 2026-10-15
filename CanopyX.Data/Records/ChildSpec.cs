@@ -7,7 +7,7 @@ namespace CanopyX.Data;
 /// <summary>What a child-row mapping reads and builds: the child key, the order keys, the projected values and the cell they make.</summary>
 internal sealed class ChildSpec<TChild> {
     internal ChildSpec(LambdaExpression key, IReadOnlyList<(LambdaExpression Expression, bool Descending)> orders, IReadOnlyList<LambdaExpression> values,
-        bool collection, int size, Func<IReadOnlyList<object?[]>, int?, CanopyCell> build) {
+        bool collection, int size, Func<IReadOnlyList<object?[]>, int?, int, CanopyCell> build) {
         Key = key; Orders = orders; Values = values; Collection = collection; Size = size; Build = build;
     }
 
@@ -26,8 +26,9 @@ internal sealed class ChildSpec<TChild> {
     /// <summary>A collection's page size, or a timeline's or change list's item limit.</summary>
     internal int Size { get; }
 
-    /// <summary>Builds the cell from the projected rows (key first, then <see cref="Values"/>) and a collection's total.</summary>
-    internal Func<IReadOnlyList<object?[]>, int?, CanopyCell> Build { get; }
+    /// <summary>Builds the cell from the projected rows (key first, then <see cref="Values"/>), a collection's total and the
+    /// rows Load more asks for (the page size within the endpoint's limit).</summary>
+    internal Func<IReadOnlyList<object?[]>, int?, int, CanopyCell> Build { get; }
 
     /// <summary>Clips plain text to a bound without splitting a surrogate pair; blank text becomes an em dash.</summary>
     internal static string Text(object? value, int maximum, bool required) {

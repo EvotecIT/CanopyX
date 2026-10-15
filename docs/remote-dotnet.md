@@ -593,7 +593,9 @@ Records are found by the column map's key, which must be text, a GUID or an inte
    the same order every time (the order keys, then the child key). A whole record carries each collection's first
    `PageSize` rows (at most `MaxRecordPageSize`) with its total, and each timeline or change list its first `Limit` items (at
    most `MaxRecordItems`). A collection page checks that the record exists, then answers its rows from `offset` and the total;
-   past the end it answers an empty page.
+   past the end it answers an empty page. Rows written between the count and the window answer 409 `staleRevision`, as pages
+   do. The `pageSize` a collection carries (what Load more asks for) is its page size within `MaxRecordPageSize`. Text orders
+   by the column's collation in a database and ordinally in memory; the child key decides every tie.
 6. **Answer.** The handler checks the provider's answer and fails the request (500) instead of sending a field or drawer
    value that was not asked for, more rows or items than allowed, or a row of another record; then it writes the document
    with `CanopyGridRecord.ToJson(view)`, which checks it against the view, and refuses one larger than `MaxRecordBytes` with
@@ -608,8 +610,12 @@ drawer shows the message with Retry; a failed Load more says so and keeps its bu
 
 - **Scope.** The lookup composes on the query callback, so a record a caller cannot see in the grid cannot be opened, and
   child rows come only through it. A navigation that reaches *other* records (related records, rack peers, a replaced
-  record's name) shows what it reaches: when those records have a scope of their own, restrict the navigation in its
-  expression (`m => m.Rack!.Machines.Where(peer => peer.TeamId == m.TeamId)`) or leave the field out of the map.
+  record's name) shows what it reaches, and the record map is shared by every caller: when those records have a scope of
+  their own, restrict the navigation to records every reader of this record may also read (for example
+  `m => m.Rack!.Machines.Where(peer => peer.TeamId == m.TeamId)` when readers see their own team's machines), hide the field
+  with `CanReadRecordField`, or leave it out of the map.
+- **Keys.** The column map's key must be unique under the store's own comparison: a text key in a case-insensitive column
+  needs values that differ beyond case, or two records answer one identity and the request fails as a server error.
 - **Fields.** Only mapped fields are read; `CanReadRecordField` hides fields and drawer values per caller. Grid columns,
   and so the record's `row`, follow the column map exactly as page rows do: leave out of the map what a caller must not read.
 - **Bounds.** Request bodies keep `MaxRequestBytes`; answers are bounded by `MaxRecordPageSize`, `MaxRecordItems` and

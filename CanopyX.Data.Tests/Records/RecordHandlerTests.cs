@@ -152,6 +152,12 @@ public sealed class RecordHandlerTests {
         var fields = (await Record(handler, id)).GetProperty("fields");
         Assert.Equal(4, fields.GetProperty("parts").GetProperty("records").GetProperty("rows").GetArrayLength());
         Assert.Equal(asset.Parts.Count, fields.GetProperty("parts").GetProperty("records").GetProperty("total").GetInt32());
+        // Load more asks for the page size the collection carries, which stays within the limit, so it is never refused.
+        var pageSize = fields.GetProperty("parts").GetProperty("records").GetProperty("pageSize").GetInt32();
+        Assert.Equal(4, pageSize);
+        var more = (await Record(handler, id, ",\"field\":\"parts\",\"offset\":4,\"limit\":" + pageSize)).GetProperty("fields").GetProperty("parts").GetProperty("records");
+        Assert.Equal(4, more.GetProperty("rows").GetArrayLength());
+        Assert.Equal(4, more.GetProperty("pageSize").GetInt32());
         Assert.Equal(3, fields.GetProperty("events").GetProperty("events").GetArrayLength());
         Assert.Equal(3, fields.GetProperty("changes").GetProperty("changes").GetArrayLength());
         Assert.Equal(CanopyRequestError.LimitExceeded, (await Rejected(handler, id, ",\"field\":\"parts\",\"limit\":5")).Error);
@@ -202,6 +208,55 @@ public sealed class RecordHandlerTests {
         var insensitive = Tag.Handler(false, tags, true, caseInsensitive: true);
         Assert.Contains("note 3", await insensitive.RecordAsync(Tag.Query("Code-3")));
         Assert.Equal(CanopyRequestError.RecordNotFound, (await Assert.ThrowsAsync<CanopyRequestException>(() => insensitive.RecordAsync(Tag.Query("CODE-3")))).Error);
+    }
+
+    [Fact]
+    public async Task NullableKeysAndNulCharacters_AnswerNotFoundInsteadOfFailing() {
+        var tags = Enumerable.Range(1, 4).Select(i => new Tag { Id = new Guid(i, 0, 0, new byte[8]), Code = i == 2 ? "" : "C" + i, Note = "n" + i }).ToList();
+        foreach (var queryable in new[] { false, true }) {
+            var handler = Tag.Handler(false, tags, queryable, caseInsensitive: false);
+            Assert.Equal(CanopyRequestError.RecordNotFound, (await Assert.ThrowsAsync<CanopyRequestException>(() => handler.RecordAsync(Tag.Query("C3\u0000")))).Error);
+            Assert.Contains("n3", await handler.RecordAsync(Tag.Query("C3")));
+        }
+        var view = Assets.View();
+        var nullable = new CanopyColumnMap<Asset>(view).Key(asset => asset.ReplacesId).Column("name", asset => asset.Name);
+        var records = new CanopyRecordMap<Asset>(nullable).Field("serial", asset => asset.Serial);
+        var withNulls = All.Take(40).ToList();
+        var target = withNulls.First(asset => asset.ReplacesId != null && withNulls.Count(other => other.ReplacesId == asset.ReplacesId) == 1);
+        var id = target.ReplacesId!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        foreach (var provider in new ICanopyRecordProvider[] {
+            new CanopyQueryableRecordProvider<Asset>(withNulls.AsQueryable(), records), new CanopyInMemoryRecordProvider<Asset>(records, () => withNulls) }) {
+            var handler = new CanopyRemoteHandler(nullable.Schema, new CanopyQueryableProvider<Asset>(withNulls.AsQueryable(), nullable), null, null, provider);
+            Assert.Contains("\"id\":\"" + id + "\"", await handler.RecordAsync("{\"view\":\"assets\",\"id\":\"" + id + "\"}"));
+        }
+    }
+
+    [Fact]
+    public async Task ChildRowsThatChangeBetweenCountAndWindow_AnswerStale() {
+        var view = Assets.View();
+        var columns = new CanopyColumnMap<Shifting>(view).Key(item => item.Id).Column("name", item => item.Name);
+        var records = new CanopyRecordMap<Shifting>(columns).Collection("parts", item => item.Parts, list => list.Key(part => part.Id).Column(new CanopyColumn("name", "Part"), part => part.Name));
+        var items = new[] { new Shifting { Id = 1, Name = "one" } };
+        var handler = new CanopyRemoteHandler(columns.Schema, new CanopyQueryableProvider<Shifting>(items.AsQueryable(), columns), null, null,
+            new CanopyQueryableRecordProvider<Shifting>(items.AsQueryable(), records));
+        Assert.Equal(CanopyRequestError.StaleRevision, (await Assert.ThrowsAsync<CanopyRequestException>(() => handler.RecordAsync("{\"view\":\"assets\",\"id\":\"1\",\"field\":\"parts\",\"limit\":50}"))).Error);
+    }
+
+    [Fact]
+    public async Task RequestsParsedWithLargerLimits_AreRefused() {
+        var options = new CanopyRemoteOptions();
+        options.Limits.MaxRecordItems = 5;
+        var handler = Handler(ProviderKind.Linq, options);
+        var request = CanopyRequestParser.ParseRecord(Assets.Query("1"), handler.Records!.Schema);
+        Assert.Equal(CanopyRequestError.LimitExceeded, (await Assert.ThrowsAsync<CanopyRequestException>(() => handler.RecordAsync(request))).Error);
+    }
+
+    /// <summary>A record whose child rows grow every time they are read, as rows written between two queries do.</summary>
+    public sealed class Shifting {
+        private int _reads;
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public List<AssetPart> Parts => Enumerable.Range(1, 3 + _reads++).Select(i => new AssetPart { Id = i, Name = "p" + i }).ToList();
     }
 
     [Fact]

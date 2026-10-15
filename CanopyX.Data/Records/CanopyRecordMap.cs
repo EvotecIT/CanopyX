@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace CanopyX.Data;
 
@@ -55,8 +56,10 @@ public sealed class CanopyRecordMap<T> {
             if (_schema != null) return _schema;
             var data = Columns.Schema;
             if (!RecordKeys.Supported(Columns.KeyExpression!.ReturnType)) throw new InvalidOperationException("Records are looked up by the column map's key, which must be text, a GUID or an integer.");
-            return _schema = new CanopyRecordSchema(data, _fields.Select(item => item is RecordChildMap<T> child && child.Collection
+            var schema = new CanopyRecordSchema(data, _fields.Select(item => item is RecordChildMap<T> child && child.Collection
                 ? CanopyRecordField.Collection(item.Id, child.Size) : CanopyRecordField.Value(item.Id)), _cells.Select(cell => cell.Id));
+            // Concurrent first reads keep one schema, which providers and requests compare by reference.
+            return Interlocked.CompareExchange(ref _schema, schema, null) ?? schema;
         }
     }
 

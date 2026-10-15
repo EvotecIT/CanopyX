@@ -19,7 +19,8 @@ internal static class RecordKeys {
     /// </summary>
     internal static object? Parse(string id, Type type) {
         var t = ExpressionTools.Underlying(type);
-        if (t == typeof(string)) return id;
+        // Some stores refuse a NUL character in a text parameter; no stored key holds one, so it finds nothing without a query.
+        if (t == typeof(string)) return id.IndexOf('\0') >= 0 ? null : id;
         if (t == typeof(Guid)) return Guid.TryParseExact(id, "D", out var guid) && guid.ToString("D") == id ? guid : (object?)null;
         if (id.Length > 20 || !long.TryParse(id, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number)) return null;
         if (number.ToString(CultureInfo.InvariantCulture) != id) return null;

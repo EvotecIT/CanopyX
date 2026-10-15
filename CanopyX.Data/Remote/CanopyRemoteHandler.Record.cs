@@ -44,7 +44,9 @@ public sealed partial class CanopyRemoteHandler {
         if (request == null) throw new ArgumentNullException(nameof(request));
         var records = Records ?? throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not serve record details.");
         if (!ReferenceEquals(request.Schema, records.Schema)) throw new ArgumentException("The request belongs to another record schema.", nameof(request));
-        if (request.Limit > Options.Limits.MaxRecordPageSize) throw CanopyRequestException.Limit("The collection page is larger than this endpoint allows.");
+        // A request parsed with other limits keeps this endpoint's bounds.
+        if (request.Limit > Options.Limits.MaxRecordPageSize || request.CollectionRows > Options.Limits.MaxRecordPageSize || request.MaxItems > Options.Limits.MaxRecordItems)
+            throw CanopyRequestException.Limit("The request allows more rows than this endpoint does.");
         var revision = await RevisionAsync(request.Revision, cancellationToken).ConfigureAwait(false);
         var record = await records.GetRecordAsync(request, cancellationToken).ConfigureAwait(false);
         if (record == null) throw new CanopyRequestException(CanopyRequestError.RecordNotFound, "The record is not available.");
@@ -62,7 +64,7 @@ public sealed partial class CanopyRemoteHandler {
             if (record.Cells.Count != 0 || record.Row != null || record.Fields.Count != 1 || !record.Fields.TryGetValue(request.Field.Id, out var page))
                 throw new InvalidOperationException("The record provider answered a collection page with other values than its field.");
             var list = page?.Records ?? throw new InvalidOperationException("The record provider answered a collection page without its rows.");
-            if (list.Rows.Count > request.Limit || list.Roots.Count != 0 || list.Total == null)
+            if (list.Rows.Count > request.Limit || list.Roots.Count != 0 || list.Total == null || page.Events.Count != 0 || page.Changes.Count != 0)
                 throw new InvalidOperationException("The record provider answered a collection page with more rows than asked for, tree roots or no total.");
             return;
         }
@@ -73,8 +75,8 @@ public sealed partial class CanopyRemoteHandler {
             var cell = pair.Value;
             if (cell == null) continue;
             if (field.IsCollection) {
-                if (cell.Records != null && (cell.Records.Rows.Count > request.FirstRows(field) || cell.Records.Roots.Count != 0))
-                    throw new InvalidOperationException("The record provider answered a collection with more rows than allowed.");
+                if (cell.Records != null && (cell.Records.Rows.Count > request.FirstRows(field) || cell.Records.Roots.Count != 0) || cell.Events.Count != 0 || cell.Changes.Count != 0)
+                    throw new InvalidOperationException("The record provider answered a collection with more rows than allowed, or with other items.");
             } else if (cell.Records != null || cell.Events.Count > request.MaxItems || cell.Changes.Count > request.MaxItems) {
                 throw new InvalidOperationException("The record provider answered a value field with a collection or too many items.");
             }

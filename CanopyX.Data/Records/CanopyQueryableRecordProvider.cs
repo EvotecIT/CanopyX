@@ -59,8 +59,10 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
         var keyType = ExpressionTools.Underlying(translator.Key.Type);
         var key = RecordKeys.Parse(request.Id, keyType);
         if (key == null) return null;
-        var keyValue = translator.Key.Type == keyType ? translator.Key : Expression.Convert(translator.Key, keyType);
-        var scoped = source.Where(Expression.Lambda<Func<T, bool>>(Expression.Equal(keyValue, ExpressionTools.Parameter(key, keyType)), translator.Row));
+        // Compared in the key's own type, so a nullable key (or one made null-safe in memory) never fails on a missing value.
+        var parameter = ExpressionTools.Parameter(key, keyType);
+        if (parameter.Type != translator.Key.Type) parameter = Expression.Convert(parameter, translator.Key.Type);
+        var scoped = source.Where(Expression.Lambda<Func<T, bool>>(Expression.Equal(translator.Key, parameter), translator.Row));
         var record = new CanopyGridRecord(request.Id);
         var boxedKey = Expression.Convert(translator.Key, typeof(object));
 
@@ -68,7 +70,7 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
             var keys = await Executor.ToListAsync(scoped.Select(Expression.Lambda<Func<T, object?>>(boxedKey, translator.Row)).Take(2), cancellationToken).ConfigureAwait(false);
             if (!Single(keys, request.Id)) return null;
             var child = (RecordChildMap<T>)Map.Field(request.Field.Id);
-            record.Fields[request.Field.Id] = (await child.QueryAsync(scoped, memory, request.Offset, request.Limit, true, Executor, cancellationToken).ConfigureAwait(false))!;
+            record.Fields[request.Field.Id] = (await child.QueryAsync(scoped, memory, request.Offset, request.Limit, request.FirstRows(request.Field), true, Executor, cancellationToken).ConfigureAwait(false))!;
             return record;
         }
 
@@ -102,7 +104,7 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
         foreach (var field in request.Fields) {
             if (!(Map.Field(field.Id) is RecordChildMap<T> child)) continue;
             var take = child.Collection ? request.FirstRows(field) : Math.Min(child.Size, request.MaxItems);
-            var cell = await child.QueryAsync(scoped, memory, 0, take, false, Executor, cancellationToken).ConfigureAwait(false);
+            var cell = await child.QueryAsync(scoped, memory, 0, take, take, false, Executor, cancellationToken).ConfigureAwait(false);
             if (cell != null) record.Fields[field.Id] = cell;
         }
         return record;

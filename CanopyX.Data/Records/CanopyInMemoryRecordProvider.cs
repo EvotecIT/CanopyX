@@ -53,6 +53,8 @@ public sealed class CanopyInMemoryRecordProvider<T> : ICanopyRecordProvider {
         if (request == null) throw new ArgumentNullException(nameof(request));
         if (!ReferenceEquals(request.Schema, Schema)) throw new ArgumentException("The request belongs to another record schema.", nameof(request));
         cancellationToken.ThrowIfCancellationRequested();
+        // The same identity rule as the queryable provider: only a key's own text, never text that would not reach a store.
+        if (RecordKeys.Parse(request.Id, _translator.Key.Type) == null) return new ValueTask<CanopyGridRecord?>((CanopyGridRecord?)null);
         var matches = new List<T>(2);
         foreach (var item in _records()) {
             if (RecordKeys.Format(_key(item)) != request.Id) continue;
@@ -63,7 +65,7 @@ public sealed class CanopyInMemoryRecordProvider<T> : ICanopyRecordProvider {
         var found = matches[0];
         var record = new CanopyGridRecord(request.Id);
         if (request.Field != null) {
-            record.Fields[request.Field.Id] = ((RecordChildMap<T>)Map.Field(request.Field.Id)).Evaluate(found, request.Offset, request.Limit, true)!;
+            record.Fields[request.Field.Id] = ((RecordChildMap<T>)Map.Field(request.Field.Id)).Evaluate(found, request.Offset, request.Limit, request.FirstRows(request.Field), true)!;
             return new ValueTask<CanopyGridRecord?>(record);
         }
         foreach (var field in request.Fields) {
@@ -73,7 +75,8 @@ public sealed class CanopyInMemoryRecordProvider<T> : ICanopyRecordProvider {
                 cell = Value(value, found);
             } else {
                 var child = (RecordChildMap<T>)map;
-                cell = child.Evaluate(found, 0, child.Collection ? request.FirstRows(field) : Math.Min(child.Size, request.MaxItems), false);
+                var take = child.Collection ? request.FirstRows(field) : Math.Min(child.Size, request.MaxItems);
+                cell = child.Evaluate(found, 0, take, take, false);
             }
             if (cell != null) record.Fields[field.Id] = cell;
         }

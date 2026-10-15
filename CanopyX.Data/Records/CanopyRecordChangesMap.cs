@@ -42,8 +42,9 @@ public sealed class CanopyRecordChangesMap<TChild> {
     /// <typeparam name="TValue">The value type: text, a boolean, an enumeration, a number or a date.</typeparam>
     /// <param name="before">The value expression.</param>
     /// <returns>This map.</returns>
+    /// <exception cref="ArgumentException">The value after the change is mapped with another kind (text, number or date).</exception>
     public CanopyRecordChangesMap<TChild> Before<TValue>(Expression<Func<TChild, TValue>> before) {
-        _kind = Kind(typeof(TValue));
+        _kind = SameKind(typeof(TValue), _after, nameof(before));
         _before = before ?? throw new ArgumentNullException(nameof(before));
         return this;
     }
@@ -52,10 +53,18 @@ public sealed class CanopyRecordChangesMap<TChild> {
     /// <typeparam name="TValue">The value type: text, a boolean, an enumeration, a number or a date.</typeparam>
     /// <param name="after">The value expression.</param>
     /// <returns>This map.</returns>
+    /// <exception cref="ArgumentException">The value before the change is mapped with another kind (text, number or date).</exception>
     public CanopyRecordChangesMap<TChild> After<TValue>(Expression<Func<TChild, TValue>> after) {
-        _kind = Kind(typeof(TValue));
+        _kind = SameKind(typeof(TValue), _before, nameof(after));
         _after = after ?? throw new ArgumentNullException(nameof(after));
         return this;
+    }
+
+    /// <summary>Both values of a change format alike, so they must have one kind.</summary>
+    private CanopyColumnKind SameKind(Type type, LambdaExpression? other, string parameter) {
+        var kind = Kind(type);
+        if (other != null && kind != _kind) throw new ArgumentException("The values before and after a change have one kind: text, a number or a date.", parameter);
+        return kind;
     }
 
     /// <summary>Orders the changes by a key before the change key; call again for further keys.</summary>
@@ -92,7 +101,7 @@ public sealed class CanopyRecordChangesMap<TChild> {
         if (_before != null) { before = values.Count + 1; values.Add(_before); }
         if (_after != null) { after = values.Count + 1; values.Add(_after); }
         var kind = _kind;
-        return new ChildSpec<TChild>(key, _orders.ToArray(), values, false, _limit, (rows, _) => {
+        return new ChildSpec<TChild>(key, _orders.ToArray(), values, false, _limit, (rows, _, _) => {
             var changes = new List<CanopyFieldChange>(rows.Count);
             foreach (var row in rows) {
                 changes.Add(new CanopyFieldChange(ChildSpec<TChild>.Text(row[1], 4096, true),

@@ -9,8 +9,9 @@ public static partial class CanopyRequestParser {
     /// <param name="json">The document.</param>
     /// <param name="schema">The record allow-list.</param>
     /// <param name="limits">Safety limits; null uses the defaults.</param>
-    /// <param name="canRead">Decides whether the caller may read a record field or a column's drawer value; false leaves it
-    /// out of the answer, and a page of such a field answers as an unknown field. Null allows every served field.</param>
+    /// <param name="canRead">Decides whether the caller may read a record field or a column's drawer value, by identity
+    /// (record field identities always differ from column identities); false leaves it out of the answer, and a page of such a
+    /// field answers as an unknown field. Null allows every served field.</param>
     /// <returns>The validated request.</returns>
     /// <exception cref="CanopyRequestException">The document is malformed, targets another view, names a field the endpoint
     /// does not serve or the caller may not read (<see cref="CanopyRequestError.UnknownField"/>), pages a field that is not a

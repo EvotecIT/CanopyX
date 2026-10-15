@@ -27,6 +27,8 @@ public sealed class RecordContractTests {
         Assert.Throws<ArgumentException>(() => Map().Timeline("events", asset => asset.Events, events => events.Time(item => item.Summary)));
         Assert.Throws<InvalidOperationException>(() => Map().Changes("changes", asset => asset.Changes, changes => changes.Key(item => item.Id).Name(item => item.Setting)));
         Assert.Throws<ArgumentOutOfRangeException>(() => Map().Changes("changes", asset => asset.Changes, changes => changes.Limit(513)));
+        Assert.Throws<ArgumentException>(() => Map().Changes("changes", asset => asset.Changes, changes => changes.Before(item => item.Before).After(item => item.At)));
+        Assert.Throws<ArgumentException>(() => Map().Changes("changes", asset => asset.Changes, changes => changes.After(item => item.Id).Before(item => item.Setting)));
     }
 
     [Fact]
@@ -72,6 +74,8 @@ public sealed class RecordContractTests {
         new object[] { "too many collection rows", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] = Rows(11, 30))) },
         new object[] { "too many events", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["events"] =
             CanopyCell.Timeline(Enumerable.Range(0, 201).Select(i => new CanopyRecordEvent(DateTime.UtcNow, "e" + i))))) },
+        new object[] { "events in a collection field", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] =
+            CanopyCell.Timeline(new[] { new CanopyRecordEvent(DateTime.UtcNow, "e") }))) },
         new object[] { "a collection in a value field", "", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["serial"] = Rows(1, 1))) },
         new object[] { "a page with another field", ",\"field\":\"parts\",\"limit\":5", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => { record.Fields["parts"] = Rows(1, 1); record.Fields["serial"] = "x"; })) },
         new object[] { "a page with too many rows", ",\"field\":\"parts\",\"limit\":5", (Func<CanopyRecordRequest, CanopyGridRecord>)(request => With(request, record => record.Fields["parts"] = Rows(6, 10))) },

@@ -72,9 +72,10 @@ internal abstract class RecordChildMap<T> : RecordFieldMap<T> {
     internal abstract int Size { get; }
 
     /// <summary>Reads the child rows of the one record <paramref name="scoped"/> holds: a window of them (and for collections the
-    /// total). A whole-record answer gets null for no rows; a page always gets its (possibly empty) rows.</summary>
-    internal abstract Task<CanopyCell?> QueryAsync(IQueryable<T> scoped, bool memory, int offset, int take, bool page, CanopyQueryExecutor executor, CancellationToken cancellationToken);
+    /// total). A whole-record answer gets null for no rows; a page always gets its (possibly empty) rows. A collection says
+    /// <paramref name="pageSize"/> rows per Load more, its page size within the endpoint's limit.</summary>
+    internal abstract Task<CanopyCell?> QueryAsync(IQueryable<T> scoped, bool memory, int offset, int take, int pageSize, bool page, CanopyQueryExecutor executor, CancellationToken cancellationToken);
 
     /// <summary>The same rows evaluated in memory over one record, for the reference provider.</summary>
-    internal abstract CanopyCell? Evaluate(T record, int offset, int take, bool page);
+    internal abstract CanopyCell? Evaluate(T record, int offset, int take, int pageSize, bool page);
 }

@@ -26,7 +26,7 @@ internal sealed class ChildSetMap<T, TChild> : RecordChildMap<T> {
 
     internal override int Size => _spec.Size;
 
-    internal override async Task<CanopyCell?> QueryAsync(IQueryable<T> scoped, bool memory, int offset, int take, bool page, CanopyQueryExecutor executor,
+    internal override async Task<CanopyCell?> QueryAsync(IQueryable<T> scoped, bool memory, int offset, int take, int pageSize, bool page, CanopyQueryExecutor executor,
         CancellationToken cancellationToken) {
         var children = scoped.SelectMany(Items(memory));
         int? total = null;
@@ -42,10 +42,13 @@ internal sealed class ChildSetMap<T, TChild> : RecordChildMap<T> {
             var projection = Expression.Lambda<Func<TChild, object?[]>>(Expression.NewArrayInit(typeof(object), parts), child);
             rows = await executor.ToListAsync(ordered.Take(take).Select(projection), cancellationToken).ConfigureAwait(false);
         }
-        return Result(rows, total, page);
+        // Rows written between the count and the window change the window; the reader reloads instead of mixing snapshots.
+        if (total != null && rows.Count != Math.Min(take, Math.Max(0, total.Value - offset)))
+            throw new CanopyRequestException(CanopyRequestError.StaleRevision, "The record changed while it was read; reload it.");
+        return Result(rows, total, pageSize, page);
     }
 
-    internal override CanopyCell? Evaluate(T record, int offset, int take, bool page) {
+    internal override CanopyCell? Evaluate(T record, int offset, int take, int pageSize, bool page) {
         var compiled = _compiled.Value;
         var children = (compiled.Items(record) ?? Enumerable.Empty<TChild>()).ToList();
         int? total = _spec.Collection ? children.Count : (int?)null;
@@ -55,12 +58,12 @@ internal sealed class ChildSetMap<T, TChild> : RecordChildMap<T> {
         var window = keyed.OrderBy(item => item.Keys, Comparer<object?[]>.Create((left, right) => ChildOrdering.Compare(left, right, descending)))
             .Skip(offset).Take(take);
         var rows = window.Select(item => new[] { compiled.Key(item.Child) }.Concat(compiled.Values.Select(value => value(item.Child))).ToArray()).ToList();
-        return Result(rows, total, page);
+        return Result(rows, total, pageSize, page);
     }
 
-    private CanopyCell? Result(List<object?[]> rows, int? total, bool page) {
+    private CanopyCell? Result(List<object?[]> rows, int? total, int pageSize, bool page) {
         if (!page && rows.Count == 0) return null;
-        return _spec.Build(rows, total);
+        return _spec.Build(rows, total, pageSize);
     }
 
     /// <summary>The navigation; in memory a missing collection or reference on the way is an empty collection, as a database join is.</summary>

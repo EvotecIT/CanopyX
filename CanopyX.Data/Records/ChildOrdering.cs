@@ -9,8 +9,10 @@ namespace CanopyX.Data;
 
 /// <summary>
 /// The order of a record's child rows (collection rows, timeline events, changes): each order key with missing values last in
-/// both directions, then the child key ascending. Stored values compare as the store orders them: numbers and dates by value,
-/// booleans false first, enumerations by their underlying number and text in ordinal (binary) order.
+/// both directions, then the child key ascending. Numbers and dates compare by value, booleans false first, enumerations by
+/// their underlying number; text compares ordinally in memory and by the column's collation in a database (SQLite's binary
+/// collation agrees with the ordinal order except for characters outside the Basic Multilingual Plane). The child key decides
+/// every tie, so the order is stable either way.
 /// </summary>
 internal static class ChildOrdering {
     private static readonly MethodInfo[] OrderMethods = typeof(Queryable).GetMethods().Where(method =>

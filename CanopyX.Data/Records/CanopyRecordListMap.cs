@@ -100,8 +100,9 @@ public sealed class CanopyRecordListMap<TChild> {
         int pageSize = _pageSize;
         int? pageLength = _pageLength;
         string? targetView = _targetView, targetColumn = _targetColumn;
-        return new ChildSpec<TChild>(key, _orders.ToList(), _columns.Select(item => item.Value).ToList(), true, pageSize, (rows, total) => {
-            var list = new CanopyRecordList { Total = total, PageSize = pageSize, PageLength = pageLength };
+        return new ChildSpec<TChild>(key, _orders.ToList(), _columns.Select(item => item.Value).ToList(), true, pageSize, (rows, total, loadMore) => {
+            // Load more asks for the page size the endpoint allows, so its requests stay within MaxRecordPageSize.
+            var list = new CanopyRecordList { Total = total, PageSize = Math.Min(pageSize, loadMore), PageLength = pageLength };
             foreach (var column in columns) list.Columns.Add(column);
             if (targetView != null) list.Target = new CanopyRecordTarget(targetView) { Column = targetColumn };
             foreach (var values in rows) {

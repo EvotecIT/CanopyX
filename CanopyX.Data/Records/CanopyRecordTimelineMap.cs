@@ -94,7 +94,7 @@ public sealed class CanopyRecordTimelineMap<TChild> {
         if (_actor != null) { actor = values.Count + 1; values.Add(_actor); }
         if (_kind != null) { kind = values.Count + 1; values.Add(_kind); }
         var tone = _tone;
-        return new ChildSpec<TChild>(key, orders, values, false, _limit, (rows, _) => {
+        return new ChildSpec<TChild>(key, orders, values, false, _limit, (rows, _, _) => {
             var events = new List<CanopyRecordEvent>(rows.Count);
             foreach (var row in rows) {
                 var item = new CanopyRecordEvent(DateTime.MinValue, ChildSpec<TChild>.Text(row[1], 4096, true)) {
