@@ -28,7 +28,11 @@
       try { this.initialState = stored && stored.current ? this.readGridState(stored.current) : null; } catch (_) { this.initialState = null; }
     },
 
-    initializeState() { return this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {}); },
+    // A grid with conditional formatting is ready once its formatting part is too (52-grid-formatting.js).
+    initializeState() {
+      const ready = this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {});
+      return this.view.formatRules || this.view.formatting ? Promise.all([ready, this.loadFormatting().catch(error => this.emit("error", { error }))]).then(([result]) => result) : ready;
+    },
     getState() {
       const query = this.getQuery() || this.defaultState.query;
       const state = { version: 1, view: this.view.id,
@@ -36,6 +40,8 @@
         query: JSON.parse(JSON.stringify({ ...query, offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined })),
         timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
       if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset, ...this.pageAll?{allRows:true}:{} };
+      // Rules edited at run time (52-grid-formatting.js) are part of the view a reader saves.
+      if (this.formatEdited) state.formatRules = JSON.parse(JSON.stringify(this.formatRules));
       return state;
     },
 
@@ -52,7 +58,7 @@
       const query = gridQuery(this.view, gridQueryStart(input, {
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)) }), true);
       const parsed = { version: 1, view: this.view.id, columns, query,
-        timeZone: state.timeZone, selection, scrollTop: state.scrollTop };
+        timeZone: state.timeZone, selection, scrollTop: state.scrollTop, formatRules: state.formatRules };
       if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
         if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > Math.max(10000,this.view.source.kind==="inline"?(this.view.rowData?.count??this.view.rows.length):0) || paging.allRows!==undefined&&(typeof paging.allRows!=="boolean"||paging.allRows&&this.view.source.kind!=="inline") ||
@@ -90,6 +96,8 @@
       });
       this.setTimeZone(state.timeZone); this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
+      // Formatting rules travel untouched through readGridState; the formatting part validates them here.
+      if (state.formatRules || this.formatEdited) this.setFormatRules(state.formatRules || this.view.formatRules || []).catch(error => this.emit("error", { error }));
     },
 
     setColumnOrder(ids) {

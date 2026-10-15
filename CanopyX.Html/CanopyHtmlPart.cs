@@ -30,6 +30,7 @@ public sealed class CanopyHtmlPart {
     private readonly bool _deepLink;
     private readonly bool _pager;
     private readonly bool _editable;
+    private readonly string? _feature;
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
         Name = Text(entry, "name") ?? throw new InvalidOperationException("A CanopyX part has no name.");
@@ -48,6 +49,7 @@ public sealed class CanopyHtmlPart {
         _deepLink = entry.TryGetValue("deepLink", out var deepLink) && deepLink is bool flag && flag;
         _pager = entry.TryGetValue("pager", out var pager) && pager is bool pagerFlag && pagerFlag;
         _editable = entry.TryGetValue("editable", out var editable) && editable is bool editing && editing;
+        _feature = Text(entry, "feature");
     }
 
     /// <summary>Gets the part's name, for example <c>tree-tools</c> or <c>export</c>.</summary>
@@ -120,13 +122,14 @@ public sealed class CanopyHtmlPart {
     public bool IsShippedWith(CanopyRuntime runtime) => Runtimes.Contains(runtime);
 
     /// <summary>Whether a tree loads this part: a part for trees, limited to the source kinds and deep links it names.</summary>
-    internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 && !_pager &&
+    internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 && !_pager && _feature == null &&
         (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink);
 
     /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters it names, or to views with pager settings.</summary>
     internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink && (!_pager || view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault) &&
         (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
-        (!_editable || view.Columns.Any(column => column.Editable));
+        (!_editable || view.Columns.Any(column => column.Editable)) &&
+        (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true);
 
     /// <summary>The wire name of an enum member: its name with a lowercase first letter (<c>StatusStrip</c> is <c>statusStrip</c>).</summary>
     private static string WireName(string name) => name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);

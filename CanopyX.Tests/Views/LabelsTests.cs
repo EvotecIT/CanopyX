@@ -95,6 +95,7 @@ public sealed class LabelsTests {
         Assert.DoesNotContain("gridSortAscending", tree);
 
         // The runtime's English texts are the C# defaults, name for name.
+        // The conditional formatting parts carry the English texts of their format* labels themselves.
         var runtime = RuntimeLabels(CanopyX.Html.CanopyRuntime.ReportingGrid);
         // The editing part brings its gridEdit… labels: names the core accepts for it without defining them.
         var editing = PartLabels("editing");
@@ -102,6 +103,7 @@ public sealed class LabelsTests {
         Assert.All(editing.Keys, name => Assert.StartsWith("gridEdit", name));
         Assert.All(editing.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
         foreach (var (name, text) in editing) runtime.Add(name, text);
+        foreach (var (name, text) in FormattingPartLabels()) runtime.Add(name, text);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();
         foreach (var property in browser) {
@@ -172,6 +174,11 @@ public sealed class LabelsTests {
         return System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value, "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }
+    /// <summary>The English format* labels of the formatting part and the rule editor part, by name.</summary>
+    private static Dictionary<string, string?> FormattingPartLabels() =>
+        new[] { ("formatting", "FORMAT_LABELS"), ("format-editor", "FORMAT_EDITOR_LABELS") }.SelectMany(part => System.Text.RegularExpressions.Regex.Matches(
+            System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part.Item1).Script, "const " + part.Item2 + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}").Groups["body"].Value,
+            "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")).ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
 
     private static List<string> RuntimeLabelNames(CanopyX.Html.CanopyRuntime runtime) => RuntimeLabels(runtime).Keys.OrderBy(name => name, StringComparer.Ordinal).ToList();
 

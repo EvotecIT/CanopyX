@@ -21,5 +21,5 @@ public sealed partial class CanopyLabels {
     /// Whether the tree runtimes read a label: the core texts, the interaction texts and the tree menus' labels. The other
     /// flat-grid labels reach only flat grids, so a tree view leaves them out of its document.
     /// </summary>
-    private static bool ReadByTrees(string name) => !name.StartsWith("Grid", StringComparison.Ordinal) || TreeToolNames.Contains(name);
+    private static bool ReadByTrees(string name) => !name.StartsWith("Grid", StringComparison.Ordinal) && !name.StartsWith("Format", StringComparison.Ordinal) || TreeToolNames.Contains(name);
 }

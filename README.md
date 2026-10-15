@@ -36,10 +36,10 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Querying | Search, sibling sorting and named filters | Search, multi-column sorting, typed filters and condition groups |
 | Columns | Resize and hide | Resize, hide, reorder, pin and fit to content |
 | Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs |
-| Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting and light/dark themes |
+| Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting, conditional formatting and light/dark themes |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German and Spanish packs are included.
+Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
 ## Installation
 
@@ -205,6 +205,10 @@ A page that already has an HTML table needs one call. The table's headers, rows,
 ### Edit data in a grid
 
 Mark flat-grid columns `editable` and give them typed editors (text, number, date and time, select, toggle, lookup) and validation. Readers edit in the cells (or in the record drawer on phones) with undo and redo; changes stay marked until your callbacks or data source save them through row or batch commits, which report each row's result. CanopyX never writes data itself. See [docs/editing.md](docs/editing.md).
+
+### Format cells by rule
+
+`formatRules` (in .NET, `CanopyDataGridView.FormatRules`) tints cells and rows, adds icons, badges and cues, and draws data bars, colour scales and threshold bands, with conditions from the filter builder. Readers can change the rules in a rule editor, and their rules are kept in saved views. See [docs/conditional-formatting.md](docs/conditional-formatting.md).
 
 ### Translate the controls
 
