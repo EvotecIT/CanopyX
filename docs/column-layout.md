@@ -43,8 +43,7 @@ owner hides too and the essential status stays beside the tree column and its "+
 ## Tooltips and header room
 
 A column's `Tooltip` (`tooltip`) shows on hover: `"auto"` (`CanopyColumn.AutoTooltip`) shows a cell's full value while it is
-cut off, like the DataTables ellipsis renderer, and the id of another declared column shows that column's text, like AG Grid's
-`tooltipField`. A cell's own `title` wins. Flat grids and trees both read it.
+cut off, and the id of another declared column shows that column's text. A cell's own `title` wins. Flat grids and trees both read it.
 
 A flat grid's header keeps room for its column menu button (32 pixels, 52 on phones) while columns are fitted. A host that
 draws no column menus switches them off with `Toolbar.ColumnMenus = false` (`toolbar: { columnMenus: false }`): the buttons
@@ -122,8 +121,8 @@ Readers retain the existing `reporting.layout` map (`minimum`, `maximum`, `flex`
 
 | Method | Effect |
 |---|---|
-| `autoFitColumn(id)`, `autoFitColumns()` | Set columns to their measured content width as a sticky user width (like AG Grid `autoSizeColumns`). |
-| `autoSizeColumns(ids?)` | Drop user widths so the columns return to automatic sizing that fills the width (like AG Grid `sizeColumnsToFit`, kept live). |
+| `autoFitColumn(id)`, `autoFitColumns()` | Set columns to their measured content width as a sticky user width. |
+| `autoSizeColumns(ids?)` | Drop user widths so the columns return to automatic sizing that fills the width, and keep refitting as the width changes. |
 | `setColumnWidth(id, px)` | Sticky user width. |
 | `setColumnPinned(id, "left" \| "right" \| "none")` | Pin or unpin. |
 | `setColumnPriority(id, priority)` | Change a column's priority (string or integer). |
@@ -155,21 +154,6 @@ handle, to reorder. A moved column joins the pinned group it lands in. A "Find a
 more than eight columns, and **Show all** and **Reset columns** sit at the bottom. Pinning, fitting and hiding a single
 column live in the header's own ⋮ menu.
 
-## Coming from DataTables or AG Grid
-
-| DataTables | AG Grid | CanopyX |
-|---|---|---|
-| `autoWidth: true` | `autoSizeStrategy: { type: "fitCellContents" }` | Default: columns measure header and loaded values. |
-| `columns.width` | `width` | `width`, preferred unless `fixed`. |
-| — | `minWidth`, `maxWidth` | `minWidth`, `maxWidth`. |
-| — | `flex` | `flex`. |
-| — | `suppressAutoSize`, `resizable: false` | `autoSize: "none"`, `fixed: true`. |
-| Responsive `responsivePriority` | — | `priority` as an integer; or `essential` / `normal` / `optional`. |
-| Responsive child rows | — | Record drawer and the phone "+N" button. |
-| FixedColumns `left` / `right` | `pinned: "left" \| "right"` | `pinned: "left" \| "right"`; the identity column pins left by default. |
-| `columns.adjust()` | `sizeColumnsToFit()` | Automatic on resize; `autoSizeColumns()` drops user widths. |
-| — | `autoSizeColumns(ids)` | `autoFitColumns()` / `autoFitColumn(id)`. |
-| `column-visibility` buttons | Columns tool panel | Columns menu with find, drag reorder, Show all and Reset columns. |
-| — | `columnResized`, `columnPinned` events | `canopyx:columnResize`, `canopyx:columnPin`. |
+## Limitations
 
 The grid has no right-to-left layout yet; pinning and the shadow edges assume left-to-right documents.

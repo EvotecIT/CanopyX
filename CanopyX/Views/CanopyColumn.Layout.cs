@@ -30,8 +30,8 @@ public sealed partial class CanopyColumn {
 
     /// <summary>
     /// Gets or sets the tooltip of this column's cells, shown on hover. <see cref="AutoTooltip"/> (<c>"auto"</c>) shows a cell's
-    /// full value while it is cut off (an ellipsis), like DataTables' ellipsis renderer; any other value names a declared column
-    /// whose text the tooltip shows, like AG Grid's <c>tooltipField</c>. Null shows none. A cell's own title
+    /// full value while it is cut off (an ellipsis); any other value names a declared column
+    /// whose text the tooltip shows. Null shows none. A cell's own title
     /// (<see cref="CanopyCell.Title"/>) takes precedence, and the value <c>auto</c> always means the automatic tooltip.
     /// </summary>
     public string? Tooltip { get; set; }

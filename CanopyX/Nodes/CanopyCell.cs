@@ -92,8 +92,8 @@ public sealed class CanopyCell {
     public CanopyTone Tone { get; set; }
 
     /// <summary>
-    /// Gets or sets the key this cell sorts by when it differs from its value, like DataTables' orthogonal sort data or an
-    /// AG Grid comparator: text, a number, or a date (written as ISO 8601 UTC text with milliseconds, which sorts in time order). Sorting
+    /// Gets or sets the key this cell sorts by when it differs from its value:
+    /// text, a number, or a date (written as ISO 8601 UTC text with milliseconds, which sorts in time order). Sorting
     /// reads it; filters, value lists, search and the display keep reading <see cref="Value"/> and <see cref="Text"/>. Null
     /// sorts by the value. Give every cell of a column a key of one type. A host source sorts on its own and may ignore it.
     /// </summary>
