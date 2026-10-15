@@ -153,7 +153,7 @@ export type LabelName =
   | "gridRenameView" | "gridDefaultView" | "gridClearDefaultView" | "gridDefaultViewName" | "gridNoDefaultView" | "gridDefaultViewOption"
   | "gridSelection" | "gridSelectPage" | "gridSelectMatching" | "gridClearSelection" | "gridSelectionCount"
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
-  | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder"
+  | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder" | "gridAggregateCount" | "gridAggregateSum" | "gridAggregateAverage" | "gridAggregateMinimum" | "gridAggregateMaximum"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint"
   | "gridFitContent"
   | "gridUnpin"
