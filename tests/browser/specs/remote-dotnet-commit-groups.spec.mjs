@@ -142,8 +142,8 @@ test("shows a conflict when another user changed the row, and saves untouched ro
   const byId = Object.fromEntries(result.rows.map(row => [row.id, row]));
   expect(byId[changed]).toEqual({ id: changed, status: "conflict", error: "Someone else changed this row. Reload it and try again." });
   expect(byId[untouched].status).toBe("saved");
-  const changes = await page.evaluate(api => eval(api).getChanges(), api);
-  expect(changes.map(change => [change.id, change.status])).toEqual([[changed, "conflict"]]);
+  // The grid applies the answer after the response arrives; WebKit reports the response before the page has read it.
+  await expect.poll(async () => (await page.evaluate(api => eval(api).getChanges(), api)).map(change => [change.id, change.status])).toEqual([[changed, "conflict"]]);
   await expect(page.locator('.cx-row[data-cx-id="' + changed + '"]')).toHaveClass(/cx-row-invalid/);
   // The stored memory is the other user's, not the reader's.
   const memory = await page.evaluate(async id => {
