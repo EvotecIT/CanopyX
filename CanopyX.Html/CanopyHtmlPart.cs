@@ -106,15 +106,18 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>Whether a tree loads this part: a part for trees, limited to the source kinds and deep links it names.</summary>
     internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 &&
-        (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink);
+        (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink) &&
+        (_features.Length == 0 || Array.IndexOf(_features, "record") >= 0 && UsesRecordPanel(view));
 
     /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters and reporting features it names.</summary>
     internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink &&
-        (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
+        // Record fields present their values in the record panel with the same presenters as columns.
+        (_presenters.Length == 0 || view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column?.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
         (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
 
     /// <summary>Whether a grid uses a reporting feature a part serves: <c>grouping</c> (fixed or runtime grouping, or aggregates) or <c>detail</c> rows.</summary>
     private static bool Uses(CanopyDataGridView view, string feature) {
+        if (feature == "record") return UsesRecordPanel(view);
         var reporting = view.Reporting;
         if (reporting == null) return false;
         return feature switch {
@@ -123,6 +126,29 @@ public sealed class CanopyHtmlPart {
             _ => false
         };
     }
+
+    /// <summary>Whether a grid uses the record panel part: a record panel, a structured summary column, or structured cells or record links.</summary>
+    private static bool UsesRecordPanel(CanopyDataGridView view) {
+        if (view.Record != null) return true;
+        foreach (var column in view.Columns) if (column?.Presenter?.Kind == CanopyGridPresenterKind.Structured) return true;
+        foreach (var row in view.Rows) if (row != null && (row.HasFields || Structured(row.Cells.Values))) return true;
+        return false;
+    }
+
+    /// <summary>Whether a tree uses the record panel part: a record panel, or nodes with record fields, structured cells or record links.</summary>
+    private static bool UsesRecordPanel(CanopyTreeView view) {
+        if (view.Record != null) return true;
+        var pending = new Stack<CanopyNode>(view.Roots);
+        while (pending.Count > 0) {
+            var node = pending.Pop();
+            if (node == null) continue;
+            if (node.HasFields || node.HasCells && Structured(node.Cells.Values)) return true;
+            if (node.HasInlineChildren) foreach (var child in node.Children) pending.Push(child);
+        }
+        return false;
+    }
+
+    private static bool Structured(IEnumerable<CanopyCell> cells) => cells.Any(cell => cell != null && (cell.IsStructured || cell.Ref != null));
 
     /// <summary>The wire name of an enum member: its name with a lowercase first letter (<c>StatusStrip</c> is <c>statusStrip</c>).</summary>
     private static string WireName(string name) => name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);

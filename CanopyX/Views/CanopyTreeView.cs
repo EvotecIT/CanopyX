@@ -155,6 +155,10 @@ public sealed class CanopyTreeView {
     /// <summary>Gets or sets whether selecting a row writes its id path to the URL hash and a hash expands it on load.</summary>
     public bool DeepLink { get; set; }
 
+    /// <summary>Gets or sets the record panel of the tree's drawer: record-only fields, sections, tabs, a pinned summary, structured values,
+    /// related records, record deep links and actions. Null keeps the plain drawer of the columns. Presenters of record fields apply on flat grids only.</summary>
+    public CanopyRecordPanel? Record { get; set; }
+
     /// <summary>
     /// Gets or sets the texts CanopyX writes itself for this view, in the browser and in the static outline. English
     /// by default; set translations once here. Assign one <see cref="CanopyLabels"/> to several views, or
@@ -332,6 +336,11 @@ public sealed class CanopyTreeView {
         writer.OptionalProperty("stateKey", StateKey);
         if (DeepLink) {
             writer.Property("deepLink", true);
+        }
+
+        if (Record != null) {
+            writer.Name("record");
+            Record.WriteJson(writer, grid: false);
         }
 
         writer.Name("source");

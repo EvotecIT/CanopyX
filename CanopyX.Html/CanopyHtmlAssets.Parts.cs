@@ -49,8 +49,23 @@ public static partial class CanopyHtmlAssets {
         // A nested detail grid or tree loads its own parts in the same page.
         var nestedGrid = view.Reporting?.Detail?.View;
         var nestedTree = view.Reporting?.Detail?.TreeView;
-        return Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree))
-            .ToList().AsReadOnly();
+        // A record collection held as tree nodes shows as a nested tree in the record panel, which loads the tree tools.
+        var treeCollection = view.Rows.Any(row => TreeCollection(row.Cells.Values) || row.HasFields && TreeCollection(row.Fields.Values));
+        return Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree) ||
+            treeCollection && part.Name == "tree-tools").ToList().AsReadOnly();
+    }
+
+    private static bool TreeCollection(IEnumerable<CanopyCell> cells) {
+        var pending = new Stack<CanopyCell>(cells.Where(cell => cell != null));
+        while (pending.Count > 0) {
+            var cell = pending.Pop();
+            if (cell.Records != null) {
+                if (cell.Records.Roots.Count > 0) return true;
+                foreach (var row in cell.Records.Rows) foreach (var inner in row.Cells.Values) if (inner != null) pending.Push(inner);
+            }
+            if (cell.Fields.Count > 0) foreach (var field in cell.Fields) if (field?.Value != null) pending.Push(field.Value);
+        }
+        return false;
     }
 
     /// <summary>Writes a part's script and stylesheet under a naming; content-hashed files are written once.</summary>

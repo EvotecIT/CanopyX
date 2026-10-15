@@ -14,7 +14,7 @@ namespace CanopyX;
 /// browser. Implicit conversions let hosts assign plain values: <c>node.Cells["size"] = 1024;</c>.
 /// A cell that has only a value is written as a bare JSON value; otherwise it is written as an object.
 /// </remarks>
-public sealed class CanopyCell {
+public sealed partial class CanopyCell {
     private readonly object? _value;
     private List<CanopyBadge>? _badges;
     private List<CanopyCellPeriod>? _series;
@@ -213,6 +213,7 @@ public sealed class CanopyCell {
     }
 
     internal void ValidateShape() {
+        ValidateStructure(0);
         if (Secondary != null && Secondary.Length > 4096) throw new InvalidOperationException("Secondary cell text is limited to 4096 code units.");
         if (_series != null && (_series.Count > 4096 || _series.Exists(point => point == null))) throw new InvalidOperationException("Cell history supports at most 4096 non-null periods.");
         if (_sortKey is string key && key.Length > 4096) throw new InvalidOperationException("A sort key is limited to 4096 code units.");
@@ -236,7 +237,7 @@ public sealed class CanopyCell {
     internal void WriteJson(CanopyJsonWriter writer) {
         ValidateShape();
         var simple = Text == null && SearchText == null && Title == null && Secondary == null && (_series == null || _series.Count == 0) && Tone == CanopyTone.None && !HasBadges &&
-            _sortKey == null;
+            _sortKey == null && !IsStructured && Ref == null;
         if (simple) {
             WriteValue(writer);
             return;
@@ -269,6 +270,7 @@ public sealed class CanopyCell {
             writer.EndArray();
         }
 
+        WriteStructure(writer);
         writer.EndObject();
     }
 
