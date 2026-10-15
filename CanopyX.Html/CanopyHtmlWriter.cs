@@ -120,11 +120,12 @@ internal static class CanopyHtmlWriter {
             html = FragmentDocument(data.ToJson(bundleBase), options, chunks.ToString());
         }
 
-        // A single-file grid carries the filter editor and export parts, the history part when it draws history presenters, and
-        // the row data part when its rows are compact.
-        if (options.AssetMode != CanopyAssetMode.Inline) return html;
+        // A single-file grid carries the filter editor and export parts, the history part when it draws history presenters, the
+        // parts of the other features it uses and of the parts the host asked for (checked in every asset mode), and the row data
+        // part when its rows are compact.
         var required = WithRequested(CanopyHtmlAssets.GetRequiredParts(view), options, CanopyHtmlAssets.GetRuntime(view));
-        return html + SharedParts(options, CanopyHtmlAssets.Parts.Where(part => required.Contains(part) || data != null && part.Name == "data"));
+        if (options.AssetMode != CanopyAssetMode.Inline) return html;
+        return html + SharedParts(options, CanopyHtmlAssets.Parts.Where(part => required.Contains(part) || data != null && part.Serves("rowData")));
     }
 
     internal static string Page(CanopyDataGridView view, CanopyHtmlOptions options, CanopyGridRowData? bundled = null, string? bundleBase = null) {

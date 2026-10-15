@@ -70,7 +70,9 @@
       "views": [
         "grid"
       ],
-      "pager": true
+      "features": [
+        "pager"
+      ]
     },
     {
       "name": "enhance",
@@ -90,7 +92,10 @@
       "runtimes": [
         "grid"
       ],
-      "views": []
+      "views": [],
+      "features": [
+        "rowData"
+      ]
     },
     {
       "name": "editing",
@@ -104,7 +109,9 @@
       "views": [
         "grid"
       ],
-      "editable": true,
+      "features": [
+        "editable"
+      ],
       "requires": [
         "filter-editor"
       ]
@@ -121,7 +128,9 @@
       "views": [
         "grid"
       ],
-      "feature": "columnGroups"
+      "features": [
+        "columnGroups"
+      ]
     },
     {
       "name": "cell-range",
@@ -135,7 +144,9 @@
       "views": [
         "grid"
       ],
-      "feature": "rangeSelection"
+      "features": [
+        "rangeSelection"
+      ]
     },
     {
       "name": "links",
@@ -179,7 +190,9 @@
       "views": [
         "grid"
       ],
-      "feature": "formatting"
+      "features": [
+        "formatting"
+      ]
     },
     {
       "name": "format-editor",
@@ -193,7 +206,9 @@
       "views": [
         "grid"
       ],
-      "feature": "formatEditor",
+      "features": [
+        "formatEditor"
+      ],
       "requires": [
         "filter-editor",
         "formatting"
@@ -261,7 +276,9 @@
         "tree",
         "grid"
       ],
-      "feature": "searchHighlight"
+      "features": [
+        "searchHighlight"
+      ]
     },
     {
       "name": "layouts",
@@ -277,7 +294,9 @@
         "tree",
         "grid"
       ],
-      "feature": "layout"
+      "features": [
+        "layout"
+      ]
     },
     {
       "name": "record-panel",

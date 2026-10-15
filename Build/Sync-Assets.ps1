@@ -127,6 +127,13 @@ $partList = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'parts.json') -
 # A part requires parts that exist for every entry point and view it has, without a cycle; the runtime loader relies on it.
 $partNames = @($partList | ForEach-Object name)
 foreach ($part in $partList) {
+    # View gating has one field: features lists the view features that make a view load the part (CanopyHtmlPart maps them).
+    foreach ($retired in 'feature', 'pager', 'editable') {
+        if ($part.PSObject.Properties.Name -contains $retired) { throw "Part '$($part.name)' uses '$retired'; list the view feature under features instead." }
+    }
+    if ($part.features -and @($part.features | Where-Object { $_ -isnot [string] -or $_ -notmatch '^[a-z][A-Za-z]{0,31}$' }).Count) {
+        throw "Part '$($part.name)' has an invalid feature name."
+    }
     foreach ($name in @($part.requires | Where-Object { $_ })) {
         $required = $partList | Where-Object name -EQ $name
         if (-not $required) { throw "Part '$($part.name)' requires the unknown part '$name'." }
@@ -359,9 +366,6 @@ $partIndex = [ordered]@{ parts = @(foreach ($build in $partBuilds) {
     if ($build.Part.presenters) { $entry.presenters = @($build.Part.presenters) }
     if ($build.Part.features) { $entry.features = @($build.Part.features) }
     if ($build.Part.deepLink) { $entry.deepLink = $true }
-    if ($build.Part.pager) { $entry.pager = $true }
-    if ($build.Part.editable) { $entry.editable = $true }
-    if ($build.Part.feature) { $entry.feature = $build.Part.feature }
     if ($build.Part.requires) { $entry.requires = @($build.Part.requires) }
     $entry
 }) }

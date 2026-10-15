@@ -29,9 +29,12 @@ public sealed class CanopyHtmlPart {
     private readonly string[] _presenters;
     private readonly string[] _features;
     private readonly bool _deepLink;
-    private readonly bool _pager;
-    private readonly bool _editable;
-    private readonly string? _feature;
+
+    // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
+    private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
+        "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail",
+        "searchHighlight", "layout", "record"
+    };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
         Name = Text(entry, "name") ?? throw new InvalidOperationException("A CanopyX part has no name.");
@@ -49,9 +52,9 @@ public sealed class CanopyHtmlPart {
         _presenters = List(entry, "presenters").ToArray();
         _features = List(entry, "features").ToArray();
         _deepLink = entry.TryGetValue("deepLink", out var deepLink) && deepLink is bool flag && flag;
-        _pager = entry.TryGetValue("pager", out var pager) && pager is bool pagerFlag && pagerFlag;
-        _editable = entry.TryGetValue("editable", out var editable) && editable is bool editing && editing;
-        _feature = Text(entry, "feature");
+        foreach (var feature in _features) {
+            if (!KnownFeatures.Contains(feature)) throw new InvalidOperationException("The CanopyX part '" + Name + "' names the unknown view feature '" + feature + "'.");
+        }
     }
 
     /// <summary>Gets the part's name, for example <c>tree-tools</c> or <c>export</c>.</summary>
@@ -123,33 +126,50 @@ public sealed class CanopyHtmlPart {
     /// <returns>True when <see cref="Runtimes"/> contains the entry point.</returns>
     public bool IsShippedWith(CanopyRuntime runtime) => Runtimes.Contains(runtime);
 
-    /// <summary>Whether a tree loads this part: a part for trees, limited to the source kinds and deep links it names.</summary>
-    internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 && !_pager &&
-        (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink) &&
-        (_feature == null || _feature == "searchHighlight" && view.SearchHighlight != null || _feature == "layout" && view.Layout != null) &&
-        (_features.Length == 0 || Array.IndexOf(_features, "record") >= 0 && UsesRecordPanel(view));
+    /// <summary>Whether this part serves a view feature (<c>features</c> in <c>Build/parts.json</c>), for example <c>rowData</c>.</summary>
+    internal bool Serves(string feature) => Array.IndexOf(_features, feature) >= 0;
 
-    /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters and features it names.</summary>
-    internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink && (!_pager || view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault) &&
-        // Record fields present their values in the record panel with the same presenters as columns.
-        (_presenters.Length == 0 || view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column?.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
-        (!_editable || view.Columns.Any(column => column.Editable)) &&
-        (_feature == null || _feature == "formatting" && (view.FormatRules.Count > 0 || view.Formatting != null) || _feature == "formatEditor" && view.Formatting?.Editor == true ||
-            _feature == "searchHighlight" && view.SearchHighlight != null || _feature == "layout" && view.Layout != null ||
-            _feature == "columnGroups" && view.ColumnGroups.Count > 0 || _feature == "rangeSelection" && view.RangeSelection != null) &&
+    /// <summary>Whether a tree loads this part: a part for trees, limited to the source kinds, deep links and view features it names.</summary>
+    internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 &&
+        (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink) &&
         (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
 
-    /// <summary>Whether a grid uses a reporting feature a part serves: <c>grouping</c> (fixed or runtime grouping, or aggregates) or <c>detail</c> rows.</summary>
+    /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters and view features it names.</summary>
+    internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink &&
+        // Record fields present their values in the record panel with the same presenters as columns.
+        (_presenters.Length == 0 || view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column?.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
+        (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
+
+    /// <summary>
+    /// Whether a grid uses a view feature: pager settings, an editable column, formatting rules or the rule editor, column
+    /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes or the record panel. Compact
+    /// row data (<c>rowData</c>) is a writer option, not a view setting: the HTML writer adds the parts that serve it.
+    /// </summary>
     private static bool Uses(CanopyDataGridView view, string feature) {
-        if (feature == "record") return UsesRecordPanel(view);
         var reporting = view.Reporting;
-        if (reporting == null) return false;
         return feature switch {
-            "grouping" => reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0,
-            "detail" => reporting.Detail != null,
+            "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
+            "editable" => view.Columns.Any(column => column.Editable),
+            "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,
+            "formatEditor" => view.Formatting?.Editor == true,
+            "columnGroups" => view.ColumnGroups.Count > 0,
+            "rangeSelection" => view.RangeSelection != null,
+            "grouping" => reporting != null && (reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0),
+            "detail" => reporting?.Detail != null,
+            "searchHighlight" => view.SearchHighlight != null,
+            "layout" => view.Layout != null,
+            "record" => UsesRecordPanel(view),
             _ => false
         };
     }
+
+    /// <summary>Whether a tree uses a view feature: search highlighting, layout modes or the record panel.</summary>
+    private static bool Uses(CanopyTreeView view, string feature) => feature switch {
+        "searchHighlight" => view.SearchHighlight != null,
+        "layout" => view.Layout != null,
+        "record" => UsesRecordPanel(view),
+        _ => false
+    };
 
     /// <summary>Whether a grid uses the record panel part: a record panel, a structured summary column, or structured cells or record links.</summary>
     private static bool UsesRecordPanel(CanopyDataGridView view) {
