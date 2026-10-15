@@ -46,6 +46,26 @@ const graphiteView: InlineGridView = {
   ], rows: [{ id: "one", cells: { name: { value: "Service", secondary: "Region" }, amount: { value: 20,
     series: [{ period: "2026-10-05", value: 20, state: "Healthy", tone: "success" }] } } }]
 };
+// Search highlighting and layout modes: typed options, state and API.
+const ticketsView: InlineGridView = { ...measuredWireView, id: "tickets",
+  searchHighlight: { ignoreAccents: true, matchCase: false, minLength: 2, filterTones: { name: "info" } },
+  layout: { mode: "cards", modes: ["cards", "fit", "scroll"], density: "compact" }, toolbar: { matches: true, layout: true } };
+const tickets = createDataGrid(document.createElement("div"), { view: ticketsView, onPrint: ({ layout }) => { const stacked: boolean = layout === "stacked"; } });
+const layout = await tickets.setLayout({ mode: "scroll", density: "comfortable" });
+const layoutModes: readonly ("fit" | "scroll" | "cards")[] = layout.modes;
+const matchCount: number = tickets.getMatches().total;
+const moved: boolean = await tickets.nextMatch({ focus: false });
+await tickets.setSearchHighlight(false);
+const savedLayout = tickets.getState().layout?.density;
+// @ts-expect-error A layout mode is fit, scroll or cards.
+await tickets.setLayout({ mode: "tiles" });
+const kbTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "kb", label: "Knowledge base", rowHeight: 28, pageSize: 100,
+  selection: "single", columns: [{ id: "name", title: "Article", width: 200, kind: "text" }], searchHighlight: true, layout: { mode: "scroll" },
+  source: { kind: "inline" }, roots: [] } });
+await kbTree.previousMatch();
+const treeLayout: string = kbTree.getLayout().mode;
+// @ts-expect-error Trees offer the fit and scroll layouts.
+const cardsTree: CanopyView = { protocol: "canopyx/2", type: "view", id: "bad", label: "Bad", rowHeight: 28, pageSize: 100, selection: "single", columns: [], layout: { mode: "cards" } };
 const graphite = createDataGrid(document.createElement("div"), { view: graphiteView,
   onChart: ({ signal, selection }) => { if (signal.aborted) return; }, onUngroup: ({ signal }) => {} });
 await graphite.setPageLength("all");
