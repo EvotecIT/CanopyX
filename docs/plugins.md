@@ -124,6 +124,8 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
+| `highlight` | a tree or grid with `searchHighlight` starts, or its highlight API is first called | search-hit marks, the match count and navigator, the Highlight matches switch ([search highlighting](search-highlight.md)) |
+| `layouts` | a tree or grid with `layout` starts, or `setLayout` is first called | the Layout menu, the card layout and tree densities ([layout modes](layout-modes.md)) |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 

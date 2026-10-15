@@ -110,6 +110,19 @@ Grid columns accept `wrap: true` to retain line breaks and wrap long text. The w
 
 Measurements preserve the first visible row and its offset while overscan rows grow or shrink. ResizeObserver also measures host-rendered content that changes later. Page Up/Down moves by the viewport's pixel height. Logical offsets remain independent of the native scrollbar's 8,000,000-pixel cap. Previously measured offscreen rows retain their last height as an estimate after a column width changes and are remeasured when recycled into view. Automatic mode retains sparse height information for visited rows; fixed mode avoids that work.
 
+#### Search highlighting and layout modes
+
+Optional `searchHighlight` (`true` or `{ enabled, search, filters, matchCase, ignoreAccents, minLength, filterTones }`) marks
+search and filter hits in cells and the record drawer, with a match count and next/previous navigation
+([search highlighting](search-highlight.md)). Optional `layout` (`{ mode, modes, density }`, modes `fit`, `scroll` and
+`cards`, densities `compact`, `default` and `comfortable`) adds the Layout menu ([layout modes](layout-modes.md)); a
+grid's `layout.density` takes the place of its `density`. Toolbar switches `matches` and `layout` leave their controls out.
+Grid state carries the reader's choices as optional `layout: { mode, density }` and `highlight` (a boolean); a saved mode
+the view no longer offers falls back to the declared one, and state from a view without the option ignores them. Tree
+documents take the same two fields, with the fit and scroll modes, and tree state the same two choices. A flat grid's
+`onPrint` hook receives `layout: "stacked"` from a grid in the card layout and `"table"` otherwise. These fields are
+additive; readers without them keep the fit layout and unmarked cells.
+
 #### Sequential sources and unknown counts
 
 Cursor views require a host source and paged presentation. They send `gridCursorQuery` documents with the same search, sort, predicate, limit and optional revision fields as `gridQuery`, but no offset. An absent `cursor` requests the first page. A supplied cursor requires its issuing revision; the host binds tokens to the complete criteria and requested limit and rejects stale or unauthorized tokens. Cursors contain at most 4,096 well-formed UTF-16 code units. They are opaque positions, never authorization or client-interpreted offsets.
