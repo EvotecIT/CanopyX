@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX grids from data and a URL</title>
+<link rel="stylesheet" href="enhance-assets/canopyx-grid.css">
+<style>{{example-style}}
+.cx-example h2 { margin: 28px 0 8px; font-size: 18px; }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Grids from records and from a URL</h1>
+<p>Both grids below start from one call. The first reads plain records, with field paths and a render function for its budget column; its sort, search and page go into the address, so the link can be shared. The second reads its records from a URL once and then sorts, searches and pages in the browser.</p>
+<h2 id="projects-title">Projects</h2>
+<div id="projects"></div>
+<h2 id="orders-title">Orders</h2>
+<div id="orders"></div>
+<script src="enhance-assets/canopyx-grid.js"></script>
+<script>
+const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
+const owners = ["Ada", "Bruno", "Chen", "Dana", "Emil", "Farah", "Goran", "Hana"], states = ["Planned", "Active", "Active", "On hold", "Done"];
+const projects = Array.from({ length: 48 }, (_, index) => ({
+  id: "p" + (index + 1), name: "Project " + String.fromCharCode(65 + index % 26) + (index >= 26 ? "2" : ""),
+  owner: { name: owners[index % owners.length], team: index % 3 ? "Platform" : "Field" },
+  budget: 12000 + (index * 7919) % 88000, due: new Date(Date.UTC(2026, index % 12, 1 + index % 27)).toISOString().slice(0, 10), state: states[index % states.length]
+}));
+const money = new Intl.NumberFormat("en", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+CanopyX.grid("#projects", {
+  label: "Projects", data: projects, rowId: "id", theme, pageLength: 10, order: [["budget", "desc"]], stateSave: { url: "hash", parameter: "projects" },
+  columns: [
+    { data: "name", title: "Project" },
+    { data: "owner.name", title: "Owner" },
+    { data: "owner.team", title: "Team" },
+    { data: "budget", id: "budget", title: "Budget", type: "number", render: (value, purpose) => purpose === "display" ? money.format(value) : value },
+    { data: "due", title: "Due", type: "date", render: { display: value => new Date(value).toLocaleDateString("en", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) } },
+    { data: "state", title: "State" }
+  ]
+}).then(grid => { window.projectsGrid = grid; });
+
+// A stand-in for your endpoint: the URL source takes a fetch function, here one that answers from the page after a short wait.
+const regions = ["North", "South", "East", "West"];
+function exampleFetch(url) {
+  const items = Array.from({ length: 240 }, (_, index) => ({ number: "SO-" + String(1001 + index), customer: "Customer " + (1 + index * 37 % 90),
+    region: regions[index % regions.length], total: Math.round(((index * 4973) % 9000 + 120) * 100) / 100, placed: new Date(Date.UTC(2026, 8, 1) + index * 3600e3 * 7).toISOString() }));
+  return new Promise(resolve => setTimeout(() => resolve(new Response(JSON.stringify({ items }), { headers: { "Content-Type": "application/json" } })), 400));
+}
+CanopyX.grid("#orders", {
+  label: "Orders", theme, pageLength: 10, pageLengths: [10, 25, 50], rowId: "number",
+  url: { url: "data/orders.json", dataSrc: "items", fetch: exampleFetch },
+  columns: [
+    { data: "number", title: "Order", type: "text" },
+    { data: "customer", title: "Customer", type: "text" },
+    { data: "region", title: "Region", type: "text" },
+    { data: "total", title: "Total", type: "number" },
+    { data: "placed", title: "Placed", type: "datetime" }
+  ]
+}).then(grid => { window.ordersGrid = grid; });
+</script>
+</main>
+</body>
+</html>

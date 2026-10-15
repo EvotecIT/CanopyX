@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX server processing</title>
+<link rel="stylesheet" href="enhance-assets/canopyx-grid.css">
+<style>{{example-style}}
+#request { font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--example-muted); overflow-wrap: anywhere; }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Server processing</h1>
+<p>This grid asks its URL for every page: each sort, search, filter and page change posts a canopyx/2 grid query, and the answer carries the matching rows and the counts. A small stand-in server in this page answers from 25,000 generated events; a real one is any endpoint that reads the same query, such as the CanopyX .NET adapter.</p>
+<div id="events"></div>
+<p id="request" role="status">Waiting for the first request.</p>
+<script src="enhance-assets/canopyx-grid.js"></script>
+<script>
+const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
+const sources = ["Gateway", "Scheduler", "Directory", "Mail relay", "Backup", "Print queue"], levels = ["Information", "Information", "Information", "Warning", "Error"];
+const events = Array.from({ length: 25000 }, (_, index) => ({ id: "e" + (index + 1), source: sources[index * 7 % sources.length], level: levels[index * 13 % levels.length],
+  code: 1000 + index * 31 % 900, message: "Event " + (index + 1) + " from " + sources[index * 7 % sources.length].toLowerCase(),
+  time: new Date(Date.UTC(2026, 9, 15) - index * 61e3).toISOString() }));
+
+// The stand-in server: it filters by the search text, sorts by the query's sort list and returns one window with its counts.
+function mockServer(url, init) {
+  const query = JSON.parse(init.body), search = query.search.trim().toLowerCase();
+  let rows = search ? events.filter(event => [event.source, event.level, String(event.code), event.message].some(value => value.toLowerCase().includes(search))) : events.slice();
+  for (const sort of [...query.sort].reverse()) rows.sort((a, b) => (a[sort.column] < b[sort.column] ? -1 : a[sort.column] > b[sort.column] ? 1 : 0) * (sort.direction === "desc" ? -1 : 1));
+  document.getElementById("request").textContent = "POST " + url + " " + JSON.stringify({ offset: query.offset, limit: query.limit, search: query.search, sort: query.sort });
+  const answer = { total: events.length, matched: rows.length, items: rows.slice(query.offset, query.offset + query.limit) };
+  return new Promise(resolve => setTimeout(() => resolve(new Response(JSON.stringify(answer), { headers: { "Content-Type": "application/json" } })), 120));
+}
+CanopyX.grid("#events", {
+  label: "Events", theme, rowId: "id", pageLength: 25, pageLengths: [25, 50, 100], order: [["time", "desc"]],
+  url: { url: "/api/events/query", serverSide: true, fetch: mockServer },
+  columns: [
+    { data: "time", title: "Time", type: "datetime" },
+    { data: "source", title: "Source", type: "text" },
+    { data: "level", title: "Level", type: "text" },
+    { data: "code", title: "Code", type: "number" },
+    { data: "message", title: "Message", type: "text" }
+  ]
+}).then(grid => { window.eventsGrid = grid; });
+</script>
+</main>
+</body>
+</html>
