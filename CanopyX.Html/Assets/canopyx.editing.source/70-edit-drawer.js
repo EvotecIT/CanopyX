@@ -84,18 +84,28 @@
         const values = [], invalid = [];
         for (const field of form.fields) {
           const parse = field.instance.error?.() || null, value = parse ? undefined : field.instance.getValue();
-          let message = parse || this.editRules(field.spec, value, form.record, false);
+          const message = parse || (!editScalar(value) ? fill(labels.gridEditChoice, { column: field.spec.column.title }) : null);
+          if (message) { this.editFormMessage(field, message); invalid.push(field); }
+          else values.push([field.spec, value, field]);
+        }
+        const preview = this.editPreview(form.record, values), shape = JSON.stringify(preview.cells);
+        for (const item of values) {
+          const field = item[2];
+          let message = this.editRules(field.spec, item[1], preview);
           if (message && typeof message.then === "function") message = await message;
           this.editFormMessage(field, message);
-          if (message) invalid.push(field); else values.push([field.spec, value]);
+          if (message) invalid.push(field);
+          item[2] = { result: message, row: shape };
         }
         if (this.edit.form !== form) return false;
         if (!invalid.length) {
-          this.editGroup(() => { for (const [spec, value] of values) this.editApply(form.record.id, spec, value, "form", form.record); });
+          this.editGroup(() => { for (const [spec, value, checked] of values) this.editApply(form.record.id, spec, value, "form", form.record, checked); });
           const result = await this.commitRow(form.record.id);
           if (this.edit.form !== form) return result.ok;
           if (result.ok) { form.dialog.close(); return true; }
-          for (const field of form.fields) if (result.errors?.[field.spec.id]) { this.editFormMessage(field, result.errors[field.spec.id]); invalid.push(field); }
+          for (const field of form.fields) if (Object.hasOwn(result.errors || {}, field.spec.id) && result.errors[field.spec.id]) {
+            this.editFormMessage(field, result.errors[field.spec.id]); invalid.push(field);
+          }
           form.summary.hidden = false; setText(form.summary, result.error || fill(labels.gridEditErrors, { count: invalid.length || 1 }));
         } else { form.summary.hidden = false; setText(form.summary, fill(labels.gridEditErrors, { count: invalid.length })); }
         (invalid[0]?.control || form.summary).focus?.({ preventScroll: false });

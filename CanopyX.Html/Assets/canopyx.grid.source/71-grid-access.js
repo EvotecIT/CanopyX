@@ -2,7 +2,28 @@
   // Parts that extend the record drawer register a hook once: every drawer a grid opens runs the hooks in order before its
   // first paint, so each can follow the dialog's cx-drawer-paint events (editing 10, formatting 20, search highlighting 30).
   DataGrid.drawerHooks = [];
-  DataGrid.drawerHook = (order, hook) => { DataGrid.drawerHooks.push({ order, hook }); DataGrid.drawerHooks.sort((a, b) => a.order - b.order); };
+  DataGrid.activeDrawers = new Map();
+  DataGrid.applyDrawerHooks = (grid, dialog) => {
+    const applied = dialog._cxDrawerHooks ||= new Set();
+    for (const entry of DataGrid.drawerHooks) if (!applied.has(entry)) {
+      applied.add(entry);
+      try { entry.hook.call(grid, dialog); } catch (error) { grid.emit("error", { error }); }
+    }
+  };
+  DataGrid.refreshDrawerHooks = (grid, dialog) => {
+    if (dialog._cxHooksFrame) return;
+    // A newly installed part starts its per-grid state in the following microtasks. Paint after that state is ready.
+    dialog._cxHooksFrame = requestAnimationFrame(() => {
+      dialog._cxHooksFrame = 0;
+      if (grid.destroyed || !dialog.isConnected) return;
+      DataGrid.applyDrawerHooks(grid, dialog);
+      if (dialog._cxRecord) dialog.dispatchEvent(new CustomEvent("cx-drawer-paint", { detail: { id: dialog._cxRecord.id, index: dialog._cxIndex ?? null } }));
+    });
+  };
+  DataGrid.drawerHook = (order, hook) => {
+    DataGrid.drawerHooks.push({ order, hook }); DataGrid.drawerHooks.sort((a, b) => a.order - b.order);
+    for (const [dialog, grid] of DataGrid.activeDrawers) DataGrid.refreshDrawerHooks(grid, dialog);
+  };
   Object.assign(DataGrid.prototype, {
     // The record drawer (filter editor part) focuses its title through this, with the ring after a key press only.
     focusRing: focusDrawerTitle,

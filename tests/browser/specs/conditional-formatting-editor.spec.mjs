@@ -51,7 +51,7 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
   });
 }
 
-test("switching, ordering and deleting rules apply at once, with the keyboard, and the legend follows", async ({ page }) => {
+test("switching, ordering and deleting rules apply at once, with the keyboard, and the legend follows", async ({ page, browserName }) => {
   await open(page);
   await page.locator(".cx-grid-overflow > summary").focus();
   await page.keyboard.press("Enter");
@@ -59,9 +59,10 @@ test("switching, ordering and deleting rules apply at once, with the keyboard, a
   await page.keyboard.press("Enter");
   const editor = page.locator(".cx-format-editor");
   await expect(editor.locator("h4")).toBeFocused();
-  await page.keyboard.press("Tab");
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
+  await page.keyboard.press(tab);
   await expect(editor.getByRole("button", { name: "Cancel" })).toBeFocused();
-  await page.keyboard.press("Tab");
+  await page.keyboard.press(tab);
   await expect(editor.getByRole("checkbox", { name: "Apply Server down" })).toBeFocused();
   await page.keyboard.press("Space");
   await expect(page.locator('.cx-row[data-cx-id="srv-00005"]')).not.toHaveClass(/cx-fmt-row/);

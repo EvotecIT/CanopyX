@@ -20,8 +20,8 @@ public static partial class CanopyStaticHtml {
         if (first && row != null && row.Tone.Name != null) style.Append(styles.FormatAccent(row.Tone));
         if (paint == null) return style.ToString();
         if (paint.ScaleFrom is CanopyTone from && paint.ScaleTo is CanopyTone to) style.Append(styles.FormatScale(from, to, paint.ScaleWeight));
-        if (paint.Tone.Name != null && (!paint.Bar.HasValue && paint.ScaleFrom == null || paint.Emphasis == CanopyFormatEmphasis.Text))
-            style.Append(styles.FormatTone(paint.Tone, paint.Emphasis ?? CanopyFormatEmphasis.Fill));
+        if (paint.Tone.Name != null)
+            style.Append(styles.FormatTone(paint.Tone, paint.Bar.HasValue || paint.ScaleFrom != null ? CanopyFormatEmphasis.Text : paint.Emphasis ?? CanopyFormatEmphasis.Fill));
         if (paint.Css != null) foreach (var entry in paint.Css) style.Append(entry.Key).Append(':').Append(entry.Value).Append(';');
         return style.ToString();
     }

@@ -94,7 +94,7 @@
       element.classList.toggle("cx-row-invalid", !!rowError);
       editAttr(element, "aria-describedby", rowError ? this.editNote("\u0001" + row.key, rowError) : null);
       editAttr(element, "aria-busy", entry?.status === "saving" ? "true" : null);
-      const errors = entry ? editErrors(entry) : {};
+      const errors = entry ? editErrors(entry) : Object.create(null);
       this.cols.forEach((column, index) => {
         const slot = element._cells[index], cell = slot.cell, dirty = !!entry && Object.hasOwn(entry.values, column.id), error = errors[column.id];
         const editable = state.specs.has(column.id) && this.canEditCell(row.h, column.id), field = session?.fields.get(column.id);
@@ -163,7 +163,7 @@
     },
 
     async editLookup(spec, search, record, signal) {
-      const limit = spec.lookup.limit, own = this.edit.options.lookups?.[spec.id], text = foldText(search.trim());
+      const limit = spec.lookup.limit, lookups = this.edit.options.lookups, own = lookups && Object.hasOwn(lookups, spec.id) ? lookups[spec.id] : null, text = foldText(search.trim());
       const matching = list => list.filter(option => foldText(option.label).includes(text)).slice(0, limit);
       if (typeof own === "function") return editOptions(await own({ column: spec.id, search, limit, row: editCopy(record), signal }), spec.id).slice(0, limit);
       if (spec.options) return matching(spec.options);
@@ -178,11 +178,10 @@
       }
       if (typeof this.source.facet !== "function" || !this.acceptedQuery) return [];
       const query = gridQuery(this.view, { ...this.acceptedQuery, search: "", filters: [], filterGroup: undefined });
-      const page = await this.runGridHook(hook => this.source.facet(editCopy({ protocol: PROTOCOL, type: "gridFacetQuery", query, column: column.id,
-        search, limit, includeCurrentFilter: false }), { signal: hook }), signal);
-      checkDocument(page, "gridFacetPage");
-      if (!Array.isArray(page.items)) throw new Error("CanopyX: malformed lookup values.");
-      return page.items.filter(item => item && item.value != null).slice(0, limit).map(item => ({ value: item.value, label: cellText(item.value, column, this.fmt) }));
+      const request = editCopy({ protocol: PROTOCOL, type: "gridFacetQuery", query, column: column.id, search, limit, includeCurrentFilter: false });
+      const response = await this.runGridHook(hook => this.source.facet(request, { signal: hook }), signal);
+      const page = validateGridFacetPage(response, this.view, request, { total: this.snapshot.total, matched: this.snapshot.total });
+      return page.items.filter(item => item.value != null).map(item => ({ value: item.value, label: cellText(item.value, column, this.fmt) }));
     }
   });
 

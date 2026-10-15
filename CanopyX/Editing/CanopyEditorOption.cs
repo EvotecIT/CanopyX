@@ -40,7 +40,19 @@ public sealed class CanopyEditorOption {
     /// <summary>Gets the label the reader sees; null shows the value.</summary>
     public string? Label { get; }
 
-    internal bool Fits(CanopyColumnKind kind) => kind == CanopyColumnKind.Number ? Value is double : !(Value is double);
+    internal bool Fits(CanopyColumnKind kind) => kind switch {
+        CanopyColumnKind.Number => Value is double,
+        CanopyColumnKind.DateTime => Value is string text && IsInstant(text),
+        _ => Value is string || Value is bool
+    };
+
+    private static bool IsInstant(string text) {
+        // A datetime choice uses the same zoned ISO value the browser stores, never a local or date-only value.
+        return System.Text.RegularExpressions.Regex.IsMatch(text, @"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$", System.Text.RegularExpressions.RegexOptions.CultureInvariant)
+            && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var moment)
+            && moment.UtcDateTime >= new DateTime(2, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            && moment.UtcDateTime <= new DateTime(9998, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+    }
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Name("value");

@@ -129,7 +129,7 @@
 
   // The parts install on the grid's first page request; every later request (pages, exports, ranges) waits for the same load.
   const DETAIL_ROWS = definePart(DataGrid, "detail-rows", "detail rows", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, gridButton, gridFreeze,
-    cellText, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS }));
+    cellText, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS, hostHtml }));
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, numberFormat,
     formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,

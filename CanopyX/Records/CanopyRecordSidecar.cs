@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using CanopyX.Bundles;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -103,6 +104,7 @@ public static class CanopyRecordSidecar {
                 pair.Value.Write("]}]);\n");
                 written.Add(source.Base + "r" + pair.Key + ".js");
             }
+            CanopySidecarFiles.RemoveObsolete(folder, "r", open.ContainsKey);
             return written.AsReadOnly();
         } finally {
             foreach (var file in open.Values) file.Dispose();

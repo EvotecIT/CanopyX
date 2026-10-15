@@ -210,7 +210,7 @@ Standalone examples and a separate HtmlForgeX inventory host have contract, brow
 
 ### Reporting Grid Replacement Scope
 
-Report-engine foundations include hidden-container layout, wrapped automatic rows, stable measured scroll anchoring, pixel-based keyboard paging, bounded first-load content sizing and ordered raw-value row/cell highlight rules. Columns offers per-column and full-grid fitting while saved widths retain precedence. Complete Polish, German and Spanish packs cover browser and static labels. The standalone contained, wrapped, content and localized examples exercise these paths. Consumer: portable inventory reports and TestimoX tables. Host migration still needs each report's workflow qualification.
+Report-engine foundations include hidden-container layout, wrapped automatic rows, stable measured scroll anchoring, pixel-based keyboard paging, bounded first-load content sizing and ordered raw-value row/cell highlight rules. Columns offers per-column and full-grid fitting while saved widths retain precedence. Complete Polish, German, Spanish, French and Italian packs cover browser and static labels. The standalone contained, wrapped, content and localized examples exercise these paths. Consumer: portable inventory reports and TestimoX tables. Host migration still needs each report's workflow qualification.
 
 The replacement target is a complete reporting workflow: readers can find records, change their layout, inspect content, select a defined scope, and export the same accepted results. Existing table callers also depend on formatting, paging controls, responsive hidden-column details, grouping and print behavior. Replacing a table must preserve those outcomes, not merely its row renderer.
 

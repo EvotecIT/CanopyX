@@ -26,7 +26,7 @@
   }
   function formatIconButton(label, icon, run) {
     const button = gridDecorateButton(gridButton("", run), icon === "edit" ? "more" : icon, true);
-    if (icon === "edit") button.querySelector("svg").innerHTML = '<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>';
+    if (icon === "edit") button.querySelector("svg").replaceWith(svgIcon('<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>'));
     button.classList.add("icon"); button.setAttribute("aria-label", label); button.title = label;
     return button;
   }

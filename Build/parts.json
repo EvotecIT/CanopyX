@@ -9,7 +9,7 @@
       "key": "TreeGrid.prototype",
       "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
         "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
-        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL"],
+        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField"],
       "start": "const EXPORT_IMPL = {};",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
@@ -73,7 +73,7 @@
       "views": ["tree", "grid"],
       "key": "EXPORT_IMPL",
       "context": ["DataGrid", "EXPORT_IMPL", "h", "setText", "gridButton", "gridOption", "fill", "numberFormat", "gridOperationActive", "formatting", "gridQuery",
-        "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS"],
+        "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS", "gridExportField"],
       "end": "DataGrid.prototype.renderGridExport = exportMenu;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/87-export-formats.js",
@@ -143,7 +143,7 @@
       "key": "DataGrid.prototype",
       "requires": ["filter-editor"],
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
-        "gridFreeze", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL"],
+        "gridFreeze", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.editing.source"
       ],
@@ -175,7 +175,7 @@
       "features": ["rangeSelection"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
-        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable"],
+        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.cell-range.source"
       ],
@@ -217,7 +217,7 @@
       "features": ["formatting"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
-        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu"],
+        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
     },
@@ -229,7 +229,7 @@
       "features": ["formatEditor"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
-        "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS"],
+        "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS", "svgIcon"],
       "requires": ["filter-editor", "formatting"],
       "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.format-editor.source/format-editor.css"]
@@ -256,7 +256,7 @@
       "features": ["grouping", "detail"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "gridButton", "gridFreeze", "cellText", "requireIdentifier", "GridRowOffsets",
-        "TreeGrid", "createDataGrid", "createTreeGrid", "disposeRowHostCells", "OWN_ARROWS"],
+        "TreeGrid", "createDataGrid", "createTreeGrid", "disposeRowHostCells", "OWN_ARROWS", "hostHtml"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.detail-rows.source"
       ],
@@ -290,7 +290,7 @@
       "views": ["tree", "grid"],
       "features": ["searchHighlight"],
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural"],
+      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.highlight.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.highlight.source/highlight.css"]
     },
@@ -301,7 +301,7 @@
       "views": ["tree", "grid"],
       "features": ["layout"],
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural"],
+      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.layouts.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
     },
@@ -313,7 +313,7 @@
       "features": ["record"],
       "key": "RECORD_IMPL",
       "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors",
-        "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid"],
+        "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"
       ],

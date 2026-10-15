@@ -345,6 +345,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
+  /** Sanitizes trusted host HTML details before insertion; shares the tree host's sanitizer contract. */
+  sanitizeHtml?: HostOptions["sanitizeHtml"];
   query?: Q;
 }
 export interface InlineGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rows: GridRow[]; rowData?: never; }
@@ -689,7 +691,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   /** Open all in grid of a collection; return false (or cancel canopyx:openAll) to filter the target yourself. */
   onOpenAll?: (event: RecordOpenAll) => boolean | void;
   /** Print one record; return false (or cancel canopyx:recordPrint) to print the sheet yourself. */
-  onRecordPrint?: (event: { readonly id: string; readonly element: HTMLElement }) => boolean | void;
+  onRecordPrint?: (event: { readonly id: string; readonly element: HTMLElement; readonly dispose: () => void }) => boolean | void;
   /** Row activation: a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, or a click with rowAction (or on a
    * phone). Runs before the row's own action (onDetails or the drawer, or the row's link); returning false keeps that from
    * running, so the host can open its own view of the row. The cancelable canopyx:rowActivate event carries the same detail. */

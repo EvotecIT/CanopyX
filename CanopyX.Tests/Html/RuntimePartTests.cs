@@ -67,7 +67,7 @@ public sealed class RuntimePartTests {
         tree.DeepLink = true;
         Assert.Equal(new[] { "tree-tools", "export", "links" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
         tree.Source = CanopySource.Sidecar("data/tree/");
-        Assert.Equal(new[] { "tree-tools", "export", "links", "search" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
+        Assert.Equal(new[] { "tree-tools", "export", "links", "search", "record-panel" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
 
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));

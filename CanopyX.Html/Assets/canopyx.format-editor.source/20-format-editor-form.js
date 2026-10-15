@@ -76,7 +76,9 @@
         if (kind === "highlight") {
           const toneSelect = formatSelect([["", "—"], ...tones], current.tone ?? (fresh ? "warning" : ""));
           const emphasis = formatSelect([["fill", labels.formatFill], ["text", labels.formatTextOnly], ["strong", labels.formatStrong]], current.emphasis || "fill");
-          const icon = formatSelect([["auto", labels.formatAutomatic], ["none", labels.formatNoIcon], ...Object.entries(FORMAT_ICONS).map(([key, glyph]) => [key, glyph])], current.icon || "auto");
+          const icons = [["auto", labels.formatAutomatic], ["none", labels.formatNoIcon], ...Object.entries(FORMAT_ICONS).map(([key, glyph]) => [key, glyph])];
+          if (current.icon && !icons.some(([name]) => name === current.icon)) icons.push([current.icon, current.icon]);
+          const icon = formatSelect(icons, current.icon || "auto");
           const badge = h("input"), cue = h("input"); badge.type = cue.type = "text"; badge.maxLength = cue.maxLength = 64; badge.value = current.badge || ""; cue.value = current.cue || "";
           styleBox.append(formatField(labels.formatTone, toneSelect), formatField(labels.formatEmphasis, emphasis), formatField(labels.formatIcon, icon),
             formatField(labels.formatBadge, badge), formatField(labels.formatCue, cue));

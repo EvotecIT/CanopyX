@@ -7,7 +7,8 @@
       this.view = JSON.parse(JSON.stringify(definition));
       if (rows) this.view.rows = owned ? rows : JSON.parse(JSON.stringify(rows));
       // The rows of rowData arrive in view.rows as the data part decodes them.
-      if (rowData) { this.view.rowData = owned ? rowData : JSON.parse(JSON.stringify(rowData)); this.view.rows = []; }
+      // Structured cloning preserves invalid numeric values for the decoder to reject instead of converting them to null.
+      if (rowData) { this.view.rowData = owned ? rowData : structuredClone(rowData); this.view.rows = []; }
       this.host = host; this.opts = options; this.id = "cx" + ++instanceSeq;
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
       this.source = options.source || (this.view.source.kind === "inline" ? this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);

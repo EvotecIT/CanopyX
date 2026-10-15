@@ -10,6 +10,8 @@
   const TREE_DETAILS = { paintNodeRow: TreeGrid.prototype.paintNodeRow, active: null };
 
   Object.assign(TreeGrid.prototype, {
+    // Record-panel repaints use the same input-modality focus treatment as opening and stepping a drawer.
+    focusRing: focusDrawerTitle,
     hiddenFieldCount() { return this.columns.filter(column => column.hidden || column.fitHidden).length; },
 
     // Rows are repainted while detached (row recycling), so the button is kept by its slot, not by isConnected.

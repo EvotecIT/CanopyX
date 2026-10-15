@@ -102,6 +102,36 @@ public sealed class EfCoreWriterSafetyTests : IDisposable {
     }
 
     [Fact]
+    public async Task PerBatchValidationFailure_WritesNothing() {
+        var (handler, db, store) = Handler(options => options.Transaction = CanopyCommitTransaction.PerBatch);
+        using (db) {
+            var json = Commit("r5", _hosts[6], _hosts[7]);
+            var invalid = "\"id\":\"" + _hosts[7].Id + "\",\"values\":{\"memory\":42}";
+            json = json.Replace(invalid, "\"id\":\"" + _hosts[7].Id + "\",\"values\":{\"memory\":-1}");
+            Assert.Equal(new[] { "error", "error" }, Statuses(await handler.CommitAsync(json)));
+            Assert.Equal(0, store.Transactions);
+            Assert.Equal(_hosts[6].Memory, Stored(_hosts[6].Id));
+            Assert.Equal(_hosts[7].Memory, Stored(_hosts[7].Id));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LaterTransactionStartFailure_PreservesSavedAcknowledgements(bool storeTimeout) {
+        var failures = new List<Exception>();
+        var (handler, db, store) = Handler(options => options.Failed = (_, error) => failures.Add(error));
+        using (db) {
+            store.FailStartAt = 2;
+            store.CancelStart = storeTimeout;
+            Assert.Equal(new[] { "saved", "error" }, Statuses(await handler.CommitAsync(Commit("r5", _hosts[6], _hosts[7]))));
+            Assert.Equal(42, Stored(_hosts[6].Id));
+            Assert.Equal(_hosts[7].Memory, Stored(_hosts[7].Id));
+            Assert.Single(failures);
+        }
+    }
+
+    [Fact]
     public async Task AFailedRollback_KeepsTheRowsAnswerAndForgetsItsChanges() {
         var failures = new List<Exception>();
         var (handler, db, store) = Handler(options => options.Failed = (_, error) => failures.Add(error));
@@ -195,9 +225,16 @@ public sealed class EfCoreWriterSafetyTests : IDisposable {
         public Action? BeforeTransaction { get; set; }
         public bool FailCommit { get; set; }
         public bool FailRollback { get; set; }
+        public int FailStartAt { get; set; }
+        public bool CancelStart { get; set; }
+        public int Transactions { get; private set; }
         public int Discarded { get; private set; }
         public IQueryable<Host> Records => _inner.Records;
         public async ValueTask<ICanopyWriteTransaction> BeginTransactionAsync(CancellationToken cancellationToken) {
+            if (++Transactions == FailStartAt) {
+                if (CancelStart) throw new OperationCanceledException("Store timeout.");
+                throw new InvalidOperationException("Transaction unavailable.");
+            }
             var interfere = BeforeTransaction;
             BeforeTransaction = null;
             interfere?.Invoke();

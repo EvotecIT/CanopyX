@@ -247,6 +247,7 @@ white-space:nowrap;text-overflow:ellipsis;
 .cx-content{display:inline-flex;align-items:center;gap:var(--cx-size-6px);min-width:0;max-width:100%;}
 .cx-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cx-indent{flex:none;display:inline-block;}
+.cx-ico{width:var(--cx-size-16px);height:var(--cx-size-16px);flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
 .cx-icon{flex:none;display:inline-flex;width:var(--cx-size-16px);height:var(--cx-size-16px);margin-right:var(--cx-size-4px);color:var(--cx-muted);}
 .cx-icon svg{width:var(--cx-size-16px);height:var(--cx-size-16px);}
 .cx-exp{

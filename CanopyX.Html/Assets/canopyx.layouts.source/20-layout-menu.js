@@ -22,7 +22,7 @@
     if (view.tools.layout === false || typeof view.controlPanel !== "function") return;
     const { details, panel } = view.controlPanel(view.labels.layoutMenu, "cx-grid-layout"), id = view.id + "-layout-" + ++layoutSeq;
     const icon = details.firstChild.querySelector("svg");
-    if (icon) icon.innerHTML = LAYOUT_ICON;
+    if (icon) icon.replaceWith(svgIcon(LAYOUT_ICON));
     const choose = change => Promise.resolve().then(() => VIEW_MODES.setLayout(view, change)).catch(error => view.emit("error", { error }));
     // The choices are built once; later renders only check the current ones, so keyboard focus stays on its radio.
     const render = () => {

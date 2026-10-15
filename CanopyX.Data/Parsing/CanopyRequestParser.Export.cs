@@ -106,7 +106,7 @@ public static partial class CanopyRequestParser {
                 columns.Add(column);
             }
         }
-        if (columns.Count == 0) foreach (var column in schema.Columns) if (!column.Definition.Hidden) columns.Add(column);
+        if (columns.Count == 0) foreach (var column in schema.Columns) if (!column.Hidden) columns.Add(column);
         if (columns.Count == 0) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "An export needs at least one column.");
         return columns;
     }

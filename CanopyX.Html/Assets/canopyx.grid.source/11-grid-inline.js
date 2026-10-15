@@ -13,7 +13,9 @@
     if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
     const x = column.kind === "text" && typeof a !== "number" ? String(a) : a, y = column.kind === "text" && typeof b !== "number" ? String(b) : b;
     // Keys of different types (a numeric sort key beside text) order by type, numbers first, so the order is consistent.
-    const result = gridOrder(typeof x, typeof y) || gridOrder(x, y);
+    const rank = gridOrder(typeof x, typeof y);
+    if (rank) return rank;
+    const result = gridOrder(x, y);
     return direction === "desc" ? -result : result;
   }
 

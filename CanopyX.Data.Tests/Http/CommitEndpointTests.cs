@@ -166,11 +166,13 @@ public sealed class CommitEndpointTests : IAsyncLifetime {
     }
 
     private sealed class SavingWriter : ICanopyDataWriter {
+        public CanopyCommitTransaction Transaction => CanopyCommitTransaction.PerRow;
         public ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) =>
             new ValueTask<CanopyCommitResult>(new CanopyCommitResult(batch.Rows.Select(row => CanopyCommitRowResult.Saved(row.Id)), "r2"));
     }
 
     private sealed class FailingWriter : ICanopyDataWriter {
+        public CanopyCommitTransaction Transaction => CanopyCommitTransaction.PerRow;
         public ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) =>
             throw new InvalidOperationException("database password is hunter2");
     }

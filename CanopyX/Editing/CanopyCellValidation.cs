@@ -73,6 +73,7 @@ public sealed class CanopyCellValidation {
         if (Minimum > Maximum || Earliest > Latest || MinLength > MaxLength) throw new InvalidOperationException("A lower limit cannot exceed its upper limit.");
         if (Message != null && (Message.Trim().Length == 0 || Message.Length > 1024)) throw new InvalidOperationException("A validation message needs visible text of at most 1024 characters.");
         if (Pattern != null) {
+            CanopyPattern.Validate(Pattern, whole: true);
             // The pattern must compile on its own too, so a stray parenthesis cannot escape the anchors the browser adds.
             try { _ = new Regex(Pattern, RegexOptions.ECMAScript, TimeSpan.FromSeconds(1)); _ = new Regex("^(?:" + Pattern + ")$", RegexOptions.ECMAScript, TimeSpan.FromSeconds(1)); }
             catch (ArgumentException error) { throw new InvalidOperationException("Column " + column.Id + " has an invalid pattern.", error); }

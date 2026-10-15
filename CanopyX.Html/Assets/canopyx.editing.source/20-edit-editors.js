@@ -13,11 +13,21 @@
   }
 
   // The group and decimal separators of the page language; parsing reads numbers as people of that language type them.
+  const EDIT_NUMBER_LOCALES = new Map();
   function editParseNumber(text, locale) {
-    let parts;
-    try { parts = new Intl.NumberFormat(locale || undefined).formatToParts(-12345.6); } catch (error) { parts = []; }
+    let format = EDIT_NUMBER_LOCALES.get(locale);
+    if (!format) {
+      let number;
+      try { number = new Intl.NumberFormat(locale || undefined); } catch (error) { number = new Intl.NumberFormat(); }
+      const digits = new Map();
+      for (let digit = 0; digit < 10; digit++) digits.set(number.formatToParts(digit).find(part => part.type === "integer").value, String(digit));
+      format = { parts: number.formatToParts(-12345.6), digits };
+      if (EDIT_NUMBER_LOCALES.size >= 32) EDIT_NUMBER_LOCALES.delete(EDIT_NUMBER_LOCALES.keys().next().value);
+      EDIT_NUMBER_LOCALES.set(locale, format);
+    }
+    const parts = format.parts;
     const group = parts.find(part => part.type === "group")?.value ?? ",", decimal = parts.find(part => part.type === "decimal")?.value ?? ".";
-    let source = text.trim().replace(/\u2212/g, "-");
+    let source = Array.from(text.trim(), digit => format.digits.get(digit) ?? digit).join("").replace(/[\u061c\u200e\u200f]/g, "").replace(/\u2212/g, "-");
     // Group separators count only in groups of three digits before the decimal separator ("1.5" is not 15 in German).
     const pieces = source.split(decimal), whole = pieces[0], spaced = !group.trim();
     if (pieces.length > 2) return NaN;
@@ -50,10 +60,14 @@
     const start = !moment ? typeof context.value === "string" ? context.value : "" : !parts ? "" :
       withDate && withTime ? parts.date + "T" + parts.time : withDate ? parts.date : parts.time;
     input.value = start;
+    // Native inputs sanitize legacy text they cannot represent. Opening such a value does not edit it.
+    const displayed = input.value;
+    let changed = false;
+    input.addEventListener("input", () => { changed = true; });
     return { element: input,
       error: () => input.validity?.badInput ? fill(context.labels.gridEditDate, { column: context.column.title }) : null,
       getValue() {
-        if (input.value === start) return context.value ?? null;
+        if (!changed && input.value === displayed || input.value === start) return context.value ?? null;
         if (!input.value) return null;
         if (!moment) return input.value;
         const [date, time] = withDate && withTime ? input.value.split("T") : withDate ? [input.value, parts ? parts.time : "00:00"] :

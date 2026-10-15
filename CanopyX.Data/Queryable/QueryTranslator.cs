@@ -16,18 +16,35 @@ internal sealed partial class QueryTranslator<T> {
     private readonly Dictionary<string, Expression> _sorts = new Dictionary<string, Expression>(StringComparer.Ordinal);
     private readonly Dictionary<string, Expression> _search = new Dictionary<string, Expression>(StringComparer.Ordinal);
     private readonly HashSet<string> _neverNull = new HashSet<string>(StringComparer.Ordinal);
+    private readonly bool _memory;
 
     internal QueryTranslator(CanopyColumnMap<T> map, CanopyTextComparison comparison, bool nullSafe) {
         Map = map;
         Comparison = comparison;
+        _memory = nullSafe;
         Row = Expression.Parameter(typeof(T), "row");
         Key = ExpressionTools.Bind(map.KeyExpression!, Row, nullSafe);
         foreach (var column in map.Columns) {
-            _values[column.Id] = ExpressionTools.Bind(column.Value, Row, nullSafe);
-            if (column.SortBy != null) _sorts[column.Id] = ExpressionTools.Bind(column.SortBy, Row, nullSafe);
+            _values[column.Id] = Finite(ExpressionTools.Bind(column.Value, Row, nullSafe));
+            if (column.SortBy != null) _sorts[column.Id] = Finite(ExpressionTools.Bind(column.SortBy, Row, nullSafe));
             if (column.SearchBy != null) _search[column.Id] = ExpressionTools.Bind(column.SearchBy, Row, nullSafe);
-            if (column.NeverNull || ExpressionTools.AnnotatedNotNull(column.SortBy ?? column.Value)) _neverNull.Add(column.Id);
+            var sorted = column.SortBy ?? column.Value;
+            var type = ExpressionTools.Underlying(sorted.ReturnType);
+            if (type != typeof(float) && type != typeof(double) && (column.NeverNull || ExpressionTools.AnnotatedNotNull(sorted))) _neverNull.Add(column.Id);
         }
+    }
+
+    /// <summary>Non-finite real cells are missing in the wire protocol. Use portable comparisons, including in SQL,
+    /// rather than a CLR method call, so filters, sort ranks, facets and aggregates share the normalized value.</summary>
+    private static Expression Finite(Expression value) {
+        var type = ExpressionTools.Underlying(value.Type);
+        if (type != typeof(float) && type != typeof(double)) return value;
+        var nullable = typeof(Nullable<>).MakeGenericType(type);
+        var maximum = type == typeof(float) ? (object)float.MaxValue : double.MaxValue;
+        var minimum = type == typeof(float) ? (object)(-float.MaxValue) : -double.MaxValue;
+        Expression Bound(object bound) => Expression.Convert(Expression.Constant(bound, type), value.Type);
+        var valid = Expression.AndAlso(Expression.GreaterThanOrEqual(value, Bound(minimum)), Expression.LessThanOrEqual(value, Bound(maximum)));
+        return Expression.Condition(valid, Expression.Convert(value, nullable), Expression.Constant(null, nullable));
     }
 
     internal CanopyColumnMap<T> Map { get; }
@@ -80,10 +97,10 @@ internal sealed partial class QueryTranslator<T> {
     internal static object? ParseKey(string id, Type type) {
         if (type == typeof(string)) return id;
         if (type == typeof(Guid)) return Guid.TryParse(id, out var guid) ? guid : (object?)null;
-        if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(uint) || type == typeof(ushort) || type == typeof(byte)) {
-            if (!long.TryParse(id, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number)) return null;
-            var (minimum, maximum) = ValueShapes.Range(type);
-            return number < minimum || number > maximum ? null : Convert.ChangeType(number, type, CultureInfo.InvariantCulture);
+        if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(uint) || type == typeof(ushort) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(ulong)) {
+            if (!decimal.TryParse(id, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number)) return null;
+            try { return Convert.ChangeType(number, type, CultureInfo.InvariantCulture); }
+            catch (OverflowException) { return null; }
         }
         throw new CanopyRequestException(CanopyRequestError.Unsupported, "Record identities of this endpoint cannot be selected.");
     }
@@ -147,11 +164,16 @@ internal sealed partial class QueryTranslator<T> {
     /// <summary>Tests a finite domain (booleans, enumeration members) member by member with the exact protocol rules, then matches the members that pass.</summary>
     private static Expression Domain(Expression value, ValueShape shape, Func<object, bool> passes) {
         var type = ExpressionTools.Underlying(value.Type);
-        var members = shape == ValueShape.Boolean ? new object[] { false, true } : Enum.GetValues(type).Cast<object>().ToArray();
+        var members = shape == ValueShape.Boolean ? new object[] { false, true } : EnumDomains.Members(type);
         var matching = members.Where(member => passes(shape == ValueShape.Boolean ? member : CanopyDataValues.EnumText((Enum)member))).ToList();
         if (matching.Count == 0) return Expression.Constant(false);
         var guard = ExpressionTools.IsNullable(value.Type) ? ExpressionTools.NotNull(value) : null;
-        if (matching.Count == members.Length) return guard ?? Expression.Constant(true);
+        if (shape == ValueShape.Boolean && matching.Count == members.Length) return guard ?? Expression.Constant(true);
+        if (matching.Count > 8) {
+            var plain = value.Type == type ? value : Expression.Convert(value, type);
+            var contains = ExpressionTools.InList(plain, matching);
+            return guard == null ? contains : Expression.AndAlso(guard, contains);
+        }
         Expression? any = null;
         foreach (var member in matching) any = ExpressionTools.Or(any, Expression.Equal(value, ExpressionTools.Parameter(member, value.Type)));
         return any!;

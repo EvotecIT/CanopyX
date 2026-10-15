@@ -69,12 +69,13 @@
         const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
-        context.font = this.fitFont[0]; this.fitCh = Math.ceil(context.measureText("00000000000").width);
+        this.fitNumericVariant = gridNumericVariant(this.grid);
+        context.font = this.fitFont[0]; this.fitCh = Math.ceil(gridMeasureText(context, "00000000000", this.fitNumericVariant));
       }
       const [, small, headFont, pad] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
-      const text = (value, font = this.fitFont[0]) => { context.font = font; return context.measureText(String(value).slice(0, 512)).width; };
+      const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // The title is a 24 px pointer target at least, and a move handle takes its 24 px target plus the gap beside it.
-      const head = Math.ceil(Math.max(24, text(column.title, headFont)) + 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
+      const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0));
       // The header holds the column menu button (wider on phones) unless the toolbar switches column menus off.
       let values = 0, sampled = 0;

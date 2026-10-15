@@ -18,7 +18,7 @@ namespace CanopyX;
 /// snapshots carry detail payloads under their records unless <see cref="Print"/> is false.
 /// </remarks>
 public sealed class CanopyGridDetail {
-    private static readonly Regex TemplateId = new Regex("^[A-Za-z][\\w:.-]{0,255}$", RegexOptions.CultureInvariant);
+    private static readonly Regex TemplateId = new Regex("^[A-Za-z][A-Za-z0-9_:.-]{0,255}$", RegexOptions.CultureInvariant);
     private static readonly Regex RendererName = new Regex("^[a-z][a-z0-9-]{0,31}$", RegexOptions.CultureInvariant);
 
     /// <summary>Gets or sets the id of a page <c>&lt;template&gt;</c> element the detail rows clone.</summary>
@@ -47,7 +47,9 @@ public sealed class CanopyGridDetail {
         if (Renderer != null && !RendererName.IsMatch(Renderer)) throw new InvalidOperationException("A detail renderer name is 1 to 32 lowercase letters, digits and hyphens.");
         if (Label != null && (string.IsNullOrWhiteSpace(Label) || Label.Length > 256)) throw new InvalidOperationException("A detail label has 1 to 256 characters.");
         if (View != null && View.Rows.Count != 0) throw new InvalidOperationException("A nested detail grid takes its rows from each record.");
+        if (TreeView != null && TreeView.Roots.Count != 0) throw new InvalidOperationException("A nested detail tree takes its roots from each record.");
         View?.Validate();
+        TreeView?.Validate();
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {

@@ -38,7 +38,7 @@
     if (view.kind !== "grid" || view.tools.layout === false || !view.layoutOptions.modes.includes("cards") || typeof view.controlPanel !== "function") return;
     const { details, panel } = view.controlPanel(view.labels.layoutSort, "cx-grid-sort", target => sortMenuRender(view, target));
     const icon = details.firstChild.querySelector("svg");
-    if (icon) icon.innerHTML = SORT_ICON;
+    if (icon) icon.replaceWith(svgIcon(SORT_ICON));
     const anchor = view.layoutMenu?.details || view.toolbar.querySelector(".cx-grid-views") || view.spacer;
     if (anchor && anchor.parentNode === view.toolbar) view.toolbar.insertBefore(details, anchor);
     // A new sort or result while the menu is open shows at once.

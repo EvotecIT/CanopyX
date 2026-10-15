@@ -77,6 +77,7 @@ public sealed class CanopyColumnMap<T> {
         if (_byId.ContainsKey(id)) throw new ArgumentException("Column '" + id + "' is already mapped.", nameof(id));
         var shape = ValueShapes.Of(typeof(TValue), id);
         if (!ValueShapes.Fits(shape, declared.Kind)) throw new ArgumentException("Column '" + id + "' is a " + declared.Kind + " column and cannot map " + typeof(TValue).Name + ".", nameof(value));
+        if (shape == ValueShape.Enum) _ = EnumDomains.Members(ExpressionTools.Underlying(typeof(TValue)));
         var column = new MappedColumn(id, value, shape);
         configure?.Invoke(new CanopyColumnMapping<T, TValue>(column));
         _columns.Add(column);

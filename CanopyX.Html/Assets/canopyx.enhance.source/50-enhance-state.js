@@ -48,6 +48,7 @@
       const query = { ...base.query, sort, search: typeof shared.q === "string" ? shared.q : "", filters: Array.isArray(shared.f) ? shared.f : [] };
       if (shared.g && typeof shared.g === "object") query.filterGroup = shared.g; else delete query.filterGroup;
       const paging = { pageLength: Number.isInteger(shared.l) ? shared.l : base.paging?.pageLength || settings.pageLength || 50, offset: Number.isInteger(shared.o) ? shared.o : 0 };
+      if (shared.a === true) paging.allRows = true;
       envelope = { ...envelope, current: { ...base, query, paging, scrollTop: 0 } };
     }
     return envelope;
@@ -68,6 +69,7 @@
     if (query.filterGroup) shared.g = query.filterGroup;
     if (paging.offset) shared.o = paging.offset;
     if (paging.pageLength && paging.pageLength !== settings.pageLength) shared.l = paging.pageLength;
+    if (paging.allRows) shared.a = true;
     const address = enhanceAddress(settings);
     if (!address) return;
     const { url, params } = address, text = Object.keys(shared).length ? JSON.stringify(shared) : null;

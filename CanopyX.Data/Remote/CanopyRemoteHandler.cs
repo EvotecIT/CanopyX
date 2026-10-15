@@ -81,7 +81,7 @@ public sealed partial class CanopyRemoteHandler {
         if (result.Rows.Count != expected) throw new CanopyRequestException(CanopyRequestError.StaleRevision, "The data changed; reload the grid.");
         var page = new CanopyGridPage(Schema.ViewId, revision, request.Offset, result.Total, result.Matched);
         foreach (var row in result.Rows) page.Rows.Add(row);
-        return page.ToJson(Schema.View);
+        return page.ToJson(Schema.ProtocolView);
     }
 
     /// <summary>Answers a <c>gridFacetQuery</c> document with a <c>gridFacetPage</c> document.</summary>
@@ -104,7 +104,7 @@ public sealed partial class CanopyRemoteHandler {
             Search = request.Search, IncludeCurrentFilter = request.IncludeCurrentFilter
         };
         foreach (var item in result.Items.Take(request.Limit)) page.Items.Add(new CanopyGridFacetValue(CanopyDataValues.ToCell(item.Value), item.Count));
-        return page.ToJson(Schema.View);
+        return page.ToJson(Schema.ProtocolView);
     }
 
     /// <summary>Answers a summary request (a <c>gridQuery</c> document with its revision) with a <c>gridSummary</c> document.</summary>

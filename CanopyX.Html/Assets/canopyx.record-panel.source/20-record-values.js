@@ -9,9 +9,7 @@
     open: '<path d="M14 5h5v5M19 5l-8 8M17 14v5H5V7h5"/>', chevron: '<path d="m9 6 6 6-6 6"/>'
   };
   function recordIcon(name) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.classList.add("cx-ico"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = RECORD_ICONS[name]; return svg;
+    return svgIcon(RECORD_ICONS[name]);
   }
   function recordButton(text, run, className, icon) {
     const button = h("button", "cx-record-btn" + (className ? " " + className : "")); button.type = "button";

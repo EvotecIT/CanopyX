@@ -28,6 +28,7 @@
     }
     GRID_REPORTING.api?.(api, grid);
     Object.assign(api, linkApi(grid));
+    api.ready = linkReady(grid, api.ready);
     Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; recordStart(grid); return api;
   }

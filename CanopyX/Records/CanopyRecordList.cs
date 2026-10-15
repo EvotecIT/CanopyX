@@ -48,6 +48,18 @@ public sealed class CanopyRecordList {
         if (Rows.Count > 0 && Roots.Count > 0) throw new InvalidOperationException("A collection holds rows or tree roots, not both.");
         if (Rows.Count > 100000) throw new InvalidOperationException("A collection carries at most 100,000 rows; page longer ones with Total.");
         if (_total.HasValue && _total.Value < Rows.Count) throw new InvalidOperationException("A collection's total cannot be below the rows it carries.");
+        if (Roots.Count > 0 && _total.HasValue && _total.Value != Roots.Count)
+            throw new InvalidOperationException("An inline tree collection's total must equal its root count.");
+        // Collections construct ordinary nested views in the browser, so validate their column contracts at this boundary.
+        if (Roots.Count == 0) {
+            var grid = new CanopyDataGridView("collection", "Collection");
+            foreach (var column in Columns) grid.Columns.Add(column);
+            grid.Validate();
+        } else {
+            var tree = new CanopyTreeView("collection", "Collection");
+            foreach (var column in Columns) tree.Columns.Add(column);
+            CanopyTreeViewValidator.ValidateDefinition(tree, false);
+        }
         var bindings = new Dictionary<string, CanopyColumn>(StringComparer.Ordinal);
         foreach (var column in Columns) bindings.Add(column.Id, column);
         CanopyGridRows.Validate(Rows, ids, bindings.Values);
@@ -55,6 +67,10 @@ public sealed class CanopyRecordList {
         // A tree collection is inline: it has no source to load children from.
         CanopyTreeValidator.Validate(Roots, "A tree collection", node => {
             if (node.HasChildren && !node.HasInlineChildren || node.Ref != null) throw new InvalidOperationException("Node '" + node.Id + "' of a tree collection declares children that load later.");
+            foreach (var cell in node.Cells) {
+                if (!bindings.ContainsKey(cell.Key)) throw new InvalidOperationException("A collection node uses an undeclared column '" + cell.Key + "'.");
+                cell.Value?.ValidateStructure(depth + 1);
+            }
         });
     }
 

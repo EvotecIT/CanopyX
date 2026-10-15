@@ -38,6 +38,7 @@
       if (!Array.isArray(row) || row.length > columns.length + 1) throw new Error("CanopyX: invalid compact grid row.");
       const key = row[0], cells = {};
       for (let c = 1; c < row.length; c++) {
+        if (row[c] === undefined) throw new Error("CanopyX: compact grid cells cannot be undefined; use null for an empty cell.");
         // A column named __proto__ is an own property, as JSON.parse makes it in the object form.
         if (row[c] != null) columns[c - 1] === "__proto__" ? Object.defineProperty(cells, "__proto__", { value: row[c], enumerable: true, writable: true, configurable: true }) : cells[columns[c - 1]] = row[c];
       }
@@ -51,11 +52,16 @@
     const waitForChunk = () => progress = new Promise(resolve => advance = resolve);
     waitForChunk();
     const done = (async () => {
+      const active = () => { if (grid.destroyed) throw new DOMException("Grid was destroyed.", "AbortError"); };
       for (let index = 0; index < total; index++) {
-        if (grid.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
+        active();
         let chunk = await read(index);
+        active();
         if (sidecar && index + 1 < total) read(index + 1).catch(() => {});
-        if (typeof chunk === "string") chunk = JSON.parse(data.encoding ? await inflateRows(chunk) : chunk);
+        if (typeof chunk === "string") {
+          if (data.encoding) { chunk = await inflateRows(chunk); active(); }
+          chunk = JSON.parse(chunk);
+        }
         if (!Array.isArray(chunk)) throw new Error("CanopyX: a row data chunk is not an array of rows.");
         const decoded = chunk.map(expand);
         validateGridRows(decoded, view.columns, ids);
@@ -69,10 +75,12 @@
         advance(); waitForChunk();
         await nextTask();
       }
+      active();
       if (rows.length !== data.count) throw new Error("CanopyX: row data holds " + rows.length + " rows, not " + data.count + ".");
       // The grid's copies of chunks given in the document are released once all rows are decoded.
       finished = true; ids.clear();
       if (Array.isArray(chunks)) chunks.fill(null);
+      scripts?.forEach(script => { script.textContent = ""; });
     })();
     done.catch(() => outer.reset());
     let complete = null;

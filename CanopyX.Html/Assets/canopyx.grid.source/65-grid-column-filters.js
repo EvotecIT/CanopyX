@@ -26,7 +26,7 @@
   Object.assign(DataGrid.prototype,{
     columnFacetItems(column,search="",signal){
       if(this.view.source.kind==="host")return this.getFacets(column.id,{search,includeCurrentFilter:false,limit:200,signal});
-      const query=gridColumnProjection(this.queryForChange(),column.id),columns=new Map(this.view.columns.map(item=>[item.id,item])),rows=gridQueryRows(this.view,query,columns,false),buckets=new Map();
+      const query=gridColumnProjection(this.queryForChange(false,true),column.id),columns=new Map(this.view.columns.map(item=>[item.id,item])),rows=gridQueryRows(this.view,query,columns,false),buckets=new Map();
       for(const row of rows){const value=cellValue(row.cells[column.id])??null,key=typeof value+":"+foldText(value),item=buckets.get(key);
         if(item)item.count++;else buckets.set(key,{value,count:1});}
       const items=[...buckets.values()].filter(item=>foldText(item.value).includes(foldText(search)));

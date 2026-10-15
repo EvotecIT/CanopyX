@@ -29,6 +29,8 @@ public abstract class CanopyDetail {
     public int Height {
         get => _height;
         set {
+            if (value != 0 && (this is CanopyGridRowsDetail || this is CanopyTreeDetail))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Nested grid and tree details use automatic content height.");
             if (value < 0 || value > MaxHeight) {
                 throw new ArgumentOutOfRangeException(nameof(value), value, "Detail height must be between 0 (automatic) and " + MaxHeight + " row slots.");
             }

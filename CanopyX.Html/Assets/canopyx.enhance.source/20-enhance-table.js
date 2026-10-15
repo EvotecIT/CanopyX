@@ -57,14 +57,14 @@
   /** Reads a section's rows into values per column, carrying row spans down and leaving column spans empty after their cell. */
   function enhanceReadRows(rows, skip) {
     const read = [], carry = [];
-    for (const row of rows) {
+    for (const [index, row] of rows.entries()) {
       if (row === skip) continue;
       const values = [];
       let c = 0;
       const carried = () => { while (carry[c] && carry[c].left > 0) { values[c] = carry[c].value; carry[c].left--; c++; } };
       for (const cell of row.cells) {
         carried();
-        const value = enhanceReadCell(cell), across = Math.min(Math.max(cell.colSpan || 1, 1), 1000), down = Math.max(cell.rowSpan || 1, 1);
+        const value = enhanceReadCell(cell), across = Math.min(Math.max(cell.colSpan || 1, 1), 1000), down = cell.rowSpan === 0 ? rows.length - index : Math.max(cell.rowSpan || 1, 1);
         for (let x = 0; x < across; x++) {
           values[c + x] = x ? "" : value;
           carry[c + x] = down > 1 ? { value: x ? "" : value, left: down - 1 } : null;

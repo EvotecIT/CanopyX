@@ -53,9 +53,12 @@ and `.css` beside the runtime, or adds the payload with `CanopyHtmlDocument.Embe
 
 Focus stays on the anchor cell while the far corner moves and scrolls into view. A plain arrow key clears the ranges and
 moves focus as it always did. Links, buttons and other controls in cells keep their own clicks. A new query (search,
-filters, sorting, paging), a new data revision, or a reporting group that collapses or expands clears the ranges, because row
-positions then mean other rows; a reload of the same query at the same revision keeps them. Shift and Ctrl/Cmd clicks change
+filters, sorting, paging, regrouping), a new data revision, a detail row that opens or closes, or a reporting group that collapses
+or expands clears the ranges, because positions then mean other rows; a reload of the same query at the same revision keeps them. Shift and Ctrl/Cmd clicks change
 only the ranges, never the row selection, and a click that clears the ranges raises `cellRangeChange` like any other change.
+
+Range coordinates use positions in the displayed order, including group headings and expanded detail rows. Copy, paste,
+fill and selection counts operate on data cells: headings and details do not consume pasted lines or arithmetic-series values.
 
 Ranges are drawn as a tint with an outline on each range's outer edges, from the theme's accent in light and dark. In
 forced colours (Windows high contrast) the cells and everything in them (links, badges, presenters) take the system

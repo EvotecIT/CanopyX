@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -133,7 +134,7 @@ internal sealed partial class QueryTranslator<T> {
 
     /// <summary>Reads value-list buckets: grouped by the folded text or the value, ordered by key with missing values last.</summary>
     internal Task<List<StoreBucket>> BucketsAsync(IQueryable<T> source, string column, int? take, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
-        var value = _values[column];
+        var value = FacetValue(column);
         var text = Map.Get(column).Shape == ValueShape.Text;
         var key = text ? ExpressionTools.Fold(value, Comparison) : value;
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(BucketsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type, value.Type);
@@ -142,7 +143,7 @@ internal sealed partial class QueryTranslator<T> {
 
     /// <summary>Counts distinct value-list keys after value search.</summary>
     internal Task<int> DistinctAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
-        var value = _values[column];
+        var value = FacetValue(column);
         var key = Map.Get(column).Shape == ValueShape.Text ? ExpressionTools.Fold(value, Comparison) : value;
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(DistinctCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type);
         return (Task<int>)method.Invoke(this, new object[] { source, key, executor, cancellationToken })!;
@@ -151,8 +152,39 @@ internal sealed partial class QueryTranslator<T> {
     private Task<int> DistinctCoreAsync<TKey>(IQueryable<T> source, Expression key, CanopyQueryExecutor executor, CancellationToken cancellationToken) =>
         executor.CountAsync(source.Select(Expression.Lambda<Func<T, TKey>>(key, Row)).Distinct(), cancellationToken);
 
+    private Expression FacetValue(string column) {
+        var value = _values[column];
+        return Map.Get(column).Shape == ValueShape.Decimal
+            ? Expression.Convert(value, ExpressionTools.IsNullable(value.Type) ? typeof(double?) : typeof(double)) : value;
+    }
+
+    /// <summary>Streams raw date buckets in instant order so protocol-equivalent instants can merge without retaining the full distinct set.</summary>
+    internal IAsyncEnumerable<StoreBucket> DateBucketsAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
+        var value = _values[column];
+        var method = typeof(QueryTranslator<T>).GetMethod(nameof(DateBucketsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(value.Type);
+        return (IAsyncEnumerable<StoreBucket>)method.Invoke(this, new object[] { source, value, executor, cancellationToken })!;
+    }
+
+    private async IAsyncEnumerable<StoreBucket> DateBucketsCoreAsync<TValue>(IQueryable<T> source, Expression value, CanopyQueryExecutor executor,
+        [EnumeratorCancellation] CancellationToken cancellationToken) {
+        var query = BucketsQuery<TValue, TValue>(source, value, value, false, null);
+        var item = Expression.Parameter(typeof(FacetRow<TValue, TValue>), "bucket");
+        var key = Expression.Property(item, nameof(FacetRow<TValue, TValue>.Key));
+        var ordered = ExpressionTools.IsNullable(typeof(TValue))
+            ? query.OrderBy(Expression.Lambda<Func<FacetRow<TValue, TValue>, int>>(Expression.Condition(ExpressionTools.IsNull(key), Expression.Constant(1), Expression.Constant(0)), item))
+                .ThenBy(Expression.Lambda<Func<FacetRow<TValue, TValue>, TValue>>(key, item))
+            : query.OrderBy(Expression.Lambda<Func<FacetRow<TValue, TValue>, TValue>>(key, item));
+        await foreach (var row in executor.StreamAsync(ordered, cancellationToken).ConfigureAwait(false))
+            yield return new StoreBucket(row.Key, row.Value, row.Count);
+    }
+
     private async Task<List<StoreBucket>> BucketsCoreAsync<TKey, TValue>(IQueryable<T> source, Expression key, Expression value, bool text, int? take,
         CanopyQueryExecutor executor, CancellationToken cancellationToken) {
+        var list = await executor.ToListAsync(BucketsQuery<TKey, TValue>(source, key, value, text, take), cancellationToken).ConfigureAwait(false);
+        return list.Select(row => new StoreBucket(row.Key, row.Value, row.Count)).ToList();
+    }
+
+    private IQueryable<FacetRow<TKey, TValue>> BucketsQuery<TKey, TValue>(IQueryable<T> source, Expression key, Expression value, bool text, int? take) {
         var group = Expression.Parameter(typeof(IGrouping<TKey, T>), "group");
         var rowType = typeof(FacetRow<TKey, TValue>);
         Expression representative = Expression.Convert(Expression.Property(group, nameof(IGrouping<TKey, T>.Key)), typeof(TValue));
@@ -183,8 +215,7 @@ internal sealed partial class QueryTranslator<T> {
                 : rows.OrderBy(Expression.Lambda<Func<FacetRow<TKey, TValue>, TKey>>(keyAccess, item));
             rows = ordered.Take(take.Value);
         }
-        var list = await executor.ToListAsync(rows, cancellationToken).ConfigureAwait(false);
-        return list.Select(row => new StoreBucket(row.Key, row.Value, row.Count)).ToList();
+        return rows;
     }
 
     private static IOrderedQueryable<TRow> ThenByKey<TRow, TKey>(IOrderedQueryable<TRow> rows, Expression<Func<TRow, TKey>> key, bool canonical) =>

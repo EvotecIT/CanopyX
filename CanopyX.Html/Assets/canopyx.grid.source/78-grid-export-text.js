@@ -2,15 +2,6 @@
   // This part ships in the lazy export file. The grid runtime keeps stable methods that capture the export first and
   // call these implementations once the part is installed, so reporting wrappers of those methods keep working. Trees load
   // it too, for exportText, the CSV of tree captures.
-  function gridExportField(value, delimiter) {
-    if (value == null) return "";
-    let text = String(value);
-    // Raw negative numbers remain numeric. Text and headings cannot start spreadsheet formulas: a field that starts with
-    // = + - @ (or their full-width forms), after any spaces, or with a tab or carriage return, gets a leading apostrophe.
-    if (typeof value !== "number" && /^(?:[\t\r]|\s*[=+\-@\uFF1D\uFF0B\uFF0D\uFF20])/.test(text)) text = "'" + text;
-    return text.includes(delimiter) || /["\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
-  }
-
   function gridWriteClipboard(grid, text, signal) {
     return grid.runGridHook(() => {
       const clipboard = global.navigator.clipboard;

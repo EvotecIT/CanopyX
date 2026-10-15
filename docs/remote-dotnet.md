@@ -46,7 +46,8 @@ var map = new CanopyColumnMap<Machine>(view)
     .Column("name", machine => machine.Name)
     .Column("site", machine => machine.Site)
     .Column("memory", machine => machine.MemoryGb)
-    .Column("lastSeen", machine => machine.LastSeen)
+    // This store writes UTC whole milliseconds; its indexed timestamp already has the protocol's precision.
+    .Column("lastSeen", machine => machine.LastSeen, column => column.SortBy(machine => machine.LastSeen))
     .Column("team", machine => machine.Team!.Name);
 
 // 3. The endpoints. The query callback returns what this caller may see; authorization is required by default.
@@ -165,6 +166,8 @@ Per-column options (`.Column(id, expr, column => column…)`):
 `Key(x => x.Id)` maps the stable record identity: row ids are its invariant text, selected exports look records up by it,
 and it is the final sort key. `DecorateRows(row => …)` adjusts every written row (a row tone or class). The map freezes when
 its `Schema` is first used. Declared view columns that are not mapped remain display-only.
+The schema captures its column rules and advertised view at construction. Later changes to the authoring view or copies
+returned by the column descriptors do not change the endpoint contract; create a new map/schema to publish a new definition.
 
 ## Protocol coverage
 
@@ -201,10 +204,16 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
   are exact values.
 - **Enumerations and booleans** evaluate every member against the exact rule and send the matching members as an `IN`
   test, so `contains "ux"` on an enumeration becomes `os IN (Linux)`. Enumerations sort by their raw text (an `[EnumMember]` value or the member name).
+  Flags include unnamed combinations of up to eight declared bits (at most 256 values). Map larger flag domains to host-projected text.
 - **Integers** accept fractional operands as the protocol's binary64 comparison would: `gt 4.5` becomes `> 4`, `eq 4.5`
   matches nothing, and out-of-range operands become always/never true.
 - **Dates** become half-open bounds: `eq t` is `t ≤ v < t + 1 ms`, `gt t` is `v ≥ t + 1 ms`. Store UTC; `DateTime` values
-  without a kind are read as UTC.
+  without a kind are read as UTC. In-memory ordering compares UTC milliseconds and breaks ties by record identity.
+  Database ordering requires an explicit `SortBy` mapping whose values have the same ordering and ties, usually an indexed
+  UTC millisecond key. Mapping the timestamp itself is appropriate only when the store guarantees whole milliseconds.
+  Without that mapping, date sorts return `unsupported` before querying or preparing an export. No client-side full-table sort is used.
+  Date facets merge submillisecond values before counting and limiting the list. Exact totals scan and transfer the distinct
+  raw date groups while retained memory stays proportional to the requested limit; consider this cost for high-cardinality columns.
 - **Large numbers.** Number columns follow the protocol's binary64 range: comparisons are bounded to ±2^53−1, so store
   larger identifiers as text.
 - **Search over numbers and dates.** In memory, quick search reads every searchable column's raw text. Databases search
@@ -419,6 +428,10 @@ are shortened.
 CancellationToken token)` answers per row with `CanopyCommitRowResult.Saved(id, cells)`, `Failed(id, error, errors)` or
 `Conflict(id, error)`, and the revision after the commit (null lets the endpoint read it from the provider). A row the
 result leaves out was not saved.
+
+Custom writers declare their transaction boundary with `CanopyCommitTransaction Transaction { get; }`. Return `PerRow`
+for independent row saves or `PerBatch` for an atomic batch. If any input row fails endpoint validation, a per-batch
+writer is not called and every row answers as not saved; the invalid rows retain their specific validation messages.
 
 **`CanopyQueryableWriter<T>`** is the reference writer over the column map:
 

@@ -133,7 +133,7 @@ public sealed partial class CanopyRemoteHandler {
         writer.WriteString("view", query.Schema.ViewId);
         writer.WriteString("revision", revision);
         writer.WriteNumber("offset", 0);
-        writer.WriteNumber("limit", query.Schema.View.PageSize);
+        writer.WriteNumber("limit", query.Schema.ProtocolView.PageSize);
         writer.WriteString("search", query.Search);
         if (query.SearchMode == CanopyGridSearchMode.Words) writer.WriteString("searchMode", "words");
         writer.WriteStartArray("sort");

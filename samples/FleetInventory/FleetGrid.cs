@@ -76,7 +76,8 @@ public static class FleetGrid {
         .Column("cores", machine => machine.Cores)
         .Column("memory", machine => machine.MemoryGb, column => column.Cell(value => new CanopyCell(value) { Text = value.ToString("N1", System.Globalization.CultureInfo.InvariantCulture) }))
         .Column("online", machine => machine.Online)
-        .Column("lastSeen", machine => machine.LastSeen)
+        // FleetSeed writes UTC dates at whole seconds; the existing LastSeen index has protocol precision.
+        .Column("lastSeen", machine => machine.LastSeen, column => column.SortBy(machine => machine.LastSeen))
         .Column("team", machine => machine.Team!.Name);
 
     /// <summary>A complete page: the grid with the reporting runtime inline, plus the script that connects it to its endpoints.</summary>

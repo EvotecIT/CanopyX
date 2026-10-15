@@ -50,7 +50,7 @@ test("Shift+click spans from the anchor and Ctrl+click adds ranges; a plain clic
   expect(await ranges(page)).toEqual([]);
   await bodyCell(page, 4, 6).click({ modifiers: ["Shift"] });
   expect(await ranges(page)).toEqual([{ startRow: 2, endRow: 4, startColumn: "feb", endColumn: "may" }]);
-  await bodyCell(page, 8, 9).click({ modifiers: ["Control"] });
+  await bodyCell(page, 8, 9).click({ modifiers: ["ControlOrMeta"] });
   expect(await ranges(page)).toHaveLength(2);
   expect(await live(page)).toBe("2 ranges selected, 13 cells");
   await page.keyboard.press("Escape");
@@ -61,7 +61,7 @@ test("Shift+click spans from the anchor and Ctrl+click adds ranges; a plain clic
 test("one range at a time when several are off", async ({ page }) => {
   await serveGrid(page, budgetView({ rangeSelection: { multiple: false } }));
   await bodyCell(page, 1, 2).click();
-  await bodyCell(page, 2, 3).click({ modifiers: ["Control"] });
+  await bodyCell(page, 2, 3).click({ modifiers: ["ControlOrMeta"] });
   expect(await ranges(page)).toEqual([]);
   expect(await page.getAttribute("[role=grid]", "aria-multiselectable")).toBe("true");
   await expect(page.evaluate(() => api.setCellRanges([{ startRow: 0, startColumn: "jan" }, { startRow: 1, startColumn: "jan" }]))).rejects.toThrow();
@@ -73,7 +73,7 @@ test("Shift with the arrow keys extends a range from the focused cell and keeps 
   await page.keyboard.press("Shift+ArrowRight"); await page.keyboard.press("Shift+ArrowRight"); await page.keyboard.press("Shift+ArrowDown");
   expect(await ranges(page)).toEqual([{ startRow: 1, endRow: 2, startColumn: "jan", endColumn: "mar" }]);
   expect(await live(page)).toBe("2 rows × 3 columns selected");
-  await page.keyboard.press("Control+Shift+ArrowDown");
+  await page.keyboard.press("ControlOrMeta+Shift+ArrowDown");
   expect((await ranges(page))[0].endRow).toBe(299);
   await expect(page.locator('.cx-canvas .cx-row[data-cx-id="r0299"]')).toBeVisible();
   await page.keyboard.press("Shift+End");
@@ -83,7 +83,7 @@ test("Shift with the arrow keys extends a range from the focused cell and keeps 
   // A plain arrow clears the ranges and moves focus as before.
   await page.keyboard.press("ArrowDown");
   expect(await ranges(page)).toEqual([]);
-  await page.keyboard.press("Control+a");
+  await page.keyboard.press("ControlOrMeta+a");
   expect(await ranges(page)).toEqual([{ startRow: 0, endRow: 299, startColumn: "line", endColumn: "reviewed" }]);
 });
 
@@ -91,7 +91,7 @@ test("Ctrl+C copies tab-separated text and a typed table that keeps numbers and 
   await serveGrid(page, budgetView({ rangeSelection: true }));
   await bodyCell(page, 0, 1).click();
   await page.evaluate(() => api.setCellRanges([{ startRow: 0, endRow: 1, startColumn: "team", endColumn: "feb" }]));
-  await page.keyboard.press("Control+c");
+  await page.keyboard.press("ControlOrMeta+c");
   await expect(page.locator(".cx-live")).toHaveText("Copied 2 rows × 3 columns");
   const copied = await clipboard(page);
   expect(copied["text/plain"]).toBe("Platform\t1,000\t1,130\r\nProduct\t1,070\t1,200\r\n");
@@ -141,7 +141,7 @@ test("paste offers the parsed cells to the host, applies none itself, and report
   await serveGrid(page, budgetView({ rangeSelection: true }), { options: `{ onPaste(detail) { events.push(JSON.parse(JSON.stringify(detail))); detail.respondWith({ refused: detail.cells.filter(cell => cell.value < 0).map(cell => ({ id: cell.id, column: cell.column, reason: "Negative" })) }); } }` });
   await bodyCell(page, 0, 2).click();
   await page.evaluate(() => navigator.clipboard.writeText("1 234\t-5\tlots\n7\t8\t9\n"));
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press("ControlOrMeta+v");
   await expect(page.locator(".cx-paste-report")).toBeVisible();
   const [detail] = await page.evaluate(() => events);
   expect(detail.source).toBe("clipboard");
@@ -192,7 +192,7 @@ test("the fill handle drags down to continue each column's series or repeat its 
   expect(detail.source).toBe("fill");
   expect(detail.cells).toEqual([["r0002", "team", "A"], ["r0003", "team", "B"], ["r0004", "team", "A"], ["r0002", "jan", 200], ["r0003", "jan", 250], ["r0004", "jan", 300]]);
   expect(await ranges(page)).toEqual([{ startRow: 0, endRow: 4, startColumn: "team", endColumn: "jan" }]);
-  await page.keyboard.press("Control+d");
+  await page.keyboard.press("ControlOrMeta+d");
   await expect.poll(() => page.evaluate(() => events.length)).toBe(2);
   expect(await page.evaluate(() => events[1].cells.filter(cell => cell.column === "jan").map(cell => cell.value))).toEqual([100, 100, 100, 100]);
 });
@@ -292,7 +292,7 @@ test("the quarterly budget example takes pasted amounts into its months only", a
   const row = page.locator(".cx-canvas .cx-row").first();
   await row.locator(".cx-cell").nth(1).click();
   await page.evaluate(() => navigator.clipboard.writeText("Team\t500\t600"));
-  await page.keyboard.press("Control+v");
+  await page.keyboard.press("ControlOrMeta+v");
   await expect(page.locator(".cx-live")).toHaveText("Pasted 2 cells. 1 cells were not pasted");
   await expect(row.locator(".cx-cell").nth(2)).toHaveText("500");
   expect(await page.locator(".cx-paste-report").textContent()).toContain("Only the months take amounts.");

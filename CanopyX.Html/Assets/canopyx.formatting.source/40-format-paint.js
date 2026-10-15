@@ -19,7 +19,7 @@
     const prop = (target, name, value) => { target.style.setProperty(name, value); if (target === element) fx.props.push(name); };
     const node = (tag, className, text) => { const item = h(tag, className); if (text) setText(item, text); fx.nodes.push(item); return item; };
     // Over a bar or a scale a tone colours only the text.
-    if (target.tone && emphasis && (!target.bar && !target.scale || target.emphasis === "text")) { add("cx-fmt-" + (target.emphasis || emphasis)); prop(element, "--cx-fmt", formatToneVar(target.tone)); }
+    if (target.tone && emphasis) { add("cx-fmt-" + (target.bar || target.scale ? "text" : target.emphasis || emphasis)); prop(element, "--cx-fmt", formatToneVar(target.tone)); }
     if (target.scale) { add("cx-fmt-scale"); prop(element, "--cx-fmt-scale", target.scale); }
     if (target.className) for (const name of target.className.split(/\s+/)) if (name) add(name);
     if (target.css) for (const name of Object.keys(target.css)) prop(element, name, target.css[name]);

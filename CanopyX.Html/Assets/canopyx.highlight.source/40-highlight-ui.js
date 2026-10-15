@@ -6,9 +6,7 @@
   // the view's live region; the count element itself is not live, so counting does not flood a screen reader.
   const HL_ICONS = { up: '<path d="m6 15 6-6 6 6"/>', down: '<path d="m6 9 6 6 6-6"/>' };
   function hlIcon(name) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "cx-ico"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = HL_ICONS[name]; return svg;
+    return svgIcon(HL_ICONS[name]);
   }
   function hlButton(className, label, run) {
     const button = h("button", className); button.type = "button"; button.setAttribute("aria-label", label); button.title = label;

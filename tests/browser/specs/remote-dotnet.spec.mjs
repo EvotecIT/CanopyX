@@ -139,6 +139,18 @@ test("exports every matching row through the server CSV format", async ({ page }
   expect(lines.slice(1).every(line => line.startsWith("ams-"))).toBe(true);
 });
 
+test("remote exports keep the server-declared Unicode download filename", async ({ page }) => {
+  await open(page);
+  await page.route("**/api/machines/export/csv", async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, headers: { ...response.headers(), "content-disposition": "attachment; filename*=UTF-8''Fleet%20%C5%81%C3%B3d%C5%BA.txt" } });
+  });
+  await openGridControl(page, "export");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "CSV from server (all matching rows)", exact: true }).click();
+  expect((await download).suggestedFilename()).toBe("Fleet Łódź.txt");
+});
+
 test("grouped pages follow the server summary's group ranges", async ({ page }) => {
   await open(page, "/by-site");
   const summary = await page.evaluate(api => eval(api).getSummary(), api);

@@ -201,6 +201,7 @@ public sealed class CommitTests {
 
     /// <summary>Saves every row it is given and answers with the next revision, unless a test supplies the answer.</summary>
     private sealed class RecordingWriter : ICanopyDataWriter {
+        public CanopyCommitTransaction Transaction => CanopyCommitTransaction.PerRow;
         private readonly Func<CanopyCommitBatch, string, CanopyCommitResult>? _answer;
         public RecordingWriter(Func<CanopyCommitBatch, string, CanopyCommitResult>? answer) { _answer = answer; }
         public CanopyCommitBatch? Batch { get; private set; }

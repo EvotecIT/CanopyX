@@ -4,13 +4,14 @@
   // applying a view without rules returns to the view's. Export records carry each cell's resolved format for writers that
   // paint (a styled spreadsheet, a print snapshot); CSV and plain text read only values and text, so they are unchanged.
   const FORMAT_EDITOR = definePart(DataGrid, "format-editor", "formatting rule editor", () => ({ DataGrid, h, setText, fill, gridButton, gridOption,
-    gridInputLabel, gridIcon, gridDecorateButton, announceMenu, formatCompile, formatToneVar, formatError, FORMAT_ICONS, FORMAT_TONE_ICONS, FORMAT_OPERATORS }));
+    gridInputLabel, gridIcon, gridDecorateButton, announceMenu, formatCompile, formatToneVar, formatError, FORMAT_ICONS, FORMAT_TONE_ICONS, FORMAT_OPERATORS, svgIcon }));
   function formatPick(labels) {
     const own = {};
     for (const name of Object.keys(FORMAT_LABELS)) own[name] = Object.hasOwn(labels, name) ? labels[name] : FORMAT_LABELS[name];
     return own;
   }
   Object.assign(DataGrid.prototype, {
+    validateFormatRules(rules) { formatCompile(rules, this); },
     startFormatting() {
       if (this.formatStarted || this.destroyed) return;
       this.formatStarted = true; this.formatVersion = 1; this.formatCache = new WeakMap(); this.formatLabels = formatPick(this.labels);

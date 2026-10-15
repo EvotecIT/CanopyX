@@ -25,7 +25,7 @@
   }
   // The columns a view counts, in order, with the terms that apply to each. Columns a host renderer draws are not marked.
   function hlCountedColumns(view) {
-    const state = view.hl, cols = view.kind === "grid" ? view.cols || [] : (view.cols || []).slice(0, 1);
+    const state = view.hl, cols = view.kind === "grid" ? view.columns : (view.cols || []).slice(0, 1);
     return cols.map(column => [column, !hlHostDrawn(column) && state.columns.get(column.id)]).filter(([, applicable]) => applicable);
   }
   function hlCellText(view, record, column) {
@@ -150,6 +150,8 @@
     if (element && at >= 0) {
       if (focus) view.focusCell(row, at, null);
       else view.revealInRow(cells[at], cells[at], cells[0]);
+    } else if (row && view.kind === "grid" && focus) {
+      await view.openDetails(row.key);
     }
     hlSync(view);
     hlAnnounce(view, fill(view.labels.matchesAnnounce, { current: hlFormat(view, position), count: hlFormat(view, state.total), column: column ? column.title : "" }));

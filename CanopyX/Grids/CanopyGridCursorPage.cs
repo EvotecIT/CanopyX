@@ -65,7 +65,7 @@ public sealed class CanopyGridCursorPage {
         CanopyGridCursors.Validate(PreviousCursor, nameof(PreviousCursor));
         if (NextCursor != null && NextCursor == PreviousCursor)
             throw new InvalidOperationException("Next and previous cursors must identify different pages.");
-        CanopyGridRows.Validate(Rows, view?.ValidateColumns(), view?.Columns);
+        CanopyGridRows.Validate(Rows, view?.ValidateColumns(), view?.Columns, view?.Reporting?.Detail);
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("gridCursorPage").Property("view", View).Property("revision", Revision).Property("offset", Offset);
         writer.Name("total"); if (Total.HasValue) writer.Number(Total.Value); else writer.Null();

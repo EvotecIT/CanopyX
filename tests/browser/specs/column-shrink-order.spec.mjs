@@ -2,6 +2,7 @@
 // the long path and description columns, still wider than their minimum, take the cut. Flat grids and trees share the rule.
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
+import { pinTestFont, testFontState } from "./visual-font.mjs";
 
 const description = "Keeps the policy of the team with its history, its approvals and the notes of every review that changed it over the years";
 const columns = [
@@ -20,16 +21,42 @@ const tree = { protocol: "canopyx/2", type: "view", id: "shrink", label: "Docume
 const columnFit = page => page.evaluate(() => {
   const heads = [...document.querySelectorAll(".cx-hcell")], rows = [...document.querySelectorAll(".cx-row[data-cx-id]")];
   const cut = element => [element, ...element.querySelectorAll("*")].some(item => item.scrollWidth > item.clientWidth + 1 && getComputedStyle(item).overflow !== "visible");
-  return Object.fromEntries(heads.map((head, index) => [head.dataset.cxColumn, {
-    width: Math.round(head.getBoundingClientRect().width), cut: rows.filter(row => cut(row.querySelectorAll(".cx-cell")[index])).length }]));
+  return Object.fromEntries(heads.map((head, index) => {
+    const cell = rows[0]?.querySelectorAll(".cx-cell")[index], text = cell?.querySelector(".cx-text"), style = cell && getComputedStyle(cell);
+    const font = style && style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+    return [head.dataset.cxColumn, {
+      width: Math.round(head.getBoundingClientRect().width), cut: rows.filter(row => cut(row.querySelectorAll(".cx-cell")[index])).length,
+      sample: cell && { text: text?.textContent, font, padding: [style.paddingLeft, style.paddingRight],
+        cellWidth: cell.clientWidth, textWidth: text?.clientWidth, textScroll: text?.scrollWidth, variant: style.fontVariantNumeric }
+    }];
+  }));
 });
 
-for (const [name, view] of [["flat grid", grid], ["tree", tree]]) for (const width of [1100, 1440]) {
-  test("a " + name + " keeps its dates whole while long text gives way (" + width + ")", async ({ page }) => {
+for (const font of ["system", "bundled Inter"]) for (const [name, view] of [["flat grid", grid], ["tree", tree]]) for (const width of [1100, 1440]) {
+  test("a " + name + " keeps its dates whole while long text gives way (" + width + ", " + font + ")", async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
+    if (font === "bundled Inter") await pinTestFont(page);
     await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
     await page.goto("https://canopyx.test/");
     await page.waitForSelector("[data-cx-ready]");
+    if (font === "bundled Inter") {
+      expect((await testFontState(page)).atMount).toBe("loaded");
+      // This font exposes the difference: fitting must reserve the tabular digits the cells actually render.
+      const advances = await page.evaluate(() => {
+        const cell = document.querySelector('.cx-row[data-cx-id] .cx-cell'), probe = document.createElement("span");
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;";
+        const style = getComputedStyle(cell);
+        probe.style.font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+        probe.textContent = "1111111111";
+        document.body.appendChild(probe);
+        const width = variant => { probe.style.fontVariantNumeric = variant; return probe.getBoundingClientRect().width; };
+        const result = { proportional: width("normal"), tabular: width("tabular-nums"), variant: getComputedStyle(cell).fontVariantNumeric };
+        probe.remove();
+        return result;
+      });
+      expect(advances.variant).toContain("tabular-nums");
+      expect(advances.tabular).toBeGreaterThan(advances.proportional + 1);
+    }
     await expect.poll(async () => (await columnFit(page)).description?.width ?? 0).toBeGreaterThan(0);
     const fit = await columnFit(page);
     // The columns do not fit whole: the long text is cut, and it is still wider than its minimum.
@@ -37,7 +64,7 @@ for (const [name, view] of [["flat grid", grid], ["tree", tree]]) for (const wid
     expect(fit.description.width).toBeGreaterThan(100);
     expect(fit.path.width).toBeGreaterThan(100);
     // Dates, short names and states stay whole.
-    for (const id of ["created", "modified", "owner", "status"]) expect(fit[id].cut, id).toBe(0);
+    for (const id of ["created", "modified", "owner", "status"]) expect(fit[id].cut, JSON.stringify({ id, ...fit[id] })).toBe(0);
     expect(await page.locator(".cx-grid").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   });
 }

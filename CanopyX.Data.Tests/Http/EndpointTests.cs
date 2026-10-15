@@ -160,6 +160,21 @@ public sealed class EndpointTests : IAsyncLifetime {
         await Task.CompletedTask;
     }
 
+    [Fact]
+    public void RemoteExportIdentifiers_StayDistinctForLongAndCaseSensitiveViews() {
+        var ids = new List<string>();
+        foreach (var name in new[] { "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }) {
+            var view = new CanopyDataGridView(name, "Grid");
+            view.Columns.Add(new CanopyColumn("name", "Name"));
+            var schema = new CanopyDataSchema(view);
+            var script = CanopyRemoteScript.Script(schema, "/api/hosts", ("csv", "CSV"), ("xlsx", "Excel"));
+            ids.AddRange(System.Text.RegularExpressions.Regex.Matches(script, "\"exportId\":\"([^\"]+)\"")
+                .Cast<System.Text.RegularExpressions.Match>().Select(match => match.Groups[1].Value));
+        }
+        Assert.Equal(4, ids.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(ids, id => Assert.Matches("^[a-z][a-z0-9-]{0,31}$", id));
+    }
+
     /// <summary>Authenticates requests that carry an X-Test-User header.</summary>
     private sealed class HeaderAuthentication : AuthenticationHandler<AuthenticationSchemeOptions> {
         public HeaderAuthentication(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder) { }

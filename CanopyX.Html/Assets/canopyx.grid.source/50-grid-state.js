@@ -74,13 +74,18 @@
 
     async setState(input) {
       const state = this.readGridState(input);
+      const rules = state.formatRules !== undefined ? JSON.parse(JSON.stringify(state.formatRules)) : this.formatEdited ? this.view.formatRules || [] : undefined;
+      const before = this.queryEpoch;
+      if (rules !== undefined) await this.validateFormatRules(rules);
+      if (this.destroyed || before !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
+      state.formatRules = rules;
       clearTimeout(this.searchTimer); this.searchTimer = null;
       const pending = this.setQuery({ ...state.query, offset: state.paging ? state.paging.offset : 0 }, state.paging), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
         await pending;
         if (this.destroyed || epoch !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
-        this.applyStatePresentation(state);
+        await this.applyStatePresentation(state);
         return this.getQuery();
       } finally {
         if (this.restoringEpoch === epoch) { this.restoringEpoch = null; this.stateChanged(); }
@@ -97,7 +102,7 @@
       this.setTimeZone(state.timeZone); this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
       // Formatting rules travel untouched through readGridState; the formatting part validates them here.
-      if (state.formatRules || this.formatEdited) this.setFormatRules(state.formatRules || this.view.formatRules || []).catch(error => this.emit("error", { error }));
+      if (state.formatRules !== undefined || this.formatEdited) return this.setFormatRules(state.formatRules || this.view.formatRules || []);
     },
 
     setColumnOrder(ids) {

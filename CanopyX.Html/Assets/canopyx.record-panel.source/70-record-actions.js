@@ -11,7 +11,7 @@
     if (switches.print !== false) add(labels.recordPrint, () => recordPrint(view, dialog));
     for (const action of [...(Array.isArray(view.opts.recordActions) ? view.opts.recordActions : []), ...view.plugins.flatMap(item => item.recordActions || [])]) {
       if (!action || typeof action.label !== "string" || typeof action.run !== "function") continue;
-      add(action.label, () => { const record = dialog._cxRecord, entry = view._recordPayloads?.get(record.id);
+      add(action.label, () => { const record = dialog._cxRecord, entry = recordEntry(view, record.id);
         return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); });
     }
     if (!items.length) return;
@@ -62,16 +62,18 @@
     return cellText(cell, field, fmt);
   }
   function recordData(view, dialog) {
-    const record = dialog._cxRecord, entry = view._recordPayloads?.get(record.id), payload = entry?.state === "ready" ? entry.payload : null;
-    const layout = recordLayout(view, recordFields(view)), items = [];
+    const record = dialog._cxRecord, entry = recordEntry(view, record.id), payload = entry?.state === "ready" ? entry.payload : null;
+    const fields = recordFields(view), layout = recordLayout(view, fields), items = [], seen = new Set();
     const walk = (sections, path) => {
       for (const section of sections) {
         const name = path ? path + " / " + section.label : section.label;
-        for (const field of section.fields) items.push({ section: name, field, cell: recordCell(view, record, payload, field) });
+        for (const field of section.fields) if (!seen.has(field.id)) { seen.add(field.id); items.push({ section: name, field, cell: recordCell(view, record, payload, field) }); }
         walk(section.sections, name);
       }
     };
     walk(layout.tabs.flatMap(tab => tab.sections), "");
+    // Header-only facts and the title field are still fields of the exported record.
+    for (const field of fields) if (!seen.has(field.id)) items.push({ section: "", field, cell: recordCell(view, record, payload, field) });
     return { record, items };
   }
   function recordExport(view, dialog, format) {
@@ -81,7 +83,11 @@
     const rows = items.map(item => [item.section, item.field.title, recordFlat(item.cell, item.field, view.fmt)]);
     if (format === "text") return [title, ...rows.map(row => row[1] + "\t" + row[2].replace(/\s*\n\s*/g, "; "))].join("\n");
     // CSV: quoted fields, and text that a spreadsheet would run as a formula starts with an apostrophe.
-    const quote = value => '"' + (/^[=+\-@\t\r]/.test(value) ? "'" + value : value).replace(/"/g, '""') + '"';
+    // Keep the record CSV's quoted-field shape while sharing the grid's spreadsheet formula protection.
+    const quote = value => {
+      const escaped = gridExportField(String(value), ",");
+      return escaped.startsWith('"') ? escaped : '"' + escaped + '"';
+    };
     return [[labels.recordSection, labels.recordField, labels.recordValue], ...rows].map(row => row.map(quote).join(",")).join("\r\n");
   }
   function recordDownload(view, dialog, format) {
@@ -94,13 +100,26 @@
 
   // Print one record: every tab and section expanded, collections as full tables, on a sheet the print stylesheet shows alone.
   // canopyx:recordPrint (cancelable, { id, element, dispose }) lets a host print the sheet its own way and dispose it after.
-  function recordPrint(view, dialog) {
-    const record = dialog._cxRecord, entry = view._recordPayloads?.get(record.id), payload = entry?.state === "ready" ? entry.payload : null;
+  let recordPrintDispose;
+  async function recordPrint(view, dialog) {
+    if (view.destroyed || !dialog.isConnected) return;
+    recordPrintDispose?.();
+    const record = dialog._cxRecord, entry = recordEntry(view, record.id), payload = entry?.state === "ready" ? entry.payload : null;
     // The sheet's ids differ from the drawer's, which stays in the page while printing.
-    const controller = new AbortController(), sheetOwner = Object.create(dialog, { id: { value: dialog.id + "-print" } });
-    const ctx = recordContext(view, record, sheetOwner, { signal: controller.signal, print: true, index: null }, payload);
+    const controller = new AbortController(), signal = AbortSignal.any([controller.signal, view.lifetime.signal]);
+    const sheetOwner = Object.create(dialog, { id: { value: dialog.id + "-print" } });
+    const ctx = recordContext(view, record, sheetOwner, { signal, print: true, index: null }, payload);
     const layout = recordLayout(view, recordFields(view)), showEmpty = RECORD_SHOW_EMPTY || !layout.hideEmpty, sheet = h("div", "cx-host cx-record-print"), heading = h("h1");
-    document.querySelector(".cx-record-print")?.remove();
+    let disposed = false;
+    const changed = () => { if (dialog._cxRecord !== record) done(); };
+    const done = () => {
+      if (disposed) return;
+      disposed = true; document.documentElement.classList.remove("cx-record-printing"); sheet.remove(); controller.abort();
+      global.removeEventListener("afterprint", done); dialog.removeEventListener("close", done); dialog.removeEventListener("cx-drawer-paint", changed); signal.removeEventListener("abort", done);
+      if (recordPrintDispose === done) recordPrintDispose = null;
+    };
+    recordPrintDispose = done; signal.addEventListener("abort", done, { once: true }); dialog.addEventListener("close", done, { once: true });
+    dialog.addEventListener("cx-drawer-paint", changed);
     sheet.setAttribute("data-cx-theme", "light"); setText(heading, recordTitle(dialog)); sheet.appendChild(heading);
     const subtitle = dialog.querySelector(".cx-drawer-h p"); if (subtitle && !subtitle.hidden) { const line = h("p", "cx-record-print-sub"); setText(line, subtitle.textContent); sheet.appendChild(line); }
     const summary = dialog.querySelector(".cx-record-summary"); if (summary && !summary.hidden) sheet.appendChild(summary.cloneNode(true));
@@ -111,9 +130,16 @@
       sheet.append(...sections);
     }
     document.body.appendChild(sheet);
-    const done = () => { document.documentElement.classList.remove("cx-record-printing"); sheet.remove(); controller.abort(); global.removeEventListener("afterprint", done); };
+    const cancelled = new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException("Record print cancelled.", "AbortError"));
+      if (signal.aborted) abort(); else signal.addEventListener("abort", abort, { once: true });
+    });
+    try { await Promise.race([Promise.all(ctx.pending), cancelled]); }
+    catch (error) { done(); if (error.name !== "AbortError") throw error; return; }
+    if (signal.aborted) return;
     // A host that prints the sheet itself calls dispose when it is done with it.
     if (!recordEmit(view, "recordPrint", Object.freeze({ id: record.id, element: sheet, dispose: done }))) return;
+    if (signal.aborted) return;
     document.documentElement.classList.add("cx-record-printing");
     global.addEventListener("afterprint", done);
     global.print();

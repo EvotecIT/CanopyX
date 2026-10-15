@@ -5,7 +5,7 @@
   // recomputed when that set changes. Rules apply in order: for each target the first rule that sets an aspect (tone, icon,
   // badge, cue, bar, scale, css) wins it, every matched rule adds its description, and stopIfTrue ends the row's rules.
   function formatStats(grid) {
-    const inline = grid.view.source.kind === "inline", key = inline ? "inline" : (grid.snapshot?.revision || "") + ":" + [...grid.pages.keys()].join(",");
+    const inline = grid.view.source.kind === "inline", key = inline ? "inline" : grid.queryEpoch + ":" + (grid.snapshot?.revision || "") + ":" + [...grid.pages.keys()].join(",");
     if (grid.formatStatsKey === key) return grid.formatStatsCache;
     const wanted = new Set(grid.formatCompiled.filter(rule => rule.style.bar || rule.style.scale).map(rule => rule.column)), stats = new Map();
     if (wanted.size) {
@@ -69,23 +69,25 @@
   }
   Object.assign(DataGrid.prototype, {
     // { row, cells: Map of column id -> target } for a row's data, or null when no rule applies.
-    formatResult(data) {
+    formatResult(data, details = false) {
       const rules = this.formatCompiled;
       if (!rules || !rules.length) return null;
-      const stats = formatStats(this), cached = this.formatCache.get(data);
+      const cache = details ? this.formatDetailCache ||= new WeakMap() : this.formatCache;
+      const stats = formatStats(this), cached = cache.get(data);
       if (cached && cached.version === this.formatVersion) return cached.result;
       let row = null, cells = null;
       for (const rule of rules) {
         if (!rule.enabled || rule.test && !rule.test(data)) continue;
         const style = formatResolve(rule, data, stats);
-        if (!style) continue;
-        if (rule.target === "row") row = formatMerge(row, rule, style);
-        else for (const id of rule.columns) (cells ||= new Map()).set(id, formatMerge(cells.get(id), rule, style));
+        if (style && (!details || rule.details)) {
+          if (rule.target === "row") row = formatMerge(row, rule, style);
+          else for (const id of rule.columns) (cells ||= new Map()).set(id, formatMerge(cells.get(id), rule, style));
+        }
         if (rule.stop) break;
       }
       if (cells) for (const target of cells.values()) formatFinish(target);
       const result = row || cells ? { row: formatFinish(row), cells: cells || new Map() } : null;
-      this.formatCache.set(data, { version: this.formatVersion, result });
+      cache.set(data, { version: this.formatVersion, result });
       return result;
     }
   });

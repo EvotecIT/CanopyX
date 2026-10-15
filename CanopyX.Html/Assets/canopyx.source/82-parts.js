@@ -21,10 +21,10 @@
   // Build/Sync-Assets.ps1 refuses requires that name no part of the same view kind or that form a cycle.
   function loadPart(part) {
     return part.ready ||= Promise.resolve().then(async () => {
-      const [version, scriptFile, styleFile] = PARTS[part.name] || [];
+      const [version, scriptFile, styleFile] = Object.hasOwn(PARTS, part.name) ? PARTS[part.name] : [];
       part.version = version;
       if (!version) throw new Error("CanopyX: this runtime has no " + part.label + ".");
-      if (PART_CODE.get(part.name)?.version !== part.version) {
+      if (PART_CODE.get(part.name)?.version !== part.version || part.styleReady === null) {
         // An embedded part runs with its payload's own nonce. When the page nonce is known (CanopyX.setNonce, or the runtime
         // script's own nonce), only a payload that carries it counts, so markup injected into the page cannot run as a part,
         // also under 'strict-dynamic' and Trusted Types.
@@ -38,8 +38,11 @@
           const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
             element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
           const link = h("link"); link.rel = "stylesheet";
-          await Promise.all([styleFile && load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet"),
-            load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")]); script.remove();
+          const style = styleFile && (part.styleReady ||= load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet")
+            .catch(error => { part.styleReady = null; throw error; }));
+          const code = PART_CODE.get(part.name)?.version === part.version || (part.scriptReady ||= load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")
+            .finally(() => script.remove()).catch(error => { part.scriptReady = null; throw error; }));
+          await Promise.all([style, code]);
         }
       }
       const code = PART_CODE.get(part.name);
@@ -57,14 +60,14 @@
   // The tree toolbar menus (Columns, Views, Export, more), column fitting and auto height. Trees on every runtime load it.
   const TREE_TOOLS = definePart(TreeGrid, "tree-tools", "tree tools", () => ({ TreeGrid, h, setText, fill, numberFormat, watchFlyout, columnWidth, prepareWidth, cellText, cellValue, isCellObject, foldText, formatting,
     sortKey, compareKeys, EXPORT_FORMATS, exportFormat, exportTimeout, INDENT, MAX_PROTOCOL_INTEGER, hostControl, detailCell, HostCellContext, disposeHostSlot, loadPart, definePart, pluginItems,
-    applyTone, toneOf, badgeElement, RECORD_IMPL }));
+    applyTone, toneOf, badgeElement, RECORD_IMPL, svgIcon, gridExportField }));
   // A bundle's index search (15-search-index.js), loaded on a sidecar source's first query, also outside a tree.
   const SEARCH_IMPL = {}, SEARCH_PART = definePart(TreeGrid, "search", "sidecar search", () => ({ SEARCH_IMPL, checkDocument, badIndex, isCount, isIdentifier, recentCache, packBytes,
     shardKey, foldText, trimSeparators, rankHits, validateSearchHit, PACK_CACHE, PACK_CACHE_BYTES, SHARD_CACHE, ENTRY_CACHE, ENTRY_BATCH, SEARCH_CANDIDATES }));
   /** Loads a part of this view kind by name, after the tree tools part that defines a tree's export part. */
   async function requirePart(name) {
     await this.toolsReady;
-    const part = this.parts[name];
+    const part = Object.hasOwn(this.parts, name) ? this.parts[name] : null;
     if (!part) throw new Error("CanopyX: unknown part '" + name + "'.");
     return loadPart(part);
   }

@@ -50,6 +50,10 @@ public sealed partial class CanopyRemoteHandler {
             else valid.Add(typed);
         }
         string? after = null;
+        if (valid.Count != batch.Rows.Count && writer.Transaction == CanopyCommitTransaction.PerBatch) {
+            foreach (var row in valid) answers[row.Id] = CanopyCommitRowResult.Failed(row.Id, Options.CommitMessages.BatchNotSaved);
+            valid.Clear();
+        }
         if (valid.Count > 0) {
             var result = await writer.CommitAsync(new CanopyCommitBatch(Schema, batch.Revision, valid), revision, cancellationToken).ConfigureAwait(false);
             if (result == null) {
@@ -127,7 +131,7 @@ public sealed partial class CanopyRemoteHandler {
         page.Rows.Add(grid);
         string json;
         try {
-            json = page.ToJson(Schema.View);
+            json = page.ToJson(Schema.ProtocolView);
         } catch (Exception error) when (!(error is OutOfMemoryException)) {
             Problem("The data writer gave cells that break the page rules; the row's cells are left out.");
             return null;

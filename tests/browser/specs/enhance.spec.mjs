@@ -60,7 +60,7 @@ test("options come from data attributes on the table and header cells, and scrip
   expect((await page.evaluate(() => grid.getRows("page").map(record => record[2]))).slice(0, 2)).toEqual(["90 %", "77 %"]);
 });
 
-test("numbered pages, page sizes with All and the result sentence; the current page keeps focus", async ({ page }) => {
+test("numbered pages, page sizes with All and the result sentence; the current page keeps focus", async ({ page, browserName }) => {
   await servePage(page, serverTable({ rows: 95 }));
   await enhance(page, "{ pageLength: 10, on: { page(detail) { (window.pages ||= []).push(detail.paging.pageIndex); } } }");
   await ready(page);
@@ -73,7 +73,7 @@ test("numbered pages, page sizes with All and the result sentence; the current p
   await expect(page.getByRole("button", { name: "Page 5" })).toBeFocused();
   expect(await pages.allTextContents()).toEqual(["1", "4", "5", "6", "10"]);
   // Keyboard: the next page button is a Tab stop away, and Enter moves on with focus on the new current page.
-  await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
+  await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab"); await page.keyboard.press("Enter");
   await expect(page.locator(".cx-grid-page-range")).toHaveText("Showing 51 to 60 of 95 rows");
   await expect(page.getByRole("button", { name: "Page 6" })).toBeFocused();
   expect(await page.evaluate(() => window.pages)).toEqual([4, 5]);

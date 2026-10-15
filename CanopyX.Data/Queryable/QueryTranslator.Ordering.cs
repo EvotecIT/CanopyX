@@ -14,6 +14,7 @@ internal sealed partial class QueryTranslator<T> {
 
     /// <summary>Orders by the sort keys (missing values last in both directions), then by the record key.</summary>
     internal IQueryable<T> Order(IQueryable<T> source, IEnumerable<CanopySortKey> sort, Expression? lead = null) {
+        ValidateOrder(sort);
         var first = true;
         if (lead != null) {
             source = ApplyOrder(source, lead, false, null, true);
@@ -29,6 +30,17 @@ internal sealed partial class QueryTranslator<T> {
         return ApplyOrder(source, Key, false, keyComparer, first);
     }
 
+    /// <summary>Rejects unavailable date ordering before a page or export starts reading records.</summary>
+    internal void ValidateOrder(IEnumerable<CanopySortKey> sort) {
+        if (_memory) return;
+        foreach (var key in sort) {
+            var shape = Map.Get(key.Column.Id).Shape;
+            if (!_sorts.ContainsKey(key.Column.Id) && (shape == ValueShape.DateTime || shape == ValueShape.DateTimeOffset))
+                throw new CanopyRequestException(CanopyRequestError.Unsupported,
+                    "Database date ordering requires an explicit SortBy expression at millisecond precision; map a UTC millisecond key or a date value stored at whole milliseconds.");
+        }
+    }
+
     private IEnumerable<(Expression Expression, bool Descending, object? Comparer)> SortKeys(CanopySortKey key) {
         var mapped = Map.Get(key.Column.Id);
         var custom = _sorts.TryGetValue(key.Column.Id, out var sortBy);
@@ -40,6 +52,15 @@ internal sealed partial class QueryTranslator<T> {
             yield break;
         }
         var canonical = Comparison == CanopyTextComparison.Canonical;
+        if (mapped.Shape == ValueShape.DateTime || mapped.Shape == ValueShape.DateTimeOffset) {
+            var method = typeof(QueryTranslator<T>).GetMethod(nameof(DateMilliseconds), BindingFlags.NonPublic | BindingFlags.Static)!;
+            yield return (Expression.Call(method, Expression.Convert(value, typeof(object))), key.Descending, null);
+            yield break;
+        }
+        if (mapped.Shape == ValueShape.Real || mapped.Shape == ValueShape.Decimal) {
+            yield return (Expression.Convert(value, ExpressionTools.IsNullable(value.Type) ? typeof(double?) : typeof(double)), key.Descending, null);
+            yield break;
+        }
         if (mapped.Shape == ValueShape.Enum) {
             var type = ExpressionTools.Underlying(value.Type);
             if (canonical) {
@@ -49,7 +70,7 @@ internal sealed partial class QueryTranslator<T> {
                 yield return (name, key.Descending, StringComparer.Ordinal);
             } else {
                 // Enumerations sort by their raw text (EnumMember value or name); the database sees a rank expression, one rank per text.
-                var texts = Enum.GetValues(type).Cast<Enum>().Distinct().GroupBy(member => CanopyDataValues.EnumText(member), StringComparer.Ordinal)
+                var texts = EnumDomains.Members(type).Cast<Enum>().GroupBy(member => CanopyDataValues.EnumText(member), StringComparer.Ordinal)
                     .OrderBy(group => group.Key, StringComparer.Ordinal).ToList();
                 yield return (Rank(value, texts.Select(group => group.Select(member => (Expression)Expression.Equal(value, ExpressionTools.Parameter(member, value.Type)))
                     .Aggregate(Expression.OrElse)).ToList()), key.Descending, null);
@@ -72,6 +93,9 @@ internal sealed partial class QueryTranslator<T> {
         }
         yield return (value, key.Descending, null);
     }
+
+    private static long? DateMilliseconds(object? value) => CanopyDataValues.Normalize(value) is DateTime date
+        ? date.Ticks / TimeSpan.TicksPerMillisecond : (long?)null;
 
     internal static Expression Rank(Expression value, IReadOnlyList<Expression> tests) {
         Expression rank = Expression.Constant(tests.Count);
@@ -101,7 +125,10 @@ internal sealed partial class QueryTranslator<T> {
         for (var i = 0; i < columns.Count; i++) {
             var mapped = Map.Get(columns[i]);
             var raw = values[i + 1];
-            row.Cells[columns[i]] = (mapped.Format != null ? mapped.Format(raw) : CanopyDataValues.ToCell(raw))!;
+            // Finite normalization can yield null for a nonnullable real member. Do not invoke a typed formatter with
+            // default(float/double), which would manufacture a displayed zero for a missing value.
+            var missingReal = raw == null && (mapped.Value.ReturnType == typeof(float) || mapped.Value.ReturnType == typeof(double));
+            row.Cells[columns[i]] = (mapped.Format != null && !missingReal ? mapped.Format(raw) : CanopyDataValues.ToCell(raw))!;
         }
         Map.Decorator?.Invoke(row);
         return row;

@@ -14,9 +14,7 @@
   }
   // typed marks the formatted text of a number or date cell, which needs no protection against formulas.
   function crField(value, typed) {
-    let text = value == null ? "" : String(value);
-    if (typeof value !== "number" && !typed && /^[\s\uFEFF]*[=+\-@]/.test(text)) text = "'" + text;
-    return /[\t\r\n"]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+    return gridExportField(value, "\t", typed);
   }
   const crHtml = text => String(text).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 

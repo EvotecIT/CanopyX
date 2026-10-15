@@ -3,7 +3,7 @@
   // column by level; format providers receive each row's level and id path. The menu body, CSV and the format writers ship
   // in the export part (canopyx-export.js), which a tree loads on first use, as a flat grid does, and installs into this
   // part's own EXPORT_IMPL. Captures (45-tree-capture.js) are taken at once and run when the part is ready.
-  const TREE_EXPORT_PART = definePart(TreeGrid, "export", "export part", () => ({ DataGrid: TreeGrid, EXPORT_IMPL, h, setText, gridButton, gridOption, fill, numberFormat,
+  const TREE_EXPORT_PART = definePart(TreeGrid, "export", "export part", () => ({ DataGrid: TreeGrid, EXPORT_IMPL, h, setText, gridButton, gridOption, fill, numberFormat, gridExportField,
     gridOperationActive, formatting, cellValue, cellText, isCellObject, exportTimeout, exportFormat, EXPORT_FORMATS }));
   function loadExportPart() { return loadPart(TREE_EXPORT_PART); }
 

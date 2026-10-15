@@ -8,7 +8,7 @@
   const LINK_ROWS = 1000, LINK_COLUMN_VALUES = 100;
   /** Distinct values of each declared column across records, bounded per column. */
   function linkValues(grid, records) {
-    const values = {};
+    const values = Object.create(null);
     for (const column of grid.view.columns) {
       const seen = new Set();
       for (const record of records) {
@@ -46,11 +46,16 @@
       this.emit("linkchange", { view: this.view.id, action: keys.length ? "select" : "clear", scope: "select", keys, values: linkValues(this, records), label: linkLabel(this, records) });
     },
     linkQueried() {
-      const query = this.queryForChange(), mine = (query.filters || []).filter(filter => filter.operator === "eq" || filter.operator === "in");
+      const query = this.queryForChange(), mine = [];
+      const collect = group => {
+        for (const filter of group.filters || []) if (filter.operator === "eq" || filter.operator === "in") mine.push(filter);
+        for (const child of group.groups || []) collect(child);
+      };
+      collect({ filters: query.filters, groups: query.filterGroup ? [query.filterGroup] : [] });
       const shape = JSON.stringify(mine);
       if (shape === (this.linkOwnShape || "[]")) return;
       this.linkOwnShape = shape;
-      const values = {};
+      const values = Object.create(null);
       for (const filter of mine) values[filter.column] = Array.from(new Set((values[filter.column] || []).concat(filter.values)));
       const label = Object.values(values).map(list => list.slice(0, 3).join(", ")).join("; ");
       this.emit("linkchange", { view: this.view.id, action: mine.length ? "filter" : "clear", scope: "filter", keys: [], values, label });

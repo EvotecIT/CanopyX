@@ -18,13 +18,7 @@
   // The icon's shapes (GRID_ICONS, or the constant shapes a menu passes) are built as elements, not parsed as markup, so
   // icons need no HTML sink (docs/security.md).
   function gridIcon(name, shapes) {
-    const svgNs = "http://www.w3.org/2000/svg", svg = document.createElementNS(svgNs, "svg");
-    svg.classList.add("cx-ico"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
-    for (const [, tag, attributes] of (shapes || GRID_ICONS[name] || GRID_ICONS.more).matchAll(/<(\w+)([^>]*)\/>/g)) {
-      const shape = svg.appendChild(document.createElementNS(svgNs, tag));
-      for (const [, attribute, value] of attributes.matchAll(/([\w-]+)="([^"]*)"/g)) shape.setAttribute(attribute, value);
-    }
-    return svg;
+    return svgIcon(shapes || GRID_ICONS[name] || GRID_ICONS.more);
   }
   function gridDecorateButton(button, icon, ghost) {
     button.classList.add("cx-btn"); if (ghost) button.classList.add("ghost");

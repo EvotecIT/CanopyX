@@ -94,7 +94,7 @@ public static class CanopyRemoteEndpointExtensions {
             }));
             if (writePolicy != null) commit.RequireAuthorization(writePolicy);
         }
-        var view = schema.View.ToJson();
+        var view = schema.ToJson();
         CanopyRemoteHandler Handler(HttpContext context) => new CanopyRemoteHandler(schema, provider(context), options.Remote);
 
         group.MapPost("/query", Json(Handler, options.Limits, QueryAnswer));

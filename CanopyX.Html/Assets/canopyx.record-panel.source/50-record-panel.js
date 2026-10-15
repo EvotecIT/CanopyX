@@ -7,14 +7,18 @@
   // for the page. A part keeps a field visible by answering recordKeepField(id, record) with true (an editable field).
   let RECORD_SHOW_EMPTY = false;
   const recordId = (dialog, kind, id) => dialog.id + "-" + kind + "-" + String(id).replace(/[^\w-]/g, "_");
+  const recordOnDispose = (signal, cleanup) => {
+    const dispose = () => { try { cleanup(); } catch (error) { console.error(error); } };
+    if (signal.aborted) dispose(); else signal.addEventListener("abort", dispose, { once: true });
+  };
 
   function recordContext(view, record, dialog, context, payload) {
-    const ctx = { view, record, payload, dialog, labels: view.labels, fmt: view.fmt, signal: context.signal, index: context.index, origins: 0,
+    const ctx = { view, record, payload, dialog, labels: view.labels, fmt: view.fmt, signal: context.signal, index: context.index, origins: 0, pending: [],
       phone: view.host.clientWidth <= 640, print: !!context.print, width: context.print ? 520 : view.host.clientWidth <= 640 ? 300 : 380,
       row: { id: record.id, cells: recordMerge(record.cells, payload?.cells, record.fields, payload?.fields) },
       node: view.kind === "tree" ? { ...record, cells: recordMerge(record.cells, payload?.cells) } : null };
     ctx.navigate = (ref, origin) => recordNavigate(ctx, ref, origin);
-    ctx.repaint = () => { if (dialog._cxRecord === record && dialog.isConnected) recordRepaint(dialog, record, context.index); };
+    ctx.repaint = () => { if (!context.signal.aborted && dialog._cxRecord === record && dialog.isConnected) recordRepaint(view, dialog, record, context.index); };
     return ctx;
   }
   // Cells of several sources by id, without inherited members: "__proto__" or "toString" stay plain ids.
@@ -25,7 +29,7 @@
   }
   // A repaint keeps the scroll position and the control the reader is on: a tab, a section heading, a field's control or the
   // empty-field switch, found again in the new body; anything else falls back to the title.
-  function recordRepaint(dialog, record, index) {
+  function recordRepaint(view, dialog, record, index) {
     const body = dialog.querySelector(".cx-drawer-body"), scroll = body?.scrollTop || 0, active = document.activeElement, inside = body?.contains(active);
     const section = inside && active.closest("[data-cx-section]")?.getAttribute("data-cx-section"), field = inside && active.closest("[data-cx-field]")?.getAttribute("data-cx-field");
     const kind = inside && [...active.classList].find(name => name.startsWith("cx-record-")), id = inside && active.id;
@@ -33,8 +37,8 @@
     if (body) body.scrollTop = scroll;
     if (!inside || body.contains(document.activeElement)) return;
     const scope = field ? body.querySelector('[data-cx-field="' + CSS.escape(field) + '"]') : section ? body.querySelector('[data-cx-section="' + CSS.escape(section) + '"]') : body;
-    const target = id && body.querySelector("#" + CSS.escape(id)) || kind && scope?.querySelector("." + kind) || dialog.querySelector(".cx-drawer-h h4");
-    target?.focus({ preventScroll: true });
+    const title = dialog.querySelector(".cx-drawer-h h4"), target = id && body.querySelector("#" + CSS.escape(id)) || kind && scope?.querySelector("." + kind) || title;
+    if (target === title) view.focusRing(title); else target?.focus({ preventScroll: true });
   }
 
   // A field is shown when it has a value, when the reader shows empty fields, or when a part keeps it.
@@ -99,9 +103,12 @@
     const holder = h("div", "cx-record-custom"); content.appendChild(holder);
     const values = Object.fromEntries(recordFields(view).map(field => [field.id, recordCell(view, ctx.record, ctx.payload, field)]));
     const context = Object.freeze({ section: section.id, view: view.view.id, api: view.host.canopyx, labels: ctx.labels, signal: ctx.signal, payload: ctx.payload, values,
-      print: ctx.print, width: ctx.width, onDispose: cleanup => ctx.signal.addEventListener("abort", cleanup, { once: true }) });
-    try { Promise.resolve(renderer(JSON.parse(JSON.stringify(ctx.record)), holder, context)).catch(error => view.emit("error", { error })); }
-    catch (error) { view.emit("error", { error }); }
+      print: ctx.print, width: ctx.width, onDispose: cleanup => recordOnDispose(ctx.signal, cleanup) });
+    let pending;
+    try { pending = Promise.resolve(renderer(JSON.parse(JSON.stringify(ctx.record)), holder, context)); }
+    catch (error) { pending = Promise.reject(error); }
+    ctx.pending.push(pending);
+    pending.catch(error => { if (!ctx.signal.aborted) view.emit("error", { error }); });
   }
   // Nested grids measure their width once visible: a collapsed section or a hidden tab refreshes them when it opens.
   function recordMount(ctx, content) { for (const host of content.querySelectorAll(".cx-record-nested")) host.canopyx?.refresh(); }
@@ -144,7 +151,7 @@
     if (view.loadHistory && !view._recordHistory && (view.view.record?.fields || []).some(field => ["statusStrip", "sparklineBars", "sparklineLine"].includes(field.presenter?.kind)))
       view._recordHistory = Promise.resolve(view.loadHistory()).then(() => {
         // Whatever record the drawer shows by then paints again with the part installed.
-        if (dialog.isConnected && dialog._cxRecord) recordRepaint(dialog, dialog._cxRecord, dialog._cxPanel?.index);
+        if (dialog.isConnected && dialog._cxRecord) recordRepaint(view, dialog, dialog._cxRecord, dialog._cxPanel?.index);
       }, () => {});
     const showEmpty = RECORD_SHOW_EMPTY || !layout.hideEmpty;
     const tabs = layout.tabs.filter(tab => tab.sections.some(section => recordHasContent(ctx, section, showEmpty)));
@@ -153,8 +160,11 @@
     recordSummary(ctx, layout, dialog);
     body.replaceChildren();
     const tools = h("div", "cx-record-tools"), panel = h("div", "cx-record-panel"), sub = h("div", "cx-record-subtools");
+    let tabLifetime, tabContext;
     const paintTab = () => {
-      const tab = tabs.find(item => item.id === state.tab), sections = tab.sections.map(section => recordSection(ctx, section, state, showEmpty)).filter(Boolean);
+      tabLifetime?.abort(); tabLifetime = new AbortController();
+      tabContext = recordContext(view, record, dialog, { ...context, signal: AbortSignal.any([context.signal, tabLifetime.signal]) }, payload);
+      const tab = tabs.find(item => item.id === state.tab), sections = tab.sections.map(section => recordSection(tabContext, section, state, showEmpty)).filter(Boolean);
       panel.replaceChildren(...sections); sub.replaceChildren();
       if (tabs.length > 1) { panel.setAttribute("role", "tabpanel"); panel.id = recordId(dialog, "p", tab.id); panel.setAttribute("aria-labelledby", recordId(dialog, "t", tab.id)); panel.tabIndex = 0; }
       if (layout.jump !== false && sections.length >= (layout.jump ? 2 : 4)) {
@@ -168,7 +178,7 @@
       const hidden = layout.hideEmpty ? recordEmptyCount(ctx, layout.tabs.flatMap(item => item.sections)) : 0;
       if (hidden || RECORD_SHOW_EMPTY && layout.hideEmpty) {
         const toggle = recordButton(RECORD_SHOW_EMPTY ? ctx.labels.recordHideEmpty : fill(ctx.labels.recordShowEmpty, { count: recordCount(ctx, hidden) }), () => {
-          RECORD_SHOW_EMPTY = !RECORD_SHOW_EMPTY; recordRepaint(dialog, record, context.index); dialog.querySelector(".cx-record-empty")?.focus();
+          RECORD_SHOW_EMPTY = !RECORD_SHOW_EMPTY; recordRepaint(view, dialog, record, context.index); dialog.querySelector(".cx-record-empty")?.focus();
         }, "cx-record-empty");
         toggle.setAttribute("aria-pressed", String(RECORD_SHOW_EMPTY)); sub.appendChild(toggle);
       }
@@ -180,7 +190,7 @@
         const on = button.id === recordId(dialog, "t", id); button.setAttribute("aria-selected", String(on)); button.tabIndex = on ? 0 : -1;
         if (on) button.setAttribute("aria-controls", recordId(dialog, "p", id)); else button.removeAttribute("aria-controls");
       }
-      paintTab(); recordMount(ctx, panel);
+      paintTab(); recordMount(tabContext, panel);
       // A tab paints its fields anew: parts that follow the drawer (editing, formatting, highlighting) see it as a paint.
       dialog.dispatchEvent(new CustomEvent("cx-drawer-paint", { detail: { id: record.id, index: context.index ?? null } }));
       if (focus) tools.querySelector("[aria-selected=true]")?.focus();
@@ -196,7 +206,7 @@
     } else if (entry?.state === "error") {
       const note = h("p", "cx-record-note cx-record-error"); setText(note, fill(ctx.labels.recordLoadFailed, { error: entry.error.message }));
       note.setAttribute("role", "alert");
-      note.appendChild(recordButton(ctx.labels.recordRetry, () => { view._recordPayloads.delete(record.id); ctx.repaint(); }, "cx-record-retry"));
+      note.appendChild(recordButton(ctx.labels.recordRetry, () => { view._recordPayloads.delete(recordCacheKey(view, record.id)); ctx.repaint(); }, "cx-record-retry"));
       panel.prepend(note);
     }
     recordLinkWrite(view, record);

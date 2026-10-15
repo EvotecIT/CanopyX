@@ -13,6 +13,7 @@ public sealed class CanopyTreeDetail : CanopyDetail {
     internal override string Type => "tree";
 
     internal override void WriteContent(CanopyJsonWriter writer) {
+        CanopyTreeValidator.Validate(Roots, "A nested detail tree");
         writer.Name("roots").BeginArray();
         foreach (var root in Roots) {
             if (root == null) throw new InvalidOperationException("Nested detail roots cannot be null.");

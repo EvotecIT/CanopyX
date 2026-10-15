@@ -96,7 +96,10 @@ A cell is checked when its value changes, in this order: its type, then the colu
 
 `validation.message` replaces the label for every failed rule of that column. Validators return a message, `null`, or a
 promise of one; `validateRow` returns a row message, messages by column, `null`, or a promise of them. Patterns match the
-whole text and use the syntax JavaScript and .NET share (the C# writer checks them with `RegexOptions.ECMAScript`).
+whole text and use the bounded syntax described in [conditional formatting](conditional-formatting.md): literals,
+character classes, common character escapes, fixed repetitions up to 256 characters and at most one variable-length
+repetition. Editing supplies the anchors. Groups, alternatives, lookarounds and backreferences are rejected by both the
+C# writer and browser validation.
 
 A value that fails a check that answers at once keeps its editor open with the message beside the cell; Escape restores the
 old value. An asynchronous validator answers after the value is applied and marks the cell. A row with a failed check does

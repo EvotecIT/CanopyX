@@ -95,7 +95,10 @@
       const left = start ? grid.cols.findIndex(column => column.id === start.column) : -1;
       if (!start || left < 0 || start.row < bounds.first || start.row > bounds.last) crBad("pasting needs a range, a focused cell or a row and column to start at");
       const width = Math.max(...matrix.map(line => line.length)), rows = [], view = crRows(grid);
-      for (let position = start.row; rows.length < matrix.length && position <= bounds.last; position++) if (view.rowItem(position)?.status !== "group") rows.push(position);
+      for (let position = start.row; rows.length < matrix.length && position <= bounds.last; position++) {
+        const row = view.rowItem(position);
+        if (row && (!row.status || row.status === "loading" || row.status === "error")) rows.push(position);
+      }
       blocks = [{ rows, left, right: Math.min(grid.cols.length - 1, left + width - 1) }];
     }
     if (!single && grid.cellOptions?.enabled && blocks[0].rows.length) {
@@ -120,18 +123,34 @@
   }
 
   /** Applies cells through the editing part: one undo step, each cell's rules and checks; returns how many it applied. */
-  function crApplyEditing(grid, cells, source, refused) {
+  async function crApplyEditing(grid, cells, source, refused) {
     let applied = 0;
+    const approved = [], candidates = [], proposals = new Map(), epoch = grid.queryEpoch;
     grid.cancelEdit?.();
+    for (const cell of cells) {
+      const spec = grid.edit.specs.get(cell.column), record = grid.editRecord(cell.id);
+      if (!spec || !record || !grid.canEditCell(record, cell.column)) { refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly }); continue; }
+      const proposed = proposals.get(cell.id) || { record, values: [] };
+      proposed.values.push([spec, cell.value]); proposals.set(cell.id, proposed);
+      candidates.push({ cell, spec, record });
+    }
+    for (const proposed of proposals.values()) {
+      proposed.preview = grid.editPreview(proposed.record, proposed.values);
+      proposed.checked = { result: null, row: JSON.stringify(proposed.preview.cells) };
+    }
+    for (const candidate of candidates) {
+      const { cell, spec } = candidate, proposed = proposals.get(cell.id);
+      let message = grid.editRules(spec, cell.value, proposed.preview);
+      if (message && typeof message.then === "function") message = await message;
+      if (grid.destroyed || epoch !== grid.queryEpoch) throw new DOMException("The paste query changed during validation.", "AbortError");
+      if (message) refused.push({ ...cell, reason: message });
+      else approved.push({ ...candidate, checked: proposed.checked });
+    }
     grid.editGroup(() => {
-      for (const cell of cells) {
-        const spec = grid.edit.specs.get(cell.column), record = grid.editRecord(cell.id);
-        if (!spec || !record || !grid.canEditCell(record, cell.column)) { refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly }); continue; }
-        grid.edit.pending = null;
-        const message = grid.editRules(spec, cell.value, record, true);
-        if (message) { grid.edit.pending = null; refused.push({ ...cell, reason: message }); continue; }
-        if (grid.editApply(cell.id, spec, cell.value, source, record)) applied++;
-        else { grid.edit.pending = null; refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly }); }
+      for (const { cell, spec, record, checked } of approved) {
+        if (!grid.canEditCell(record, cell.column)) { refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly }); continue; }
+        if (grid.editApply(cell.id, spec, cell.value, source, record, checked)) applied++;
+        else refused.push({ ...cell, reason: grid.labels.gridPasteReadOnly });
       }
     });
     return applied;
@@ -157,7 +176,7 @@
     }
     // Without the editing part the grid changes nothing: what the host's answer did not refuse counts as applied by the host.
     const remaining = cells.filter(cell => !declined.has(cell));
-    const applied = editing ? crApplyEditing(grid, remaining, source, refused) : answer !== undefined ? remaining.length : 0;
+    const applied = editing ? await crApplyEditing(grid, remaining, source, refused) : answer !== undefined ? remaining.length : 0;
     crReport(grid, applied, refused, source);
     return gridFreeze({ applied, refused: JSON.parse(JSON.stringify(refused)), cancelled: false });
   }

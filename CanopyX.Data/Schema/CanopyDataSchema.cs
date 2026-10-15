@@ -12,6 +12,7 @@ namespace CanopyX.Data;
 /// later changes to the view do not apply.
 /// </remarks>
 public sealed class CanopyDataSchema {
+    private readonly string _definitionJson;
     private readonly Dictionary<string, CanopyDataColumn> _byId = new Dictionary<string, CanopyDataColumn>(StringComparer.Ordinal);
 
     /// <summary>Creates a schema over a hosted offset grid.</summary>
@@ -21,7 +22,8 @@ public sealed class CanopyDataSchema {
     /// <exception cref="ArgumentException">The view uses cursor navigation, or a column is not declared.</exception>
     public CanopyDataSchema(CanopyDataGridView view, IEnumerable<string>? columns = null, IEnumerable<string>? notFilterable = null) {
         View = view ?? throw new ArgumentNullException(nameof(view));
-        view.Validate();
+        _definitionJson = view.ToJson();
+        ProtocolView = CanopyDataSnapshot.View(view);
         if (view.Navigation != CanopyGridNavigation.Offset)
             throw new ArgumentException("The remote data adapter serves offset navigation; cursor views are not supported.", nameof(view));
         var allowed = columns == null ? null : new HashSet<string>(columns, StringComparer.Ordinal);
@@ -82,8 +84,15 @@ public sealed class CanopyDataSchema {
         EditableColumns = new ReadOnlyCollection<CanopyDataColumn>(editable);
     }
 
-    /// <summary>Gets the grid definition.</summary>
+    /// <summary>Gets the original authoring definition. Changes do not alter the captured schema or <see cref="ToJson"/>.</summary>
     public CanopyDataGridView View { get; }
+
+    /// <summary>The private captured metadata used by typed request and response validation.</summary>
+    internal CanopyDataGridView ProtocolView { get; }
+
+    /// <summary>Writes the advertised grid definition captured when the schema was created.</summary>
+    /// <returns>The HTML-safe grid definition, unchanged by later authoring edits.</returns>
+    public string ToJson() => _definitionJson;
 
     /// <summary>Gets the grid identity.</summary>
     public string ViewId => View.Id;
@@ -134,7 +143,7 @@ public sealed class CanopyDataSchema {
 
     /// <summary>The protocol's raw group order of a sortable column (<see cref="CanopyGridGrouping.CreateComparer"/>), built once per column and direction.</summary>
     internal IComparer<CanopyCell> GroupComparer(string column, bool descending) =>
-        _comparers.GetOrAdd(column + (descending ? "\u0001desc" : "\u0001asc"), _ => new CanopyGridGrouping(column, descending).CreateComparer(View));
+        _comparers.GetOrAdd(column + (descending ? "\u0001desc" : "\u0001asc"), _ => new CanopyGridGrouping(column, descending).CreateComparer(ProtocolView));
 
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, IComparer<CanopyCell>> _comparers =
         new System.Collections.Concurrent.ConcurrentDictionary<string, IComparer<CanopyCell>>(StringComparer.Ordinal);

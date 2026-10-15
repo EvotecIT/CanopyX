@@ -50,7 +50,7 @@
         [rules.pattern, rules.message, raw.placeholder].some(text => text !== undefined && typeof text !== "string")) editBad(id, "has invalid editor or validation settings");
     let pattern = null;
     // The pattern must compile on its own too, so a stray parenthesis cannot escape the anchors around it.
-    if (rules.pattern !== undefined) try { new RegExp(rules.pattern); pattern = new RegExp("^(?:" + rules.pattern + ")$"); } catch (error) { editBad(id, "has an invalid pattern"); }
+    if (rules.pattern !== undefined) try { pattern = boundedPattern(rules.pattern, true, true); } catch (error) { editBad(id, "has an invalid or unsafe pattern"); }
     const lookup = raw.lookup ?? (type === "lookup" ? {} : null);
     if (lookup && (!object(lookup) || lookup.column !== undefined && !columns.some(item => item.id === lookup.column) ||
         lookup.limit !== undefined && !(Number.isInteger(lookup.limit) && lookup.limit >= 1 && lookup.limit <= 50) ||
@@ -118,23 +118,24 @@
 
     // Applies one value: the cancelable cellValueChanging event first, then the change set, the undo history, validation
     // and cellValueChanged. A value equal to the one the row started from takes the change back. False when cancelled.
-    editApply(id, spec, value, source, record = this.editRecord(id)) {
+    editApply(id, spec, value, source, record = this.editRecord(id), checked) {
       if (!record) throw new Error("CanopyX: the record " + id + " is not loaded.");
       const state = this.edit, cells = record.cells, previous = cellValue(cells[spec.id]);
       if (editSame(previous, value)) return true;
       const detail = { id, column: spec.id, value, previous, row: editCopy(record), source };
       if (!this.emit("cellValueChanging", detail)) return false;
-      const entry = state.changes.get(id) || { id, original: {}, values: {}, errors: {}, error: null };
+      const entry = state.changes.get(id) || { id, original: Object.create(null), values: Object.create(null), errors: Object.create(null), error: null };
       if (!Object.hasOwn(entry.original, spec.id)) entry.original[spec.id] = cells[spec.id];
       const original = entry.original[spec.id];
       if (editSame(cellValue(original), value)) {
         if (original === undefined) delete cells[spec.id]; else cells[spec.id] = original;
         delete entry.original[spec.id]; delete entry.values[spec.id]; delete entry.errors[spec.id];
+        state.checks.delete(id + "\u0000" + spec.id); entry.checked?.delete(spec.id);
       } else {
         cells[spec.id] = editCell(original, value, this.editText(spec, value, record));
         entry.values[spec.id] = value;
       }
-      entry.row = record; entry.error = entry.rowError = null; entry.rowErrors = {}; entry.committed = false;
+      entry.row = record; entry.error = entry.rowError = null; entry.rowErrors = Object.create(null); entry.committed = false;
       if (entry.status !== "saving") entry.status = undefined;
       // A row that is saving keeps its entry, so the answer still finds it.
       if (Object.keys(entry.values).length || entry.status === "saving") state.changes.set(id, entry); else state.changes.delete(id);
@@ -143,7 +144,7 @@
         if (state.group) state.group.push(step);
         else if (state.limit) { state.undo.push([step]); if (state.undo.length > state.limit) state.undo.shift(); state.redo.length = 0; }
       }
-      if (Object.hasOwn(entry.values, spec.id)) this.editCheck(id, spec);
+      if (Object.hasOwn(entry.values, spec.id)) this.editCheck(id, spec, checked);
       this.editChanged();
       this.emit("cellValueChanged", { ...detail, row: editCopy(record) });
       return true;
@@ -152,7 +153,7 @@
     // The text an edited cell shows: the host's formatter for the column (the one its source text comes from), else the
     // label of a select or lookup choice, else none, so the column's default formatting applies as it does to every cell.
     editText(spec, value, record) {
-      const format = spec && this.edit.options.formatters?.[spec.id];
+      const formatters = this.edit.options.formatters, format = spec && formatters && Object.hasOwn(formatters, spec.id) ? formatters[spec.id] : null;
       if (typeof format === "function" && value != null) return String(format(value, editCopy(record)));
       const option = spec && (spec.options || this.edit.seen?.get(spec.id))?.find(item => item.value === value);
       return option && option.label !== String(value) ? option.label : undefined;
@@ -168,11 +169,14 @@
     },
 
     // Repaints the changed cells and the edit bar.
-    editChanged() { this.version++; this.scheduleRender(); this.syncEditBar(); },
+    editChanged() {
+      if (this.formatStarted) { this.formatVersion++; this.formatStatsKey = undefined; }
+      this.version++; this.scheduleRender(); this.syncEditBar();
+    },
 
     getChanges() {
       return this.editEntries().map(entry => {
-        const change = { id: entry.id, values: entry.values, original: {} };
+        const change = { id: entry.id, values: entry.values, original: Object.create(null) };
         for (const id of Object.keys(entry.values)) change.original[id] = cellValue(entry.original[id]);
         const errors = editErrors(entry), error = entry.error || entry.rowError;
         if (Object.keys(errors).length) change.errors = errors;

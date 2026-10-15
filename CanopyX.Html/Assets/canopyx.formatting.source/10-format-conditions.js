@@ -27,7 +27,7 @@
   function formatNumber(text, culture) {
     let value = String(text).trim().replace(/[\s  ']/g, "");
     if (culture) value = value.split(culture.group).join("").replace(culture.decimal, ".");
-    return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) ? Number(value) : null;
+    return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) && Number.isFinite(Number(value)) ? Number(value) : null;
   }
   // The typed value of a raw cell or operand: numbers, epoch milliseconds, booleans or text; null when it does not convert.
   function formatCoerce(raw, type, culture) {
@@ -46,9 +46,6 @@
       return /^(?:true|yes|on|1)$/i.test(word) ? true : /^(?:false|no|off|0)$/i.test(word) ? false : null;
     }
     return type === "text" ? String(raw) : raw;
-  }
-  function formatWildcard(pattern) {
-    return "^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[\\s\\S]*").replace(/\?/g, "[\\s\\S]") + "$";
   }
   function formatPredicate(predicate, columns, budget) {
     if (++budget.predicates > 64) formatError("a formatting rule has at most 64 conditions.");
@@ -76,8 +73,7 @@
       // Patterns use the syntax ECMAScript and .NET share; the static renderer evaluates them too.
       const source = String(values[0]);
       if (source.length > 256) formatError("patterns have at most 256 characters.");
-      if (/\(\?(?![:=!]|<[=!]|<[A-Za-z])/.test(source)) formatError("pattern '" + source + "' uses a construct outside the shared syntax.");
-      try { pattern = new RegExp(op === "like" || op === "notLike" ? formatWildcard(source) : source, exact ? "u" : "iu"); }
+      try { pattern = op === "like" || op === "notLike" ? { test: value => wildcardMatch(source, value, exact) } : boundedPattern(source, exact); }
       catch (_) { formatError("invalid pattern '" + source + "'."); }
     } else if (op === "olderThan" || op === "withinLast") operands = [values[0] * FORMAT_DAY];
     else operands = values.map(value => {

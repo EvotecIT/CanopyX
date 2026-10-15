@@ -6,10 +6,11 @@
   // part cannot load keeps every other feature and reports the error.
   const GRID_FORMAT = definePart(DataGrid, "formatting", "conditional formatting", () => ({ DataGrid, h, setText, setClass, fill, gridFreeze,
     cellValue, cellText, foldText, toneOf, numberFormat, gridButton, gridOption, gridInputLabel, gridIcon, gridDecorateButton, GRID_REPORTING, loadPart,
-    definePart, announceMenu }));
+    definePart, announceMenu, boundedPattern, wildcardMatch, svgIcon }));
   Object.assign(DataGrid.prototype, {
     loadFormatting() { return this.formatLoad ||= loadPart(GRID_FORMAT).then(() => this.startFormatting(), error => { this.formatLoad = null; throw error; }); },
     setFormatRules(rules) { return this.loadFormatting().then(() => this.setFormatRules(rules)); },
+    validateFormatRules(rules) { return this.loadFormatting().then(() => this.validateFormatRules(rules)); },
     openFormatRules() { return this.loadFormatting().then(() => this.openFormatRules()); },
     getFormatRules() { return gridFreeze(JSON.parse(JSON.stringify(this.formatRules || this.view.formatRules || []))); }
   });

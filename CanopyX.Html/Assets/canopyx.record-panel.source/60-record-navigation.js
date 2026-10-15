@@ -63,8 +63,9 @@
     }
     if (!row && typeof view.source.row === "function") row = view.source.row(id);
     if (!row && recordLoader(view)) {
+      const key = recordCacheKey(view, id);
       const payload = await recordFetch(view, id, { row: true });
-      if (payload?.row) { row = payload.row; (view._recordPayloads ||= new Map()).set(id, { state: "ready", payload, promise: Promise.resolve(payload) }); }
+      if (payload?.row) { row = payload.row; (view._recordPayloads ||= new Map()).set(key, { state: "ready", payload, promise: Promise.resolve(payload) }); }
     }
     if (!row) recordFail("record " + id + " is not available.");
     const returnFocus = options.returnFocus || document.activeElement;

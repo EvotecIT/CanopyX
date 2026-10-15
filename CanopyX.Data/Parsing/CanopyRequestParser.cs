@@ -116,7 +116,7 @@ public static partial class CanopyRequestParser {
     public static CanopyDataRequest FromQuery(CanopyGridQuery query, CanopyDataSchema schema, CanopyRemoteLimits? limits = null) {
         if (query == null) throw new ArgumentNullException(nameof(query));
         if (schema == null) throw new ArgumentNullException(nameof(schema));
-        return ParseQuery(query.ToJson(schema.View), schema, limits);
+        return ParseQuery(query.ToJson(schema.ProtocolView), schema, limits);
     }
 
     internal static JsonDocument Open(string json, CanopyRemoteLimits limits) {
@@ -140,7 +140,7 @@ public static partial class CanopyRequestParser {
             throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint serves offset navigation, not cursors.");
         var offset = OptionalInteger(root, "offset") ?? 0;
         if (offset < 0) throw CanopyRequestException.Document("The offset must not be negative.");
-        var limit = OptionalInteger(root, "limit") ?? Math.Min(schema.View.PageSize, limits.MaxPageSize);
+        var limit = OptionalInteger(root, "limit") ?? Math.Min(schema.ProtocolView.PageSize, limits.MaxPageSize);
         if (limit < 1 || limit > 10000) throw CanopyRequestException.Document("A page holds 1 to 10,000 rows.");
         if (limit > limits.MaxPageSize && !nested) throw CanopyRequestException.Limit("The page is larger than this endpoint allows.");
         var search = OptionalString(root, "search") ?? string.Empty;

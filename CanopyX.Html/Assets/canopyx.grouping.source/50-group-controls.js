@@ -7,7 +7,7 @@
   for (const name of ["buildHeader", "querySortHeader"]) GROUP_CONTROL_BASE[name] = DataGrid.prototype[name];
   Object.assign(DataGrid.prototype, {
     attachGroupControls() {
-      const reporting = this.view.reporting;
+      const reporting = this.view.reporting || {};
       this.groupingDynamic = reportingDynamicGroups(this.view);
       if (reporting.grouping || this.groupingDynamic) {
         this.groupBar = h("div", "cx-groupbar"); this.groupBar.setAttribute("role", "group"); this.groupBar.setAttribute("aria-label", this.labels.gridGroupedBy);
@@ -41,6 +41,7 @@
       const id = this.gridPopover?.columnId, column = this.columns.find(item => item.id === id), menu = panel.querySelector('[role="menu"]');
       if (!menu || !column?.sortable || this.gridPopover.panel !== panel) return;
       const levels = this.groupLevelsNow(), grouped = levels.some(level => level.column === id);
+      if (!grouped && !this.view.reporting?.groupable) return;
       const item = gridButton(grouped ? this.labels.gridUngroup : this.labels.gridGroupBy, () => {
         this.closeGridPopover(false);
         this.setGroupBy(grouped ? levels.filter(level => level.column !== id) : [...levels, { column: id, direction: "asc" }]).catch(error => this.emit("error", { error }));
@@ -51,7 +52,7 @@
     // A column dragged onto the bar becomes the innermost level.
     groupDrop(column) {
       const levels = this.groupingDynamic && this.groupLevelsNow();
-      if (!levels || !column.sortable || levels.length >= 4 || levels.some(level => level.column === column.id)) return false;
+      if (!levels || !this.view.reporting?.groupable || !column.sortable || levels.length >= 4 || levels.some(level => level.column === column.id)) return false;
       this.setGroupBy([...levels, { column: column.id, direction: "asc" }]).catch(error => this.emit("error", { error }));
       return true;
     },

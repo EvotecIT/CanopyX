@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Security.Cryptography;
 using CanopyX.Data;
 
 namespace CanopyX.AspNetCore;
@@ -48,6 +49,7 @@ public static class CanopyRemoteScript {
             foreach (var (id, label) in exportFormats) {
                 writer.WriteStartObject();
                 writer.WriteString("id", id);
+                writer.WriteString("exportId", "remote-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(schema.ViewId + "\0" + endpoint + "\0" + id))).ToLowerInvariant().Substring(0, 24));
                 writer.WriteString("label", label);
                 writer.WriteEndObject();
             }
@@ -69,6 +71,16 @@ async function post(path, body, signal) {
   }
   return response;
 }
+async function exportFile(response, fallback) {
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const encoded = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(disposition), plain = /filename\s*=\s*(?:"([^"]*)"|([^;]*))/i.exec(disposition);
+  let name = plain ? (plain[1] || plain[2]).trim() : fallback;
+  if (encoded) { try { name = decodeURIComponent(encoded[1].trim()); } catch (ignored) { } }
+  name = name.split(/[\\/]/).pop().replace(/[\u0000-\u001f\u007f]/g, "_");
+  if (!name || name === "." || name === "..") name = fallback;
+  const blob = await response.blob();
+  return new File([blob], name, { type: blob.type });
+}
 const source = { query: (query, options) => post("/query", query, options.signal).then(response => response.json()) };
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
@@ -87,11 +99,11 @@ if (settings.commit) {
   }, true);
 }
 const ids = settings.formats.map(format => {
-  const id = ("remote-" + settings.view.toLowerCase().replace(/[^a-z0-9-]/g, "-") + "-" + format.id).slice(0, 32).replace(/-+$/, "");
+  const id = format.exportId;
   CanopyX.registerExportFormat({ id, label: format.label, extension: format.id.replace(/[^a-z0-9]/g, "").slice(0, 16) || "dat",
     async write(capture, context) {
       const response = await post("/export/" + encodeURIComponent(format.id), capture.request, context.signal);
-      return response.blob();
+      return exportFile(response, context.fileName + "." + format.id);
     } });
   return id;
 });
@@ -99,8 +111,8 @@ CanopyX.configure(settings.view, { source, exportFormats: ids,
   onExport: async event => {
     const format = settings.formats.find(item => item.id === event.format) || settings.formats[0];
     const response = await post("/export/" + encodeURIComponent(format.id), event.request, event.signal);
-    const blob = await response.blob(), link = document.createElement("a");
-    link.href = URL.createObjectURL(blob); link.download = (event.request.fileName || settings.view) + "." + format.id;
+    const blob = await exportFile(response, (event.request.fileName || settings.view) + "." + format.id), link = document.createElement("a");
+    link.href = URL.createObjectURL(blob); link.download = blob.name;
     document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 0);
   } });
 """;

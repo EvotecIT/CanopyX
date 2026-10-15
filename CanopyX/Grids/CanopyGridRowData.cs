@@ -27,7 +27,7 @@ namespace CanopyX;
 /// </para>
 /// </remarks>
 public sealed class CanopyGridRowData {
-    private readonly CanopyGridRow[] _rows;
+    private readonly string[] _rows;
     private readonly int _chunkSize;
 
     /// <summary>Takes the rows of an inline grid.</summary>
@@ -42,12 +42,18 @@ public sealed class CanopyGridRowData {
         var settings = options ?? new CanopyRowDataOptions();
         _chunkSize = settings.ChunkSize;
         Compression = settings.Compression;
-        _rows = view.Rows.ToArray();
+        var rows = view.Rows.ToArray();
         // A compact row is its key and its cells: detail payloads and record fields would be lost, so such rows stay row objects.
-        var carried = _rows.FirstOrDefault(row => row.Detail != null || row.HasFields);
+        var carried = rows.FirstOrDefault(row => row.Detail != null || row.HasFields);
         if (carried != null) throw new InvalidOperationException("Row data cannot carry the detail payload or record fields of row '" + carried.Id + "'; write these rows as row objects.");
-        Array.Sort(_rows, (left, right) => string.CompareOrdinal(left.Id, right.Id));
+        Array.Sort(rows, (left, right) => string.CompareOrdinal(left.Id, right.Id));
         Columns = view.Columns.Select(column => column.Id).ToList().AsReadOnly();
+        // Capture the compact wire values, including nested structured cells, rather than mutable authoring objects.
+        _rows = rows.Select(row => {
+            var writer = new CanopyJsonWriter(128);
+            row.WriteCompactJson(writer, Columns);
+            return writer.ToString();
+        }).ToArray();
     }
 
     /// <summary>Gets the grid whose rows these are.</summary>
@@ -79,7 +85,7 @@ public sealed class CanopyGridRowData {
         if (index < 0 || index >= ChunkCount) throw new ArgumentOutOfRangeException(nameof(index), index, "No such row data chunk.");
         var writer = new CanopyJsonWriter(_chunkSize * 128);
         writer.BeginArray();
-        for (var i = index * _chunkSize; i < Math.Min(_rows.Length, (index + 1) * _chunkSize); i++) _rows[i].WriteCompactJson(writer, Columns);
+        for (var i = index * _chunkSize; i < Math.Min(_rows.Length, (index + 1) * _chunkSize); i++) writer.Raw(_rows[i]);
         var json = writer.EndArray().ToString();
         if (Compression == CanopyRowCompression.None) return json;
         using var output = new MemoryStream();
@@ -128,6 +134,8 @@ public sealed class CanopyGridRowData {
             result.TotalBytes += bytes;
             result.LargestFileBytes = Math.Max(result.LargestFileBytes, bytes);
         }
+
+        CanopySidecarFiles.RemoveObsolete(folder, string.Empty, index => index < ChunkCount);
 
         return result;
     }

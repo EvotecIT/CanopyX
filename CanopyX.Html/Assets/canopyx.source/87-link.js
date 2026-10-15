@@ -9,7 +9,7 @@
     linkFiltered: "Filtered by {source}: {count} rows", linkHighlighted: "{count} rows highlighted from {source}", linkHighlightedRows: "{count} rows highlighted",
     linkCleared: "Linked filters removed"
   }));
-  const LINK_IMPL = { TreeGrid }, LINK_PART = definePart(TreeGrid, "link", "linked views", () => ({ LINK_IMPL, h, setText, fill, numberFormat,
+  const LINK_IMPL = { TreeGrid, queryOwn: Symbol("own conditions") }, LINK_PART = definePart(TreeGrid, "link", "linked views", () => ({ LINK_IMPL, h, setText, fill, numberFormat,
     cellValue, setAttr }));
   const LINK_METHODS = ["setExternalFilter", "clearExternalFilters", "setHighlight", "clearHighlight", "startLinkEvents"];
   /** Gives a view kind the link methods: each loads the part, which replaces them, and runs again. */
@@ -21,16 +21,17 @@
     View.prototype.getExternalFilters = function () { return (this.linkCommitted || []).map(item => JSON.parse(JSON.stringify(item))); };
     View.prototype.getHighlight = function () { return Array.from(this.linkHighlight || []); };
     View.prototype.linkStart = function () {
-      if (this.opts.linkEvents === true) loadPart(LINK_PART).then(() => this.linkWatch(), error => this.emit("error", { error }));
+      if (this.opts.linkEvents === true) return loadPart(LINK_PART).then(() => this.linkWatch()).catch(error => { this.emit("error", { error }); throw error; });
     };
   }
   linkMethods(TreeGrid);
   // A flat grid's plugins can require the part as well (requirePart reads its view kind's parts).
   function linkGridPart(View) { (Object.hasOwn(View.prototype, "parts") ? View.prototype.parts : View.prototype.parts = {}).link = LINK_PART; }
+  /** Requested link events are installed before a host observes the ready API. */
+  function linkReady(grid, ready) { return Promise.all([ready, grid.linkStart()]).then(([result]) => result); }
   /** The link methods of a grid's public API. */
   function linkApi(grid) {
     const api = {};
     for (const name of LINK_METHODS.concat("getExternalFilters", "getHighlight")) api[name] = (...args) => grid[name](...args);
-    grid.linkStart();
     return api;
   }

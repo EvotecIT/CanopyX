@@ -49,10 +49,10 @@
   }
 
   /** One cell of a record: display, sort and search values come from render when a column has one. */
-  function enhanceRecordCell(column, record, index) {
+  function enhanceRecordCell(column, record, index, position = index) {
     const raw = enhancePath(record, column.data);
     if (!column.render) return enhanceCell(column.kind, raw, null, undefined, undefined, column.defaultContent);
-    const typed = enhanceRender(column, raw, "type", record, index), display = enhanceDisplay(enhanceRender(column, raw, "display", record, index));
+    const typed = column.typed ? column.typed[position] : enhanceRender(column, raw, "type", record, index), display = enhanceDisplay(enhanceRender(column, raw, "display", record, index));
     const sort = enhanceRender(column, raw, "sort", record, index), filter = enhanceRender(column, raw, "filter", record, index);
     return enhanceCell(column.kind, typed, display, sort === typed ? undefined : sort, filter === undefined || filter === null ? undefined : String(filter), column.defaultContent);
   }
@@ -72,10 +72,11 @@
   /** Infers the kinds of columns that did not declare one, from every value they hold; parsed keeps the values read. */
   function enhanceKinds(columns, count, valueAt, numericText) {
     columns.forEach(column => {
-      column.parsed = null;
+      column.parsed = null; column.typed = null;
       if (column.kind) return;
       const values = new Array(count), parsed = new Array(count);
       for (let index = 0; index < count; index++) values[index] = valueAt(column, index);
+      if (column.render) column.typed = values;
       column.kind = enhanceInfer(values, numericText, parsed);
       if (column.kind !== "text") column.parsed = parsed;
     });
@@ -90,11 +91,11 @@
     records.forEach((record, index) => {
       if (record === null || typeof record !== "object") throw new Error("CanopyX: each record is an array or an object.");
       const cells = {};
-      for (const column of columns) { const cell = enhanceRecordCell(column, record, start + index); if (cell !== null) cells[column.grid.id] = cell; }
+      for (const column of columns) { const cell = enhanceRecordCell(column, record, start + index, index); if (cell !== null) cells[column.grid.id] = cell; }
       const id = enhanceRowId(rowId === undefined ? undefined : typeof rowId === "function" ? rowId(record, start + index) : enhancePath(record, rowId), start + index, ids);
       rows[index] = { id, cells }; byId.set(id, record);
     });
-    columns.forEach(column => { column.parsed = null; });
+    columns.forEach(column => { column.parsed = null; column.typed = null; });
     return { rows, records: byId };
   }
 
@@ -127,7 +128,7 @@
       if (className && className.trim() && className.length <= 1024 && !/[\u0000-\u001f\u007f-\u009f]/.test(className)) record.className = className;
       rows[index] = record;
     });
-    columns.forEach(column => { column.parsed = null; });
+    columns.forEach(column => { column.parsed = null; column.typed = null; });
     // Markup is looked up by row id, which the grid hands its renderers; a row's record is its cell texts, read when asked for.
     const byId = new Map(), positions = new Map(rows.map((row, index) => [row.id, index]));
     markup.forEach((cells, index) => byId.set(rows[index].id, cells));

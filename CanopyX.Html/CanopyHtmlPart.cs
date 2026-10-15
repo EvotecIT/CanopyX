@@ -173,7 +173,7 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>Whether a grid uses the record panel part: a record panel, a structured summary column, or structured cells or record links.</summary>
     private static bool UsesRecordPanel(CanopyDataGridView view) {
-        if (view.Record != null) return true;
+        if (view.Record != null || view.Source.Kind == CanopyGridSourceKind.Host) return true;
         foreach (var column in view.Columns) if (column?.Presenter?.Kind == CanopyGridPresenterKind.Structured) return true;
         foreach (var row in view.Rows) if (row != null && (row.HasFields || Structured(row.Cells.Values))) return true;
         return false;
@@ -181,7 +181,7 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>Whether a tree uses the record panel part: a record panel, or nodes with record fields, structured cells or record links.</summary>
     private static bool UsesRecordPanel(CanopyTreeView view) {
-        if (view.Record != null) return true;
+        if (view.Record != null || view.Source.Kind != CanopySourceKind.Inline) return true;
         var pending = new Stack<CanopyNode>(view.Roots);
         while (pending.Count > 0) {
             var node = pending.Pop();

@@ -23,7 +23,11 @@ internal sealed partial class QueryTranslator<T> {
                 return Domain(value, mapped.Shape, member => ProtocolSemantics.Matches(member, CanopyColumnKind.Text, op, condition.Values));
             case ValueShape.Integer: test = IntegerCondition(value, op, condition.Values, guard); break;
             case ValueShape.Real:
-            case ValueShape.Decimal: test = Compare(value, op, condition.Values.Select(operand => Convert.ChangeType((double)operand, ExpressionTools.Underlying(value.Type), CultureInfo.InvariantCulture)).ToList()); break;
+            case ValueShape.Decimal:
+                // Request numbers already are binary64. Narrowing an operand to float/decimal changes boundaries
+                // that the browser sees, so promote the stored value instead (also a portable SQL CAST).
+                var number = Expression.Convert(value, nullable ? typeof(double?) : typeof(double));
+                test = Compare(number, op, condition.Values); break;
             default: test = DateCondition(value, mapped.Shape, op, condition.Values, guard); break;
         }
         if (test is ConstantExpression constant && constant.Value is bool flag) return flag ? (Expression?)guard ?? Expression.Constant(true) : Expression.Constant(false);

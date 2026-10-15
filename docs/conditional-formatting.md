@@ -57,13 +57,19 @@ A predicate is `{ "column", "operator", "values" }` with optional fields:
 | `eq`, `ne`, `gt`, `ge`, `lt`, `le` | one |
 | `contains`, `notContains`, `startsWith`, `endsWith` | one |
 | `like`, `notLike` | one wildcard pattern: `*` any text, `?` one character |
-| `matches`, `notMatches` | one regular expression of at most 256 characters, in the syntax common to ECMAScript and .NET (groups other than `(?:`, lookarounds and named groups are refused); it tests the first 4,096 characters |
+| `matches`, `notMatches` | a bounded regular expression of at most 256 characters; it tests the first 4,096 characters |
 | `in`, `notIn` | 1 to 1,000 |
 | `between` (inclusive), `betweenExclusive` | two, lower first |
 | `isNull`, `isNotNull` | none |
 | `olderThan`, `withinLast` | a number of days, for dates; grids re-evaluate them every minute |
 
 Missing values match only `isNull`, as in filters. Dates compare as instants; ISO 8601 dates without a time zone read as UTC, and other date text does not convert. `valueColumn` works with one-operand comparisons, not with patterns or relative dates.
+
+Regular expressions accept literals, character classes, common character escapes such as `\d`, and fixed repetitions up
+to 256 characters. At most one repetition can have a variable length (`*`, `+`, `?`, or a range); it requires a leading
+`^`. For example, `^web-[0-9]+$` is accepted. Groups, alternatives, lookarounds and backreferences are rejected before a
+rule is applied, so a pattern cannot freeze the browser through catastrophic backtracking. Use `in` or an `or` condition
+for alternatives. Wildcards keep their separate `*` and `?` syntax and support multiple stars.
 
 ## Styles
 

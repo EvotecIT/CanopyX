@@ -51,7 +51,8 @@ public static class CanopyDataValues {
 
     /// <summary>Gets the raw text of an enumeration member: its <see cref="EnumMemberAttribute"/> value when it declares one,
     /// otherwise its name; a combination of flags joins its flags' texts. Filtering, searching, sorting, value lists and exports
-    /// all read this text. Filters match defined members only, so undefined values and flag combinations are never matched by value.</summary>
+    /// all read this text. Queryable mappings support defined members and combinations of up to eight declared flag bits;
+    /// larger flag domains require a host-projected text column.</summary>
     /// <param name="value">The member.</param>
     /// <returns>The text.</returns>
     public static string EnumText(Enum value) {
@@ -95,6 +96,9 @@ public static class CanopyDataValues {
     /// <returns>The identity text.</returns>
     /// <exception cref="InvalidOperationException">The key is null or empty.</exception>
     public static string FormatId(object? key) {
+        // Identities travel as text, so CLR integers must not pass through the numeric-cell double normalization.
+        if (key is sbyte || key is byte || key is short || key is ushort || key is int || key is uint || key is long || key is ulong)
+            return ((IFormattable)key).ToString(null, CultureInfo.InvariantCulture);
         var text = Normalize(key) switch {
             null => null,
             string value => value,

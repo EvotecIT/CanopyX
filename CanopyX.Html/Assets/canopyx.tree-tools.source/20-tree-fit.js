@@ -11,13 +11,13 @@
   const TREE_FIT_ROWS = 2000;
 
   Object.assign(TreeGrid.prototype, COLUMN_FIT, {
-    // The layout fields flat-grid validation checks; the tree column may unpin (pinned: null) or pin left, the others pin left or right.
+    // The layout fields flat-grid validation checks; null unpins any column, and the tree column may only pin left.
     checkTreeLayout() {
       for (const [index, column] of this.view.columns.entries()) {
         if (column.priority !== undefined && !gridPriority(column.priority) || column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) ||
             [column.fixed, column.alwaysVisible, column.autoWidth].some(value => value !== undefined && typeof value !== "boolean") ||
             column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
-            column.pinned !== undefined && (index ? !["left", "right"].includes(column.pinned) : column.pinned !== null && column.pinned !== "left")) throw new Error("CanopyX: invalid tree column layout.");
+            column.pinned !== undefined && (index ? !["left", "right", null].includes(column.pinned) : column.pinned !== null && column.pinned !== "left")) throw new Error("CanopyX: invalid tree column layout.");
       }
     },
 
@@ -110,7 +110,8 @@
       const style = getComputedStyle(this.grid), family = this.fitFamily = " " + style.fontFamily, head = this.headCells?.[0] && getComputedStyle(this.headCells[0]);
       const font = style.fontWeight + " " + style.fontSize + family, headFont = (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family;
       const badgeFont = "400 " + parseFloat(style.fontSize) * 0.8 + "px" + family, pad = parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 8;
-      const text = (value, using = font) => { context.font = using; return context.measureText(String(value).slice(0, 512)).width; };
+      const numericVariant = gridNumericVariant(this.grid);
+      const text = (value, using = font, numeric = true) => { context.font = using; return gridMeasureText(context, value, numeric ? numericVariant : "normal"); };
       const badges = list => (list || []).reduce((sum, badge) => sum + text(badge.text, badgeFont) + 20, 0);
       this.fitCh = Math.ceil(text("00000000000"));
       const rows = [];
@@ -118,7 +119,7 @@
       // A checkbox (interactive runtime, 16 pixels with its 6 pixel spacing from the expander) and an icon sit between the expander and the label.
       const check = this.checkMode ? 28 : 0;
       this.columns.forEach((column, index) => {
-        const headNeed = Math.ceil(text(column.title, headFont) + 2 * pad + (column.sortable ? 22 : 8));
+        const headNeed = Math.ceil(text(column.title, headFont, false) + 2 * pad + (column.sortable ? 22 : 8));
         let values = 0, indent = 0;
         if (column.autoSize !== "none" && column.autoSize !== "header") for (const w of rows) {
           const cell = this.cellOf(w.h, column, index), object = isCellObject(cell);

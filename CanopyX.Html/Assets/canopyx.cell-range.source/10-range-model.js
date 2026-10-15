@@ -23,6 +23,21 @@
     const bounds = grid.rowBounds();
     return { first: Math.max(0, bounds.first), last: bounds.last };
   }
+  // Positions stay in the shown order, but headings and expanded details are not selectable data cells.
+  // The projection's record intervals count large ranges without visiting every record.
+  function crDataBounds(grid, top, bottom) {
+    const projection = grid.rowProjection;
+    if (!projection) return { first: top, count: Math.max(0, bottom - top + 1) };
+    let first = -1, count = 0;
+    for (const range of projection.recordWindow(top, bottom).ranges) {
+      const start = range.first + (projection.recordIndex(range.first) < top ? 1 : 0);
+      const end = range.last - (projection.recordIndex(range.last) > bottom ? 1 : 0);
+      if (start > end) continue;
+      if (first < 0) first = projection.recordIndex(start);
+      count += end - start + 1;
+    }
+    return { first, count };
+  }
 
   /** A range as row and column positions (top, bottom, left, right), or null when one of its columns is out of view. */
   function crRect(grid, range) {
@@ -97,9 +112,9 @@
   /** Says what is selected: one range's rows and columns, or several ranges and their cells. */
   function crAnnounce(grid) {
     const rects = crRects(grid), count = value => numberFormat(grid.lang).format(value);
-    const size = rect => (rect.bottom - rect.top + 1) * (rect.right - rect.left + 1);
+    const rows = rect => crDataBounds(grid, rect.top, rect.bottom).count, size = rect => rows(rect) * (rect.right - rect.left + 1);
     const text = !rects.length ? grid.cellAnnounced ? grid.labels.gridCellRangeCleared : "" : rects.length === 1 ?
-      fill(grid.labels.gridCellRangeSelected, { rows: count(rects[0].bottom - rects[0].top + 1), columns: count(rects[0].right - rects[0].left + 1) }) :
+      fill(grid.labels.gridCellRangeSelected, { rows: count(rows(rects[0])), columns: count(rects[0].right - rects[0].left + 1) }) :
       fill(grid.labels.gridCellRangesSelected, { ranges: count(rects.length), cells: count(rects.reduce((sum, rect) => sum + size(rect), 0)) });
     grid.cellAnnounced = rects.length > 0;
     if (text) setText(grid.live, text);

@@ -46,7 +46,7 @@
           text.appendChild(document.createTextNode(value)); setText(badge, count);
           const heading = h("span", "cx-grid-group-label"); heading.append(text, badge);
           cell.append(button); this.paintGroupSelection(cell, group); cell.append(heading); cell.title = label;
-          this.paintHiddenAggregates(heading, group.aggregates, cell);
+          this.paintHiddenAggregates(heading, group.aggregates, cell, column.id, label);
           return;
         }
         const aggregates = (this.view.reporting.aggregates || []).filter(item => item.column === column.id);
@@ -89,14 +89,18 @@
       return selected && selected === group.count ? true : selected ? "mixed" : false;
     },
     // Aggregates of columns out of view (hidden, or left out on a phone) follow the first cell, so none is lost.
-    paintHiddenAggregates(target, values, cell = target) {
-      const shown = new Set(this.cols.map(column => column.id)), parts = [];
+    paintHiddenAggregates(target, values, cell = target, headingColumn = null, title = this.labels.gridSummary || this.view.label) {
+      const shown = new Set(this.cols.filter(column => column.id !== headingColumn).map(column => column.id)), parts = [];
       for (const column of this.columns) {
         const aggregates = shown.has(column.id) ? [] : (this.view.reporting.aggregates || []).filter(item => item.column === column.id);
         if (aggregates.length) { const text = reportingAggregateParts(this, column, aggregates, values).text; if (text) parts.push(column.title + " " + text); }
       }
       if (!parts.length) return;
-      const extra = h("span", "cx-grid-group-aggregates"); setText(extra, parts.join(" · ")); target.appendChild(extra);
+      const extra = h("button", "cx-grid-group-aggregates"); extra.type = "button";
+      extra.setAttribute("aria-haspopup", "dialog"); setText(extra, parts.join(" · ")); target.appendChild(extra);
+      extra.addEventListener("click", event => {
+        event.stopPropagation(); this.showReportingText({ title }, parts.join("\n"), extra);
+      });
       cell.title = (cell.title ? cell.title + " · " : "") + parts.join(" · ");
     },
     syncSummaryControls() {

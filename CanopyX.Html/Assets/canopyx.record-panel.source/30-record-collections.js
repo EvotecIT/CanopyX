@@ -63,8 +63,8 @@
     }
     host.style.setProperty("--cx-record-rows", String(Math.min(tree ? (list.roots || rows).length : Math.min(rows.length, list.pageLength || 10), 12)));
     body.appendChild(host);
-    ctx.signal.addEventListener("abort", () => { try { api.destroy(); } catch (error) { console.error(error); } }, { once: true });
-    api.ready?.catch(error => ctx.view.emit("error", { error }));
+    recordOnDispose(ctx.signal, () => api.destroy());
+    api.ready?.catch(error => { if (!ctx.signal.aborted) ctx.view.emit("error", { error }); });
   }
 
   // Phones: one card per row, its first column as the title (a link when the row opens a record), then the other fields.
@@ -113,7 +113,8 @@
   async function recordMore(ctx, field, list, button) {
     button.disabled = true; setText(button, ctx.labels.loading);
     try {
-      const payload = await recordFetch(ctx.view, ctx.record.id, { field: field.id, offset: list.rows.length, limit: list.pageSize || 50 });
+      const payload = await recordFetch(ctx.view, ctx.record.id, { field: field.id, offset: list.rows.length, limit: list.pageSize || 50 }, ctx.signal);
+      if (ctx.signal.aborted) return;
       const page = (payload?.fields?.[field.id] ?? payload?.cells?.[field.id])?.records;
       if (!page || !Array.isArray(page.rows)) recordFail("a field page answers with the field's records.");
       const known = new Set(list.rows.map(row => row.id));

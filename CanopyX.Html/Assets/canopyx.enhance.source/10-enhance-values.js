@@ -45,6 +45,8 @@
     if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : null;
     const match = typeof value === "string" ? ENHANCE_DATE.exec(value.trim()) : null;
     if (!match) return null;
+    const [year, month, day] = match[1].split("-").map(Number), leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    if (month < 1 || month > 12 || day < 1 || day > [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]) return null;
     const zone = !match[3] || match[3] === "Z" ? "Z" : match[3].length === 5 ? match[3].slice(0, 3) + ":" + match[3].slice(3) : match[3];
     const iso = match[1] + "T" + (match[2] || "00:00") + zone;
     return Number.isFinite(Date.parse(iso)) ? iso : null;

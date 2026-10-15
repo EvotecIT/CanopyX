@@ -33,7 +33,10 @@
     async fillDetail(entry, id, record) {
       const body = entry.body, options = this.opts.detail || {}, declared = this.view.reporting?.detail || {}, signal = entry.controller.signal;
       const context = Object.freeze({ id, signal, api: this.host.canopyx, labels: this.labels,
-        onDispose: cleanup => signal.addEventListener("abort", () => { try { cleanup(); } catch (error) { console.error(error); } }, { once: true }) });
+        onDispose: cleanup => {
+          const dispose = () => { try { cleanup(); } catch (error) { console.error(error); } };
+          if (signal.aborted) dispose(); else signal.addEventListener("abort", dispose, { once: true });
+        } });
       const row = gridFreeze(JSON.parse(JSON.stringify(record || { id, cells: {} })));
       setText(body, this.labels.loading); body.classList.add("cx-detail-pending");
       try {
@@ -43,7 +46,7 @@
         } else if (typeof options.html === "function") {
           const html = await options.html(row, context);
           if (typeof html !== "string") throw new Error("CanopyX: a detail html renderer returns a string.");
-          if (!signal.aborted) body.innerHTML = html; // trusted host markup: hosts encode the record text they put in it
+          if (!signal.aborted) hostHtml(body, html, this.opts.sanitizeHtml, "detail");
         } else if (declared.template) {
           const template = document.getElementById(declared.template);
           if (!(template instanceof HTMLTemplateElement)) throw new Error("CanopyX: the detail template is not a <template> element.");
@@ -105,7 +108,7 @@
           payload.type === "properties" && !Array.isArray(payload.items) || payload.type === "html" && typeof payload.html !== "string")
         throw new Error("CanopyX: a detail payload is a table, properties or html; grid and tree payloads need the definition's detail view.");
       const holder = h("div");
-      TreeGrid.prototype.renderDetail.call({ opts: {}, fmt: this.fmt }, { detail: payload }, holder);
+      TreeGrid.prototype.renderDetail.call({ opts: this.opts, fmt: this.fmt }, { detail: payload }, holder);
       body.replaceChildren(...holder.firstChild.childNodes);
     },
     disposeDetail(id) {

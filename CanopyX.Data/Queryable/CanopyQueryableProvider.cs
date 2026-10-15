@@ -63,6 +63,7 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         Own(request);
         var source = _source();
         var translator = Translator(source);
+        translator.ValidateOrder(request.InnerSort);
         var total = await Executor.CountAsync(source, cancellationToken).ConfigureAwait(false);
         var filtered = translator.Apply(source, request);
         var matched = ReferenceEquals(filtered, source) ? total : await Executor.CountAsync(filtered, cancellationToken).ConfigureAwait(false);
@@ -83,7 +84,9 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
     public ValueTask<int> CountAsync(CanopyDataRequest request, CancellationToken cancellationToken) {
         Own(request);
         var source = _source();
-        return new ValueTask<int>(Executor.CountAsync(Translator(source).Apply(source, request), cancellationToken));
+        var translator = Translator(source);
+        translator.ValidateOrder(request.InnerSort);
+        return new ValueTask<int>(Executor.CountAsync(translator.Apply(source, request), cancellationToken));
     }
 
     /// <inheritdoc />
@@ -91,6 +94,7 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         Own(request);
         var source = _source();
         var translator = Translator(source);
+        translator.ValidateOrder(request.InnerSort);
         var columns = Map.Columns.Select(column => column.Id).ToList();
         var filtered = translator.Apply(source, request);
         // A grouped export follows the grid's record order, so outline ranges written from the summary fit its rows.
@@ -112,6 +116,8 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var matched = await Executor.CountAsync(filtered, cancellationToken).ConfigureAwait(false);
         var searched = translator.ValueSearch(filtered, request.Column.Id, request.Search);
         var shape = Map.Get(request.Column.Id).Shape;
+        if (shape == ValueShape.DateTime || shape == ValueShape.DateTimeOffset)
+            return await DateFacetAsync(translator, searched, request, matched, cancellationToken).ConfigureAwait(false);
         var small = shape == ValueShape.Boolean || shape == ValueShape.Enum;
         var distinct = small ? -1 : await translator.DistinctAsync(searched, request.Column.Id, Executor, cancellationToken).ConfigureAwait(false);
         var buckets = await translator.BucketsAsync(searched, request.Column.Id, small ? (int?)null : request.Limit, Executor, cancellationToken).ConfigureAwait(false);
@@ -128,6 +134,30 @@ public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
         var complete = small || distinct <= request.Limit;
         var totalValues = complete ? ordered.Count : distinct;
         return new CanopyFacetResult(matched, totalValues, ordered.Take(request.Limit).Select(item => new CanopyFacetBucket(item.Value, item.Count)));
+    }
+
+    /// <summary>Date functions differ between SQL stores (some round fractional milliseconds). Merge ordered raw groups
+    /// as a stream instead, retaining only the requested prefix while counting every protocol-distinct instant.</summary>
+    private async ValueTask<CanopyFacetResult> DateFacetAsync(QueryTranslator<T> translator, IQueryable<T> source, CanopyFacetRequest request, int matched, CancellationToken cancellationToken) {
+        var items = new List<CanopyFacetBucket>();
+        string? previous = null;
+        object? value = null;
+        var count = 0;
+        var total = 0;
+        void Complete() {
+            if (previous == null) return;
+            total++;
+            if (items.Count < request.Limit) items.Add(new CanopyFacetBucket(value, count));
+        }
+        await foreach (var bucket in translator.DateBucketsAsync(source, request.Column.Id, Executor, cancellationToken).ConfigureAwait(false)) {
+            var normalized = CanopyDataValues.Normalize(bucket.Value);
+            var key = FacetKey(normalized);
+            if (key == previous) { count += bucket.Count; continue; }
+            Complete();
+            previous = key; value = normalized; count = bucket.Count;
+        }
+        Complete();
+        return new CanopyFacetResult(matched, total, items);
     }
 
     /// <inheritdoc />

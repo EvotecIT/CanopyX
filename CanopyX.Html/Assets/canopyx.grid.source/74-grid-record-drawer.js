@@ -22,7 +22,7 @@
     const previous=gridDecorateButton(gridButton("",()=>navigate(-1)),"up",true),next=gridDecorateButton(gridButton("",()=>navigate(1)),"down",true),close=gridDecorateButton(gridButton("",()=>dialog.close()),"close",true);
     previous.setAttribute("aria-label",this.labels.gridPreviousRecord);next.setAttribute("aria-label",this.labels.gridNextRecord);close.setAttribute("aria-label",this.labels.gridCloseRecord);
     for(const button of [previous,next,close])button.classList.add("icon");identity.append(title,subtitle);head.append(identity,previous,next,close);dialog.append(head,body);
-    document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;
+    document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;DataGrid.activeDrawers.set(dialog,this);
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false,paints=null;
     // A record outside the accepted result (a deep link or a related record) has no position: previous and next stay off.
     const placed=()=>Number.isInteger(index);
@@ -33,7 +33,7 @@
       // The subtitle is the secondary text the host configures (a cell's secondary text or the presenter's secondaryColumn), never the raw row id.
       const secondary=row.cells[primary.id]?.secondary||options?.secondaryColumn&&cellText(row.cells[options.secondaryColumn],this.columns.find(column=>column.id===options.secondaryColumn),this.fmt)||"";
       setText(subtitle,secondary);subtitle.hidden=!secondary;
-      dialog._cxRecord=row;dialog.setAttribute("data-cx-record",row.id);dialog.setAttribute("data-cx-view",this.view.id);
+      dialog._cxRecord=row;dialog._cxIndex=index;dialog.setAttribute("data-cx-record",row.id);dialog.setAttribute("data-cx-view",this.view.id);
       steps();this.paintDrawerBody(row,body,dialog,{index,signal:paints.signal});
       dialog.dispatchEvent(new CustomEvent("cx-drawer-paint",{detail:{id:row.id,index}}));
     };
@@ -53,10 +53,12 @@
       else if(["ArrowUp","ArrowDown"].includes(event.key)&&!event.defaultPrevented&&!event.target.matches('input,textarea,select,[contenteditable],[role=tab]')&&!event.target.closest(".cx-record-nested")){event.preventDefault();navigate(event.key==="ArrowUp"?-1:1);}
     });
     const abort=()=>{retiredForNavigation=dialog._navigating;dialog.close();};owner.signal.addEventListener("abort",abort,{once:true});
-    dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
+    const refreshHooks=()=>DataGrid.refreshDrawerHooks(this,dialog);
+    this.host.addEventListener("canopyx:format",refreshHooks);
+    dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);this.host.removeEventListener("canopyx:format",refreshHooks);DataGrid.activeDrawers.delete(dialog);cancelAnimationFrame(dialog._cxHooksFrame);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
       if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
-    for(const {hook} of DataGrid.drawerHooks){try{hook.call(this,dialog);}catch(error){this.emit("error",{error});}}
+    DataGrid.applyDrawerHooks(this,dialog);
     paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();this.focusRing(title);
     return dialog;
   };
@@ -77,7 +79,7 @@
     paintDrawerValue(column,row,value,context){
       const cell=row.cells[column.id],object=isCellObject(cell),presenter=column.presenter||(column.wrap?{kind:"longText"}:null);
       if(column.render&&column.hostRenderer!==false){
-        try{if(column.render(row,value,{column:column.id,index:this.columns.indexOf(column),signal:context.signal,onDispose:cleanup=>context.signal.addEventListener("abort",cleanup,{once:true})})===true)return;}
+        try{if(column.render(row,value,{column:column.id,index:this.columns.indexOf(column),signal:context.signal,onDispose:cleanup=>{if(context.signal.aborted)cleanup();else context.signal.addEventListener("abort",cleanup,{once:true});}})===true)return;}
         catch(error){this.emit("error",{error});}
       }
       if(presenter){gridCellRenderer(this,{...column,renderWidth:context.width||260},presenter)(row,value);return;}

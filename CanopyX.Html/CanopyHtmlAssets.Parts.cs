@@ -51,7 +51,8 @@ public static partial class CanopyHtmlAssets {
         var nestedGrid = view.Reporting?.Detail?.View;
         var nestedTree = view.Reporting?.Detail?.TreeView;
         // A record collection held as tree nodes shows as a nested tree in the record panel, which loads the tree tools.
-        var treeCollection = view.Rows.Any(row => TreeCollection(row.Cells.Values) || row.HasFields && TreeCollection(row.Fields.Values));
+        var treeCollection = view.Source.Kind == CanopyGridSourceKind.Host || view.Record != null && view.Record.Source.Kind != CanopyRecordSourceKind.Inline ||
+            view.Rows.Any(row => TreeCollection(row.Cells.Values) || row.HasFields && TreeCollection(row.Fields.Values));
         return Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree) ||
             treeCollection && part.Name == "tree-tools").ToList().AsReadOnly();
     }

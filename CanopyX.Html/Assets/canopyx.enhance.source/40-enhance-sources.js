@@ -81,11 +81,12 @@
       query(query, { signal }) {
         const extra = enhanceExtra(source, query);
         return enhanceRequest(source, source.url, extra ? { ...query, ...extra } : query, signal, true).then(answer => {
-          if (answer && answer.type === "gridPage") { store.rows = answer.items || []; return answer; }
+          if (answer && answer.protocol === PROTOCOL && answer.type === "gridPage") {
+            store.rows = answer.items || []; store.records = new Map(store.rows.map(record => [record.id, record])); return answer;
+          }
           // A plain answer: records (found as for a URL read once) mapped through the columns, with the answer's counts.
           const records = enhanceRecordsOf(answer, source.dataSrc);
-          const ready = records.every(record => record && typeof record.id === "string" && record.cells && typeof record.cells === "object");
-          const built = ready ? { rows: records, records: new Map(records.map(record => [record.id, record])) } : enhanceRecordRows(records, columns, rowId, query.offset);
+          const built = enhanceRecordRows(records, columns, rowId, query.offset);
           const total = Number(answer.total ?? records.length), matched = Number(answer.matched ?? total);
           store.rows = built.rows; store.records = built.records;
           // Without a revision of its own, an answer is the snapshot the query names: the same data while the query keeps its revision.
@@ -95,6 +96,9 @@
         });
       }
     };
-    if (source.facetUrl) server.facet = (request, { signal }) => enhanceRequest(source, source.facetUrl, request, signal, true);
+    if (source.facetUrl) server.facet = (request, { signal }) => {
+      const extra = enhanceExtra(source, request.query);
+      return enhanceRequest(source, source.facetUrl, extra ? { ...request, ...extra } : request, signal, true);
+    };
     return server;
   }

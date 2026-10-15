@@ -26,8 +26,9 @@
     getState() { return this.modeState(MODES_BASE.getState.call(this)); },
     readGridState(state) { return Object.assign(MODES_BASE.readGridState.call(this, state), readModeState(this, state)); },
     applyStatePresentation(state) {
-      MODES_BASE.applyStatePresentation.call(this, state);
+      const applied = MODES_BASE.applyStatePresentation.call(this, state);
       this.applyModeState(state);
+      return applied;
     },
     initializeState() {
       const ready = MODES_BASE.initializeState.call(this);

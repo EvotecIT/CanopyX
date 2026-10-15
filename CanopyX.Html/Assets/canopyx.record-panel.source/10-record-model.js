@@ -4,10 +4,31 @@
   // Any value may be structured: a list (items), an object (fields), a collection of records (records), a timeline (events)
   // or before/after changes (changes); any value may link to another record (ref). docs/record-panel.md has the contract.
   const RECORD_KINDS = ["items", "fields", "records", "events", "changes"], RECORD_LINK_KEY = /^[A-Za-z][\w.-]{0,31}$/;
-  const recordKind = cell => isCellObject(cell) && !Array.isArray(cell) ? RECORD_KINDS.find(name => cell[name] !== undefined) || null : null;
+  const recordKind = cell => {
+    const kinds = isCellObject(cell) && !Array.isArray(cell) ? RECORD_KINDS.filter(name => cell[name] !== undefined) : [];
+    if (kinds.length > 1) recordFail("a cell carries at most one structured value.");
+    return kinds[0] || null;
+  };
   const recordFail = message => { throw new Error("CanopyX: " + message); };
   const recordText = (value, max = 256) => typeof value === "string" && !!value.trim() && value.length <= max;
   const recordGridHelpers = () => RECORD_IMPL.grid || {};
+  function recordCheckValue(cell, depth = 0) {
+    if (depth > 64) recordFail("a structured value is nested too deeply.");
+    const kind = recordKind(cell);
+    if (kind === "items") for (const item of cell.items || []) recordCheckValue(item, depth + 1);
+    if (kind === "fields") for (const field of cell.fields || []) recordCheckValue(field.value, depth + 1);
+    if (kind === "changes") for (const change of cell.changes || []) { recordCheckValue(change.before, depth + 1); recordCheckValue(change.after, depth + 1); }
+    if (kind === "events") for (const event of cell.events || []) for (const change of event.changes || []) {
+      recordCheckValue(change.before, depth + 1); recordCheckValue(change.after, depth + 1);
+    }
+    if (kind === "records") {
+      const rows = (list, level = depth + 1) => {
+        if (level > 64) recordFail("a structured value is nested too deeply.");
+        for (const row of list || []) { Object.values(row.cells || {}).forEach(value => recordCheckValue(value, level)); rows(row.children, level + 1); }
+      };
+      rows(cell.records.rows || cell.records.roots);
+    }
+  }
 
   // The view's record panel definition, checked once per view: ids, references, layout, deep links, source and actions.
   function recordSpec(view) {
@@ -125,17 +146,22 @@
     if (view.kind === "grid" && typeof view.source?.record === "function") return (request, options) => view.source.record(request, options);
     return source?.kind === "sidecar" ? "sidecar" : null;
   }
-  function recordPayload(view, id, doc) {
+  const recordRevision = view => view.snapshot?.revision ?? null;
+  const recordCacheKey = (view, id, revision = recordRevision(view)) => JSON.stringify([revision, id]);
+  const recordEntry = (view, id) => view._recordPayloads?.get(recordCacheKey(view, id));
+  function recordPayload(view, id, doc, revision) {
     if (doc == null) return null;
     if (typeof doc !== "object" || Array.isArray(doc) || doc.protocol !== undefined && doc.protocol !== PROTOCOL || doc.type !== undefined && doc.type !== "gridRecord" ||
-        doc.view !== undefined && doc.view !== view.view.id || doc.id !== undefined && doc.id !== id) recordFail("a record source answers with the gridRecord of the requested record.");
+        doc.view !== undefined && doc.view !== view.view.id || doc.id !== undefined && doc.id !== id ||
+        revision && revision !== "inline" && doc.revision !== undefined && doc.revision !== revision) recordFail("a record source answers with the gridRecord of the requested record and revision.");
     for (const name of ["cells", "fields"]) if (doc[name] !== undefined && (!doc[name] || typeof doc[name] !== "object" || Array.isArray(doc[name]) || Object.hasOwn(doc[name], "__proto__")))
       recordFail("record " + name + " are an object of ids.");
     if (doc.row !== undefined && (!doc.row || doc.row.id !== id || !doc.row.cells || typeof doc.row.cells !== "object")) recordFail("a record's row is the requested record.");
+    for (const cells of [doc.cells, doc.fields, doc.row?.cells, doc.row?.fields]) if (cells) Object.values(cells).forEach(cell => recordCheckValue(cell));
     return JSON.parse(JSON.stringify({ cells: doc.cells || null, fields: doc.fields || null, row: doc.row || null }));
   }
-  function recordFetch(view, id, extra) {
-    const loader = recordLoader(view), spec = recordSpec(view).source;
+  function recordFetch(view, id, extra, signal) {
+    const loader = recordLoader(view), spec = recordSpec(view).source, revision = recordRevision(view);
     if (!loader) return Promise.resolve(null);
     if (loader === "sidecar") {
       const shard = recordShard(id, spec.shards), key = JSON.stringify([view.view.id, spec.base, shard]);
@@ -149,21 +175,21 @@
         pack.catch(() => RECORD_PACKS.delete(key)); RECORD_PACKS.set(key, pack);
         if (RECORD_PACKS.size > 16) RECORD_PACKS.delete(RECORD_PACKS.keys().next().value);
       }
-      return pack.then(records => recordPayload(view, id, records.get(id) || null));
+      return pack.then(records => recordPayload(view, id, records.get(id) || null, revision));
     }
-    const revision = view.snapshot?.revision, request = { protocol: PROTOCOL, type: "gridRecordQuery", view: view.view.id, id,
+    const request = { protocol: PROTOCOL, type: "gridRecordQuery", view: view.view.id, id,
       ...(revision && revision !== "inline" ? { revision } : {}), ...extra };
     const run = signal => Promise.resolve(loader(request, { signal }));
-    return (view.runGridHook ? view.runGridHook(run) : run(view.lifetime.signal)).then(doc => recordPayload(view, id, doc));
+    return (view.runGridHook ? view.runGridHook(run, signal || view.dataLifetime?.signal) : run(signal || view.lifetime.signal)).then(doc => recordPayload(view, id, doc, revision));
   }
   // The record's cached payload entry ({ state, payload, error, promise }), started on first use; null when nothing loads. A
   // failed entry stays until the reader retries (which drops it), so a failure never turns into a loop of requests.
   function recordEnsure(view, id) {
-    const cache = view._recordPayloads ||= new Map();
-    let entry = cache.get(id);
+    const cache = view._recordPayloads ||= new Map(), key = recordCacheKey(view, id);
+    let entry = cache.get(key);
     if (entry) return entry;
     if (!recordLoader(view)) return null;
-    entry = { state: "loading" }; cache.delete(id); cache.set(id, entry);
+    entry = { state: "loading" }; cache.set(key, entry);
     if (cache.size > 64) cache.delete(cache.keys().next().value);
     entry.promise = recordFetch(view, id, {}).then(payload => { entry.state = "ready"; entry.payload = payload; return payload; },
       error => { entry.state = "error"; entry.error = error; if (error.name !== "AbortError") view.emit("error", { error }); throw error; });

@@ -121,7 +121,8 @@ public static class Fleet {
         .Column("cores", x => x.Cores)
         .Column("memory", x => x.Memory)
         .Column("online", x => x.Online)
-        .Column("lastSeen", x => x.LastSeen)
+        // Database fixtures seed UTC dates at whole milliseconds, so their indexed date is already a protocol sort key.
+        .Column("lastSeen", x => x.LastSeen, column => column.SortBy(x => x.LastSeen))
         .Column("owner", x => x.Owner!.Name)
         .Column("notes", x => x.Notes);
 

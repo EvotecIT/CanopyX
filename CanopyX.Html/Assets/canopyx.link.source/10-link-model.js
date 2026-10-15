@@ -66,7 +66,7 @@
     return grid.linkFilters.every(filter => {
       const value = linkCell(grid, record, filter.field), date = linkColumn(grid, filter.field).kind === "datetime";
       if (value == null) return false;
-      const at = item => date || typeof item === "string" && linkIsoDate(item) ? Date.parse(item) : item, key = at(value);
+      const at = item => date ? Date.parse(item) : item, key = at(value);
       if (filter.values) return filter.values.some(item => at(item) === key || String(item) === String(value));
       return (filter.range[0] == null || key >= at(filter.range[0])) && (filter.range[1] == null || key <= at(filter.range[1]));
     });
@@ -91,8 +91,10 @@
     /** Applies the filters the host asked for; the view commits them once they show (linkCommit, per view kind). */
     async linkApply(next, reason) {
       if (this.destroyed) return false;
-      if (JSON.stringify(next) === JSON.stringify(this.linkFilters || [])) return true;
-      return this.linkCommit(next, reason);
+      if (JSON.stringify(next) === JSON.stringify(this.linkFilters || [])) return this.linkPending || true;
+      const pending = this.linkCommit(next, reason);
+      this.linkPending = pending;
+      try { return await pending; } finally { if (this.linkPending === pending) this.linkPending = null; }
     },
 
     /** The view shows new external filters: tell the host (canopyx:externalfilter) and the screen reader. */

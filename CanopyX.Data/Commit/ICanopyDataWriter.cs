@@ -12,7 +12,9 @@ namespace CanopyX.Data;
 /// require a write policy of their own.
 /// </para>
 /// <para>
-/// A writer executes each row independently, so one row's failure does not discard the others. For concurrency it compares
+/// A per-row writer executes each row independently, so one row's failure does not discard the others. A per-batch writer
+/// declares that boundary through <see cref="Transaction"/>; the endpoint rejects the whole batch when any row fails its
+/// validation. For concurrency it compares
 /// <see cref="CanopyCommitBatch.Revision"/> with its current revision and, where they differ, each row's
 /// <see cref="CanopyCommitRow.Original"/> values with the stored ones: a row whose stored values differ is a
 /// <see cref="CanopyCommitStatus.Conflict"/> and is not written. A writer that cannot compare rows may answer every row of a
@@ -22,6 +24,10 @@ namespace CanopyX.Data;
 /// </para>
 /// </remarks>
 public interface ICanopyDataWriter {
+    /// <summary>Gets the writer's transaction boundary. A per-batch writer receives no rows when any input row fails
+    /// endpoint validation; per-row writers can save the remaining valid rows independently.</summary>
+    CanopyCommitTransaction Transaction { get; }
+
     /// <summary>Saves the rows of a validated batch.</summary>
     /// <param name="batch">The batch; its rows passed the endpoint's checks.</param>
     /// <param name="revision">The dataset revision the endpoint read when the batch arrived.</param>

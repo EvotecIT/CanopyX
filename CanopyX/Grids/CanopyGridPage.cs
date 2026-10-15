@@ -57,7 +57,7 @@ public sealed class CanopyGridPage {
         if (Rows.Count == 0 && Offset < Matched) throw new InvalidOperationException("A grid page cannot be empty before the end of its matching rows.");
         if (view != null && (view.Id != View || view.Navigation != CanopyGridNavigation.Offset))
             throw new InvalidOperationException("An offset page must target its owning offset grid.");
-        CanopyGridRows.Validate(Rows, view?.ValidateColumns(), view?.Columns);
+        CanopyGridRows.Validate(Rows, view?.ValidateColumns(), view?.Columns, view?.Reporting?.Detail);
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("gridPage").Property("view", View).Property("revision", Revision)
             .Property("offset", Offset).Property("total", Total).Property("matched", Matched)

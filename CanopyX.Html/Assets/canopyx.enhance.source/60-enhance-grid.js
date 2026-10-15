@@ -162,18 +162,21 @@
     let caption = null;
     if (read && read.caption) { caption = enhanceStyled("div", "cx-enhanced-caption", "caption"); setText(caption, read.caption); host.appendChild(caption); }
     if (isTable) element.replaceWith(host);
-    const events = enhanceEvents(host, settings.on);
-    if (!settings.height && paged) events.on("draw", ({ paging }) => fit(paging.pageLength));
-    let api;
+    let api, events;
     // The pager part loads once the table has left the page: its stylesheet then restyles the small grid host, not every row.
-    try { await loadPart(GRID_PAGER); api = createDataGrid(host, Object.assign(grid, { view })); } catch (error) {
-      events.abort(); caption?.remove(); restore();
+    try {
+      events = enhanceEvents(host, settings.on);
+      if (!settings.height && paged) events.on("draw", ({ paging }) => fit(paging.pageLength));
+      await loadPart(GRID_PAGER); api = createDataGrid(host, Object.assign(grid, { view }));
+    } catch (error) {
+      events?.abort(); caption?.remove(); restore();
       if (isTable) host.replaceWith(element);
       throw error;
     }
     const footer = read && settings.footer !== false && !(settings.view && settings.view.reporting && settings.view.reporting.aggregates) ? enhanceFooter(read.footer, columns) : null;
     if (footer) host.querySelector(":scope > .cx-grid").after(footer);
     const controller = enhanceController({ api, element, host, isTable, read, columns, store, rowSource, server, events, settings, caption, footer, restore });
+    host.canopyx = controller;
     ENHANCE_CONTROLLERS.set(element, controller);
     if (isTable) ENHANCE_CONTROLLERS.set(host, controller);
     events.start(controller, api);

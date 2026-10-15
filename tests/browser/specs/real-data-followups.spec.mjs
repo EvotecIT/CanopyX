@@ -212,14 +212,14 @@ test("a grouped grid keeps each group whole when its cells carry sort keys, and 
   const groups = await page.locator("[data-cx-group]").evaluateAll(items => items.map(item => item.getAttribute("data-cx-group")));
   expect(groups.length).toBe(2);
   expect(new Set(groups).size).toBe(2);
-  // Without grouping, numeric keys (items 0, 3, 6, 9) come before text values in either direction's mirror.
+  // Without grouping, numeric keys (items 0, 3, 6, 9) keep their rank before text in both directions.
   await open(page, grid({ id: "mixed", pageSize: 50, rows: rows.map(row => ({ id: row.id, cells: { name: row.cells.name } })), columns: [{ id: "name", title: "Name", kind: "text", sortable: true }] }));
   const order = () => page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top).map(row => row.dataset.cxId));
   await page.locator('.cx-hcell[data-cx-column="name"] .cx-sort').click();
   await expect.poll(async () => (await order()).slice(0, 4)).toEqual(["r00", "r03", "r06", "r09"]);
   const ascending = await order();
   await page.locator('.cx-hcell[data-cx-column="name"] .cx-sort').click();
-  await expect.poll(order).toEqual([...ascending].reverse());
+  await expect.poll(order).toEqual([...ascending.slice(0, 4).reverse(), ...ascending.slice(4).reverse()]);
   expect(page.errors).toEqual([]);
 });
 // Where the column menu always shows, a number column's header reads as one cell: the title over the numbers, then the menu.
@@ -280,9 +280,12 @@ for (const theme of ["light", "dark"]) {
     await tree.screenshot({ path: process.env.CANOPYX_EVIDENCE ? path.join(process.env.CANOPYX_EVIDENCE, "deep-tree-" + theme + "-390.png") : undefined });
     // Record details in the more menu opens the focused row's drawer, for keyboard readers.
     await tree.locator('.cx-row[data-cx-id="fs-2"]').click();
+    // A centered row click can hit the phone's hidden-fields button; close its modal before reaching the toolbar.
+    const drawer = page.locator("dialog.cx-drawer");
+    if (await drawer.isVisible()) await drawer.getByRole("button", { name: "Close record details", exact: true }).click();
+    await expect(drawer).toHaveCount(0);
     await tree.locator(".cx-grid-overflow > summary").click();
     await tree.locator(".cx-grid-details").click();
-    const drawer = page.locator("dialog.cx-drawer");
     await expect(drawer.locator("h4")).toHaveText("Projects");
     await expect(drawer.locator("dt")).toHaveText(["Size", "Modified", "Type"]);
     await page.keyboard.press("Escape");

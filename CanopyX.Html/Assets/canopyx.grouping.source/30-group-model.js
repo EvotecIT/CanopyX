@@ -35,6 +35,7 @@
     attachRows() {
       if (this.rowsAttached) return;
       GROUP_ATTACH.call(this);
+      if (!reportingSummaryEnabled(this.view)) return;
       GROUP_GRIDS.set(this.view, this);
       this.groupAggregates = groupCustomAggregates(this);
       for (const aggregate of this.view.reporting.aggregates || [])
@@ -54,6 +55,11 @@
         if (this.summaryCandidate?.key === key && this.summary !== this.summaryCandidate.result) { this.summary = this.summaryCandidate.result; this.groupHeaders.clear(); }
       }
       this.groupLevels = this.summary ? groupLevelsOf(this.view, query) : [];
+      const levelsKey = JSON.stringify(this.groupLevels);
+      if (this.groupLevelsKey !== undefined && this.groupLevelsKey !== levelsKey && this.collapsedGroups.size) {
+        this.collapsedGroups.clear(); this.groupCollapseVersion = (this.groupCollapseVersion || 0) + 1; this.version++;
+      }
+      this.groupLevelsKey = levelsKey;
       this.syncGroupAria(); this.syncSummaryControls(); this.syncGroupBar();
     },
     projectionGroups() { return this.groupLevels?.length ? this.summary.groups : null; },

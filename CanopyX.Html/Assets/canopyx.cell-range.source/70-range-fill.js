@@ -22,15 +22,15 @@
   async function crFill(grid, rect, top, bottom, sourceRows) {
     const blocks = [{ rows: Array.from({ length: bottom - rect.top + 1 }, (_, index) => rect.top + index), left: rect.left, right: rect.right }];
     const loaded = await crLoad(grid, blocks), cells = [];
+    const targets = blocks[0].rows.filter(position => position >= top && position <= bottom && loaded.has(position));
     for (let index = rect.left; index <= rect.right; index++) {
       const column = grid.cols[index], values = [];
       for (let position = rect.top; position < rect.top + sourceRows; position++) { const row = loaded.get(position); if (row) values.push(cellValue(row.h.cells[column.id]) ?? null); }
       if (!values.length) continue;
-      const series = crSeries(values, bottom - top + 1);
-      for (let position = top; position <= bottom; position++) {
+      const series = crSeries(values, targets.length);
+      for (const [index, position] of targets.entries()) {
         const row = loaded.get(position);
-        if (!row) continue;
-        const value = series[position - top], previous = cellValue(row.h.cells[column.id]);
+        const value = series[index], previous = cellValue(row.h.cells[column.id]);
         cells.push({ id: row.key, column: column.id, row: position, text: value == null ? "" : cellText(value, column, grid.fmt), value, previous: previous ?? null });
       }
     }
@@ -40,7 +40,8 @@
   function crFillDown(grid) {
     const rect = crRects(grid)[0];
     if (!rect || rect.bottom === rect.top) return Promise.resolve();
-    return crFill(grid, rect, rect.top + 1, rect.bottom, 1);
+    const first = crDataBounds(grid, rect.top, rect.bottom).first;
+    return first < 0 || first === rect.bottom ? Promise.resolve() : crFill(grid, { ...rect, top: first }, first + 1, rect.bottom, 1);
   }
 
   function crFillDrag(grid, event) {

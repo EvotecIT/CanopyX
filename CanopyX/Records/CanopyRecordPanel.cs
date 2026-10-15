@@ -23,7 +23,7 @@ namespace CanopyX;
 /// </para>
 /// </remarks>
 public sealed class CanopyRecordPanel {
-    private static readonly Regex LinkKey = new Regex("^[A-Za-z][\\w.-]{0,31}$", RegexOptions.CultureInvariant);
+    private static readonly Regex LinkKey = new Regex("^[A-Za-z][A-Za-z0-9_.-]{0,31}$", RegexOptions.CultureInvariant);
     private string? _deepLinkKey;
     private CanopyRecordSource _source = CanopyRecordSource.Inline();
 

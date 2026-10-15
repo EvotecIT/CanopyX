@@ -14,7 +14,8 @@
   // which replace a registered format with the same id on this grid. An id nobody registered is skipped.
   function exportFormatsOf(grid) {
     const list = grid.opts.exportFormats ?? grid.view.exportFormats, known = new Map(EXPORT_FORMATS);
-    for (const format of grid.plugins.flatMap(item => item.exportFormats || [])) known.set(format.id, exportFormat(format));
+    for (const format of grid.plugins.filter(item => (grid.opts.plugins || []).some(local => local.name === item.name))
+      .flatMap(item => item.exportFormats || [])) known.set(format.id, exportFormat(format));
     if (list === undefined) return [...known.values()];
     const formats = Array.isArray(list) ? list.map(item => typeof item === "string" ? known.get(item) : exportFormat(item)).filter(Boolean) : null;
     if (!formats || new Set(formats.map(format => format.id)).size !== formats.length) throw new Error("CanopyX: invalid exportFormats.");

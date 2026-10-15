@@ -5,6 +5,23 @@ namespace CanopyX.Data.Tests;
 
 /// <summary>Operator, null, case, search, ordering and window rules, checked on the reference and on LINQ to objects.</summary>
 public sealed class ProviderSemanticsTests {
+    [Theory, MemberData(nameof(Kinds))]
+    public async Task NonFiniteNumbers_AreMissingForFiltersOrderingAndAggregates(ProviderKind kind) {
+        var hosts = new[] { 10d, 20d, double.NaN, double.NegativeInfinity, double.PositiveInfinity }
+            .Select((memory, index) => new Host { Id = index + 1, Name = "host-" + index, Memory = memory }).ToList();
+        var view = Fleet.View();
+        view.Reporting!.Aggregates.Add(new CanopyGridAggregate("memoryCount", "memory", CanopyGridAggregateOperation.Count, "Memory count"));
+        var harness = new Harness(hosts, kind, view: view);
+        Assert.Equal(new[] { "3", "4", "5" }, (await harness.Ids(Harness.Where(F("memory", "isNull", "")))).Ids);
+        Assert.Equal(new[] { "1", "2" }, (await harness.Ids(Harness.Where(F("memory", "isNotNull", "")))).Ids);
+        Assert.Equal(new[] { "2" }, (await harness.Ids(Harness.Where(F("memory", "ne", "10")))).Ids);
+        Assert.Equal(new[] { "2", "1", "3", "4", "5" }, (await harness.Ids(Harness.Where("", sort: "[{\"column\":\"memory\",\"direction\":\"desc\"}]"))).Ids);
+        using var summary = JsonDocument.Parse(await harness.Handler.SummaryAsync("{\"revision\":\"r1\"}"));
+        var aggregates = summary.RootElement.GetProperty("aggregates");
+        Assert.Equal(30, aggregates.GetProperty("memorySum").GetDouble());
+        Assert.Equal(15, aggregates.GetProperty("memoryAvg").GetDouble());
+        Assert.Equal(2, aggregates.GetProperty("memoryCount").GetDouble());
+    }
     private static readonly Owner TeamA = new Owner { Id = 1, Name = "Team A" };
     private static readonly DateTime Noon = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
 

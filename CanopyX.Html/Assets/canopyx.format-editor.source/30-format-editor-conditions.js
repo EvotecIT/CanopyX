@@ -112,7 +112,7 @@
         list.replaceChildren();
         items.forEach((band, index) => {
           const row = h("div", "cx-format-band"), last = index === items.length - 1, tone = formatSelect(tones, band.tone), label = h("input");
-          if (last) { const above = h("span", "cx-format-above"); setText(above, labels.formatAbove); row.appendChild(above); delete band.upperBound; }
+          if (last && band.upperBound === undefined) { const above = h("span", "cx-format-above"); setText(above, labels.formatAbove); row.appendChild(above); }
           else { const bound = formatNumberInput(band.upperBound); bound.addEventListener("input", () => { band.upperBound = formatNumberValue(bound); }); row.appendChild(formatField(labels.formatUpTo, bound)); }
           label.type = "text"; label.maxLength = 64; label.value = band.label || ""; label.placeholder = labels.formatCue;
           tone.addEventListener("change", () => { band.tone = tone.value; }); label.addEventListener("input", () => { band.label = label.value.trim() || undefined; });
@@ -120,8 +120,9 @@
           if (items.length > 1) row.appendChild(formatIconButton(labels.formatRemoveBand, "close", () => { items.splice(index, 1); render(); }));
           list.appendChild(row);
         });
+        add.disabled = items.length >= 16;
       };
-      const add = gridButton(labels.formatAddBand, () => { items.splice(items.length - 1, 0, { tone: "warning" }); render(); list.querySelector(".cx-format-band:nth-last-child(2) input")?.focus(); });
+      const add = gridButton(labels.formatAddBand, () => { if (items.length >= 16) return; items.splice(items.length - 1, 0, { tone: "warning" }); render(); list.querySelector(".cx-format-band:nth-last-child(2) input")?.focus(); });
       add.classList.add("cx-link"); add.disabled = items.length >= 16;
       render(); box.append(list, add);
       register(() => items.map(band => ({ ...(band.upperBound === undefined ? {} : { upperBound: band.upperBound }), tone: band.tone, ...(band.label ? { label: band.label } : {}), ...(band.icon ? { icon: band.icon } : {}) })));

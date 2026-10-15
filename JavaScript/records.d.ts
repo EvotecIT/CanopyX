@@ -132,5 +132,5 @@ export interface RecordPanelOptions {
   /** Open all in grid: return false (or cancel canopyx:openAll) to handle it yourself. */
   onOpenAll?: (event: RecordOpenAll) => boolean | void;
   /** Print one record: return false (or cancel canopyx:recordPrint) to print the sheet yourself. */
-  onRecordPrint?: (event: { readonly id: string; readonly element: HTMLElement }) => boolean | void;
+  onRecordPrint?: (event: { readonly id: string; readonly element: HTMLElement; readonly dispose: () => void }) => boolean | void;
 }

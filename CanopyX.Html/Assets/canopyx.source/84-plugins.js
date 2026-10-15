@@ -8,8 +8,9 @@
   function plugin(value) {
     const item = Object.freeze({ ...value }), fn = handler => typeof handler === "function";
     // A toolbar item runs; a menu entry runs or, on the reporting runtime, renders content.
-    const entry = menu => action => action && typeof action.label === "string" && (fn(action.run) || menu && fn(action.render));
-    if (!value || !partName(item.name) || PARTS[item.name] || [item.init, item.destroy].some(hook => hook !== undefined && !fn(hook)) ||
+    const entry = menu => action => action && typeof action.label === "string" &&
+      (fn(action.run) && action.render === undefined || menu && fn(action.render) && action.run === undefined);
+    if (!value || !partName(item.name) || Object.hasOwn(PARTS, item.name) || [item.init, item.destroy].some(hook => hook !== undefined && !fn(hook)) ||
         ["requires", "views", "toolbarItems", "menuItems", "exportFormats", "recordActions"].some(key => item[key] !== undefined && !Array.isArray(item[key])) ||
         ["cellRenderers", "columnTypes", "editors", "events", "aggregates", "detailRenderers", "drawerSections"].some(key => item[key] !== undefined && Object(item[key]) !== item[key]) ||
         !(item.requires || []).every(partName) || !(item.views || []).every(kind => kind === "tree" || kind === "grid") ||
@@ -30,7 +31,7 @@
   /** The plugins of a new grid or tree of a kind, required plugins first; a required name is a plugin or a part. */
   function viewPlugins(options, kind) {
     const byName = new Map(PLUGINS), ordered = [], visiting = new Set(), applies = item => !item.views || item.views.includes(kind);
-    for (const value of options.plugins || []) { const item = plugin(value); byName.set(item.name, item); }
+    for (const value of options.plugins || []) { const item = plugin(value); byName.delete(item.name); byName.set(item.name, item); }
     const visit = item => {
       if (ordered.includes(item) || !applies(item)) return;
       if (visiting.has(item)) throw new Error("CanopyX: plugin '" + item.name + "' requires itself.");
@@ -38,7 +39,7 @@
       for (const name of item.requires || []) {
         const required = byName.get(name);
         if (required && applies(required)) visit(required);
-        else if (!PARTS[name]) throw new Error("CanopyX: plugin '" + item.name + "' requires '" + name + "', which is neither a plugin nor a part.");
+        else if (!Object.hasOwn(PARTS, name)) throw new Error("CanopyX: plugin '" + item.name + "' requires '" + name + "', which is neither a plugin nor a part.");
       }
       ordered.push(item);
     };
@@ -48,10 +49,14 @@
   /** Runs a grid's plugins; api returns the grid's API once it exists. Resolves with the grid's own ready result. */
   function startPlugins(grid, api) {
     if (!grid.plugins.length) return grid.ready;
-    const signal = grid.lifetime.signal, contexts = grid.plugins.map(item => {
+    const signal = grid.lifetime.signal, failed = new Set(), byName = new Map(grid.plugins.map(item => [item.name, item]));
+    const blocked = item => failed.has(item.name) || (item.requires || []).some(name => byName.has(name) && blocked(byName.get(name)));
+    const contexts = grid.plugins.map(item => {
       const context = Object.freeze({ get api() { return api(); }, element: grid.host, view: grid.view, kind: grid.kind, labels: grid.labels, signal,
         part: name => grid.requirePart(name) });
-      for (const [name, handler] of Object.entries(item.events || {})) grid.host.addEventListener("canopyx:" + name, event => handler(event, context), { signal });
+      // Events subscribe before any async initialization, but stop reaching a plugin after a requirement fails.
+      for (const [name, handler] of Object.entries(item.events || {})) grid.host.addEventListener("canopyx:" + name,
+        event => { if (!blocked(item)) handler(event, context); }, { signal });
       if (item.destroy) signal.addEventListener("abort", () => item.destroy(context), { once: true });
       return context;
     });
@@ -59,9 +64,15 @@
       for (const [index, item] of grid.plugins.entries()) {
         if (signal.aborted) return;
         try {
-          for (const name of item.requires || []) if (!grid.plugins.some(other => other.name === name)) await grid.requirePart(name);
-          if (!signal.aborted) await item.init?.(contexts[index]);
-        } catch (error) { grid.emit("error", { error }); }
+          for (const name of item.requires || []) {
+            if (failed.has(name)) throw new Error("CanopyX: plugin '" + item.name + "' requires failed plugin '" + name + "'.");
+            if (!grid.plugins.some(other => other.name === name)) await grid.requirePart(name);
+          }
+          if (!signal.aborted) {
+            const context = contexts[index];
+            await item.init?.(context);
+          }
+        } catch (error) { failed.add(item.name); grid.emit("error", { error }); }
       }
     });
     return Promise.all([grid.ready, started]).then(([result]) => result);

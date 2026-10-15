@@ -10,7 +10,7 @@
     /** The grid predicates of external filters: eq or in for values, ge and le for a range. */
     const linkPredicates = filters => filters.flatMap(filter => filter.values ? [{ column: filter.field, operator: filter.values.length === 1 ? "eq" : "in", values: filter.values.slice() }] :
       [filter.range[0] == null ? null : { column: filter.field, operator: "ge", values: [filter.range[0]] }, filter.range[1] == null ? null : { column: filter.field, operator: "le", values: [filter.range[1]] }].filter(Boolean));
-    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b), LINK_OWN = Symbol("own conditions");
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b), LINK_OWN = LINK_IMPL.queryOwn;
     /** Filters without the external predicates a query carries at its end; a reader condition equal to one stays. */
     const strip = (filters, tail) => {
       filters = filters || [];
@@ -24,21 +24,25 @@
         const desired = this.linkFilters || [];
         if (!desired.length && !this.linkAcceptedExt && !this.linkSent) return SET_QUERY.call(this, input, paging);
         // A query from queryForChange carries the reader's conditions only; any other (a host's, a saved state) may end with them.
-        const ext = linkPredicates(desired), own = !input || !input.filters ? [] : input[LINK_OWN] ? input.filters : strip(strip(input.filters, this.linkSent && this.linkSent.ext), this.linkAcceptedExt);
-        const before = this.queryEpoch, promise = SET_QUERY.call(this, { ...(input || {}), filters: own.concat(ext) }, paging);
+        const ext = linkPredicates(desired), own = !input || !input.filters ? [] : input[LINK_OWN] ? input.filters : strip(input.filters, tailOf(this, true));
+        const before = this.queryEpoch, promise = SET_QUERY.call(this, { ...(input || {}), filters: own.concat(ext), [LINK_OWN]: undefined }, paging);
         // The base takes its epoch before its first wait, so the accepted query later tells which call it came from; a call
         // the base refused before it started (an invalid query) leaves the epoch, and the query in flight, as they were.
         if (this.queryEpoch !== before) this.linkSent = { epoch: this.queryEpoch, ext, desired: desired.slice() };
         return promise.catch(error => {
           if ((!error || error.name !== "AbortError") && !this.destroyed && !this.pendingQuery) {
+            // retry() uses the failed query. Keep its reader intent, replacing the failed external tail with restored links.
+            if (this.lastFailedQuery && this.linkSent?.epoch === this.queryEpoch)
+              this.lastFailedQuery = { ...this.lastFailedQuery, filters: strip(this.lastFailedQuery.filters, this.linkSent.ext), [LINK_OWN]: true };
             this.linkFilters = (this.linkCommitted || []).slice(); this.linkReason = null; this.linkSent = null;
             this.syncQuerySummary();
           }
           throw error;
         });
       },
-      queryForChange(includeQueuedInput) {
+      queryForChange(includeQueuedInput, includeExternal) {
         const query = FOR_CHANGE.call(this, includeQueuedInput), tail = tailOf(this, true);
+        if (includeExternal) return query;
         return tail && query.filters ? { ...query, filters: strip(query.filters, tail), [LINK_OWN]: true } : query;
       },
       getState() {
@@ -99,7 +103,7 @@
       /** The empty state's Clear all removes the external filters too. */
       setNotice(...args) {
         NOTICE.apply(this, args);
-        const clear = this.linkCommitted && this.linkCommitted.length && this.notice.querySelector(".acts button");
+        const clear = (this.linkFilters?.length || this.linkCommitted?.length) && this.notice.querySelector(".acts button");
         if (clear) { const run = clear.onclick; clear.onclick = event => { this.linkClearAll(); run(event); }; }
       },
       destroy() { this.host.classList.remove("cx-has-linked"); return DESTROY.call(this); }

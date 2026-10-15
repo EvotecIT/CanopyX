@@ -133,6 +133,74 @@ test("a failing plugin is reported as the grid's error while the grid and its ot
   expect(result.rows).toBeGreaterThan(0);
 });
 
+test("failed plugin requirements suppress dependents while unrelated plugins start", async ({ page }) => {
+  await serve(page, { views: [gridView("dependency-failure")], script: `
+    window.started = []; window.afterFailure = [];
+    CanopyX.use({ name: "broken", async init() { throw new Error("broken plugin"); } });
+    CanopyX.use({ name: "dependent", requires: ["broken"], events: { select: () => afterFailure.push("dependent") }, init() { started.push("dependent"); } });
+    CanopyX.use({ name: "transitive", requires: ["dependent"], events: { select: () => afterFailure.push("transitive") }, init() { started.push("transitive"); } });
+    CanopyX.use({ name: "healthy", events: { select: () => afterFailure.push("healthy") }, init() { started.push("healthy"); } });` });
+  await page.evaluate(async () => { const api = document.querySelector("[data-canopyx-host]").canopyx; await api.ready; api.setSelection(["r0"]); });
+  expect(await page.evaluate(() => started)).toEqual(["healthy"]);
+  expect(await page.evaluate(() => afterFailure)).toEqual(["healthy"]);
+  expect(await page.evaluate(() => errors)).toEqual(["broken plugin", "CanopyX: plugin 'dependent' requires failed plugin 'broken'.", "CanopyX: plugin 'transitive' requires failed plugin 'dependent'."]);
+});
+
+test("per-view plugin replacements start after the remaining page plugins", async ({ page }) => {
+  await serve(page, { views: [gridView("replacement-order")], script: `
+    window.order = [];
+    CanopyX.use({ name: "first", init: () => order.push("page:first") });
+    CanopyX.use({ name: "second", init: () => order.push("page:second") });
+    CanopyX.configure("replacement-order", { plugins: [{ name: "first", init: () => order.push("view:first") }] });` });
+  expect(await page.evaluate(async () => { await document.querySelector("[data-canopyx-host]").canopyx.ready; return order; })).toEqual(["page:second", "view:first"]);
+});
+
+test("page plugin formats respect later registration and disposal on existing grids", async ({ page }) => {
+  await serve(page, { views: [gridView("format-disposal")], script: `
+    window.disposePlugin = CanopyX.use({ name: "page-format", exportFormats: [{ id: "audit", label: "Audit", extension: "txt", write: () => new Blob(["plugin"]) }] });` });
+  const result = await page.evaluate(async () => {
+    const api = document.querySelector("[data-canopyx-host]").canopyx; await api.ready;
+    const text = () => api.exportAs("audit", { scope: "all", download: false }).then(result => result.blob.text());
+    const before = await text();
+    const disposeFormat = CanopyX.registerExportFormat({ id: "audit", label: "Replacement", extension: "txt", write: () => new Blob(["replacement"]) });
+    const replaced = await text(); disposePlugin(); const afterPlugin = await text(); disposeFormat();
+    return { before, replaced, afterPlugin, afterFormat: await text().catch(error => error.message) };
+  });
+  expect(result).toEqual({ before: "plugin", replaced: "replacement", afterPlugin: "replacement", afterFormat: "CanopyX: export format 'audit' is not available." });
+});
+
+test("plugin names use own manifest entries and ambiguous menu handlers fail at registration", async ({ page }) => {
+  await serve(page, { views: [], script: "window.order = [];" });
+  const result = await page.evaluate(async view => {
+    let missing, ambiguous;
+    try { CanopyX.createDataGrid(document.body.appendChild(document.createElement("div")), { view, plugins: [{ name: "missing-constructor", requires: ["constructor"] }] }); }
+    catch (error) { missing = error.message; }
+    try { CanopyX.use({ name: "ambiguous", menuItems: [{ label: "Both", run() {}, render() {} }] }); }
+    catch (error) { ambiguous = error.message; }
+    const dispose = CanopyX.use({ name: "constructor", init: () => order.push("constructor") });
+    const api = CanopyX.createDataGrid(document.body.appendChild(document.createElement("div")), { view,
+      plugins: [{ name: "dependent-constructor", requires: ["constructor"], init: () => order.push("dependent") }] });
+    await api.ready; api.destroy(); dispose();
+    return { missing, ambiguous, order };
+  }, gridView("manifest-own"));
+  expect(result).toEqual({ missing: "CanopyX: plugin 'missing-constructor' requires 'constructor', which is neither a plugin nor a part.",
+    ambiguous: "CanopyX: invalid plugin 'ambiguous'.", order: ["constructor", "dependent"] });
+});
+
+test("a failed part stylesheet retries after its script has registered", async ({ page }) => {
+  let styles = 0;
+  await serve(page, { views: [], script: 'CanopyX.use({ name: "loader", init(context) { window.loadTestPart = context.part; } });' });
+  await page.route("https://plugins.test/canopyx-editing.css", route => ++styles === 1 ? route.fulfill({ status: 503, body: "" }) : route.fulfill({ contentType: "text/css", body: read("canopyx-editing.css") }));
+  const result = await page.evaluate(async view => {
+    const host = Object.assign(document.body.appendChild(document.createElement("div")), { style: "height:300px" });
+    const api = CanopyX.createDataGrid(host, { view }); await api.ready;
+    const first = await loadTestPart("editing").then(() => "loaded", error => error.message);
+    await loadTestPart("editing"); return first;
+  }, gridView("retry-css"));
+  expect(result).toContain("stylesheet unavailable");
+  expect(styles).toBe(2);
+});
+
 test("destroy runs once, aborts the plugin signal and removes its event subscriptions", async ({ page }) => {
   await serve(page, { views: [gridView("lifecycle")], script: `
     window.calls = [];

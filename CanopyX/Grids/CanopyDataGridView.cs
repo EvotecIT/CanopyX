@@ -312,14 +312,8 @@ public sealed partial class CanopyDataGridView {
             if (!IsExportFormatId(format) || !formats.Add(format)) throw new InvalidOperationException("Export formats must be unique identities of 1 to 32 lowercase letters, digits and hyphens, starting with a letter; csv is built in.");
         }
         if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
-        CanopyGridRows.Validate(Rows, columnIds, Columns);
+        CanopyGridRows.Validate(Rows, columnIds, Columns, Reporting?.Detail);
         ValidateRecord();
-        var nested = Reporting?.Detail?.View;
-        if (nested != null) {
-            var nestedIds = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var column in nested.Columns) nestedIds.Add(column.Id);
-            foreach (var row in Rows) if (row.Detail is CanopyGridRowsDetail detail) CanopyGridRows.Validate(detail.Rows, nestedIds, nested.Columns);
-        }
         Query?.Validate(this);
         return columnIds;
     }

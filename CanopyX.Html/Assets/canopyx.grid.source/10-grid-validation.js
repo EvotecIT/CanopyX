@@ -138,6 +138,8 @@
     const budget = { predicates: 0, groups: 0, strict };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
+    // Sorting and paging normalize reader queries; preserve their internal origin without adding wire fields.
+    if (input[LINK_IMPL.queryOwn]) query[LINK_IMPL.queryOwn] = true;
     return gridQueryRecord(input, query, strict, cursor);
   }
 

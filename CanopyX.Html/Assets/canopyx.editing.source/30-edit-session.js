@@ -32,6 +32,14 @@
       field.host.remove(); field.cell?.classList.remove("cx-editing");
     },
 
+    // Validators see the completed row, and the same check can accompany its values into the change set.
+    editPreview(record, values) {
+      const preview = { ...record, cells: Object.assign(Object.create(null), record.cells) };
+      for (const [spec, value] of values) if (!editSame(cellValue(record.cells[spec.id]), value))
+        preview.cells[spec.id] = editCell(record.cells[spec.id], value, this.editText(spec, value, record));
+      return preview;
+    },
+
     // Opens the session synchronously on a rendered row; false when nothing there can be edited.
     editStart(wrapper, column, initial) {
       const state = this.edit, open = state.session;
@@ -83,14 +91,20 @@
       const values = [], record = this.editRecord(session.id) || session.wrapper.h;
       if (apply) for (const field of session.fields.values()) {
         const parse = field.instance.error?.() || null, value = parse ? undefined : field.instance.getValue();
-        const message = parse || (editScalar(value) ? this.editRules(field.spec, value, record, true) : fill(state.labels.gridEditChoice, { column: field.spec.column.title }));
+        const message = parse || (!editScalar(value) ? fill(state.labels.gridEditChoice, { column: field.spec.column.title }) : null);
         if (message && !force) { this.editShowMessage(field, message); this.editAnnounce(message); return false; }
-        if (!parse && editScalar(value)) values.push([field.spec, value]);
+        if (!parse && editScalar(value)) values.push([field.spec, value, field]);
+      }
+      const preview = this.editPreview(record, values), shape = JSON.stringify(preview.cells);
+      for (const item of values) {
+        const result = this.editRules(item[0], item[1], preview), message = result && typeof result.then !== "function" ? result : null;
+        if (message && !force) { this.editShowMessage(item[2], message); this.editAnnounce(message); return false; }
+        item[2] = { result, row: shape };
       }
       state.session = null;
       for (const field of session.fields.values()) this.editDispose(field);
       this.editHideMessage();
-      this.editGroup(() => { for (const [spec, value] of values) this.editApply(session.id, spec, value, "edit", record); });
+      this.editGroup(() => { for (const [spec, value, checked] of values) this.editApply(session.id, spec, value, "edit", record, checked); });
       return true;
     },
 

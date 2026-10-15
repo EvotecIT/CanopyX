@@ -79,7 +79,10 @@ public static partial class CanopyStaticHtml {
         html.Append("</thead><tbody>");
         // Formatting rules evaluate as in the browser; automatic bounds come from the supplied rows.
         var formats = view.FormatRules.Count > 0 ? new CanopyFormatEvaluator(view, supplied) : null;
+        var remaining = settings.MaxRows;
         foreach (var row in rows) {
+            if (remaining == 0) break;
+            remaining--;
             var outcome = formats?.Evaluate(row);
             var printedCells = new List<string>(columns.Length);
             var rowRule = CanopyGridHighlights.Find(view, row, null);
@@ -106,8 +109,10 @@ public static partial class CanopyStaticHtml {
                 var text = new StringBuilder();
                 html.Append('>');
                 AppendFormatBefore(html, paint, outcome?.Row, first, styles);
+                if (paint?.BarValue == false) html.Append("<span style=\"position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;\">");
                 AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
                 if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
+                if (paint?.BarValue == false) html.Append("</span>");
                 AppendFormatAfter(html, paint, outcome?.Row, first, styles);
                 html.Append("</td>");
                 first = false;
@@ -116,12 +121,14 @@ public static partial class CanopyStaticHtml {
             html.Append("</tr>");
             printedRows.Add(printedCells.AsReadOnly());
             // Detail rows print under their record (unless the definition excludes them from print); HTML stays text.
-            var detail = view.Reporting?.Detail is { Print: true } definition ? StaticDetail(definition, row.Detail, settings, view.Labels) : null;
+            string? detailOverflow = null;
+            var detail = view.Reporting?.Detail is { Print: true } definition ? StaticDetail(definition, row.Detail, settings, view.Labels, ref remaining, out detailOverflow) : null;
             if (detail != null) AppendDetail(html, detail, 1, columns.Length, styles, view.Labels);
+            if (detailOverflow != null) html.Append("<tr><td colspan=\"").Append(columns.Length).Append("\" style=\"").Append(styles.Note).Append("\">").Append(Encode(detailOverflow)).Append("</td></tr>");
         }
         html.Append("</tbody>");
-        if (!matching.HasValue || rows.Length < matching.Value) {
-            var note = (settings.OverflowNote ?? view.Labels.OverflowNote).Replace("{shown}", rows.Length.ToString("N0", settings.Culture))
+        if (!matching.HasValue || printedRows.Count < matching.Value) {
+            var note = (settings.OverflowNote ?? view.Labels.OverflowNote).Replace("{shown}", printedRows.Count.ToString("N0", settings.Culture))
                 .Replace("{total}", matching.HasValue ? matching.Value.ToString("N0", settings.Culture) : view.Labels.UnknownTotal);
             html.Append("<tbody><tr><td colspan=\"").Append(columns.Length).Append("\" style=\"").Append(styles.Note).Append("\">").Append(Encode(note));
             if (IsSafeReportUrl(settings.FullReportUrl)) html.Append(" <a href=\"").Append(Encode(settings.FullReportUrl!)).Append("\" style=\"")
@@ -135,12 +142,15 @@ public static partial class CanopyStaticHtml {
 
     /// <summary>A record's detail as the static table, property list or text the fallback prints: nested grid rows and tree
     /// roots become a table with the nested view's visible columns, tree levels indented.</summary>
-    private static CanopyDetail? StaticDetail(CanopyGridDetail definition, CanopyDetail? detail, CanopyStaticHtmlOptions settings, CanopyLabels labels) {
+    private static CanopyDetail? StaticDetail(CanopyGridDetail definition, CanopyDetail? detail, CanopyStaticHtmlOptions settings, CanopyLabels labels, ref int remaining, out string? overflow) {
+        overflow = null;
         if (detail is CanopyGridRowsDetail rows && definition.View != null) {
             var columns = definition.View.Columns.Where(column => !column.Hidden).ToArray();
             var table = new CanopyTableDetail(definition.Label).AddColumns(columns.Select(column => column.Title).ToArray());
-            foreach (var row in rows.Rows.Take(settings.MaxRows)) table.AddRow(columns.Select(column => row.Cells.TryGetValue(column.Id, out var cell) && cell != null ?
+            foreach (var row in rows.Rows.Take(remaining)) table.AddRow(columns.Select(column => row.Cells.TryGetValue(column.Id, out var cell) && cell != null ?
                 new CanopyCell(cell.DisplayText(column.Kind, labels)) { Tone = cell.Tone } : new CanopyCell()).ToArray());
+            remaining -= table.Rows.Count;
+            if (table.Rows.Count < rows.Rows.Count) overflow = DetailOverflow(table.Rows.Count, rows.Rows.Count, settings, labels);
             return table;
         }
         if (detail is CanopyTreeDetail tree && definition.TreeView != null) {
@@ -148,16 +158,24 @@ public static partial class CanopyStaticHtml {
             var table = new CanopyTableDetail(definition.Label).AddColumns(columns.Select(column => column.Title).ToArray());
             var pending = new Stack<(CanopyNode Node, int Level)>();
             for (var index = tree.Roots.Count - 1; index >= 0; index--) pending.Push((tree.Roots[index], 0));
-            while (pending.Count > 0 && table.Rows.Count < settings.MaxRows) {
+            var total = 0;
+            while (pending.Count > 0) {
                 var (node, level) = pending.Pop();
-                table.AddRow(columns.Select((column, index) => index == 0 ? new CanopyCell(new string('\u00A0', level * 2) + node.Label) :
+                total++;
+                if (table.Rows.Count < remaining) table.AddRow(columns.Select((column, index) => index == 0 ? new CanopyCell(new string('\u00A0', level * 2) + node.Label) :
                     node.Cells.TryGetValue(column.Id, out var cell) && cell != null ? new CanopyCell(cell.DisplayText(column.Kind, labels)) : new CanopyCell()).ToArray());
                 for (var child = node.Children.Count - 1; child >= 0; child--) pending.Push((node.Children[child], level + 1));
             }
+            remaining -= table.Rows.Count;
+            if (table.Rows.Count < total) overflow = DetailOverflow(table.Rows.Count, total, settings, labels);
             return table;
         }
         return detail is CanopyTableDetail || detail is CanopyPropertiesDetail || detail is CanopyHtmlDetail ? detail : null;
     }
+
+    private static string DetailOverflow(int shown, int total, CanopyStaticHtmlOptions settings, CanopyLabels labels) =>
+        (settings.OverflowNote ?? labels.OverflowNote).Replace("{shown}", shown.ToString("N0", settings.Culture))
+            .Replace("{total}", total.ToString("N0", settings.Culture));
 
     /// <summary>
     /// The header rows: one row per column-group level above the column titles. A group spans its visible columns; a column

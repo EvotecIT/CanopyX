@@ -9,15 +9,16 @@
   // the message. The grid keeps reading pages at the revision it accepted; the result's revision tells the host when to reload.
 
   // Checks a writer's answer against the rows asked for; a row the answer leaves out was not saved.
-  function editCommitAnswer(result, batch) {
+  function editCommitAnswer(result, batch, columns) {
     checkDocument(result, "gridCommitResult");
     if (result.view !== batch.view || !Array.isArray(result.rows)) throw new Error("CanopyX: the commit result does not answer its batch.");
     const asked = new Set(batch.rows.map(row => row.id)), rows = new Map(), text = value => value === undefined || typeof value === "string";
     for (const row of result.rows) {
       if (!row || !asked.has(row.id) || rows.has(row.id) || !["saved", "error", "conflict"].includes(row.status) || !text(row.error) ||
-          row.errors !== undefined && (Object(row.errors) !== row.errors || !Object.values(row.errors).every(text)) ||
+          row.errors !== undefined && (Object(row.errors) !== row.errors || Array.isArray(row.errors) || !Object.values(row.errors).every(text)) ||
           row.cells !== undefined && (row.status !== "saved" || Object(row.cells) !== row.cells))
         throw new Error("CanopyX: malformed commit result row.");
+      if (row.cells !== undefined) validateGridRows([{ id: row.id, cells: row.cells }], columns);
       rows.set(row.id, row);
     }
     return { rows, revision: result.revision };
@@ -61,7 +62,7 @@
       if (!answered) return editCopy({ id, ok: true, status: "pending" });
       return this.editSave([id], () => Promise.resolve(response).then(value =>
         editCommitAnswer({ protocol: PROTOCOL, type: "gridCommitResult", view: this.view.id, rows: [value === true ? { id, status: "saved" } : { ...value, id }] },
-          { view: this.view.id, rows: [{ id }] }))).then(rows => rows[0]);
+          { view: this.view.id, rows: [{ id }] }, this.view.columns))).then(rows => rows[0]);
     },
 
     async commitChanges(options = {}) {
@@ -69,7 +70,9 @@
       const state = this.edit, open = state.session;
       if (open && !this.editClose(true)) return editCopy({ ok: false, saved: 0, failed: 1, rows: [{ id: open.id, ok: false, status: "invalid", errors: {} }] });
       const ready = id => state.changes.get(id)?.status !== "saving" && Object.keys(state.changes.get(id)?.values || {}).length > 0;
-      const checks = await Promise.all((options.ids ?? [...state.changes.keys()]).filter(ready).map(id => this.editValidateRow(id)));
+      const ids = [...new Set(options.ids ?? state.changes.keys())];
+      ids.forEach(id => requireIdentifier(id, "committed row ID"));
+      const checks = await Promise.all(ids.filter(ready).map(id => this.editValidateRow(id)));
       const rows = checks.filter(check => !check.valid).map(check => ({ id: check.id, ok: false, status: "invalid", errors: check.errors, error: check.error }));
       const valid = checks.filter(check => check.valid && ready(check.id)).map(check => check.id);
       let revision;
@@ -79,7 +82,7 @@
         const writer = state.options.commit || (typeof this.source.commit === "function" ? (body, context) => this.source.commit(body, context) : null);
         const local = !writer && this.view.source.kind === "inline";
         rows.push(...await this.editSave(valid, async signal => {
-          if (writer) { const answer = editCommitAnswer(await writer(batch, { signal }), batch); revision = answer.revision; return answer; }
+          if (writer) { const answer = editCommitAnswer(await writer(batch, { signal }), batch, this.view.columns); revision = answer.revision; return answer; }
           return { rows: new Map(local ? valid.map(id => [id, { id, status: "saved" }]) : []) };
         }, options.signal));
       }
@@ -127,14 +130,22 @@
     // inline grid keeps them in its rows so later queries sort and filter by them. A value changed while the row saved
     // (an edit, an undo) stays a change from the saved value.
     editAccept(entry, canonical) {
-      if (canonical) validateGridRows([{ id: entry.id, cells: canonical }], this.view.columns);
       const record = entry.row, inline = this.view.source.kind === "inline" ? this.view.rows.find(row => row.id === entry.id) : null;
       for (const [column, value] of Object.entries(entry.saved)) {
-        const current = cellValue(record.cells[column]);
-        if (editSame(current, value)) { delete entry.values[column]; delete entry.original[column]; delete entry.errors[column]; }
-        else { entry.original[column] = editCell(entry.original[column], value, this.editText(this.edit.specs.get(column), value, record)); entry.values[column] = current; }
+        const current = cellValue(record.cells[column]), saved = canonical && Object.hasOwn(canonical, column) ? canonical[column] :
+          editCell(entry.original[column], value, this.editText(this.edit.specs.get(column), value, record));
+        if (editSame(current, value) || editSame(current, cellValue(saved))) {
+          delete entry.values[column]; delete entry.original[column]; delete entry.errors[column];
+          record.cells[column] = saved;
+        } else { entry.original[column] = saved; entry.values[column] = current; }
       }
-      for (const [column, cell] of Object.entries(canonical || {})) if (!Object.hasOwn(entry.values, column)) record.cells[column] = cell;
+      for (const [column, cell] of Object.entries(canonical || {})) {
+        if (Object.hasOwn(entry.values, column) && !Object.hasOwn(entry.saved, column)) {
+          if (editSame(entry.values[column], cellValue(cell))) { delete entry.values[column]; delete entry.original[column]; delete entry.errors[column]; }
+          else entry.original[column] = cell;
+        }
+        if (!Object.hasOwn(entry.values, column)) record.cells[column] = cell;
+      }
       if (inline) for (const column of new Set([...Object.keys(entry.saved), ...Object.keys(canonical || {})])) {
         const cell = Object.hasOwn(entry.values, column) ? entry.original[column] : record.cells[column];
         if (cell === undefined) delete inline.cells[column]; else inline.cells[column] = JSON.parse(JSON.stringify(cell));

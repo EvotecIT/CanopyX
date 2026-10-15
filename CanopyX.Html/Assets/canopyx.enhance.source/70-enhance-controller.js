@@ -32,10 +32,12 @@
       }
       emit("draw", detail, event);
     }, { signal: lifetime.signal });
-    if (initial !== undefined) {
-      if (initial === null || typeof initial !== "object") throw new Error("CanopyX: on is an object of handlers by event name.");
-      for (const [name, handler] of Object.entries(initial)) on(name, handler);
-    }
+    try {
+      if (initial !== undefined) {
+        if (initial === null || typeof initial !== "object") throw new Error("CanopyX: on is an object of handlers by event name.");
+        for (const [name, handler] of Object.entries(initial)) on(name, handler);
+      }
+    } catch (error) { lifetime.abort(); throw error; }
     return {
       on, off: (name, handler) => { handlers.get(name)?.delete(handler); }, abort: () => lifetime.abort(),
       start(created, grid) {
@@ -55,7 +57,9 @@
       if (store.grid) store.grid.view.rows = store.rows;
       // All rows stays all rows: its page length follows the new row count.
       const query = api.getQuery();
-      return !query ? api.reload() : store.grid && store.grid.pageAll ? api.setPageLength("all") : api.setQuery({ ...query, revision: undefined });
+      if (!query) return api.reload();
+      const request = { ...query, revision: undefined };
+      return store.grid && store.grid.pageAll ? store.grid.setQuery({ ...request, offset: 0 }, { pageLength: Math.max(1, store.rows.length), allRows: true }) : api.setQuery(request);
     };
     // The grid's API is frozen, so the controller inherits it and defines its own members rather than assigning over them.
     const own = {

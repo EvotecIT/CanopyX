@@ -11,7 +11,7 @@
     // Pressing anywhere in the list (an option, its scroll bar, the note) keeps focus in the editor.
     popup.addEventListener("pointerdown", event => event.preventDefault());
     let options = [], active = -1, timer = 0, request = null;
-    let chosen = context.value == null ? null : { value: context.value, label: context.text || String(context.value) };
+    let chosen = context.initial !== undefined || context.value == null ? null : { value: context.value, label: context.text || String(context.value) };
     input.value = context.initial ?? (chosen ? chosen.label : "");
     const paint = () => {
       [...list.querySelectorAll("[role=option]")].forEach((option, index) => option.setAttribute("aria-selected", String(index === active)));
@@ -66,6 +66,7 @@
     };
     const element = h("span", "cx-editor-combo");
     element.append(input, popup);
+    if (typeof context.initial === "string") queueMicrotask(search);
     return { element, control: input,
       getValue: () => !input.value.trim() ? null : (chosen || typed())?.value ?? null,
       error: () => input.value.trim() && !chosen && !typed() ? fill(labels.gridEditChoice, { column: context.column.title }) : null,

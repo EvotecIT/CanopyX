@@ -34,6 +34,8 @@ namespace CanopyX.Data;
 /// </para>
 /// </remarks>
 public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class {
+    /// <inheritdoc />
+    public CanopyCommitTransaction Transaction => _options.Transaction;
     private readonly CanopyColumnMap<T> _map;
     private readonly ICanopyWriteStore<T> _store;
     private readonly CanopyQueryableWriterOptions<T> _options;
@@ -86,7 +88,14 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
     private async Task<List<CanopyCommitRowResult>> RowsAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
         var results = new List<CanopyCommitRowResult>(batch.Rows.Count);
         foreach (var row in batch.Rows) {
-            var transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            ICanopyWriteTransaction transaction;
+            try { transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception error) {
+                _options.Failed?.Invoke(row, error);
+                results.Add(CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved));
+                continue;
+            }
             var result = CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
             try {
                 result = await RowAsync(batch, row, revision, cancellationToken).ConfigureAwait(false);

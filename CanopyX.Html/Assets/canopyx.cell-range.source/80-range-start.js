@@ -21,7 +21,7 @@
       const columns = () => { const before = this.cellRanges.length; this.cellRanges = this.cellRanges.filter(range => crRect(this, range)); if (before !== this.cellRanges.length) crChanged(this); else crPaint(this); };
       // A reload of the same query at the same data revision (same search, filters, sorting and page) keeps the ranges: its
       // rows keep their places. A new revision, another query, or a reporting group that collapses or expands clears them.
-      const shape = (query, revision) => query && JSON.stringify([query.search, query.searchMode, query.sort, query.filters, query.filterGroup, this.paged ? query.offset : 0, revision]);
+      const shape = (query, revision) => query && JSON.stringify([query.search, query.searchMode, query.sort, query.filters, query.filterGroup, query.groupBy, this.paged ? query.offset : 0, revision]);
       const clear = () => { if (this.cellRanges.length) { this.cellRanges = []; this.cellAnchor = null; this.cellHandles = false; crChanged(this); } };
       let accepted = shape(this.getQuery(), this.snapshot?.revision);
       this.host.addEventListener("canopyx:query", event => {
@@ -30,6 +30,7 @@
         accepted = next; clear();
       }, { signal });
       this.host.addEventListener("canopyx:group", clear, { signal });
+      this.host.addEventListener("canopyx:detail", clear, { signal });
       this.host.addEventListener("canopyx:state", columns, { signal });
       document.addEventListener("copy", event => crCopyEvent(this, event), { signal });
       if (!options.enabled) return;

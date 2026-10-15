@@ -6,6 +6,22 @@ namespace CanopyX.Tests.Grids;
 
 /// <summary>Typed conditional formatting authoring: the JSON schema the browser reads, validation, the parts a grid carries, and labels.</summary>
 public sealed class GridFormattingTests {
+    [Theory]
+    [InlineData("(a+)+$")]
+    [InlineData("^(a|aa)+$")]
+    [InlineData("^a+a+$")]
+    [InlineData("a+$")]
+    [InlineData("^(a+)\\1$")]
+    [InlineData("a{10000000}")]
+    [InlineData("^[\\B]+$")]
+    [InlineData("^[\\q]+$")]
+    [InlineData("\\-")]
+    public void UnsafePatterns_AreRejectedBeforeWritingTheView(string pattern) {
+        var view = View();
+        view.FormatRules.Add(CanopyFormatRule.ForCell("pattern", "name", CanopyFormatStyle.Highlight(CanopyTone.Info),
+            CanopyFormatCondition.All(new CanopyFormatPredicate("name", CanopyFormatOperator.Matches, pattern))));
+        Assert.Throws<InvalidOperationException>(() => view.Validate());
+    }
     private static CanopyDataGridView View() {
         var view = new CanopyDataGridView("servers", "Servers");
         view.Columns.Add(new CanopyColumn("name", "Name"));

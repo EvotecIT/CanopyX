@@ -320,7 +320,7 @@ function Get-AssetHash([string] $Content) {
 }
 
 # Each part becomes canopyx-<name>.js (and .css): its scripts in the listed order inside a registration that destructures the
-# context the runtime hands its install function. The version is the hash of the part's source and style, so a runtime only
+# context the runtime hands its install function. The version hashes the complete generated install definition and style, so a runtime only
 # installs the part of its own build. Entry points read the manifest of the parts they know (__CX_PARTS__).
 $partBuilds = foreach ($part in $partList) {
     $scriptPaths = @($part.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
@@ -332,7 +332,7 @@ $partBuilds = foreach ($part in $partList) {
         if ($part.styleScope) { $style = $style.Replace($part.styleScope[0], $part.styleScope[1]) }
         $style = Compress-StyleSpacing $style
     }
-    $version = Get-AssetHash ($body + $style)
+    $version = '__CX_PART_VERSION__'
     $requires = if ($part.requires) { ', requires:' + (ConvertTo-Json -InputObject @($part.requires) -Compress) } else { '' }
     $key = 'context.' + $part.key
     $header = "(function(global) {`n`"use strict`";`nconst installed = new WeakSet();`nconst part = {version:`"$version`"$requires, install(context) {`n" +
@@ -340,6 +340,8 @@ $partBuilds = foreach ($part in $partList) {
     $footer = $(if ($part.end) { $part.end + "`n" } else { '' }) + "installed.add($key);`n}};`n" +
         "(global.CanopyXParts ||= []).push([`"$($part.name)`", part]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
     $script = Compress-ScriptSpacing ($header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"))
+    $version = Get-AssetHash ($script + $style)
+    $script = $script.Replace('__CX_PART_VERSION__', $version)
     [pscustomobject]@{
         Part = $part; Version = $version; Script = $script; Style = $style
         ScriptName = 'canopyx-' + $part.name + '.' + (Get-AssetHash $script) + '.js'

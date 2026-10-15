@@ -129,7 +129,7 @@
   // Both view kinds load the same two parts; whichever view loads a part first installs it for every view of the runtime.
   // The flat-grid runtimes add their helpers to VIEW_MODES (86-grid-view-modes.js) before any view is created.
   const viewModeContext = () => ({ VIEW_MODES, TreeGrid, h, setText, fill, numberFormat, foldText, cellText, cellValue, isCellObject,
-    setAttr, toneOf, watchFlyout, densityRowHeight, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural });
+    setAttr, toneOf, watchFlyout, densityRowHeight, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural, svgIcon });
   definePart(TreeGrid, "highlight", "search highlighting", viewModeContext);
   definePart(TreeGrid, "layouts", "layout modes", viewModeContext);
   // A tree starts its declared modes once its tree tools part (and so its toolbar menus) is installed.

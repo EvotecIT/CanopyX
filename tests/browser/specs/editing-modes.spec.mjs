@@ -18,21 +18,21 @@ test("full-row mode edits every editable cell of a row, Tab moves between them a
   const row = page.locator('.cx-row[data-cx-id="a0"]');
   await expect(row.locator(".cx-editor-host")).toHaveCount(8);
   await expect(cell(page, "a0", 1).locator("input")).toBeFocused();
-  await page.keyboard.press("Control+a"); await page.keyboard.type("Row name");
+  await page.keyboard.press("ControlOrMeta+a"); await page.keyboard.type("Row name");
   await page.keyboard.press("Tab");
   await expect(cell(page, "a0", 2).locator("input")).toBeFocused();
-  await page.keyboard.press("Control+a"); await page.keyboard.type("1500");
+  await page.keyboard.press("ControlOrMeta+a"); await page.keyboard.type("1500");
   await page.keyboard.press("Enter");
   await expect(row.locator(".cx-editor-host")).toHaveCount(0);
   // Enter moves down in the column of the editor it was pressed in.
   await expect(cell(page, "a1", 2)).toBeFocused();
   expect(await page.evaluate(() => events)).toEqual([{ name: "Row name", cost: 1500 }]);
   // One undo takes the whole row back; Escape leaves a row without changes.
-  await page.keyboard.press("Control+z");
+  await page.keyboard.press("ControlOrMeta+z");
   await expect(cell(page, "a0", 1)).toHaveText("Laptop 0");
   await expect(cell(page, "a0", 2)).toHaveText("900");
   await page.keyboard.press("F2");
-  await page.keyboard.press("Control+a"); await page.keyboard.type("Discarded");
+  await page.keyboard.press("ControlOrMeta+a"); await page.keyboard.type("Discarded");
   await page.keyboard.press("Escape");
   await expect(cell(page, "a1", 1)).toHaveText("Laptop 1");
   expect(await page.evaluate(`${grid}.getChanges()`)).toEqual([]);

@@ -105,6 +105,7 @@
         if (/^(exportAs|applySavedView|resetView|openDetails|openRecord)$/.test(name)) return Promise.reject(error);
         throw error;
       };
+    api.ready = linkReady(grid, api.ready);
     Object.freeze(api);
     activeGrids.set(host, api);
     host.setAttribute("data-canopyx-mounted", "true");
@@ -148,7 +149,7 @@
   let watcher = null;
   function mountWhenVisible(host) {
     if (!watcher) {
-      watcher = new IntersectionObserver(entries => entries.forEach(entry => entry.isIntersecting && mount(entry.target)), { rootMargin: "50% 0px" });
+      watcher = new IntersectionObserver(entries => entries.forEach(entry => entry.isIntersecting && mount(entry.target)), { rootMargin: Math.ceil(global.innerHeight / 2) + "px 0px" });
       global.addEventListener("beforeprint", () => document.querySelectorAll('[data-cx-mount="visible"]:not([data-canopyx-mounted])').forEach(host => mount(host)));
     }
     watcher.observe(host);

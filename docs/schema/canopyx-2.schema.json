@@ -185,6 +185,14 @@
     "gridFormatIcon": { "type": "string", "minLength": 1, "maxLength": 16, "description": "auto, none, a named icon (up, down, check, cross, warning, info, dot, circle, triangle, square, diamond, flag, star, minus, plus, clock) or up to four characters." },
     "gridFormatStyle": {
       "type": "object", "additionalProperties": false,
+      "anyOf": [
+        { "required": ["tone"] },
+        { "required": ["icon"], "properties": { "icon": { "not": { "const": "none" } } } },
+        { "required": ["badge"] }, { "required": ["cue"] },
+        { "required": ["bar"] }, { "required": ["scale"] }, { "required": ["bands"] },
+        { "required": ["className"], "properties": { "className": { "minLength": 1 } } },
+        { "required": ["css"], "properties": { "css": { "minProperties": 1 } } }
+      ],
       "properties": {
         "tone": { "$ref": "#/$defs/tone" },
         "emphasis": { "enum": ["fill", "text", "strong"] },

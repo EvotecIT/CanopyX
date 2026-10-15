@@ -15,7 +15,6 @@ internal static class CanopyFormatValues {
     private static readonly ConcurrentDictionary<string, CultureInfo> Cultures = new ConcurrentDictionary<string, CultureInfo>(StringComparer.Ordinal);
     private static readonly Regex NumberShape = new Regex(@"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IsoDate = new Regex(@"^\d{4}-\d\d-\d\d(?:T\d\d:\d\d(?::\d\d(?:\.\d+)?)?(?:Z|[+-]\d\d:\d\d)?)?$", RegexOptions.CultureInvariant);
-    private static readonly Regex SharedSyntax = new Regex(@"\(\?(?![:=!]|<[=!]|<[A-Za-z])", RegexOptions.CultureInvariant);
     private static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     internal static CultureInfo Culture(string name) {
@@ -100,7 +99,7 @@ internal static class CanopyFormatValues {
     internal static Regex Pattern(CanopyFormatOperator op, string source, bool caseSensitive) {
         if (source.Length > 256) throw new InvalidOperationException("Patterns have at most 256 characters.");
         var wildcard = op == CanopyFormatOperator.Like || op == CanopyFormatOperator.NotLike;
-        if (!wildcard && SharedSyntax.IsMatch(source)) throw new InvalidOperationException("Pattern '" + source + "' uses a construct outside the syntax ECMAScript and .NET share.");
+        if (!wildcard) CanopyPattern.Validate(source);
         var expression = wildcard ? "^" + Regex.Escape(source).Replace(@"\*", @"[\s\S]*").Replace(@"\?", @"[\s\S]") + "$" : source;
         try {
             return new Regex(expression, RegexOptions.CultureInvariant | (caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase), TimeSpan.FromMilliseconds(100));

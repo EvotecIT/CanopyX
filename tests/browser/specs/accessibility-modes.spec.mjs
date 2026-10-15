@@ -71,7 +71,7 @@ for (const scheme of ["light", "dark"]) {
     });
   }
 
-  test(`forced colours keep the record drawer's edge, controls and status dots visible (${scheme})`, async ({ page }) => {
+  test(`forced colours keep the record drawer's edge, controls and status dots visible (${scheme})`, async ({ page, browserName }) => {
     await page.emulateMedia({ forcedColors: "active", colorScheme: scheme });
     await openExample(page, scheme === "dark" ? "rich-grid-dark.html" : "rich-grid.html");
     const dot = page.locator(".cx-row[data-cx-id]:not([aria-selected='true']) .p-dot").first();
@@ -83,7 +83,8 @@ for (const scheme of ["light", "dark"]) {
     expect(edge.some(style => style === "solid")).toBe(true);
     // Focus rings follow the keyboard (focus-visible): Tab to the close button, as a keyboard reader does, in every engine.
     const close = drawer.getByRole("button", { name: /close/i });
-    for (let step = 0; step < 8 && !(await close.evaluate(button => button === document.activeElement)); step++) await page.keyboard.press("Tab");
+    const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
+    for (let step = 0; step < 8 && !(await close.evaluate(button => button === document.activeElement)); step++) await page.keyboard.press(tab);
     await expect(close).toBeFocused();
     expect(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle)).not.toBe("none");
   });

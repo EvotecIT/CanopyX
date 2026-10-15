@@ -37,7 +37,7 @@ whose neighbours are not + or -, and drops a semicolon before a closing brace; s
 the whitespace around braces and after semicolons, commas and declaration colons outside quoted text.
 No minifier dependency or npm build step is required.
 
-Complete Polish, German and Spanish label packs are generated from one translation table into .NET factories and
+Complete Polish, German, Spanish, French and Italian label packs are generated from one translation table into .NET factories and
 optional JavaScript module/classic assets. They are loaded only by hosts that choose a pack; no language table is
 added to the four runtime entry points. Browser and script-free label coverage share the same source.
 

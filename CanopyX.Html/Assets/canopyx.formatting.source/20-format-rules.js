@@ -84,7 +84,7 @@
         formatError("formatting rule '" + rule.id + "' names its columns once each.");
       formatStyle(rule.style, { target, column: rule.column });
       const budget = { predicates: 0, groups: 0 }, test = rule.when === undefined ? null : formatGroup(rule.when, columns, budget, 1);
-      return { id: rule.id, index, label: rule.label, description: rule.description || rule.label, enabled: rule.enabled !== false, test, target,
+      return { id: rule.id, index, label: rule.label, description: rule.description || rule.label || rule.id, enabled: rule.enabled !== false, test, target,
         column: rule.column, columns: targets, details: rule.details !== false, stop: !!rule.stopIfTrue, style: rule.style, relative: !!budget.relative };
     });
   }

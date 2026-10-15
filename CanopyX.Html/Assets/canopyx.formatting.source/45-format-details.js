@@ -9,7 +9,7 @@
       effects.forEach(formatUndo); effects = [];
       const head = dialog.querySelector(".cx-drawer-h"), title = head && head.querySelector("h4"), data = dialog._cxRecord;
       if (!dialog.isConnected || !title || !data || !grid.formatCompiled || !grid.formatCompiled.length) return;
-      const result = grid.formatResult(data);
+      const result = grid.formatResult(data, true);
       if (!result) return;
       if (result.row) {
         const fx = formatEffects(head); effects.push(fx);
