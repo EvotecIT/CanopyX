@@ -8,10 +8,12 @@ namespace CanopyX.AspNetCore;
 
 /// <summary>Writes the small browser script that connects a hosted CanopyX grid to endpoints mapped by <see cref="CanopyRemoteEndpointExtensions"/>.</summary>
 /// <remarks>
-/// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c> and <c>summary</c>
-/// hooks post to the endpoints (with the grid's cancellation signal), and registers one export format per server format
-/// so the Export menu offers a complete server-side download. Include it after the CanopyX runtime and before the grid
-/// mounts. It sends same-origin credentials and expects JSON error bodies, whose message the grid shows.
+/// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c>, <c>summary</c> and,
+/// for a view with editable columns, <c>commit</c> hooks post to the endpoints (with the grid's cancellation signal), and
+/// registers one export format per server format so the Export menu offers a complete server-side download. After a commit
+/// answers with a new dataset revision the grid reloads, because the revision it read pages at is gone; map a writer
+/// (<see cref="CanopyRemoteEndpointOptions.Writer"/>) for views with editable columns. Include the script after the CanopyX
+/// runtime and before the grid mounts. It sends same-origin credentials and expects JSON error bodies, whose message the grid shows.
 /// </remarks>
 public static class CanopyRemoteScript {
     /// <summary>Creates the script element for a grid.</summary>
@@ -41,6 +43,7 @@ public static class CanopyRemoteScript {
             writer.WriteString("endpoint", endpoint.TrimEnd('/'));
             writer.WriteBoolean("facets", facets);
             writer.WriteBoolean("summary", schema.HasSummary);
+            writer.WriteBoolean("commit", schema.EditableColumns.Count > 0);
             writer.WriteStartArray("formats");
             foreach (var (id, label) in exportFormats) {
                 writer.WriteStartObject();
@@ -69,6 +72,19 @@ async function post(path, body, signal) {
 const source = { query: (query, options) => post("/query", query, options.signal).then(response => response.json()) };
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
+if (settings.commit) {
+  // Saving changes a revision the grid still reads pages at; once a commit answers with a new one, the grid reloads.
+  const asked = new Set();
+  source.commit = (batch, options) => post("/commit", batch, options.signal).then(response => response.json()).then(result => {
+    if (result && typeof result.revision === "string" && result.revision !== batch.revision) asked.add(result.revision);
+    return result;
+  });
+  document.addEventListener("canopyx:commit", event => {
+    const grid = event.target && event.target.canopyx, revision = event.detail && event.detail.revision;
+    if (!grid || grid.view.id !== settings.view || !asked.delete(revision)) return;
+    grid.reload();
+  });
+}
 const ids = settings.formats.map(format => {
   const id = ("remote-" + settings.view.toLowerCase().replace(/[^a-z0-9-]/g, "-") + "-" + format.id).slice(0, 32).replace(/-+$/, "");
   CanopyX.registerExportFormat({ id, label: format.label, extension: format.id.replace(/[^a-z0-9]/g, "").slice(0, 16) || "dat",

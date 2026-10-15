@@ -19,6 +19,8 @@ namespace CanopyX.AspNetCore;
 /// <item><c>POST summary</c>: a <c>gridQuery</c> body with its revision, answered with a <c>gridSummary</c> (groups and aggregates).</item>
 /// <item><c>POST export/{format}</c>: the grid's export request, answered with a streamed file.</item>
 /// <item><c>GET view</c>: the grid definition document.</item>
+/// <item><c>POST commit</c> (with <see cref="CanopyRemoteEndpointOptions.Writer"/>): a <c>gridCommit</c> body, answered with a
+/// <c>gridCommitResult</c>; it requires <see cref="CanopyRemoteEndpointOptions.WriteAuthorizationPolicy"/> as well.</item>
 /// </list>
 /// POST bodies must be JSON (<c>application/json</c>), which makes cross-origin pages go through a CORS preflight. Client
 /// errors return 400 (409 for a stale revision, 413 for an oversized body, 415 for another content type) with
@@ -66,9 +68,17 @@ public static class CanopyRemoteEndpointExtensions {
         if (endpoints == null) throw new ArgumentNullException(nameof(endpoints));
         if (schema == null) throw new ArgumentNullException(nameof(schema));
         if (string.IsNullOrEmpty(pattern)) throw new ArgumentException("A route pattern is required.", nameof(pattern));
+        if (options.Writer != null && options.WriteAuthorizationPolicy == null && !options.AllowAnonymousWrites)
+            throw new InvalidOperationException("Name the WriteAuthorizationPolicy the commit route requires. The default policy would let every reader write; AllowAnonymousWrites is for local samples only.");
         var group = endpoints.MapGroup(pattern);
         if (!options.AllowAnonymous) {
             if (options.AuthorizationPolicy == null) group.RequireAuthorization(); else group.RequireAuthorization(options.AuthorizationPolicy);
+        }
+        if (options.Writer != null) {
+            var writer = options.Writer;
+            var commit = group.MapPost("/commit", (RequestDelegate)(context => CanopyRemoteHttp.RunJsonAsync(context, options.Limits,
+                http => new CanopyRemoteHandler(schema, provider(http), options.Remote, writer(http)), CommitAnswer)));
+            if (options.WriteAuthorizationPolicy != null) commit.RequireAuthorization(options.WriteAuthorizationPolicy);
         }
         var view = schema.View.ToJson();
         CanopyRemoteHandler Handler(HttpContext context) => new CanopyRemoteHandler(schema, provider(context), options.Remote);
@@ -96,6 +106,7 @@ public static class CanopyRemoteEndpointExtensions {
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> QueryAnswer = (handler, body, token) => handler.QueryAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> FacetAnswer = (handler, body, token) => handler.FacetAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> SummaryAnswer = (handler, body, token) => handler.SummaryAsync(body, token);
+    private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> CommitAnswer = (handler, body, token) => handler.CommitAsync(body, token);
 
     private static RequestDelegate Json(Func<HttpContext, CanopyRemoteHandler> handler, CanopyRemoteLimits limits,
         Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> answer) =>
