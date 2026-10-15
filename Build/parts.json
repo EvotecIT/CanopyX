@@ -306,6 +306,23 @@
       "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
     },
     {
+      "name": "live",
+      "label": "live data",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["live"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder",
+        "validateGridRows", "validateGridPage", "validateGridCursorPage", "gridFreeze", "requireIdentifier", "checkDocument", "cellValue", "PROTOCOL",
+        "GRID_REPORTING", "VIEW_MODES", "inlineGridSource"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.live.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.live.source/live.css"
+      ]
+    },
+    {
       "name": "record-panel",
       "label": "record panel",
       "runtimes": ["tree", "grid"],

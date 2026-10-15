@@ -20,7 +20,7 @@ try {
   const run = (file, args, cwd) => execute(file, args, { cwd, timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
   const result = await run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", output], repo);
   const [packed] = JSON.parse(result.stdout);
-  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts", "JavaScript/editing.d.ts", "JavaScript/formatting.d.ts", "JavaScript/column-groups.d.ts", "JavaScript/cell-ranges.d.ts", "JavaScript/records.d.ts",
+  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts", "JavaScript/editing.d.ts", "JavaScript/formatting.d.ts", "JavaScript/column-groups.d.ts", "JavaScript/cell-ranges.d.ts", "JavaScript/records.d.ts", "JavaScript/live.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
@@ -29,7 +29,7 @@ try {
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js", "CanopyX.Html/Assets/canopyx-link.js", "CanopyX.Html/Assets/canopyx-link.css",
     "CanopyX.Html/Assets/canopyx-formatting.js", "CanopyX.Html/Assets/canopyx-formatting.css", "CanopyX.Html/Assets/canopyx-format-editor.js", "CanopyX.Html/Assets/canopyx-format-editor.css",
     "CanopyX.Html/Assets/canopyx-column-groups.js", "CanopyX.Html/Assets/canopyx-column-groups.css", "CanopyX.Html/Assets/canopyx-cell-range.js", "CanopyX.Html/Assets/canopyx-cell-range.css",
-    "CanopyX.Html/Assets/canopyx-highlight.js", "CanopyX.Html/Assets/canopyx-highlight.css", "CanopyX.Html/Assets/canopyx-layouts.js", "CanopyX.Html/Assets/canopyx-layouts.css", "CanopyX.Html/Assets/canopyx-record-panel.js", "CanopyX.Html/Assets/canopyx-record-panel.css",
+    "CanopyX.Html/Assets/canopyx-highlight.js", "CanopyX.Html/Assets/canopyx-highlight.css", "CanopyX.Html/Assets/canopyx-layouts.js", "CanopyX.Html/Assets/canopyx-layouts.css", "CanopyX.Html/Assets/canopyx-record-panel.js", "CanopyX.Html/Assets/canopyx-record-panel.css", "CanopyX.Html/Assets/canopyx-live.js", "CanopyX.Html/Assets/canopyx-live.css",
     ...['pl','de','es','fr','it'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));

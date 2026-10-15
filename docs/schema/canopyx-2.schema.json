@@ -14,7 +14,7 @@
     { "$ref": "#/$defs/gridFacetPage" },
     { "$ref": "#/$defs/gridSummary" },
     { "$ref": "#/$defs/gridCommit" },
-    { "$ref": "#/$defs/gridCommitResult" },
+    { "$ref": "#/$defs/gridCommitResult" }, { "$ref": "#/$defs/gridTransaction" },
     { "$ref": "#/$defs/gridRecordQuery" },
     { "$ref": "#/$defs/gridRecord" },
     { "$ref": "#/$defs/gridRecordPack" },
@@ -109,6 +109,47 @@
             "errors": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "type": "string" } } },
           "if": { "properties": { "status": { "not": { "const": "saved" } } } },
           "then": { "not": { "required": ["cells"] } } } }
+      }
+    },
+    "gridLive": {
+      "description": "Live data for a flat grid: rows change in place, keeping the reader's query, selection, focus, scroll position, open drawer and pending edits. stableOrder (default true) keeps rows whose sort keys change in their places until the reader re-sorts; flash marks changed cells (true, or { durationMs }); batchMs applies changes arriving within that time together; pollMs polls the source (a hosted grid's revision-aware refresh, an inline grid's live.load function); announce (default true) announces added and removed rows; pauseWhenHidden (default true) skips polls while the page is hidden.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stableOrder": { "type": "boolean" },
+        "flash": { "anyOf": [{ "type": "boolean" }, { "type": "object", "additionalProperties": false, "properties": { "durationMs": { "type": "integer", "minimum": 100, "maximum": 10000 } } }] },
+        "batchMs": { "type": "integer", "minimum": 0, "maximum": 60000 },
+        "pollMs": { "anyOf": [{ "const": 0 }, { "type": "integer", "minimum": 250, "maximum": 86400000 }] },
+        "announce": { "type": "boolean" },
+        "pauseWhenHidden": { "type": "boolean" }
+      }
+    },
+    "gridRowUpdate": {
+      "description": "A row update of a gridTransaction: the row's id and the cells to change (a null cell clears it); tone, className, detail and fields replace the row's when given, and null clears tone and className.",
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
+        "tone": { "anyOf": [{ "$ref": "#/$defs/tone" }, { "type": "null" }] },
+        "className": { "anyOf": [{ "$ref": "#/$defs/gridClasses" }, { "type": "null" }] },
+        "detail": { "$ref": "#/$defs/gridRowDetail" },
+        "fields": { "$ref": "#/$defs/recordValues" }
+      }
+    },
+    "gridTransaction": {
+      "description": "Changes a host sends to an open flat grid: add (complete rows; a row whose id the grid has replaces it), update (rows whose cells merge into the existing row's; a null cell clears it) and remove (row ids). Removes apply first, then adds, then updates; at most 100,000 rows in all.",
+      "type": "object",
+      "required": ["protocol", "type", "view"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridTransaction" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "add": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } },
+        "update": { "type": "array", "items": { "$ref": "#/$defs/gridRowUpdate" } },
+        "remove": { "type": "array", "items": { "$ref": "#/$defs/identifier" } }
       }
     },
     "gridRowDetail": {
@@ -296,6 +337,7 @@
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
         "searchHighlight": { "$ref": "#/$defs/searchHighlight" },
         "layout": { "$ref": "#/$defs/layoutOptions" },
+        "live": { "$ref": "#/$defs/gridLive" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Conditional formatting rules in priority order (docs/conditional-formatting.md)." },
         "formatting": { "type": "object", "additionalProperties": false, "description": "A legend of the labelled rules and the rule editor in the more menu.", "properties": { "legend": { "type": "boolean" }, "editor": { "type": "boolean" } } },
@@ -1490,6 +1532,14 @@
         "gridYesterday": { "type": "string" },
         "gridLastSevenDays": { "type": "string" },
         "gridLastThirtyDays": { "type": "string" },
+        "gridLiveChanged": { "type": "string" },
+        "gridLiveNewData": { "type": "string" },
+        "gridLiveOrderChanged": { "type": "string" },
+        "gridLiveOrderHint": { "type": "string" },
+        "gridLiveRecordRemoved": { "type": "string" },
+        "gridLiveRefresh": { "type": "string" },
+        "gridLiveResort": { "type": "string" },
+        "gridLiveSorted": { "type": "string" },
         "gridThisMonth": { "type": "string" },
         "gridDateRange": { "type": "string" },
         "gridEmpty": { "type": "string" },

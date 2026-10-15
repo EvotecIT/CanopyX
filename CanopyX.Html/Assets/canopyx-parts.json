@@ -265,7 +265,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "1cb852aac9130960",
+      "version": "22852c9951e97423",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [
@@ -296,6 +296,22 @@
       ],
       "features": [
         "layout"
+      ]
+    },
+    {
+      "name": "live",
+      "label": "live data",
+      "version": "e2f3cdfcb1f696bc",
+      "script": "canopyx-live.js",
+      "style": "canopyx-live.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "live"
       ]
     },
     {

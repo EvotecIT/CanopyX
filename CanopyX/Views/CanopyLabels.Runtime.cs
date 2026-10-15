@@ -12,6 +12,8 @@ public sealed partial class CanopyLabels {
         nameof(GridEditMinLength), nameof(GridEditMaxLength), nameof(GridEditPattern), nameof(GridEditChoice), nameof(GridEditConflict),
         nameof(GridEditRejected), nameof(GridEditNotSaved), nameof(GridEditNoMatches), nameof(GridEditSearching), nameof(GridEditUndone),
         nameof(GridEditRedone), nameof(GridEditNone),
+        nameof(GridLiveOrderChanged), nameof(GridLiveResort), nameof(GridLiveNewData), nameof(GridLiveRefresh), nameof(GridLiveOrderHint),
+        nameof(GridLiveChanged), nameof(GridLiveSorted), nameof(GridLiveRecordRemoved),
         nameof(MatchesHighlight), nameof(MatchesCount), nameof(MatchesPosition), nameof(MatchesNone), nameof(MatchesLoaded), nameof(MatchesPrevious), nameof(MatchesNext), nameof(MatchesAnnounce), nameof(LayoutMenu), nameof(LayoutFit), nameof(LayoutScroll), nameof(LayoutCards), nameof(LayoutDensity), nameof(LayoutCompact), nameof(LayoutNormal), nameof(LayoutComfortable), nameof(LayoutChanged), nameof(LayoutSort),
         nameof(GridGroupCount),
         nameof(GridOfThese),

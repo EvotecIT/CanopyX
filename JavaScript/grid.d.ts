@@ -17,6 +17,8 @@ import type { GridColumnGroup, GridColumnGroupApi } from "./column-groups.js";
 import type { GridRangeSelection, GridClipboardSettings, GridCellRange, GridPasteEvent, GridCellRangeApi } from "./cell-ranges.js";
 export * from "./column-groups.js";
 export * from "./cell-ranges.js";
+import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
+export * from "./live.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
@@ -342,6 +344,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   clipboard?: GridClipboardSettings;
   /** The record panel: record fields, sections, tabs, a pinned summary, deep links, record details on demand (records.d.ts). */
   record?: RecordPanelDefinition;
+  /** Live data: rows that change in place, the stable order, flashing cells, batching and polling (live.d.ts). */
+  live?: GridLiveDefinition;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -726,6 +730,11 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   rangeSelection?: GridRangeSelection;
   /** Overrides the view's clipboard settings, switch by switch. */
   clipboard?: GridClipboardSettings;
+  /** Live data settings, over the view's live object; true turns live data on with the defaults, false keeps the view's
+   * settings from applying while the live methods still work (live.d.ts). */
+  live?: boolean | GridLiveOptions<GridRow, Q>;
+  /** After rows changed in place (a transaction, a poll, a refresh); canopyx:rowsChanged carries the same detail. */
+  onRowsChanged?: (event: GridLiveResult) => void;
   /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
   onPaste?: (event: GridPasteEvent) => boolean | void;
   /** After the cell ranges changed. */
@@ -742,7 +751,7 @@ export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGri
 export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<GridRow, Q> {
   readonly element: HTMLElement;
   readonly view: GridView;
   readonly ready: Promise<Q>;

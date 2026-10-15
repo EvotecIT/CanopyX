@@ -213,6 +213,7 @@ public sealed partial class CanopyDataGridView {
             writer.EndArray();
         }
         WriteFormattingJson(writer);
+        WriteLiveJson(writer);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Record != null) { writer.Name("record"); Record.WriteJson(writer, grid: true); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);

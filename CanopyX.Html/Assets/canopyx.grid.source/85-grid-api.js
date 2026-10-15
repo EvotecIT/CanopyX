@@ -18,7 +18,7 @@
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
       "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
       "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "openDetails", "openRecord", "scrollToRow", "retry", "closeMenus", "getFormatRules", "setFormatRules", "openFormatRules",
-      "getLayout", "setLayout", "getMatches", "setSearchHighlight", "nextMatch", "previousMatch", ...GRID_EDIT_API])
+      "getLayout", "setLayout", "getMatches", "setSearchHighlight", "nextMatch", "previousMatch", ...GRID_EDIT_API, ...GRID_LIVE_API, "getLiveState"])
       // Each call looks the method up, so a part installed later (editing, linked views and others) serves the API it replaces.
       api[name] = (...args) => grid[name](...args);
     // Part actions (column groups, cell ranges) answer with a promise, also when the call throws.

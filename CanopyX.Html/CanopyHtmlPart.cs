@@ -33,7 +33,7 @@ public sealed class CanopyHtmlPart {
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail",
-        "searchHighlight", "layout", "record"
+        "searchHighlight", "layout", "record", "live"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -142,7 +142,7 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>
     /// Whether a grid uses a view feature: pager settings, an editable column, formatting rules or the rule editor, column
-    /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes or the record panel. Compact
+    /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes, the record panel or live data. Compact
     /// row data (<c>rowData</c>) is a writer option, not a view setting: the HTML writer adds the parts that serve it.
     /// </summary>
     private static bool Uses(CanopyDataGridView view, string feature) {
@@ -159,6 +159,7 @@ public sealed class CanopyHtmlPart {
             "searchHighlight" => view.SearchHighlight != null,
             "layout" => view.Layout != null,
             "record" => UsesRecordPanel(view),
+            "live" => view.Live != null,
             _ => false
         };
     }

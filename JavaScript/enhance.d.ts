@@ -173,8 +173,11 @@ export interface GridHeaderGroup {
   readonly columns: readonly string[];
 }
 
-/** The controller CanopyX.enhance and CanopyX.grid resolve with: the grid's API plus events by name, records and the restored table. */
-export interface EnhancedGrid<R = any> extends DataGrid {
+/**
+ * The controller CanopyX.enhance and CanopyX.grid resolve with: the grid's API plus events by name, records and the restored
+ * table. Its addRows and removeRows take records as the controller was given them; the grid's other live methods stay.
+ */
+export interface EnhancedGrid<R = any> extends Omit<DataGrid, "addRows" | "removeRows"> {
   /** The original table, put back by destroy(); null for a grid built in another element. */
   readonly table: HTMLTableElement | null;
   /** Header rows above the bottom one, as levels of groups. */

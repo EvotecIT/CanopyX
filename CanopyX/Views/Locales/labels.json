@@ -411,5 +411,13 @@
   "GridEditSearching": ["Wyszukiwanie…","Suche läuft…","Buscando…","Recherche…","Ricerca in corso…"],
   "GridEditUndone": ["Cofnięto: {column}","Rückgängig gemacht: {column}","Deshecho: {column}","Annulé : {column}","Annullato: {column}"],
   "GridEditRedone": ["Ponowiono: {column}","Wiederholt: {column}","Rehecho: {column}","Rétabli : {column}","Ripetuto: {column}"],
-  "GridEditNone": ["(brak)","(keine)","(ninguno)","(aucun)","(nessuno)"]
+  "GridEditNone": ["(brak)","(keine)","(ninguno)","(aucun)","(nessuno)"],
+  "GridLiveOrderChanged": ["Kolejność się zmieniła","Reihenfolge geändert","El orden ha cambiado","L’ordre a changé","L’ordine è cambiato"],
+  "GridLiveResort": ["Sortuj ponownie","Neu sortieren","Reordenar","Trier à nouveau","Riordina"],
+  "GridLiveNewData": ["Nowe dane","Neue Daten","Datos nuevos","Nouvelles données","Nuovi dati"],
+  "GridLiveRefresh": ["Odśwież","Aktualisieren","Actualizar","Actualiser","Aggiorna"],
+  "GridLiveOrderHint": ["Wiersze zostają na swoich miejscach, gdy dane się zmieniają. Posortuj ponownie, aby przenieść je na miejsca zgodne z sortowaniem.","Zeilen bleiben an ihrem Platz, während sich die Daten ändern. Neu sortieren verschiebt sie an ihre sortierte Stelle.","Las filas mantienen su lugar mientras cambian los datos. Reordene para moverlas a la posición que les da el orden.","Les lignes restent à leur place pendant que les données changent. Triez à nouveau pour les placer selon le tri.","Le righe restano al loro posto mentre i dati cambiano. Riordina per spostarle dove le colloca l’ordinamento."],
+  "GridLiveChanged": ["Zmienione wiersze: dodane {added}, zaktualizowane {updated}, usunięte {removed}","Zeilen geändert: {added} hinzugefügt, {updated} aktualisiert, {removed} entfernt","Filas cambiadas: {added} añadidas, {updated} actualizadas, {removed} eliminadas","Lignes modifiées : {added} ajoutées, {updated} mises à jour, {removed} supprimées","Righe modificate: {added} aggiunte, {updated} aggiornate, {removed} rimosse"],
+  "GridLiveSorted": ["Wiersze przeniesiono na miejsca zgodne z sortowaniem.","Zeilen an ihre sortierte Stelle verschoben.","Filas movidas a la posición que les da el orden.","Lignes replacées selon le tri.","Righe spostate dove le colloca l’ordinamento."],
+  "GridLiveRecordRemoved": ["Ten rekord został usunięty.","Dieser Datensatz wurde entfernt.","Este registro se ha eliminado.","Cet enregistrement a été supprimé.","Questo record è stato rimosso."]
 }
