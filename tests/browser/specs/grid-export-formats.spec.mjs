@@ -67,12 +67,13 @@ for (const reporting of [false, true]) test("format providers join the " + (repo
 });
 
 test("a slow provider shows progress, can be cancelled from the menu, and is not bound by the request deadline", async ({ page }) => {
+  // The export timeout outlasts every assertion made while the slow writer runs, in the slowest engine as well.
   await open(page, definition(), `window.errors=[];CanopyX.registerExportFormat({id:'slow',label:'Download slow',extension:'bin',async write(capture,{signal,progress}){
     let count=0;for await(const row of capture.rows())count++;progress(count);window.slowStarted=true;
     await new Promise((resolve,reject)=>{window.release=resolve;signal.addEventListener('abort',()=>{window.slowAborted=signal.reason&&signal.reason.name;reject(signal.reason);});});
     return new Blob(['done']);}});
     CanopyX.registerExportFormat({id:'deaf',label:'Download deaf',extension:'bin',write:()=>new Promise(()=>{})});
-    CanopyX.configure('records',{requestTimeoutMs:50,exportTimeoutMs:400,onExport:()=>new Promise(resolve=>setTimeout(resolve,200)),onError:event=>window.errors.push(event.error.message)});`);
+    CanopyX.configure('records',{requestTimeoutMs:50,exportTimeoutMs:1500,onExport:()=>new Promise(resolve=>setTimeout(resolve,200)),onError:event=>window.errors.push(event.error.message)});`);
   await openGridControl(page, "export");
   const panel = page.locator(".cx-grid-export .cx-grid-panel");
   await page.getByRole("button", { name: "Download slow", exact: true }).click();

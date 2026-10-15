@@ -141,7 +141,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 180 }
     const margin = viewport.width <= 640 ? 0 : 7;
     await expect.poll(() => menu.evaluate((group, margin) => {
       const r = group.getBoundingClientRect();
-      return r.left >= margin && r.right <= innerWidth - margin && r.top >= margin && r.bottom <= innerHeight - margin;
+      // Half a pixel absorbs layout rounding: Firefox can place a sheet's bottom edge at 844.00003 in an 844 pixel viewport.
+      const slack = 0.5;
+      return r.left >= margin - slack && r.right <= innerWidth - margin + slack && r.top >= margin - slack && r.bottom <= innerHeight - margin + slack;
     }, margin)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
     await menu.locator("input").last().uncheck();
