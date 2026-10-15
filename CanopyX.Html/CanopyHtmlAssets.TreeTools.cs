@@ -29,7 +29,7 @@ public static partial class CanopyHtmlAssets {
     /// outside a mounted host, or serve <see cref="TreeToolsScriptFileName"/> and <see cref="TreeToolsStyleFileName"/> beside the runtime.
     /// Trees load other parts too: the export part for their Export menu, the links part for deep links and the search part for a
     /// sidecar source. A host that assembles a single-file page embeds the parts of <see cref="GetRequiredParts(CanopyTreeView)"/>
-    /// (<see cref="CanopyHtmlDocument.EmbedOnce"/>), and a host that serves files serves those of <see cref="GetParts(CanopyRuntime)"/>.
+    /// (<see cref="CanopyHtmlDocument.EmbedOnce(CanopyHtmlPart)"/>), and a host that serves files serves those of <see cref="GetParts(CanopyRuntime)"/>.
     /// </remarks>
     public static string TreeToolsMarkup => GetPart("tree-tools").Markup;
 }
