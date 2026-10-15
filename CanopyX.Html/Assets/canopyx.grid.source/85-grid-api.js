@@ -16,9 +16,9 @@
     };
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
       "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
-      "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "openDetails", "scrollToRow", "retry", "closeMenus"])
+      "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "openDetails", "openRecord", "scrollToRow", "retry", "closeMenus"])
       api[name] = grid[name].bind(grid);
     GRID_REPORTING.api?.(api, grid);
     Object.freeze(api);
-    activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; return api;
+    activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; recordStart(grid); return api;
   }

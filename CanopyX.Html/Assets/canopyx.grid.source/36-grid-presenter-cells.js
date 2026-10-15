@@ -11,6 +11,9 @@
       };
       if (GRID_HISTORY_KINDS.includes(options.kind)) {
         if(GRID_HISTORY_IMPL.render)GRID_HISTORY_IMPL.render(grid,column,options,cell,element,text);else grid.loadHistory();
+      } else if (options.kind==="structured") {
+        // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).
+        if(RECORD_IMPL.summary)RECORD_IMPL.summary(grid,column,options,row,element,text);else{add(text);grid.loadRecordPanel();}
       } else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
       else if (options.kind==="link") {
         const href=gridPresenterLink(cellValue(options.hrefColumn?row.cells[options.hrefColumn]:cell));

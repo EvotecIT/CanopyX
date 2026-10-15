@@ -90,17 +90,18 @@
     }, grid.interactionApi && grid.interactionApi());
     // Exports, named views and column order come with the tree tools part: they work once ready has resolved. Before that the
     // methods that return a promise reject it, and the others throw.
-    for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned", "openDetails"])
+    for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned", "openDetails", "openRecord"])
       api[name] = (...args) => {
         if (grid[name]) return grid[name](...args);
         const error = new Error("CanopyX: " + name + " needs the tree tools part.");
-        if (/^(exportAs|applySavedView|resetView|openDetails)$/.test(name)) return Promise.reject(error);
+        if (/^(exportAs|applySavedView|resetView|openDetails|openRecord)$/.test(name)) return Promise.reject(error);
         throw error;
       };
     Object.freeze(api);
     activeGrids.set(host, api);
     host.setAttribute("data-canopyx-mounted", "true");
     host.canopyx = api;
+    recordStart(grid);
     return api;
   }
 
