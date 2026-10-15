@@ -10,7 +10,12 @@ import { budgetView, serveGrid, bodyCell, rowId, MONTHS } from "./column-groups-
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const editing = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-parts.json"), "utf8")).parts.some(part => part.name === "editing");
 test.skip(!editing, "The editing part is not in this runtime.");
-test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+// Clipboard permissions exist in Chromium only: the tests that read or write the system clipboard run there, the rest everywhere.
+test.use({ permissions: async ({ browserName }, use) => { await use(browserName === "chromium" ? ["clipboard-read", "clipboard-write"] : []); } });
+const SYSTEM_CLIPBOARD = new Set([
+  "a paste applies editable cells through editing, refuses read-only and invalid ones, and undoes as one step"
+]);
+test.beforeEach(({ browserName }, testInfo) => { test.skip(browserName !== "chromium" && SYSTEM_CLIPBOARD.has(testInfo.title), "The system clipboard needs Chromium's clipboard permissions."); });
 
 function editableBudget(extra = {}) {
   const view = budgetView({ rangeSelection: { fillHandle: true }, ...extra });

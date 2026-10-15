@@ -5,7 +5,17 @@ import { test, expect } from "@playwright/test";
 import { exampleUrl, nextFrames } from "./support.mjs";
 import { budgetView, serveGrid, bodyCell } from "./column-groups-support.mjs";
 
-test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+// Clipboard permissions exist in Chromium only: the tests that read or write the system clipboard run there, the rest everywhere.
+test.use({ permissions: async ({ browserName }, use) => { await use(browserName === "chromium" ? ["clipboard-read", "clipboard-write"] : []); } });
+const SYSTEM_CLIPBOARD = new Set([
+  "Ctrl+C copies tab-separated text and a typed table that keeps numbers and dates",
+  "copies with headers carry the group rows above the column titles",
+  "paste offers the parsed cells to the host, applies none itself, and reports the refused ones",
+  "the cell menu copies, pastes, selects all and clears; the keyboard opens it too",
+  "the more menu copies the ranges",
+  "the quarterly budget example takes pasted amounts into its months only"
+]);
+test.beforeEach(({ browserName }, testInfo) => { test.skip(browserName !== "chromium" && SYSTEM_CLIPBOARD.has(testInfo.title), "The system clipboard needs Chromium's clipboard permissions."); });
 const ranges = page => page.evaluate(() => api.getCellRanges());
 const live = page => page.locator(".cx-live").textContent();
 const clipboard = page => page.evaluate(async () => {
@@ -243,12 +253,14 @@ test("the outline stays visible in forced colours", async ({ page }) => {
   await page.emulateMedia({ forcedColors: "active" });
   await page.evaluate(() => api.setCellRanges([{ startRow: 0, endRow: 1, startColumn: "jan", endColumn: "feb" }]));
   const style = await bodyCell(page, 0, 2).evaluate(cell => { const s = getComputedStyle(cell); return { adjust: s.forcedColorAdjust, image: s.backgroundImage, color: s.backgroundColor }; });
-  expect(style.adjust).toBe("none");
+  // WebKit does not report forced-color-adjust; where an engine does, the range keeps its own colours.
+  if (style.adjust !== undefined) expect(style.adjust).toBe("none");
   expect(style.image).toContain("linear-gradient");
   expect(style.color).not.toBe("rgba(0, 0, 0, 0)");
 });
 
-test("a long press starts a range on touch screens, dragging extends it and the handles resize it", async ({ browser }) => {
+test("a long press starts a range on touch screens, dragging extends it and the handles resize it", async ({ browser, browserName }) => {
+  test.skip(browserName !== "chromium", "The touch input goes through the Chromium DevTools protocol.");
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
   await serveGrid(page, budgetView({ rangeSelection: true }));

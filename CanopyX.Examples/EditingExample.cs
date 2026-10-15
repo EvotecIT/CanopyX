@@ -14,6 +14,7 @@ internal static class EditingExample {
     // changed "by someone else" (the status of asset AS-1003 changes behind the reader's back a second after the page loads) is a conflict.
     private const string Script = """
 <style>
+body{background:Canvas;color:CanvasText}
 .register-log{box-sizing:border-box;margin:0;padding:10px 16px 0;font:13px/1.4 system-ui,sans-serif;color:CanvasText}
 .register-log b{font-weight:600}
 body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}

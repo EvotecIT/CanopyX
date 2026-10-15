@@ -81,7 +81,10 @@ for (const scheme of ["light", "dark"]) {
     await expect(drawer).toBeVisible();
     const edge = await drawer.evaluate(element => { const style = getComputedStyle(element); return [style.borderLeftStyle, style.borderTopStyle, style.outlineStyle]; });
     expect(edge.some(style => style === "solid")).toBe(true);
-    await drawer.getByRole("button", { name: /close/i }).focus();
+    // Focus rings follow the keyboard (focus-visible): Tab to the close button, as a keyboard reader does, in every engine.
+    const close = drawer.getByRole("button", { name: /close/i });
+    for (let step = 0; step < 8 && !(await close.evaluate(button => button === document.activeElement)); step++) await page.keyboard.press("Tab");
+    await expect(close).toBeFocused();
     expect(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle)).not.toBe("none");
   });
 }

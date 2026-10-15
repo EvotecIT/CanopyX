@@ -15,7 +15,8 @@ internal static class PluginsExample {
 .load-meter-track{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--cx-text) 12%,transparent);overflow:hidden}
 .load-meter-fill{display:block;height:100%;background:var(--cx-accent)}
 .load-meter-text{min-width:3.5ch;text-align:right}
-.plugin-log{box-sizing:border-box;height:36px;margin:0;padding:10px 16px 0;font-size:13px}
+body{background:Canvas;color:CanvasText}
+.plugin-log{box-sizing:border-box;height:36px;margin:0;padding:10px 16px 0;font-size:13px;color:CanvasText}
 body.cx-page > .cx-main > .cx-host{height:calc(100vh - 36px)}
 </style>
 <script>

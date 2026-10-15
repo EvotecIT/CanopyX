@@ -3,7 +3,8 @@
 import { test, expect } from "@playwright/test";
 import { budgetView, serveGrid, bodyCell, headerColumns, rowId, MONTHS } from "./column-groups-support.mjs";
 
-test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+// Clipboard permissions exist in Chromium only: the tests that read or write the system clipboard run there, the rest everywhere.
+test.use({ permissions: async ({ browserName }, use) => { await use(browserName === "chromium" ? ["clipboard-read", "clipboard-write"] : []); } });
 const ranges = page => page.evaluate(() => api.getCellRanges());
 const pins = page => page.evaluate(() => api.getColumnGroups().map(group => group.pin));
 const grouped = (extra = {}) => budgetView({ rangeSelection: true, reporting: { grouping: { column: "team", direction: "asc" }, aggregates: [] }, ...extra });
