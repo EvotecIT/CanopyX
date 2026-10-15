@@ -93,12 +93,15 @@ export function runtimeAssets(runtime = "tree") {
   return {
     script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8") +
       (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") +
-        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-history.js"),"utf8") : "") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-history.js"),"utf8") +
+        // The detail rows and grouping parts every grid runtime loads for grouped or detail views.
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.js"),"utf8") : "") +
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script +
       // The links and search parts every runtime loads for deep links and sidecar searches.
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-links.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-search.js"),"utf8"),
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
-      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") : "") +
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.css"),"utf8") : "") +
       "\n" + treeToolsAssets().style
   };
 }
