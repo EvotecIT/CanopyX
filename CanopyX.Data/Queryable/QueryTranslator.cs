@@ -148,7 +148,7 @@ internal sealed partial class QueryTranslator<T> {
     private static Expression Domain(Expression value, ValueShape shape, Func<object, bool> passes) {
         var type = ExpressionTools.Underlying(value.Type);
         var members = shape == ValueShape.Boolean ? new object[] { false, true } : Enum.GetValues(type).Cast<object>().ToArray();
-        var matching = members.Where(member => passes(shape == ValueShape.Boolean ? member : member.ToString()!)).ToList();
+        var matching = members.Where(member => passes(shape == ValueShape.Boolean ? member : CanopyDataValues.EnumText((Enum)member))).ToList();
         if (matching.Count == 0) return Expression.Constant(false);
         var guard = ExpressionTools.IsNullable(value.Type) ? ExpressionTools.NotNull(value) : null;
         if (matching.Count == members.Length) return guard ?? Expression.Constant(true);

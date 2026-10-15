@@ -44,14 +44,15 @@ internal sealed partial class QueryTranslator<T> {
             var type = ExpressionTools.Underlying(value.Type);
             if (canonical) {
                 var plain = value.Type == type ? value : Expression.Convert(value, type);
-                Expression name = Expression.Call(plain, typeof(object).GetMethod(nameof(ToString), Type.EmptyTypes)!);
+                Expression name = Expression.Call(typeof(CanopyDataValues).GetMethod(nameof(CanopyDataValues.EnumText))!, Expression.Convert(plain, typeof(Enum)));
                 if (value.Type != type) name = Expression.Condition(ExpressionTools.IsNull(value), Expression.Constant(null, typeof(string)), name);
                 yield return (name, key.Descending, StringComparer.Ordinal);
             } else {
-                // Enumerations sort by member name, as their raw text value does; the database sees a rank expression.
-                var names = Enum.GetValues(type).Cast<object>().GroupBy(member => member.ToString()).Select(group => group.First())
-                    .OrderBy(member => member.ToString(), StringComparer.Ordinal).ToList();
-                yield return (Rank(value, names.Select(member => (Expression)Expression.Equal(value, ExpressionTools.Parameter(member, value.Type))).ToList()), key.Descending, null);
+                // Enumerations sort by their raw text (EnumMember value or name); the database sees a rank expression, one rank per text.
+                var texts = Enum.GetValues(type).Cast<Enum>().Distinct().GroupBy(member => CanopyDataValues.EnumText(member), StringComparer.Ordinal)
+                    .OrderBy(group => group.Key, StringComparer.Ordinal).ToList();
+                yield return (Rank(value, texts.Select(group => group.Select(member => (Expression)Expression.Equal(value, ExpressionTools.Parameter(member, value.Type)))
+                    .Aggregate(Expression.OrElse)).ToList()), key.Descending, null);
             }
             yield break;
         }

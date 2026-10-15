@@ -1,5 +1,10 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace CanopyX.Data;
 
@@ -22,7 +27,7 @@ public static class CanopyDataValues {
             case string text: return text;
             case bool flag: return flag;
             case char unit: return unit.ToString();
-            case Enum member: return member.ToString();
+            case Enum member: return EnumText(member);
             case sbyte n: return (long)n;
             case byte n: return (long)n;
             case short n: return (long)n;
@@ -43,6 +48,31 @@ public static class CanopyDataValues {
 #endif
         throw new ArgumentException("Values of type " + value.GetType().Name + " have no CanopyX raw value shape.", nameof(value));
     }
+
+    /// <summary>Gets the raw text of an enumeration member: its <see cref="EnumMemberAttribute"/> value when it declares one,
+    /// otherwise its name; a combination of flags joins its flags' texts. Filtering, searching, sorting, value lists and exports
+    /// all read this text. Filters match defined members only, so undefined values and flag combinations are never matched by value.</summary>
+    /// <param name="value">The member.</param>
+    /// <returns>The text.</returns>
+    public static string EnumText(Enum value) {
+        if (value == null) throw new ArgumentNullException(nameof(value));
+        var names = EnumNames.GetOrAdd(value.GetType(), type => {
+            var map = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static)) {
+                var member = field.GetCustomAttribute<EnumMemberAttribute>();
+                if (member?.Value != null && member.Value.Length > 0) map[field.Name] = member.Value;
+            }
+            return map;
+        });
+        var name = value.ToString();
+        if (names.TryGetValue(name, out var text)) return text;
+        // A combination of flags reads each flag by its own text.
+        if (name.IndexOf(", ", StringComparison.Ordinal) >= 0 && value.GetType().IsDefined(typeof(FlagsAttribute), false))
+            return string.Join(", ", name.Split(new[] { ", " }, StringSplitOptions.None).Select(part => names.TryGetValue(part, out var flag) ? flag : part));
+        return name;
+    }
+
+    private static readonly ConcurrentDictionary<Type, Dictionary<string, string>> EnumNames = new ConcurrentDictionary<Type, Dictionary<string, string>>();
 
     /// <summary>Creates a cell holding a normalized store value, or null for a missing value.</summary>
     /// <param name="value">The store value.</param>

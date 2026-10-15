@@ -127,7 +127,7 @@ kind that fits the expression type:
 
 | Column kind | Expression types | Wire value |
 | --- | --- | --- |
-| `Text` | `string`, `bool`, enumerations | text; booleans stay JSON booleans; enumerations are their member names |
+| `Text` | `string`, `bool`, enumerations | text; booleans stay JSON booleans; enumerations are their `[EnumMember(Value = …)]` names, else their member names |
 | `Number` | `byte` … `long`, `float`, `double`, `decimal` | number (keep magnitudes within ±2^53−1) |
 | `DateTime` | `DateTime` (stored as UTC), `DateTimeOffset`, `DateOnly` (midnight UTC) | ISO 8601 UTC |
 
@@ -181,7 +181,7 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
   a case-insensitive collation interleaves case. Grouping columns need a binary (case-sensitive) collation, because groups
   are exact values.
 - **Enumerations and booleans** evaluate every member against the exact rule and send the matching members as an `IN`
-  test, so `contains "ux"` on an enumeration becomes `os IN (Linux)`. Enumerations sort by member name.
+  test, so `contains "ux"` on an enumeration becomes `os IN (Linux)`. Enumerations sort by their raw text (an `[EnumMember]` value or the member name).
 - **Integers** accept fractional operands as the protocol's binary64 comparison would: `gt 4.5` becomes `> 4`, `eq 4.5`
   matches nothing, and out-of-range operands become always/never true.
 - **Dates** become half-open bounds: `eq t` is `t ≤ v < t + 1 ms`, `gt t` is `v ≥ t + 1 ms`. Store UTC; `DateTime` values
