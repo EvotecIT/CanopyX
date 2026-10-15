@@ -216,5 +216,22 @@
   "GridShowRowsWhere": ["Pokaż wiersze, dla których","Zeilen anzeigen, für die","Mostrar filas donde","Afficher les lignes où","Mostra le righe in cui"],
   "GridOfTheseAreTrue": ["z tych warunków są spełnione","dieser Bedingungen zutreffen","de estas condiciones se cumplen","de ces conditions sont vraies","di queste condizioni sono vere"],
   "GridOfThese": ["z tych warunków","dieser Bedingungen","de estas condiciones","de ces conditions","di queste condizioni"],
-  "GridGroupCount": ["Grupy: {count}","{count} Gruppen","{count} grupos","Groupes : {count}","Gruppi: {count}"]
+  "GridGroupCount": ["Grupy: {count}","{count} Gruppen","{count} grupos","Groupes : {count}","Gruppi: {count}"],
+  "MatchesHighlight": ["Wyróżniaj dopasowania","Treffer hervorheben","Resaltar coincidencias","Surligner les correspondances","Evidenzia le corrispondenze"],
+  "MatchesCount": ["Dopasowania: {count}","{count} Treffer","{count} coincidencias","Correspondances : {count}","Corrispondenze: {count}"],
+  "MatchesPosition": ["{current} z {count}","{current} von {count}","{current} de {count}","{current} sur {count}","{current} di {count}"],
+  "MatchesNone": ["Brak dopasowań","Keine Treffer","Sin coincidencias","Aucune correspondance","Nessuna corrispondenza"],
+  "MatchesLoaded": ["Dopasowania we wczytanych wierszach: {count}","{count} Treffer in geladenen Zeilen","{count} coincidencias en las filas cargadas","Correspondances dans les lignes chargées : {count}","Corrispondenze nelle righe caricate: {count}"],
+  "MatchesPrevious": ["Poprzednie dopasowanie","Vorheriger Treffer","Coincidencia anterior","Correspondance précédente","Corrispondenza precedente"],
+  "MatchesNext": ["Następne dopasowanie","Nächster Treffer","Coincidencia siguiente","Correspondance suivante","Corrispondenza successiva"],
+  "MatchesAnnounce": ["Dopasowanie {current} z {count}, {column}","Treffer {current} von {count}, {column}","Coincidencia {current} de {count}, {column}","Correspondance {current} sur {count}, {column}","Corrispondenza {current} di {count}, {column}"],
+  "LayoutMenu": ["Układ","Layout","Diseño","Disposition","Layout"],
+  "LayoutFit": ["Dopasuj do szerokości","An Breite anpassen","Ajustar al ancho","Ajuster à la largeur","Adatta alla larghezza"],
+  "LayoutScroll": ["Wszystkie kolumny, przewijanie w poziomie","Alle Spalten, seitlich scrollen","Todas las columnas, desplazamiento horizontal","Toutes les colonnes, défilement horizontal","Tutte le colonne, scorrimento orizzontale"],
+  "LayoutCards": ["Karty","Karten","Tarjetas","Cartes","Schede"],
+  "LayoutDensity": ["Gęstość","Dichte","Densidad","Densité","Densità"],
+  "LayoutCompact": ["Zwarta","Kompakt","Compacta","Compacte","Compatta"],
+  "LayoutNormal": ["Normalna","Normal","Normal","Normale","Normale"],
+  "LayoutComfortable": ["Swobodna","Großzügig","Amplia","Aérée","Ampia"],
+  "LayoutChanged": ["Układ: {mode}, {density}","Layout: {mode}, {density}","Diseño: {mode}, {density}","Disposition : {mode}, {density}","Layout: {mode}, {density}"]
 }

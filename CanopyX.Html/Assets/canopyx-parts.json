@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "e3c3ee2d7b19f9a1",
+      "version": "1fbe8aba26fa26e0",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "799c415d8d5cfdb7",
+      "version": "6eaaefcdf88efa12",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -87,6 +87,22 @@
       "sources": [
         "sidecar"
       ]
+    },
+    {
+      "name": "highlight",
+      "label": "search highlighting",
+      "version": "bb1aa4e225d383ed",
+      "script": "canopyx-highlight.js",
+      "style": "canopyx-highlight.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "feature": "searchHighlight"
     }
   ]
 }

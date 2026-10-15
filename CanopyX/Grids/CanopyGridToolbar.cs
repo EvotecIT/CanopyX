@@ -36,7 +36,13 @@ public sealed class CanopyGridToolbar {
     /// </summary>
     public bool ColumnMenus { get; set; } = true;
 
-    internal bool IsDefault => Filters && Columns && Views && Export && More && Count && ColumnMenus;
+    /// <summary>Gets or sets whether the match navigator (count, Previous and Next) and the Highlight matches switch are built when the view declares search highlighting.</summary>
+    public bool Matches { get; set; } = true;
+
+    /// <summary>Gets or sets whether the Layout menu is built when the view declares layout modes.</summary>
+    public bool Layout { get; set; } = true;
+
+    internal bool IsDefault => Filters && Columns && Views && Export && More && Count && ColumnMenus && Matches && Layout;
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
@@ -47,6 +53,8 @@ public sealed class CanopyGridToolbar {
         if (!More) writer.Property("more", false);
         if (!Count) writer.Property("count", false);
         if (!ColumnMenus) writer.Property("columnMenus", false);
+        if (!Matches) writer.Property("matches", false);
+        if (!Layout) writer.Property("layout", false);
         writer.EndObject();
     }
 }

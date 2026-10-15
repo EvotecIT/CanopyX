@@ -15,7 +15,7 @@ namespace CanopyX;
 /// <see cref="ToJson()"/> writes the <c>view</c> document of the <c>canopyx/2</c> protocol. <c>CanopyX.Html</c> embeds
 /// that document in a page, and the browser runtime mounts a tree grid from it.
 /// </remarks>
-public sealed class CanopyTreeView {
+public sealed partial class CanopyTreeView {
     private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
     private int _rowHeight = 28;
@@ -323,6 +323,8 @@ public sealed class CanopyTreeView {
         if (PinTreeColumn) {
             writer.Property("pinTreeColumn", true);
         }
+
+        WriteViewModesJson(writer);
 
         if (_labels.HasRuntimeLabels(true)) {
             writer.Name("labels");

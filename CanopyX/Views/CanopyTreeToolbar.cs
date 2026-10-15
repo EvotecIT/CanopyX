@@ -26,7 +26,13 @@ public sealed class CanopyTreeToolbar {
     /// <summary>Gets or sets whether the more menu is built: host actions and print.</summary>
     public bool More { get; set; } = true;
 
-    internal bool IsDefault => Filters && Columns && Views && Export && More;
+    /// <summary>Gets or sets whether the match navigator (count, Previous and Next) and the Highlight matches switch are built when the view declares search highlighting.</summary>
+    public bool Matches { get; set; } = true;
+
+    /// <summary>Gets or sets whether the Layout menu is built when the view declares layout modes.</summary>
+    public bool Layout { get; set; } = true;
+
+    internal bool IsDefault => Filters && Columns && Views && Export && More && Matches && Layout;
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject();
@@ -35,6 +41,8 @@ public sealed class CanopyTreeToolbar {
         if (!Views) writer.Property("views", false);
         if (!Export) writer.Property("export", false);
         if (!More) writer.Property("more", false);
+        if (!Matches) writer.Property("matches", false);
+        if (!Layout) writer.Property("layout", false);
         writer.EndObject();
     }
 }

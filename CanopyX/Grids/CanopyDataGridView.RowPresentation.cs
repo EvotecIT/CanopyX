@@ -17,11 +17,13 @@ public sealed partial class CanopyDataGridView {
 
     private void ValidateRowPresentation() {
         if (!Enum.IsDefined(typeof(CanopyGridRowAction), RowAction)) throw new ArgumentOutOfRangeException(nameof(RowAction), RowAction, "Unknown row action.");
+        ValidateViewModes();
     }
 
     private void WriteRowPresentationJson(CanopyJsonWriter writer) {
         if (RowAction != CanopyGridRowAction.None) writer.Property("rowAction", RowAction == CanopyGridRowAction.Details ? "details" : "link");
         if (!AutoHeight) writer.Property("autoHeight", false);
         if (RowAccents) writer.Property("rowAccents", true);
+        WriteViewModesJson(writer);
     }
 }

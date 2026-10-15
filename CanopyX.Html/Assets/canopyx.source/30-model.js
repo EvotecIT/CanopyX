@@ -32,7 +32,7 @@
       this.labels = labelsFor(view.labels, options.labels);
       // Per-control toolbar switches, as on flat grids: the view's toolbar object, then the host's; a missing switch keeps its control.
       this.tools = Object.assign({}, view.toolbar, options.toolbar);
-      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more)$/.test(name) || typeof value !== "boolean"))
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|matches|layout)$/.test(name) || typeof value !== "boolean"))
         throw new Error("CanopyX: toolbar options are booleans by control name.");
       // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
@@ -73,11 +73,13 @@
       this.rafId = 0;
       this.iconTemplates = this.buildIcons(view.icons || {});
       this.initializing = true;
+      this.prepareViewModes();
       this.build();
       this.buildToolbar();
       // The links part (86-links.js) loads beside the data; a failure is reported when the address is first read.
       if (view.deepLink) loadPart(LINKS).catch(() => {});
-      this.ready = this.init();
+      // The declared view modes (87-view-modes.js) start with the tree tools part; ready waits for them too.
+      this.ready = this.modesReady ? Promise.all([this.init(), this.modesReady]).then(([result]) => result) : this.init();
     }
 
     async search(query, limit) {

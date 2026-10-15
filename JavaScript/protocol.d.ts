@@ -95,6 +95,55 @@ export interface TreeToolbarControls {
   views?: boolean;
   export?: boolean;
   more?: boolean;
+  /** The match navigator and the Highlight matches switch of a view with searchHighlight. */
+  matches?: boolean;
+  /** The Layout menu of a view with layout options. */
+  layout?: boolean;
+}
+/** Search-hit highlighting (docs/search-highlight.md). true in a view document uses every default. */
+export interface SearchHighlightOptions {
+  /** Marks shown when the view opens; the reader can switch them. Default true. */
+  enabled?: boolean;
+  /** Mark quick-search text. Default true. */
+  search?: boolean;
+  /** Mark the values a flat grid's column filters match, styled apart from search hits. Default true. */
+  filters?: boolean;
+  /** Compare case exactly when marking. Default false: the search's own case folding. */
+  matchCase?: boolean;
+  /** A letter with accents matches its base letter when marking. Default false. */
+  ignoreAccents?: boolean;
+  /** The shortest term that is marked, 1..32. Default 1. */
+  minLength?: number;
+  /** A tone per column id for its filter hits. */
+  filterTones?: Record<string, string>;
+}
+/** How a view lays out its columns (docs/layout-modes.md). Trees offer fit and scroll. */
+export type LayoutMode = "fit" | "scroll" | "cards";
+/** Row spacing; "default" is the Normal density. */
+export type LayoutDensity = "compact" | "default" | "comfortable";
+/** The Layout menu of a view: the layouts the reader can choose, and the starting layout and density. */
+export interface LayoutOptions<M extends LayoutMode = LayoutMode> {
+  mode?: M;
+  modes?: readonly M[];
+  density?: LayoutDensity;
+}
+/** The reader's layout choice, as saved state keeps it. */
+export interface LayoutState { mode: LayoutMode; density: LayoutDensity; }
+/** The current layout and the layouts the view offers. */
+export interface LayoutInfo extends LayoutState { readonly modes: readonly LayoutMode[]; }
+/** The match count: total matches (in the loaded rows while complete is false) and the 1-based current match, or 0. */
+export interface MatchInfo { readonly enabled: boolean; readonly total: number; readonly current: number; readonly complete: boolean; }
+/** Search highlighting and layout methods of every tree and flat grid; they reject when the view does not declare the feature. */
+export interface ViewModeMethods {
+  getLayout(): LayoutInfo;
+  /** Switches the layout and/or density, keeping the query, selection, focus and the first row in view. */
+  setLayout(change: Partial<LayoutState>): Promise<LayoutInfo>;
+  getMatches(): MatchInfo;
+  /** The Highlight matches switch. */
+  setSearchHighlight(enabled: boolean): Promise<void>;
+  /** Moves to the next match and scrolls its row into view; focus (default true) focuses its cell. False when nothing matches. */
+  nextMatch(options?: { focus?: boolean }): Promise<boolean>;
+  previousMatch(options?: { focus?: boolean }): Promise<boolean>;
 }
 export interface CanopyFilter {
   id: string;
@@ -155,6 +204,8 @@ export type LabelName =
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
   | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridPrint"
+  | "matchesHighlight" | "matchesCount" | "matchesPosition" | "matchesNone" | "matchesLoaded" | "matchesPrevious" | "matchesNext" | "matchesAnnounce"
+  | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged"
   | "gridFitContent"
   | "gridUnpin"
   | "gridWhere"
@@ -197,6 +248,10 @@ interface ViewDefinitionBase {
   filters?: CanopyFilter[];
   timeZone?: TimeZone;
   pinTreeColumn?: boolean;
+  /** Marks the search box's words in the tree column (docs/search-highlight.md). */
+  searchHighlight?: boolean | SearchHighlightOptions;
+  /** The Layout menu: fit and scroll, and the density (docs/layout-modes.md). */
+  layout?: LayoutOptions<"fit" | "scroll">;
   /** Per-control toolbar switches (the search box is the search property). */
   toolbar?: TreeToolbarControls;
   /** Identities of registered export formats the Export menu offers after CSV, in order. */
@@ -255,6 +310,10 @@ export interface ViewState {
   filters: string[];
   timeZone: TimeZone;
   pinTreeColumn: boolean;
+  /** The reader's layout, in a view with layout options. */
+  layout?: LayoutState;
+  /** The reader's Highlight matches switch, in a view with searchHighlight. */
+  highlight?: boolean;
   focus: string[] | null;
   anchor: { path: string[]; offset: number } | null;
   checkboxes?: CheckMode;

@@ -73,6 +73,12 @@
       toOutline: () => grid.toOutline(),
       getState: () => grid.getState(),
       setState: (state) => grid.setState(state),
+      getLayout: () => grid.getLayout(),
+      setLayout: (change) => grid.setLayout(change),
+      getMatches: () => grid.getMatches(),
+      setSearchHighlight: (enabled) => grid.setSearchHighlight(enabled),
+      nextMatch: (options) => grid.nextMatch(options),
+      previousMatch: (options) => grid.previousMatch(options),
       search: (query, limit) => grid.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
       loadMore: (id) => {
         const w = id == null ? grid.root : grid.keyMap.get(id);

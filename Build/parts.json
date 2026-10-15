@@ -117,6 +117,17 @@
       "scripts": [
         "CanopyX.Html/Assets/canopyx.search.source/10-search-index.js"
       ]
+    },
+    {
+      "name": "highlight",
+      "label": "search highlighting",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree", "grid"],
+      "feature": "searchHighlight",
+      "key": "VIEW_MODES",
+      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.highlight.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.highlight.source/highlight.css"]
     }
   ]
 }

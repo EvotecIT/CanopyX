@@ -46,6 +46,36 @@
         "target": { "enum": ["row", "cell"] }, "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
       }
     },
+    "searchHighlight": {
+      "description": "Marks search and filter matches inside cells with <mark>, with a match count and next/previous navigation. true uses the defaults. The reader's switch is saved in state.",
+      "oneOf": [{ "type": "boolean" }, { "type": "object", "additionalProperties": false, "properties": {
+        "enabled": { "type": "boolean", "description": "Marks shown when the view opens. Default true." },
+        "search": { "type": "boolean", "description": "Mark quick-search text. Default true." },
+        "filters": { "type": "boolean", "description": "Mark the values a flat grid's column filters match, styled apart from search hits. Default true." },
+        "matchCase": { "type": "boolean", "description": "Compare case exactly when marking. Default false." },
+        "ignoreAccents": { "type": "boolean", "description": "A letter with accents matches its base letter when marking. Default false." },
+        "minLength": { "type": "integer", "minimum": 1, "maximum": 32, "description": "The shortest term that is marked. Default 1." },
+        "filterTones": { "type": "object", "description": "A tone per column id for its filter hits.", "additionalProperties": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "not": { "pattern": "-bg$" } } }
+      } }]
+    },
+    "layoutOptions": {
+      "description": "A Layout menu with the layout modes and densities the reader can choose; the choice is saved in state.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["fit", "scroll", "cards"], "description": "The starting layout; one of modes. Default fit, or the first of modes." },
+        "modes": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "enum": ["fit", "scroll", "cards"] }, "description": "The layouts offered, in menu order. Default every layout the view supports." },
+        "density": { "enum": ["compact", "default", "comfortable"], "description": "The starting density. Default the view's own density." }
+      }
+    },
+    "treeLayoutOptions": {
+      "description": "A tree's Layout menu: the fit and scroll layouts and the densities.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["fit", "scroll"] },
+        "modes": { "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": { "enum": ["fit", "scroll"] } },
+        "density": { "enum": ["compact", "default", "comfortable"] }
+      }
+    },
     "grid": {
       "description": "A flat data-grid definition. All columns contain cells; none represents hierarchy.",
       "type": "object",
@@ -63,11 +93,13 @@
         "noun": { "type": "string", "minLength": 1, "maxLength": 256 },
         "emptyReason": { "type": "string", "maxLength": 4096 },
         "statusBar": { "type": "boolean" },
-        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" }, "columnMenus": { "type": "boolean" } } },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" }, "columnMenus": { "type": "boolean" }, "matches": { "type": "boolean" }, "layout": { "type": "boolean" } } },
         "exportFormats": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "not": { "const": "csv" } }, "description": "Identities of browser-registered export formats the Export menu offers after CSV, in order; an identity the page does not register is skipped. Absent offers every registered format." },
         "rowAction": { "enum": ["none", "details", "link"], "description": "What a plain row click does; a plain click never selects. Default none." },
         "autoHeight": { "type": "boolean", "description": "A grid whose rows fit is as tall as its rows; false keeps the host height. Default true." },
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
+        "searchHighlight": { "$ref": "#/$defs/searchHighlight" },
+        "layout": { "$ref": "#/$defs/layoutOptions" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
@@ -160,6 +192,8 @@
         "timeZone": { "enum": ["utc", "local"] },
         "selection": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "scrollTop": { "type": "number", "minimum": 0, "maximum": 137438953408 },
+        "layout": { "type": "object", "required": ["mode", "density"], "additionalProperties": false, "properties": { "mode": { "enum": ["fit", "scroll", "cards"] }, "density": { "enum": ["compact", "default", "comfortable"] } } },
+        "highlight": { "type": "boolean", "description": "The reader's Highlight matches switch." },
         "collapsedGroups": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
         "paging": { "type": "object", "required": ["pageLength", "offset"], "additionalProperties": false,
           "properties": { "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
@@ -1100,7 +1134,9 @@
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
         "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
         "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
-        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control tree toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" } } },
+        "searchHighlight": { "$ref": "#/$defs/searchHighlight" },
+        "layout": { "$ref": "#/$defs/treeLayoutOptions" },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control tree toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "matches": { "type": "boolean" }, "layout": { "type": "boolean" } } },
         "exportFormats": { "$ref": "#/$defs/grid/properties/exportFormats" },
         "autoHeight": { "type": "boolean", "description": "A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true." },
         "stateKey": { "type": "string" },
@@ -1111,6 +1147,23 @@
           "additionalProperties": false,
           "properties": {
             "gridFitContent": { "type": "string" },
+        "matchesHighlight": { "type": "string" },
+        "matchesCount": { "type": "string" },
+        "matchesPosition": { "type": "string" },
+        "matchesNone": { "type": "string" },
+        "matchesLoaded": { "type": "string" },
+        "matchesPrevious": { "type": "string" },
+        "matchesNext": { "type": "string" },
+        "matchesAnnounce": { "type": "string" },
+        "layoutMenu": { "type": "string" },
+        "layoutFit": { "type": "string" },
+        "layoutScroll": { "type": "string" },
+        "layoutCards": { "type": "string" },
+        "layoutDensity": { "type": "string" },
+        "layoutCompact": { "type": "string" },
+        "layoutNormal": { "type": "string" },
+        "layoutComfortable": { "type": "string" },
+        "layoutChanged": { "type": "string" },
         "gridUnpin": { "type": "string" },
         "gridWhere": { "type": "string" },
         "gridComplexFilter": { "type": "string" },
