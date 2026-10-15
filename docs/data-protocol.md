@@ -27,6 +27,8 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridCommit` | The editing part | A grid asks its writer to save changed rows ([Editing and commit](#editing-and-commit)) |
+| `gridCommitResult` | The host's writer | The writer answers per row: saved, error or conflict |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -270,6 +272,58 @@ Effective pins leave `reporting.minimumCenterWidth` CSS pixels (default 128, ran
 
 `reporting.responsive: true` temporarily hides requested columns until their base widths fit, hiding larger priorities first and equal priorities from the end of current order. It retains at least one requested field and all `alwaysVisible` fields; protected fields wider than the viewport use horizontal scrolling. Explicit user visibility remains separate and survives viewport changes. Responsive hiding changes neither search/filter/sort meanings nor full record details. Default export columns include every user-visible column in the grouped display order, including temporarily hidden fields; an explicit export column list retains its caller-defined order. The chooser marks temporarily hidden fields and provides translated pin controls through `gridPinColumn`, `gridPinNone`, `gridPinLeft`, `gridPinRight` and `gridResponsiveHidden`.
 
+### Editing and commit
+
+Grid columns may declare `editable: true`, an `editor` and `validation`; the grid may declare `editing` (`readOnly`, `mode`
+`cell` or `row`, `drawer` `phone`, `always` or `never`, `editBar`). The fields are optional additions to `canopyx/2`;
+[editing.md](editing.md) describes the behaviour and `$defs/gridEditor`, `$defs/gridValidation` the shapes. `editor` is an
+editor name (`text`, `number`, `date`, `datetime`, `time`, `select`, `toggle`, `lookup`, or a name a plugin or the host
+registers) or `{ type, min?, max?, step?, placeholder?, options?, lookup? }`. `validation` is `{ required?, min?, max?,
+minLength?, maxLength?, pattern?, message? }`; `min` and `max` are numbers, or ISO 8601 moments for date-and-time columns.
+Edited values follow the cell rules of this document: numbers within the safe integer magnitude, ISO 8601 moments with an
+explicit time zone (the runtime writes UTC with `Z`), text and booleans.
+
+A grid saves changed rows by sending a `gridCommit` document to its writer: the host's `editing.commit(batch, { signal })`,
+or the source's `commit(batch, { signal })`. A remote source posts it, for example to `POST {pattern}/commit` beside its
+`query` and `facet` endpoints.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridCommit", "view": "assets", "revision": "r41",
+  "rows": [
+    { "id": "asset-003", "values": { "cost": 1250, "status": "Repair" }, "original": { "cost": 1180.5, "status": "In use" } },
+    { "id": "asset-007", "values": { "owner": "Chen Wu" }, "original": { "owner": "Ada Park" } } ] }
+```
+
+- `revision` is the dataset revision the grid read (the accepted query's), or `null` before one was accepted.
+- `rows` holds at least one row: its `id`, the raw `values` of its changed columns, and the raw `original` values the reader
+  started from for those columns (`null` for a missing value). Only rows whose checks passed are sent.
+
+The writer answers with a `gridCommitResult`, one entry per row it handled:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridCommitResult", "view": "assets", "revision": "r42",
+  "rows": [
+    { "id": "asset-003", "status": "saved", "cells": { "cost": { "value": 1250, "text": "1,250.00" } } },
+    { "id": "asset-007", "status": "conflict", "error": "Someone else changed the owner." } ] }
+```
+
+- `status` is `saved`, `error` or `conflict`. A saved row may carry canonical `cells` (grid cells, validated like page rows)
+  that replace the shown ones; other rows may carry an `error` message and `errors` by column. A row the answer leaves out
+  was not saved.
+- `revision` is optional: the dataset revision after the commit. The grid reports it in the commit result and keeps
+  reading pages at the revision it accepted; a host whose source no longer serves that revision reloads the grid.
+- A transport failure (a non-success status, invalid JSON, a document that does not answer the batch: another view, an
+  unknown or repeated row, an unknown status, `cells` on a row that was not saved) fails every row of the batch with the
+  reason. The grid keeps their changes.
+
+**What a writer does.** It authorizes the caller and every changed column (editable columns are a presentation contract,
+not authority), validates the values with its own rules (the view's `validation` mirrors them), and executes each row
+independently, so one row's failure does not discard the others. For concurrency it checks the batch `revision` against
+its current one and, where they differ, compares each row's `original` values with what it stores: a row whose stored
+values differ is a `conflict` and is not written. A writer that cannot check rows individually may answer every row of a
+stale batch with `conflict`. It answers with the revision after the commit. Writes are the writer's own, governed by its
+write policy; CanopyX only raises the request.
+
 ## View
 
 Every tree runtime loads the **tree tools part** (`canopyx-tree-tools.js` and `.css`) when a tree mounts: the toolbar's
@@ -333,7 +387,7 @@ A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or 
 
 ### Host Interaction Proposals
 
-Optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly.
+In tree views, optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly. Flat grids edit through the editing part instead ([Editing and commit](#editing-and-commit)).
 
 | Proposal | Fields |
 | --- | --- |

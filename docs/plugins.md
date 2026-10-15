@@ -69,7 +69,9 @@ The context is frozen and the same object for every hook and handler of a plugin
 
 **Events.** `events` maps an event name without the `canopyx:` prefix to a handler `(event, context)`: `select`, `query`, `load`, `toggle`, `filter`, `state`, `error`, `rowActivate`, `link` and the rest that [the protocol](data-protocol.md) lists. The handler receives the DOM event, so it can read `event.detail` and call `preventDefault()` on a cancelable event such as `rowActivate`.
 
-**Editors and column types.** `editors` and `columnTypes` are maps a plugin can register today; CanopyX validates that they are objects and keeps them on the plugin. The editing feature reads `editors` (typed cell editors), and later features read `columnTypes`. Nothing reads them yet.
+**Editors.** `editors` maps an editor name to `{ create(context) }`. An editable flat-grid column chooses one by name (`"editor": { "type": "stars" }`, `CanopyCellEditor.Custom("stars")` in .NET); a host's `editing.editors` for the grid wins, and a plugin editor replaces a built-in one with the same name. See [Custom editors](editing.md#custom-editors) for the contract.
+
+**Column types.** `columnTypes` is a map a plugin can register today; CanopyX validates that it is an object and keeps it on the plugin. Later features read it.
 
 ## Example: a third-party cell renderer
 
@@ -124,6 +126,7 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `history` | a grid with a status strip or sparkline column starts | the history presenters |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
+| `editing` | a grid with an editable column starts, or an editing method runs | typed editors, validation, the change set, row and batch commit, undo and redo, the phone edit form ([editing.md](editing.md)); it requires the filter editor |
 
 A part script registers itself whether it runs before or after the runtime: it pushes `[name, definition]` onto `window.CanopyXParts`, which the runtime drains and then turns into a direct call of `CanopyX.registerPart(name, definition)`. The definition is `{ version, requires?, install(context) }`; `install` receives the runtime's internals that the part declared, so parts are built with the runtime, not separately.
 
@@ -158,7 +161,7 @@ A part is a listing in `Build/parts.json`; the assembly, the runtimes' manifests
 | --- | --- |
 | `name`, `label` | The part's name (file `canopyx-<name>.js`, payload type `application/x-canopyx-<name>`) and the words its errors use. |
 | `runtimes` | `tree` (the two tree entry points) and/or `grid` (the two grid entry points): which manifests name the part and beside which entry points `WriteTo` writes it. |
-| `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds) and `deepLink` narrow that further. |
+| `views` | Which views' single-file fragments carry its payload. `sources` (tree source kinds), `presenters` (grid presenter kinds), `deepLink` and `editable` (grids with an editable column) narrow that further. |
 | `key`, `context` | The object that marks the part as installed for one runtime context, and the names `install` destructures from the context the runtime hands it. |
 | `start`, `end` | Optional statements before and after the part's scripts inside `install`. |
 | `requires` | Parts that load and install first. The assembly refuses a name that is not a part of every entry point and view this part has, and requires that form a cycle. |

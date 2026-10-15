@@ -188,6 +188,10 @@ Module imports are safe on the server; mounting a view requires a browser. The i
 
 `CanopyX.use(plugin)` adds cell renderers that columns choose by name, toolbar buttons, menu entries, export formats and event handlers to every grid and tree on the page; the `plugins` option adds them to one view. Optional features load as separate parts only when a view needs them, so serve the `canopyx-*.js` files beside the runtime (the .NET writers do). See [docs/plugins.md](docs/plugins.md).
 
+### Edit data in a grid
+
+Mark flat-grid columns `editable` and give them typed editors (text, number, date and time, select, toggle, lookup) and validation. Readers edit in the cells (or in the record drawer on phones) with undo and redo; changes stay marked until your callbacks or data source save them through row or batch commits, which report each row's result. CanopyX never writes data itself. See [docs/editing.md](docs/editing.md).
+
 ### Translate the controls
 
 Import labels from `@evotecit/canopyx/locales/pl`, `/locales/de`, `/locales/es`, `/locales/fr` or `/locales/it` and pass them as `labels` in your view definition. In C#, set the view's `Labels` to `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()` or `Italian()` before writing the page.
