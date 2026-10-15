@@ -95,6 +95,7 @@ WideTreeExample.Write(output);
 RunsGridExample.Write(output);
 RunsBoardExample.Write(output);
 ScoresGridExample.Write(output);
+PluginsExample.Write(output);
 
 var largeTree = new SyntheticFileTree();
 var bundleView = ExampleViews.FileShares("files", largeTree.Build(shares: 26, departments: 8, projects: 10, minFiles: 10, maxFiles: 40, longListFiles: 3_000));
