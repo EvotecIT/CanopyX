@@ -83,8 +83,8 @@ public static class FleetDemo {
     /// <summary>The note above the editable grid: how saving works and the button that plays the other user.</summary>
     public static string EditNote(CanopyTheme theme) => Style(theme) + """
 <div class="fleet-note" role="region" aria-label="About this page">
-<p>Edit a cell (F2 or double-click), then press <strong>Save</strong>. The server checks every value again and saves each machine on its own.
-To see a conflict, change a machine's cores, memory, model or online state, select its row, press the button, then save.</p>
+<p>Edit cells (F2 or double-click), then <strong>Save</strong>: the server checks every value again and saves each machine on its own.
+For a conflict, change a machine's memory, select its row, press the button, then save.</p>
 <button type="button" class="fleet-button" id="fleet-other-user">Simulate another user's change</button>
 <span class="fleet-status" id="fleet-status" role="status"></span>
 </div>
@@ -102,8 +102,8 @@ document.getElementById("fleet-other-user").addEventListener("click", async () =
     /// <summary>The note above the grouped grid.</summary>
     public static string GroupNote(CanopyTheme theme) => Style(theme) + """
 <div class="fleet-note" role="region" aria-label="About this page">
-<p>Machines grouped by site, busiest sites first, then by operating system. Each heading shows its machines, total memory,
-average cores and distinct models. Drag a column header onto the group bar, or use a column menu, to group differently.</p>
+<p>Grouped by site (busiest first) and operating system; each heading counts machines and models and sums memory.
+Change the levels in the group bar or a column menu.</p>
 </div>
 """;
 
@@ -120,6 +120,7 @@ average cores and distinct models. Drag a column header onto the group bar, or u
             ".fleet-button:hover{background:" + (dark ? "#272a30" : "#f2f3f4") + "}" +
             ".fleet-button:focus-visible{outline:2px solid " + (dark ? "#37c9b8" : "#11776f") + ";outline-offset:2px}" +
             ".fleet-status{color:" + (dark ? "#c9ccd1" : "#4a4e55") + "}" +
+            "@media (max-width:600px){.fleet-note{font-size:13px;padding:8px 12px 0;gap:6px 12px}.fleet-note p{flex-basis:100%}}" +
             "</style>";
     }
 }
