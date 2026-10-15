@@ -75,7 +75,7 @@ public sealed class LinkPartAssetsTests {
 
     [Fact]
     public void LabelPacks_TranslateTheLinkTexts() {
-        foreach (var labels in new[] { CanopyLabels.Polish(), CanopyLabels.German(), CanopyLabels.Spanish() }) {
+        foreach (var labels in new[] { CanopyLabels.Polish(), CanopyLabels.German(), CanopyLabels.Spanish(), CanopyLabels.French(), CanopyLabels.Italian() }) {
             Assert.Contains("{source}", labels.LinkFilteredBy);
             Assert.Contains("{values}", labels.LinkFilteredBy);
             Assert.NotEqual(new CanopyLabels().LinkCleared, labels.LinkCleared);

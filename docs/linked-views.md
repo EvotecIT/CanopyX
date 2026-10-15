@@ -103,7 +103,7 @@ var html = grid.ToHtmlFragment(options);      // carries the link payload once f
 | `linkHighlightedRows` | {count} rows highlighted |
 | `linkCleared` | Linked filters removed |
 
-The Polish, German and Spanish packs translate them (`CanopyLabels.LinkFilteredBy` and the rest in .NET).
+The Polish, German, Spanish, French and Italian packs translate them (`CanopyLabels.LinkFilteredBy` and the rest in .NET).
 
 ## TypeScript
 
