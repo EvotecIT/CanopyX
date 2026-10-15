@@ -83,23 +83,17 @@
   // The record drawer repaints its body for each record (and names the record on the dialog); its values are marked after
   // every repaint.
   function hlPaintDrawer(view, dialog) {
-    const body = dialog.querySelector(".cx-drawer-body");
-    if (!body || dialog._cxHighlight) return;
+    if (dialog._cxHighlight) return;
     dialog._cxHighlight = true;
+    // Fields come from drawerFields (values carry data-cx-field), so the plain drawer, the record panel and the edit form match.
     const paint = () => {
-      observer.disconnect();
       const state = view.hl, record = dialog._cxRecord;
-      if (state && state.active && record) {
-        const queue = new Map();
-        for (const column of view.columns) { const list = queue.get(column.title) || []; list.push(column); queue.set(column.title, list); }
-        for (const term of body.querySelectorAll("dl > dt")) {
-          const column = (queue.get(term.textContent) || []).shift(), applicable = column && !hlHostDrawn(column) && state.columns.get(column.id), value = term.nextElementSibling;
-          if (applicable && value) hlMarkCell(value, value, applicable, view.highlightOptions, record, -1);
-        }
+      if (!dialog.isConnected || !state || !state.active || !record) return;
+      for (const { column, value } of view.drawerFields(dialog)) {
+        const applicable = column && !hlHostDrawn(column) && state.columns.get(column.id);
+        if (applicable) hlMarkCell(value, value, applicable, view.highlightOptions, record, -1);
       }
-      if (dialog.isConnected) observer.observe(body, { childList: true });
     };
-    const observer = new MutationObserver(paint);
+    dialog.addEventListener("cx-drawer-paint", paint);
     paint();
-    dialog.addEventListener("close", () => observer.disconnect(), { once: true });
   }

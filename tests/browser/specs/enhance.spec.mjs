@@ -17,9 +17,13 @@ test("a table gives the grid its columns, header groups, rows, ids, sort and sea
     columns: grid.view.columns.map(column => [column.id, column.title, column.kind, !!column.rowHeader, column.section || null]),
     groups: grid.headerGroups, label: grid.element.querySelector("[role=grid]").getAttribute("aria-label"), table: grid.table.id, attached: grid.table.isConnected
   }));
-  expect(shape.columns).toEqual([["c0", "Server", "text", true, null], ["c1", "Site", "text", false, null], ["c2", "Load", "number", false, "Usage"],
-    ["c3", "Memory", "number", false, "Usage"], ["c4", "Patched", "datetime", false, null], ["c5", "Console", "text", false, null]]);
+  expect(shape.columns).toEqual([["c0", "Server", "text", true, null], ["c1", "Site", "text", false, null], ["c2", "Load", "number", false, null],
+    ["c3", "Memory", "number", false, null], ["c4", "Patched", "datetime", false, null], ["c5", "Console", "text", false, null]]);
   expect(shape.groups).toEqual([[{ title: "Usage", columns: ["c2", "c3"] }]]);
+  // The header row above the bottom one draws as a real column group, spanning its columns.
+  expect(await page.evaluate(() => grid.view.columnGroups)).toEqual([{ id: "group-0-0", title: "Usage", columns: ["c2", "c3"] }]);
+  await expect(page.locator(".cx-hgroup-row [role=columnheader]")).toHaveText(["Usage"]);
+  await expect(page.locator(".cx-hgroup-row [role=columnheader]")).toHaveAttribute("aria-colspan", "2");
   expect(shape).toMatchObject({ label: "Servers by site", table: "servers", attached: false });
   expect((await rowIds(page)).slice(0, 3)).toEqual(["srv-1", "srv-2", "srv-3"]);
   // The row keeps its class and tone; the cell keeps its link; the caption and footer stay visible.

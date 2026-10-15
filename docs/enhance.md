@@ -41,7 +41,7 @@ The table stays in the page source, so readers without script, search engines an
 | Table | Grid |
 | --- | --- |
 | The bottom header row (`<thead>`, or a first row of `<th>` cells) | The columns and their titles. Cells with `colspan` and `rowspan` are laid out as the browser lays them out. |
-| Header rows above the bottom one | Header groups (`grid.headerGroups`, levels of `{ title, columns }`). Each column also gets its group as its record-drawer section. A bottom title that repeats under different groups gets its group in front ("Q1 · Sales"), so the columns stay distinguishable until the grid draws multi-level headers. |
+| Header rows above the bottom one | Column groups: the grid draws them as multi-level headers (`view.columnGroups`, see [column-groups.md](column-groups.md)), up to the three rows nearest the columns, and `grid.headerGroups` lists them as levels of `{ title, columns }`. Column titles stay as the table wrote them; on phones each group names its columns' section in the record drawer. |
 | `<td>` text | The cell's display text, with runs of white space collapsed. |
 | `data-order` or `data-sort` on a cell | The cell's sort value (a number when it reads as one). The text stays what readers see. |
 | `data-search` or `data-filter` on a cell | The cell's search value, which the search box matches instead of the text. |

@@ -111,13 +111,28 @@
     return levels.map(row => row.map(group => Object.freeze({ title: group.title, columns: Object.freeze(group.columns) })));
   }
 
-  /** The columns of a table: the header gives titles, attributes and groups; script column options at the same index win. */
+  /**
+   * Header groups as the grid's column groups ({ id, title, columns?, groups? }, nested by level): each group of a lower row
+   * nests under the group above whose columns hold all of its own, and lists only the columns no nested group takes. Column
+   * groups draw at most three levels, so a deeper header keeps the three rows nearest the columns.
+   */
+  function enhanceColumnGroups(levels) {
+    const kept = levels.slice(-3);
+    const nodes = kept.map((row, level) => row.map((group, index) => ({ id: "group-" + level + "-" + index, title: group.title, all: group.columns, groups: [] })));
+    for (let level = nodes.length - 1; level > 0; level--) {
+      for (const node of nodes[level]) nodes[level - 1].find(parent => node.all.every(id => parent.all.includes(id)))?.groups.push(node);
+    }
+    // A header cell without text groups nothing: its nested groups take its place.
+    const writeAll = list => list.flatMap(node => node.title ? [write(node)] : writeAll(node.groups));
+    const write = node => {
+      const nested = new Set(node.groups.flatMap(group => group.all)), columns = node.all.filter(id => !nested.has(id)), groups = writeAll(node.groups);
+      return { id: node.id, title: node.title, ...(columns.length ? { columns } : {}), ...(groups.length ? { groups } : {}) };
+    };
+    return writeAll(nodes[0] || []).filter(group => group.columns || group.groups);
+  }
+
+  /** The columns of a table: the header gives titles and attributes; script column options at the same index win. Header groups become column groups. */
   function enhanceTableColumns(read, specs) {
-    const titles = read.columns.map(column => column.title), repeated = title => titles.filter(item => item === title).length > 1;
-    return read.columns.map((column, index) => {
-      const group = column.groups.map(item => item.title).filter(Boolean).join(" · ");
-      // Without column groups in the header, a title that repeats keeps its group in front, so readers can tell them apart.
-      const title = group && repeated(column.title) ? group + " · " + column.title : column.title || String(index + 1);
-      return Object.assign({ data: index, title, rowHeader: column.rowHeader || undefined, section: group || undefined }, column.options, specs && specs[index] || {});
-    });
+    return read.columns.map((column, index) =>
+      Object.assign({ data: index, title: column.title || String(index + 1), rowHeader: column.rowHeader || undefined }, column.options, specs && specs[index] || {}));
   }

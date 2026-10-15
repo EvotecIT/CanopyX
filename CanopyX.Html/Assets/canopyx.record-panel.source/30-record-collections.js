@@ -139,8 +139,17 @@
     if (!recordEmit(ctx.view, "openAll", detail)) return;
     const api = recordApi(target.view);
     if (!api || !filters || api.view.type !== "grid") { recordAnnounce(ctx.dialog, fill(ctx.labels.recordUnavailable, { id: target.view })); return; }
-    const query = api.getQuery() || {};
-    await api.setQuery({ sort: query.sort || [], search: "", filters });
+    // With the link part in, a one-column list goes through the grid's external filter API (linked views): a removable chip
+    // that names the record and the field, combined with the reader's own conditions. Without it, and for filter groups the
+    // host declared, the list replaces the query's filters and search.
+    const values = !Array.isArray(target.filters) && target.column && filters[0].values, external = RECORD_IMPL.grid?.DataGrid?.prototype.setExternalFilter;
+    if (values && typeof external === "function" && !external.linkStub && typeof api.setExternalFilter === "function") {
+      const sourceLabel = (ctx.dialog.querySelector(".cx-drawer-h h4")?.textContent || ctx.record.id) + " · " + (field.title || field.id);
+      await api.setExternalFilter("record-" + field.id, { field: target.column, values, sourceLabel, label: fill(ctx.labels.recordItems, { count: recordCount(ctx, values.length) }) });
+    } else {
+      const query = api.getQuery() || {};
+      await api.setQuery({ sort: query.sort || [], search: "", filters });
+    }
     ctx.dialog.close();
     api.element.scrollIntoView({ block: "start" }); api.focus();
   }

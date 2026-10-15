@@ -3,21 +3,17 @@
   // shows an editor for each editable field, with the same checks as the cells. Save applies the form as one undo step and
   // commits the row (rowCommit); a message stays beside each invalid field and a summary above the buttons. Moving to
   // another record in the drawer leaves the form's unsaved input behind.
-  const EDIT_OPEN_DRAWER = DataGrid.prototype.openGridDrawer;
-  DataGrid.prototype.openGridDrawer = function (record, index, returnFocus) {
-    EDIT_OPEN_DRAWER.call(this, record, index, returnFocus);
-    const state = this.edit, dialog = this.recordDrawer, body = dialog?.querySelector(".cx-drawer-body");
-    if (!state || !body || state.drawer === "never" || state.drawer === "phone" && !this.phone || !state.specs.size) return;
-    this.editForm(dialog, body, record.id);
-    // The drawer repaints for the record it moved to, or for the same record when moving failed: the title tells which.
-    const primary = this.visibleColumns()[0], shown = () => {
-      const row = this.focused, title = dialog.querySelector(".cx-drawer-h h4")?.textContent;
-      return row && !row.status && (cellText(row.h.cells[primary.id], primary, this.fmt) || row.key) === title ? row.key : this.edit.form?.record.id ?? record.id;
-    };
-    const observer = new MutationObserver(() => this.editForm(dialog, body, shown()));
-    observer.observe(body, { childList: true });
-    dialog.addEventListener("close", () => { observer.disconnect(); this.editFormDispose(); }, { once: true });
-  };
+  // The drawer (filter editor part, generalised by the record panel part) dispatches cx-drawer-paint after it paints a
+  // record; the form follows those paints through the grid's drawer hooks and reads the record from dialog._cxRecord.
+  const editDrawerOn = grid => { const state = grid.edit; return !!state && state.specs.size > 0 && state.drawer !== "never" && (state.drawer !== "phone" || grid.phone); };
+  // First of the drawer hooks (order 10): formatting (20) and search highlighting (30) decorate the form's fields after it.
+  DataGrid.drawerHook(10, function (dialog) {
+    dialog.addEventListener("cx-drawer-paint", () => {
+      const body = dialog.querySelector(".cx-drawer-body");
+      if (body && dialog.isConnected && editDrawerOn(this)) this.editForm(dialog, body, dialog._cxRecord?.id);
+    });
+    dialog.addEventListener("close", () => this.editFormDispose(), { once: true });
+  });
 
   Object.assign(DataGrid.prototype, {
     editFormDispose() {
@@ -25,28 +21,26 @@
       if (form) { form.fields.forEach(field => this.editDispose(field)); this.edit.form = null; }
     },
 
-    // Turns the drawer's fields into editors, in the order the drawer lists them (by section, then column order).
+    // A field the record panel would hide as empty stays visible while it can be edited in the form.
+    recordKeepField(id, record) {
+      return editDrawerOn(this) && !this.editReadOnly && this.edit.specs.has(id) && !!record && !!this.editRecord(record.id) && this.canEditCell(this.editRecord(record.id), id);
+    },
+
+    // Turns the drawer's editable fields into editors, in the order the drawer lists them (drawerFields: the plain drawer's
+    // sections, or the record panel's tabs and sections); record-only fields and structured blocks stay read-only.
     editForm(dialog, body, id) {
       const state = this.edit, record = this.editRecord(id), labels = state.labels;
       this.editFormDispose();
       if (!record || this.editReadOnly || this.destroyed) return;
-      const sections = new Map();
-      for (const column of this.columns) {
-        const name = column.section || this.labels.gridDetailsSection;
-        if (!sections.has(name)) sections.set(name, []);
-        sections.get(name).push(column);
-      }
-      const order = [...sections.values()].flat(), values = body.querySelectorAll(":scope > dl > dd");
-      if (values.length !== order.length) return;
       const form = state.form = { dialog, record, fields: [] };
-      order.forEach((column, index) => {
-        if (!this.canEditCell(record, column.id)) return;
+      for (const { column, term, value } of this.drawerFields(dialog)) {
+        if (!column || value.tagName !== "DD" || !state.specs.has(column.id) || !this.canEditCell(record, column.id)) continue;
         const field = this.editCreate(record, state.specs.get(column.id), "form"), message = h("div", "cx-edit-message");
         message.id = this.id + "-em" + ++state.sequence; message.hidden = true;
-        field.message = message; field.label = values[index].previousElementSibling;
-        values[index].replaceChildren(field.host, message);
+        field.message = message; field.label = term;
+        value.replaceChildren(field.host, message);
         form.fields.push(field);
-      });
+      }
       dialog.classList.toggle("cx-edit-form", form.fields.length > 0);
       let foot = dialog.querySelector(".cx-drawer-f");
       if (!form.fields.length) { foot?.remove(); return; }

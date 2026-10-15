@@ -1,4 +1,8 @@
   // ---------- read-only host hooks, clipboard and record details ----------
+  // Parts that extend the record drawer register a hook once: every drawer a grid opens runs the hooks in order before its
+  // first paint, so each can follow the dialog's cx-drawer-paint events (editing 10, formatting 20, search highlighting 30).
+  DataGrid.drawerHooks = [];
+  DataGrid.drawerHook = (order, hook) => { DataGrid.drawerHooks.push({ order, hook }); DataGrid.drawerHooks.sort((a, b) => a.order - b.order); };
   Object.assign(DataGrid.prototype, {
     // The record drawer (filter editor part) focuses its title through this, with the ring after a key press only.
     focusRing: focusDrawerTitle,

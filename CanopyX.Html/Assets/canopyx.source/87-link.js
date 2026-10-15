@@ -14,9 +14,10 @@
   const LINK_METHODS = ["setExternalFilter", "clearExternalFilters", "setHighlight", "clearHighlight", "startLinkEvents"];
   /** Gives a view kind the link methods: each loads the part, which replaces them, and runs again. */
   function linkMethods(View) {
-    for (const name of LINK_METHODS) View.prototype[name] = function (...args) {
+    // The stubs are marked, so a feature can tell whether the part is in (the record panel's Open all in grid uses it then).
+    for (const name of LINK_METHODS) (View.prototype[name] = function (...args) {
       return this.destroyed ? Promise.resolve(/Highlight/.test(name) ? 0 : name === "startLinkEvents" ? undefined : false) : loadPart(LINK_PART).then(() => this[name](...args));
-    };
+    }).linkStub = true;
     View.prototype.getExternalFilters = function () { return (this.linkCommitted || []).map(item => JSON.parse(JSON.stringify(item))); };
     View.prototype.getHighlight = function () { return Array.from(this.linkHighlight || []); };
     View.prototype.linkStart = function () {

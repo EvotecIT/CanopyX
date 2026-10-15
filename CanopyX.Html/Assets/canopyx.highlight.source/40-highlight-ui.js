@@ -136,14 +136,9 @@
     };
   }
   if (VIEW_MODES.DataGrid) {
-    const proto = VIEW_MODES.DataGrid.prototype, wrap = open => open && function (...args) {
-      const result = open.apply(this, args);
-      if (this.hl && this.recordDrawer) hlPaintDrawer(this, this.recordDrawer);
-      return result;
-    };
-    // The filter editor part assigns openGridDrawer when it installs, before or after this part.
-    let open = wrap(Object.getOwnPropertyDescriptor(proto, "openGridDrawer")?.value);
-    Object.defineProperty(proto, "openGridDrawer", { configurable: true, get: () => open, set(value) { open = wrap(value); } });
+    const proto = VIEW_MODES.DataGrid.prototype;
+    // Last of the drawer hooks (order 30): marks go on the values editing and formatting have already drawn.
+    VIEW_MODES.DataGrid.drawerHook(30, function (dialog) { if (this.hl) hlPaintDrawer(this, dialog); });
     // A host source's pages arrive as the reader scrolls: the loaded rows are counted again, a moment after the last one.
     const store = proto.storePage;
     proto.storePage = function (...args) {

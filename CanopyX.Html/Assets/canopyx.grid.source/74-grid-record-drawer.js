@@ -8,7 +8,8 @@
   //    the view or record needs it), and the part decorates the head once it is built (RECORD_IMPL.decorate);
   //  - every field's <dt> and <dd> carry data-cx-field (the column or record field id); the dialog carries data-cx-record and
   //    data-cx-view, dialog._cxRecord is the raw record shown, and drawerFields(dialog) lists the painted fields in order;
-  //  - after each paint the dialog dispatches "cx-drawer-paint" with { id, index }.
+  //  - after each paint the dialog dispatches "cx-drawer-paint" with { id, index }; parts that follow it register through
+  //    DataGrid.drawerHook(order, hook), which runs for every drawer before its first paint, in order.
   let activeRecordDrawer;
   DataGrid.prototype.openGridDrawer=function(record,index,returnFocus,options){
     if(activeRecordDrawer?.contains(returnFocus))returnFocus=activeRecordDrawer._returnFocus;
@@ -55,6 +56,7 @@
     dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
       if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
+    for(const {hook} of DataGrid.drawerHooks)hook.call(this,dialog);
     paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();this.focusRing(title);
     return dialog;
   };

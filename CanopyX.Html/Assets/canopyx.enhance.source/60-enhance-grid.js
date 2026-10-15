@@ -119,6 +119,9 @@
     for (const name of ["noun", "density", "zebra"]) if (settings[name] !== undefined) view[name] = settings[name];
     view.query = { sort: enhanceOrder(settings.order, columns), search: settings.searchText === undefined ? "" : String(settings.searchText) };
     if (settings.searchMode !== undefined) view.query.searchMode = settings.searchMode;
+    // Header rows above the bottom one draw as the grid's column groups (multi-level headers).
+    const groups = read ? enhanceColumnGroups(enhanceHeaderGroups(read, columns.map(column => column.grid.id))) : [];
+    if (groups.length) view.columnGroups = groups;
     if (settings.view) Object.assign(view, settings.view);
     // Host options pass through: renderers, actions, plugins, exportFormats, toolbar, callbacks such as onQuery.
     const host = isTable ? h("div") : element, grid = {};

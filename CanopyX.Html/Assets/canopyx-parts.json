@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "1ece52fe0ca43475",
+      "version": "176ae0f82836e779",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -77,7 +77,7 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "version": "edf52e5aaf59b59f",
+      "version": "23b306218f3238e9",
       "script": "canopyx-enhance.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "efd5f39ab5302ef0",
+      "version": "517e3e524c1576fb",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "fd1a83b70ff2a670",
+      "version": "058008fc601cfdc6",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -265,7 +265,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "d600b9c125252960",
+      "version": "c8627d7e1c629936",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "14daf6ac8f916dec",
+      "version": "f81db654a7c6f25e",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

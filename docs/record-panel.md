@@ -127,8 +127,10 @@ tables with every row. Rows keep the order they come in.
   field, the offset and the limit.
 - `Target` (`CanopyRecordTarget`) names the grid whose records the rows are. A row then opens its record (row ids are that
   grid's record ids), and **Open all in grid** filters that grid: by `Filters`, or `Column` in `Values`, or `Column` in the
-  rows' ids. The cancelable `canopyx:openAll` event and the `onOpenAll` option come first with `{ view, filters, ids, field,
-  record, total }`, so a host can filter a linked view or another page instead.
+  rows' ids. When the page has the link part (it is loaded for linked views), a `Column` list goes through the target grid's external
+  filter API ([linked views](linked-views.md)): a removable chip that names the record and the field, combined with the
+  reader's own conditions. Otherwise, and for `Filters`, the list replaces the target's query filters and search. The cancelable `canopyx:openAll` event and the `onOpenAll` option come first with `{ view, filters, ids,
+  field, record, total }`, so a host can filter a linked view or another page instead.
 
 ## Related records and the back stack
 
