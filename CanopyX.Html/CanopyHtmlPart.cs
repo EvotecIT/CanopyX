@@ -27,6 +27,7 @@ public sealed class CanopyHtmlPart {
     private readonly string[] _views;
     private readonly string[] _sources;
     private readonly string[] _presenters;
+    private readonly string[] _features;
     private readonly bool _deepLink;
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -43,6 +44,7 @@ public sealed class CanopyHtmlPart {
         _views = List(entry, "views").ToArray();
         _sources = List(entry, "sources").ToArray();
         _presenters = List(entry, "presenters").ToArray();
+        _features = List(entry, "features").ToArray();
         _deepLink = entry.TryGetValue("deepLink", out var deepLink) && deepLink is bool flag && flag;
     }
 
@@ -106,9 +108,21 @@ public sealed class CanopyHtmlPart {
     internal bool IsNeededBy(CanopyTreeView view) => Array.IndexOf(_views, "tree") >= 0 && _presenters.Length == 0 &&
         (_sources.Length == 0 || Array.IndexOf(_sources, WireName(view.Source.Kind.ToString())) >= 0) && (!_deepLink || view.DeepLink);
 
-    /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters it names.</summary>
+    /// <summary>Whether a flat grid loads this part: a part for grids, limited to the presenters and reporting features it names.</summary>
     internal bool IsNeededBy(CanopyDataGridView view) => Array.IndexOf(_views, "grid") >= 0 && _sources.Length == 0 && !_deepLink &&
-        (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0));
+        (_presenters.Length == 0 || view.Columns.Any(column => column.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
+        (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
+
+    /// <summary>Whether a grid uses a reporting feature a part serves: <c>grouping</c> (fixed or runtime grouping, or aggregates) or <c>detail</c> rows.</summary>
+    private static bool Uses(CanopyDataGridView view, string feature) {
+        var reporting = view.Reporting;
+        if (reporting == null) return false;
+        return feature switch {
+            "grouping" => reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0,
+            "detail" => reporting.Detail != null,
+            _ => false
+        };
+    }
 
     /// <summary>The wire name of an enum member: its name with a lowercase first letter (<c>StatusStrip</c> is <c>statusStrip</c>).</summary>
     private static string WireName(string name) => name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);

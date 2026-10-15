@@ -270,7 +270,7 @@ public sealed partial class CanopyDataGridView {
             rule.Condition.Validate(conditionColumn);
         }
         Reporting?.Validate(Columns);
-        if ((Reporting?.Grouping != null || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
+        if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");
         if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))
             throw new InvalidOperationException("Durable reporting preferences require a state key of 1 to 512 characters.");
@@ -284,6 +284,12 @@ public sealed partial class CanopyDataGridView {
         }
         if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
         CanopyGridRows.Validate(Rows, columnIds, Columns);
+        var nested = Reporting?.Detail?.View;
+        if (nested != null) {
+            var nestedIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var column in nested.Columns) nestedIds.Add(column.Id);
+            foreach (var row in Rows) if (row.Detail is CanopyGridRowsDetail detail) CanopyGridRows.Validate(detail.Rows, nestedIds, nested.Columns);
+        }
         Query?.Validate(this);
         return columnIds;
     }

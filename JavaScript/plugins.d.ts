@@ -32,6 +32,12 @@ export type CanopyCellRenderer =
   | ((node: CanopyNode, element: HTMLElement, context: CellContext) => boolean)
   | ((row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void);
 
+/** A custom aggregate: the raw nonmissing values of a group (or the whole result) in, a finite number or null out. */
+export interface CanopyAggregate {
+  compute(values: readonly (string | number | boolean)[], context: { readonly column: string; readonly aggregate: string }): number | null;
+  /** The cell text, a template with {value}, for example "med {value}". Default "<name> {value}". */
+  readonly label?: string;
+}
 /** Reserved for typed cell editors: plugins can register them now, and the editing feature reads them. */
 export interface CanopyCellEditor { readonly [key: string]: unknown; }
 
@@ -75,6 +81,10 @@ export interface CanopyPlugin {
   readonly cellRenderers?: Readonly<Record<string, CanopyCellRenderer>>;
   /** Reserved: named column types. */
   readonly columnTypes?: Readonly<Record<string, CanopyColumnType>>;
+  /** Custom aggregates by operation name: compute(values, context) returns a finite number or null; label is a "{value}" template. */
+  readonly aggregates?: Readonly<Record<string, CanopyAggregate | CanopyAggregate["compute"]>>;
+  /** Detail renderers by name; a reporting definition chooses one with detail.renderer. */
+  readonly detailRenderers?: Readonly<Record<string, (row: Readonly<{ id: string; cells: Readonly<Record<string, unknown>> }>, element: HTMLElement, context: { readonly id: string; readonly signal: AbortSignal; readonly api: unknown; readonly labels: Readonly<Record<string, string>>; onDispose(cleanup: () => void): void }) => void | PromiseLike<void>>>;
   /** Reserved: typed cell editors. */
   readonly editors?: Readonly<Record<string, CanopyCellEditor>>;
   /** Buttons in the toolbar's left-hand group, after Columns and before Views. */

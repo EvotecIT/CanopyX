@@ -31,8 +31,33 @@
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
-        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
+        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" },
+        "detail": { "$ref": "#/$defs/gridRowDetail" }
       }
+    },
+    "gridRowDetail": {
+      "description": "A record's detail row payload in a reporting grid with detail rows: a table, properties or trusted HTML, or the inline data of the definition's nested grid (rows) or tree (roots).",
+      "anyOf": [
+        { "$ref": "#/$defs/detail" },
+        { "type": "object", "required": ["type", "rows"], "additionalProperties": false, "properties": { "type": { "const": "grid" }, "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } } } },
+        { "type": "object", "required": ["type", "roots"], "additionalProperties": false, "properties": { "type": { "const": "tree" }, "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } } } }
+      ]
+    },
+    "gridDetail": {
+      "type": "object", "additionalProperties": false,
+      "description": "Expandable detail rows. At most one content source: a page template id, a plugin detail renderer, or a nested grid or tree view whose data comes from each record's detail payload; none uses each record's own payload.",
+      "properties": {
+        "template": { "type": "string", "pattern": "^[A-Za-z][\\w:.-]{0,255}$" },
+        "renderer": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+        "view": { "anyOf": [{ "$ref": "#/$defs/grid" }, { "$ref": "#/$defs/view" }] },
+        "print": { "type": "boolean", "description": "Whether exports and print snapshots carry detail payloads. Default true." },
+        "label": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "gridGroupLevel": {
+      "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+      "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] },
+        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." } }
     },
     "gridClasses": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$" },
     "gridHighlightRule": {
@@ -184,6 +209,9 @@
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
         "grouping": { "$ref": "#/$defs/gridGrouping" },
+        "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Initial runtime grouping levels, outermost first. Not combined with grouping." },
+        "groupable": { "type": "boolean", "description": "Readers can group by sortable columns. Not combined with grouping." },
+        "detail": { "$ref": "#/$defs/gridDetail" },
         "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "viewStorage": { "enum": ["session", "local"] },
@@ -205,7 +233,7 @@
     "gridAggregate": {
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
-        "operation": { "enum": ["count", "sum", "average", "minimum", "maximum"] },
+        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
         "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
     },
     "gridAggregateValues": {
@@ -226,7 +254,8 @@
       "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
         "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" } }
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" },
+        "groups": { "type": "array", "minItems": 1, "maxItems": 10000, "items": { "$ref": "#/$defs/gridGroup" }, "description": "The next level's groups inside this group; present on every group of an outer level and absent on the innermost." } }
     },
     "gridColumnLayout": {
       "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
@@ -651,6 +680,7 @@
         "search": { "type": "string" },
         "searchMode": { "enum": ["substring", "words"], "default": "substring" },
         "filterGroup": { "$ref": "#/$defs/gridFilterGroup" },
+        "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Runtime grouping levels of a definition with groupBy or groupable, always present for such definitions; their columns lead sort." },
         "sort": {
           "type": "array",
           "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": {
@@ -1291,6 +1321,22 @@
             "gridAggregateAverage": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateMinimum": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateMaximum": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupBy": { "$ref": "#/$defs/accessibleLabel" },
+            "gridUngroup": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupDrop": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExpandAll": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCollapseAll": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExpandLevel": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCollapseLevel": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupMove": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupSortBy": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupSortValue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectGroup": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateDistinct": { "$ref": "#/$defs/accessibleLabel" },
+            "gridShowDetail": { "$ref": "#/$defs/accessibleLabel" },
+            "gridHideDetail": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDetailOf": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDetailFailed": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportProgress": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportReading": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportCancelled": { "$ref": "#/$defs/accessibleLabel" },
