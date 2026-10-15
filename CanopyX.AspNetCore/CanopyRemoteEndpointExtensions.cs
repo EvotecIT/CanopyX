@@ -24,9 +24,11 @@ namespace CanopyX.AspNetCore;
 /// <item><c>GET view</c>: the grid definition document.</item>
 /// <item><c>POST commit</c> (with <see cref="CanopyRemoteEndpointOptions.Writer"/>): a <c>gridCommit</c> body, answered with a
 /// <c>gridCommitResult</c>; it requires <see cref="CanopyRemoteEndpointOptions.WriteAuthorizationPolicy"/> as well.</item>
+/// <item><c>POST record</c> (with <see cref="CanopyRemoteEndpointOptions.Records"/>): a <c>gridRecordQuery</c> body, answered with a
+/// <c>gridRecord</c>; a record that is missing or outside the caller's scope answers 404 <c>recordNotFound</c>.</item>
 /// </list>
 /// POST bodies must be JSON (<c>application/json</c>), which makes cross-origin pages go through a CORS preflight. Client
-/// errors return 400 (409 for a stale revision, 413 for an oversized body, 415 for another content type) with
+/// errors return 400 (409 for a stale revision, 404 for a record that is not available, 413 for an oversized body, 415 for another content type) with
 /// <c>{ "error": code, "message": text }</c>; server failures return a generic 500 body and are logged, never echoed.
 /// Requests observe <see cref="HttpContext.RequestAborted"/>. The group requires authorization (the default policy, or
 /// <see cref="CanopyRemoteEndpointOptions.AuthorizationPolicy"/>) unless <see cref="CanopyRemoteEndpointOptions.AllowAnonymous"/> is set;
@@ -48,6 +50,34 @@ public static class CanopyRemoteEndpointExtensions {
         var options = new CanopyRemoteEndpointOptions();
         configure?.Invoke(options);
         var queryOptions = options.Query;
+        return Map(endpoints, pattern, map.Schema, context => new CanopyQueryableProvider<T>(() => query(context), map, queryOptions), options);
+    }
+
+    /// <summary>Maps remote grid endpoints over an <see cref="IQueryable{T}"/>, with a record route that loads record details
+    /// through the same query callback.</summary>
+    /// <typeparam name="T">The record type.</typeparam>
+    /// <param name="endpoints">The route builder.</param>
+    /// <param name="pattern">The route prefix, for example <c>/api/hosts</c>.</param>
+    /// <param name="query">Returns the base query for a request, already restricted to what the caller may see. Record
+    /// lookups compose on it too, so a record outside the caller's scope is not found.</param>
+    /// <param name="map">The column allow-list.</param>
+    /// <param name="records">The record allow-list, built over <paramref name="map"/>.</param>
+    /// <param name="configure">Adjusts limits, export formats, query options and the record read check.</param>
+    /// <returns>The route group, for authorization and other conventions.</returns>
+    /// <exception cref="ArgumentException">The record map belongs to another column map.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="configure"/> also sets <see cref="CanopyRemoteEndpointOptions.Records"/>.</exception>
+    public static RouteGroupBuilder MapCanopyRemote<T>(this IEndpointRouteBuilder endpoints, string pattern, Func<HttpContext, IQueryable<T>> query,
+        CanopyColumnMap<T> map, CanopyRecordMap<T> records, Action<CanopyRemoteEndpointOptions>? configure = null) {
+        if (query == null) throw new ArgumentNullException(nameof(query));
+        if (map == null) throw new ArgumentNullException(nameof(map));
+        if (records == null) throw new ArgumentNullException(nameof(records));
+        if (!ReferenceEquals(records.Columns, map)) throw new ArgumentException("The record map must be built over the same column map.", nameof(records));
+        var options = new CanopyRemoteEndpointOptions();
+        configure?.Invoke(options);
+        if (options.Records != null) throw new InvalidOperationException("The record map already supplies the record provider; do not set Records as well.");
+        var queryOptions = options.Query;
+        _ = records.Schema;
+        options.Records = context => new CanopyQueryableRecordProvider<T>(() => query(context), records, queryOptions);
         return Map(endpoints, pattern, map.Schema, context => new CanopyQueryableProvider<T>(() => query(context), map, queryOptions), options);
     }
 
@@ -93,6 +123,17 @@ public static class CanopyRemoteEndpointExtensions {
                 return CanopyRemoteHttp.RunJsonAsync(context, options.Limits, http => new CanopyRemoteHandler(schema, provider(http), options.Remote, writer(http)), CommitAnswer);
             }));
             if (writePolicy != null) commit.RequireAuthorization(writePolicy);
+        }
+        if (options.Records != null) {
+            var records = options.Records;
+            var canRead = options.CanReadRecordField;
+            Task Record(HttpContext context) {
+                Func<string, bool>? check = canRead == null ? null : id => canRead(context, id);
+                Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> answer = (handler, body, token) => handler.RecordAsync(body, check, token);
+                return CanopyRemoteHttp.RunJsonAsync(context, options.Limits, http => new CanopyRemoteHandler(schema, provider(http), options.Remote, null, records(http)), answer);
+            }
+            var route = group.MapPost("/record", (RequestDelegate)Record);
+            options.RecordEndpoint?.Invoke(route);
         }
         var view = schema.ToJson();
         CanopyRemoteHandler Handler(HttpContext context) => new CanopyRemoteHandler(schema, provider(context), options.Remote);
