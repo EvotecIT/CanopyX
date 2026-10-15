@@ -28,12 +28,12 @@
         const find = type => document.querySelector('script[type="application/x-canopyx-'+type+'"][data-cx-version="'+part.version+'"]');
         const payload = find(part.name), script = h("script"), embeddedStyle = styleFile && find(part.name + "-style");
         if (payload) {
-          if (embeddedStyle) { const style = h("style"); setText(style, embeddedStyle.textContent); if (payload.nonce) style.nonce = payload.nonce; document.head.appendChild(style); }
-          setText(script, payload.textContent); if (payload.nonce) script.nonce = payload.nonce; document.head.appendChild(script); script.remove();
+          if (embeddedStyle) { const style = withNonce(h("style"), payload); setText(style, embeddedStyle.textContent); document.head.appendChild(style); }
+          script.textContent = trusted("Script", payload.textContent); document.head.appendChild(withNonce(script, payload)); script.remove();
         } else {
           const runtime = PART_URL || global.CanopyXFilterEditorBase || document.baseURI, hashed = PART_URL && /\.[a-f\d]{16}\.js(?:[?#]|$)/.test(PART_URL);
-          const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { element[attribute] = new URL(file, runtime).href; element.onload = resolve;
-            element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(element); });
+          const load = (element, attribute, file, kind) => new Promise((resolve, reject) => { const url = new URL(file, runtime).href; element[attribute] = attribute === "src" ? trusted("ScriptURL", url) : url; element.onload = resolve;
+            element.onerror = () => { element.remove(); reject(new Error("CanopyX: " + part.label + " " + kind + " unavailable.")); }; document.head.appendChild(withNonce(element)); });
           const link = h("link"); link.rel = "stylesheet";
           await Promise.all([styleFile && load(link, "href", hashed ? styleFile : "canopyx-" + part.name + ".css", "stylesheet"),
             load(script, "src", hashed ? scriptFile : "canopyx-" + part.name + ".js", "script")]); script.remove();

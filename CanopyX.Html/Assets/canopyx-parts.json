@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "e3c3ee2d7b19f9a1",
+      "version": "e58b550ab4ebc579",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "799c415d8d5cfdb7",
+      "version": "bb1c770d1aee7d4d",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "583e3e19a2caa9d1",
+      "version": "2a2552039d334946",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",

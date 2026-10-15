@@ -1,7 +1,9 @@
   // ---------- export part: format writers and tree records ----------
   // This part ships in the lazy export file, which flat grids and trees load on first use.
   function saveExport(blob, name) {
-    const url = URL.createObjectURL(blob), link = h("a"); link.href = url; link.download = name;
+    const url = URL.createObjectURL(blob), link = h("a"); link.href = url;
+    // A file name is a basename: path separators, reserved and control characters become "_".
+    link.download = String(name).replace(/[\\/:*?"<>|\x00-\x1f\x7f]/g, "_").replace(/^[. ]+/, "_");
     document.body.appendChild(link); link.click(); link.remove();
     // A large file can still be reading after the click returns; release the URL only later.
     setTimeout(() => URL.revokeObjectURL(url), 30000);
