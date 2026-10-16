@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "e5e51ecf55a218ac",
+      "version": "2ba5ad1355790930",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

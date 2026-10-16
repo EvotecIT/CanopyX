@@ -46,8 +46,12 @@
       this.calBody.addEventListener("pointerout", event => this.calHoverOut(event), { signal });
       for (const type of ["pointerdown", "keydown", "wheel"]) this.calBody.addEventListener(type, () => this.calHideHover(), { signal, passive: true });
       this.calMenuStart();
-      // A query keeps the view's place (focus and scroll): saving local values re-runs the same query.
-      host.addEventListener("canopyx:query", () => { this.calCache?.clear(); this.calReload({ keep: true }); }, { signal });
+      // A new query starts the view afresh (the agenda scrolls to today); the same query run again (saving local values re-runs
+      // it) keeps the view's place, its focus and scroll.
+      host.addEventListener("canopyx:query", () => {
+        const shape = gridResultShape(this.acceptedQuery || {}), same = this.calQueryShape === shape;
+        this.calQueryShape = shape; this.calCache?.clear(); this.calReload(same ? { keep: true } : {});
+      }, { signal });
       host.addEventListener("canopyx:rowsChanged", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:commit", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:cellValueChanged", () => { this.calVersion++; this.calReload({ keep: true }); }, { signal });
