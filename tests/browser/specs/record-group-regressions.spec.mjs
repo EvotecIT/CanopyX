@@ -197,7 +197,7 @@ test("grouping keeps first-column aggregates and clears collapse keys after regr
   await expect(page.locator(".cx-row[data-cx-id]").first()).toBeVisible();
 });
 
-for (const depth of [1, 2]) test(`phone group totals use cell navigation and preserve row keys with ${depth} grouping levels`, async ({ page }) => {
+for (const depth of [1, 2]) test(`phone group totals use cell navigation and preserve row keys with ${depth} grouping levels`, async ({ page, browserName }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const view = groupedDefinition(); view.reporting.groupBy.length = depth;
   // Cell navigation needs a second cell even when the platform font makes fewer columns fit.
@@ -229,7 +229,8 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
     await page.keyboard.press("ArrowRight"); await expect(page.locator(".cx-grid-group").nth(1)).toBeFocused();
     await heading.focus();
   }
-  await nextFrames(page); await page.keyboard.press("Tab");
+  // macOS WebKit uses Option+Tab to include native buttons when Keyboard Navigation is off.
+  await nextFrames(page); await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
   const summary = page.locator(".cx-summary-row .cx-grid-group-aggregates");
   await expect(summary).toBeFocused();
   await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Query totals");

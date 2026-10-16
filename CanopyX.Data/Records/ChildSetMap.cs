@@ -44,6 +44,7 @@ internal sealed class ChildSetMap<T, TChild> : RecordChildMap<T> {
         if (keep != null) children = children.Where(Expression.Lambda<Func<TChild, bool>>(keep, child));
         int? total = null;
         if (_spec.Collection) total = await context.Executor.CountAsync(children, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         var rows = new List<object?[]>();
         if (take > 0 && (total == null || offset < total)) {
             var keys = _spec.Orders.Select(order => (ExpressionTools.Bind(order.Expression, child, memory), order.Descending)).ToList();
@@ -53,6 +54,7 @@ internal sealed class ChildSetMap<T, TChild> : RecordChildMap<T> {
             foreach (var value in _spec.Values) parts.Add(Expression.Convert(RecordText.Truncate(ExpressionTools.Bind(value, child, memory), context.MaxText), typeof(object)));
             var projection = Expression.Lambda<Func<TChild, object?[]>>(Expression.NewArrayInit(typeof(object), parts), child);
             rows = await context.Executor.ToListAsync(ordered.Take(take).Select(projection), cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
         }
         // Rows written between the count and the window change the window; the reader reloads instead of mixing snapshots.
         if (total != null && rows.Count != Math.Min(take, Math.Max(0, total.Value - offset)))

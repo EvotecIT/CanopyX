@@ -116,7 +116,10 @@
     for (const row of rows) {
       const raw = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && raw !== null ? new Date(raw).toISOString() : raw, key = facetKey(value, column);
       const bucket = buckets.get(key);
-      if (bucket) bucket.count++; else buckets.set(key, { value, count: 1 });
+      if (bucket) {
+        bucket.count++;
+        if (typeof value === "string" && value < bucket.value) bucket.value = value;
+      } else buckets.set(key, { value, count: 1 });
     }
     const items = [...buckets.values()];
     return { matched: rows.length, items, totalValues: items.length, truncated: false };

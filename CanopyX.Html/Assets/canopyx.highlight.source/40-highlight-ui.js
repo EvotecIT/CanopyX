@@ -143,7 +143,7 @@
     const store = proto.storePage;
     proto.storePage = function (...args) {
       const result = store.apply(this, args), state = this.hl;
-      if (state && state.active && !(this.view.source.kind === "inline" && !this.opts.source)) {
+      if (state && state.active && !(this.view.source.kind === "inline" && (!this.opts.source || this.enhanceStore))) {
         clearTimeout(state.pageTimer);
         state.pageTimer = setTimeout(() => this.destroyed || hlRecount(this), 150);
       }

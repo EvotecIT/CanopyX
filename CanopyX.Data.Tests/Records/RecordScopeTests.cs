@@ -21,6 +21,48 @@ public sealed class RecordScopeTests {
 
     [Theory]
     [MemberData(nameof(Kinds))]
+    public async Task OneRequest_UsesOneAuthorizationSnapshotForLinksAndCollections(ProviderKind kind) {
+        var group = new AssetGroup { Id = 1, Name = "group" };
+        var first = new Asset { Id = 1, Name = "first", Site = "Main", Group = group, ReplacesId = 2 };
+        var hidden = new Asset { Id = 2, Name = "hidden", Site = "Hidden", Group = group };
+        first.Replaces = hidden;
+        group.Members.AddRange(new[] { first, hidden });
+        var calls = 0;
+        var enumerations = 0;
+        IEnumerable<Asset> Snapshot() {
+            calls++;
+            return Enumerate(calls == 1 ? new[] { first } : new[] { first, hidden });
+        }
+        IEnumerable<Asset> Enumerate(Asset[] items) {
+            enumerations++;
+            foreach (var item in items) yield return item;
+        }
+        var map = Assets.Records(Assets.Columns(Assets.View()));
+        ICanopyRecordProvider provider = kind == ProviderKind.Reference
+            ? new CanopyInMemoryRecordProvider<Asset>(map, Snapshot)
+            : new CanopyQueryableRecordProvider<Asset>(() => Snapshot().AsQueryable(), map);
+        var handler = Assets.Handler(map, provider);
+        using (var whole = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1")))) {
+            var fields = whole.RootElement.GetProperty("fields");
+            Assert.False(fields.TryGetProperty("replaces", out _));
+            var peers = fields.GetProperty("peers").GetProperty("records");
+            Assert.Equal(1, peers.GetProperty("total").GetInt32());
+            Assert.Equal("1", Assert.Single(peers.GetProperty("rows").EnumerateArray()).GetProperty("id").GetString());
+            Assert.Equal(1, calls);
+            if (kind == ProviderKind.Reference) Assert.Equal(1, enumerations);
+        }
+        calls = 0;
+        enumerations = 0;
+        using var page = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1", ",\"field\":\"peers\"")));
+        var rows = page.RootElement.GetProperty("fields").GetProperty("peers").GetProperty("records");
+        Assert.Equal(1, rows.GetProperty("total").GetInt32());
+        Assert.Equal("1", Assert.Single(rows.GetProperty("rows").EnumerateArray()).GetProperty("id").GetString());
+        Assert.Equal(1, calls);
+        if (kind == ProviderKind.Reference) Assert.Equal(1, enumerations);
+    }
+
+    [Theory]
+    [MemberData(nameof(Kinds))]
     public async Task RelatedRecordsOutsideTheScope_AreNeverShown(ProviderKind kind) {
         var handler = Handler(kind);
         var asset = Assets.Scoped(All).First(item => item.Group != null && item.Group.Members.Any(member => member.Site == "Hidden") && item.Group.Members.Count(member => member.Site != "Hidden") > 1);

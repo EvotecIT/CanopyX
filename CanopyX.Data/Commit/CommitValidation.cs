@@ -115,7 +115,7 @@ internal static class CommitValidation {
         switch (raw) {
             case double value: number = value; break;
             case float value: number = value; break;
-            case decimal value: number = (double)value; break;
+            case decimal value: number = CanopyDataValues.ToDouble(value); break;
             case long value: number = value; break;
             case int value: number = value; break;
             default: return false;

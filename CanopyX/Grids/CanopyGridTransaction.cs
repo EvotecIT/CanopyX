@@ -36,8 +36,8 @@ public sealed class CanopyGridTransaction {
         if (view == null) throw new ArgumentNullException(nameof(view));
         var columnIds = view.ValidateColumns();
         if (Add.Count + Update.Count + Remove.Count > 100000) throw new InvalidOperationException("A transaction changes at most 100,000 rows.");
-        CanopyGridRows.Validate(Add, columnIds, view.Columns);
-        CanopyGridRows.Validate(Update, columnIds, view.Columns);
+        CanopyGridRows.Validate(Add, columnIds, view.Columns, view.Reporting?.Detail);
+        CanopyGridRows.Validate(Update, columnIds, view.Columns, view.Reporting?.Detail);
         foreach (var id in Remove) CanopyIdentifiers.Require(id, nameof(Remove));
         var writer = new CanopyJsonWriter(1024);
         writer.BeginObject().Envelope("gridTransaction").Property("view", view.Id);

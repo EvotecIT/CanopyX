@@ -52,7 +52,7 @@ internal sealed class CanopyFormatEvaluator {
         var operands = new List<object?>();
         foreach (var operand in predicate.Values) operands.Add(relative ? (double)CanopyFormatValues.Coerce(operand.Value, CanopyFormatValueType.Number, null)! * 86400000d : CanopyFormatValues.Read(operand.Value, predicate, column));
         int Order(object? a, object? b) => CanopyFormatValues.Compare(a, b, predicate);
-        string Text(object value) => value as string ?? (value is bool flag ? (flag ? "true" : "false") : value is double real ? real.ToString("R", CultureInfo.InvariantCulture) : Convert.ToString(value, CultureInfo.InvariantCulture)!);
+        string Text(object value) => CanopyFormatValues.Text(value);
         return row => {
             var value = CanopyFormatValues.Read(Raw(row, column.Id), predicate, column);
             if (op == CanopyFormatOperator.IsNull) return value == null;
@@ -84,7 +84,9 @@ internal sealed class CanopyFormatEvaluator {
         };
     }
 
-    private static bool Matches(System.Text.RegularExpressions.Regex pattern, string text) {
+    private static bool Matches(CanopyNativePattern pattern, string text) {
+        // JavaScript slice counts UTF-16 units too; the shared pattern grammar and timeout stay unchanged.
+        if (text.Length > 4096) text = text.Substring(0, 4096);
         try { return pattern.IsMatch(text); } catch (System.Text.RegularExpressions.RegexMatchTimeoutException) { return false; }
     }
 
@@ -97,11 +99,12 @@ internal sealed class CanopyFormatEvaluator {
         foreach (var (rule, test) in _rules) {
             if (test != null && !test(row)) continue;
             var paint = Resolve(rule, row);
-            if (paint == null) continue;
-            if (rule.Target == CanopyFormatTarget.Row) rowPaint = Merge(rowPaint, rule, paint);
-            else foreach (var id in rule.Target == CanopyFormatTarget.Cell ? new[] { rule.Column! } : (IEnumerable<string>)rule.Columns) {
-                cells ??= new Dictionary<string, CanopyFormatPaint>(StringComparer.Ordinal);
-                cells[id] = Merge(cells.TryGetValue(id, out var existing) ? existing : null, rule, paint);
+            if (paint != null) {
+                if (rule.Target == CanopyFormatTarget.Row) rowPaint = Merge(rowPaint, rule, paint);
+                else foreach (var id in rule.Target == CanopyFormatTarget.Cell ? new[] { rule.Column! } : (IEnumerable<string>)rule.Columns) {
+                    cells ??= new Dictionary<string, CanopyFormatPaint>(StringComparer.Ordinal);
+                    cells[id] = Merge(cells.TryGetValue(id, out var existing) ? existing : null, rule, paint);
+                }
             }
             if (rule.StopIfTrue) break;
         }
@@ -149,8 +152,8 @@ internal sealed class CanopyFormatEvaluator {
         var target = into ?? new CanopyFormatPaint();
         target.Absorb(paint);
         target.Rules.Add(rule.Id);
-        var description = rule.Description ?? rule.Label;
-        if (description != null && !target.Descriptions.Contains(description)) target.Descriptions.Add(description);
+        var description = rule.Description ?? rule.Label ?? rule.Id;
+        if (!target.Descriptions.Contains(description)) target.Descriptions.Add(description);
         if (paint.Band != null && !target.Descriptions.Contains(paint.Band)) target.Descriptions.Add(paint.Band);
         target.Details |= rule.Details;
         return target;

@@ -40,12 +40,13 @@
         frame.setAttribute("data-cx-position", options.position);
         this.host.before(frame); frame.append(panel, this.host);
       }
-      // The toolbar button that opens the sheet when the panel does not fit.
+      // The button that opens the sheet when the panel does not fit, including grids without a toolbar.
       const sheetButton = this.facetSheetButton = gridButton(this.labels.gridFacetPanel, () => this.openFacetSheet());
       sheetButton.classList.add("cx-btn", "cx-facets-open"); sheetButton.prepend(gridIcon(null, FACET_ICON)); sheetButton.hidden = true;
       sheetButton.setAttribute("aria-haspopup", "dialog");
       const anchor = this.toolbar.querySelector(".cx-grid-filters") || this.toolbar.querySelector(".cx-grid-columns") || this.spacer;
-      if (anchor?.parentNode === this.toolbar) anchor.before(sheetButton); else this.toolbar.prepend(sheetButton);
+      if (this.opts.toolbar === false) this.host.prepend(sheetButton);
+      else if (anchor?.parentNode === this.toolbar) anchor.before(sheetButton); else this.toolbar.prepend(sheetButton);
       this.facetResize = new ResizeObserver(() => requestAnimationFrame(() => this.destroyed || this.facetFit()));
       this.facetResize.observe(this.facetFrame || this.host);
       if (this.facetFrame) this.facetResize.observe(this.host);
@@ -116,15 +117,19 @@
       for (const section of this.facetSections) {
         if (targets && !targets.includes(section.facet)) continue;
         section.controller?.abort(); const controller = section.controller = new AbortController(), generation = ++section.generation;
+        const current = () => !this.destroyed && run === this.facetRun && generation === section.generation;
         try {
           const counts = section.facet.hosted ? await facetHostedCounts(this, section.facet, section.content.search(), controller.signal) : facetInlineCounts(this, section.facet, query);
-          if (generation === section.generation && !this.destroyed) { section.failure.hidden = true; section.content.update(counts); }
+          if (current()) { section.failure.hidden = true; section.content.update(counts); }
         } catch (error) {
-          if (generation === section.generation && !this.destroyed && error?.name !== "AbortError") { setText(section.failure, fill(this.labels.queryFailed, { error: error.message })); section.failure.hidden = false; }
+          if (current() && error?.name !== "AbortError") { setText(section.failure, fill(this.labels.queryFailed, { error: error.message })); section.failure.hidden = false; }
+        } finally {
+          if (section.controller === controller) section.controller = null;
+          controller.abort();
         }
         // A pause between facets keeps the page responsive while a large inline dataset is counted.
         if (!section.facet.hosted) await new Promise(resolve => setTimeout(resolve, 0));
-        if (this.destroyed || !targets && run !== this.facetRun) return;
+        if (this.destroyed || run !== this.facetRun) return;
       }
     },
     /** Badges, Clear buttons and the custom-condition notes follow the accepted query. */

@@ -103,6 +103,165 @@ public sealed class RecordTextBoundTests {
         }
     }
 
+    [Fact]
+    public async Task HistoryLabels_AreClippedInFieldsDrawerValuesAndNestedCells() {
+        CanopyCell History() => new CanopyCell(Long) {
+            Series = { new CanopyCellPeriod(Long, 3, Long, CanopyTone.Danger), new CanopyCellPeriod("short", 0) }
+        };
+        var handler = Handler(request => {
+            var record = new CanopyGridRecord(request.Id);
+            record.Fields["notes"] = CanopyCell.Object(new[] { new CanopyCellField("history", History()) });
+            record.Cells["site"] = History();
+            var list = new CanopyRecordList { Total = 1 };
+            list.Columns.Add(new CanopyColumn("name", "Name"));
+            var row = new CanopyGridRow(LongId);
+            row.Cells["name"] = History();
+            list.Rows.Add(row);
+            record.Fields["parts"] = CanopyCell.Collection(list);
+            var item = new CanopyRecordEvent(DateTime.UtcNow, "event");
+            item.Changes.Add(new CanopyFieldChange("history", History(), History()));
+            record.Fields["events"] = CanopyCell.Timeline(new[] { item });
+            return record;
+        });
+        using var document = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1")));
+        var root = document.RootElement;
+        var fields = root.GetProperty("fields");
+        var changes = fields.GetProperty("events").GetProperty("events")[0].GetProperty("changes")[0];
+        foreach (var cell in new[] {
+            root.GetProperty("cells").GetProperty("site"), fields.GetProperty("notes").GetProperty("fields")[0].GetProperty("value"),
+            fields.GetProperty("parts").GetProperty("records").GetProperty("rows")[0].GetProperty("cells").GetProperty("name"),
+            changes.GetProperty("before"), changes.GetProperty("after")
+        }) {
+            Assert.Equal(Clipped, cell.GetProperty("value").GetString());
+            var series = cell.GetProperty("series");
+            Assert.Equal(Clipped, series[0].GetProperty("period").GetString());
+            Assert.Equal(Clipped, series[0].GetProperty("state").GetString());
+            Assert.Equal(3, series[0].GetProperty("value").GetDouble());
+            Assert.Equal("danger", series[0].GetProperty("tone").GetString());
+            Assert.Equal("short", series[1].GetProperty("period").GetString());
+            Assert.False(series[1].TryGetProperty("state", out _));
+        }
+    }
+
+    [Fact]
+    public async Task NestedTreeLabelsAndBadges_AreClippedWithoutChangingIdentityOrScopeMetadata() {
+        var handler = Handler(request => {
+            var record = new CanopyGridRecord(request.Id);
+            var tree = new CanopyRecordList();
+            tree.Columns.Add(new CanopyColumn("name", "Name"));
+            var root = new CanopyNode(LongId, Long) { Kind = "host-kind", Flags = { "host-flag" }, Data = { ["host-key"] = LongId } };
+            root.Badges.Add(new CanopyBadge(Long, CanopyTone.Warning) { Title = Long });
+            root.Children.Add(new CanopyNode("child", Long) { Badges = { new CanopyBadge(Long) { Title = Long } } });
+            tree.Roots.Add(root);
+            record.Fields["notes"] = CanopyCell.Object(new[] { new CanopyCellField("tree", CanopyCell.Collection(tree)) });
+            return record;
+        });
+        using var document = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1")));
+        var node = document.RootElement.GetProperty("fields").GetProperty("notes").GetProperty("fields")[0].GetProperty("value").GetProperty("records").GetProperty("roots")[0];
+        Assert.Equal(LongId, node.GetProperty("id").GetString());
+        Assert.Equal("host-kind", node.GetProperty("kind").GetString());
+        Assert.Equal("host-flag", node.GetProperty("flags")[0].GetString());
+        Assert.Equal(LongId, node.GetProperty("data").GetProperty("host-key").GetString());
+        foreach (var item in new[] { node, node.GetProperty("children")[0] }) {
+            Assert.Equal(Clipped, item.GetProperty("label").GetString());
+            Assert.Equal(Clipped, item.GetProperty("badges")[0].GetProperty("text").GetString());
+            Assert.Equal(Clipped, item.GetProperty("badges")[0].GetProperty("title").GetString());
+        }
+        Assert.Equal("warning", node.GetProperty("badges")[0].GetProperty("tone").GetString());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeepTrees_ClipEveryNodeAndKeepCanonicalCycleRejection(bool cyclic) {
+        const int count = 300;
+        var handler = Handler(request => {
+            var record = new CanopyGridRecord(request.Id);
+            var tree = new CanopyRecordList();
+            tree.Columns.Add(new CanopyColumn("name", "Name"));
+            var first = new CanopyNode("node-0", Long);
+            tree.Roots.Add(first);
+            var node = first;
+            for (var i = 1; i < count; i++) {
+                var child = new CanopyNode("node-" + i, Long) { Cells = { ["name"] = Long }, Badges = { new CanopyBadge(Long) } };
+                node.Children.Add(child);
+                node = child;
+            }
+            if (cyclic) node.Children.Add(first);
+            record.Fields["notes"] = CanopyCell.Object(new[] { new CanopyCellField("tree", CanopyCell.Collection(tree)) });
+            return record;
+        });
+        if (cyclic) {
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.RecordAsync(Assets.Query("1")));
+            Assert.Contains("more than one node with id", error.Message);
+        } else {
+            using var document = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1")), new JsonDocumentOptions { MaxDepth = count * 3 });
+            var node = document.RootElement.GetProperty("fields").GetProperty("notes").GetProperty("fields")[0].GetProperty("value").GetProperty("records").GetProperty("roots")[0];
+            for (var i = 0; i < count; i++) {
+                Assert.Equal("node-" + i, node.GetProperty("id").GetString());
+                Assert.Equal(Clipped, node.GetProperty("label").GetString());
+                if (i > 0) {
+                    Assert.Equal(Clipped, node.GetProperty("cells").GetProperty("name").GetString());
+                    Assert.Equal(Clipped, node.GetProperty("badges")[0].GetProperty("text").GetString());
+                }
+                if (i + 1 < count) node = node.GetProperty("children")[0];
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("object")]
+    [InlineData("collection")]
+    [InlineData("changes")]
+    [InlineData("events")]
+    public async Task CyclicCustomAnswers_AreRejectedBeforeClippingCanOverflowTheStack(string kind) {
+        var handler = Handler(request => {
+            var record = new CanopyGridRecord(request.Id);
+            var cell = new CanopyCell();
+            switch (kind) {
+                case "object": cell.Fields.Add(new CanopyCellField("self", cell)); break;
+                case "collection":
+                    var list = new CanopyRecordList { Total = 1 };
+                    list.Columns.Add(new CanopyColumn("name", "Name"));
+                    var row = new CanopyGridRow("child");
+                    row.Cells["name"] = cell;
+                    list.Rows.Add(row);
+                    cell.Records = list;
+                    break;
+                case "changes": cell.Changes.Add(new CanopyFieldChange("self", cell, null)); break;
+                case "events":
+                    var item = new CanopyRecordEvent(DateTime.UtcNow, "event");
+                    item.Changes.Add(new CanopyFieldChange("self", cell, null));
+                    cell.Events.Add(item);
+                    break;
+            }
+            record.Fields[kind == "collection" ? "parts" : "notes"] = cell;
+            return record;
+        });
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.RecordAsync(Assets.Query("1")));
+        Assert.Contains("Structured values nest at most " + CanopyCell.MaxStructureDepth, error.Message);
+    }
+
+    [Theory]
+    [InlineData(CanopyCell.MaxStructureDepth, false)]
+    [InlineData(CanopyCell.MaxStructureDepth + 1, true)]
+    public async Task NestedCustomAnswers_KeepTheCanonicalStructureDepthBoundary(int depth, bool rejected) {
+        var handler = Handler(request => {
+            var record = new CanopyGridRecord(request.Id);
+            CanopyCell cell = Long;
+            for (var i = 0; i < depth; i++) cell = CanopyCell.Object(new[] { new CanopyCellField("nested", cell) });
+            record.Fields["notes"] = cell;
+            return record;
+        });
+        if (rejected) await Assert.ThrowsAsync<InvalidOperationException>(() => handler.RecordAsync(Assets.Query("1")));
+        else {
+            using var document = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1")));
+            var cell = document.RootElement.GetProperty("fields").GetProperty("notes");
+            for (var i = 0; i < depth; i++) cell = cell.GetProperty("fields")[0].GetProperty("value");
+            Assert.Equal(Clipped, cell.GetString());
+        }
+    }
+
     private sealed class Custom : ICanopyRecordProvider {
         private readonly Func<CanopyRecordRequest, CanopyGridRecord> _answer;
         public Custom(CanopyRecordSchema schema, Func<CanopyRecordRequest, CanopyGridRecord> answer) { Schema = schema; _answer = answer; }

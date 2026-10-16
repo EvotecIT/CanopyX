@@ -46,7 +46,8 @@
       this.calBody.addEventListener("pointerout", event => this.calHoverOut(event), { signal });
       for (const type of ["pointerdown", "keydown", "wheel"]) this.calBody.addEventListener(type, () => this.calHideHover(), { signal, passive: true });
       this.calMenuStart();
-      host.addEventListener("canopyx:query", () => { this.calCache?.clear(); this.calReload(); }, { signal });
+      // A query keeps the view's place (focus and scroll): saving local values re-runs the same query.
+      host.addEventListener("canopyx:query", () => { this.calCache?.clear(); this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:rowsChanged", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:commit", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:cellValueChanged", () => { this.calVersion++; this.calReload({ keep: true }); }, { signal });

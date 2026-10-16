@@ -24,11 +24,15 @@ public sealed class CanopyRecordSchema {
     public CanopyRecordSchema(CanopyDataSchema data, IEnumerable<CanopyRecordField> fields, IEnumerable<string>? cells = null) {
         Data = data ?? throw new ArgumentNullException(nameof(data));
         if (fields == null) throw new ArgumentNullException(nameof(fields));
-        var panel = data.View.Record ?? throw new ArgumentException("View '" + data.ViewId + "' declares no record panel (Record).", nameof(data));
+        var panel = CanopyDataSnapshot.Record(data.View.Record) ?? throw new ArgumentException("View '" + data.ViewId + "' declares no record panel (Record).", nameof(data));
+        // Columns and nested reporting definitions belong to the data schema's capture. The record panel is captured now:
+        // hosts may declare its fields after creating the data schema, before creating this record allow-list.
+        ProtocolView = CanopyDataSnapshot.View(data.ProtocolView);
+        ProtocolView.Record = panel;
         var declared = new HashSet<string>(StringComparer.Ordinal);
         foreach (var field in panel.Fields) if (field != null) declared.Add(field.Id);
         var columns = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var column in data.View.Columns) columns.Add(column.Id);
+        foreach (var column in ProtocolView.Columns) columns.Add(column.Id);
         var list = new List<CanopyRecordField>();
         foreach (var field in fields) {
             if (field == null) throw new ArgumentException("A record schema cannot list a null field.", nameof(fields));
@@ -52,8 +56,11 @@ public sealed class CanopyRecordSchema {
     /// <summary>Gets the grid's column allow-list.</summary>
     public CanopyDataSchema Data { get; }
 
-    /// <summary>Gets the grid definition.</summary>
+    /// <summary>Gets the original authoring definition. Later changes do not alter the captured record response metadata.</summary>
     public CanopyDataGridView View => Data.View;
+
+    /// <summary>The captured columns, nested definitions and record panel used to validate record responses.</summary>
+    internal CanopyDataGridView ProtocolView { get; }
 
     /// <summary>Gets the grid identity.</summary>
     public string ViewId => Data.ViewId;

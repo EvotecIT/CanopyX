@@ -190,30 +190,30 @@ public sealed partial class CanopyCell {
     }
 
     /// <summary>ISO 8601 UTC, with milliseconds only when they are not zero.</summary>
-    private static string FormatIso(DateTime date) =>
+    internal static string FormatIso(DateTime date) =>
         date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
     /// <summary>Checks a node's cells, walking the dictionary without an enumerator object.</summary>
-    internal static void ValidateEntries(Dictionary<string, CanopyCell>? cells) {
+    internal static void ValidateEntries(Dictionary<string, CanopyCell>? cells, int structureDepth = 0) {
         if (cells == null) {
             return;
         }
 
         foreach (var cell in cells) {
             if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
-            cell.Value?.ValidateShape();
+            cell.Value?.ValidateShape(structureDepth);
         }
     }
 
-    internal static void ValidateEntries(IEnumerable<KeyValuePair<string, CanopyCell>> cells) {
+    internal static void ValidateEntries(IEnumerable<KeyValuePair<string, CanopyCell>> cells, int structureDepth = 0) {
         foreach (var cell in cells) {
             if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
-            cell.Value?.ValidateShape();
+            cell.Value?.ValidateShape(structureDepth);
         }
     }
 
-    internal void ValidateShape() {
-        ValidateStructure(0);
+    internal void ValidateShape(int structureDepth = 0) {
+        ValidateStructure(structureDepth);
         if (Secondary != null && Secondary.Length > 4096) throw new InvalidOperationException("Secondary cell text is limited to 4096 code units.");
         if (_series != null && (_series.Count > 4096 || _series.Exists(point => point == null))) throw new InvalidOperationException("Cell history supports at most 4096 non-null periods.");
         if (_sortKey is string key && key.Length > 4096) throw new InvalidOperationException("A sort key is limited to 4096 code units.");

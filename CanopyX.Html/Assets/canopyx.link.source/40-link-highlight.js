@@ -1,6 +1,6 @@
   // ---------- link part: highlights mark rows without filtering them ----------
   // A highlighted row carries data-cx-linked, which the stylesheet tones with the info colour and a bar at its start. The
-  // first highlighted row scrolls into view unless the host says not to: a loaded row at once, an inline grid's row after
+  // first highlighted row scrolls into view unless the host says not to: a loaded row at once, a local grid's row after
   // it reads where the row is in the accepted order, a loaded tree node after its branch opens.
   const linkMark = (grid, element, row) => setAttr(element, "data-cx-linked", row && !row.status && grid.linkHighlight && grid.linkHighlight.has(row.key) ? "true" : null);
   for (const View of [TreeGrid, DataGrid]) if (View) {
@@ -44,15 +44,26 @@
   if (DataGrid) Object.assign(DataGrid.prototype, LINK_HIGHLIGHT, {
     async linkReveal(keys) {
       if (this.pendingQuery || !this.acceptedQuery) return;
-      const epoch = this.queryEpoch;
+      const epoch = this.queryEpoch, lifetime = this.dataLifetime;
+      const current = () => !this.destroyed && !lifetime.signal.aborted && epoch === this.queryEpoch && !this.pendingQuery && this.linkHighlight === keys;
       let index = -1;
       for (const row of this.rowCache.values()) if (keys.has(row.key) && (index < 0 || row._ri < index)) index = row._ri;
-      // An ungrouped inline grid reads its accepted order once; a host source is not asked for rows it did not send.
-      if (index < 0 && this.view.source.kind === "inline" && !this.view.reporting?.grouping && this.snapshot && this.snapshot.matched) {
-        const query = { ...this.acceptedQuery, offset: 0, limit: Math.min(10000, this.snapshot.matched) };
-        const page = await this.source.query(query, { signal: this.dataLifetime.signal });
-        index = page.items.findIndex(item => keys.has(item.id));
+      // Local sources cache the complete accepted order. Read bounded windows until its first highlighted record;
+      // a loaded candidate bounds the search, while a host source is never asked for rows it did not send.
+      if (index !== 0 && this.view.source.kind === "inline" && (!this.opts.source || this.enhanceStore) && !this.view.reporting?.grouping && this.snapshot?.matched) {
+        const query = this.acceptedQuery, end = index < 0 ? this.snapshot.matched : index;
+        const top = this.logicalTop(), focused = this.focused, navigation = this.pendingNavigation;
+        for (let offset = 0; offset < end && current();) {
+          const page = await this.source.query({ ...query, offset, limit: Math.min(10000, end - offset) }, { signal: lifetime.signal });
+          if (!current()) return;
+          const found = page.items.findIndex(item => keys.has(item.id));
+          if (found >= 0) { index = offset + found; break; }
+          if (!page.items.length) break;
+          offset += page.items.length;
+        }
+        // A later keyboard/API navigation or reader scroll owns the viewport while compact rows finish decoding.
+        if (this.focused !== focused || this.pendingNavigation !== navigation || this.logicalTop() !== top) return;
       }
-      if (index >= 0 && !this.destroyed && epoch === this.queryEpoch && !this.pendingQuery && this.linkHighlight === keys) await this.scrollToRow(index);
+      if (index >= 0 && current()) await this.scrollToRow(index);
     }
   });

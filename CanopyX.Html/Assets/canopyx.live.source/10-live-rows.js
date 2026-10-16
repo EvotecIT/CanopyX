@@ -43,7 +43,8 @@
       return value || [];
     };
     if (list("add").length + list("update").length + list("remove").length > LIVE_MAX_ROWS) throw new Error("CanopyX: a transaction changes at most " + LIVE_MAX_ROWS + " rows.");
-    const add = JSON.parse(JSON.stringify(list("add"))), update = JSON.parse(JSON.stringify(list("update")));
+    // Validate the supplied numbers before a JSON copy could turn NaN or Infinity into a clearing null.
+    const add = list("add"), update = list("update");
     const remove = list("remove").map(item => typeof item === "string" ? item : item && item.id);
     validateGridRows(add, grid.view.columns);
     const seen = new Set();
@@ -59,8 +60,7 @@
       validateGridRows([{ id: row.id, cells, tone: row.tone ?? undefined, className: row.className ?? undefined }], grid.view.columns);
     }
     remove.forEach(id => requireIdentifier(id, "removed row ID"));
-    for (const row of add) for (const [id, cell] of Object.entries(row.cells)) if (cell === null) delete row.cells[id];
-    return { add, update, remove };
+    return { add: liveCopy(add), update: liveCopy(update), remove };
   }
 
   /** Merges a checked transaction into a queue of changes by row id (a Map), in the order the transaction applies. */
@@ -71,8 +71,8 @@
       const queued = queue.get(row.id);
       if (queued?.kind === "remove") continue;
       if (!queued) { queue.set(row.id, { kind: "update", id: row.id, row }); continue; }
-      const target = queued.row, cells = Object.assign(target.cells || (target.cells = {}), row.cells || {});
-      if (queued.kind === "add") for (const [id, cell] of Object.entries(cells)) if (cell === null) delete cells[id];
+      const target = queued.row;
+      Object.assign(target.cells || (target.cells = {}), row.cells || {});
       for (const name of ["tone", "className", "fields", "detail"]) if (row[name] !== undefined) target[name] = row[name];
     }
     return queue;
@@ -84,7 +84,8 @@
   function liveChangedColumns(before, after) {
     if (!before) return "*";
     const columns = new Set();
-    for (const id of new Set([...Object.keys(before.cells), ...Object.keys(after.cells)])) if (!liveSame(before.cells[id], after.cells[id])) columns.add(id);
+    for (const id of new Set([...Object.keys(before.cells), ...Object.keys(after.cells)]))
+      if (Object.hasOwn(before.cells, id) !== Object.hasOwn(after.cells, id) || !liveSame(before.cells[id], after.cells[id])) columns.add(id);
     return columns;
   }
 

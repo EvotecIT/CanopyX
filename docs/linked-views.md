@@ -53,7 +53,7 @@ grid.getHighlight();                                                      // ["s
 
 Highlighted rows carry `data-cx-linked="true"`. The call resolves with the number of distinct keys. The stylesheet tones them with the info tone and a bar at the row start, distinct from selection; forced-colours mode draws a dashed outline instead. Keys are row ids (node ids on a tree); keys of rows that are not loaded or not in the result are kept and marked when those rows paint. Up to 10000 keys.
 
-Unless `scroll: false`, the first highlighted row scrolls into view: a loaded row at once, an ungrouped inline grid's row after it reads where the row is in the accepted order, and a loaded tree node after its branch opens (a node the reader's tree filter hides stays hidden: the filter is never cleared for a highlight). A host source is never asked for rows it did not send, and a grid that is loading keeps the marks without scrolling. The view announces "2 rows highlighted from Topology".
+Unless `scroll: false`, the first highlighted row scrolls into view: a loaded row at once, an ungrouped local grid's first matching row in the complete accepted sorted and filtered result, and a loaded tree node after its branch opens (a node the reader's tree filter hides stays hidden: the filter is never cleared for a highlight). Local grids include inline and compact rows and complete datasets loaded through `CanopyX.grid` or `CanopyX.enhance`. A host-supplied query source is never asked for rows it did not send, even when its view definition says `inline`. A grid that is loading keeps the marks without scrolling. The view announces "2 rows highlighted from Topology".
 
 ## Link events
 

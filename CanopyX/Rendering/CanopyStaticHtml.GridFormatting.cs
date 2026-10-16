@@ -36,19 +36,30 @@ public static partial class CanopyStaticHtml {
     }
 
     /// <summary>The bar and the icon before a cell's text (for the first cell, the row's icon first).</summary>
-    private static void AppendFormatBefore(StringBuilder html, CanopyFormatPaint? paint, CanopyFormatPaint? row, bool first, CanopyStaticStyles styles) {
-        if (first && row?.Glyph != null) html.Append("<span style=\"").Append(styles.FormatIcon(row.Tone)).Append("\">").Append(Encode(row.Glyph)).Append("</span>");
+    private static void AppendFormatBefore(StringBuilder html, CanopyFormatPaint? paint, CanopyFormatPaint? row, bool first, CanopyStaticStyles styles, StringBuilder text) {
+        if (first && row?.Glyph != null) AppendFormatGlyph(html, row, styles, text);
         if (paint == null) return;
         if (paint.Bar.HasValue) html.Append(styles.FormatBar(paint.BarTone, paint.Bar.Value));
-        if (paint.Glyph != null) html.Append("<span style=\"").Append(styles.FormatIcon(paint.Tone)).Append("\">").Append(Encode(paint.Glyph)).Append("</span>");
+        if (paint.Glyph != null) AppendFormatGlyph(html, paint, styles, text);
+    }
+
+    private static void AppendFormatGlyph(StringBuilder html, CanopyFormatPaint paint, CanopyStaticStyles styles, StringBuilder text) {
+        html.Append("<span style=\"").Append(styles.FormatIcon(paint.Tone)).Append("\">");
+        AppendVisibleText(html, paint.Glyph!, text); html.Append("</span>"); text.Append(' ');
     }
 
     /// <summary>The badge and the text cue after a cell's text (for the first cell, the row's as well).</summary>
-    private static void AppendFormatAfter(StringBuilder html, CanopyFormatPaint? paint, CanopyFormatPaint? row, bool first, CanopyStaticStyles styles) {
+    private static void AppendFormatAfter(StringBuilder html, CanopyFormatPaint? paint, CanopyFormatPaint? row, bool first, CanopyStaticStyles styles, StringBuilder text) {
         foreach (var target in first ? new[] { row, paint } : new[] { paint }) {
             if (target == null) continue;
-            if (target.Badge != null) html.Append("<span style=\"").Append(styles.Badge(target.Tone.Name == null ? CanopyTone.Neutral : target.Tone)).Append("\">").Append(Encode(target.Badge)).Append("</span>");
-            if (target.Cue != null) html.Append("<span style=\"").Append(styles.FormatCue).Append("\">").Append(Encode(target.Cue)).Append("</span>");
+            if (target.Badge != null) {
+                html.Append("<span style=\"").Append(styles.Badge(target.Tone.Name == null ? CanopyTone.Neutral : target.Tone)).Append("\">");
+                AppendVisibleText(html, target.Badge, text, true); html.Append("</span>");
+            }
+            if (target.Cue != null) {
+                html.Append("<span style=\"").Append(styles.FormatCue).Append("\">");
+                AppendVisibleText(html, target.Cue, text, true); html.Append("</span>");
+            }
         }
     }
 

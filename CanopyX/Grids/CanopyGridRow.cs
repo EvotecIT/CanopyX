@@ -41,9 +41,10 @@ public sealed class CanopyGridRow {
 
     private Dictionary<string, CanopyCell>? _fields;
 
-    internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null) {
-        CanopyCell.ValidateEntries(Cells);
-        CanopyCell.ValidateEntries(_fields);
+    internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null, int structureDepth = 0, bool validateDetail = true) {
+        CanopyCell.ValidateEntries(Cells, structureDepth);
+        CanopyCell.ValidateEntries(_fields, structureDepth);
+        if (validateDetail) Detail?.ValidateStructure(structureDepth);
         CanopyGridHighlightRule.ValidateClassName(ClassName);
         foreach (var cell in Cells) {
             CanopyIdentifiers.Require(cell.Key, nameof(Cells));

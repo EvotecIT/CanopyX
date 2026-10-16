@@ -148,7 +148,8 @@
     const state = enhanceStateSettings(settings.stateSave, { ...view, timeZone: settings.view && settings.view.timeZone }), envelope = state ? await enhanceLoadState(state) : null;
     ENHANCE_SETUP.set(grid, created => {
       store.grid = created;
-      if (!server) created.view.rows = store.rows;
+      // The enhancer owns the complete local dataset despite supplying its page-order query source.
+      if (!server) { created.enhanceStore = store; created.view.rows = store.rows; }
       if (state) enhanceStateStore(created, state, envelope);
     });
     // A page of rows shows whole, as the table did: the bound leaves room for up to 100 rows and the chrome, and the grid's

@@ -9,7 +9,7 @@
     linkFiltered: "Filtered by {source}: {count} rows", linkHighlighted: "{count} rows highlighted from {source}", linkHighlightedRows: "{count} rows highlighted",
     linkCleared: "Linked filters removed"
   }));
-  const LINK_IMPL = { TreeGrid, queryOwn: Symbol("own conditions") }, LINK_PART = definePart(TreeGrid, "link", "linked views", () => ({ LINK_IMPL, h, setText, fill, numberFormat,
+  const LINK_IMPL = { TreeGrid, queryOwn: Symbol("own conditions") }, LINK_PART = definePart(TreeGrid, "link", "linked views", () => ({ LINK_IMPL, h, setText, filterChipContent, fill, numberFormat,
     cellValue, setAttr, cellMatches }));
   const LINK_METHODS = ["setExternalFilter", "clearExternalFilters", "setHighlight", "clearHighlight", "startLinkEvents"];
   /** Gives a view kind the link methods: each loads the part, which replaces them, and runs again. */

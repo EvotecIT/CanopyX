@@ -13,7 +13,7 @@
     if (view.kind !== "grid") return { list: view.rows.map(row => row.status || row.h.detail ? null : row.h), complete: true };
     const query = view.acceptedQuery, matched = view.snapshot?.matched;
     if (!query) return { list: [], complete: true };
-    if (view.view.source.kind === "inline" && !view.opts.source && Number.isInteger(matched)) {
+    if (view.view.source.kind === "inline" && (!view.opts.source || view.enhanceStore) && Number.isInteger(matched)) {
       const page = await view.source.query({ ...query, offset: 0, limit: Math.max(1, matched) }, { signal });
       return { list: page.items, complete: true };
     }

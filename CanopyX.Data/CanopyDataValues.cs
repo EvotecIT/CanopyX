@@ -120,7 +120,7 @@ public static class CanopyDataValues {
         bool flag => flag ? "true" : "false",
         DateTime date => FormatDate(date),
         long n => n.ToString(CultureInfo.InvariantCulture),
-        decimal n => FormatNumber((double)n),
+        decimal n => FormatNumber(CanopyNumericValues.DecimalToDouble(n)),
         double n => FormatNumber(n),
         var other => other.ToString()
     };
@@ -136,19 +136,7 @@ public static class CanopyDataValues {
     /// <summary>Formats a number the way JavaScript's <c>String(number)</c> does for finite values.</summary>
     /// <param name="number">The number.</param>
     /// <returns>The text.</returns>
-    public static string FormatNumber(double number) {
-        if (number == 0) return "0";
-        if (Math.Abs(number) < 1e21 && Math.Abs(number) >= 1e-6) {
-            var fixedText = number.ToString("R", CultureInfo.InvariantCulture);
-            if (fixedText.IndexOf('E') < 0) return fixedText;
-            return decimal.Parse(fixedText, NumberStyles.Float, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
-        }
-        var text = number.ToString("R", CultureInfo.InvariantCulture);
-        var e = text.IndexOf('E');
-        if (e < 0) return text;
-        var exponent = int.Parse(text.Substring(e + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
-        return text.Substring(0, e) + "e" + (exponent < 0 ? "-" : "+") + Math.Abs(exponent).ToString(CultureInfo.InvariantCulture);
-    }
+    public static string FormatNumber(double number) => CanopyNumericValues.FormatNumber(number);
 
     /// <summary>Truncates an instant to whole milliseconds, the precision of date comparisons.</summary>
     internal static DateTime TruncateToMilliseconds(DateTime date) => new DateTime(date.Ticks - date.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
@@ -156,7 +144,7 @@ public static class CanopyDataValues {
     /// <summary>Converts a normalized numeric value to binary64 for comparison.</summary>
     internal static double ToDouble(object value) => value switch {
         long n => n,
-        decimal n => (double)n,
+        decimal n => CanopyNumericValues.DecimalToDouble(n),
         double n => n,
         _ => Convert.ToDouble(value, CultureInfo.InvariantCulture)
     };

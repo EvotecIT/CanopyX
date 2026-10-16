@@ -87,8 +87,8 @@ string json = page.ToJson(view);
 ```
 
 A page written with `view.ToHtmlFragment()` gets its `source` from `CanopyX.configure("orders", { source })` in a script that
-runs before the page loads. Translating the query into SQL or LINQ is your code today; a .NET query adapter is planned (see
-the [roadmap](roadmap.md)). For server-side cursors instead of offsets, use `CanopyGridSource.HostedCursor()` and see
+runs before the page loads. Use the [.NET query adapter](remote-dotnet.md) to translate supported grid queries over
+`IQueryable<T>`, or supply an `ICanopyDataProvider` for a host-owned service. For server-side cursors instead of offsets, use `CanopyGridSource.HostedCursor()` and see
 [sequential sources](data-protocol.md#sequential-sources-and-unknown-counts).
 
 ## Give a cell separate display, sort and search values

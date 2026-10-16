@@ -32,7 +32,8 @@
       const counts = state.counts, selection = panel.selection(facet);
       if (!counts) return;
       state.chosen = selection.values || [];
-      const chosen = new Set(state.chosen.map(value => facetKey(value, facet.def))), focusKey = list.contains(document.activeElement) ? document.activeElement.getAttribute("data-cx-key") : null;
+      const chosen = new Set(state.chosen.map(value => facetKey(value, facet.def))), focused = list.contains(document.activeElement) ? document.activeElement : null;
+      const focusKey = focused?.getAttribute("data-cx-key"), focusPosition = focused ? [...list.querySelectorAll("input")].indexOf(focused) : 0;
       const needle = facet.hosted ? "" : foldText(state.search), locked = !!selection.locked;
       let items = counts.items.filter(item => !needle || item.value !== null && foldText(String(item.value)).includes(needle));
       // A chosen value the other facets exclude stays listed (count 0) so it can be unchosen; not while a hosted search hides it.
@@ -40,10 +41,13 @@
       items.sort(facet.sort === "count" ? (a, b) => b.count - a.count || facetValueOrder(a.value, b.value, facet) : (a, b) => facetValueOrder(a.value, b.value, facet));
       // Show more lists at most 200 values; the search finds the others.
       const shown = state.expanded ? items.filter((item, index) => index < FACET_VALUES || chosen.has(facetKey(item.value, facet.def))) : items.filter((item, index) => index < facet.limit || chosen.has(facetKey(item.value, facet.def)));
+      // A refreshed list can lose its focused, unselected bucket; a surviving value must remain its Tab entry.
+      const retainedIndex = shown.findIndex(item => facetKey(item.value, facet.def) === focusKey);
+      const focusIndex = retainedIndex >= 0 ? retainedIndex : Math.min(Math.max(0, focusPosition), Math.max(0, shown.length - 1));
       const numbers = numberFormat(grid.lang);
       list.replaceChildren(...shown.map((item, index) => {
         const row = h("li"), label = h("label", "cx-facet-val"), box = h("input"), text = h("span", "cx-facet-text"), count = h("span", "cx-facet-n"), key = facetKey(item.value, facet.def);
-        box.type = "checkbox"; box.checked = chosen.has(key); box.disabled = locked; box.setAttribute("data-cx-key", key); box.tabIndex = (focusKey ? key === focusKey : index === 0) ? 0 : -1;
+        box.type = "checkbox"; box.checked = chosen.has(key); box.disabled = locked; box.setAttribute("data-cx-key", key); box.tabIndex = index === focusIndex ? 0 : -1;
         const empty = item.value === null || item.value === "", display = empty ? grid.labels.gridFacetEmptyValue : facetValueText(grid, facet, item.value, text);
         if (empty) { setText(text, display); text.classList.add("cx-facet-empty"); }
         box.setAttribute("aria-label", fill(grid.labels.gridFacetValueCount, { value: display, count: numbers.format(item.count) }));
@@ -52,7 +56,10 @@
         box.addEventListener("change", () => choose(item, box.checked));
         label.append(box, text, count); row.appendChild(label); return row;
       }));
-      if (focusKey) list.querySelector('[data-cx-key="' + CSS.escape(focusKey) + '"]')?.focus({ preventScroll: true });
+      if (focusKey) {
+        const target = !locked && list.querySelector('input[tabindex="0"]') || body.closest(".cx-facet")?.querySelector(".cx-facet-toggle");
+        target?.focus({ preventScroll: !locked && retainedIndex >= 0 });
+      }
       const hidden = items.length - shown.length, capped = state.expanded && hidden > 0;
       more.hidden = !hidden && !state.expanded || items.length <= facet.limit;
       setText(more, state.expanded ? grid.labels.gridFacetShowFewer : fill(grid.labels.gridFacetShowMore, { count: numbers.format(Math.min(hidden, Math.max(1, FACET_VALUES - shown.length))) }));

@@ -150,8 +150,14 @@
         if (index < this.rowBounds().first || index > this.rowBounds().last)
           throw new Error("CanopyX: row position is outside the accepted result page.");
         const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
-        this.setFocus(this.rowItem(index), ownsFocus);
+        const initial = this.rowItem(index);
+        this.setFocus(initial, ownsFocus);
         navigation.epoch = epoch; this.pendingNavigation = navigation;
+        // A cached row is already revealed and painted. Reading scrollTop again would flush the new cell styles.
+        if (focus === false && column == null && control == null && initial && !initial.status &&
+            !this.destroyed && !this.dataLifetime.signal.aborted && epoch === this.queryEpoch && !this.pendingQuery &&
+            this.pendingNavigation === navigation && this.rowCache.get(index) === initial && this.focused === initial &&
+            this.rendered.get(initial)?.isConnected) return;
         const navigationTop = this.logicalTop();
         const row = await this.waitForRow(index, epoch);
         if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");

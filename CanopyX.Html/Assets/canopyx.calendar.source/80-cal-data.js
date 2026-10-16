@@ -18,10 +18,11 @@
           await this.source.decoded;
         }
         const rows = this.view.rows, key = gridResultShape(query);
-        // New and removed rows change the array in place and give the grid a new source: either one reads the rows again.
-        if (this.calRowsCache?.rows !== rows || this.calRowsCache.key !== key || this.calRowsCache.source !== this.source) {
+        // New and removed rows change the array in place, and saved values give the grid a new source or invalidate its compact
+        // decoder: any of these reads the rows again.
+        if (this.calRowsCache?.rows !== rows || this.calRowsCache.key !== key || this.calRowsCache.source !== this.source || this.calRowsCache.shape !== rows.length + ":" + this.calVersion) {
           const plain = !query.search && !query.filters.length && !query.filterGroup;
-          this.calRowsCache = { rows, key, source: this.source, matched: plain ? rows : gridQueryRows(this.view, query, new Map(this.view.columns.map(column => [column.id, column])), null) };
+          this.calRowsCache = { rows, key, source: this.source, shape: rows.length + ":" + this.calVersion, matched: plain ? rows : gridQueryRows(this.view, query, new Map(this.view.columns.map(column => [column.id, column])), null) };
         }
         return { rows: this.calEdited(this.calRowsCache.matched), truncated: false };
       }

@@ -1994,11 +1994,11 @@ export interface GridLiveOptions<Row extends GridRow=GridRow,Q extends AcceptedG
 }
 export interface GridRowUpdate<Row extends GridRow=GridRow>{
   id:string;
-  cells?:{[Column in keyof Row["cells"]]?:Row["cells"][Column]|null};
+  cells?:{[Column in keyof Row["cells"]]?:Row["cells"][Column]};
   tone?:string|null;
   className?:string|null;
   fields?:Row extends{fields?:infer Fields}?Fields:Record<string,unknown>;
-  detail?:unknown;
+  detail?:Row["detail"];
 }
 export interface GridTransaction<Row extends GridRow=GridRow>{
   add?:readonly Row[];

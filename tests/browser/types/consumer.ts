@@ -617,7 +617,7 @@ void [liveState.orderChanged, liveState.pending, liveState.polling, liveState.re
 // @ts-expect-error A transaction lists rows to add, not a single row.
 void liveGrid.applyTransaction({ add: { id: "x", cells: {} } });
 // Typed rows (docs/typed-grids.md): a named row type checks column ids, rows, facets, events and the live API.
-import type { GridRow as TypedGridRow, GridColumnId, InlineGridView as TypedInlineView } from "@evotecit/canopyx/grid";
+import type { GridRow as TypedGridRow, GridRowUpdate, GridColumnId, InlineGridView as TypedInlineView } from "@evotecit/canopyx/grid";
 interface ServerRow extends TypedGridRow { cells: { host: string; load: number; site: string | null } }
 const serverView: TypedInlineView<ServerRow> = { protocol: "canopyx/2", type: "grid", id: "servers", label: "Servers", pageSize: 100, selection: "multiple", search: true,
   source: { kind: "inline" }, columns: [{ id: "host", title: "Host", kind: "text" }, { id: "load", title: "Load", kind: "number" }, { id: "site", title: "Site", kind: "text" }],
@@ -627,6 +627,14 @@ const servers = createDataGrid<ServerRow>(document.createElement("div"), { view:
 servers.setColumnVisible("load", false);
 void servers.addRows([{ id: "s2", cells: { host: "db-01", load: 2, site: null } }]);
 void servers.updateRows([{ id: "s2", cells: { load: 3 } }]);
+void servers.updateRows([{ id: "s2", cells: { site: null } }]);
+// @ts-expect-error A typed live update cannot clear a required non-null cell.
+void servers.updateRows([{ id: "s2", cells: { host: null } }]);
+interface DetailedServerRow extends ServerRow { detail?: { type: "properties"; items: { name: string; value: string }[] } }
+const typedDetailUpdate: GridRowUpdate<DetailedServerRow> = { id: "s2", detail: { type: "properties", items: [{ name: "Owner", value: "Team" }] } };
+// @ts-expect-error A typed live update preserves a specialized detail payload.
+const wrongDetailUpdate: GridRowUpdate<DetailedServerRow> = { id: "s2", detail: { type: "html", html: "Wrong payload" } };
+void typedDetailUpdate; void wrongDetailUpdate;
 const typedColumn: GridColumnId<ServerRow> = "site";
 void typedColumn;
 // @ts-expect-error A typed grid knows its columns.
@@ -642,6 +650,7 @@ const plainGrid = createDataGrid(document.createElement("div"), { view: { protoc
   source: { kind: "inline" }, columns: [{ id: "any", title: "Any", kind: "text" }], rows: [{ id: "p0", cells: { any: "x" } }] } });
 plainGrid.setColumnVisible("anything", true);
 void plainGrid.addRows([{ id: "p1", cells: { other: 1 } }]);
+void plainGrid.updateRows([{ id: "p1", cells: { other: null } }]);
 // Row activation, links and detail callbacks carry the row type too.
 createDataGrid<ServerRow>(document.createElement("div"), { view: serverView,
   onRowActivate: event => void event.row.cells.load.toFixed(1), onLink: event => void (event.column satisfies GridColumnId<ServerRow>),

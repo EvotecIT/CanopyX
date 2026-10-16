@@ -54,7 +54,7 @@ internal sealed partial class QueryTranslator<T> {
             if (aggregate.Operation == CanopyGridAggregateOperation.Custom)
                 throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute the custom aggregate '" + aggregate.CustomOperation + "'.");
         }
-        var parts = columns.Select(column => _values[column]).ToArray();
+        var parts = columns.Select(GroupValue).ToArray();
         // One column groups by its value; several by a composite key, which LINQ providers translate like an anonymous type.
         var key = parts.Length == 0 ? Expression.Constant(1) : parts.Length == 1 ? parts[0] : CompositeKeys.New(parts);
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(GroupsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type);
@@ -73,7 +73,7 @@ internal sealed partial class QueryTranslator<T> {
             Expression.Bind(rowType.GetProperty(nameof(AggregateRow<TKey>.Rows))!, Expression.Call(CountAll.MakeGenericMethod(typeof(T)), group))
         };
         for (var i = 0; i < aggregates.Count; i++) {
-            var value = _values[aggregates[i].Column.Id];
+            var value = GroupValue(aggregates[i].Column.Id);
             var nullable = ExpressionTools.IsNullable(value.Type);
             var present = nullable
                 ? Expression.Call(CountWhere.MakeGenericMethod(typeof(T)), group, Expression.Lambda(ExpressionTools.NotNull(value), Row))
@@ -92,7 +92,7 @@ internal sealed partial class QueryTranslator<T> {
             }
             var name = operation == CanopyGridAggregateOperation.Sum ? nameof(Enumerable.Sum) : operation == CanopyGridAggregateOperation.Average ? nameof(Enumerable.Average)
                 : operation == CanopyGridAggregateOperation.Minimum ? nameof(Enumerable.Min) : nameof(Enumerable.Max);
-            var selector = Expression.Lambda(typeof(Func<T, double?>), Expression.Convert(value, typeof(double?)), Row);
+            var selector = Expression.Lambda(typeof(Func<T, double?>), Expression.Convert(Binary64(value), typeof(double?)), Row);
             var aggregate = typeof(Enumerable).GetMethods().Single(candidate => candidate.Name == name && candidate.IsGenericMethodDefinition &&
                 candidate.GetGenericArguments().Length == 1 && candidate.GetParameters().Length == 2 &&
                 candidate.GetParameters()[1].ParameterType == typeof(Func<,>).MakeGenericType(candidate.GetGenericArguments()[0], typeof(double?)));
@@ -154,8 +154,7 @@ internal sealed partial class QueryTranslator<T> {
 
     private Expression FacetValue(string column) {
         var value = _values[column];
-        return Map.Get(column).Shape == ValueShape.Decimal
-            ? Expression.Convert(value, ExpressionTools.IsNullable(value.Type) ? typeof(double?) : typeof(double)) : value;
+        return Map.Get(column).Shape == ValueShape.Decimal ? Binary64(value) : value;
     }
 
     /// <summary>Streams raw text groups without a store-folded search or prefix. The caller applies canonical folding,
@@ -168,14 +167,14 @@ internal sealed partial class QueryTranslator<T> {
             yield return new StoreBucket(row.Key, row.Value, row.Count);
     }
 
-    /// <summary>Streams raw date buckets in instant order so protocol-equivalent instants can merge without retaining the full distinct set.</summary>
-    internal IAsyncEnumerable<StoreBucket> DateBucketsAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
-        var value = _values[column];
-        var method = typeof(QueryTranslator<T>).GetMethod(nameof(DateBucketsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(value.Type);
+    /// <summary>Streams numeric or date buckets in value order so canonical search and merging need retain only the requested prefix.</summary>
+    internal IAsyncEnumerable<StoreBucket> OrderedValueBucketsAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
+        var value = FacetValue(column);
+        var method = typeof(QueryTranslator<T>).GetMethod(nameof(OrderedValueBucketsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(value.Type);
         return (IAsyncEnumerable<StoreBucket>)method.Invoke(this, new object[] { source, value, executor, cancellationToken })!;
     }
 
-    private async IAsyncEnumerable<StoreBucket> DateBucketsCoreAsync<TValue>(IQueryable<T> source, Expression value, CanopyQueryExecutor executor,
+    private async IAsyncEnumerable<StoreBucket> OrderedValueBucketsCoreAsync<TValue>(IQueryable<T> source, Expression value, CanopyQueryExecutor executor,
         [EnumeratorCancellation] CancellationToken cancellationToken) {
         var query = BucketsQuery<TValue, TValue>(source, value, value, false, null);
         var item = Expression.Parameter(typeof(FacetRow<TValue, TValue>), "bucket");

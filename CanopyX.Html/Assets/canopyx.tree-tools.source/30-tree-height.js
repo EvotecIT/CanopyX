@@ -8,9 +8,14 @@
 
   Object.assign(TreeGrid.prototype, {
     watchHeight() {
-      if (!this.fitReady || this.view.autoHeight === false || this.total === this.heightTotal) return;
+      // A loading row can have the same height as the first real row; that row must still finish the initial fit.
+      if (!this.fitReady || this.view.autoHeight === false || this.total === this.heightTotal &&
+          (this.heightFitted || !this.rows.some(row => !row.status))) return;
       this.heightTotal = this.total;
       clearTimeout(this.heightTimer);
+      // Fit the first measurable rows before their first paint. Delaying that initial shrink can move the page
+      // between a reader's pointer press and release; later expansion changes still settle through the debounce.
+      if (!this.heightFitted) { this.fitHeight(); return; }
       this.heightTimer = setTimeout(() => this.destroyed || this.fitHeight(), TREE_HEIGHT_DELAY);
     },
 
@@ -24,6 +29,13 @@
       }
       const content = [...grid.children].reduce((sum, child) => sum + child.offsetHeight, grid.offsetHeight - grid.clientHeight);
       const value = this.rows.length ? Math.min(this.heightMax, Math.ceil(this.host.offsetHeight - grid.offsetHeight + content)) + "px" : this.heightInline;
-      if (style.maxHeight !== value) style.maxHeight = value;
+      if (style.maxHeight !== value) {
+        style.maxHeight = value;
+        // Fitting expanded rows can clamp the reveal scroll; keep a newly opened editor or menu on its row.
+        const anchor = this.interactionPanel && this.rendered.get(this.panelNode);
+        if (anchor?.isConnected) this.placeInteractionPanel(anchor);
+      }
+      // An empty or hidden host must not consume the first fit of actual rows when data or visibility arrives.
+      if (this.rows.some(row => !row.status)) this.heightFitted = true;
     }
   });

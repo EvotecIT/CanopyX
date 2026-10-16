@@ -80,7 +80,7 @@ public static partial class CanopyRequestParser {
             case JsonValueKind.True: return true;
             case JsonValueKind.False: return false;
             case JsonValueKind.Number:
-                if (!value.TryGetDouble(out var number) || double.IsNaN(number) || double.IsInfinity(number)) throw CanopyRequestException.Operand("A changed number must be finite.");
+                if (!TryNumber(value, out var number) || double.IsNaN(number) || double.IsInfinity(number)) throw CanopyRequestException.Operand("A changed number must be finite.");
                 return number;
             case JsonValueKind.String:
                 var text = value.GetString()!;

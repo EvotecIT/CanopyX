@@ -35,6 +35,14 @@
         else if (!outer && steps.length && state.limit) { state.undo.push(steps); if (state.undo.length > state.limit) state.undo.shift(); state.redo.length = 0; }
       }
     },
+    /** The grid owns its rows (inline data, or an enhanced table's store): new and removed rows change them in place. */
+    editOwnsRows() { return this.view.source.kind === "inline" && (!this.opts.source || !!this.enhanceStore); },
+    /** Rows came or went: the local source forgets its result, as editAccept does for saved values (compact data keeps its decoder). */
+    editRowsChanged() {
+      if (this.enhanceStore) this.enhanceStore.version++;
+      else if (this.view.rowData && this.source.invalidate) this.source.invalidate();
+      else this.source = inlineGridSource(this.view);
+    },
     editNewId() {
       let id;
       do id = "new-" + (++this.edit.sequence); while (this.editRecord(id) || this.edit.changes.has(id));
@@ -47,7 +55,7 @@
         row: JSON.parse(JSON.stringify(row)), committed: false };
       for (const column of state.specs.keys()) entry.values[column] = cellValue(row.cells[column]) ?? null;
       state.changes.set(row.id, entry); state.inserted.set(row.id, entry.row);
-      if (this.view.source.kind === "inline" && !this.opts.source) { this.view.rows.push(JSON.parse(JSON.stringify(row))); this.source = inlineGridSource(this.view); }
+      if (this.editOwnsRows()) { this.view.rows.push(JSON.parse(JSON.stringify(row))); this.editRowsChanged(); }
       if (source !== "undo" && source !== "redo") {
         const step = { id: row.id, insert: JSON.parse(JSON.stringify(row)) };
         if (state.group) state.group.push(step);
@@ -56,7 +64,7 @@
       for (const column of state.specs.keys()) this.editCheck(row.id, state.specs.get(column));
       this.editChanged();
       this.emit("rowAdded", { id: row.id, row: editCopy(entry.row) });
-      if (this.view.source.kind === "inline" && !this.opts.source) Promise.resolve(this.reload?.()).catch(() => {});
+      if (this.editOwnsRows()) Promise.resolve(this.reload?.()).catch(() => {});
     },
     /** Takes a new row out; forget also drops the undo steps that added it (revertChanges), as nothing can bring it back. */
     editRemoveInserted(id, forget) {
@@ -65,9 +73,9 @@
       if (!state.inserted.has(id) || state.changes.get(id)?.status === "saving") return false;
       state.inserted.delete(id); state.changes.delete(id);
       if (forget) for (const list of [state.undo, state.redo]) for (let at = list.length - 1; at >= 0; at--) if (list[at].some(step => step.insert && step.id === id)) list.splice(at, 1);
-      if (this.view.source.kind === "inline" && !this.opts.source) {
+      if (this.editOwnsRows()) {
         const at = this.view.rows.findIndex(row => row.id === id);
-        if (at >= 0) { this.view.rows.splice(at, 1); this.source = inlineGridSource(this.view); }
+        if (at >= 0) { this.view.rows.splice(at, 1); this.editRowsChanged(); }
         Promise.resolve(this.reload?.()).catch(() => {});
       }
       this.editChanged();
@@ -80,7 +88,7 @@
       let to = newId ?? from;
       if (to !== from) requireIdentifier(to, "saved row ID");
       // An identity another row of the grid holds would make two rows one: the row keeps its id and the writer hears of it.
-      if (to !== from && (state.changes.has(to) || this.view.source.kind === "inline" && this.view.rows.some(row => row.id === to))) {
+      if (to !== from && (state.changes.has(to) || this.editOwnsRows() && this.view.rows.some(row => row.id === to))) {
         this.emit("error", { error: new Error("CanopyX: the writer stored a new row as " + to + ", which another row has."), id: from });
         to = from;
       }
@@ -91,10 +99,10 @@
       for (const [column, cell] of Object.entries(canonical || {})) record.cells[column] = cell;
       record.id = to;
       state.changes.delete(from); state.inserted.delete(from);
-      if (this.view.source.kind === "inline") {
+      if (this.editOwnsRows()) {
         const inline = this.view.rows.find(row => row.id === from);
         if (inline) { inline.id = to; for (const column of Object.keys(entry.saved || {})) if (Object.hasOwn(record.cells, column)) inline.cells[column] = JSON.parse(JSON.stringify(record.cells[column])); }
-        if (!this.opts.source) this.source = inlineGridSource(this.view);
+        this.editRowsChanged();
       }
       // A stored row cannot be taken back (gridCommit has no deletes): the undo steps that added it leave the history, with the
       // changes grouped with them, so undo never half-reverts a change. Later steps follow the row to its stored identity.
@@ -108,6 +116,6 @@
         finally { state.group = outer; }
       }
       // The table's cached rows of an inline grid take the stored identity too.
-      if (to !== from && this.view.source.kind === "inline" && !this.opts.source) Promise.resolve(this.reload?.()).catch(() => {});
+      if (to !== from && this.editOwnsRows()) Promise.resolve(this.reload?.()).catch(() => {});
     }
   });

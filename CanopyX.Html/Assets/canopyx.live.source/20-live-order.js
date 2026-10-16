@@ -102,7 +102,8 @@
   /** A row with an update merged in: cells by column (null clears one), and tone, className, fields and detail replaced. */
   function liveMerged(before, change) {
     const after = { ...before, cells: { ...before.cells } };
-    for (const [id, cell] of Object.entries(change.cells || {})) { if (cell === null) delete after.cells[id]; else after.cells[id] = cell; }
+    // A clearing null stays explicit in the row object hosts receive, including required nullable typed cells.
+    Object.assign(after.cells, change.cells || {});
     for (const name of ["tone", "className", "fields", "detail"]) if (change[name] !== undefined) { if (change[name] === null) delete after[name]; else after[name] = change[name]; }
     return after;
   }

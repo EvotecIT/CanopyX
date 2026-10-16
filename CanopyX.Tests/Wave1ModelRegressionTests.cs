@@ -171,7 +171,9 @@ public sealed class Wave1ModelRegressionTests {
         grid.Rows.Add(new CanopyGridRow("a") { Detail = detail, Cells = { ["value"] = "Outer A" } });
         grid.Rows.Add(new CanopyGridRow("b") { Detail = detail, Cells = { ["value"] = "Outer B" } });
         var result = CanopyStaticHtml.RenderGridWithResult(grid, options: new CanopyStaticHtmlOptions { MaxRows = 3, OverflowNote = "Shown {shown} of {total}" });
-        Assert.Single(result.Rows);
+        Assert.Equal(2, result.Rows.Count);
+        Assert.Equal("Outer A", Assert.Single(result.Rows[0]));
+        Assert.Equal("Value Nested 0 Nested 1", Assert.Single(result.Rows[1]));
         Assert.Contains("Outer A", result.Html);
         Assert.Contains("Nested 1", result.Html);
         Assert.DoesNotContain("Nested 2", result.Html);

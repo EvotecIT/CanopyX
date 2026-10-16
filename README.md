@@ -243,7 +243,7 @@ CSV export and copying distinguish filtered results, selected records and all re
 - [Features](docs/features.md): everything the tree and data grids do, grouped by capability.
 - [Recipes](docs/recipes.md): short how-tos for server data, cell values, export, phones, grouping, saved views and translations.
 - [Authoring reference](docs/authoring.md), [column layout](docs/column-layout.md), [label packs](docs/labels.md) and the [data protocol](docs/data-protocol.md).
-- [Roadmap](docs/roadmap.md): what is planned next.
+- [Planned work](TODO.md): remaining capabilities, consumers and acceptance gates.
 
 ## Community and license
 

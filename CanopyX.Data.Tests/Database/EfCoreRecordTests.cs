@@ -98,4 +98,16 @@ public sealed class EfCoreRecordTests : IClassFixture<EfCoreRecordTests.Database
             Assert.Equal(_database.Assets.Count, db.Assets.Count());
         }
     }
+
+    [Fact]
+    public async Task RecordFieldReadPolicy_AppliesToDecoratedParentRows() {
+        using var db = _database.Sqlite.Create();
+        var columns = Assets.Columns(Assets.View()).DecorateRows(row => row.Fields["secret"] = "sensitive");
+        var records = Assets.Records(columns);
+        var provider = new CanopyQueryableRecordProvider<Asset>(() => db.Assets.Where(asset => asset.Site != "Hidden"), records,
+            new CanopyQueryOptions { Executor = new EfExecutor() });
+        var handler = Assets.Handler(records, provider);
+        var id = _database.Assets.First(asset => asset.Site != "Hidden").Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.RecordAsync(Assets.Query(id, ",\"row\":true"), field => field != "secret"));
+    }
 }

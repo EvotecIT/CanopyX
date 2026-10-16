@@ -283,6 +283,38 @@ test('a viewport resize closes the editor and returns focus to its row',async({p
   await expect(page.getByRole('dialog')).toHaveCount(0);await expect(row(page,'a')).toBeFocused();
 });
 
+for(const panel of ['editor','menu'])test(`a revealed ${panel} survives queued scrolling and height fitting but closes on a new scroll`,async({page})=>{
+  const definition=view();
+  definition.roots[0].expanded=false;
+  definition.roots[0].children=Array.from({length:12},(_,i)=>({id:'a'+i,label:'Task '+i}));
+  await mount(page,'{onEdit(p,r){window.editSignal=r.signal;return new Promise(()=>{})},onAction:()=>true}',definition);
+  expect(await page.evaluate(async panel=>{
+    const host=document.querySelector('.cx-host'),api=host.canopyx;host.style.height='300px';
+    await api.expandPath(['a','a7'],{focus:true});
+    return panel==='editor'?api.beginEdit('a7','name'):api.openActions('a7');
+  },panel)).toBe(true);
+  const control=page.getByRole(panel==='editor'?'dialog':'menu');
+  await nextFrames(page);
+  await expect(control).toBeVisible();
+  await expect.poll(()=>page.locator('.cx-host').evaluate(host=>host.getBoundingClientRect().height)).toBe(300);
+  await nextFrames(page);
+  await expect(control).toBeVisible();
+  expect(await row(page,'a7').evaluate(row=>{
+    const bounds=row.getBoundingClientRect(),grid=row.closest('.cx-grid'),viewport=grid.getBoundingClientRect();
+    return bounds.top>=viewport.top+grid.querySelector('.cx-head').offsetHeight&&bounds.bottom<=viewport.bottom;
+  })).toBe(true);
+  if(panel==='editor'){
+    await page.getByRole('textbox',{name:'Edit Name'}).fill('Preserved draft');
+    await page.getByRole('button',{name:'Save',exact:true}).click();
+    await expect(page.getByRole('textbox',{name:'Edit Name'})).toBeDisabled();
+    expect(await page.evaluate(()=>window.editSignal.aborted)).toBe(false);
+  }
+  await page.locator('.cx-grid').hover({position:{x:5,y:5}});
+  await page.mouse.wheel(0,-300);
+  await expect(control).toHaveCount(0);
+  if(panel==='editor')expect(await page.evaluate(()=>window.editSignal.aborted)).toBe(true);
+});
+
 test('accepted saved state closes interaction controls and cancels pending host work',async({page})=>{
   await mount(page,`{onEdit(p,r){window.signal=r.signal;return new Promise(()=>{})}}`);
   await row(page,'a').focus();await page.keyboard.press('Alt+Enter');await page.keyboard.press('Enter');
