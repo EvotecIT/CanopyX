@@ -19,7 +19,7 @@ namespace CanopyX.Data;
 /// </para>
 /// <para>Each request reads the records again; use it for modest datasets, fixtures and tests.</para>
 /// </remarks>
-public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
+public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRangeProvider {
     private readonly Func<IEnumerable<T>> _records;
     private readonly Func<T, string> _id;
     private readonly Func<T, object?>[] _values;
@@ -98,6 +98,37 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
         }
         var ordered = buckets.Values.OrderBy(bucket => bucket.Value, FacetOrder.Instance).Take(request.Limit).Select(bucket => new CanopyFacetBucket(bucket.Value, bucket.Count));
         return new ValueTask<CanopyFacetResult>(new CanopyFacetResult(matches.Count, buckets.Count, ordered));
+    }
+
+    /// <inheritdoc />
+    /// <remarks>The overlap is evaluated directly on the normalized values (UTC milliseconds), independently of
+    /// <see cref="CanopyRangeRequest.Selection"/>, so this provider doubles as the oracle of the range semantics.</remarks>
+    public ValueTask<CanopyRangeResult> RangeAsync(CanopyRangeRequest request, CancellationToken cancellationToken) {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+        Own(request.Query);
+        var from = request.From.Ticks / TimeSpan.TicksPerMillisecond;
+        var to = request.To.Ticks / TimeSpan.TicksPerMillisecond;
+        long? At(Record record, CanopyDataColumn? column) => column != null && record.Values[column.Ordinal] is DateTime date ? date.Ticks / TimeSpan.TicksPerMillisecond : (long?)null;
+        bool Overlaps(Record record) {
+            var start = At(record, request.Start);
+            if (start == null || start.Value >= to) return false;
+            var rule = request.Recurrence == null ? null : record.Values[request.Recurrence.Ordinal];
+            if (rule == null || rule is string text && text.Length == 0) {
+                if (start.Value >= from) return true;
+                var end = At(record, request.End);
+                return end != null && end.Value > from;
+            }
+            if (request.SeriesEnd == null) return true;
+            var last = At(record, request.SeriesEnd);
+            return last == null || last.Value > from;
+        }
+        var resources = request.Resources?.Cast<object>().ToList();
+        var matches = Select(Load(cancellationToken), request.Query).Where(record =>
+            (resources == null || ProtocolSemantics.Matches(record.Values[request.Resource!.Ordinal], request.Resource.Kind, CanopyGridFilterOperator.In, resources)) && Overlaps(record)).ToList();
+        var ordered = matches.Select(record => (Record: record, Start: At(record, request.Start)!.Value)).ToArray();
+        Array.Sort(ordered, (left, right) => left.Start != right.Start ? left.Start.CompareTo(right.Start) : string.CompareOrdinal(left.Record.Id, right.Record.Id));
+        var rows = ordered.Take(request.Limit).Select(item => Row(item.Record));
+        return new ValueTask<CanopyRangeResult>(new CanopyRangeResult(matches.Count, rows));
     }
 
     /// <inheritdoc />

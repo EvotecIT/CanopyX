@@ -24,7 +24,7 @@ namespace CanopyX.Data;
 /// scan per level (several columns become one multi-column <c>GROUP BY</c>; <c>distinctCount</c> becomes <c>COUNT(DISTINCT …)</c>).
 /// </para>
 /// </remarks>
-public sealed class CanopyQueryableProvider<T> : ICanopyDataProvider {
+public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, ICanopyRangeProvider {
     private readonly Func<IQueryable<T>> _source;
     private readonly CanopyQueryOptions _options;
 
