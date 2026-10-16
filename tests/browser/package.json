@@ -13,6 +13,7 @@
     "test:distribution": "node tools/distribution-smoke.mjs",
     "test:api": "node tools/api-report.mjs",
     "test:api:update": "node tools/api-report.mjs --update",
+    "test:benchmarks": "node tools/browsers.mjs all --benchmarks",
     "bench": "node bench/scroll-benchmark.mjs"
   },
   "devDependencies": {

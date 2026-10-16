@@ -6,6 +6,7 @@
 import { defineConfig } from "@playwright/test";
 
 const engines = ["chromium", "firefox", "webkit"];
+const benchmarks = process.env.CANOPYX_BENCHMARKS === "1";
 const requested = (process.env.CANOPYX_TEST_BROWSERS || "chromium").trim();
 const browserNames = requested === "all" ? engines : requested.split(",").map(name => name.trim());
 if (new Set(browserNames).size !== browserNames.length || browserNames.some(name => !engines.includes(name))) {
@@ -13,12 +14,14 @@ if (new Set(browserNames).size !== browserNames.length || browserNames.some(name
 }
 
 const customChromium = !!(process.env.CANOPYX_BROWSER_CHANNEL || process.env.CANOPYX_BROWSER_EXECUTABLE);
-const visual = process.env.CANOPYX_VISUAL === "1" ||
-  (process.env.CANOPYX_VISUAL !== "0" && browserNames.includes("chromium") && process.platform === "win32" && !customChromium);
+const visual = !benchmarks && (process.env.CANOPYX_VISUAL === "1" ||
+  (process.env.CANOPYX_VISUAL !== "0" && browserNames.includes("chromium") && process.platform === "win32" && !customChromium));
 const visualSpec = /visual-baselines\.spec\.mjs$/;
 
 export default defineConfig({
   testDir: "specs",
+  grep: benchmarks ? /@benchmark/ : undefined,
+  grepInvert: benchmarks ? undefined : /@benchmark/,
   timeout: 60000,
   expect: {
     timeout: 10000,

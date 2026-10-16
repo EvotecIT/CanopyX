@@ -122,9 +122,9 @@ What does not change: trees, a report that mounts every view at load and hosted 
 
 Search still scans every row: a quick search over a million rows takes about 1.4 s at normal speed. For datasets beyond that, a hosted source answers each query from the host.
 
-## Budgets in CI
+## Opt-in load benchmarks
 
-`tests/browser/specs/large-data-performance.spec.mjs` checks, with the CPU slowed four times (median of three cold loads, Chromium):
+`tests/browser/specs/large-data-performance.spec.mjs` retains these measurement targets with the CPU slowed four times (median of three cold loads, Chromium). Run it through the [explicit benchmark selection](testing.md#run-measurements-explicitly); shared correctness CI keeps the data and lazy-mount contracts without timing ceilings.
 
 | Check | Budget | Measured |
 | --- | --- | --- |
@@ -133,7 +133,7 @@ Search still scans every row: a quick search over a million rows takes about 1.4
 | `large/report.html` (24 grids that mount when visible): its two visible grids ready | 6,000 ms | about 2.0 s |
 | `large/report.html`: views mounted at that moment | exactly 2 | 2 |
 
-The budgets leave room for slower hosted runners; the size budgets of the runtime entry points (gzip) stay as before, and the row data part has a 2.5 KiB guard (about 2 KiB).
+Timing targets help compare qualified runs on a known host. The deterministic size budgets of the runtime entry points (gzip) remain required, and the row data part has a 2.5 KiB guard (about 2 KiB).
 
 The examples it opens are written by `CanopyX.Examples` into `large/`: `grid-100k.html` (compact row data), `grid-100k-objects.html` (row objects), `bundle/` (gzip row data in sidecar files) and `report.html` (24 grids that mount when visible). `large-data.spec.mjs` checks their behaviour: mounting on view, tab, print and request; identical results from compact and object rows; first windows before the last chunk; and failures for invalid row data.
 

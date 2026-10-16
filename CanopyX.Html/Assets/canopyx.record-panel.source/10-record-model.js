@@ -169,6 +169,9 @@
   }
   const recordCacheKey = (view, id, revision = recordRevision(view)) => JSON.stringify([revision, id]);
   const recordEntry = (view, id) => view._recordPayloads?.get(recordCacheKey(view, id));
+  // An accepted local save changes this record independently of the cache's query/revision key.
+  // Removing the entry also detaches a late loading result; its promise never inserts itself back into the cache.
+  RECORD_IMPL.invalidate = (view, id) => { view._recordPayloads?.delete(recordCacheKey(view, id)); };
   function recordPayload(view, id, doc, revision) {
     if (doc == null) return null;
     if (typeof doc !== "object" || Array.isArray(doc) || doc.protocol !== undefined && doc.protocol !== PROTOCOL || doc.type !== undefined && doc.type !== "gridRecord" ||

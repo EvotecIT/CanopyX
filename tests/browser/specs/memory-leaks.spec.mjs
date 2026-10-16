@@ -31,12 +31,12 @@ async function open(page) {
   await page.evaluate(({ grid, tree }) => {
     const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     // One cycle mounts a view, uses it the way a reader would, then destroys it and drops the host.
-    window.cycle = async kind => {
+    window.cycle = async (kind, inspect = false) => {
       const host = document.createElement("div");
       host.setAttribute("data-cx-theme", "light");
       host.style.height = "420px";
       document.getElementById("stage").appendChild(host);
-      let rendered = [];
+      let rendered = [], rowsBefore = 0;
       if (kind === "grid") {
         const api = CanopyX.createDataGrid(host, { view: grid });
         await api.ready;
@@ -46,6 +46,7 @@ async function open(page) {
         host.querySelector(".cx-grid").scrollTop = 600;
         await frame();
         rendered = [...host.children];
+        if (inspect) rowsBefore = host.querySelectorAll(".cx-row[data-cx-id]").length;
         api.destroy();
       } else {
         const api = CanopyX.createTreeGrid(host, { view: tree });
@@ -56,6 +57,7 @@ async function open(page) {
         host.querySelector(".cx-grid").scrollTop = 300;
         await frame();
         rendered = [...host.children];
+        if (inspect) rowsBefore = host.querySelectorAll(".cx-row[data-cx-id]").length;
         api.destroy();
       }
       host.remove();
@@ -64,6 +66,8 @@ async function open(page) {
         window.retained.push(host, rendered);
         window.addEventListener("resize", () => host.isConnected);
       }
+      if (inspect) return { rowsBefore, children: host.childElementCount, registered: !!host.canopyx,
+        mounted: host.hasAttribute("data-canopyx-mounted"), connected: host.isConnected };
     };
     window.retain = false;
     window.retained = [];
@@ -83,7 +87,19 @@ async function measure(page, cdp) {
   return { nodes: counters.nodes, listeners: counters.jsEventListeners, documents: counters.documents, heapBytes: heap.usedSize, detached };
 }
 
-test("the leak check detects a view whose host and listeners are retained", async ({ page, browserName }) => {
+for (const kind of ["grid", "tree"]) {
+  test(`a ${kind} releases its rendered host after use and can mount again`, async ({ page }) => {
+    await open(page);
+    for (let cycle = 0; cycle < 3; cycle++) {
+      const result = await page.evaluate(kind => window.cycle(kind, true), kind);
+      expect(result.rowsBefore).toBeGreaterThan(0);
+      expect(result).toMatchObject({ children: 0, registered: false, mounted: false, connected: false });
+      await expect(page.locator("#stage")).toBeEmpty();
+    }
+  });
+}
+
+test("the leak check detects a view whose host and listeners are retained", { tag: "@benchmark" }, async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "Heap and DOM counters come from the Chromium DevTools protocol.");
   await open(page);
   const cdp = await page.context().newCDPSession(page);
@@ -102,7 +118,7 @@ test("the leak check detects a view whose host and listeners are retained", asyn
 });
 
 for (const kind of ["grid", "tree"]) {
-  test(`a ${kind} mounted and destroyed ${CYCLES} times returns heap, nodes and listeners to the baseline`, async ({ page, browserName }) => {
+  test(`a ${kind} mounted and destroyed ${CYCLES} times returns heap, nodes and listeners to the baseline`, { tag: "@benchmark" }, async ({ page, browserName }) => {
     test.skip(browserName !== "chromium", "Heap and DOM counters come from the Chromium DevTools protocol.");
     test.setTimeout(180000);
     await open(page);

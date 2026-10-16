@@ -144,7 +144,7 @@
       "key": "DataGrid.prototype",
       "requires": ["filter-editor"],
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
-        "gridFreeze", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage"],
+        "gridFreeze", "gridMomentFromParts", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage", "RECORD_IMPL"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.editing.source"
       ],
@@ -176,7 +176,7 @@
       "features": ["rangeSelection"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
-        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
+        "numberFormat", "gridFreeze", "gridMomentFromParts", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.cell-range.source"
       ],

@@ -33,9 +33,15 @@
     }
     const { group, decimal } = crSeparators.get(lang || ""), escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     // Spaces and apostrophes only ever group digits, in every language, so they go first.
-    let value = text.trim().replace(/^\((.*)\)$/, "-$1").replace(/[\s\u00a0\u202f'\u2019]/g, "").replace(/^[^\d+\-.,]+|[^\d.,]+$/g, "");
-    const negative = value[0] === "-";
-    value = value.replace(/^[-+]/, "");
+    const affixes = /^[^\d+\-.,()]+|[^\d+\-.,()]+$/g;
+    let value = text.trim().replace(/\u2212/g, "-").replace(/[\s\u00a0\u202f'\u2019]/g, "").replace(affixes, "");
+    const accounting = /^\(.*\)$/.test(value);
+    if (accounting) value = value.slice(1, -1).replace(affixes, "");
+    // Currency or units may surround the sign or sit inside accounting parentheses. Keep extra signs/parentheses so
+    // malformed amounts fail the numeric grammar instead of silently losing their sign.
+    const negative = accounting || value[0] === "-";
+    if (accounting && /^[-+]/.test(value)) return undefined;
+    value = value.replace(/^[-+]/, "").replace(affixes, "");
     const groups = /[\s\u2019']/.test(group) ? "(?!)" : escape(group), local = new RegExp("^\\d{1,3}(" + groups + "\\d{3})*(" + escape(decimal) + "\\d+)?$|^\\d+(" + escape(decimal) + "\\d+)?$");
     let number = NaN;
     if (local.test(value)) number = Number(value.replace(new RegExp(groups, "g"), "").replace(decimal, "."));
@@ -64,9 +70,8 @@
       if (year < 100) year += 2000;
     }
     const [hours = 0, minutes = 0, seconds = 0] = parts.slice(4, 7).map(item => item === undefined ? 0 : Number(item));
-    const date = grid.local ? new Date(year, month - 1, day, hours, minutes, seconds) : new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
-    const check = grid.local ? [date.getFullYear(), date.getMonth() + 1, date.getDate()] : [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
-    return check[0] === year && check[1] === month && check[2] === day && hours < 24 && minutes < 60 && seconds < 60 ? date.toISOString() : undefined;
+    const date = gridMomentFromParts(year, month, day, hours, minutes, seconds, grid.local);
+    return date ? date.toISOString() : undefined;
   }
 
   /** A pasted text as a value of the column: undefined when it is not one. */

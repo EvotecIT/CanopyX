@@ -245,7 +245,27 @@ test("forced colours keep the non-colour cues and draw accents in system colours
   await expect(row(page, "srv-00003").locator(".cx-cell").nth(1).locator(".cx-fmt-icon")).toBeVisible();
 });
 
-test("scroll navigation stays within budget on 100,000 rows with formatting and cached repaints", async ({ page }) => {
+test("formatted and plain cached navigation keeps the requested row visible with its global index", async ({ page }) => {
+  const view = healthView(1500);
+  for (const formatRules of [[], view.formatRules]) {
+    await page.unrouteAll(); await open(page, { ...view, formatRules });
+    for (let pass = 0; pass < 2; pass++) for (const index of [0, 1100, 64, 1400]) {
+      const visible = await page.evaluate(async index => {
+        const api = document.querySelector("[data-canopyx-host]").canopyx;
+        await api.scrollToRow(index);
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const target = document.querySelector('.cx-row[data-cx-id="srv-' + String(index).padStart(5, "0") + '"]');
+        if (!target || target.getAttribute("aria-rowindex") !== String(index + 2)) return false;
+        const grid = target.closest(".cx-grid"), bounds = target.getBoundingClientRect(), viewport = grid.getBoundingClientRect();
+        return bounds.bottom > Math.max(viewport.top, grid.querySelector(".cx-head").getBoundingClientRect().bottom) && bounds.top < viewport.bottom;
+      }, index);
+      expect(visible).toBe(true);
+    }
+    expect(page.errors).toEqual([]);
+  }
+});
+
+test("scroll navigation stays within budget on 100,000 rows with formatting and cached repaints", { tag: "@benchmark" }, async ({ page }) => {
   test.setTimeout(120000);
   const view = healthView(100000);
   view.formatting = { legend: true };

@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "7a6a134ff8f5aeb3",
+      "version": "37aefb2ff94cb423",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "a635a9197df79d67",
+      "version": "6347fb0a4587a97d",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "1fb00f2b2ea31c56",
+      "version": "7c776f7cfb5bb19b",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "7fd05d2a68346edf",
+      "version": "21031ca54485efce",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -333,7 +333,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "d2dd03704d761dd3",
+      "version": "e776ece53a116200",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

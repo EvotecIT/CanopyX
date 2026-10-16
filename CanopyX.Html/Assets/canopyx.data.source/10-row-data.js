@@ -81,6 +81,8 @@
       finished = true; ids.clear();
       if (Array.isArray(chunks)) chunks.fill(null);
       scripts?.forEach(script => { script.textContent = ""; });
+      // The first ordered window may already be visible with only a prefix decoded. Refresh once with the complete rows.
+      grid.version++; grid.scheduleRender();
     })();
     done.catch(() => outer.reset());
     let complete = null;

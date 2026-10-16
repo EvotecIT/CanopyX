@@ -6,7 +6,7 @@
   // badge, cue, bar, scale, css) wins it, every matched rule adds its description, and stopIfTrue ends the row's rules.
   function formatStats(grid) {
     const inline = grid.view.source.kind === "inline" && (!grid.opts.source || grid.enhanceStore),
-      key = inline ? "inline:" + (grid.enhanceStore?.version ?? 0) : grid.queryEpoch + ":" + (grid.snapshot?.revision || "") + ":" + [...grid.pages.keys()].join(",");
+      key = inline ? "inline:" + (grid.enhanceStore?.version ?? 0) + ":" + grid.view.rows.length : grid.queryEpoch + ":" + (grid.snapshot?.revision || "") + ":" + [...grid.pages.keys()].join(",");
     if (grid.formatStatsKey === key) return grid.formatStatsCache;
     const wanted = new Set(grid.formatCompiled.filter(rule => rule.style.bar || rule.style.scale).map(rule => rule.column)), stats = new Map();
     if (wanted.size) {
@@ -17,7 +17,10 @@
         stats.set(id, min <= max ? { min, max } : null);
       }
     }
-    if (grid.formatStatsKey !== undefined && wanted.size) grid.formatVersion++;
+    if (grid.formatStatsKey !== undefined && wanted.size) {
+      grid.formatVersion++;
+      if (grid.recordDrawer) DataGrid.refreshDrawerHooks(grid, grid.recordDrawer);
+    }
     grid.formatStatsKey = key; grid.formatStatsCache = stats;
     return stats;
   }

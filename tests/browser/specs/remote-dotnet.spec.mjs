@@ -139,6 +139,30 @@ test("exports every matching row through the server CSV format", async ({ page }
   expect(lines.slice(1).every(line => line.startsWith("ams-"))).toBe(true);
 });
 
+test("host exports reject unavailable formats before requesting or downloading another format", async ({ page }) => {
+  await open(page);
+  const requests = [], downloads = [];
+  page.on("request", request => { if (request.url().includes("/export/")) requests.push(request.url()); });
+  page.on("download", download => downloads.push(download.suggestedFilename()));
+  const errors = await page.evaluate(async api => {
+    const grid = eval(api), errors = [];
+    for (const format of ["pdf", "CSV"])
+      errors.push(await grid.exportToHost(format, { scope: "all" }).then(() => null, error => error.message));
+    return errors;
+  }, api);
+  expect(errors).toEqual([expect.stringMatching(/unknown.*format/i), expect.stringMatching(/unknown.*format/i)]);
+  expect(requests).toEqual([]);
+  expect(downloads).toEqual([]);
+
+  const download = page.waitForEvent("download");
+  await page.evaluate(api => eval(api).exportToHost("csv", { scope: "all", fileName: "Host export" }), api);
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("Host export.csv");
+  expect(requests.map(url => new URL(url).pathname)).toEqual(["/api/machines/export/csv"]);
+  const lines = fs.readFileSync(await file.path(), "utf8").replace(/^﻿/, "").trimEnd().split("\r\n");
+  expect(lines).toHaveLength(rows + 1);
+});
+
 test("remote exports keep the server-declared Unicode download filename", async ({ page }) => {
   await open(page);
   await page.route("**/api/machines/export/csv", async route => {
