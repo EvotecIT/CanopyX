@@ -5,7 +5,7 @@ namespace CanopyX.Data;
 /// <summary>One declared aggregate of a summary request.</summary>
 /// <remarks>
 /// <see cref="CanopyGridAggregateOperation.Count"/> counts nonmissing values and <see cref="CanopyGridAggregateOperation.DistinctCount"/>
-/// distinct nonmissing raw values, in any column. The other built-in operations read number columns, skip missing values
+/// distinct nonmissing protocol values, in any column. The other built-in operations read number columns, skip missing values
 /// and yield null when a group has no values. A <see cref="CanopyGridAggregateOperation.Custom"/> aggregate names its
 /// operation in <see cref="CustomOperation"/>; only a provider that knows that operation computes it, the built-in
 /// providers answer <see cref="CanopyRequestError.Unsupported"/>.

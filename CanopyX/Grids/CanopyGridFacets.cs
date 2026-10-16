@@ -21,7 +21,7 @@ internal static class CanopyGridFacets {
         }
         if (value is bool flag) return flag ? "b:true" : "b:false";
         if (value is DateTime date) return "d:" + (date.Ticks / TimeSpan.TicksPerMillisecond).ToString(CultureInfo.InvariantCulture);
-        var number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        var number = CanopyNumericValues.ToDouble(value);
         return "n:" + (number == 0 ? "0" : number.ToString("R", CultureInfo.InvariantCulture));
     }
 }

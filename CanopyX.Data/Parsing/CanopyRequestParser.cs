@@ -309,7 +309,7 @@ public static partial class CanopyRequestParser {
     private static object Operand(JsonElement value, CanopyDataColumn column, CanopyRemoteLimits limits) {
         switch (column.Kind) {
             case CanopyColumnKind.Number:
-                if (value.ValueKind != JsonValueKind.Number || !value.TryGetDouble(out var number) || double.IsNaN(number) || double.IsInfinity(number) || Math.Abs(number) > SafeInteger)
+                if (value.ValueKind != JsonValueKind.Number || !TryNumber(value, out var number) || double.IsNaN(number) || double.IsInfinity(number) || Math.Abs(number) > SafeInteger)
                     throw CanopyRequestException.Operand("A number column needs finite numeric operands within the safe integer magnitude.");
                 return number;
             case CanopyColumnKind.DateTime:

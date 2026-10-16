@@ -45,7 +45,7 @@ public static partial class CanopyStaticHtml {
         var o = options ?? new CanopyStaticHtmlOptions();
         CanopyTreeViewValidator.Validate(view);
         var columns = view.Columns.Where((column, index) => index == 0 || !column.Hidden).ToList();
-        var rows = CollectRows(view, o, out var total, out var hiddenBelow, out var unknown);
+        var rows = CollectRows(view.Roots, o, o.MaxRows, out var total, out var hiddenBelow, out var unknown);
         var styles = new CanopyStaticStyles(o);
         var html = new StringBuilder(256 + rows.Count * 160);
         var printedRows = new List<IReadOnlyList<string>>(rows.Count);
@@ -77,20 +77,15 @@ public static partial class CanopyStaticHtml {
 
         html.Append("</tbody>");
         if (unknown || total > rows.Count) {
-            var note = (o.OverflowNote ?? view.Labels.OverflowNote)
-                .Replace("{shown}", rows.Count.ToString("N0", o.Culture))
-                .Replace("{total}", unknown ? view.Labels.UnknownTotal : total.ToString("N0", o.Culture));
             // The note is the last row of the table, so it sits on the theme's surface like the rows above it. It has
             // a row group of its own rather than a tfoot, which browsers repeat at the bottom of every printed page.
-            html.Append("<tbody><tr><td colspan=\"").Append(columns.Count).Append("\" style=\"").Append(styles.Note).Append("\">").Append(Encode(note));
-            if (IsSafeReportUrl(o.FullReportUrl)) {
-                html.Append(" <a href=\"").Append(Encode(o.FullReportUrl!)).Append("\" style=\"").Append(styles.Link).Append("\">").Append(Encode(o.FullReportText ?? view.Labels.FullReport)).Append("</a>");
-            }
-
-            html.Append("</td></tr></tbody>");
+            html.Append("<tbody>");
+            AppendOverflow(html, rows.Count, unknown ? null : total, columns.Count, o, styles, view.Labels);
+            html.Append("</tbody>");
         }
 
-        return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(), total, unknown);
+        return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(), total, unknown,
+            !unknown && rows.Count == total);
     }
 
     /// <summary>
@@ -98,20 +93,20 @@ public static partial class CanopyStaticHtml {
     /// MaxDepth, or under a collapsed node (with OnlyExpanded) are not shown, and the nodes cut below a shown row are
     /// recorded so the row can say so. Children a sidecar or remote source would load count by their declared number.
     /// </summary>
-    private static List<(CanopyNode Node, int Level)> CollectRows(CanopyTreeView view, CanopyStaticHtmlOptions options, out long total, out Dictionary<CanopyNode, long> hiddenBelow, out bool unknown) {
+    private static List<(CanopyNode Node, int Level)> CollectRows(IList<CanopyNode> roots, CanopyStaticHtmlOptions options, int maxRows, out long total, out Dictionary<CanopyNode, long> hiddenBelow, out bool unknown) {
         var rows = new List<(CanopyNode, int)>();
         hiddenBelow = new Dictionary<CanopyNode, long>();
         unknown = false;
         var pending = new Stack<(CanopyNode Node, int Level, CanopyNode? VisibleAncestor)>();
-        for (var index = view.Roots.Count - 1; index >= 0; index--) {
-            pending.Push((view.Roots[index], 1, null));
+        for (var index = roots.Count - 1; index >= 0; index--) {
+            pending.Push((roots[index], 1, null));
         }
 
         total = 0;
         while (pending.Count > 0) {
             var (node, level, visibleAncestor) = pending.Pop();
             total++;
-            var emitted = rows.Count < options.MaxRows;
+            var emitted = rows.Count < maxRows;
             if (emitted) {
                 rows.Add((node, level));
                 visibleAncestor = node;
@@ -172,7 +167,7 @@ public static partial class CanopyStaticHtml {
         return count;
     }
 
-    private static IReadOnlyList<string> AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels, string? checkState) {
+    private static IReadOnlyList<string> AppendRow(StringBuilder html, CanopyNode node, int level, IList<CanopyColumn> columns, long hiddenBelow, CanopyStaticHtmlOptions options, CanopyStaticStyles styles, CanopyLabels labels, string? checkState, bool inner = false) {
         var printedCells = new List<string>(columns.Count);
         html.Append("<tr>");
         for (var index = 0; index < columns.Count; index++) {
@@ -180,7 +175,7 @@ public static partial class CanopyStaticHtml {
             var column = columns[index];
             var display = TreeCellText(node, column, index == 0, labels, out var cell);
 
-            var style = styles.Cell + Align(column);
+            var style = (inner ? styles.InnerCell : styles.Cell) + Align(column);
             if (index == 0) {
                 style += "padding-left:" + ((level - 1) * IndentPixels + 8) + "px;" + (node.Group ? "font-weight:600;" : string.Empty);
             }
@@ -244,15 +239,10 @@ public static partial class CanopyStaticHtml {
 
     private static IReadOnlyList<string> AppendDetail(StringBuilder html, CanopyDetail? detail, int level, int columnCount, CanopyStaticStyles styles, CanopyLabels labels) {
         var text = new StringBuilder();
-        html.Append("<tr><td colspan=\"").Append(columnCount).Append("\" style=\"").Append(styles.Detail)
-            .Append("padding-left:").Append((level - 1) * IndentPixels + 8).Append("px;\">");
+        BeginDetail(html, level, columnCount, styles);
         switch (detail) {
             case CanopyTableDetail table:
-                html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.InnerTable).Append("\">");
-                if (!string.IsNullOrEmpty(table.Caption)) {
-                    html.Append("<caption style=\"").Append(styles.DetailCaption).Append("\">");
-                    AppendVisibleText(html, table.Caption!, text); html.Append("</caption>");
-                }
+                BeginDetailTable(html, table.Caption, styles, text);
 
                 html.Append("<thead><tr>");
                 var shares = table.ColumnWidths.Count == table.Columns.Count ? table.ColumnWidths : null;
@@ -302,6 +292,17 @@ public static partial class CanopyStaticHtml {
 
         html.Append("</td></tr>");
         return Array.AsReadOnly(new[] { text.ToString() });
+    }
+
+    private static void BeginDetail(StringBuilder html, int level, int columnCount, CanopyStaticStyles styles) =>
+        html.Append("<tr><td colspan=\"").Append(columnCount).Append("\" style=\"").Append(styles.Detail)
+            .Append("padding-left:").Append((level - 1) * IndentPixels + 8).Append("px;\">");
+
+    private static void BeginDetailTable(StringBuilder html, string? caption, CanopyStaticStyles styles, StringBuilder text) {
+        html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.InnerTable).Append("\">");
+        if (string.IsNullOrEmpty(caption)) return;
+        html.Append("<caption style=\"").Append(styles.DetailCaption).Append("\">");
+        AppendVisibleText(html, caption!, text); html.Append("</caption>");
     }
 
     private static void AppendInnerCell(StringBuilder html, CanopyCell? cell, CanopyStaticStyles styles, CanopyLabels labels, StringBuilder text) {

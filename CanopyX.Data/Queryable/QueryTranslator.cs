@@ -53,6 +53,19 @@ internal sealed partial class QueryTranslator<T> {
     internal Expression Key { get; }
     internal Expression Value(string id) => _values[id];
 
+    /// <summary>Numeric grouping and reconstruction compare the binary64 key exposed by the wire.</summary>
+    internal Expression GroupValue(string id) => Map.Get(id).Shape == ValueShape.Decimal ? Binary64(_values[id]) : _values[id];
+
+    /// <summary>CLR execution rounds decimal once; database execution retains a translatable binary64 CAST.</summary>
+    private Expression Binary64(Expression value) {
+        var nullable = ExpressionTools.IsNullable(value.Type);
+        if (!_memory || ExpressionTools.Underlying(value.Type) != typeof(decimal))
+            return Expression.Convert(value, nullable ? typeof(double?) : typeof(double));
+        var method = typeof(CanopyNumericValues).GetMethod(nameof(CanopyNumericValues.DecimalToDouble), BindingFlags.Static | BindingFlags.NonPublic)!;
+        var number = Expression.Call(method, nullable ? Expression.Property(value, "Value") : value);
+        return nullable ? Expression.Condition(ExpressionTools.IsNull(value), Expression.Constant(null, typeof(double?)), Expression.Convert(number, typeof(double?))) : number;
+    }
+
     internal Expression<Func<T, bool>>? Where(CanopyDataRequest request) {
         Expression? body = null;
         if (request.Ids != null) body = ExpressionTools.And(body, KeyIn(request.Ids));
@@ -152,6 +165,7 @@ internal sealed partial class QueryTranslator<T> {
                 ExpressionTools.ContainsMethod, ExpressionTools.Parameter(CanopyTextFolding.Fold(term), typeof(string))));
         }
         if (shape == ValueShape.DateTime || shape == ValueShape.DateTimeOffset || shape == ValueShape.DateOnly) return null;
+        // Explicit database quick search follows the store's text. Numeric facets search canonical text after grouping.
         var underlying = ExpressionTools.Underlying(value.Type);
         var plain = value.Type == underlying ? value : Expression.Convert(value, underlying);
         var asText = Expression.Call(plain, underlying.GetMethod(nameof(ToString), Type.EmptyTypes) ?? ObjectToString);

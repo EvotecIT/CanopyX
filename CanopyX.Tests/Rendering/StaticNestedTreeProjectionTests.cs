@@ -15,9 +15,12 @@ public sealed class StaticNestedTreeProjectionTests {
         child.Children.Add(grandchild); root.Children.Add(child); tree.Roots.Add(root);
 
         var html = CanopyStaticHtml.RenderGrid(Outer(tree));
-        var cells = InnerTable(html).Element("tbody")!.Elements("tr").Select(row => row.Elements("td").First().Value).ToArray();
+        var cells = InnerTable(html).Element("tbody")!.Elements("tr").Select(row => row.Elements("td").First()).ToArray();
 
-        Assert.Equal(new[] { "Preferred <root & value>", "\u00a0\u00a0Fallback <child & label>", "\u00a0\u00a0\u00a0\u00a0" }, cells);
+        Assert.Equal(new[] { "Preferred <root & value>", "Fallback <child & label>", "" }, cells.Select(cell => cell.Value).ToArray());
+        Assert.Contains("padding-left:8px;", cells[0].Attribute("style")!.Value);
+        Assert.Contains("padding-left:24px;", cells[1].Attribute("style")!.Value);
+        Assert.Contains("padding-left:40px;", cells[2].Attribute("style")!.Value);
         Assert.DoesNotContain("Wrong root label", html);
         Assert.DoesNotContain("Wrong explicit-null label", html);
         Assert.Contains("Preferred &lt;root &amp; value&gt;", html);

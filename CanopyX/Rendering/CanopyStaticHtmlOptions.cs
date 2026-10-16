@@ -13,7 +13,8 @@ public sealed class CanopyStaticHtmlOptions {
     private CultureInfo _culture = CultureInfo.InvariantCulture;
     private CanopyStaticTheme _theme = new CanopyStaticTheme();
 
-    /// <summary>Gets or sets the most rows the outline shows; later rows are counted in the overflow note. Defaults to 1,000.</summary>
+    /// <summary>Gets or sets the most data rows shown across the outer view and its nested grid or tree payloads.
+    /// Detail wrappers do not consume additional rows. Later rows are counted in their view's overflow note. Defaults to 1,000.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is below 1.</exception>
     public int MaxRows {
         get => _maxRows;

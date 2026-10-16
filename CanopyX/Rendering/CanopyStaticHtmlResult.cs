@@ -4,19 +4,20 @@ namespace CanopyX.Rendering;
 
 /// <summary>A script-free tree outline or flat-grid table and the visible row text produced by the same render pass.</summary>
 public sealed class CanopyStaticHtmlResult {
-    internal CanopyStaticHtmlResult(string html, IReadOnlyList<IReadOnlyList<string>> rows, long totalRows, bool hasUnknownTotal) {
+    internal CanopyStaticHtmlResult(string html, IReadOnlyList<IReadOnlyList<string>> rows, long totalRows, bool hasUnknownTotal, bool isComplete) {
         Html = html;
         Rows = rows;
         TotalRows = totalRows;
         HasUnknownTotal = hasUnknownTotal;
+        IsComplete = isComplete;
     }
 
     /// <summary>Gets the complete table markup, including its caption, headers and overflow note.</summary>
     public string Html { get; }
 
     /// <summary>
-    /// Gets the rendered data and detail rows in document order, excluding the column headers and overflow note.
-    /// Each row contains its visible cell text before HTML encoding, including checkboxes, badges and hidden-row markers.
+    /// Gets the rendered data and detail rows in document order, excluding outer column headers, overflow notes and formatting legends.
+    /// Each row contains its visible cell text before HTML encoding, including checkboxes, formatting cues, badges and hidden-row markers.
     /// A detail row has one cell; nested captions, headers, properties and values are separated by spaces within it.
     /// </summary>
     public IReadOnlyList<IReadOnlyList<string>> Rows { get; }
@@ -31,4 +32,13 @@ public sealed class CanopyStaticHtmlResult {
 
     /// <summary>Gets whether unloaded tree children or an unknown cursor matching count prevent an exact total.</summary>
     public bool HasUnknownTotal { get; }
+
+    /// <summary>
+    /// Gets whether all matching outer records and their printable nested content are included. Partial accepted
+    /// windows, row or tree depth limits, collapsed branches, unloaded children and unknown totals make this false.
+    /// Excluding a detail with <see cref="CanopyGridDetail.Print"/> does not make the result incomplete.
+    /// Detail wrappers and nested rows have different counts, so completeness cannot be inferred by comparing
+    /// <see cref="Rows"/> with <see cref="TotalRows"/>.
+    /// </summary>
+    public bool IsComplete { get; }
 }

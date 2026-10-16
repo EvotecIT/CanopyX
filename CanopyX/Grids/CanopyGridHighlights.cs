@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
 using CanopyX.Bundles;
 
@@ -47,7 +46,7 @@ internal static class CanopyGridHighlights {
             foreach (var unit in text) folded.Append(CanopySearchFolding.Fold(unit));
             return folded.ToString();
         }
-        if (column.Kind == CanopyColumnKind.Number && value != null) return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        if (column.Kind == CanopyColumnKind.Number && value != null) return CanopyNumericValues.ToDouble(value);
         if (value is DateTime date) return date.Ticks / TimeSpan.TicksPerMillisecond;
         return value;
     }

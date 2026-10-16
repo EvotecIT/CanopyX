@@ -39,23 +39,24 @@ internal static class CanopyFormatValues {
                 if (raw is bool flag) return flag ? 1d : 0d;
                 if (raw is string text) return Number(text, culture);
                 if (raw is DateTime) return null;
-                return Convert.ToDouble(raw, CultureInfo.InvariantCulture);
+                return CanopyNumericValues.ToDouble(raw);
             case CanopyFormatValueType.Date:
                 if (raw is DateTime date) return Milliseconds(date);
                 if (raw is DateTimeOffset offset) return Milliseconds(offset.UtcDateTime);
                 // ISO dates and times; without a zone they are UTC, as the browser part reads them.
                 if (raw is string iso) return IsoDate.IsMatch(iso.Trim()) && DateTimeOffset.TryParse(iso.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed) ? Milliseconds(parsed.UtcDateTime) : null;
-                return raw is bool ? null : Convert.ToDouble(raw, CultureInfo.InvariantCulture);
+                return raw is bool ? null : CanopyNumericValues.ToDouble(raw);
             case CanopyFormatValueType.Boolean:
                 if (raw is bool boolean) return boolean;
                 if (raw is string word) {
                     var value = word.Trim().ToLowerInvariant();
                     return value == "true" || value == "yes" || value == "on" || value == "1" ? true : value == "false" || value == "no" || value == "off" || value == "0" ? false : null;
                 }
-                return raw is DateTime ? null : Convert.ToDouble(raw, CultureInfo.InvariantCulture) != 0;
+                return raw is DateTime ? null : CanopyNumericValues.ToDouble(raw) != 0;
             case CanopyFormatValueType.Text:
                 return raw is bool truth ? (truth ? "true" : "false") : raw is DateTime moment ? moment.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture) :
-                    raw is double real ? real.ToString("R", CultureInfo.InvariantCulture) : raw as string ?? Convert.ToString(raw, CultureInfo.InvariantCulture);
+                    raw is decimal || raw is double || raw is long ? CanopyNumericValues.FormatNumber(CanopyNumericValues.ToDouble(raw)) :
+                    raw as string ?? Convert.ToString(raw, CultureInfo.InvariantCulture);
             default:
                 return raw;
         }
