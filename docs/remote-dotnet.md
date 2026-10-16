@@ -5,11 +5,12 @@ filters, opens a value list or exports, and expects revisioned documents back (s
 These two packages answer those queries from .NET:
 
 - **`CanopyX.Data`** (`net472`, `netstandard2.0`, `net8.0`, `net10.0`) parses and validates every request against a column
-  allow-list and safety limits, executes it, and writes the `gridPage`, `gridFacetPage`, `gridSummary` and
+  allow-list and safety limits, executes it, and writes the `gridPage`, `gridFacetPage`, `gridSummary`, `gridRangePage` and
   `gridCommitResult` documents the browser runtime accepts. It runs requests over any `IQueryable<T>` (EF Core, LINQ to
   objects, any LINQ provider), over a provider you write for another back end, streams exports, serves grouping with up to
   four levels, saves edited rows through a writer you choose ([Saving edits](#saving-edits)), and loads one record's details
-  for the record panel on demand ([Record details](#record-details)).
+  for the record panel on demand ([Record details](#record-details)). Calendar and timeline views read the records that
+  overlap a date window through range queries ([Range queries](#range-queries)).
 - **`CanopyX.AspNetCore`** (`net8.0`, `net10.0`) maps it to minimal-API endpoints and writes the small browser script that
   connects the grid to them.
 
@@ -135,6 +136,7 @@ and export to the server without changing what readers see:
 | `GET {pattern}/query` (with `AllowGetQueries`) | `?q=<gridQuery JSON>`, or `offset`, `limit`, `search`, `searchMode`, `revision`, `sort` (`name`, `name:desc`, `-name`, repeatable or comma separated), `filters` (JSON array), `filterGroup` (JSON object) | `gridPage` |
 | `POST {pattern}/facet` | `gridFacetQuery` document | `gridFacetPage` |
 | `POST {pattern}/summary` | `gridQuery` with its accepted `revision` | `gridSummary` |
+| `POST {pattern}/range` | `gridRangeQuery` document | `gridRangePage` (400 `unsupported` when the provider has no range capability) |
 | `POST {pattern}/export/{format}` | the grid's export request (`scope`, `query`, `revision`, `selection`, `querySelection`, `columns`, `values`, …) | the file, streamed |
 | `GET {pattern}/view` | | the `grid` definition document |
 | `POST {pattern}/commit` (with `options.Writer`) | `gridCommit` document | `gridCommitResult` |
@@ -144,7 +146,7 @@ The GET form is off by default because query strings reach access logs, proxies 
 cannot post without passing a CORS preflight. Responses carry `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
 Every handler observes `HttpContext.RequestAborted`; the token flows into the provider and the database command.
 
-Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`,
+Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`, `RangeAsync(json)`,
 `PrepareExportAsync(json, format)`, with a writer (`new CanopyRemoteHandler(schema, provider, options, writer)`)
 `CommitAsync(json)`, and with a record provider (`new CanopyRemoteHandler(schema, provider, options, writer, records)`)
 `RecordAsync(json, canRead)` return documents (or an export job) and throw `CanopyRequestException` for client errors.
@@ -196,6 +198,7 @@ returned by the column descriptors do not change the endpoint contract; create a
 | Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
 | Editing | `gridCommit` → `gridCommitResult` | Full with a writer: editable columns only, values checked again with the view's validation, rows saved independently (or all or nothing), conflicts from original values, the new revision (see [Saving edits](#saving-edits)). |
 | Record details | `gridRecordQuery` → `gridRecord` | Full with a record map or provider: record fields, columns' drawer values (`cells`), the row, collections that page with totals, timelines, change lists and links to related records (see [Record details](#record-details)). |
+| Range queries | `gridRangeQuery` → `gridRangePage` | Full with the built-in providers: the records that overlap a UTC window after the query's criteria, recurring series, resource restriction, start order, `matched` and `truncated` (see [Range queries](#range-queries)). |
 | Revisions | `revision` | Full: a stale revision answers 409 `staleRevision`. |
 | Exports | export request → file | Full: `filtered`, `selected` (ids or all-matching with exclusions) and `all` scopes, chosen columns, raw or display values, streamed. |
 | Cursor navigation | `gridCursorQuery` | Not served; rejected with `unsupported`. Offset navigation covers the protocol's hosted grids. |
@@ -308,6 +311,7 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxRecordTextLength` (one text value of a record answer, held for every provider; longer text ends with an ellipsis and fits the limit) | 8,192 | — |
 | `MaxRecordOffset` (offset of a collection page) | 10,000 | — |
 | `MaxRecordRequestBytes` (one record request body, within `MaxRequestBytes`) | 16 KiB | — |
+| `MaxRangeRows` (records of one range answer; a larger request `limit` is lowered to it) | 5,000 | 10,000 |
 
 - **Typed errors.** Rejections throw `CanopyRequestException` and answer `{ "error": code, "message": text }` with status 400
   (409 for `staleRevision`, 404 for `recordNotFound`, 413 for an oversized body, 415 for a non-JSON body). Codes: `invalidJson`, `invalidDocument`,
@@ -395,6 +399,93 @@ Contract details:
 rule directly, without LINQ providers) and the oracle the tests compare EF Core and LINQ results with. Register any
 provider with `MapCanopyRemote(pattern, schema, http => provider)`, or `new CanopyRemoteHandler(schema, provider)`.
 
+## Range queries
+
+Calendar and timeline presentations of a hosted grid show the records of a period, not a page. The browser asks for them
+with a `gridRangeQuery` through the source's optional `range(request, { signal })` capability (without it, it falls back to
+`query()` with equivalent predicates). `MapCanopyRemote` answers it at `POST {pattern}/range` under the same authorization,
+body limit, content-type checks and error mapping as `/query` and `/facet`, and `CanopyRemoteScript` wires the `range`
+hook for every view with a filterable date column. The request names its columns itself, so the endpoint needs no
+calendar definition: each column is checked against the allow-list.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRangeQuery", "view": "maintenance",
+  "query": { "protocol": "canopyx/2", "type": "gridQuery", "view": "maintenance", "offset": 0, "limit": 100, "search": "patch",
+             "revision": "r7", "sort": [], "filters": [{ "column": "kind", "operator": "eq", "values": ["maintenance"] }] },
+  "from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z",
+  "start": "starts", "end": "ends", "recurrence": "rule", "seriesEnd": "seriesEnd",
+  "resource": "host", "resources": ["host-1", "host-2"], "calendarView": "month", "limit": 5000 }
+```
+
+| Field | Rule |
+| --- | --- |
+| `query` | A complete `gridQuery`, parsed with the query rules (allow-list, operators, operands, filter limits, revision). Its search, predicates and filter group select the records; its window, sort and `groupBy` do not apply. |
+| `from`, `to` | ISO 8601 UTC instants ending in `Z`, read at millisecond precision; `from < to`, at most 3,700 days apart (`invalidDocument` when reversed, `limitExceeded` when longer). |
+| `start` | Required. An allowed, filterable date column. |
+| `end`, `seriesEnd` | Optional allowed, filterable date columns. |
+| `recurrence`, `resource` | Optional allowed, filterable text columns. |
+| `resources` | Optional, 1 to 1,000 unique nonempty strings (at most `MaxInValues`, each at most `MaxOperandLength` and 4,096); requires `resource`. |
+| `calendarView` | Optional, one of `month`, `week`, `day`, `days`, `agenda`, `year`, `timeline`. Informational only (logging, host decisions); it never changes the answer. |
+| `limit` | 1 to 10,000; default and ceiling `MaxRangeRows` (5,000). A larger value is lowered, not rejected. |
+
+An unknown column answers `unknownColumn`, a column that cannot be filtered `columnNotFilterable`, a column of the wrong kind
+`invalidDocument`. Unknown additive fields are ignored, as everywhere in the protocol.
+
+**Semantics.** After the query's criteria and the resource restriction, a record overlaps the window when:
+
+- it has no recurrence (no `recurrence` column, or a null or empty value): `start < to` and (`start >= from` or
+  `end > from`). A null end, or no `end` column, makes it a zero-length marker at its start, so only `start >= from` counts:
+  a marker exactly at `from` is included, one exactly at `to` is not, and an event that ends exactly at `from` is not;
+- it has a recurrence: `start < to`, and with a `seriesEnd` column also `seriesEnd IS NULL OR seriesEnd > from` (fill the
+  column with the end of the series' last occurrence, null for an endless series).
+
+A record without a start never overlaps. `resources` keeps records whose resource is one of them with the semantics of an
+`in` predicate on the resource column (case-insensitive, like every text comparison). The query's sort is ignored: records
+are ordered by start ascending, then by record identity. Dates compare as UTC instants at millisecond precision.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRangePage", "view": "maintenance", "revision": "r7",
+  "from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z",
+  "matched": 1234, "truncated": true, "items": [ { "id": "evt-00017", "cells": { "starts": "2026-09-28T22:00:00Z" } } ] }
+```
+
+`matched` counts every overlapping record; `items` are the first `limit` of them, written exactly as page rows are (every
+mapped column, `DecorateRows`, cell formatters); `truncated` is `items.length < matched`. A stale `query.revision` answers
+409 `staleRevision`, and so does an answer whose rows no longer fit its count (records written between the count and the
+read). `CanopyGridRangePage.ToJson(view)` checks the rows against the view, the counts and the start order (every row has a
+start before `to`, never earlier than the row before it).
+
+**Provider capability.** The handler calls `ICanopyRangeProvider.RangeAsync(CanopyRangeRequest, token)`, an optional
+interface beside `ICanopyDataProvider`; a provider without it answers 400 `unsupported`. `CanopyQueryableProvider<T>` and
+`CanopyInMemoryProvider<T>` implement it. A `CanopyRangeRequest` carries the parsed `Query`, `From`, `To`, the
+`CanopyDataColumn`s (`Start`, `End`, `Recurrence`, `SeriesEnd`, `Resource`), `Resources`, `Limit` and `CalendarView`, and
+`Selection`: the same range as an ordinary `CanopyDataRequest` (the query's filter AND the resource `in` predicate AND the
+overlap predicates, sorted by the start column, ungrouped, window `0..Limit`). A custom provider can implement the capability
+by counting `Selection` and reading its window with its own filter and order code:
+
+```csharp
+public async ValueTask<CanopyRangeResult> RangeAsync(CanopyRangeRequest request, CancellationToken token) {
+    var matched = await CountAsync(request.Selection, token);
+    var rows = new List<CanopyGridRow>();
+    await foreach (var row in ReadAsync(request.Selection, token)) rows.Add(row);
+    return new CanopyRangeResult(matched, rows);
+}
+```
+
+`CanopyInMemoryProvider<T>` evaluates the overlap directly on the values, independently of `Selection`, and is the oracle
+the tests compare LINQ to objects and EF Core (SQLite) with, byte for byte, over random ranges and the boundary cases above.
+In C#, `CanopyGridRangeQuery` writes a request (for tests, mocks and .NET clients) and
+`CanopyRequestParser.FromRangeQuery(query, schema)` validates it with the wire rules; `ParseRange(json, schema)` parses one.
+
+**EF Core translation.** `CanopyQueryableProvider<T>` builds one predicate from the mapped expressions: the query's search,
+predicates and filter group exactly as pages apply them, the resource `in` test, and the overlap as half-open millisecond
+bounds (`start < @to`, `start >= @from`, `end >= @from + 1 ms`, `seriesEnd IS NULL OR seriesEnd >= @from + 1 ms`) with
+`IS NULL` and `= ''` tests on the recurrence value. It composes on the host's base `IQueryable`, so the caller's scope still
+applies; every instant and resource identity is a parameter. The answer is one `COUNT` and one window
+`ORDER BY start, key LIMIT @limit`. As for date sorting, database ordering by the start column requires its
+`SortBy` mapping (usually the indexed UTC timestamp itself when the store keeps whole milliseconds); without it the range
+answers `unsupported` before querying. Index the start column (and the resource column for timelines). Stores that pad or
+trim trailing spaces in comparisons treat a whitespace-only rule as empty; keep the recurrence column null for single events.
 ## Export
 
 The browser grid hands its export request to the server: the scope (`filtered`, `selected` or `all`), the accepted query

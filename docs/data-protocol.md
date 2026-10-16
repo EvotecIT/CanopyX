@@ -27,6 +27,8 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridRangeQuery` | The browser; `CanopyGridRangeQuery.ToJson(view)` | A calendar or timeline asks a host for the records that overlap a period ([Date ranges](#date-ranges)) |
+| `gridRangePage` | `CanopyGridRangePage.ToJson(view)` | A host answers a range request with the overlapping records in start order |
 | `gridCommit` | The editing part | A grid asks its writer to save changed rows ([Editing and commit](#editing-and-commit)) |
 | `gridCommitResult` | The host's writer | The writer answers per row: saved, error or conflict |
 | `gridRecordQuery` | The browser; `CanopyGridRecordQuery.ToJson()` | A record's drawer opens and its details load on demand ([Record details](#record-details)) |
@@ -223,6 +225,51 @@ Named preference edits wait for the initial host load to complete, so saving bef
 
 `getShareState()` returns layout, sorting, time zone and page length with search/filters/group conditions, selection, revision/cursor, page offset and scroll position removed. It writes nothing to the address bar. To share a query-bearing view, use a host-authorized opaque identifier rather than putting its search or record IDs in a URL. Applying any snapshot queries the current data source and remains subject to its authorization.
 
+### Date ranges
+
+A calendar or timeline presentation of a hosted flat grid reads the records of a visible period through the optional source
+capability `range(request, { signal })`, as value lists use `facet`. Without the capability the runtime falls back to
+`query()` with equivalent predicates. The request is a `gridRangeQuery`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRangeQuery", "view": "maintenance",
+  "query": { "protocol": "canopyx/2", "type": "gridQuery", "view": "maintenance", "offset": 0, "limit": 100, "search": "",
+             "revision": "r1", "sort": [], "filters": [] },
+  "from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z",
+  "start": "starts", "end": "ends", "recurrence": "rule", "seriesEnd": "seriesEnd",
+  "resource": "host", "resources": ["host-1", "host-2"], "calendarView": "month", "limit": 5000 }
+```
+
+- `query` is a complete `gridQuery` (offset zero). Its search, predicates and filter group select the records; its window,
+  sort and grouping do not apply. Its optional `revision` follows the `gridQuery` rules: a stale revision is rejected
+  (`staleRevision`, HTTP 409).
+- `from` < `to` are ISO 8601 UTC instants ending in `Z`, compared at millisecond precision, at most 3,700 days apart.
+- `start` (a date column, required), `end` and `seriesEnd` (date columns), `recurrence` and `resource` (text columns) are
+  column ids of the view. A server accepts only columns on its allow-list that it allows filtering on, with the right kind.
+- `resources` (optional, 1..1,000 unique nonempty strings of at most 4,096 code units) requires `resource` and keeps the
+  records whose resource is one of them, with the semantics of an `in` predicate on that column.
+- `calendarView` (optional: `month`, `week`, `day`, `days`, `agenda`, `year` or `timeline`) is informational; servers never
+  let it change the answer.
+- `limit` is 1..10,000; a server lowers it to its own maximum.
+
+After the query's criteria and the resource restriction, a record without a recurrence (no `recurrence` column, or a null or
+empty value) overlaps when `start < to` and (`start >= from` or `end > from`); a null end, or no `end` column, is a
+zero-length marker at its start. A record with a recurrence overlaps when `start < to` and, when `seriesEnd` is given, its
+series end is null or after `from`. A record without a start never overlaps. Overlapping records are ordered by start
+ascending, then by ordinal row identity; the query's sort is ignored.
+
+The answer is a `gridRangePage`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRangePage", "view": "maintenance", "revision": "r1",
+  "from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z",
+  "matched": 1234, "truncated": false, "items": [ { "id": "evt-1", "cells": { "starts": "2026-10-02T08:00:00Z" } } ] }
+```
+
+`view`, `revision`, `from` and `to` echo the accepted request. `matched` counts every overlapping record; `items` are the
+first `limit` of them in order, written as `gridPage` rows; `truncated` is exactly `items.length < matched`. Every item
+starts before `to`, and no item starts before the one it follows. The C# `CanopyGridRangeQuery` and `CanopyGridRangePage`
+writers validate this contract, and `CanopyX.Data` answers it ([Range queries](remote-dotnet.md#range-queries)).
 ### Record selection scopes
 
 `reporting.selectionControls: true` adds native row checkboxes, selected counts and explicit page/all-matching/clear commands. It also enables `getSelectionDescriptor`, `setRowSelected`, `selectPage`, `selectRange` and `selectAllMatching`; views without this flag retain the existing ID-list selection API. Single selection supports record toggles; page, range and all-matching commands require multiple selection. These controls use existing columns and logical ARIA indices, without a synthetic data column. Space toggles the focused record; Shift+Space and Shift-click extend from the selection anchor, and Ctrl/Command-click toggles a record. Ctrl/Command adds a range to existing identities. Without these controls, selection comes from Space and the API; a plain row click never selects.
