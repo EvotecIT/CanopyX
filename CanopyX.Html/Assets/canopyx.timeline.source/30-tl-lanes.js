@@ -1,0 +1,219 @@
+  // ---------- resource timeline: lanes, events, shading, capacity and aggregates ----------
+  // Only the lanes of the rows the tree shows exist, each with the events and gridcells inside the visible width plus a margin,
+  // so 5,000 resources and 100,000 events paint as fast as twenty. A lane stacks overlapping events in up to four sub-rows.
+  // A group's lane shows its capacity instead: the most events at once among its resources in each unit, toned by the
+  // capacity thresholds. Business hours (hour zoom), unavailable time and background ranges shade the lanes behind events.
+  const TL_MARGIN = 480, TL_STACK = 4;
+
+  Object.assign(DataGrid.prototype, {
+    /** Events by resource, sorted by start, with their sub-rows; background events apart. */
+    tlIndexEvents() {
+      const byResource = new Map(), backgrounds = new Map();
+      for (const event of this.calEvents) {
+        const target = event.background ? backgrounds : byResource, key = event.resource ?? "";
+        if (!target.has(key)) target.set(key, []);
+        target.get(key).push(event);
+      }
+      for (const list of byResource.values()) {
+        list.sort((a, b) => a.start - b.start || b.end - a.end);
+        const ends = [];
+        for (const event of list) {
+          let lane = ends.findIndex(end => end <= event.start);
+          if (lane < 0) { lane = ends.length; ends.push(0); }
+          ends[lane] = Math.max(event.end, event.start + 1); event.tlLane = lane;
+        }
+        list.lanes = Math.max(1, ends.length);
+      }
+      this.tl.stats = null;
+      return { byResource, backgrounds };
+    },
+    tlVisibleRows(margin) {
+      const tree = this.tlTree, tops = tree.tops, count = tree.rows.length, main = this.tlMain;
+      if (!count) return { first: 0, last: -1 };
+      const top = main.scrollTop, bottom = top + main.clientHeight, find = y => { let low = 0, high = count - 1; while (low < high) { const mid = (low + high + 1) >> 1; if (tops[mid] <= y) low = mid; else high = mid - 1; } return low; };
+      return { first: Math.max(0, find(top) - margin), last: Math.min(count - 1, find(bottom) + margin) };
+    },
+    tlScheduleLanes() {
+      if (this.tlFrame) return;
+      this.tlFrame = requestAnimationFrame(() => { this.tlFrame = 0; if (!this.destroyed) this.tlPaintLanes(); });
+    },
+
+    tlPaintLanes() {
+      const tree = this.tlTree, axis = this.tlAxis, canvas = this.tlCanvas;
+      if (!tree || !axis || this.calView !== "timeline" || !canvas.isConnected) return;
+      const rows = tree.rows, tops = tree.tops, total = tops[rows.length] || 0, main = this.tlMain;
+      canvas.style.height = total + "px"; canvas.setAttribute("aria-rowcount", String(rows.length));
+      const visible = this.tlVisibleRows(3), bucket = Math.floor(main.scrollLeft / TL_MARGIN), left = (bucket - 1) * TL_MARGIN, right = (bucket + 2) * TL_MARGIN + main.clientWidth;
+      const lanes = this.tlLanes ||= new Map(), keep = new Set(), signature = [this.calEpoch, this.calVersion, axis.zoom, axis.from, bucket, this.linkHighlight?.size || 0, this.calSelection?.resource ?? ""].join("|");
+      for (let i = visible.first; i <= visible.last; i++) {
+        const row = rows[i], key = row.status ? "status:" + i : row.key;
+        keep.add(key);
+        let lane = lanes.get(key);
+        if (!lane) { lane = h("div", "cx-tl-lane"); lane.setAttribute("role", "row"); lanes.set(key, lane); }
+        const height = (tops[i + 1] ?? total) - tops[i];
+        lane.style.top = tops[i] + "px"; lane.style.height = height + "px"; lane.setAttribute("aria-rowindex", String(i + 1));
+        if (lane._sig !== signature + "|" + height || lane._row !== row) { lane._sig = signature + "|" + height; lane._row = row; this.tlPaintLane(lane, row, height, left, right); }
+        if (lane.parentNode !== canvas) canvas.appendChild(lane);
+      }
+      for (const [key, lane] of lanes) if (!keep.has(key)) { if (lane.contains(document.activeElement)) continue; lane.remove(); lanes.delete(key); }
+      this.tlPaintCanvas(left, right, total);
+      this.calMarkSelection();
+      if (this.calRoot.contains(document.activeElement) && !this.calBody.contains(document.activeElement)) return;
+      if (!canvas.querySelector('[tabindex="0"]')) this.calRestoreFocus(false);
+    },
+
+    /** One lane: gridcells for the units in view, then shading, then the events (or a group's capacity). */
+    tlPaintLane(lane, row, height, left, right) {
+      lane.replaceChildren();
+      if (row.status) { lane.removeAttribute("aria-label"); return; }
+      const axis = this.tlAxis, id = row.key, group = this.tl.children.has(id), events = group ? [] : this.tlIndex.byResource.get(id) || [];
+      lane.classList.toggle("cx-tl-group", group);
+      lane.dataset.cxResource = id;
+      const name = this.calResourceName(id), count = group ? this.tlStats(id).count : events.length;
+      lane.setAttribute("aria-label", fill(this.calLabels.calendarLane, { resource: name, events: calCount(this, this.calLabels.calendarEvents, count) }));
+      const cells = [];
+      axis.units.forEach((unit, index) => {
+        if (unit.x + axis.width <= left || unit.x > right) return;
+        const cell = h("div", "cx-tl-cell"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1;
+        cell.dataset.cxDay = String(unit.first); cell.dataset.cxUnit = String(index); cell.dataset.cxResource = id;
+        cell.style.left = unit.x + "px"; cell.style.width = axis.width + "px";
+        cell.setAttribute("aria-label", name + ", " + this.tlUnitLabel(unit));
+        cells.push(cell); lane.appendChild(cell);
+      });
+      if (group) { this.tlPaintHeat(lane, id, left, right); return; }
+      this.tlPaintShade(lane, id, left, right);
+      const stack = Math.min(TL_STACK, events.lanes || 1), inner = height - 6, bar = Math.max(6, inner / stack - (stack > 1 ? 2 : 0));
+      const firstVisible = cells.length ? Number(cells[0].dataset.cxUnit) : 0;
+      for (const event of events) {
+        if (event.end < axis.from || event.start >= axis.to) continue;
+        const x1 = axis.x(event.start), x2 = event.end > event.start ? axis.x(event.end) : x1;
+        if (x2 < left || x1 > right) continue;
+        const element = this.calEventElement(event, "lane"), slot = Math.min(event.tlLane, stack - 1), width = Math.max(event.marker ? 0 : 3, x2 - x1);
+        const unit = Math.max(firstVisible, axis.unitOf(event.start)), cell = cells.find(item => Number(item.dataset.cxUnit) === unit) || cells[0];
+        const offset = cell ? Number.parseFloat(cell.style.left) : 0;
+        element.style.left = (x1 - offset) + "px"; element.style.width = width + "px"; element.style.top = (3 + slot * (inner / stack)) + "px"; element.style.height = bar + "px";
+        if (bar < 16) element.classList.add("cx-tl-thin");
+        if (event.marker) element.classList.add("cx-tl-point");
+        // Past the hour zoom points sit too close for their names; the name stays in the accessible name and the tooltip.
+        if (event.marker && axis.zoom !== "hour") { element.classList.add("cx-tl-bare"); element.title = this.calEventName(event); }
+        if (width < 40) element.classList.add("cx-tl-narrow");
+        if (event.start < axis.from) element.classList.add("cx-cal-cont-start");
+        if (event.end > axis.to) element.classList.add("cx-cal-cont-end");
+        (cell || lane).appendChild(element);
+      }
+    },
+    tlUnitLabel(unit) {
+      const lower = this.tlHeader?.lower.find(cell => cell.unit === unit);
+      return lower ? lower.label : this.calFmt.longDay(unit.first);
+    },
+
+    /** Shading inside a lane: the resource's off hours (hour zoom), its unavailable time and its background ranges. */
+    tlPaintShade(lane, id, left, right) {
+      const axis = this.tlAxis, add = (start, end, cls, label, tone) => {
+        const x1 = axis.x(start), x2 = axis.x(end);
+        if (x2 <= x1 || x2 < left || x1 > right) return;
+        const block = h("div", "cx-tl-shade " + cls); block.setAttribute("aria-hidden", "true");
+        block.style.left = x1 + "px"; block.style.width = (x2 - x1) + "px";
+        if (tone) block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-tone-info))");
+        if (label && x2 - x1 > 60) { const text = h("span"); setText(text, label); block.appendChild(text); }
+        lane.appendChild(block);
+      };
+      if (axis.zoom === "hour") {
+        const day = axis.units[0].first, hours = this.calHoursFor(id, calDow(day)) ?? (this.cal.working ? (this.cal.working.days.has(calDow(day)) ? [this.cal.working] : []) : null);
+        if (hours) { let at = 0; for (const span of hours.slice().sort((a, b) => a.start - b.start)) { add(this.calZone.instant(day, at), this.calZone.instant(day, span.start), "cx-tl-off"); at = Math.max(at, span.end); } add(this.calZone.instant(day, at), this.calZone.instant(day, 1440), "cx-tl-off"); }
+      }
+      for (const range of this.calRanges) if (range.resource === id) add(range.start, range.end, range.kind === "unavailable" ? "cx-tl-unavailable" : "cx-tl-bg", range.label, range.kind === "unavailable" ? null : range.tone);
+      for (const event of this.tlIndex.backgrounds.get(id) || []) add(event.start, event.end, "cx-tl-bg", event.title, event.tone || "info");
+    },
+    /** Shading across every lane: weekend days (day zoom), background ranges for every resource and the now line. */
+    tlPaintCanvas(left, right, total) {
+      const axis = this.tlAxis, layer = this.tlLayer ||= h("div", "cx-tl-layer");
+      layer.setAttribute("aria-hidden", "true"); layer.style.height = total + "px";
+      const blocks = [];
+      for (const cell of this.tlHeader.lower) if (cell.weekend && cell.x + cell.width >= left && cell.x <= right) { const block = h("div", "cx-tl-weekend-col"); block.style.left = cell.x + "px"; block.style.width = cell.width + "px"; blocks.push(block); }
+      const global = [...this.calRanges.filter(range => range.resource == null), ...(this.tlIndex.backgrounds.get("") || []).map(event => ({ start: event.start, end: event.end, label: event.title, tone: event.tone || "info", kind: "background" }))];
+      for (const range of global) {
+        const x1 = axis.x(range.start), x2 = axis.x(range.end);
+        if (x2 <= x1 || x2 < left || x1 > right) continue;
+        const block = h("div", "cx-tl-range" + (range.kind === "unavailable" ? " cx-tl-unavailable" : "")); block.style.left = x1 + "px"; block.style.width = (x2 - x1) + "px";
+        if (range.kind !== "unavailable") block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + range.tone + ",var(--cx-tone-info))");
+        block.title = range.label; blocks.push(block);
+      }
+      const now = Date.now();
+      if (this.cal.now && now >= axis.from && now < axis.to) { const line = h("div", "cx-tl-now"); line.style.left = axis.x(now) + "px"; line.title = this.calLabels.calendarNow + " " + this.calFmt.time(now); blocks.push(line); }
+      layer.replaceChildren(...blocks);
+      if (layer.parentNode !== this.tlCanvas) this.tlCanvas.prepend(layer);
+      // Ranges for every resource are named in a third header row, which the tree's header matches in height.
+      const labels = this.tlRangeLabels ||= h("div", "cx-tl-range-labels"), named = global.filter(range => axis.x(range.end) - axis.x(range.start) > 50);
+      labels.replaceChildren(...named.map(range => { const label = h("span", "cx-tl-range-label"); label.style.left = axis.x(range.start) + "px"; label.style.width = (axis.x(range.end) - axis.x(range.start)) + "px"; setText(label, range.label); label.title = range.label; return label; }));
+      if (labels.parentNode !== this.tlHead) this.tlHead.appendChild(labels);
+      if (this.tlHead.classList.contains("cx-tl-has-ranges") !== named.length > 0) {
+        this.tlHead.classList.toggle("cx-tl-has-ranges", named.length > 0);
+        this.tlRoot.style.setProperty("--cx-tl-head-h", named.length ? "78px" : "57px");
+        this.tlTree.scheduleRender();
+      }
+    },
+    calTickTimeline() { if (this.calView === "timeline") this.tlPaintCanvas(this.tlMain.scrollLeft - TL_MARGIN, this.tlMain.scrollLeft + this.tlMain.clientWidth + TL_MARGIN, this.tlTree.tops[this.tlTree.rows.length] || 0); },
+
+    /** A group's capacity: per unit, the most events at once among its resources, toned by the thresholds. */
+    tlPaintHeat(lane, id, left, right) {
+      const axis = this.tlAxis, heat = this.tlHeat(id), thresholds = this.cal.capacity?.thresholds || [], most = Math.max(1, ...heat);
+      heat.forEach((value, index) => {
+        const unit = axis.units[index];
+        if (!value || unit.x + axis.width < left || unit.x > right) return;
+        const block = h("div", "cx-tl-heat"), tone = thresholds.reduce((found, item) => value >= item.at ? item.tone : found, null);
+        block.style.left = unit.x + "px"; block.style.width = axis.width + "px";
+        block.style.setProperty("--cx-heat", String(Math.min(1, value / most)));
+        if (tone) { block.dataset.cxTone = tone; block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-accent))"); }
+        block.setAttribute("aria-hidden", "true"); block.title = fill(this.calLabels.calendarCapacityAt, { count: numberFormat(this.lang).format(value) });
+        if (axis.width >= 28) setText(block, numberFormat(this.lang).format(value));
+        lane.appendChild(block);
+      });
+      lane.setAttribute("aria-label", lane.getAttribute("aria-label") + ", " + this.calLabels.calendarCapacity + " " + fill(this.calLabels.calendarCapacityAt, { count: numberFormat(this.lang).format(Math.max(0, ...heat)) }));
+    },
+    tlHeat(id) {
+      if (this.tl.heat.has(id)) return this.tl.heat.get(id);
+      const axis = this.tlAxis, units = axis.units, points = [], out = new Array(units.length).fill(0);
+      for (const leaf of [id, ...this.tlDescendants(id)]) for (const event of this.tlIndex.byResource.get(leaf) || []) {
+        if (event.end <= axis.from || event.start >= axis.to) continue;
+        points.push([Math.max(event.start, axis.from), 1], [Math.max(event.end, event.start + 1), -1]);
+      }
+      points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      let level = 0, unit = 0;
+      for (let i = 0; i < points.length; i++) {
+        level += points[i][1];
+        const from = points[i][0], to = i + 1 < points.length ? points[i + 1][0] : from;
+        if (to <= from || level <= 0) continue;
+        while (unit < units.length - 1 && units[unit].end <= from) unit++;
+        for (let at = unit; at < units.length && units[at].start < to; at++) out[at] = Math.max(out[at], level);
+      }
+      this.tl.heat.set(id, out);
+      return out;
+    },
+    /** Event count, busy time (merged intervals) and the events that overlap another, for a resource and its descendants. */
+    tlStats(id) {
+      const cache = this.tl.stats ||= new Map();
+      if (cache.has(id)) return cache.get(id);
+      const axis = this.tlAxis, stats = { count: 0, busy: 0, overlaps: 0 };
+      if (this.tl.children.has(id)) for (const child of this.tl.children.get(id)) { const inner = this.tlStats(child); stats.count += inner.count; stats.busy += inner.busy; stats.overlaps += inner.overlaps; }
+      else {
+        let end = -Infinity, lastEnd = -Infinity, lastIndex = -1;
+        const overlapped = new Set(), list = (this.tlIndex.byResource.get(id) || []).filter(event => event.end > axis.from && event.start < axis.to);
+        list.forEach((event, index) => {
+          const from = Math.max(event.start, axis.from), to = Math.min(event.end, axis.to);
+          if (to > end) { stats.busy += to - Math.max(from, end); end = to; }
+          if (event.start < lastEnd) { overlapped.add(index); overlapped.add(lastIndex); }
+          if (event.end > lastEnd) { lastEnd = event.end; lastIndex = index; }
+        });
+        stats.count = list.length; stats.overlaps = overlapped.size;
+      }
+      cache.set(id, stats);
+      return stats;
+    },
+    tlAggregateText(id, kind) {
+      if (!this.tlIndex) return "";
+      const stats = this.tlStats(id), format = numberFormat(this.lang);
+      if (kind === "busy") return format.format(Math.round(stats.busy / CAL_HOUR * 10) / 10) + " h";
+      return format.format(kind === "overlap" ? stats.overlaps : stats.count);
+    }
+  });

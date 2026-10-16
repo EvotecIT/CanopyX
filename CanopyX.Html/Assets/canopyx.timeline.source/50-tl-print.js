@@ -1,0 +1,37 @@
+  // ---------- resource timeline: the print layout ----------
+  // Printing a timeline cannot rely on virtual rows and a scrolled axis, so beforeprint writes a static copy: the resources the
+  // tree shows (indented, at most 400), each with its events as bars placed by share of the span across the page width, the
+  // span's header and the capacity of groups as numbers. It is shown only in print and removed afterwards.
+  const TL_PRINT_ROWS = 400;
+  Object.assign(DataGrid.prototype, {
+    tlPrint(on) {
+      this.tlPrintView?.remove(); this.tlPrintView = null;
+      if (!on || this.calView !== "timeline" || !this.tlTree || !this.tlAxis) return;
+      const axis = this.tlAxis, tree = this.tlTree, view = this.tlPrintView = h("div", "cx-tl-print"), share = time => (axis.x(time) / axis.total * 100) + "%";
+      view.setAttribute("aria-hidden", "true");
+      const head = h("div", "cx-tl-print-row cx-tl-print-head"), corner = h("div", "cx-tl-print-name"), scale = h("div", "cx-tl-print-lane");
+      setText(corner, this.cal.resources.label || this.calLabels.calendarResources);
+      for (const cell of this.tlHeader.lower) {
+        const mark = h("span", "cx-tl-print-unit"); mark.style.left = (cell.x / axis.total * 100) + "%"; mark.style.width = (cell.width / axis.total * 100) + "%";
+        setText(mark, cell.text); scale.appendChild(mark);
+      }
+      head.append(corner, scale); view.appendChild(head);
+      for (const row of tree.rows.filter(item => !item.status).slice(0, TL_PRINT_ROWS)) {
+        const line = h("div", "cx-tl-print-row"), name = h("div", "cx-tl-print-name"), lane = h("div", "cx-tl-print-lane"), group = this.tl.children.has(row.key);
+        name.style.paddingLeft = (4 + (row.level - 1) * 12) + "px"; setText(name, this.calResourceName(row.key));
+        if (group) {
+          line.classList.add("cx-tl-print-group");
+          this.tlHeat(row.key).forEach((value, index) => { if (!value) return; const unit = axis.units[index], mark = h("span", "cx-tl-print-heat");
+            mark.style.left = (unit.x / axis.total * 100) + "%"; mark.style.width = (axis.width / axis.total * 100) + "%"; setText(mark, String(value)); lane.appendChild(mark); });
+        } else for (const event of this.tlIndex.byResource.get(row.key) || []) {
+          if (event.end <= axis.from || event.start >= axis.to) continue;
+          const bar = h("span", "cx-tl-print-bar");
+          bar.style.left = share(Math.max(event.start, axis.from)); bar.style.width = "max(3px, calc(" + share(Math.min(event.end, axis.to)) + " - " + share(Math.max(event.start, axis.from)) + "))";
+          if (event.tone) bar.style.setProperty("--cx-ev", "var(--cx-tone-" + event.tone + ",var(--cx-accent))");
+          setText(bar, event.title); bar.title = this.calEventName(event); lane.appendChild(bar);
+        }
+        line.append(name, lane); view.appendChild(line);
+      }
+      this.tlRoot.appendChild(view);
+    }
+  });
