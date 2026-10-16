@@ -71,26 +71,26 @@
       const items = clauses.length !== 1 ? null : clauses[0].groups ? clauses[0].operator === "or" && !clauses[0].groups.length && clauses[0].filters.every(listed) ? clauses[0].filters : null : listed(clauses[0]) ? clauses : null;
       return items ? { values: items.flatMap(clause => clause.operator === "isNull" ? [null] : clause.values) } : { custom: true };
     }
-    let low = null, high = null, open = false;
+    let low = null, high = null, lowOpen = false, open = false;
     for (const clause of clauses) {
       if (clause.groups || clauses.length > 2) return { custom: true };
-      if ((clause.operator === "ge" || clause.operator === "gt") && low === null) low = clause.values[0];
+      if ((clause.operator === "ge" || clause.operator === "gt") && low === null) { low = clause.values[0]; lowOpen = clause.operator === "gt"; }
       else if ((clause.operator === "le" || clause.operator === "lt") && high === null) { high = clause.values[0]; if (clause.operator === "lt") open = true; }
       else return { custom: true };
     }
-    return { low, high, open };
+    return { low, high, lowOpen, open };
   }
 
   /**
    * The query with a facet's choice in place of its column's conditions: a value list's values, or a range's bounds (an
-   * open high bound is exclusive). A locked column (see facetSelection) keeps the query as it is.
+   * open bound is exclusive). A locked column (see facetSelection) keeps the query as it is.
    */
   function facetQuery(query, facet, choice) {
     const predicate = (operator, values = []) => ({ column: facet.column, operator, values });
     try {
       if (facet.kind === "range") {
         const base = gridColumnClauses(query, facet.column).query;
-        const bounds = [choice.low != null && predicate("ge", [choice.low]), choice.high != null && predicate(choice.open ? "lt" : "le", [choice.high])].filter(Boolean);
+        const bounds = [choice.low != null && predicate(choice.lowOpen ? "gt" : "ge", [choice.low]), choice.high != null && predicate(choice.open ? "lt" : "le", [choice.high])].filter(Boolean);
         return gridQueryStart(base, { filters: [...base.filters, ...bounds] });
       }
       const raw = choice.filter(value => value !== null), empty = raw.length < choice.length;

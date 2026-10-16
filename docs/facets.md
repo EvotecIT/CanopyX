@@ -64,6 +64,9 @@ that, the values its enum or state presenter names, in the order it names them (
 Normal lists Urgent, High, Normal, then the values it does not name, such as Low). A list facet of such a column lists by that
 order unless its `sort` is `count`; other columns keep the order above.
 
+Leaving `CanopyFacet.Sort` unassigned keeps that automatic choice. Assigning `CanopyFacetSort.Count` explicitly selects
+the most frequent values first, including for a column with a declared order; `CanopyFacetSort.Value` selects value order.
+
 Above twelve values a search box narrows the list (a hosted grid searches at its source). A hosted grid's list is bounded to
 200 values; when there are more, a note says how many and the search finds the others.
 
@@ -71,7 +74,9 @@ Above twelve values a search box narrows the list (a hosted grid searches at its
 
 A range draws the column's distribution as equal-width bars over the result without this column's conditions; the bars
 inside the chosen range use the accent colour, and each bar's tooltip gives its span and count. **From** and **To** (number
-fields, or date fields in the grid's time zone, whole days) set the bounds (`ge` and `le`), on change or Enter. A click on a bar
+fields, or date fields in the grid's time zone, whole days) set the edited bound (`ge` or `le`), on change or Enter. The other
+bound keeps its existing condition, including `gt` or `lt` and an exact date/time supplied through another filter control.
+Clearing one field removes only that bound. A click on a bar
 chooses its span, from its start up to the next bar's start (`lt`; the last bar includes the maximum), Shift+click extends the
 range, and a click on the chosen bar clears it. A hosted grid draws the histogram
 from its value list when the list is complete (200 values or fewer); otherwise it keeps the fields and says "Too many values

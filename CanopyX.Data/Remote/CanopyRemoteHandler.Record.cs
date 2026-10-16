@@ -38,7 +38,8 @@ public sealed partial class CanopyRemoteHandler {
     /// again after the provider completes so a concurrent change never stamps newer details with an older revision. A record
     /// that is missing, outside the caller's scope, or whose identity cannot be a key answers alike with
     /// <see cref="CanopyRequestError.RecordNotFound"/>. The provider's answer is checked: a field or drawer value that was not
-    /// asked for (including fields on its returned parent row), more collection rows or items than allowed, or a row of another record fails the request as a server error
+    /// asked for (including fields on its returned parent row), a collection without its list or total, more collection rows
+    /// or items than allowed, or a row of another record fails the request as a server error
     /// instead of reaching the caller. Text longer than <see cref="CanopyRecordRequest.MaxTextLength"/> is then shortened, ellipsis
     /// included, to that length whatever the provider (identities, link keys, trusted HTML and the record's row never are). An answer larger
     /// than <see cref="CanopyRemoteLimits.MaxRecordBytes"/> is refused.
@@ -93,8 +94,9 @@ public sealed partial class CanopyRemoteHandler {
             var cell = pair.Value;
             if (cell == null) continue;
             if (field.IsCollection) {
-                if (cell.Records != null && (cell.Records.Rows.Count > request.FirstRows(field) || cell.Records.Roots.Count != 0 || !Bounded(cell.Records, maxPageSize)) || cell.Events.Count != 0 || cell.Changes.Count != 0)
-                    throw new InvalidOperationException("The record provider answered a collection with more rows than allowed, or with other items.");
+                if (cell.Records == null || cell.Records.Total == null || cell.Records.Rows.Count > request.FirstRows(field) || cell.Records.Roots.Count != 0 ||
+                    !Bounded(cell.Records, maxPageSize) || cell.Events.Count != 0 || cell.Changes.Count != 0)
+                    throw new InvalidOperationException("The record provider answered a collection without its rows or total, with more rows than allowed, or with other items.");
             } else if (cell.Records != null || cell.Events.Count > request.MaxItems || cell.Changes.Count > request.MaxItems) {
                 throw new InvalidOperationException("The record provider answered a value field with a collection or too many items.");
             }

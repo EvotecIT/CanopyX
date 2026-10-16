@@ -59,6 +59,12 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
                 if (kind == "provider") throw new InvalidOperationException("private provider error");
                 var record = new CanopyGridRecord(request.Id);
                 if (kind == "revision") _customRevision = "r2";
+                else if (kind == "other-row") record.Row = new CanopyGridRow("2") { Cells = { ["name"] = "another-row-value" } };
+                else if (kind == "collection-scalar") record.Fields["parts"] = "not a collection";
+                else if (kind == "collection-total") record.Fields["parts"] = CanopyCell.Collection(new CanopyRecordList {
+                    Columns = { new CanopyColumn("name", "Name") },
+                    Rows = { new CanopyGridRow("part-1") { Cells = { ["name"] = "part" } } }
+                });
                 else {
                     var cell = new CanopyCell();
                     cell.Fields.Add(new CanopyCellField("self", cell));
@@ -189,9 +195,12 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
     [InlineData("revision", 409, "staleRevision")]
     [InlineData("provider", 500, "serverError")]
     [InlineData("cycle", 500, "serverError")]
+    [InlineData("other-row", 500, "serverError")]
+    [InlineData("collection-scalar", 500, "serverError")]
+    [InlineData("collection-total", 500, "serverError")]
     public async Task CustomRecordFailures_ReturnTypedHttpErrorsWithoutProviderDetails(string kind, int status, string code) {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/custom/record") {
-            Content = new StringContent(Assets.Query("1", ",\"revision\":\"r1\""), Encoding.UTF8, "application/json")
+            Content = new StringContent(Assets.Query("1", ",\"revision\":\"r1\"" + (kind == "other-row" ? ",\"row\":true" : "")), Encoding.UTF8, "application/json")
         };
         request.Headers.Add("X-Test-Failure", kind);
         using var response = await _client.SendAsync(request);
@@ -200,6 +209,7 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         using var error = JsonDocument.Parse(text);
         Assert.Equal(code, error.RootElement.GetProperty("error").GetString());
         Assert.DoesNotContain("private provider error", text);
+        Assert.DoesNotContain("another-row-value", text);
         Assert.DoesNotContain("Structured values", text);
         Assert.DoesNotContain("Exception", text);
         Assert.DoesNotContain("   at ", text);

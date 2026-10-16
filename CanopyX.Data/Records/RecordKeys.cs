@@ -9,7 +9,7 @@ internal static class RecordKeys {
     internal static bool Supported(Type type) {
         var t = ExpressionTools.Underlying(type);
         return t == typeof(string) || t == typeof(Guid) || t == typeof(sbyte) || t == typeof(byte) || t == typeof(short) || t == typeof(ushort) ||
-            t == typeof(int) || t == typeof(uint) || t == typeof(long);
+            t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong);
     }
 
     /// <summary>
@@ -22,6 +22,9 @@ internal static class RecordKeys {
         // Some stores refuse a NUL character in a text parameter; no stored key holds one, so it finds nothing without a query.
         if (t == typeof(string)) return id.IndexOf('\0') >= 0 ? null : id;
         if (t == typeof(Guid)) return Guid.TryParseExact(id, "D", out var guid) && guid.ToString("D") == id ? guid : (object?)null;
+        // Identity text keeps all 64 bits, independently of the numeric-cell range used for display values.
+        if (t == typeof(ulong)) return id.Length <= 20 && ulong.TryParse(id, NumberStyles.None, CultureInfo.InvariantCulture, out var unsigned) &&
+            unsigned.ToString(CultureInfo.InvariantCulture) == id ? unsigned : (object?)null;
         if (id.Length > 20 || !long.TryParse(id, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number)) return null;
         if (number.ToString(CultureInfo.InvariantCulture) != id) return null;
         if (t == typeof(long)) return number;

@@ -47,6 +47,34 @@ public sealed class GridFacetPanelTests {
         Assert.Contains("\"facets\":{\"columns\":[\"site\"]}", hosted.ToJson());
     }
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(null, true)]
+    [InlineData(CanopyFacetSort.Count, false)]
+    [InlineData(CanopyFacetSort.Count, true)]
+    [InlineData(CanopyFacetSort.Value, false)]
+    [InlineData(CanopyFacetSort.Value, true)]
+    public void FacetPanel_PreservesExplicitOrderingWhileUnsetKeepsColumnDefaults(CanopyFacetSort? sort, bool labelled) {
+        var view = Grid();
+        view.Reporting = new CanopyGridReporting();
+        view.GetColumn("site").Sortable = true;
+        view.GetColumn("site").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.Natural, new[] { "Rare", "Common" });
+        var facet = new CanopyFacet("site");
+        if (sort.HasValue) facet.Sort = sort.Value;
+        if (labelled) facet.Label = "Location";
+        view.FacetPanel = new CanopyFacetPanel();
+        view.FacetPanel.Facets.Add(facet);
+
+        var wire = JsonNode.Parse(view.ToJson())!["facets"]!["columns"]![0]!;
+        if (!sort.HasValue && !labelled) Assert.Equal("site", wire.GetValue<string>());
+        else {
+            Assert.Equal("site", wire["column"]!.GetValue<string>());
+            Assert.Equal(labelled ? "Location" : null, wire["label"]?.GetValue<string>());
+            Assert.Equal(sort.HasValue ? sort == CanopyFacetSort.Count ? "count" : "value" : null, wire["sort"]?.GetValue<string>());
+        }
+        ProtocolSchema.AssertValid(view.ToJson(), "a facet preserving its explicit ordering");
+    }
+
     [Fact]
     public void FacetsPart_IsVersionedBoundedOutsideTheEntryPointsAndCarriedByFacetViewsOnly() {
         var part = CanopyHtmlAssets.GetPart("facets");

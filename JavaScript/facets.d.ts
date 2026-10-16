@@ -12,7 +12,7 @@ export type GridFacet<Row extends GridRow = GridRow> = GridColumnId<Row> | {
   limit?: number;
   /** Bars in a range's histogram, 2..60 (default 16). */
   bins?: number;
-  /** "count" (most frequent first, the default) or "value". */
+  /** "count" (most frequent first) or "value"; omitted uses declared column order, otherwise count. */
   sort?: "count" | "value";
   /** Starts collapsed to its heading. */
   collapsed?: boolean;
