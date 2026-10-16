@@ -4,7 +4,7 @@
   // a grid without one loads it on the first editing call. Until it installs nothing can have changed, so the reads answer
   // empty and the actions load it first. A part that cannot load is reported as the grid's error and editing stays off.
   const GRID_EDITING = definePart(DataGrid, "editing", "editing", () => ({ DataGrid, h, setText, fill, gridButton, gridDecorateButton, GRID_ICONS,
-    cellValue, cellText, isCellObject, gridFreeze, numberFormat, gridQuery, foldText, requireIdentifier, checkDocument, validateGridRows, inlineGridSource, PROTOCOL, boundedPattern, validateGridFacetPage }));
+    cellValue, cellText, isCellObject, gridFreeze, gridMomentFromParts, numberFormat, gridQuery, foldText, requireIdentifier, checkDocument, validateGridRows, inlineGridSource, PROTOCOL, boundedPattern, validateGridFacetPage, RECORD_IMPL }));
   const GRID_EDIT_INIT = DataGrid.prototype.initializeState;
   // The API members the part implements; createDataGrid looks them up on each call, so they switch to the part once it is in.
   // Until then the first six load the part and run, the next eight answer false and getChanges an empty list.

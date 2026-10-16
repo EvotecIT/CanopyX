@@ -207,6 +207,6 @@ Every other option of `createDataGrid` passes through: `renderers`, `actions`, `
 
 ## Fast first rows
 
-Enhancing a 10,000-row table that the page already shows paints the grid's first page in about 0.2 s in Chromium and 0.4 s in Edge on a desktop, loading the parts on first use included (`tests/browser/specs/enhance-performance.spec.mjs` keeps a 1 s budget). Reading the table and building the rows is one pass; the grid renders only the visible page.
+Enhancing a 10,000-row table that the page already shows measured about 0.2 s in Chromium and 0.4 s in Edge on a desktop, loading the parts on first use included. `tests/browser/specs/enhance-performance.spec.mjs` retains a 1 s comparison target in the [opt-in benchmark lane](testing.md#run-measurements-explicitly). Ordinary correctness tests check the first page and complete matched count without a timing ceiling. Reading the table and building the rows is one pass; the grid renders only the visible page.
 
 The table itself is visible while scripts load. To skip the part loading, load the part files in the page head with the runtime: `<script src="canopyx-enhance.js"></script>`, `<script src="canopyx-pager.js"></script>` and `<link rel="stylesheet" href="canopyx-pager.css">`; a part that registered itself is used at once.

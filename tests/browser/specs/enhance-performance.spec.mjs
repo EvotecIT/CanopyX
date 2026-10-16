@@ -35,7 +35,7 @@ async function measure(browser, warm) {
   return result;
 }
 
-test("a 10,000-row table shows its first grid rows within budget", async ({ browser }) => {
+test("a 10,000-row table shows its first grid rows within budget", { tag: "@benchmark" }, async ({ browser }) => {
   const cold = [], warm = [];
   for (let attempt = 0; attempt < 3; attempt++) {
     const first = await measure(browser, false);

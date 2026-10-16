@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "a635a9197df79d67",
+      "version": "648ae9e4c4537efd",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "1fb00f2b2ea31c56",
+      "version": "fe5fb6e9a765a1ae",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "d2dd03704d761dd3",
+      "version": "e776ece53a116200",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

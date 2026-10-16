@@ -239,6 +239,7 @@ CSV export and copying distinguish filtered results, selected records and all re
 - [Recipes](docs/recipes.md): short how-tos for server data, cell values, export, phones, grouping, saved views and translations.
 - [Authoring reference](docs/authoring.md), [column layout](docs/column-layout.md), [label packs](docs/labels.md) and the [data protocol](docs/data-protocol.md).
 - [Planned work](TODO.md): remaining capabilities, consumers and acceptance gates.
+- [Testing and benchmarks](docs/testing.md): the required correctness loop and explicit performance measurements.
 
 ## Community and license
 

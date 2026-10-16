@@ -109,7 +109,8 @@ const ids = settings.formats.map(format => {
 });
 CanopyX.configure(settings.view, { source, exportFormats: ids,
   onExport: async event => {
-    const format = settings.formats.find(item => item.id === event.format) || settings.formats[0];
+    const format = settings.formats.find(item => item.id === event.format);
+    if (!format) throw new Error("CanopyX: unknown remote export format.");
     const response = await post("/export/" + encodeURIComponent(format.id), event.request, event.signal);
     const blob = await exportFile(response, (event.request.fileName || settings.view) + "." + format.id), link = document.createElement("a");
     link.href = URL.createObjectURL(blob); link.download = blob.name;

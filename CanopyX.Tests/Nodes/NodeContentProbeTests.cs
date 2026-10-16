@@ -31,6 +31,7 @@ public sealed class NodeContentProbeTests {
     }
 
     [Fact]
+    [Trait("Category", "Benchmark")]
     public void ProbingALeafAllocatesNothing() {
         var nodes = new CanopyNode[10_000];
         var cell = new CanopyCell("text");

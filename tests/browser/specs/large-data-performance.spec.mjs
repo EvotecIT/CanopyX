@@ -38,7 +38,7 @@ test.describe("large data load budgets", () => {
   test.setTimeout(240000);
 
   for (const [name, budget] of [["large/grid-100k.html", FIRST_ROWS_COMPACT_MS], ["large/grid-100k-objects.html", FIRST_ROWS_OBJECTS_MS]]) {
-    test("first rows of " + name + " paint within budget at " + CPU + "x CPU", async ({ browser }) => {
+    test("first rows of " + name + " paint within budget at " + CPU + "x CPU", { tag: "@benchmark" }, async ({ browser }) => {
       const samples = [];
       for (let attempt = 0; attempt < 3; attempt++) {
         const page = await load(browser, name, () => window.__firstRows > 0);
@@ -51,7 +51,7 @@ test.describe("large data load budgets", () => {
     });
   }
 
-  test("a report of 24 grids mounts and readies its two visible grids within budget at " + CPU + "x CPU", async ({ browser }) => {
+  test("a report of 24 grids mounts and readies its two visible grids within budget at " + CPU + "x CPU", { tag: "@benchmark" }, async ({ browser }) => {
     const samples = [];
     for (let attempt = 0; attempt < 3; attempt++) {
       const page = await load(browser, "large/report.html", () => window.__ready != null);

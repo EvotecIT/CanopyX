@@ -64,9 +64,8 @@
       if (year < 100) year += 2000;
     }
     const [hours = 0, minutes = 0, seconds = 0] = parts.slice(4, 7).map(item => item === undefined ? 0 : Number(item));
-    const date = grid.local ? new Date(year, month - 1, day, hours, minutes, seconds) : new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
-    const check = grid.local ? [date.getFullYear(), date.getMonth() + 1, date.getDate()] : [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
-    return check[0] === year && check[1] === month && check[2] === day && hours < 24 && minutes < 60 && seconds < 60 ? date.toISOString() : undefined;
+    const date = gridMomentFromParts(year, month, day, hours, minutes, seconds, grid.local);
+    return date ? date.toISOString() : undefined;
   }
 
   /** A pasted text as a value of the column: undefined when it is not one. */

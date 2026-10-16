@@ -11,6 +11,7 @@
     "test:visual": "node node_modules/@playwright/test/cli.js test --project=visual",
     "test:visual:update": "node node_modules/@playwright/test/cli.js test --project=visual --update-snapshots",
     "test:distribution": "node tools/distribution-smoke.mjs",
+    "test:benchmarks": "node tools/browsers.mjs all --benchmarks",
     "bench": "node bench/scroll-benchmark.mjs"
   },
   "devDependencies": {

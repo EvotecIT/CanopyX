@@ -134,7 +134,8 @@
     // inline grid keeps them in its rows so later queries sort and filter by them. A value changed while the row saved
     // (an edit, an undo) stays a change from the saved value.
     editAccept(entry, canonical) {
-      const record = entry.row, inline = this.view.source.kind === "inline" && (!this.opts.source || this.enhanceStore) ? this.view.rows.find(row => row.id === entry.id) : null;
+      const record = entry.row, local = this.view.source.kind === "inline" && (!this.opts.source || this.enhanceStore),
+        inline = local ? this.view.rows.find(row => row.id === entry.id) : null;
       for (const [column, value] of Object.entries(entry.saved)) {
         const current = cellValue(record.cells[column]), saved = canonical && Object.hasOwn(canonical, column) ? canonical[column] :
           editCell(entry.original[column], value, this.editText(this.edit.specs.get(column), value, record));
@@ -160,6 +161,7 @@
         else if (this.view.rowData) this.source.invalidate();
         else this.source = inlineGridSource(this.view);
       }
+      if (local) RECORD_IMPL.invalidate?.(this, entry.id);
       entry.saved = null; entry.error = null; entry.committed = false;
       if (!Object.keys(entry.values).length) this.edit.changes.delete(entry.id);
     }

@@ -36,6 +36,7 @@
     <Compile Include="..\CanopyX.Tests\Grids\RecordDetailWriterTests.cs" Link="Grids\RecordDetailWriterTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\CollectionDepthTests.cs" Link="Records\CollectionDepthTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\TimelineDepthTests.cs" Link="Records\TimelineDepthTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Html\RecordTreeCollectionAssetsTests.cs" Link="Html\RecordTreeCollectionAssetsTests.cs" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

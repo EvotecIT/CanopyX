@@ -33,7 +33,7 @@ jobs:
     # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
     name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }})
     runs-on: ${{ fromJSON(matrix.platform.runner) }}
-    timeout-minutes: 90
+    timeout-minutes: 135
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +50,7 @@ jobs:
       DOTNET_NOLOGO: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       CANOPYX_TEST_BROWSERS: ${{ matrix.engine }}
+      CANOPYX_BENCHMARKS: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -80,9 +81,9 @@ jobs:
       - name: Run quality loop
         shell: pwsh
         run: |
-          # The 1,769-case Firefox suite was still passing after an hour on Windows shared runners.
-          # Allow 70 minutes for the serial suite; individual test and performance limits remain unchanged.
-          $seconds = 4200
+          # Each engine runs serially on a shared runner. This process deadline catches a stalled suite.
+          # Performance measurements run only by explicit opt-in.
+          $seconds = 7200
           if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
             ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds
           } else {

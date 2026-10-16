@@ -29,6 +29,7 @@ CanopyX is a generic, dependency-free engine for large interactive data views. T
 - Add or update contract tests for new behavior. Test the protocol, bundle layout, static output, and browser behavior that hosts rely on, not incidental structure.
 - Add or update generated examples when a change affects visible output.
 - Performance changes need measured before/after numbers at normal speed and at a 4x CPU slowdown from `tests/browser/bench`.
+- Keep elapsed time, relative speed, long-task, observed heap and allocation measurements out of ordinary correctness CI. Browser measurements use `@benchmark`; .NET measurements use `Category=Benchmark`. Preserve deterministic data, request, DOM, cancellation and lifecycle contracts in the normal suite; see `docs/testing.md` for opt-in commands.
 - Preserve `net472`, `netstandard2.0`, `net8.0`, and `net10.0` support in `CanopyX` and `CanopyX.Html`.
 - One public type per file. XML documentation on every public API. Keep production C# files under 800 lines (`Build.ps1` enforces it) and split by responsibility before a file gets close.
 - Do not add `NoWarn` suppressions.
@@ -53,7 +54,7 @@ Run the repository quality loop before trusting packaging, asset, or visual chan
 Use the faster loop for C#-only changes:
 
 ```powershell
-dotnet test .\CanopyX.sln -c Release
+dotnet test .\CanopyX.sln -c Release --filter "Category!=Benchmark"
 ```
 
 After editing runtime source parts, reassemble the runtime, then rebuild so the embedded runtime and the example pages are fresh. The quality loop runs the browser tests against the regenerated examples (run `npm ci` and `node node_modules/@playwright/test/cli.js install chromium` in `tests/browser` once first):

@@ -46,8 +46,8 @@
   }
   function editFromParts(date, time, local) {
     const [year, month, day] = date.split("-").map(Number), [hours, minutes] = time.split(":").map(Number);
-    const moment = local ? new Date(year, month - 1, day, hours, minutes) : new Date(Date.UTC(year, month - 1, day, hours, minutes));
-    return Number.isNaN(moment.getTime()) ? null : moment.toISOString().replace(".000Z", "Z");
+    const moment = gridMomentFromParts(year, month, day, hours, minutes, 0, local);
+    return moment ? moment.toISOString().replace(".000Z", "Z") : null;
   }
 
   // Date, time and date-and-time. On a datetime column the input shows the moment in the grid's time zone (local or UTC)
@@ -64,16 +64,16 @@
     const displayed = input.value;
     let changed = false;
     input.addEventListener("input", () => { changed = true; });
-    return { element: input,
-      error: () => input.validity?.badInput ? fill(context.labels.gridEditDate, { column: context.column.title }) : null,
-      getValue() {
-        if (!changed && input.value === displayed || input.value === start) return context.value ?? null;
-        if (!input.value) return null;
-        if (!moment) return input.value;
-        const [date, time] = withDate && withTime ? input.value.split("T") : withDate ? [input.value, parts ? parts.time : "00:00"] :
-          [(parts || editMoment(new Date().toISOString(), local)).date, input.value];
-        return editFromParts(date, time, local);
-      } };
+    const read = () => {
+      if (!changed && input.value === displayed || input.value === start) return context.value ?? null;
+      if (!input.value) return null;
+      if (!moment) return input.value;
+      const [date, time] = withDate && withTime ? input.value.split("T") : withDate ? [input.value, parts ? parts.time : "00:00"] :
+        [(parts || editMoment(new Date().toISOString(), local)).date, input.value];
+      return editFromParts(date, time, local);
+    };
+    return { element: input, getValue: read,
+      error: () => input.validity?.badInput || moment && input.value && read() === null ? fill(context.labels.gridEditDate, { column: context.column.title }) : null };
   }
 
   const EDIT_EDITORS = {

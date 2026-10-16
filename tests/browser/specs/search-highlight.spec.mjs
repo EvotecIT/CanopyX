@@ -297,7 +297,22 @@ test("match counts use the plural forms of the page language", async ({ page }) 
   }
 });
 
-test("search highlighting stays fast at 100,000 rows: painted rows only, with a sliced count", async ({ page }) => {
+test("complete match counts include unpainted rows and Previous reaches the final match", async ({ page }) => {
+  const count = 4097, total = Math.ceil(count / 7);
+  // With no explicit sort, accepted rows use lexical id order: t994 follows the other printer matches.
+  const last = "t994";
+  await open(page, ticketView(count, { pageSize: 1000 }), { height: 700 });
+  await call(page, "setQuery", { search: "printer" });
+  await settle(page);
+  await expect.poll(() => call(page, "getMatches")).toMatchObject({ complete: true, total });
+  expect(await page.locator(".cx-canvas mark.cx-hit").count()).toBeGreaterThan(0);
+  expect(await page.locator(".cx-row[data-cx-id]").count()).toBeLessThan(80);
+  await call(page, "previousMatch");
+  await expect(page.locator('.cx-row[data-cx-id="' + last + '"] mark.cx-hit-current')).toBeVisible();
+  await expect(countText(page)).toHaveText(total + " of " + total);
+});
+
+test("search highlighting stays fast at 100,000 rows: painted rows only, with a sliced count", { tag: "@benchmark" }, async ({ page }) => {
   await open(page, ticketView(100000, { pageSize: 1000 }), { height: 700 });
   await page.evaluate(() => {
     window.longTasks = [];

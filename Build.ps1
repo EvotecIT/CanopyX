@@ -1,3 +1,28 @@
+<#
+.SYNOPSIS
+Builds, validates and packages CanopyX with its ordinary correctness suites.
+.DESCRIPTION
+Benchmark measurements are excluded from the normal .NET and browser test routes.
+Run the documented opt-in benchmark commands when performance evidence is requested.
+.PARAMETER Configuration
+Build configuration, Release by default.
+.PARAMETER SkipExamples
+Leaves out example generation and its browser checks.
+.PARAMETER SkipBrowserTests
+Generates examples without running browser checks.
+.PARAMETER SkipPack
+Leaves out package creation and package-consumer validation.
+.PARAMETER DotNetCommandTimeoutSeconds
+Maximum duration of each .NET build or validation command.
+.PARAMETER BrowserTestTimeoutSeconds
+Maximum duration of the complete browser correctness suite.
+.PARAMETER PackageConsumerTimeoutSeconds
+Maximum duration of package-consumer validation.
+.EXAMPLE
+./Build.ps1 -Configuration Release -SkipPack
+.OUTPUTS
+Build output, generated examples, validation reports and packages unless skipped.
+#>
 param(
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Release',
@@ -247,7 +272,7 @@ try {
 
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('build', $solution, '-c', $Configuration, '--no-restore') -Description 'Solution build' -TimeoutSeconds $DotNetCommandTimeoutSeconds
-    Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore') -Description 'Test run' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+    Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore', '--filter', 'Category!=Benchmark') -Description 'Correctness tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
 
     if (-not $SkipExamples) {
         $examplesOutput = Join-Path $root "CanopyX.Examples/bin/$Configuration/net10.0/output"
@@ -268,12 +293,15 @@ try {
 
 
             $previousExamples = $env:CANOPYX_EXAMPLES
+            $previousBenchmarks = $env:CANOPYX_BENCHMARKS
             $env:CANOPYX_EXAMPLES = $examplesOutput
+            $env:CANOPYX_BENCHMARKS = '0'
             try {
                 Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
                 Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
             } finally {
                 $env:CANOPYX_EXAMPLES = $previousExamples
+                $env:CANOPYX_BENCHMARKS = $previousBenchmarks
             }
         }
     }
