@@ -3,7 +3,8 @@
 import { expect, test } from "@playwright/test";
 import { openExample, row, viewPage, trackScriptLoads } from "./support.mjs";
 
-const view = { protocol: "canopyx/2", type: "view", id: "packs", label: "Packs",
+// Pack protocol clicks use a fixed viewport; later auto-height fits are covered by the dedicated height tests.
+const view = { protocol: "canopyx/2", type: "view", id: "packs", label: "Packs", autoHeight: false,
   columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "sidecar", base: "/data/" } };
 const push = (ref, body) => "(self.CanopyXSidecar = self.CanopyXSidecar || []).push([\"packs\"," + JSON.stringify(ref) + "," + body + "]);\n";
 const doc = (ref, document) => push(ref, JSON.stringify(document));

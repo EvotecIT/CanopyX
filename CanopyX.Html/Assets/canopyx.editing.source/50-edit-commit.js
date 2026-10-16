@@ -104,7 +104,7 @@
       return run;
     },
 
-    editSaved(entries, answer, failure) {
+    async editSaved(entries, answer, failure) {
       const state = this.edit;
       const results = entries.map(entry => {
         const row = answer?.rows.get(entry.id), id = entry.id;
@@ -123,6 +123,10 @@
         return { id, ok: false, status, ...(entry.error ? { error: entry.error } : {}), ...(row?.errors ? { errors: row.errors } : {}) };
       });
       this.editChanged(); this.editRefreshMessage();
+      // Saved local values can change result membership and order. Refresh the reader's latest intent, including a
+      // pending query, page length or debounced search, rather than restoring the older accepted query. Hosts own refresh.
+      if (!this.destroyed && this.view.source.kind === "inline" && (!this.opts.source || this.enhanceStore) && results.some(row => row.ok))
+        await this.setQuery({ ...this.queryForChange(true), revision: undefined }, this.pendingPaging).catch(() => {});
       return results.map(editCopy);
     },
 
@@ -130,7 +134,7 @@
     // inline grid keeps them in its rows so later queries sort and filter by them. A value changed while the row saved
     // (an edit, an undo) stays a change from the saved value.
     editAccept(entry, canonical) {
-      const record = entry.row, inline = this.view.source.kind === "inline" ? this.view.rows.find(row => row.id === entry.id) : null;
+      const record = entry.row, inline = this.view.source.kind === "inline" && (!this.opts.source || this.enhanceStore) ? this.view.rows.find(row => row.id === entry.id) : null;
       for (const [column, value] of Object.entries(entry.saved)) {
         const current = cellValue(record.cells[column]), saved = canonical && Object.hasOwn(canonical, column) ? canonical[column] :
           editCell(entry.original[column], value, this.editText(this.edit.specs.get(column), value, record));
@@ -150,8 +154,12 @@
         const cell = Object.hasOwn(entry.values, column) ? entry.original[column] : record.cells[column];
         if (cell === undefined) delete inline.cells[column]; else inline.cells[column] = JSON.parse(JSON.stringify(cell));
       }
-      // A fresh inline source forgets the order it computed from the old values; the next query orders by the new ones.
-      if (inline && !this.opts.source) this.source = inlineGridSource(this.view);
+      // Both local source owners forget their previous result order. Enhanced rows retain their page-order tie break.
+      if (inline) {
+        if (this.enhanceStore) this.enhanceStore.version++;
+        else if (this.view.rowData) this.source.invalidate();
+        else this.source = inlineGridSource(this.view);
+      }
       entry.saved = null; entry.error = null; entry.committed = false;
       if (!Object.keys(entry.values).length) this.edit.changes.delete(entry.id);
     }

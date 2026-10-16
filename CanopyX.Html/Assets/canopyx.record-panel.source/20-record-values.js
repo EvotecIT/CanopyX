@@ -74,6 +74,7 @@
   }
 
   function recordObject(ctx, field, entries, element, depth) {
+    element.classList.add("cx-record-object-value");
     const list = h("dl", "cx-dl cx-record-object");
     for (const entry of entries) {
       if (!entry || !recordText(entry.name, 4096)) recordFail("an object field has a name and a value.");
@@ -89,7 +90,7 @@
     const kind = recordKind(cell);
     try {
       if (kind && !Array.isArray(cell[kind]) && kind !== "records") recordFail("a structured " + kind + " value is an array.");
-      if (kind && depth > 8) recordPlain(ctx, field, JSON.stringify(cell[kind]), element);
+      if (depth > RECORD_MAX_STRUCTURE_DEPTH) recordFail("structured values nest at most " + RECORD_MAX_STRUCTURE_DEPTH + " levels.");
       else if (kind === "items") recordItems(ctx, field, cell.items, element);
       else if (kind === "fields") recordObject(ctx, field, cell.fields, element, depth);
       else if (kind === "records") recordCollection(ctx, field, cell.records, element);
