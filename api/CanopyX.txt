@@ -736,6 +736,30 @@ CanopyX.CanopyGridQuery.System.String? Search { get; set; }
 CanopyX.CanopyGridQuietStyle : enum System.Int32
 CanopyX.CanopyGridQuietStyle.const CanopyX.CanopyGridQuietStyle Muted = 0
 CanopyX.CanopyGridQuietStyle.const CanopyX.CanopyGridQuietStyle Plain = 1
+CanopyX.CanopyGridRangePage : sealed class
+CanopyX.CanopyGridRangePage..ctor(System.String view, System.String revision, System.String start, System.DateTime from, System.DateTime to, System.Int32 matched)
+CanopyX.CanopyGridRangePage.System.Collections.Generic.IList<CanopyX.CanopyGridRow> Rows { get; }
+CanopyX.CanopyGridRangePage.System.DateTime From { get; }
+CanopyX.CanopyGridRangePage.System.DateTime To { get; }
+CanopyX.CanopyGridRangePage.System.Int32 Matched { get; }
+CanopyX.CanopyGridRangePage.System.String Revision { get; }
+CanopyX.CanopyGridRangePage.System.String Start { get; }
+CanopyX.CanopyGridRangePage.System.String ToJson(CanopyX.CanopyDataGridView view)
+CanopyX.CanopyGridRangePage.System.String View { get; }
+CanopyX.CanopyGridRangeQuery : sealed class
+CanopyX.CanopyGridRangeQuery..ctor(CanopyX.CanopyGridQuery query, System.String start, System.DateTime from, System.DateTime to)
+CanopyX.CanopyGridRangeQuery.CanopyX.CanopyGridQuery Query { get; }
+CanopyX.CanopyGridRangeQuery.System.Collections.Generic.IList<System.String> Resources { get; }
+CanopyX.CanopyGridRangeQuery.System.DateTime From { get; }
+CanopyX.CanopyGridRangeQuery.System.DateTime To { get; }
+CanopyX.CanopyGridRangeQuery.System.Int32 Limit { get; set; }
+CanopyX.CanopyGridRangeQuery.System.String Start { get; }
+CanopyX.CanopyGridRangeQuery.System.String ToJson(CanopyX.CanopyDataGridView view)
+CanopyX.CanopyGridRangeQuery.System.String? CalendarView { get; set; }
+CanopyX.CanopyGridRangeQuery.System.String? End { get; set; }
+CanopyX.CanopyGridRangeQuery.System.String? Recurrence { get; set; }
+CanopyX.CanopyGridRangeQuery.System.String? Resource { get; set; }
+CanopyX.CanopyGridRangeQuery.System.String? SeriesEnd { get; set; }
 CanopyX.CanopyGridRangeSelection : sealed class
 CanopyX.CanopyGridRangeSelection..ctor()
 CanopyX.CanopyGridRangeSelection.System.Boolean Enabled { get; set; }
