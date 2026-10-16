@@ -252,9 +252,10 @@ CanopyX.Data.CanopyQueryableRecordProvider<T>..ctor(System.Linq.IQueryable<T> so
 CanopyX.Data.CanopyQueryableRecordProvider<T>.CanopyX.Data.CanopyRecordMap<T> Map { get; }
 CanopyX.Data.CanopyQueryableRecordProvider<T>.CanopyX.Data.CanopyRecordSchema Schema { get; }
 CanopyX.Data.CanopyQueryableRecordProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.CanopyGridRecord?> GetRecordAsync(CanopyX.Data.CanopyRecordRequest request, System.Threading.CancellationToken cancellationToken)
-CanopyX.Data.CanopyQueryableWriter<T> : sealed class (CanopyX.Data.ICanopyDataWriter) where T : class
+CanopyX.Data.CanopyQueryableWriter<T> : sealed class (CanopyX.Data.ICanopyDataWriter, CanopyX.Data.ICanopyInsertWriter) where T : class
 CanopyX.Data.CanopyQueryableWriter<T>..ctor(CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.ICanopyWriteStore<T> store, CanopyX.Data.CanopyQueryableWriterOptions<T>? options = null)
 CanopyX.Data.CanopyQueryableWriter<T>.CanopyX.Data.CanopyCommitTransaction Transaction { get; }
+CanopyX.Data.CanopyQueryableWriter<T>.System.Boolean AcceptsInserts { get; }
 CanopyX.Data.CanopyQueryableWriter<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyCommitResult> CommitAsync(CanopyX.Data.CanopyCommitBatch batch, System.String revision, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableWriterOptions<T> : sealed class where T : class
 CanopyX.Data.CanopyQueryableWriterOptions<T>..ctor()
@@ -498,6 +499,8 @@ CanopyX.Data.ICanopyExportFormat.System.String Id { get; }
 CanopyX.Data.ICanopyExportFormat.abstract System.Threading.Tasks.Task WriteAsync(CanopyX.Data.CanopyExportContext context, System.IO.Stream output, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.ICanopyInsertStore<T> : interface (CanopyX.Data.ICanopyWriteStore<T>) where T : class
 CanopyX.Data.ICanopyInsertStore<T>.abstract System.Void Add(T record)
+CanopyX.Data.ICanopyInsertWriter : interface (CanopyX.Data.ICanopyDataWriter)
+CanopyX.Data.ICanopyInsertWriter.System.Boolean AcceptsInserts { get; }
 CanopyX.Data.ICanopyRangeProvider : interface
 CanopyX.Data.ICanopyRangeProvider.abstract System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.ICanopyRecordProvider : interface

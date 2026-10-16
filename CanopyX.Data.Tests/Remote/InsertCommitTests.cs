@@ -63,6 +63,8 @@ public sealed class InsertCommitTests {
     [InlineData("{\"op\":1,\"id\":\"1\",\"values\":{\"cores\":4},\"original\":{\"cores\":2}}", CanopyRequestError.InvalidDocument)]
     [InlineData("{\"op\":\"insert\",\"id\":\"new-1\",\"values\":{\"name\":\"a\"}},{\"op\":\"insert\",\"id\":\"new-1\",\"values\":{\"name\":\"b\"}}", CanopyRequestError.InvalidDocument)]
     [InlineData("{\"op\":\"insert\",\"id\":\"new-1\",\"values\":{\"name\":\"a\",\"name\":\"b\"}}", CanopyRequestError.InvalidDocument)]
+    [InlineData("{\"op\":\"insert\",\"id\":\"3\",\"values\":{\"name\":\"a\"}}", CanopyRequestError.InvalidDocument)]
+    [InlineData("{\"op\":\"insert\",\"id\":\"NEW-1\",\"values\":{\"name\":\"a\"}}", CanopyRequestError.InvalidDocument)]
     public async Task MalformedOrForbiddenInserts_AreRejectedWhole(string rows, CanopyRequestError error) {
         var (handler, writer, _) = Handler();
         Assert.Equal(error, (await Assert.ThrowsAsync<CanopyRequestException>(() => handler.CommitAsync(Commit(rows)))).Error);
@@ -98,6 +100,25 @@ public sealed class InsertCommitTests {
     }
 
     [Fact]
+    public async Task Inserts_NeverReachAWriterThatDoesNotAcceptThem() {
+        var map = Fleet.Map(Fleet.EditableView());
+        var provider = new CanopyQueryableProvider<Host>(Hosts.AsQueryable(), map, new CanopyQueryOptions { Revision = _ => new ValueTask<string>("r5") });
+        var updates = new UpdatesOnly();
+        var handler = new CanopyRemoteHandler(map.Schema, provider, null, updates);
+        var json = await handler.CommitAsync(Commit("{\"op\":\"insert\",\"id\":\"new-1\",\"values\":{\"name\":\"host-new\"}},{\"id\":\"3\",\"values\":{\"cores\":4},\"original\":{\"cores\":2}}"));
+        var rows = Rows(json);
+        Assert.Equal("error", rows[0].GetProperty("status").GetString());
+        Assert.Equal("New rows cannot be added here.", rows[0].GetProperty("error").GetString());
+        Assert.Equal("saved", rows[1].GetProperty("status").GetString());
+        Assert.Equal(new[] { "3" }, updates.Batch!.Rows.Select(row => row.Id));
+        // A writer that declares inserts but does not accept them now is treated alike.
+        var (refusing, writer, _) = Handler();
+        writer.AcceptsInserts = false;
+        Assert.Equal("error", Rows(await refusing.CommitAsync(Commit("{\"op\":\"insert\",\"id\":\"new-1\",\"values\":{\"name\":\"host-new\"}}")))[0].GetProperty("status").GetString());
+        Assert.Null(writer.Batch);
+    }
+
+    [Fact]
     public void ParsedInserts_KeepTheirOperation_AndCodeBuiltRowsToo() {
         var map = Fleet.Map(Fleet.EditableView());
         var batch = CanopyRequestParser.ParseCommit(Commit("{\"op\":\"insert\",\"id\":\"new-7\",\"values\":{\"name\":\"x1\",\"online\":true}}"), map.Schema);
@@ -109,14 +130,25 @@ public sealed class InsertCommitTests {
         Assert.Empty(built.Original);
         Assert.Equal(CanopyCommitOperation.Update, new CanopyCommitRow("1", new Dictionary<string, object?> { ["name"] = "x" }, new Dictionary<string, object?> { ["name"] = "y" }).Operation);
         Assert.Throws<ArgumentException>(() => CanopyCommitRow.Insert("new-9", new Dictionary<string, object?>()));
+        Assert.Throws<ArgumentException>(() => CanopyCommitRow.Insert("42", new Dictionary<string, object?> { ["name"] = "x" }));
         Assert.Null(CanopyCommitRowResult.Saved("1").NewId);
         Assert.Equal("5", CanopyCommitRowResult.Saved("new-1", null, "5").NewId);
     }
 
-    private sealed class Writer : ICanopyDataWriter {
+    private sealed class UpdatesOnly : ICanopyDataWriter {
+        public CanopyCommitTransaction Transaction => CanopyCommitTransaction.PerRow;
+        public CanopyCommitBatch? Batch { get; private set; }
+        public ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
+            Batch = batch;
+            return new ValueTask<CanopyCommitResult>(new CanopyCommitResult(batch.Rows.Select(row => CanopyCommitRowResult.Saved(row.Id))));
+        }
+    }
+
+    private sealed class Writer : ICanopyInsertWriter {
         private readonly Func<CanopyCommitBatch, CanopyCommitResult>? _answer;
         public Writer(Func<CanopyCommitBatch, CanopyCommitResult>? answer) { _answer = answer; }
         public CanopyCommitTransaction Transaction => CanopyCommitTransaction.PerRow;
+        public bool AcceptsInserts { get; set; } = true;
         public CanopyCommitBatch? Batch { get; private set; }
         public ValueTask<CanopyCommitResult> CommitAsync(CanopyCommitBatch batch, string revision, CancellationToken cancellationToken) {
             Batch = batch;

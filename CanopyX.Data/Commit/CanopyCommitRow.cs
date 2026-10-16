@@ -30,11 +30,14 @@ public sealed class CanopyCommitRow {
     }
 
     /// <summary>Creates an insert: a new record with every value given.</summary>
-    /// <param name="id">The client's temporary identity of the new row (the browser writes <c>new-1</c>, <c>new-2</c>, ...).</param>
+    /// <param name="id">The client's temporary identity of the new row, starting with <c>new-</c> (the browser writes <c>new-1</c>, <c>new-2</c>, ...).</param>
     /// <param name="values">The raw values of the new record by column identity; at least one.</param>
     /// <returns>The row, with no original values.</returns>
-    public static CanopyCommitRow Insert(string id, IReadOnlyDictionary<string, object?> values) =>
-        new CanopyCommitRow(id, values, new Dictionary<string, object?>(StringComparer.Ordinal), CanopyCommitOperation.Insert);
+    /// <exception cref="ArgumentException"><paramref name="id"/> does not start with <c>new-</c>, or no value is given.</exception>
+    public static CanopyCommitRow Insert(string id, IReadOnlyDictionary<string, object?> values) {
+        if (id != null && !id.StartsWith("new-", StringComparison.Ordinal)) throw new ArgumentException("A new row's id starts with new-.", nameof(id));
+        return new CanopyCommitRow(id!, values, new Dictionary<string, object?>(StringComparer.Ordinal), CanopyCommitOperation.Insert);
+    }
 
     /// <summary>Gets the row identity: the record's for an update, the client's temporary one for an insert.</summary>
     public string Id { get; }

@@ -21,7 +21,8 @@ public sealed class CanopyQueryableWriterOptions<T> where T : class {
     /// </summary>
     /// <remarks>An insert writes only editable columns, as an update does, and never the key: the store assigns it, or this
     /// callback does. With <see cref="Scope"/> set, a new record that is not in the scope after saving is rolled back and answers
-    /// as not saved, so a caller cannot add a record it could not read.</remarks>
+    /// as not saved, so a caller cannot add a record it could not read; the scope must then query the same unit of work as the
+    /// store, which sees the unsaved record inside the transaction.</remarks>
     public Func<CanopyCommitRow, T>? NewRecord { get; set; }
 
     /// <summary>Gets or sets whether rows are written in a transaction each (default) or the batch in one, all or nothing.</summary>

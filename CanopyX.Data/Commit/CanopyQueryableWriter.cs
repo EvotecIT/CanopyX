@@ -40,9 +40,12 @@ namespace CanopyX.Data;
 /// concurrency failure (an exception type named <c>DbUpdateConcurrencyException</c>, as EF Core raises for concurrency tokens).
 /// </para>
 /// </remarks>
-public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class {
+public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : class {
     /// <inheritdoc />
     public CanopyCommitTransaction Transaction => _options.Transaction;
+
+    /// <summary>Gets whether inserts are saved: <see cref="CanopyQueryableWriterOptions{T}.NewRecord"/> is set and the store implements <see cref="ICanopyInsertStore{T}"/>.</summary>
+    public bool AcceptsInserts => _options.NewRecord != null && _store is ICanopyInsertStore<T>;
     private readonly CanopyColumnMap<T> _map;
     private readonly ICanopyWriteStore<T> _store;
     private readonly CanopyQueryableWriterOptions<T> _options;

@@ -118,6 +118,20 @@ public sealed class EfCoreInsertTests : IDisposable {
     }
 
     [Fact]
+    public async Task PerRowCommits_KeepAnInsert_WhenALaterRowFails() {
+        var (handler, db) = Handler((options, _) => options.AlwaysCompareOriginals = true);
+        using (db) {
+            var before = Count();
+            var host = _hosts[3];
+            var rows = Rows(await handler.CommitAsync(Commit(Insert("new-1", "{\"name\":\"host-new\"}"),
+                "{\"id\":\"" + host.Id + "\",\"values\":{\"memory\":3},\"original\":{\"memory\":12345.5}}")));
+            Assert.Equal("saved", rows[0].GetProperty("status").GetString());
+            Assert.Equal("conflict", rows[1].GetProperty("status").GetString());
+            Assert.Equal(before + 1, Count());
+        }
+    }
+
+    [Fact]
     public async Task Inserts_ThatAMemberCannotHold_AnswerCellErrors() {
         var (handler, db) = Handler();
         using (db) {

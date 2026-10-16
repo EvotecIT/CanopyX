@@ -131,6 +131,7 @@ public sealed class GridEditingContractTests {
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"insert","id":"new-1","values":{}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"delete","id":"a1","values":{"cost":1},"original":{"cost":2}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"id":"new-1","values":{"title":"x"}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"insert","id":"a1","values":{"title":"x"}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"new-1","status":"conflict","newId":"7"}]}""",
         """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"new-1","status":"saved","newId":""}]}"""
     };

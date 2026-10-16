@@ -37,6 +37,8 @@ public static partial class CanopyRequestParser {
             RequireIdentifier(id, "row identity");
             if (!ids.Add(id)) throw CanopyRequestException.Document("A commit lists each row once.");
             var insert = Operation(row);
+            // A new row's id is the runtime's temporary id, never one that could name a stored record.
+            if (insert && !id.StartsWith("new-", StringComparison.Ordinal)) throw CanopyRequestException.Document("A new row's id starts with new-.");
             if (!row.TryGetProperty("values", out var values) || values.ValueKind != JsonValueKind.Object) throw CanopyRequestException.Document("A changed row needs its values.");
             var original = default(JsonElement);
             if (insert) {

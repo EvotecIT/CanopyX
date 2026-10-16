@@ -30,7 +30,8 @@ public sealed partial class CanopyRemoteHandler {
     /// <remarks>
     /// Every value is checked against its column's kind, the view's <see cref="CanopyCellValidation"/> and its editor (step,
     /// choices, toggles) with <see cref="CanopyRemoteOptions.CommitMessages"/>, and an insert also for the required columns it leaves
-    /// out; only rows that pass reach the writer. A saved insert's <see cref="CanopyCommitRowResult.NewId"/> is answered as
+    /// out; only rows that pass reach the writer. Inserts reach only a writer that implements <see cref="ICanopyInsertWriter"/> and
+    /// accepts them; otherwise they answer <see cref="CanopyCommitMessages.InsertRefused"/>. A saved insert's <see cref="CanopyCommitRowResult.NewId"/> is answered as
     /// <c>newId</c> when it is a well-formed identity. Once the
     /// writer has answered, rows may already be committed, so its answer never turns into a failure of the request: rows it was
     /// not asked about or answered twice, cells that break the page rules or belong to other columns, messages for other
@@ -45,7 +46,10 @@ public sealed partial class CanopyRemoteHandler {
         var revision = await RevisionAsync(null, cancellationToken).ConfigureAwait(false);
         var answers = new Dictionary<string, CanopyCommitRowResult>(StringComparer.Ordinal);
         var valid = new List<CanopyCommitRow>();
+        // Only a writer that declares it saves inserts ever sees one; for any other, an insert is refused like an invalid row.
+        var inserts = writer is ICanopyInsertWriter insertWriter && insertWriter.AcceptsInserts;
         foreach (var row in batch.Rows) {
+            if (row.Operation == CanopyCommitOperation.Insert && !inserts) { answers[row.Id] = CanopyCommitRowResult.Failed(row.Id, Options.CommitMessages.InsertRefused); continue; }
             var errors = new Dictionary<string, string>(StringComparer.Ordinal);
             var typed = CommitValidation.Check(Schema, row, Options.CommitMessages, errors);
             if (typed == null) answers[row.Id] = CanopyCommitRowResult.Failed(row.Id, null, errors);

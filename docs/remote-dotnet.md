@@ -552,10 +552,12 @@ CancellationToken token)` answers per row with `CanopyCommitRowResult.Saved(id, 
 result leaves out was not saved.
 
 **Inserts.** A row with `"op": "insert"` (a calendar's created or dropped event, for example) arrives as a `CanopyCommitRow`
-whose `Operation` is `CanopyCommitOperation.Insert`: its `Id` is the client's temporary id (`new-1`), its `Values` are the new
-record's values and its `Original` is empty. The endpoint checks it like an update (only editable, allowed columns; an
-`original` on an insert, or an unknown `op`, rejects the batch) and also answers `Required` errors for required editable
-columns the insert leaves out. A writer answers a saved insert with `CanopyCommitRowResult.Saved(id, cells, newId)`; the
+whose `Operation` is `CanopyCommitOperation.Insert`: its `Id` is the client's temporary id, which always starts with `new-`,
+its `Values` are the new record's values and its `Original` is empty. The endpoint checks it like an update (only editable,
+allowed columns; an `original` on an insert, an id without `new-`, or an unknown `op` rejects the batch) and also answers
+`Required` errors for required editable columns the insert leaves out. Inserts reach only a writer that implements
+`ICanopyInsertWriter` and answers `AcceptsInserts` with true; a writer written for updates alone never sees one, and the insert
+answers `InsertRefused`. A writer answers a saved insert with `CanopyCommitRowResult.Saved(id, cells, newId)`; the
 endpoint writes `newId` only for a saved insert whose new id is a well-formed identity (other cases are left out and
 reported to `WriterProblem`). Inserts count towards `MaxCommitRows` like any row.
 
@@ -595,7 +597,10 @@ writer is not called and every row answers as not saved; the invalid rows retain
   what the caller must not choose (owner, tenant, audit fields); the row's editable values follow (never the key, which the
   store or `NewRecord` assigns), then `Saving`, `Add` and the save. The answer carries the stored key as `newId` and canonical
   cells. With `Options.Scope`, a new record that is not in the scope after saving is rolled back and answers as not saved, so a
-  caller cannot add a record it could not read. In a `PerBatch` commit an insert is kept only when every row is saved.
+  caller cannot add a record it could not read; `Scope` must then query the same unit of work as the store (the same
+`DbContext`), which sees the unsaved record inside the transaction. The save runs before the scope check, so store-side effects
+of a rolled-back insert (triggers, identity values) still happen. In a `PerBatch` commit an insert is kept only when every row
+is saved.
 
 The writer reaches the store through `ICanopyWriteStore<T>` (and `ICanopyInsertStore<T>` for inserts), so `CanopyX.Data` stays
 free of EF Core. The EF Core adapter:

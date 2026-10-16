@@ -610,7 +610,8 @@ or the source's `commit(batch, { signal })`. A remote source posts it, for examp
   started from for those columns (`null` for a missing value). Only rows whose checks passed are sent.
 - A row may carry `op`: `update` (the default) or `insert`. An insert adds a record (a calendar's created or dropped event, for
   example): `{ "op": "insert", "id": "new-1", "values": { ... } }` with every value of the new record and no `original`. Its
-  `id` is a client id the runtime chooses (`new-1`, `new-2`, ...); only editable columns may be written, as for updates.
+  `id` is a client id the runtime chooses, always starting with `new-` (`new-1`, `new-2`, ...), so it can never name a stored
+  record; only editable columns may be written, as for updates.
 
 The writer answers with a `gridCommitResult`, one entry per row it handled:
 

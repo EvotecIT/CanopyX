@@ -94,7 +94,7 @@
             "original": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } },
           { "type": "object", "required": ["op", "id", "values"], "additionalProperties": false, "properties": {
             "op": { "const": "insert" },
-            "id": { "$ref": "#/$defs/identifier" },
+            "id": { "allOf": [{ "$ref": "#/$defs/identifier" }, { "pattern": "^new-" }], "description": "The runtime's temporary id of the new row: new-1, new-2, ..." },
             "values": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } }] } }
       }
     },
