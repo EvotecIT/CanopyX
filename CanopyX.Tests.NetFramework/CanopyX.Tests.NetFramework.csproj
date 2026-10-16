@@ -32,6 +32,7 @@
     <Compile Include="..\CanopyX.Tests\Grids\GridFormattingEvaluationTests.cs" Link="Grids\GridFormattingEvaluationTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\GridColumnGroupTests.cs" Link="Grids\GridColumnGroupTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedGridTests.cs" Link="Grids\TypedGridTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\TypedCalendarTests.cs" Link="Grids\TypedCalendarTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\RecordFrameworkTests.cs" Link="Records\RecordFrameworkTests.cs" />
     <Compile Include="..\CanopyX.Tests\Recurrence\RecurrenceFixture.cs" Link="Recurrence\RecurrenceFixture.cs" />
     <Compile Include="..\CanopyX.Tests\Recurrence\RecurrenceFixtureTests.cs" Link="Recurrence\RecurrenceFixtureTests.cs" />
