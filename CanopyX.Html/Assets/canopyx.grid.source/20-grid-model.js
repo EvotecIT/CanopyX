@@ -87,7 +87,8 @@
       clearTimeout(this.searchTimer); this.searchTimer = null;
       this.dataLifetime.abort(); this.dataLifetime = new AbortController();
       const lifetime = this.dataLifetime;
-      this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels.loading, false);
+      this.pendingPages.clear(); this.pendingQuery = query; this.pendingPaging = paging ? { ...paging, pageLength: length } : null;
+      this.setNotice(this.labels.loading, false);
       this.grid.setAttribute("aria-busy", "true");
       this.syncPager();
       try {
@@ -110,7 +111,7 @@
         this.pageLength = length; if(paging)this.pageAll=!!paging.allRows; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
         if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
         if (this.autoRows) { if (!same) this.rowHeights.clear(); this.rowOffsets = null; }
-        this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
+        this.storePage(page); this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
         const hasRows = this.cursor ? page.items.length : page.matched;
         this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
         this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1 + (this.headDepth || 0)));
@@ -130,7 +131,7 @@
         this.stateChanged(); return this.getQuery();
       } catch (error) {
         if (epoch === this.queryEpoch && !this.destroyed) {
-          this.pendingQuery = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
+          this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
           this.syncPager();

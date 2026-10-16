@@ -38,7 +38,7 @@ export function assetView(extra = {}, columns = {}) {
  * Serves one grid page. script runs before the view mounts (CanopyX.configure, plugins); routes adds handlers of other
  * paths (a mock data service). Returns the part files the page requested.
  */
-export async function serveGrid(page, { view = assetView(), script = "", height = 520, routes = {}, theme = "light", lang = "en" } = {}) {
+export async function serveGrid(page, { view = assetView(), script = "", height = 520, routes = {}, theme = "light", lang = "en", waitUntil = "load" } = {}) {
   const requested = [];
   await page.route("https://editing.test/**", async route => {
     const url = new URL(route.request().url()), file = url.pathname.slice(1);
@@ -53,7 +53,7 @@ export async function serveGrid(page, { view = assetView(), script = "", height 
     if (!fs.existsSync(path.join(assets, file))) return route.fulfill({ status: 404, body: "" });
     return route.fulfill({ contentType: file.endsWith(".css") ? "text/css" : "text/javascript", body: read(file) });
   });
-  await page.goto("https://editing.test/");
+  await page.goto("https://editing.test/", { waitUntil });
   await page.waitForSelector("[data-cx-ready]");
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.ready.catch(() => {}));
   return requested;

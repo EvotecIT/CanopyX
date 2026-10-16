@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { viewPage } from "./support.mjs";
+import { nextFrames, viewPage } from "./support.mjs";
 
 test("initial tree height stays fitted throughout a pressed expander on a scrolled page", async ({ page }) => {
   const view = { protocol: "canopyx/2", type: "view", id: "height-background", label: "Background",
@@ -79,4 +79,41 @@ test("a loading placeholder leaves the first data rows free to fit before they a
     return firstRows;
   });
   expect(firstData).toEqual({ allRowsFit: true, dataRows: 3 });
+});
+
+test("one root replacing an equal-height loading row finishes its initial fit before later expansion", async ({ page }) => {
+  const view = { protocol: "canopyx/2", type: "view", id: "height-single-root", label: "Single root height",
+    columns: [{ id: "name", title: "Name", width: 320 }], source: { kind: "inline" }, roots: [] };
+  await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("https://canopyx.test/");
+  await page.waitForSelector("[data-cx-ready]");
+  await page.evaluate(() => {
+    const host = document.createElement("div"); host.id = "height-single-root"; document.body.appendChild(host);
+    window.singleRootApi = CanopyX.createTreeGrid(host, { view: { ...document.querySelector(".cx-host").canopyx.view,
+      id: "height-single-root-data" }, source: { page: parent => parent
+        ? Promise.resolve({ items: [{ id: "first-child", label: "First child" }, { id: "second-child", label: "Second child" },
+          { id: "third-child", label: "Third child" }], total: 3, next: null })
+        : new Promise(resolve => { window.resolveSingleRoot = resolve; }) } });
+  });
+  await expect(page.locator('#height-single-root [data-cx-status="loading"]')).toBeVisible();
+  await nextFrames(page);
+  await page.evaluate(async () => {
+    resolveSingleRoot({ items: [{ id: "parent", label: "Parent", hasChildren: true, childCount: 3 }], total: 1, next: null });
+    await singleRootApi.ready;
+  });
+  await expect(page.locator('#height-single-root [data-cx-id="parent"]')).toBeVisible();
+  await nextFrames(page);
+  const expansion = await page.evaluate(async () => {
+    const host = document.querySelector("#height-single-root"), height = host.getBoundingClientRect().height;
+    const result = await singleRootApi.expandPath(["parent", "first-child"]);
+    return { id: result.id, before: height, after: host.getBoundingClientRect().height,
+      focus: document.activeElement?.getAttribute("data-cx-id") };
+  });
+  expect(expansion.id).toBe("first-child");
+  expect(expansion.focus).toBe("first-child");
+  // The first real row already fitted; later expansion keeps the normal height debounce.
+  expect(expansion.after).toBe(expansion.before);
+  await expect.poll(() => page.locator("#height-single-root").evaluate(host => host.getBoundingClientRect().height)).toBeGreaterThan(expansion.before);
+  await expect(page.locator('#height-single-root [data-cx-id="third-child"]')).toBeVisible();
+  await expect(page.locator('#height-single-root [data-cx-id="first-child"]')).toBeFocused();
 });

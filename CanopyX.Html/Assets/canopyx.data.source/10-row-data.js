@@ -84,6 +84,8 @@
     })();
     done.catch(() => outer.reset());
     let complete = null;
+    // Saved values invalidate the completed result cache while an active decoder keeps its remaining chunks.
+    outer.invalidate = () => { complete = null; };
     const all = async () => { await done; return complete ||= inlineGridSource(view); };
     // Value lists of the column filters and a reporting grid's facets count the complete rows.
     outer.decoded = done;

@@ -3,7 +3,7 @@
   // fields of view.record.fields, whose values a row or node carries in "fields" or a payload loads when the drawer opens.
   // Any value may be structured: a list (items), an object (fields), a collection of records (records), a timeline (events)
   // or before/after changes (changes); any value may link to another record (ref). docs/record-panel.md has the contract.
-  const RECORD_KINDS = ["items", "fields", "records", "events", "changes"], RECORD_LINK_KEY = /^[A-Za-z][\w.-]{0,31}$/;
+  const RECORD_KINDS = ["items", "fields", "records", "events", "changes"], RECORD_LINK_KEY = /^[A-Za-z][\w.-]{0,31}$/, RECORD_MAX_STRUCTURE_DEPTH = 8;
   const recordKind = cell => {
     const kinds = isCellObject(cell) && !Array.isArray(cell) ? RECORD_KINDS.filter(name => cell[name] !== undefined) : [];
     if (kinds.length > 1) recordFail("a cell carries at most one structured value.");
@@ -13,7 +13,8 @@
   const recordText = (value, max = 256) => typeof value === "string" && !!value.trim() && value.length <= max;
   const recordGridHelpers = () => RECORD_IMPL.grid || {};
   function recordCheckValue(cell, depth = 0) {
-    if (depth > 64) recordFail("a structured value is nested too deeply.");
+    if (cell == null) return;
+    if (depth > RECORD_MAX_STRUCTURE_DEPTH) recordFail("structured values nest at most " + RECORD_MAX_STRUCTURE_DEPTH + " levels.");
     const kind = recordKind(cell);
     if (kind === "items") for (const item of cell.items || []) recordCheckValue(item, depth + 1);
     if (kind === "fields") for (const field of cell.fields || []) recordCheckValue(field.value, depth + 1);
@@ -21,12 +22,25 @@
     if (kind === "events") for (const event of cell.events || []) for (const change of event.changes || []) {
       recordCheckValue(change.before, depth + 1); recordCheckValue(change.after, depth + 1);
     }
-    if (kind === "records") {
-      const rows = (list, level = depth + 1) => {
-        if (level > 64) recordFail("a structured value is nested too deeply.");
-        for (const row of list || []) { Object.values(row.cells || {}).forEach(value => recordCheckValue(value, level)); rows(row.children, level + 1); }
-      };
-      rows(cell.records.rows || cell.records.roots);
+    if (kind === "records") recordCheckRows(cell.records.rows || cell.records.roots, depth + 1);
+  }
+  // A collection/detail adds a structured level; ordinary tree ancestors do not. Keep the hierarchy walk iterative,
+  // as in Core's tree validator, and carry the enclosing value depth through every row's cells, fields and details.
+  function recordCheckRows(rows, depth) {
+    const pending = [...rows || []], seen = new Set();
+    while (pending.length) {
+      const row = pending.pop();
+      if (!row || seen.has(row)) continue;
+      seen.add(row);
+      for (const cells of [row.cells, row.fields]) if (cells) Object.values(cells).forEach(cell => recordCheckValue(cell, depth));
+      const detail = row.detail;
+      if (detail) {
+        if (depth > RECORD_MAX_STRUCTURE_DEPTH) recordFail("structured values nest at most " + RECORD_MAX_STRUCTURE_DEPTH + " levels.");
+        if (detail.type === "properties") for (const item of detail.items || []) recordCheckValue(item.value, depth);
+        if (detail.type === "table") for (const cells of detail.rows || []) for (const cell of cells) recordCheckValue(cell, depth);
+        if (detail.type === "grid" || detail.type === "tree") recordCheckRows(detail.rows || detail.roots, depth + 1);
+      }
+      for (const child of row.children || []) pending.push(child);
     }
   }
 
@@ -163,7 +177,8 @@
     for (const name of ["cells", "fields"]) if (doc[name] !== undefined && (!doc[name] || typeof doc[name] !== "object" || Array.isArray(doc[name]) || Object.hasOwn(doc[name], "__proto__")))
       recordFail("record " + name + " are an object of ids.");
     if (doc.row !== undefined && (!doc.row || doc.row.id !== id || !doc.row.cells || typeof doc.row.cells !== "object")) recordFail("a record's row is the requested record.");
-    for (const cells of [doc.cells, doc.fields, doc.row?.cells, doc.row?.fields]) if (cells) Object.values(cells).forEach(cell => recordCheckValue(cell));
+    for (const cells of [doc.cells, doc.fields]) if (cells) Object.values(cells).forEach(cell => recordCheckValue(cell));
+    if (doc.row) recordCheckRows([doc.row], 0);
     return JSON.parse(JSON.stringify({ cells: doc.cells || null, fields: doc.fields || null, row: doc.row || null }));
   }
   function recordFetch(view, id, extra, signal) {

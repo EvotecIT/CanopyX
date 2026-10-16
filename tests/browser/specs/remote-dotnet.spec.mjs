@@ -145,10 +145,21 @@ test("remote exports keep the server-declared Unicode download filename", async 
     const response = await route.fetch();
     await route.fulfill({ response, headers: { ...response.headers(), "content-disposition": "attachment; filename*=UTF-8''Fleet%20%C5%81%C3%B3d%C5%BA.txt" } });
   });
+  await page.evaluate(() => {
+    window.downloadNames = [];
+    const click = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      if (this.download) window.downloadNames.push(this.download);
+      return click.call(this);
+    };
+  });
   await openGridControl(page, "export");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "CSV from server (all matching rows)", exact: true }).click();
-  expect((await download).suggestedFilename()).toBe("Fleet Łódź.txt");
+  const file = await download;
+  // Keep exact server decoding at the browser handoff; macOS may decompose accents in its native download name.
+  expect(await page.evaluate(() => window.downloadNames)).toEqual(["Fleet Łódź.txt"]);
+  expect(file.suggestedFilename().normalize("NFC")).toBe("Fleet Łódź.txt");
 });
 
 test("grouped pages follow the server summary's group ranges", async ({ page }) => {
