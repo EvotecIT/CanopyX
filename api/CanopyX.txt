@@ -1125,6 +1125,37 @@ CanopyX.CanopyGridViewStorage.const CanopyX.CanopyGridViewStorage Session = 0
 CanopyX.CanopyHtmlDetail : sealed class (CanopyX.CanopyDetail)
 CanopyX.CanopyHtmlDetail..ctor(System.String html)
 CanopyX.CanopyHtmlDetail.System.String Html { get; }
+CanopyX.CanopyICalendar : static class
+CanopyX.CanopyICalendar.const System.Int32 MaxDepth = 16
+CanopyX.CanopyICalendar.const System.Int32 MaxDescription = 10000
+CanopyX.CanopyICalendar.const System.Int32 MaxEvents = 5000
+CanopyX.CanopyICalendar.const System.Int32 MaxExceptions = 1000
+CanopyX.CanopyICalendar.const System.Int32 MaxLineLength = 10000
+CanopyX.CanopyICalendar.const System.Int32 MaxLines = 75000
+CanopyX.CanopyICalendar.const System.Int32 MaxShortText = 1000
+CanopyX.CanopyICalendar.const System.Int32 MaxTextLength = 2000000
+CanopyX.CanopyICalendar.static CanopyX.CanopyICalendarResult Parse(System.String text)
+CanopyX.CanopyICalendarEvent : sealed class
+CanopyX.CanopyICalendarEvent.System.Boolean AllDay { get; }
+CanopyX.CanopyICalendarEvent.System.Boolean RecurrenceIdIsDate { get; }
+CanopyX.CanopyICalendarEvent.System.Collections.Generic.IReadOnlyList<System.String> Categories { get; }
+CanopyX.CanopyICalendarEvent.System.DateTime Start { get; }
+CanopyX.CanopyICalendarEvent.System.Nullable<System.DateTime> End { get; }
+CanopyX.CanopyICalendarEvent.System.Nullable<System.DateTime> RecurrenceId { get; }
+CanopyX.CanopyICalendarEvent.System.String? Description { get; }
+CanopyX.CanopyICalendarEvent.System.String? Exceptions { get; }
+CanopyX.CanopyICalendarEvent.System.String? Location { get; }
+CanopyX.CanopyICalendarEvent.System.String? Recurrence { get; }
+CanopyX.CanopyICalendarEvent.System.String? Status { get; }
+CanopyX.CanopyICalendarEvent.System.String? Summary { get; }
+CanopyX.CanopyICalendarEvent.System.String? TimeZone { get; }
+CanopyX.CanopyICalendarEvent.System.String? Uid { get; }
+CanopyX.CanopyICalendarResult : sealed class
+CanopyX.CanopyICalendarResult.System.Collections.Generic.IList<CanopyX.CanopyCalendarEvent> ToCalendarEvents(System.String? source = null)
+CanopyX.CanopyICalendarResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyICalendarEvent> Events { get; }
+CanopyX.CanopyICalendarResult.System.Collections.Generic.IReadOnlyList<System.String> Notes { get; }
+CanopyX.CanopyICalendarResult.System.Int32 Skipped { get; }
+CanopyX.CanopyICalendarResult.System.String? TimeZone { get; }
 CanopyX.CanopyLabels : sealed class
 CanopyX.CanopyLabels..ctor()
 CanopyX.CanopyLabels.CanopyX.CanopyLabels Clone()

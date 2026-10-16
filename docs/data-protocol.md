@@ -438,7 +438,7 @@ occurrences one range shows.
 The chrome and interaction keys are `toolbar` (`true`, `false` for the calendar's own bar only, or the grid toolbar controls
 to show: `search`, `filters`, `columns`, `views`, `export`, `more`), `details` (`drawer` or `popover`), `print` (a Print
 button), `sources` (1 to 50 `{ id, label, tone?, ics?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
-iCalendar file read within the iCalendar import limits; without `ics` on every source, `source` is required),
+iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` on every source, `source` is required),
 `create` (`true` or `{ minutes, allDay }`, minutes 5 to 1,440, default 60) and `drop` (external drops), both needing editable
 start and title columns and saved as inserts ([Editing and commit](#editing-and-commit)), `occurrence` (`ask`, `this`,
 `following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),

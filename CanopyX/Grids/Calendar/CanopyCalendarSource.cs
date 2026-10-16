@@ -44,7 +44,7 @@ public sealed class CanopyCalendarSource {
     /// Gets or sets the URL of an iCalendar file whose events join the calendar read-only, with this source's id; null for none.
     /// It is a relative URL (resolved against the page) or an absolute URL starting with <c>http://</c> or <c>https://</c> (in
     /// lowercase) of the page's origin, which the browser checks; at most 2,048 characters without white space, backslashes or
-    /// control characters. The browser reads the file within the iCalendar import limits.
+    /// control characters. The browser reads the file within the limits of <see cref="CanopyICalendar"/> (docs/icalendar.md).
     /// </summary>
     /// <exception cref="ArgumentException">The value is empty, too long, has white space or control characters, starts with
     /// <c>//</c>, or names a scheme other than <c>http</c> or <c>https</c>.</exception>
