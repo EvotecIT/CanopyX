@@ -19,6 +19,7 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 - **HTML reports** that include their own runtime and data and can be opened from disk or a file share.
 - **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
 - **Email and print tables** rendered from the same .NET view without JavaScript.
+- **Calendars and resource timelines** of the same records: month, week, day, agenda and year views, resources grouped as a tree with capacity per group, recurring events, drag to reschedule through the grid's editing, and iCalendar export.
 
 ![File explorer in the light theme, with sizes, dates, owners and an expanded detail row](docs/images/tree-grid-light.png)
 
@@ -210,6 +211,10 @@ Mark flat-grid columns `editable` and give them typed editors (text, number, dat
 ### Format cells by rule
 
 `formatRules` (in .NET, `CanopyDataGridView.FormatRules`) tints cells and rows, adds icons, badges and cues, and draws data bars, colour scales and threshold bands, with conditions from the filter builder. Readers can change the rules in a rule editor, and their rules are kept in saved views. See [docs/conditional-formatting.md](docs/conditional-formatting.md).
+
+### Show records as a calendar
+
+Give a grid a `calendar` (in .NET, `CanopyDataGridView.Calendar`, or `grid.Calendar().Start(x => x.Starts).End(x => x.Ends)` on a typed grid) and its records show as a month, week, day, N-day, agenda or year calendar, or, with resources, a resource timeline whose resources are a CanopyX tree. The grid's search, filters, facets, saved views, record panel, linked views, live data and editing keep working on the same records; recurring events, time zones with correct DST, iCalendar export and print come with it. See [docs/calendar.md](docs/calendar.md) and [docs/resource-timeline.md](docs/resource-timeline.md).
 
 ### Link views together
 

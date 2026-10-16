@@ -361,6 +361,23 @@ Consumers: HtmlForgeX reports that link charts, grids, trees and tables declarat
 
 Gate: the linked views example and HtmlForgeX's linked report pass the browser suites at desktop and phone widths in both palettes, with the link part under its gzip guard.
 
+### Calendar And Resource Timeline
+
+Consumers: certificate expiries and renewals (Sectigo, DomainDetectiveNext), Monitoring incidents, outages and maintenance windows per host, Windows Update and patch schedules, GPO change history and password expiries (PasswordSolutionX). The calendar is a presentation of a flat grid ([calendar](docs/calendar.md), [resource timeline](docs/resource-timeline.md)); ChartForgeX keeps the static schedule charts for reports and email.
+
+- [x] Month, week, day, N-day, agenda and year views over the grid's records and query, with all-day, multi-day, overlapping and zero-length events, "+N more", time zones with correct DST, working hours, hidden days and the Intl label of every date.
+- [x] ARIA grid keyboard models per view, a live region for view and range changes, light, dark and forced colours, phones (agenda first, three days, a month of dots with the day's list) and print layouts.
+- [x] Resource timeline over a CanopyX resource tree, zoom from hours to quarters, capacity per group with thresholds, aggregates, business hours, unavailable time and background ranges; resource columns in day and week views.
+- [x] Record panel, linked views (range and resource selections, external filters and highlights), facets, saved views and live data on calendar events.
+- [x] Drag to move and resize across resources with keyboard moves, overlap, allowed-resource and working-hour rules shown before the drop, through the editing contract with commit and undo.
+- [x] Recurrence (an RFC 5545 RRULE subset with exceptions and overriding records) expanded per visible range, matched in C# by `CanopyRecurrence` against one fixture.
+- [x] Range queries for hosted grids (`gridRangeQuery`, `POST {pattern}/range` over `IQueryable`), iCalendar export.
+- [ ] Editing a single occurrence of a series in the calendar itself: today the host handles `canopyx:occurrenceChange` by adding an overriding record.
+- [ ] Resource columns for trees with more than 24 leaves (a chosen subset), and events with several resources.
+- [ ] Screen-reader speech checks of the calendar views with NVDA and Narrator.
+
+Gate: the calendar examples pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both palettes, the month paints 5,000 events and the timeline 5,000 resources and 100,000 events within the performance gates, and the parts stay under their gzip guards.
+
 ## 1.0 Public-Grade
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.

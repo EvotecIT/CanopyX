@@ -77,6 +77,7 @@ host.addEventListener("canopyx:linkchange", event => {
 | `keys` | Selected row or node ids (up to 10000); empty for `filter`. |
 | `values` | Column id to distinct raw values: across the selected loaded rows for `select` (up to 1000 rows and 100 values per column), from the reader's `eq` and `in` conditions for `filter`. |
 | `label` | A short text for another view's chip: the first column of up to three selected rows, or the filtered values. |
+| `range` | On a [calendar](calendar.md#linked-views): the selected day, slots or resource's span as `{ column, from, to }` (instants on the start column, `to` exclusive), which another view can apply as a date range filter. Absent elsewhere. |
 
 A host that links views after they mounted calls `api.startLinkEvents()` instead of passing the option.
 

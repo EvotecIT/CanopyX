@@ -139,6 +139,21 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Grouping by up to four columns, from the column menus or a group-by bar, with labelled aggregates | Reporting | `reporting.groupBy`, `reporting.groupable`, `setGroupBy()` | [grouping.md](grouping.md) |
 | Expandable detail rows: a template, HTML, or a nested grid or tree | Reporting | `reporting.detail` | [grouping.md](grouping.md#detail-rows) |
 
+## Calendar and resource timeline
+
+| Feature | Views | How | Reference |
+|---|---|---|---|
+| Month, week, day, N-day, agenda and year views of a grid's records | Grid | `calendar: { start, end, title, … }`; C# `CanopyCalendar`, typed `Calendar().Start(x => x.Starts)` | [calendar.md](calendar.md) |
+| All-day, multi-day, overlapping and zero-length events; "+N more" in month cells | Grid | `allDay`, `end`, `eventLimit` | [Views](calendar.md#views) |
+| Time zones with correct DST, first weekday, working hours, hidden days, slots and visible hours | Grid | `timeZone`, `firstDay`, `workingHours`, `hiddenDays`, `slotMinutes`, `minTime`, `maxTime` | [Time zones](calendar.md#time-zones) |
+| Recurring events (an RFC 5545 RRULE subset) with exceptions and moved occurrences | Grid | `recurrence`, `exceptions`, `series`, `recurrenceId`; C# `CanopyRecurrence` | [Recurrence](calendar.md#recurrence) |
+| Resource timeline with a resource tree, zoom from hours to quarters, capacity per group and aggregates | Grid | `resources`, `zoom`, `capacity`, `aggregates` | [resource-timeline.md](resource-timeline.md) |
+| Resource columns in day and week views, business hours per resource, unavailable time and background ranges | Grid | `availability`, `ranges`, `display: "background"` | [Resource columns](resource-timeline.md#resource-columns-in-day-and-week-views) |
+| Drag to move and resize, across resources, with keyboard moves, conflict rules, commit and undo | Grid | `editable: { overlap, allowedResources, workingHours, commit }` | [Editing](calendar.md#editing) |
+| Record panel, linked views, facets, saved views and live data on calendar events | Grid | the grid's own options | [calendar.md](calendar.md#the-record-panel) |
+| Server data by visible date range over `IQueryable` | Grid | `source.range`; `POST {pattern}/range` | [Server data](calendar.md#server-data), [Range queries](remote-dotnet.md#range-queries) |
+| iCalendar export, and print layouts for month, agenda and timeline | Grid | Export menu, `exportCalendar()` | [Export and print](calendar.md#export-and-print) |
+
 ## Export, copy and print
 
 | Feature | Views | How | Reference |

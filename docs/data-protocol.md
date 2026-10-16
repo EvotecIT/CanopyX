@@ -256,7 +256,8 @@ After the query's criteria and the resource restriction, a record without a recu
 empty value) overlaps when `start < to` and (`start >= from` or `end > from`); a null end, or no `end` column, is a
 zero-length marker at its start. A record with a recurrence overlaps when `start < to` and, when `seriesEnd` is given, its
 series end is null or after `from`. A record without a start never overlaps. Overlapping records are ordered by start
-ascending, then by ordinal row identity; the query's sort is ignored.
+ascending, then by record identity (ordinal in memory; a database orders equal starts by the key column in its own collation);
+the query's sort is ignored.
 
 The answer is a `gridRangePage`:
 
@@ -436,8 +437,10 @@ occurrences one range shows.
 Recurrence rules are the RRULE subset of RFC 5545 that `CanopyRecurrence` (C#) and the browser share: `FREQ` (`DAILY`,
 `WEEKLY`, `MONTHLY`, `YEARLY`), `INTERVAL`, `COUNT` or `UNTIL`, `BYDAY` (numbered weekdays only in monthly and yearly rules),
 `BYMONTHDAY` (not in weekly rules), `BYMONTH`, `BYSETPOS` and `WKST`; any other part is an error. The series start always counts
-as the first occurrence, occurrences keep its wall-clock time in the display zone (a skipped time moves forward by the daylight
-saving gap, a repeated time is its first occurrence), and all-day series expand in UTC. `tests/fixtures/recurrence-cases.json`
+as the first occurrence, occurrences keep its wall-clock time in the series zone (the calendar's IANA `timeZone`, otherwise UTC;
+a skipped time moves forward by the daylight saving gap, a repeated time is its first occurrence), and all-day series expand in
+UTC. `exceptions` values are separated by commas, semicolons or white space (at most 1,000): instants with `Z` or an offset,
+wall times without one in the series zone, or `yyyy-MM-dd` dates. `tests/fixtures/recurrence-cases.json`
 holds the cases both implementations check. A view with `calendar` loads the `calendar` part, and the `timeline` part with
 `resources`.
 

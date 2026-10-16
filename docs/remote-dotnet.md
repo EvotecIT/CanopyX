@@ -441,7 +441,8 @@ An unknown column answers `unknownColumn`, a column that cannot be filtered `col
 
 A record without a start never overlaps. `resources` keeps records whose resource is one of them with the semantics of an
 `in` predicate on the resource column (case-insensitive, like every text comparison). The query's sort is ignored: records
-are ordered by start ascending, then by record identity. Dates compare as UTC instants at millisecond precision.
+are ordered by start ascending, then by record identity: ordinally in memory, and by the key column in the database's order
+and collation for `CanopyQueryableProvider<T>`. Dates compare as UTC instants at millisecond precision.
 
 ```json
 { "protocol": "canopyx/2", "type": "gridRangePage", "view": "maintenance", "revision": "r7",
@@ -484,7 +485,9 @@ bounds (`start < @to`, `start >= @from`, `end >= @from + 1 ms`, `seriesEnd IS NU
 applies; every instant and resource identity is a parameter. The answer is one `COUNT` and one window
 `ORDER BY start, key LIMIT @limit`. As for date sorting, database ordering by the start column requires its
 `SortBy` mapping (usually the indexed UTC timestamp itself when the store keeps whole milliseconds); without it the range
-answers `unsupported` before querying. Index the start column (and the resource column for timelines). Stores that pad or
+answers `unsupported` before querying. Index the start column (and the resource column for timelines). The overlap is an
+`OR` of the single-event and series branches, which some databases cannot answer with one range seek on that index; measure
+the plan on real data, and for very large tables consider a provider that reads each branch separately. Stores that pad or
 trim trailing spaces in comparisons treat a whitespace-only rule as empty; keep the recurrence column null for single events.
 ## Export
 
