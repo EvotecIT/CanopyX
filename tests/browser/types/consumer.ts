@@ -687,6 +687,21 @@ void calendarSaved;
 const rangeSource = { query: () => { throw new Error("unused"); }, range: (request: GridRangeQuery): GridRangePage<ShiftRow> =>
   ({ protocol: "canopyx/2", type: "gridRangePage", view: request.view, revision: "r1", from: request.from, to: request.to, matched: 0, truncated: false, items: [] }) };
 void rangeSource;
+// A basic calendar from events, the presets and the opt-in options, the hooks, inserts and the sources API.
+import { createCalendar, type CalendarEventInput, type GridCalendarMenuContext, type GridEventCreate } from "@evotecit/canopyx/grid";
+const basicEvents: CalendarEventInput[] = [{ title: "Planning", start: new Date(), end: "2026-10-16T10:00:00Z", tone: "info" }, { id: "trip", title: "Trip", start: "2026-10-20" }];
+const basicCalendar = createCalendar(document.createElement("div"), { events: basicEvents, preset: "basic", views: ["month", "mini", "weekList", "dayList", "months"],
+  sources: [{ id: "team", label: "Team", tone: "info" }, { id: "ext", label: "Company", ics: "holidays.ics", hidden: true }],
+  calendar: { weekNumbers: "iso", validRange: { start: "2026-01-01" }, menu: (context: GridCalendarMenuContext, defaults) => context.kind === "event" ? [...defaults, { label: "Copy", run: () => undefined }] : null },
+  onCreate: (proposal: GridEventCreate) => proposal.allDay });
+void Promise.resolve(basicCalendar.setCalendarSource("team", false)).then((visible: boolean) => visible);
+void basicCalendar.insertRow({ cells: { title: "New" } }).then(result => result.id);
+const schedulerDefinition: GridCalendarDefinition<ShiftRow> = { start: "starts", create: { minutes: 30 }, drop: true, occurrence: "ask", toolbar: ["search", "export"], details: "popover",
+  span: { count: 2, unit: "week" }, agendaSpan: "week", months: 3, ranges: [{ start: "2026-10-05T08:00:00Z", end: "2026-10-05T18:00:00Z", label: "Closed", inverse: true, recurrence: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" }] };
+void schedulerDefinition;
+// @ts-expect-error The toolbar lists known controls.
+const badToolbar: GridCalendarDefinition<ShiftRow> = { start: "starts", toolbar: ["print"] };
+void badToolbar;
 // @ts-expect-error A calendar names its start column.
 const badCalendar: GridCalendarDefinition<ShiftRow> = { end: "ends" };
 void badCalendar;

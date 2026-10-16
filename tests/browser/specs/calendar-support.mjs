@@ -39,7 +39,7 @@ export async function capture(page, name, options = {}) {
 export async function loadKit(page) {
   await page.goto("about:blank");
   await page.addScriptTag({ content: "window.CanopyXParts = [];" });
-  await page.addScriptTag({ content: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-calendar.js"), "utf8") });
+  for (const name of ["calendar", "calendar-recurrence", "calendar-ics"]) await page.addScriptTag({ content: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8") });
   await page.evaluate(() => {
     const [, part] = window.CanopyXParts.find(([name]) => name === "calendar");
     const FakeGrid = function () {};
@@ -49,6 +49,8 @@ export async function loadKit(page) {
       cellText: cell => String(cell ?? ""), cellValue: cell => cell, isCellObject: () => false, gridQuery: () => ({}), gridQueryRows: () => [], gridResultShape: () => "",
       gridPresenterTone: () => null, validateGridRows: rows => rows, validateGridPage: page => page, validStructuralCount: value => Number.isInteger(value) && value >= 0,
       checkDocument: value => value, numberFormat: lang => new Intl.NumberFormat(lang), loadPart: () => Promise.resolve(), PROTOCOL: "canopyx/2" });
+    // The recurrence and iCalendar parts extend the kit with their functions.
+    for (const name of ["calendar-recurrence", "calendar-ics"]) window.CanopyXParts.find(([item]) => item === name)[1].install({ DataGrid: FakeGrid, h: tag => document.createElement(tag), fill });
     window.kit = FakeGrid.prototype.calKit;
   });
 }

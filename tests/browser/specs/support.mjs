@@ -99,7 +99,8 @@ export function runtimeAssets(runtime = "tree") {
         // The live data part of grids that change in place.
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-live.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-facets.js"),"utf8") +
         // The calendar and resource timeline parts of grids that declare a calendar.
-        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.js"),"utf8") : "") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.js"),"utf8") +
+        ["calendar-recurrence", "calendar-edit", "calendar-ics"].map(name => "\n" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8")).join("") : "") +
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script +
       // The links and search parts every runtime loads for deep links and sidecar searches.
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-links.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-search.js"),"utf8") +
