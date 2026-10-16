@@ -153,6 +153,13 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Record panel, linked views, facets, saved views and live data on calendar events | Grid | the grid's own options | [calendar.md](calendar.md#the-record-panel) |
 | Server data by visible date range over `IQueryable` | Grid | `source.range`; `POST {pattern}/range` | [Server data](calendar.md#server-data), [Range queries](remote-dotnet.md#range-queries) |
 | iCalendar export, and print layouts for month, agenda and timeline | Grid | Export menu, `exportCalendar()` | [Export and print](calendar.md#export-and-print) |
+| A basic calendar from a list of events, read-only with a details popover; presets basic, standard and scheduler | Grid | `CanopyX.createCalendar(host, { events, preset })`; C# `new CanopyCalendar(events)`, `CanopyCalendar.From(...)` | [Quick start](calendar.md#quick-start), [Levels and options](calendar.md#levels-and-options) |
+| Creating events by click, drag and keyboard; dropping grid rows and marked page elements | Grid | `create`, `drop`, `dragRows`; inserts in `gridCommit` | [Creating events](calendar.md#creating-events), [Dropping events](calendar.md#dropping-events) |
+| This event, this and following, or all events of a series | Grid | `occurrence`, `series`, `recurrenceId` | [Changing one occurrence](calendar.md#changing-one-occurrence) |
+| Mini month, week and day lists, stacked months, a year with its events, a timeline without resources and custom spans | Grid | `views`, `yearEvents`, `months`, `span` | [Views](calendar.md#views) |
+| Week numbers, day links, a valid range, six fixed weeks, right to left | Grid | `weekNumbers`, `navLinks`, `validRange`, `fixedWeeks`, `dir="rtl"` | [The calendar definition](calendar.md#the-calendar-definition) |
+| Several sources with a legend; iCalendar import (browser and .NET) | Grid | `sources`, `source`; `CanopyICalendar.Parse` | [Sources and iCalendar](calendar.md#sources-and-icalendar), [icalendar.md](icalendar.md) |
+| Shading outside ranges; context menus and hover cards | Grid | `ranges[].inverse`, `menu`, `hover`, `calendar.menu` hook | [Context menus](calendar.md#context-menus-and-hover-cards) |
 
 ## Export, copy and print
 

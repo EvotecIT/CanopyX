@@ -454,8 +454,10 @@ as the first occurrence, occurrences keep its wall-clock time in the series zone
 a skipped time moves forward by the daylight saving gap, a repeated time is its first occurrence), and all-day series expand in
 UTC. `exceptions` values are separated by commas, semicolons or white space (at most 1,000): instants with `Z` or an offset,
 wall times without one in the series zone, or `yyyy-MM-dd` dates. `tests/fixtures/recurrence-cases.json`
-holds the cases both implementations check. A view with `calendar` loads the `calendar` part, and the `timeline` part with
-`resources`.
+holds the cases both implementations check. A view with `calendar` loads the `calendar` part; the `calendar-recurrence` part
+with a `recurrence` column, a recurring range or an iCalendar source; the `calendar-edit` part with `editable`, `create` or
+`drop`; the `calendar-ics` part with an iCalendar source or the Export control in the toolbar (otherwise on first export); and
+the `timeline` part with `resources` or the `timeline` view.
 
 ### Record panel
 
@@ -626,7 +628,9 @@ The writer answers with a `gridCommitResult`, one entry per row it handled:
   that replace the shown ones; other rows may carry an `error` message and `errors` by column. A row the answer leaves out
   was not saved.
 - A saved insert may carry `newId`, the stored identity of the new record (an identifier); the runtime then replaces the
-  client id with it. Without `newId` the row keeps the client id. Only saved rows carry `newId`.
+  client id with it. Without `newId` the row keeps the client id, which a later session may issue again for another new row,
+so a writer that stores records under its own identities should always answer `newId`. Only saved rows carry `newId`; an
+identity another row of the grid already has is refused (the row keeps its client id and the grid reports an error).
 - `revision` is optional: the dataset revision after the commit. The grid reports it in the commit result and keeps
   reading pages at the revision it accepted; a host whose source no longer serves that revision reloads the grid.
 - A transport failure (a non-success status, invalid JSON, a document that does not answer the batch: another view, an

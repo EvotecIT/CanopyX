@@ -45,6 +45,25 @@ with a `RECURRENCE-ID`) becomes an exception of the series and an event of its o
 keeps at most 1,000 exceptions (moved occurrences past that show twice), and an event that replaces an occurrence of a series
 whose rule fell back to a single event shows beside it.
 
+## In the browser
+
+A calendar source with `ics` reads a file on the page's own site ([Sources and iCalendar](calendar.md#sources-and-icalendar)):
+
+```js
+CanopyX.createCalendar(host, { events, sources: [{ id: "team", label: "Team" }, { id: "holidays", label: "Public holidays", tone: "success", ics: "holidays.ics" }] });
+```
+
+The `calendar-ics` part fetches it once with the page's credentials, refuses a response from another origin or larger than
+8 MB, and reads it with the rules and limits below. Its events join the calendar read-only under the source's id; a cancelled
+occurrence of a series becomes an exception of it. A failure shows "Could not read Public holidays: ..." in the calendar's
+notice and raises the grid's `error` event; `canopyx:calendarImport` reports `{ source, events, skipped, notes }`. Time zones
+are the browser's own IANA zones; Windows zone names are not read there.
+
+Because a calendar expands series on every paint, the browser also bounds imported repeat rules: at most 1,000 repeating
+events a file (later ones show once), a rule must repeat within its first thousand periods (a rule that never matches shows
+once), and a `COUNT` becomes the `UNTIL` of its last occurrence, at most the 1,000th (a note says when a count was cut). Each
+case adds a note. An identity or status longer than its limit is dropped, as in .NET; an empty `EXDATE` value is ignored.
+
 ## What is read
 
 - `VCALENDAR` > `VEVENT`: only events directly inside the calendar. Other components (`VTODO`, `VJOURNAL`, `VALARM`, ...) are ignored, and the properties of a
