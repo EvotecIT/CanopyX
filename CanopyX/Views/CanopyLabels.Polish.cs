@@ -487,6 +487,7 @@ public sealed partial class CanopyLabels {
         CalendarMoved = "Przeniesiono {title} na {time}",
         CalendarResized = "Nowy koniec wydarzenia {title}: {time}",
         CalendarSeriesMoved = "Przeniesiono wszystkie wystąpienia: {title}",
+        CalendarSeriesTime = "Tutaj można przesunąć tylko godzinę całej serii.",
         CalendarMoveHelp = "Strzałki przesuwają, Shift ze strzałkami zmienia koniec, Alt ze strzałką w górę lub w dół zmienia zasób, Enter zapisuje, Escape anuluje.",
         CalendarEdit = "Przenieś lub zmień długość: {title}",
         CalendarSaveFailed = "Nie zapisano {title}: {error}",

@@ -479,6 +479,7 @@ const labels = Object.freeze({
   calendarMoved: "Przeniesiono {title} na {time}",
   calendarResized: "Nowy koniec wydarzenia {title}: {time}",
   calendarSeriesMoved: "Przeniesiono wszystkie wystąpienia: {title}",
+  calendarSeriesTime: "Tutaj można przesunąć tylko godzinę całej serii.",
   calendarMoveHelp: "Strzałki przesuwają, Shift ze strzałkami zmienia koniec, Alt ze strzałką w górę lub w dół zmienia zasób, Enter zapisuje, Escape anuluje.",
   calendarEdit: "Przenieś lub zmień długość: {title}",
   calendarSaveFailed: "Nie zapisano {title}: {error}",

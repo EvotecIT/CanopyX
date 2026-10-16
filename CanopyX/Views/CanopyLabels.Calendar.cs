@@ -128,6 +128,9 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets what a screen reader hears after a whole series moved, including <c>{title}</c>. Default "Every occurrence of {title} moved".</summary>
     public string CalendarSeriesMoved { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets what a screen reader hears, and the move's ghost shows, when a series would change its day. Default "Only the time of a whole series can be moved here.".</summary>
+    public string CalendarSeriesTime { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the keyboard help of an event being moved. Default "Arrow keys move, Shift with arrow keys changes the end, Alt with Up or Down changes the resource, Enter saves, Escape cancels.".</summary>
     public string CalendarMoveHelp { get => Get(); set => Set(value); }
 

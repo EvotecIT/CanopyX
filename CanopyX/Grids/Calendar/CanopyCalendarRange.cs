@@ -43,7 +43,7 @@ public sealed class CanopyCalendarRange {
         set => _label = CheckLabel(value);
     }
 
-    /// <summary>Gets or sets the range's tone; <see cref="CanopyTone.None"/> (the default) uses the theme's neutral shading.</summary>
+    /// <summary>Gets or sets the range's tone; <see cref="CanopyTone.None"/> (the default) shades a background range with the info tone and an unavailable range with neutral hatching.</summary>
     public CanopyTone Tone { get; set; }
 
     /// <summary>Gets or sets the resource id (a node id of the resource tree) the range belongs to; null for every resource and the calendar views.</summary>

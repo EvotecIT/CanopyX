@@ -33,10 +33,13 @@ public sealed class CanopyRangeRequest {
     /// <param name="resource">The allowed text column holding each record's resource identity, or null.</param>
     /// <param name="resources">The resource identities to restrict to (1 to 1,000, unique, nonempty), or null for all; requires
     /// <paramref name="resource"/>.</param>
-    /// <param name="limit">The most records to return, at least one.</param>
-    /// <param name="calendarView">The informational calendar view name, or null.</param>
+    /// <param name="limit">The most records to return, 1 to 10,000 (a handler also clamps it to its <c>MaxRangeRows</c> limit).</param>
+    /// <param name="calendarView">The informational calendar view name (<c>month</c>, <c>week</c>, <c>day</c>, <c>days</c>, <c>agenda</c>,
+    /// <c>year</c> or <c>timeline</c>), or null.</param>
     /// <exception cref="ArgumentException">A column belongs to another schema or has the wrong kind, the window is empty or too
-    /// long, or the resources are invalid or have no resource column.</exception>
+    /// long, the resources are invalid (empty, repeated, longer than 4,096 characters, not well-formed text, or more than 1,000)
+    /// or have no resource column, or the view name is unknown.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="limit"/> is outside 1 to 10,000.</exception>
     public CanopyRangeRequest(CanopyDataRequest query, DateTime from, DateTime to, CanopyDataColumn start, CanopyDataColumn? end = null,
         CanopyDataColumn? recurrence = null, CanopyDataColumn? seriesEnd = null, CanopyDataColumn? resource = null, IEnumerable<string>? resources = null,
         int limit = 5000, string? calendarView = null) {
@@ -56,16 +59,29 @@ public sealed class CanopyRangeRequest {
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var item in resources) {
                 if (string.IsNullOrEmpty(item)) throw new ArgumentException("Resource identities cannot be empty.", nameof(resources));
+                if (item.Length > 4096 || !WellFormed(item)) throw new ArgumentException("A resource identity is well-formed text of at most 4,096 characters.", nameof(resources));
+                if (list.Count == 1000) throw new ArgumentException("A resource restriction lists 1 to 1,000 identities.", nameof(resources));
                 if (!seen.Add(item)) throw new ArgumentException("Resource identities must be unique.", nameof(resources));
                 list.Add(item);
             }
             if (list.Count == 0 || list.Count > 1000) throw new ArgumentException("A resource restriction lists 1 to 1,000 identities.", nameof(resources));
             Resources = new ReadOnlyCollection<string>(list);
         }
-        if (limit < 1) throw new ArgumentOutOfRangeException(nameof(limit));
+        if (limit < 1 || limit > 10000) throw new ArgumentOutOfRangeException(nameof(limit), limit, "A range request reads 1 to 10,000 records.");
+        if (calendarView != null && Array.IndexOf(Views, calendarView) < 0) throw new ArgumentException("Unknown calendar view.", nameof(calendarView));
         Limit = limit;
         CalendarView = calendarView;
         Selection = BuildSelection();
+    }
+
+    private static readonly string[] Views = { "month", "week", "day", "days", "agenda", "year", "timeline" };
+
+    private static bool WellFormed(string text) {
+        for (var i = 0; i < text.Length; i++) {
+            if (char.IsHighSurrogate(text[i])) { if (i + 1 >= text.Length || !char.IsLowSurrogate(text[i + 1])) return false; i++; }
+            else if (char.IsLowSurrogate(text[i])) return false;
+        }
+        return true;
     }
 
     /// <summary>Gets the complete query whose criteria select the records; its window, sort and grouping do not apply.</summary>

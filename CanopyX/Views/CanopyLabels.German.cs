@@ -487,6 +487,7 @@ public sealed partial class CanopyLabels {
         CalendarMoved = "{title} verschoben auf {time}",
         CalendarResized = "Neues Ende von {title}: {time}",
         CalendarSeriesMoved = "Alle Vorkommen von {title} verschoben",
+        CalendarSeriesTime = "Hier lässt sich nur die Uhrzeit einer ganzen Serie verschieben.",
         CalendarMoveHelp = "Pfeiltasten verschieben, Umschalt mit Pfeiltasten ändert das Ende, Alt mit Nach-oben oder Nach-unten ändert die Ressource, Eingabe speichert, Esc bricht ab.",
         CalendarEdit = "{title} verschieben oder Größe ändern",
         CalendarSaveFailed = "{title} wurde nicht gespeichert: {error}",

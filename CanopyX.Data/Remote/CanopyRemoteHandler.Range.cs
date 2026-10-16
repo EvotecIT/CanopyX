@@ -24,6 +24,10 @@ public sealed partial class CanopyRemoteHandler {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
         if (!(Provider is ICanopyRangeProvider ranges)) throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not answer date-range requests.");
+        // A request built in code reads no more than the endpoint's own limit, as a parsed one does.
+        if (request.Limit > Options.Limits.MaxRangeRows)
+            request = new CanopyRangeRequest(request.Query, request.From, request.To, request.Start, request.End, request.Recurrence, request.SeriesEnd, request.Resource,
+                request.Resources, Options.Limits.MaxRangeRows, request.CalendarView);
         var revision = await RevisionAsync(request.Query.Revision, cancellationToken).ConfigureAwait(false);
         var result = await ranges.RangeAsync(request, cancellationToken).ConfigureAwait(false);
         // Records written between the count and the read change the answer; the client reloads instead of mixing snapshots.

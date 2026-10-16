@@ -487,6 +487,7 @@ public sealed partial class CanopyLabels {
         CalendarMoved = "{title} spostato a {time}",
         CalendarResized = "Nuova fine di {title}: {time}",
         CalendarSeriesMoved = "Tutte le occorrenze di {title} sono state spostate",
+        CalendarSeriesTime = "Qui si può spostare solo l'orario dell'intera serie.",
         CalendarMoveHelp = "Le frecce spostano, Maiusc con le frecce cambia la fine, Alt con Su o Giù cambia la risorsa, Invio salva, Esc annulla.",
         CalendarEdit = "Sposta o ridimensiona {title}",
         CalendarSaveFailed = "{title} non è stato salvato: {error}",

@@ -479,6 +479,7 @@ const labels = Object.freeze({
   calendarMoved: "{title} verschoben auf {time}",
   calendarResized: "Neues Ende von {title}: {time}",
   calendarSeriesMoved: "Alle Vorkommen von {title} verschoben",
+  calendarSeriesTime: "Hier lässt sich nur die Uhrzeit einer ganzen Serie verschieben.",
   calendarMoveHelp: "Pfeiltasten verschieben, Umschalt mit Pfeiltasten ändert das Ende, Alt mit Nach-oben oder Nach-unten ändert die Ressource, Eingabe speichert, Esc bricht ab.",
   calendarEdit: "{title} verschieben oder Größe ändern",
   calendarSaveFailed: "{title} wurde nicht gespeichert: {error}",

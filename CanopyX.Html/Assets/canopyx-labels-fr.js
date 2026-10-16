@@ -480,6 +480,7 @@ const labels = Object.freeze({
   calendarMoved: "{title} déplacé à {time}",
   calendarResized: "Nouvelle fin de {title} : {time}",
   calendarSeriesMoved: "Toutes les occurrences de {title} ont été déplacées",
+  calendarSeriesTime: "Ici, seule l'heure de toute la série peut être déplacée.",
   calendarMoveHelp: "Les flèches déplacent, Maj avec les flèches modifie la fin, Alt avec Haut ou Bas change la ressource, Entrée enregistre, Échap annule.",
   calendarEdit: "Déplacer ou redimensionner {title}",
   calendarSaveFailed: "{title} n'a pas été enregistré : {error}",

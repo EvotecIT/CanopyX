@@ -487,6 +487,7 @@ public sealed partial class CanopyLabels {
         CalendarMoved = "{title} déplacé à {time}",
         CalendarResized = "Nouvelle fin de {title} : {time}",
         CalendarSeriesMoved = "Toutes les occurrences de {title} ont été déplacées",
+        CalendarSeriesTime = "Ici, seule l'heure de toute la série peut être déplacée.",
         CalendarMoveHelp = "Les flèches déplacent, Maj avec les flèches modifie la fin, Alt avec Haut ou Bas change la ressource, Entrée enregistre, Échap annule.",
         CalendarEdit = "Déplacer ou redimensionner {title}",
         CalendarSaveFailed = "{title} n'a pas été enregistré : {error}",

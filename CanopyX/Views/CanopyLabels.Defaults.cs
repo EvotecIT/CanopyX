@@ -490,6 +490,7 @@ public sealed partial class CanopyLabels {
         [nameof(CalendarMoved)] = "{title} moved to {time}",
         [nameof(CalendarResized)] = "{title} now ends {time}",
         [nameof(CalendarSeriesMoved)] = "Every occurrence of {title} moved",
+        [nameof(CalendarSeriesTime)] = "Only the time of a whole series can be moved here.",
         [nameof(CalendarMoveHelp)] = "Arrow keys move, Shift with arrow keys changes the end, Alt with Up or Down changes the resource, Enter saves, Escape cancels.",
         [nameof(CalendarEdit)] = "Move or resize {title}",
         [nameof(CalendarSaveFailed)] = "{title} was not saved: {error}",

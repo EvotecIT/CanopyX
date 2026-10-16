@@ -5,6 +5,7 @@ using System.Globalization;
 namespace CanopyX;
 
 public sealed partial class CanopyRecurrence {
+    private const int MaxRuleLength = 1024;
     private static readonly string[] UntilFormats = {
         "yyyyMMdd", "yyyyMMdd'T'HHmmss", "yyyy-MM-dd", "yyyy-MM-dd'T'HH:mm:ss"
     };
@@ -23,7 +24,7 @@ public sealed partial class CanopyRecurrence {
     public static CanopyRecurrence Parse(string text) {
         if (text == null) throw new ArgumentNullException(nameof(text));
         var error = TryRead(text, out var rule);
-        return rule ?? throw new FormatException("Recurrence rule '" + text + "': " + error);
+        return rule ?? throw new FormatException("Invalid recurrence rule: " + error);
     }
 
     /// <summary>Reads rule text as <see cref="Parse"/> does, without throwing.</summary>
@@ -38,6 +39,8 @@ public sealed partial class CanopyRecurrence {
 
     private static string? TryRead(string text, out CanopyRecurrence? rule) {
         rule = null;
+        // The browser reads at most 1024 characters too, so both read the same rules.
+        if (text.Length > MaxRuleLength) return "a rule is at most 1024 characters.";
         var body = text.Trim();
         if (body.StartsWith("RRULE:", StringComparison.OrdinalIgnoreCase)) body = body.Substring(6);
         if (body.Length == 0) return "the rule is empty.";
@@ -108,7 +111,8 @@ public sealed partial class CanopyRecurrence {
             if (item.Length < 2 || !CanopyRecurrenceDay.TryParseCode(item.Substring(item.Length - 2), out var day)) return "BYDAY values are weekdays such as MO, 2TU or -1FR.";
             var ordinal = 0;
             if (item.Length > 2) {
-                if (!ReadNumber(item.Substring(0, item.Length - 2), -53, 53, out ordinal)) return "A numbered weekday's number is 1 to 53 or -53 to -1.";
+                var number = item.Substring(0, item.Length - 2);
+                if (number.TrimStart('+', '-').Length > 2 || !ReadNumber(number, -53, 53, out ordinal)) return "A numbered weekday's number is 1 to 53 or -53 to -1.";
                 if (rule.Frequency != CanopyRecurrenceFrequency.Monthly && rule.Frequency != CanopyRecurrenceFrequency.Yearly) return "Numbered weekdays need FREQ=MONTHLY or FREQ=YEARLY.";
             }
             rule._days.Add(new CanopyRecurrenceDay(day, ordinal));

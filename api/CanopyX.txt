@@ -1065,6 +1065,7 @@ CanopyX.CanopyLabels.System.String CalendarResources { get; set; }
 CanopyX.CanopyLabels.System.String CalendarSaveFailed { get; set; }
 CanopyX.CanopyLabels.System.String CalendarSelected { get; set; }
 CanopyX.CanopyLabels.System.String CalendarSeriesMoved { get; set; }
+CanopyX.CanopyLabels.System.String CalendarSeriesTime { get; set; }
 CanopyX.CanopyLabels.System.String CalendarShowing { get; set; }
 CanopyX.CanopyLabels.System.String CalendarTimeRange { get; set; }
 CanopyX.CanopyLabels.System.String CalendarTimeline { get; set; }

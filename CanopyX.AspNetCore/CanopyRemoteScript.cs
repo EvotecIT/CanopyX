@@ -10,7 +10,8 @@ namespace CanopyX.AspNetCore;
 /// <summary>Writes the small browser script that connects a hosted CanopyX grid to endpoints mapped by <see cref="CanopyRemoteEndpointExtensions"/>.</summary>
 /// <remarks>
 /// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c>, <c>summary</c>, for a view with a
-/// filterable date column <c>range</c> (calendar and timeline periods, posted to <c>{endpoint}/range</c>),
+/// filterable date column <c>range</c> (calendar and timeline periods, posted to <c>{endpoint}/range</c>; when the endpoint's provider
+/// answers <c>unsupported</c> the method is dropped and the calendar reads periods through ordinary queries),
 /// for a view with editable columns <c>commit</c>, and for a record schema <c>record</c> hooks post to the endpoints (with the
 /// grid's cancellation signal), and registers one export format per server format so the Export menu offers a complete
 /// server-side download. After a commit answers with a new dataset revision the grid reloads, because the revision it read
@@ -144,7 +145,7 @@ function reopenAtCurrentRevision(id) {
 }
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
-if (settings.range) source.range = (request, options) => post("/range", request, options.signal).then(response => response.json());
+if (settings.range) source.range = (request, options) => post("/range", request, options.signal).then(response => response.json()).catch(error => { if (error.code === "unsupported") delete source.range; throw error; });
 if (settings.commit) {
   // Saving changes a revision the grid still reads pages at; once a commit answers with a new one, the grid reloads.
   // Grid events do not bubble, so the document listens in the capture phase.

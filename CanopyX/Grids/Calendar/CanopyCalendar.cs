@@ -65,10 +65,16 @@ public sealed partial class CanopyCalendar {
     /// <summary>Gets or sets the column of each event's status, of any kind, shown with the column's presenter; its tone colours the event.</summary>
     public string? Status { get => _status; set => _status = Column(value); }
 
-    /// <summary>Gets or sets the text column of each event's recurrence rule (<see cref="CanopyRecurrence"/> rule text, with or without <c>RRULE:</c>).</summary>
+    /// <summary>
+    /// Gets or sets the text column of each event's recurrence rule (<see cref="CanopyRecurrence"/> rule text, with or without <c>RRULE:</c>).
+    /// Series expand in one fixed zone for every reader: <see cref="TimeZone"/> when it names an IANA zone, otherwise UTC (all-day
+    /// series always in UTC). Give recurring data the IANA zone it was planned in, and pass the same zone to
+    /// <see cref="CanopyRecurrence.Occurrences(DateTimeOffset, TimeZoneInfo, DateTimeOffset?, DateTimeOffset?, string?)"/> and
+    /// <see cref="CanopyRecurrence.SeriesEnd(DateTimeOffset, TimeSpan, TimeZoneInfo, string?)"/> on the server.
+    /// </summary>
     public string? Recurrence { get => _recurrence; set => _recurrence = Column(value); }
 
-    /// <summary>Gets or sets the text column of each series' excluded occurrences: ISO instants or <c>yyyy-MM-dd</c> dates separated by commas or spaces.</summary>
+    /// <summary>Gets or sets the text column of each series' excluded occurrences: ISO date-times (without an offset, a wall time in the series' zone) or <c>yyyy-MM-dd</c> dates, separated by commas, semicolons or white space, at most 1000.</summary>
     public string? Exceptions { get => _exceptions; set => _exceptions = Column(value); }
 
     /// <summary>Gets or sets the text column of an override record's series: the id of the series row whose occurrence it replaces. Set with <see cref="RecurrenceId"/>.</summary>
@@ -143,7 +149,7 @@ public sealed partial class CanopyCalendar {
     /// <summary>Gets or sets how events are drawn. Defaults to <see cref="CanopyCalendarEventStyle.Quiet"/>.</summary>
     public CanopyCalendarEventStyle EventStyle { get; set; }
 
-    /// <summary>Gets or sets the display time zone: <c>utc</c>, <c>local</c> or an IANA zone name such as <c>Europe/Warsaw</c>; null uses the grid's <see cref="CanopyDataGridView.TimeZone"/>.</summary>
+    /// <summary>Gets or sets the display time zone: <c>utc</c>, <c>local</c> or an IANA zone name such as <c>Europe/Warsaw</c>; null uses the grid's <see cref="CanopyDataGridView.TimeZone"/>. An IANA zone is also the zone recurring events expand in (see <see cref="Recurrence"/>).</summary>
     /// <exception cref="ArgumentException">The value is not <c>utc</c>, <c>local</c> or an IANA zone name.</exception>
     public string? TimeZone {
         get => _timeZone;
@@ -156,7 +162,7 @@ public sealed partial class CanopyCalendar {
     /// <summary>Gets or sets the resources of the timeline and the resource columns; null for none.</summary>
     public CanopyCalendarResources? Resources { get; set; }
 
-    /// <summary>Gets or sets the timeline's zoom level. Defaults to <see cref="CanopyCalendarZoom.Day"/>.</summary>
+    /// <summary>Gets or sets the timeline's zoom level. Defaults to <see cref="CanopyCalendarZoom.Day"/>, or to the first of <see cref="Zooms"/> when they leave Day out.</summary>
     public CanopyCalendarZoom Zoom { get; set; } = CanopyCalendarZoom.Day;
 
     /// <summary>Gets the timeline zoom levels offered, in this order, each once; empty offers all five.</summary>

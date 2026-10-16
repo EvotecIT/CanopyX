@@ -10,12 +10,14 @@ public sealed partial class CanopyRecurrence {
     /// </summary>
     /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment.</param>
     /// <param name="zone">The series' time zone, whose wall-clock time the occurrences keep; UTC for all-day series.</param>
-    /// <param name="from">The first moment of the range: occurrences that start earlier are left out (they still count toward <see cref="Count"/>). Null for none.</param>
+    /// <param name="from">The first moment of the range: occurrences that start earlier are left out (they still count toward <see cref="Count"/>);
+    /// to keep occurrences that are still running at a range's start, as the browser shows them, pass that start minus the occurrences' duration. Null for none.</param>
     /// <param name="to">The end of the range, exclusive: occurrences that start at or after it are left out. Null for none.</param>
     /// <param name="exceptions">Excluded occurrences (<c>EXDATE</c>), as a calendar's <c>exceptions</c> column holds them: ISO instants
     /// (an instant without an offset is a wall time in <paramref name="zone"/>) remove the occurrence that starts then, and
-    /// <c>yyyy-MM-dd</c> dates remove every occurrence that starts on that day; separated by commas or spaces. Null for none.</param>
-    /// <returns>The occurrences, lazily; a series without an end and without <paramref name="to"/> never ends.</returns>
+    /// <c>yyyy-MM-dd</c> dates remove every occurrence that starts on that day; separated by commas, semicolons or white space, at most 1000. Null for none.</param>
+    /// <returns>The occurrences, lazily. A series without an end and without <paramref name="to"/> runs until the walk stops after
+    /// 60,000 periods (days, weeks, months or years), as the browser's does, or until the caller stops reading.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="to"/> is before <paramref name="from"/>.</exception>
     /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
@@ -92,27 +94,41 @@ public sealed partial class CanopyRecurrence {
 
     private IEnumerable<DateTimeOffset> Expand(DateTime wallStart, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, CanopyRecurrenceExclusions exclusions) {
         var time = wallStart.TimeOfDay;
-        // No period after this wall date can hold an occurrence that is still returned.
-        DateTime? lastDate = to.HasValue ? TimeZoneInfo.ConvertTime(to.Value, zone).Date.AddDays(1) : (DateTime?)null;
+        // No period after this wall date can hold an occurrence that is still returned; bounds near the end of the calendar clamp.
+        DateTime? lastDate = to.HasValue && to.Value < Far ? NextDay(TimeZoneInfo.ConvertTime(to.Value, zone).Date) : (DateTime?)null;
+        // Dates more than a day before the range are counted (for COUNT) without resolving their moment.
+        DateTime? firstDate = from.HasValue && from.Value > Near ? TimeZoneInfo.ConvertTime(from.Value, zone).Date.AddDays(-1) : (DateTime?)null;
         DateTime? untilDate = null;
         DateTimeOffset? untilInstant = null;
         if (_until.HasValue) {
             if (_untilIsDate) untilDate = _until.Value.Date;
             else untilInstant = _until.Value.Kind == DateTimeKind.Utc ? new DateTimeOffset(_until.Value, TimeSpan.Zero) : CanopyRecurrenceZone.Resolve(_until.Value, zone);
-            var bound = (untilDate ?? TimeZoneInfo.ConvertTime(untilInstant!.Value, zone).Date).AddDays(1);
+            var bound = NextDay(untilDate ?? TimeZoneInfo.ConvertTime(untilInstant!.Value, zone).Date);
             if (!lastDate.HasValue || bound < lastDate.Value) lastDate = bound;
         }
         var generated = 0;
         foreach (var date in Dates(wallStart.Date, lastDate)) {
-            if (_count.HasValue && generated >= _count.Value) yield break;
+            if (untilDate.HasValue && date > untilDate.Value) yield break;
+            if (firstDate.HasValue && date < firstDate.Value && !untilInstant.HasValue) {
+                if (_count.HasValue && ++generated >= _count.Value) yield break;
+                continue;
+            }
             var occurrence = CanopyRecurrenceZone.Resolve(date + time, zone);
-            if (untilDate.HasValue ? date > untilDate.Value : untilInstant.HasValue && occurrence > untilInstant.Value) yield break;
+            if (untilInstant.HasValue && occurrence > untilInstant.Value) yield break;
             generated++;
             if (to.HasValue && occurrence >= to.Value) yield break;
-            if (from.HasValue && occurrence < from.Value || exclusions.Removes(occurrence, date)) continue;
-            yield return occurrence;
+            if (!(from.HasValue && occurrence < from.Value || exclusions.Removes(occurrence, date))) yield return occurrence;
+            // The last occurrence COUNT allows ends the walk at once, so a rule that matches rarely is not scanned to the year 9999.
+            if (_count.HasValue && generated >= _count.Value) yield break;
         }
     }
+
+    private static readonly DateTimeOffset Far = DateTimeOffset.MaxValue.AddDays(-2);
+    private static readonly DateTimeOffset Near = DateTimeOffset.MinValue.AddDays(2);
+    private static DateTime NextDay(DateTime date) => date >= DateTime.MaxValue.Date ? date : date.AddDays(1);
+
+    /// <summary>The most periods one expansion walks, as in the browser (60,000 days, weeks, months or years).</summary>
+    private const int MaxPeriods = 60000;
 
     /// <summary>The series' dates in order: the start, then every later date the rule makes, period by period.</summary>
     private IEnumerable<DateTime> Dates(DateTime start, DateTime? lastDate) {
@@ -135,7 +151,7 @@ public sealed partial class CanopyRecurrence {
         var monthScope = Frequency == CanopyRecurrenceFrequency.Monthly || months.Count > 0;
         var candidates = new List<DateTime>();
         var chosen = new List<DateTime>();
-        while (!lastDate.HasValue || period <= lastDate.Value) {
+        for (var periods = 0; periods < MaxPeriods && (!lastDate.HasValue || period <= lastDate.Value); periods++) {
             candidates.Clear();
             var length = Frequency switch {
                 CanopyRecurrenceFrequency.Daily => 1,

@@ -59,7 +59,8 @@ public sealed partial class CanopyCalendar {
 
         Distinct(Zooms, "Timeline zooms", value => value >= CanopyCalendarZoom.Hour && value <= CanopyCalendarZoom.Quarter);
         if (Zoom < CanopyCalendarZoom.Hour || Zoom > CanopyCalendarZoom.Quarter) throw new ArgumentOutOfRangeException(nameof(Zoom), Zoom, "Unknown timeline zoom.");
-        if (Zooms.Count > 0 && !Zooms.Contains(Zoom)) throw new InvalidOperationException("The timeline's zoom must be one of its zooms.");
+        // The default zoom (Day) left out of Zooms means the first of Zooms, as the browser reads it.
+        if (Zooms.Count > 0 && !Zooms.Contains(Zoom) && Zoom != CanopyCalendarZoom.Day) throw new InvalidOperationException("The timeline's zoom must be one of its zooms.");
         Capacity?.Validate();
 
         if (Ranges.Count > 1000) throw new InvalidOperationException("A calendar has at most 1,000 ranges.");

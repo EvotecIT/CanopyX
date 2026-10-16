@@ -1972,7 +1972,7 @@
             "calendarZoomMonth": { "type": "string" }, "calendarZoomQuarter": { "type": "string" }, "calendarResources": { "type": "string" }, "calendarCapacity": { "type": "string" },
             "calendarCapacityAt": { "type": "string" }, "calendarBusy": { "type": "string" }, "calendarOverlaps": { "type": "string" }, "calendarUnavailable": { "type": "string" },
             "calendarOutsideHours": { "type": "string" }, "calendarConflict": { "type": "string" }, "calendarNotAllowed": { "type": "string" }, "calendarMoved": { "type": "string" },
-            "calendarResized": { "type": "string" }, "calendarSeriesMoved": { "type": "string" }, "calendarMoveHelp": { "type": "string" }, "calendarEdit": { "type": "string" },
+            "calendarResized": { "type": "string" }, "calendarSeriesMoved": { "type": "string" }, "calendarSeriesTime": { "type": "string" }, "calendarMoveHelp": { "type": "string" }, "calendarEdit": { "type": "string" },
             "calendarSaveFailed": { "type": "string" }, "calendarExport": { "type": "string" }, "calendarTimeRange": { "type": "string" }, "calendarSelected": { "type": "string" },
             "calendarLane": { "type": "string" }, "calendarHighlighted": { "type": "string" }
           }

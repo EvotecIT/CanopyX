@@ -7,7 +7,8 @@ namespace CanopyX;
 /// <summary>The excluded occurrences of a series (<c>EXDATE</c>): moments and whole days.</summary>
 internal sealed class CanopyRecurrenceExclusions {
     private static readonly CanopyRecurrenceExclusions None = new CanopyRecurrenceExclusions();
-    private static readonly char[] Separators = { ',', ' ', '\t', '\r', '\n' };
+    private static readonly char[] Separators = { ',', ';', ' ', '\t', '\r', '\n' };
+    private const int MaxExceptions = 1000;
     private static readonly string[] OffsetFormats = { "yyyy-MM-dd'T'HH:mm:ssK", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK", "yyyy-MM-dd'T'HH:mmK" };
     private static readonly string[] WallFormats = { "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF", "yyyy-MM-dd'T'HH:mm" };
 
@@ -16,12 +17,14 @@ internal sealed class CanopyRecurrenceExclusions {
 
     /// <summary>
     /// Reads an exceptions column's text: ISO instants (without an offset, a wall time in the series' zone) and <c>yyyy-MM-dd</c>
-    /// dates, separated by commas or white space.
+    /// dates, separated by commas, semicolons or white space; at most 1000, as the browser reads them.
     /// </summary>
     internal static CanopyRecurrenceExclusions Parse(string? text, TimeZoneInfo zone) {
         if (string.IsNullOrWhiteSpace(text)) return None;
         var result = new CanopyRecurrenceExclusions();
-        foreach (var token in text!.Split(Separators, StringSplitOptions.RemoveEmptyEntries)) {
+        var tokens = text!.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
+        if (tokens.Length > MaxExceptions) throw new FormatException("A series takes at most 1000 exceptions.");
+        foreach (var token in tokens) {
             if (token.IndexOf('T') < 0) {
                 if (!DateTime.TryParseExact(token, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) throw Invalid(token);
                 result._dates.Add(date);
@@ -42,5 +45,5 @@ internal sealed class CanopyRecurrenceExclusions {
     /// <summary>Whether an occurrence that starts at <paramref name="occurrence"/>, on <paramref name="date"/> in the series' zone, is excluded.</summary>
     internal bool Removes(DateTimeOffset occurrence, DateTime date) => _instants.Contains(occurrence.UtcTicks) || _dates.Contains(date);
 
-    private static FormatException Invalid(string token) => new FormatException("The exception '" + token + "' is neither an ISO instant nor a yyyy-MM-dd date.");
+    private static FormatException Invalid(string token) => new FormatException("An exception is neither an ISO date-time nor a yyyy-MM-dd date" + (token.Length <= 40 ? ": " + token : "."));
 }

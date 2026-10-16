@@ -29,14 +29,14 @@ public sealed class CanopyCalendarResources {
         set => _view = value ?? throw new ArgumentNullException(nameof(value));
     }
 
-    /// <summary>Gets or sets the width of the resource column in CSS pixels, 120 to 800; null keeps 280.</summary>
+    /// <summary>Gets or sets the width of the resource pane in CSS pixels, 120 to 800; null keeps 280.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is outside 120 to 800.</exception>
     public int? Width {
         get => _width;
         set => _width = value < 120 || value > 800 ? throw new ArgumentOutOfRangeException(nameof(value), value, "The resource column is 120 to 800 pixels wide.") : value;
     }
 
-    /// <summary>Gets or sets the heading of the resource column; null uses the translated "Resources".</summary>
+    /// <summary>Gets or sets the resource pane's heading in print; null uses the translated "Resources".</summary>
     /// <exception cref="ArgumentException">The value is blank or longer than 256 characters.</exception>
     public string? Label {
         get => _label;

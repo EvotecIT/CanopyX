@@ -137,7 +137,7 @@ public sealed class CanopyCalendar<T> {
     /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
     public CanopyCalendar<T> Recurrence(Expression<Func<T, CanopyRecurrence?>> member) { Definition.Recurrence = Bind(member, true); return this; }
 
-    /// <summary>Sets the member that holds each series' excluded occurrences (ISO instants or <c>yyyy-MM-dd</c> dates separated by commas or spaces); a new column for it is hidden.</summary>
+    /// <summary>Sets the member that holds each series' excluded occurrences (ISO date-times or <c>yyyy-MM-dd</c> dates separated by commas, semicolons or white space); a new column for it is hidden.</summary>
     /// <param name="member">The member.</param>
     /// <returns>This builder.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
