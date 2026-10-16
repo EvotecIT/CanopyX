@@ -52,7 +52,7 @@ public static class CanopyRecordSidecar {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
         var columns = CanopyGridRecord.ColumnIds(view.Columns);
-        return Write(pageDirectory, view.Id, view.Record, records, (record, writer) => record.WriteContent(writer, columns, view.Record, view.Columns));
+        return Write(pageDirectory, view.Id, view.Record, records, (record, writer) => record.WriteContent(writer, columns, view.Record, view.Columns, view.Reporting?.Detail));
     }
 
     /// <summary>Writes the record packs of a tree into its page's folder, under the tree's sidecar source folder.</summary>

@@ -80,9 +80,9 @@ jobs:
       - name: Run quality loop
         shell: pwsh
         run: |
-          # The serial matrix exceeded 20/25 minutes while progressing on shared runners. Allow a full hour;
-          # individual interaction timeouts and performance assertions remain unchanged.
-          $seconds = 3600
+          # The 1,769-case Firefox suite was still passing after an hour on Windows shared runners.
+          # Allow 70 minutes for the serial suite; individual test and performance limits remain unchanged.
+          $seconds = 4200
           if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
             ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds
           } else {

@@ -49,7 +49,7 @@ public sealed class CanopyGridRecord {
         view.Validate();
         var writer = new CanopyJsonWriter();
         writer.BeginObject().Envelope("gridRecord").Property("view", view.Id).Property("id", Id).OptionalProperty("revision", Revision);
-        WriteContent(writer, ColumnIds(view.Columns), view.Record, view.Columns);
+        WriteContent(writer, ColumnIds(view.Columns), view.Record, view.Columns, view.Reporting?.Detail);
         return writer.EndObject().ToString();
     }
 
@@ -77,7 +77,7 @@ public sealed class CanopyGridRecord {
     }
 
     /// <summary>Writes cells, fields and row after the caller's opening fields.</summary>
-    internal void WriteContent(CanopyJsonWriter writer, ISet<string> columns, CanopyRecordPanel? record, IList<CanopyColumn>? gridColumns) {
+    internal void WriteContent(CanopyJsonWriter writer, ISet<string> columns, CanopyRecordPanel? record, IList<CanopyColumn>? gridColumns, CanopyGridDetail? detail = null) {
         if (Revision != null) CanopyIdentifiers.Require(Revision, nameof(Revision));
         if (_cells?.Count > 0) {
             writer.Name("cells").BeginObject();
@@ -99,7 +99,7 @@ public sealed class CanopyGridRecord {
         }
         if (Row != null) {
             if (Row.Id != Id) throw new InvalidOperationException("A record's row must be the record itself.");
-            if (gridColumns != null) CanopyGridRows.Validate(new[] { Row }, columns, gridColumns);
+            if (gridColumns != null) CanopyGridRows.Validate(new[] { Row }, columns, gridColumns, detail);
             writer.Name("row"); Row.WriteJson(writer);
         }
     }

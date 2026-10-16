@@ -62,16 +62,15 @@ public sealed class CanopyRecordList {
         }
         var bindings = new Dictionary<string, CanopyColumn>(StringComparer.Ordinal);
         foreach (var column in Columns) bindings.Add(column.Id, column);
-        CanopyGridRows.Validate(Rows, ids, bindings.Values);
-        foreach (var row in Rows) foreach (var cell in row.Cells.Values) cell?.ValidateStructure(depth + 1);
+        // Shape validation must continue this depth before it can recurse into any cells, fields or details.
+        CanopyGridRows.Validate(Rows, ids, bindings.Values, structureDepth: depth + 1);
         // A tree collection is inline: it has no source to load children from.
         CanopyTreeValidator.Validate(Roots, "A tree collection", node => {
             if (node.HasChildren && !node.HasInlineChildren || node.Ref != null) throw new InvalidOperationException("Node '" + node.Id + "' of a tree collection declares children that load later.");
             foreach (var cell in node.Cells) {
                 if (!bindings.ContainsKey(cell.Key)) throw new InvalidOperationException("A collection node uses an undeclared column '" + cell.Key + "'.");
-                cell.Value?.ValidateStructure(depth + 1);
             }
-        });
+        }, structureDepth: depth + 1);
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
