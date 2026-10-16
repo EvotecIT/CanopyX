@@ -8,6 +8,7 @@
       const range = this.calRange, fmt = this.calFmt, today = this.calZone.day(Date.now());
       const grid = h("div", "cx-cal-agenda"); grid.setAttribute("role", "grid"); grid.setAttribute("aria-labelledby", this.calTitle.id); grid.setAttribute("aria-readonly", "true");
       let rows = 0;
+      if (range.lastDay - range.firstDay > 31) this.calBucketDays(range.firstDay, range.lastDay);
       for (let day = range.firstDay; day <= range.lastDay; day++) {
         if (this.cal.hidden.has(calDow(day))) continue;
         const events = this.calEventsOn(day);
@@ -90,7 +91,9 @@
           }
           grid.appendChild(row);
         }
-        box.appendChild(grid); year.appendChild(box);
+        box.appendChild(grid);
+        if (this.cal.yearEvents) box.appendChild(this.calYearList(first, last));
+        year.appendChild(box);
       }
       // A legend for the shading, from one event to the busiest day's count; each day's name already says its own.
       if (!counts.size) { this.calBody.replaceChildren(year); this.calGrid = year; return; }
@@ -102,6 +105,23 @@
       legend.appendChild(high);
       this.calBody.replaceChildren(year, legend);
       this.calGrid = year;
+    },
+    /** yearEvents: a month's events under its grid, a few by start with their day, and how many more there are. */
+    calYearList(first, last) {
+      const list = h("ul", "cx-cal-ylist"), events = this.calEvents.filter(event => !event.background && event.sd <= last && event.ed >= first).sort((a, b) => a.start - b.start), shown = events.slice(0, 5);
+      list.setAttribute("aria-label", this.calFmt.monthName(first) + ", " + calCount(this, this.calLabels.calendarEvents, events.length));
+      for (const event of shown) {
+        const item = h("li"), day = h("span", "cx-cal-yl-day"), element = this.calEventElement(event, "chip");
+        setText(day, this.calFmt.dayNumber(Math.max(event.sd, first))); day.setAttribute("aria-hidden", "true");
+        element.tabIndex = 0; item.append(day, element); list.appendChild(item);
+      }
+      if (events.length > shown.length) {
+        const item = h("li", "cx-cal-yl-more"), more = gridButton(fill(this.calLabels.calendarMore, { count: numberFormat(this.lang).format(events.length - shown.length) }), () => {
+          if (this.cal.views.includes("month")) this.calGo(first, "month", true); else if (this.cal.views.includes("agenda")) this.calGo(first, "agenda", true);
+        });
+        more.className = "cx-cal-yl-morebtn"; item.appendChild(more); list.appendChild(item);
+      }
+      return list;
     },
     calKeyYear(event, cell) {
       const day = Number(cell.dataset.cxDay), key = event.key, range = this.calRange;
