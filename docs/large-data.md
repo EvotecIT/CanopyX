@@ -6,15 +6,48 @@ CanopyX keeps the rendered DOM small at any size: only the rows in view, a small
 
 | Delivery | What the page holds | Best for |
 | --- | --- | --- |
-| Single file, row objects (the default) | The runtime, and each grid's rows as objects in its configuration | Small and medium grids; reports that are mailed or attached as one file |
-| Single file, compact row data (`RowData`) | Each grid's rows as arrays in column order, in chunks inside its host element | Large grids that must stay one file: smaller, and the first rows show after the first chunk |
-| Single file, compressed row data (`RowData` with `Gzip`) | The same chunks, gzip-compressed and base64-encoded | The smallest single file; decoding costs a little more while loading |
+| Single file, row objects | The runtime, and each grid's rows as objects in its configuration | Small and medium grids; reports that are mailed or attached as one file |
+| Single file, compact row data | Each grid's rows as arrays in column order, in chunks inside its host element | Large grids that must stay one file: smaller, and the first rows show after the first chunk |
+| Single file, compressed row data | The same chunks, gzip-compressed and base64-encoded | The largest grids that must stay one file: several times smaller; decoding costs a little more while loading |
 | Bundle (`SaveHtmlBundle`) | A small `index.html`, the runtime as files, and the rows in sidecar files | File shares and web servers; the page opens at once and loads rows chunk by chunk, also from `file://` |
 | Hosted source | Only the definition; the host's endpoint answers each query | Datasets too large for the browser, or that change; the host filters, sorts and pages |
 
 Mounting when visible (`MountWhenVisible`) combines with every delivery: a page with many views mounts only those in view, and the others when they are scrolled to, their tab or panel opens, the page prints, or a script asks for them.
 
-Trees keep their own choices: inline nodes for small trees, a bundle for large ones (see [architecture.md](architecture.md#data-flow)).
+A single file chooses among the first three by itself ([below](#how-canopyx-chooses)); a bundle and a hosted source are the
+author's choice. Trees keep their own choices: inline nodes for small trees, a bundle for large ones (see [architecture.md](architecture.md#data-flow)).
+
+## How CanopyX chooses
+
+The HTML writer looks at each inline grid's rows when it writes a fragment or a page (`CanopyHtmlOptions.RowData`, whose
+`Format` defaults to `Auto`):
+
+- **Up to 5,000 rows** (`CanopyRowDataOptions.CompactAboveRows`): row objects. That is one chunk of compact row data, so
+  compact rows would show nothing sooner, and a grid of this size loads quickly either way: 10,000 rows take about 0.2 s at
+  normal speed in every format (the measurements below).
+- **More than 5,000 rows**: compact row data, in chunks of 5,000. The first rows show after the first chunk and each task stays
+  short; at 100,000 rows the first rows come in about half the time of row objects, and the longest task drops from 2.0 s to
+  0.6 s at 4x CPU.
+- **Compact rows of more than 5 MiB of JSON** (`CanopyRowDataOptions.GzipAboveBytes`, about 25,000 rows of twelve columns):
+  compressed row data. From there the size of the file decides the load: 100,000 such rows are 19.4 MB compact and 6.3 MB
+  compressed, and the compressed page shows its first rows sooner (1.2 s against 1.4 s at 4x CPU), at the cost of decoding
+  everything about 15% later.
+- Rows with record fields or a detail payload stay row objects, which have a place for them.
+
+The page carries the row data part (`canopyx-data.js`) whenever a grid ends up with compact rows, in single-file fragments
+and pages, once per `CanopyHtmlDocument`. Set `Format` to choose yourself:
+
+| `CanopyRowDataOptions.Format` | Single-file fragments and pages | Bundles (`SaveHtmlBundle`) |
+| --- | --- | --- |
+| `Auto` (default) | By the rules above | Compact row data files, compressed above 5 MiB of JSON |
+| `Objects` | Row objects | Not available (a bundle writes its rows as files) |
+| `Compact` | Compact row data | Compact row data files |
+| `CompactGzip` | Compressed row data | Compressed row data files |
+
+```csharp
+grid.SaveHtmlPage("inventory.html");                                   // chosen from the rows
+grid.SaveHtmlPage("inventory-objects.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } });
+```
 
 ## Mount views when they come into view
 
@@ -38,17 +71,17 @@ A host's script-free `<noscript>` fallback (`CanopyStaticHtml`) works as before;
 
 ## Compact row data
 
-`CanopyHtmlOptions.RowData` writes an inline grid's rows as compact row data (`rowData` in the [protocol](data-protocol.md#row-data)): each row an array of its cells in column order instead of an object that repeats every column id, in chunks of 5,000 rows by default. The page carries the small row data part (`canopyx-data.js`), which decodes the chunks after the grid has drawn its toolbar and header, one chunk per task, so the page stays responsive while it loads.
+Compact row data (`rowData` in the [protocol](data-protocol.md#row-data)) writes each row as an array of its cells in column order instead of an object that repeats every column id, in chunks of 5,000 rows by default. The page carries the small row data part (`canopyx-data.js`), which decodes the chunks after the grid has drawn its toolbar and header, one chunk per task, so the page stays responsive while it loads.
 
 ```csharp
-grid.SaveHtmlPage("inventory.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions() });
-grid.SaveHtmlPage("inventory-small.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Compression = CanopyRowCompression.Gzip } });
+grid.SaveHtmlPage("inventory.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Compact, ChunkSize = 2000 } });
+grid.SaveHtmlPage("inventory-small.html", new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
 ```
 
 - The writer puts the rows in identity order, which is the order the grid shows when no sort applies, and says so (`ordered`). The grid then shows the first rows as soon as the first chunk is decoded. The order of rows in the data never changes what the grid shows.
 - A sort, a filter, a search, or a reporting grid's totals and groups wait until every chunk is decoded; the grid shows its loading state meanwhile.
 - `ChunkSize` (100 to 100,000) trades responsiveness for overhead: smaller chunks show the first rows sooner and keep each task short; larger ones finish slightly sooner.
-- `Gzip` makes the file several times smaller. The browser inflates every chunk with `DecompressionStream`, which every current browser has; an older browser shows an error instead of rows.
+- `CompactGzip` makes the file several times smaller. The browser inflates every chunk with `DecompressionStream`, which every current browser has; an older browser shows an error instead of rows.
 - A chunk that fails to load or decode fails the query that waited for it; the grid's Retry (or `retry()`) starts the decoding over. Decoding is local work, so the request deadline (`requestTimeoutMs`, 30 seconds by default for host sources) does not apply to it unless the host sets one.
 - `CanopyGridRowData` gives the same output to hosts that write pages themselves: `ToJson()` for the grid document, `GetChunk(index)` for each chunk script.
 - Decoding stays on the main thread, in short tasks. A worker would parse off the main thread, but handing a million parsed rows back to the page costs a copy of about the same size as parsing them, and pages opened from `file://` cannot start a worker from a script file (only from a blob); chunks that yield between them keep the page responsive without either cost.
@@ -59,7 +92,7 @@ grid.SaveHtmlPage("inventory-small.html", new CanopyHtmlOptions { RowData = new 
 
 ```csharp
 var result = grid.SaveHtmlBundle(@"\\reports\inventory", new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External,
-    RowData = new CanopyRowDataOptions { Compression = CanopyRowCompression.Gzip } });
+    RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
 Console.WriteLine($"{result.FileCount} files, {result.TotalBytes:N0} bytes, largest {result.LargestFileBytes:N0}");
 ```
 
@@ -128,14 +161,14 @@ Search still scans every row: a quick search over a million rows takes about 1.4
 
 | Check | Budget | Measured |
 | --- | --- | --- |
-| First rows of `large/grid-100k.html` (compact row data, 19.5 MB) | 4,000 ms | about 1.0 s |
+| First rows of `large/grid-100k.html` (written with the default format: compressed row data, 6.5 MB) | 4,000 ms | about 1.2 to 1.7 s |
 | First rows of `large/grid-100k-objects.html` (row objects, 30.8 MB) | 8,000 ms | about 2.5 s |
 | `large/report.html` (24 grids that mount when visible): its two visible grids ready | 6,000 ms | about 2.0 s |
 | `large/report.html`: views mounted at that moment | exactly 2 | 2 |
 
 The budgets leave room for slower hosted runners; the size budgets of the runtime entry points (gzip) stay as before, and the row data part has a 2.5 KiB guard (about 2 KiB).
 
-The examples it opens are written by `CanopyX.Examples` into `large/`: `grid-100k.html` (compact row data), `grid-100k-objects.html` (row objects), `bundle/` (gzip row data in sidecar files) and `report.html` (24 grids that mount when visible). `large-data.spec.mjs` checks their behaviour: mounting on view, tab, print and request; identical results from compact and object rows; first windows before the last chunk; and failures for invalid row data.
+The examples it opens are written by `CanopyX.Examples` into `large/`: `grid-100k.html` (the default format, which chooses compressed row data for 100,000 rows), `grid-100k-objects.html` (row objects, asked for explicitly), `bundle/` (gzip row data in sidecar files) and `report.html` (24 grids that mount when visible). `large-data.spec.mjs` checks their behaviour: mounting on view, tab, print and request; identical results from compact and object rows, and the format the default chose; first windows before the last chunk; and failures for invalid row data.
 
 ## Reproducing the measurements
 

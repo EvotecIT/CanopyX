@@ -357,12 +357,11 @@ properties or html payload (nested rows become a table of the nested view's visi
 An inline grid can carry its rows as compact row data, `rowData`, instead of `rows` (never both; host grids have neither). Each row is an array in a declared column order rather than an object with repeated keys, and the rows come in chunks that the runtime decodes one at a time, so a large dataset costs fewer bytes and the page stays responsive while it loads. Use [large-data.md](large-data.md) to choose between row objects, row data and a bundle.
 
 ```json
-"rowData": { "version": 1, "columns": ["name", "size", "status"], "count": 250000, "ordered": true, "encoding": "gzip", "chunks": 50 }
+"rowData": { "columns": ["name", "size", "status"], "count": 250000, "ordered": true, "encoding": "gzip", "chunks": 50 }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `version` | `1`. The runtime rejects other values. |
 | `columns` | Declared column ids, unique, in the order of each row's cells. Columns not listed have no cells. |
 | `count` | The number of rows in all chunks; the runtime fails the load when the chunks hold another number. |
 | `ordered` | Optional. `true` declares the rows in ordinal order of their ids (UTF-16 code units), the order the grid shows when no sort applies. The runtime then answers the windows of an unsorted, unfiltered query without search as soon as the chunks that hold them are decoded, and fails the load when a row breaks the order. Without it, every query waits for all rows. |
@@ -378,7 +377,7 @@ A row is `[key, cell, cell, ...]`. `key` is the row id, or `{ "id": "...", "tone
 
 The order of the rows in the data never changes what the grid shows: it orders rows by their sort keys and then by id. `CanopyGridRowData` (the C# writer) therefore writes them in id order and declares `ordered`. While chunks are decoding, `view.rows` of the grid's API holds the rows decoded so far; reporting grids (which total and group the complete rows) and every sorted, filtered or searched query wait until all rows are decoded. Destroying the grid stops the decoding. A chunk that fails to load or decode fails the queries waiting for it, and a retry decodes from the first chunk again; the host request deadline (`requestTimeoutMs`) does not bound decoding unless the host sets it. The value lists of column filters and the facets of reporting grids wait for all rows.
 
-C# hosts write row data through `CanopyHtmlOptions.RowData` (fragments and pages carry the chunks inside the host element and the row data part, `canopyx-data.js`), `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
+Row data has no version of its own beside the protocol's (`canopyx/2`); a `version` member in `rowData` is an unknown member, which the schema refuses. C# fragments and pages write row data by themselves for inline grids of more than 5,000 rows, compressed above 5 MiB of JSON (`CanopyHtmlOptions.RowData` and its `Format` choose otherwise; see [large-data.md](large-data.md#how-canopyx-chooses)), and carry the chunks inside the host element and the row data part, `canopyx-data.js`. Hosts also write it through `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
 
 ### Live data
 

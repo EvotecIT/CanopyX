@@ -68,7 +68,7 @@ public sealed class GridRowDataTests {
         using var document = JsonDocument.Parse(json);
         Assert.False(document.RootElement.TryGetProperty("rows", out _));
         var rowData = document.RootElement.GetProperty("rowData");
-        Assert.Equal("{\"version\":1,\"columns\":[\"name\",\"size\",\"notes\"],\"count\":250,\"ordered\":true,\"chunks\":3}", rowData.GetRawText());
+        Assert.Equal("{\"columns\":[\"name\",\"size\",\"notes\"],\"count\":250,\"ordered\":true,\"chunks\":3}", rowData.GetRawText());
         Assert.Equal(100, Chunk(data, 1).GetArrayLength());
         Assert.Equal(50, Chunk(data, 2).GetArrayLength());
         Assert.Equal("r0100", Chunk(data, 1)[0][0].GetString());
@@ -85,14 +85,15 @@ public sealed class GridRowDataTests {
         var json = new CanopyGridRowData(Grid()).ToJson();
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rows"] = new System.Text.Json.Nodes.JsonArray())).IsValid);
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["source"]!["kind"] = "host")).IsValid);
-        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!["version"] = 2)).IsValid);
+        // rowData has no version of its own (canopyx/2 is the only version): a version member is an unknown one.
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!["version"] = 1)).IsValid);
     }
 
     [Fact]
     public void GzipChunks_AreBase64OfTheCompressedJson() {
         var view = Grid(120);
         var plain = new CanopyGridRowData(view, new CanopyRowDataOptions { ChunkSize = 100 });
-        var packed = new CanopyGridRowData(view, new CanopyRowDataOptions { ChunkSize = 100, Compression = CanopyRowCompression.Gzip });
+        var packed = new CanopyGridRowData(view, new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.CompactGzip });
 
         using (var input = new GZipStream(new MemoryStream(Convert.FromBase64String(packed.GetChunk(1))), CompressionMode.Decompress))
         using (var reader = new StreamReader(input, Encoding.UTF8)) Assert.Equal(plain.GetChunk(1), reader.ReadToEnd());
@@ -116,7 +117,7 @@ public sealed class GridRowDataTests {
     public void Options_AndSources_AreChecked() {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { ChunkSize = 99 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { ChunkSize = 100001 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { Compression = (CanopyRowCompression)7 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { Format = (CanopyRowFormat)7 });
         var hosted = new CanopyDataGridView("hosted", "Hosted") { Source = CanopyGridSource.HostedOffset() };
         hosted.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Throws<InvalidOperationException>(() => new CanopyGridRowData(hosted));

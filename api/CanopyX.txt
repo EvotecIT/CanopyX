@@ -952,13 +952,14 @@ CanopyX.CanopyGridRowData : sealed class
 CanopyX.CanopyGridRowData..ctor(CanopyX.CanopyDataGridView view, CanopyX.CanopyRowDataOptions? options = null)
 CanopyX.CanopyGridRowData.CanopyX.Bundles.CanopyGridBundleResult WriteFiles(System.String directory)
 CanopyX.CanopyGridRowData.CanopyX.CanopyDataGridView View { get; }
-CanopyX.CanopyGridRowData.CanopyX.CanopyRowCompression Compression { get; }
+CanopyX.CanopyGridRowData.System.Boolean Gzip { get; }
 CanopyX.CanopyGridRowData.System.Collections.Generic.IReadOnlyList<System.String> Columns { get; }
 CanopyX.CanopyGridRowData.System.Int32 ChunkCount { get; }
 CanopyX.CanopyGridRowData.System.Int32 RowCount { get; }
 CanopyX.CanopyGridRowData.System.String DataFolder { get; }
 CanopyX.CanopyGridRowData.System.String GetChunk(System.Int32 index)
 CanopyX.CanopyGridRowData.System.String ToJson(System.String? sidecarBase = null)
+CanopyX.CanopyGridRowData.static System.Boolean ShouldWrite(CanopyX.CanopyDataGridView view, CanopyX.CanopyRowDataOptions? options = null)
 CanopyX.CanopyGridRowsDetail : sealed class (CanopyX.CanopyDetail)
 CanopyX.CanopyGridRowsDetail..ctor()
 CanopyX.CanopyGridRowsDetail.System.Collections.Generic.IList<CanopyX.CanopyGridRow> Rows { get; }
@@ -1703,13 +1704,17 @@ CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Daily 
 CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Monthly = 2
 CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Weekly = 1
 CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Yearly = 3
-CanopyX.CanopyRowCompression : enum System.Int32
-CanopyX.CanopyRowCompression.const CanopyX.CanopyRowCompression Gzip = 1
-CanopyX.CanopyRowCompression.const CanopyX.CanopyRowCompression None = 0
 CanopyX.CanopyRowDataOptions : sealed class
 CanopyX.CanopyRowDataOptions..ctor()
-CanopyX.CanopyRowDataOptions.CanopyX.CanopyRowCompression Compression { get; set; }
+CanopyX.CanopyRowDataOptions.CanopyX.CanopyRowFormat Format { get; set; }
 CanopyX.CanopyRowDataOptions.System.Int32 ChunkSize { get; set; }
+CanopyX.CanopyRowDataOptions.const System.Int32 CompactAboveRows = 5000
+CanopyX.CanopyRowDataOptions.const System.Int64 GzipAboveBytes = 5242880
+CanopyX.CanopyRowFormat : enum System.Int32
+CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Auto = 0
+CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Compact = 2
+CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat CompactGzip = 3
+CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Objects = 1
 CanopyX.CanopySearchHighlight : sealed class
 CanopyX.CanopySearchHighlight..ctor()
 CanopyX.CanopySearchHighlight.System.Boolean Enabled { get; set; }

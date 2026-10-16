@@ -43,9 +43,12 @@ test("report fragments mount when they come into view, open, print or are mounte
 });
 
 test("a compact single-file grid shows what the row objects show", async ({ page }) => {
-  const results = [];
+  // grid-100k.html is written with the default format (Auto), which compresses 100,000 rows; the objects page asks for objects.
+  const results = [], formats = [];
   for (const name of ["large/grid-100k.html", "large/grid-100k-objects.html"]) {
     await page.goto(exampleUrl(name));
+    formats.push(await page.evaluate(() => { const config = JSON.parse(document.querySelector(".cx-config").textContent);
+      return config.rowData ? { rowData: config.rowData.encoding || "json", version: "version" in config.rowData, scripts: document.querySelectorAll("script[type=\"application/x-canopyx-rows\"]").length } : { rows: config.rows.length }; }));
     await page.waitForSelector(".cx-row[data-cx-id]");
     const result = await page.evaluate(async () => {
       const api = document.querySelector("[data-canopyx-host]").canopyx, grid = document.querySelector(".cx-grid");
@@ -58,6 +61,7 @@ test("a compact single-file grid shows what the row objects show", async ({ page
     });
     results.push(result);
   }
+  expect(formats).toEqual([{ rowData: "gzip", version: false, scripts: 20 }, { rows: 100000 }]);
   expect(results[0].first).toBe("100001");
   expect(results[0].rows).toBe(100000);
   expect(results[0]).toEqual(results[1]);
@@ -79,7 +83,7 @@ test("a gzip bundle loads its rows from sidecar files on file://", async ({ page
 });
 
 test("the first windows of ordered rows paint before the last chunk arrives; other queries wait for it", async ({ page }) => {
-  const view = compactView({ version: 1, columns: ["name", "size"], count: 300, ordered: true, base: "data/", chunks: 3 });
+  const view = compactView({ columns: ["name", "size"], count: 300, ordered: true, base: "data/", chunks: 3 });
   let release;
   const held = new Promise((resolve) => { release = resolve; });
   const sidecar = (index) => "(self.CanopyXSidecar = self.CanopyXSidecar || []).push([\"compact\",\"rows/" + index + "\",String.raw`" + JSON.stringify(chunk(index * 100, index * 100 + 100)) + "`]);";
@@ -108,7 +112,7 @@ test("the first windows of ordered rows paint before the last chunk arrives; oth
   expect((await ids(page)).slice(0, 3)).toEqual(["r00096", "r00193", "r00290"]);
 });
 test("a failed row data file can be retried and decodes from the start", async ({ page }) => {
-  const view = compactView({ version: 1, columns: ["name", "size"], count: 200, ordered: true, base: "data/", chunks: 2 }, { search: false });
+  const view = compactView({ columns: ["name", "size"], count: 200, ordered: true, base: "data/", chunks: 2 }, { search: false });
   // The second file fails twice: in the decoding after the first window (which no query waits for, so the next query starts a new one)
   // and in the decoding the sort starts; the retry then succeeds.
   let failures = 2;
@@ -131,7 +135,7 @@ test("a failed row data file can be retried and decodes from the start", async (
 
 test("chunks in the document decode row tones, classes and empty cells as row objects do", async ({ page }) => {
   const rows = [[{ id: "a", tone: "warning", className: "flagged" }, "Alpha", 3], ["b", "Beta"], ["c", null, 1]];
-  const view = compactView({ version: 1, columns: ["name", "size"], count: 3, chunks: [rows.slice(0, 2), JSON.stringify(rows.slice(2))] });
+  const view = compactView({ columns: ["name", "size"], count: 3, chunks: [rows.slice(0, 2), JSON.stringify(rows.slice(2))] });
   await page.route("http://canopyx.test/doc", (route) => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
   await page.goto("http://canopyx.test/doc");
   await page.waitForSelector(".cx-row[data-cx-id]");
@@ -144,6 +148,28 @@ test("chunks in the document decode row tones, classes and empty cells as row ob
   expect(state.flagged).toBe(true);
 });
 
+test("formatting bars over compact row data take their bounds from every row, not the first chunk", async ({ page }) => {
+  const { formattingPage } = await import("./formatting-support.mjs");
+  const rows = Array.from({ length: 20 }, (_, index) => ["r" + String(index).padStart(2, "0"), "Item " + index, index < 10 ? index : 100 * (index - 9)]);
+  const view = { ...compactView({ columns: ["name", "size"], count: 20, ordered: true, chunks: [rows.slice(0, 10), rows.slice(10)] }),
+    formatRules: [{ id: "size", label: "Size", column: "size", style: { bar: { tone: "info" } } }] };
+  await page.route("http://canopyx.test/bars", (route) => route.fulfill({ contentType: "text/html", body: formattingPage(view) }));
+  await page.goto("http://canopyx.test/bars");
+  await page.waitForSelector(".cx-row[data-cx-id]");
+  await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.view.rows.length)).toBe(20);
+  // 9 of a range from 0 to 1,000: under one percent, where the first chunk alone (0 to 9) would fill the bar.
+  await expect.poll(() => page.evaluate(() => document.querySelector('.cx-row[data-cx-id="r09"] .cx-fmt-bar')?.style.getPropertyValue("--cx-fmt-w"))).toBe("0.9%");
+});
+
+test("row data has no version of its own: the runtime ignores unknown members, as elsewhere", async ({ page }) => {
+  // The schema refuses members it does not know (a version among them); the runtime reads the rows regardless.
+  const view = compactView({ columns: ["name"], count: 2, chunks: [[["a", "Alpha"], ["b", "Beta"]]], version: 7, future: { kind: "x" } });
+  await page.route("http://canopyx.test/unknown", (route) => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/unknown");
+  await page.waitForSelector(".cx-row[data-cx-id]");
+  expect(await page.evaluate(async () => { const api = document.querySelector("[data-canopyx-host]").canopyx; await api.ready; return api.view.rows.map(row => row.id); })).toEqual(["a", "b"]);
+});
+
 test("gzip chunks in host scripts inflate before they are parsed", async ({ page }) => {
   const compressed = await page.evaluate(async (text) => {
     const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"));
@@ -151,7 +177,7 @@ test("gzip chunks in host scripts inflate before they are parsed", async ({ page
     let binary = ""; for (const byte of bytes) binary += String.fromCharCode(byte);
     return btoa(binary);
   }, JSON.stringify(chunk(0, 120)));
-  const view = compactView({ version: 1, columns: ["name", "size"], count: 120, ordered: true, encoding: "gzip", chunks: 1 });
+  const view = compactView({ columns: ["name", "size"], count: 120, ordered: true, encoding: "gzip", chunks: 1 });
   const body = viewPage(view).replace("</script></div>", "</script><script type=\"application/x-canopyx-rows\">" + compressed + "</script></div>");
   await page.route("http://canopyx.test/gzip", (route) => route.fulfill({ contentType: "text/html", body }));
   await page.goto("http://canopyx.test/gzip");
@@ -162,12 +188,11 @@ test("gzip chunks in host scripts inflate before they are parsed", async ({ page
 });
 
 for (const [name, rowData, message] of [
-  ["a script count that does not match", { version: 1, columns: ["name"], count: 2, chunks: 2 }, "row data scripts"],
-  ["rows out of their declared order", { version: 1, columns: ["name"], count: 2, ordered: true, chunks: [[["b", "B"], ["a", "A"]]] }, "identity order"],
-  ["a duplicate identity in a later chunk", { version: 1, columns: ["name"], count: 2, chunks: [[["a", "A"]], [["a", "again"]]] }, "duplicate grid row ID"],
-  ["fewer rows than declared", { version: 1, columns: ["name"], count: 3, chunks: [[["a", "A"], ["b", "B"]]] }, "not 3"],
-  ["an undeclared column", { version: 1, columns: ["owner"], count: 0, chunks: [] }, "invalid grid rowData"],
-  ["an unknown version", { version: 2, columns: ["name"], count: 0, chunks: [] }, "invalid grid rowData"]
+  ["a script count that does not match", { columns: ["name"], count: 2, chunks: 2 }, "row data scripts"],
+  ["rows out of their declared order", { columns: ["name"], count: 2, ordered: true, chunks: [[["b", "B"], ["a", "A"]]] }, "identity order"],
+  ["a duplicate identity in a later chunk", { columns: ["name"], count: 2, chunks: [[["a", "A"]], [["a", "again"]]] }, "duplicate grid row ID"],
+  ["fewer rows than declared", { columns: ["name"], count: 3, chunks: [[["a", "A"], ["b", "B"]]] }, "not 3"],
+  ["an undeclared column", { columns: ["owner"], count: 0, chunks: [] }, "invalid grid rowData"]
 ]) {
   test("row data with " + name + " fails the query with a retry", async ({ page }) => {
     const view = compactView(rowData, { search: false });
@@ -184,7 +209,7 @@ test("rows and rowData together, or rowData on a host grid, are rejected when th
       CanopyX.createDataGrid(document.body.appendChild(document.createElement("div")), { view: kind === "both" ? { ...view, rows: [] } : { ...view, source: { kind: "host" } }, source: kind === "host" ? { query() {} } : undefined });
       return "created";
     } catch (error) { return error.message; }
-  }), compactView({ version: 1, columns: ["name"], count: 0, chunks: [] }));
+  }), compactView({ columns: ["name"], count: 0, chunks: [] }));
   expect(errors).toEqual(["CanopyX: invalid grid rowData.", "CanopyX: invalid grid rowData."]);
 });
 

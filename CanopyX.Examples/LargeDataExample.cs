@@ -24,12 +24,14 @@ internal static class LargeDataExample {
         var folder = Path.Combine(output, "large");
         Directory.CreateDirectory(folder);
         var grid = Inventory("inventory", "Asset inventory", 100_000, 20261015);
-        grid.SaveHtmlPage(Path.Combine(folder, "grid-100k.html"), new CanopyHtmlOptions { Title = "100,000 assets, compact row data", RowData = new CanopyRowDataOptions() });
-        grid.SaveHtmlPage(Path.Combine(folder, "grid-100k-objects.html"), new CanopyHtmlOptions { Title = "100,000 assets, row objects" });
+        // The default format chooses compressed row data for 100,000 rows; the objects page asks for row objects, for comparison.
+        grid.SaveHtmlPage(Path.Combine(folder, "grid-100k.html"), new CanopyHtmlOptions { Title = "100,000 assets, row data chosen automatically" });
+        grid.SaveHtmlPage(Path.Combine(folder, "grid-100k-objects.html"), new CanopyHtmlOptions { Title = "100,000 assets, row objects",
+            RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } });
         var bundle = grid.SaveHtmlBundle(Path.Combine(folder, "bundle"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "100,000 assets, bundle",
-            RowData = new CanopyRowDataOptions { Compression = CanopyRowCompression.Gzip } });
+            RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
         WriteReport(Path.Combine(folder, "report.html"));
-        Console.WriteLine($"large/: 100,000-row grid pages ({new FileInfo(Path.Combine(folder, "grid-100k.html")).Length / 1048576.0:N1} MB compact, " +
+        Console.WriteLine($"large/: 100,000-row grid pages ({new FileInfo(Path.Combine(folder, "grid-100k.html")).Length / 1048576.0:N1} MB automatic, " +
             $"{new FileInfo(Path.Combine(folder, "grid-100k-objects.html")).Length / 1048576.0:N1} MB objects), bundle data {bundle.TotalBytes / 1048576.0:N1} MB in {bundle.FileCount} files, " +
             $"report of {ReportGrids.Length} grids ({new FileInfo(Path.Combine(folder, "report.html")).Length / 1048576.0:N1} MB)");
     }
@@ -104,7 +106,7 @@ internal static class LargeDataExample {
             var rows = ReportGrids[index];
             var view = Inventory("section-" + index.ToString(CultureInfo.InvariantCulture), "Section " + (index + 1).ToString(CultureInfo.InvariantCulture) + " assets", rows, 1000u + (uint)index);
             return view.ToHtmlFragment(new CanopyHtmlOptions { Theme = CanopyTheme.Auto, Height = "420px", MountWhenVisible = true, Document = document,
-                RowData = rows >= 1000 ? new CanopyRowDataOptions { ChunkSize = 1000 } : null });
+                RowData = new CanopyRowDataOptions { ChunkSize = 1000, Format = rows >= 1000 ? CanopyRowFormat.Compact : CanopyRowFormat.Objects } });
         }
 
         for (var tab = 0; tab < perTab.Length; tab++) {

@@ -12,6 +12,11 @@
     async calRecords(from, to, signal) {
       const query = this.acceptedQuery || gridQuery(this.view, this.view.query || {});
       if (this.view.source.kind === "inline" && !this.opts.source) {
+        // Compact row data: the calendar shows a range once every chunk is decoded; a first window starts the decoding.
+        if (this.view.rowData) {
+          if (!this.source.decoded) await this.source.query({ ...query, offset: 0, limit: 1 }, { signal });
+          await this.source.decoded;
+        }
         const rows = this.view.rows, key = gridResultShape(query);
         if (this.calRowsCache?.rows !== rows || this.calRowsCache.key !== key) {
           const plain = !query.search && !query.filters.length && !query.filterGroup;

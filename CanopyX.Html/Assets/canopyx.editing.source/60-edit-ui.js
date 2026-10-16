@@ -169,6 +169,8 @@
       if (spec.options) return matching(spec.options);
       const column = this.columns.find(item => item.id === spec.lookup.column);
       if (this.view.source.kind === "inline") {
+        // Compact row data lists its values once every chunk is decoded.
+        await this.source.decoded;
         const values = new Map();
         for (const row of this.view.rows) {
           const value = cellValue(row.cells[column.id]);

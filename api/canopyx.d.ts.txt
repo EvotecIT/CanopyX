@@ -1053,7 +1053,6 @@ export interface InlineGridView<Row extends GridRow=GridRow>extends GridDefiniti
 }
 export type GridCompactRow=[string|{id:string;tone?:string;className?:string},...Cell[]];
 export interface GridRowData{
-  version:1;
   columns:string[];
   count:number;
   ordered?:boolean;

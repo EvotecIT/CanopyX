@@ -39,7 +39,7 @@ public sealed class LargeDataHtmlTests {
     [Fact]
     public void RowData_WritesTheChunksInsideTheHost_AndCarriesTheDataPartOnce() {
         var grid = Grid(250);
-        var options = new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100 }, Document = new CanopyHtmlDocument() };
+        var options = new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.Compact }, Document = new CanopyHtmlDocument() };
         var html = grid.ToHtmlFragment(options);
         var data = new CanopyGridRowData(grid, options.RowData);
 
@@ -53,11 +53,11 @@ public sealed class LargeDataHtmlTests {
         // The ordinary fragment keeps its rows in the document and needs no data part.
         Assert.DoesNotContain(part.Markup, grid.ToHtmlFragment());
         // With external assets the rows stay in the fragment and the runtime loads the part from beside itself.
-        var external = grid.ToHtmlFragment(new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100 }, AssetMode = CanopyAssetMode.External });
+        var external = grid.ToHtmlFragment(new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.Compact }, AssetMode = CanopyAssetMode.External });
         Assert.Equal(3, Regex.Matches(external, "x-canopyx-rows").Count);
         Assert.DoesNotContain(part.Markup, external);
         // A page carries the same chunks.
-        Assert.Contains(data.GetChunk(0), grid.ToHtmlPage(new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100 } }));
+        Assert.Contains(data.GetChunk(0), grid.ToHtmlPage(new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.Compact } }));
     }
 
     [Fact]
@@ -90,6 +90,64 @@ public sealed class LargeDataHtmlTests {
             var second = Path.Combine(directory, "default");
             grid.SaveHtmlBundle(second);
             Assert.True(File.Exists(Path.Combine(second, "assets", CanopyHtmlAssets.GetPart("data").HashedScriptFileName)));
+        } finally {
+            if (Directory.Exists(directory)) Directory.Delete(directory, true);
+        }
+    }
+
+    [Fact]
+    public void Auto_ChoosesObjectsCompactOrGzip_ByRowsAndSize_AndOverridesWin() {
+        var part = CanopyHtmlAssets.GetPart("data");
+        JsonElement Config(CanopyDataGridView view, CanopyHtmlOptions? options = null) => JsonDocument.Parse(ConfigOf(view.ToHtmlFragment(options))).RootElement;
+        string? Format(JsonElement config) => config.TryGetProperty("rows", out _) ? "objects" : config.GetProperty("rowData").TryGetProperty("encoding", out var encoding) ? encoding.GetString() : "compact";
+
+        // Up to CompactAboveRows rows stay objects; one more becomes compact row data, and the page carries the data part.
+        Assert.Equal("objects", Format(Config(Grid(CanopyRowDataOptions.CompactAboveRows))));
+        var compact = Grid(CanopyRowDataOptions.CompactAboveRows + 1);
+        Assert.Equal("compact", Format(Config(compact)));
+        Assert.Contains(part.Markup, compact.ToHtmlFragment());
+        Assert.Contains(part.Markup, compact.ToHtmlPage());
+        Assert.False(Config(compact).GetProperty("rowData").TryGetProperty("version", out _));
+        // Several fragments of one document carry the part once.
+        var document = new CanopyHtmlDocument();
+        var first = compact.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
+        Assert.Contains(part.Markup, first);
+        Assert.DoesNotContain(part.Markup, Grid(CanopyRowDataOptions.CompactAboveRows + 2).ToHtmlFragment(new CanopyHtmlOptions { Document = document }));
+
+        // Row data whose JSON comes to more than GzipAboveBytes is compressed.
+        var wide = Grid(CanopyRowDataOptions.CompactAboveRows + 1);
+        var text = new string('x', 1100);
+        foreach (var row in wide.Rows) row.Cells["name"] = text;
+        Assert.Equal("gzip", Format(Config(wide)));
+
+        // Explicit formats win over the rules.
+        Assert.Equal("objects", Format(Config(wide, new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } })));
+        Assert.Equal("compact", Format(Config(wide, new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Compact } })));
+        Assert.Equal("compact", Format(Config(Grid(3), new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Compact } })));
+        Assert.Equal("gzip", Format(Config(Grid(3), new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } })));
+
+        // Rows with record fields (or a detail payload) cannot be compact, so Auto keeps them objects.
+        var detailed = Grid(CanopyRowDataOptions.CompactAboveRows + 1);
+        detailed.Record = new CanopyRecordPanel();
+        detailed.Record.Fields.Add(new CanopyColumn("serial", "Serial number"));
+        detailed.Rows[0].Fields["serial"] = "SN-1";
+        Assert.Equal("objects", Format(Config(detailed)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { Format = (CanopyRowFormat)9 });
+        Assert.Throws<ArgumentException>(() => new CanopyGridRowData(Grid(3), new CanopyRowDataOptions { Format = CanopyRowFormat.Objects }));
+    }
+
+    [Fact]
+    public void SaveHtmlBundle_WritesCompactRows_CompressedBySize_AndRefusesObjects() {
+        var directory = Path.Combine(Path.GetTempPath(), "canopyx-grid-bundle-" + Guid.NewGuid().ToString("N"));
+        try {
+            var small = Grid(250);
+            small.SaveHtmlBundle(directory);
+            var rowData = JsonDocument.Parse(ConfigOf(File.ReadAllText(Path.Combine(directory, "index.html")))).RootElement.GetProperty("rowData");
+            Assert.False(rowData.TryGetProperty("encoding", out _));
+            small.SaveHtmlBundle(directory, new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
+            rowData = JsonDocument.Parse(ConfigOf(File.ReadAllText(Path.Combine(directory, "index.html")))).RootElement.GetProperty("rowData");
+            Assert.Equal("gzip", rowData.GetProperty("encoding").GetString());
+            Assert.Throws<InvalidOperationException>(() => small.SaveHtmlBundle(directory, new CanopyHtmlOptions { RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } }));
         } finally {
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }

@@ -21,7 +21,7 @@
   function rowDataSource(grid, outer) {
     const view = grid.view, data = view.rowData, rows = view.rows, ids = new Set(), declared = new Set(view.columns.map(column => column.id));
     const columns = data.columns, chunks = data.chunks, sidecar = data.base !== undefined;
-    if (data.version !== 1 || !Array.isArray(columns) || !columns.length || new Set(columns).size !== columns.length || columns.some(id => !declared.has(id)) ||
+    if (!Array.isArray(columns) || !columns.length || new Set(columns).size !== columns.length || columns.some(id => !declared.has(id)) ||
         ![undefined, "gzip"].includes(data.encoding) || ![undefined, true, false].includes(data.ordered) ||
         sidecar && typeof data.base !== "string" ||
         !(Array.isArray(chunks) ? !sidecar : Number.isInteger(chunks) && chunks >= 0))
@@ -83,6 +83,8 @@
       scripts?.forEach(script => { script.textContent = ""; });
     })();
     done.catch(() => outer.reset());
+    // Whatever was worked out from the rows decoded so far (bounds of formatting bars and scales) is worked out again.
+    done.then(() => { if (!grid.destroyed) { grid.version++; grid.scheduleRender?.(); } }, () => { });
     let complete = null;
     const all = async () => { await done; return complete ||= inlineGridSource(view); };
     // Value lists of the column filters and a reporting grid's facets count the complete rows.

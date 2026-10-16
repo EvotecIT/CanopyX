@@ -66,11 +66,13 @@ public sealed class CanopyHtmlOptions {
     public bool MountWhenVisible { get; set; }
 
     /// <summary>
-    /// Gets or sets how a flat grid with an inline source carries its rows. Null (the default) writes them as objects in the
-    /// grid document. Options write them as compact row data (<see cref="CanopyGridRowData"/>): arrays in column order, in
-    /// chunks inside the grid's host element that the browser decodes one at a time after the first rows have painted,
-    /// optionally gzip-compressed. Single-file fragments then also carry the row data part (<c>canopyx-data.js</c>). Trees
-    /// and hosted grids ignore it.
+    /// Gets or sets how a flat grid with an inline source carries its rows. Null uses the defaults: the format is chosen from
+    /// the rows (<see cref="CanopyRowFormat.Auto"/>): row objects in the grid document for up to
+    /// <see cref="CanopyRowDataOptions.CompactAboveRows"/> rows, compact row data (<see cref="CanopyGridRowData"/>) above that,
+    /// in chunks inside the grid's host element that the browser decodes one at a time after the first rows have painted, and
+    /// gzip-compressed chunks when their JSON comes to more than <see cref="CanopyRowDataOptions.GzipAboveBytes"/>.
+    /// <see cref="CanopyRowDataOptions.Format"/> sets a format explicitly. Fragments and pages with compact rows also carry the
+    /// row data part (<c>canopyx-data.js</c>). Bundles always write compact rows. Trees and hosted grids ignore it.
     /// </summary>
     public CanopyRowDataOptions? RowData { get; set; }
 

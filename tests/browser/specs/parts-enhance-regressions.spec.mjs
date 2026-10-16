@@ -144,7 +144,7 @@ test("compact host chunks preserve invalid numeric values until validation rejec
     const errors = [];
     for (const value of [NaN, Infinity, undefined]) {
       const api = CanopyX.createDataGrid(document.querySelector("#compact"), { view: { ...view,
-        rowData: { version: 1, columns: ["name", "size"], count: 1, chunks: [[["bad", "Bad", value]]] } } });
+        rowData: { columns: ["name", "size"], count: 1, chunks: [[["bad", "Bad", value]]] } } });
       errors.push(await api.ready.then(() => "accepted", error => error.message)); api.destroy();
     }
     return errors;
@@ -156,7 +156,7 @@ test("compact host chunks preserve invalid numeric values until validation rejec
 for (const encoding of ["json", "gzip"]) {
   test("decoded embedded row scripts release their encoded text after success (" + encoding + ")", async ({ page }) => {
     const rows = JSON.stringify([["ada", "Ada", 7]]), text = encoding === "gzip" ? gzipSync(rows).toString("base64") : rows;
-    const view = compactView({ version: 1, columns: ["name", "size"], count: 1, chunks: 1, ...(encoding === "gzip" ? { encoding } : {}) });
+    const view = compactView({ columns: ["name", "size"], count: 1, chunks: 1, ...(encoding === "gzip" ? { encoding } : {}) });
     const html = viewPage(view).replace("</script></div>", '</script><script type="application/x-canopyx-rows">' + text + "</script></div>");
     await page.route(ORIGIN + "/embedded", route => route.fulfill({ contentType: "text/html", body: html }));
     await page.goto(ORIGIN + "/embedded");
@@ -178,7 +178,7 @@ test("destroying a grid during a sidecar read prevents decoding the returned chu
   });
   await page.evaluate(view => {
     window.api = CanopyX.createDataGrid(document.querySelector("#compact"), { view }); api.ready.catch(() => {});
-  }, compactView({ version: 1, columns: ["name", "size"], count: 1, chunks: 1, base: "/data/" }));
+  }, compactView({ columns: ["name", "size"], count: 1, chunks: 1, base: "/data/" }));
   await expect.poll(() => requested).toBe(true);
   await page.evaluate(() => api.destroy()); release();
   await page.waitForFunction(() => window.sidecarReturned);

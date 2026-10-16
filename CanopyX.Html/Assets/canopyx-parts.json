@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "3d3677a95c67254e",
+      "version": "4e42c01ca3b40194",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "24df9d3c3a49360b",
+      "version": "86fd8d6dd53c4f06",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "ba59a14d582e92fd",
+      "version": "b9139d32115e17e5",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "2d18227d7ca6a656",
+      "version": "d533d697f2b72b45",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

@@ -107,7 +107,8 @@ internal static class CanopyHtmlWriter {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         // Compact row data travels in scripts inside the host element, after the configuration, or in a bundle's sidecar files.
-        var data = bundled ?? (options.RowData != null && view.Source.Kind == CanopyGridSourceKind.Inline ? new CanopyGridRowData(view, options.RowData) : null);
+        // The format is chosen from the rows unless the host set one (CanopyRowFormat.Auto, docs/large-data.md).
+        var data = bundled ?? (CanopyGridRowData.ShouldWrite(view, options.RowData) ? new CanopyGridRowData(view, options.RowData) : null);
         string html;
         if (data == null) {
             html = FragmentDocument(view.ToJson(), options);
