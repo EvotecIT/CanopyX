@@ -20,6 +20,8 @@
   if (typeof document !== "undefined") {
     // Page elements marked for the calendar carry their item while they are dragged.
     document.addEventListener("dragstart", event => {
+      // A new drag starts afresh: a row whose drag ended out of sight (its element gone) leaves nothing behind.
+      GRID_DRAG.item = null;
       // Only an element the page marked and made draggable carries an item, never a link or image dragged from inside one.
       const element = event.target.closest?.("[data-canopyx-event]");
       calDropElement = element && element.getAttribute("draggable") === "true" ? calElementItem(element) : null;

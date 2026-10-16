@@ -17,7 +17,8 @@
 .cx-cal-notice.cx-cal-error{color:var(--cx-tone-danger);}
 .cx-cal-body{flex:1 1 auto;min-height:0;overflow:auto;position:relative;}
 .cx-cal-empty{margin:0;padding:var(--cx-size-24px) var(--cx-size-16px);color:var(--cx-muted);text-align:center;}
-.cx-cal-ev{--cx-ev:var(--cx-accent);--cx-ev-bg:var(--cx-accent-soft);position:relative;display:flex;align-items:center;gap:var(--cx-size-4px);min-width:0;margin:0;padding:0 var(--cx-size-6px);border:0;border-radius:var(--cx-radius-sm);background:var(--cx-ev-bg);color:var(--cx-text);font:inherit;font-size:var(--cx-size-12d5px);line-height:var(--cx-size-18px);text-align:start;cursor:pointer;overflow:hidden;white-space:nowrap;box-shadow:inset calc(var(--cx-stripe,1) * var(--cx-size-3px)) 0 0 var(--cx-ev);}
+.cx-cal-ev{--cx-ev:var(--cx-accent);--cx-ev-bg:var(--cx-accent-soft);position:relative;display:flex;align-items:center;gap:var(--cx-size-4px);min-width:0;margin:0;padding:0 var(--cx-size-6px);border:0;border-radius:var(--cx-radius-sm);background:var(--cx-ev-bg);color:var(--cx-text);font:inherit;font-size:var(--cx-size-12d5px);line-height:var(--cx-size-18px);text-align:start;cursor:pointer;overflow:hidden;white-space:nowrap;box-shadow:inset var(--cx-size-3px) 0 0 var(--cx-ev);}
+:where(.cx-cal-rtl) .cx-cal-ev{box-shadow:inset calc(-1 * var(--cx-size-3px)) 0 0 var(--cx-ev);}
 .cx-cal-ev:hover{background:color-mix(in srgb,var(--cx-ev) 22%,var(--cx-surface));}
 .cx-cal-ev:focus-visible{outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-1px);z-index:6;}
 .cx-cal-ev-title{min-width:0;overflow:hidden;text-overflow:ellipsis;}
@@ -111,7 +112,8 @@ top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h)
 .cx-cal-shade > span{display:block;padding:var(--cx-size-2px) var(--cx-size-6px);font-size:var(--cx-size-11d5px);color:var(--cx-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cx-cal-shade.cx-cal-off{background:color-mix(in srgb,var(--cx-text) 4%,transparent);}
 .cx-cal-shade.cx-cal-unavailable{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--cx-text) 8%,transparent) 0 var(--cx-size-6px),transparent var(--cx-size-6px) var(--cx-size-12px));}
-.cx-cal-shade.cx-cal-bgrange{background:color-mix(in srgb,var(--cx-bg-tone) 11%,transparent);box-shadow:inset calc(var(--cx-stripe,1) * var(--cx-size-2px)) 0 0 color-mix(in srgb,var(--cx-bg-tone) 55%,transparent);}
+.cx-cal-shade.cx-cal-bgrange{background:color-mix(in srgb,var(--cx-bg-tone) 11%,transparent);box-shadow:inset var(--cx-size-2px) 0 0 color-mix(in srgb,var(--cx-bg-tone) 55%,transparent);}
+:where(.cx-cal-rtl) .cx-cal-shade.cx-cal-bgrange{box-shadow:inset calc(-1 * var(--cx-size-2px)) 0 0 color-mix(in srgb,var(--cx-bg-tone) 55%,transparent);}
 .cx-cal-now{position:absolute;z-index:1;height:var(--cx-size-2px);pointer-events:none;background:var(--cx-tone-danger);inset-inline-start:calc(var(--cx-cal-gutter) + (100% - var(--cx-cal-gutter)) * var(--d) / var(--cx-cal-n));width:calc((100% - var(--cx-cal-gutter)) * var(--sp) / var(--cx-cal-n));top:calc(var(--t) * var(--cx-cal-ppm) - var(--cx-size-1px));}
 .cx-cal-now::before{content:"";position:absolute;inset-inline-start:calc(-1 * var(--cx-size-4px));top:calc(-1 * var(--cx-size-3px));width:var(--cx-size-8px);height:var(--cx-size-8px);border-radius:50%;background:inherit;}
 .cx-cal-agroup{border-bottom:var(--cx-size-1px) solid var(--cx-line);}
@@ -245,7 +247,6 @@ top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h)
 .cx-cal-dow,.cx-cal-ahead{position:static;}
 }
 .cx-cal-rtl .cx-cal-prev svg,.cx-cal-rtl .cx-cal-next svg{transform:scaleX(-1);}
-.cx-cal-rtl{--cx-stripe:-1;}
 .cx-cal-bar :is(.cx-cal-prev,.cx-cal-next)[aria-disabled="true"]{opacity:.45;cursor:default;}
 :is(.cx-cal-create,.cx-cal-ask){position:absolute;z-index:22;display:flex;flex-direction:column;gap:var(--cx-size-6px);margin:0;padding:var(--cx-size-12px);background:var(--cx-surface);color:var(--cx-text);border:var(--cx-size-1px) solid var(--cx-line);border-radius:var(--cx-radius);box-shadow:var(--cx-panel-shadow);font-size:var(--cx-size-13px);line-height:1.4;}
 .cx-cal-create-h{margin:0;font-size:var(--cx-size-14px);font-weight:600;}

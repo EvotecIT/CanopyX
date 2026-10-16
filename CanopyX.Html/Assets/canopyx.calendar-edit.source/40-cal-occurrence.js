@@ -91,7 +91,9 @@
     async calApplyFollowing(event, proposal) {
       const cal = this.cal, labels = this.calLabels, base = event.base;
       // Overriding records after the split would still name the old series, and the new one would show those occurrences again.
-      if (this.calOverridden(event) !== false) { this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false; }
+      // So would a new series on another day: its rule names the old days (BYDAY, BYMONTHDAY) and its exceptions the old ones.
+      const seriesZone = base.allDay ? calZone("utc") : this.calSeriesZone;
+      if (this.calOverridden(event) !== false || seriesZone.day(proposal.start) !== seriesZone.day(event.start)) { this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false; }
       const text = String(cellValue(base.row.cells[cal.recurrence.id]) ?? ""), parts = calRuleParts(text);
       const count = parts.find(([name]) => name === "COUNT"), kept = parts.filter(([name]) => name !== "COUNT" && name !== "UNTIL");
       const rec = DataGrid.prototype.calKit, zone = base.allDay ? calZone("utc") : this.calSeriesZone;
@@ -119,9 +121,10 @@
       const done = this.editGroupIf(() => {
         inserted = this.editInsertNow({ cells }, "calendar");
         if (!inserted.applied) return false;
-        if (this.editApply(event.key, spec, oldRule, "calendar", this.editRecord(event.key))) return true;
-        this.editRemoveInserted(inserted.id);
-        return false;
+        let cut = false;
+        try { cut = this.editApply(event.key, spec, oldRule, "calendar", this.editRecord(event.key)); }
+        finally { if (!cut) this.editRemoveInserted(inserted.id); }
+        return cut;
       });
       if (!done) return false;
       const check = await this.editValidateRow(inserted.id);
@@ -129,9 +132,16 @@
       this.calAnnounce(fill(labels.calendarMoved, { title: event.title, time: this.calFmt.shortDay(this.calZone.day(proposal.start)) + (proposal.allDay ? "" : " " + this.calFmt.time(proposal.start)) }));
       if (!check.valid) { this.calInvalidInsert({ id: inserted.id, errors: check.errors }); return true; }
       if ((cal.editable?.commit ?? "auto") === "manual") { this.calReload({ keep: true }); return true; }
-      // The old series is cut first and the new one sent once that is stored: a failure never leaves both series whole on the server.
-      if (!await this.calCommit([event.key], event.title)) { this.editRemoveInserted(inserted.id, true); this.calReload({ keep: true }); return false; }
-      return this.calCommit([inserted.id], event.title);
+      // The old series is cut first and the new one sent once that is stored: a failure never leaves both series whole on the
+      // server. If the old series cannot be cut, neither change stays (nor an undo step that would cut it again later). If the
+      // new series cannot be stored, it stays unsaved, with the reason, so it can be saved again instead of being lost.
+      const history = this.edit.undo.length;
+      if (!await this.calCommit([event.key], event.title)) {
+        this.edit.undo.length = Math.max(0, history - 1); this.edit.redo.length = 0;
+        this.editRemoveInserted(inserted.id, true); this.calReload({ keep: true });
+        return false;
+      }
+      return this.calCommit([inserted.id], event.title, true);
     },
     /** A new record that fails its checks stays pending, and the calendar says why. */
     calInvalidInsert(result) {

@@ -18,9 +18,10 @@
           await this.source.decoded;
         }
         const rows = this.view.rows, key = gridResultShape(query);
-        if (this.calRowsCache?.rows !== rows || this.calRowsCache.key !== key) {
+        // New and removed rows change the array in place and give the grid a new source: either one reads the rows again.
+        if (this.calRowsCache?.rows !== rows || this.calRowsCache.key !== key || this.calRowsCache.source !== this.source) {
           const plain = !query.search && !query.filters.length && !query.filterGroup;
-          this.calRowsCache = { rows, key, matched: plain ? rows : gridQueryRows(this.view, query, new Map(this.view.columns.map(column => [column.id, column])), null) };
+          this.calRowsCache = { rows, key, source: this.source, matched: plain ? rows : gridQueryRows(this.view, query, new Map(this.view.columns.map(column => [column.id, column])), null) };
         }
         return { rows: this.calEdited(this.calRowsCache.matched), truncated: false };
       }
@@ -52,7 +53,7 @@
       const changes = this.edit?.changes;
       if (!changes?.size) return rows;
       const out = rows.map(row => changes.get(row.id)?.row || row);
-      if (hosted && this.edit.inserted?.size) { const ids = new Set(rows.map(row => row.id)); for (const [id, row] of this.edit.inserted) if (!ids.has(id)) out.push(row); }
+      if (hosted && this.edit.inserted?.size) { const ids = new Set(rows.map(row => row.id)); for (const [id, row] of this.edit.inserted) if (!ids.has(id)) out.push(changes.get(id)?.row ?? row); }
       return out;
     },
 

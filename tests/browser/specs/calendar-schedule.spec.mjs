@@ -264,7 +264,7 @@ test.describe("sources and iCalendar", () => {
       "sources: [{ id: 'team', label: 'Team', tone: 'info' }, { id: 'ops', label: 'Operations', tone: 'danger' }, { id: 'ext', label: 'Company', tone: 'success', ics: 'holidays.ics' }] }"));
     const legend = p.getByRole("group", { name: "Calendars" });
     await expect(legend.getByRole("button")).toHaveText(["Team", "Operations", "Company"]);
-    await expect.poll(async () => (await events(p)).map(event => event.title).sort()).toEqual(["Board meeting, quarterly", "On call", "Payroll run", "Payroll run", "Payroll run", "Payroll run (late)", "Planning"]);
+    await expect.poll(async () => (await events(p)).map(event => event.title).sort()).toEqual(["Board meeting, quarterly", "On call", "Payroll run", "Payroll run", "Payroll run", "Payroll run (late)", "Planning", "Public holiday"]);
     const meeting = (await events(p)).find(event => event.title === "Board meeting, quarterly");
     expect(meeting).toMatchObject({ start: "2026-10-14T08:00:00Z", end: "2026-10-14T09:30:00Z" });
     await capture(p, "calendar-sources-legend");
@@ -298,7 +298,7 @@ test.describe("sources and iCalendar", () => {
     expect(result.skipped).toBe(1);
     expect(result.events.map(event => event.title)).toEqual(["Public holiday", "Board meeting, quarterly", "Payroll run", "Payroll run (late)"]);
     expect(result.events[1]).toMatchObject({ description: "Line one\nLine two", location: "Room 4", start: "2026-10-14T08:00:00Z", end: "2026-10-14T09:30:00Z" });
-    expect(result.events[0]).toMatchObject({ allDay: true, start: "2026-11-01", end: "2026-11-02T00:00:00" });
+    expect(result.events[0]).toMatchObject({ allDay: true, start: "2026-11-01T00:00:00Z", end: "2026-11-02T00:00:00Z" });
     expect(result.events[2]).toMatchObject({ recurrence: "FREQ=WEEKLY;BYDAY=FR", exceptions: "2026-10-09T08:00:00Z" });
     const errors = await p.evaluate(() => [
       () => window.kit.calIcsParse("BEGIN:VEVENT\r\nEND:VEVENT"),
@@ -382,7 +382,7 @@ test.describe("review guards", () => {
       return { ms: performance.now() - started, count: parsed.events.find(item => item.title === "Ecount"), never: parsed.events.find(item => item.title === "Enever"), notes: parsed.notes.length };
     });
     expect(result.ms).toBeLessThan(3000);
-    expect(result.count.recurrence).toBe("FREQ=DAILY;UNTIL=20290626T080000Z");
+    expect(result.count.recurrence).toBe("FREQ=DAILY;UNTIL=20290626T085959Z");
     expect(result.count.cut).toBe(true);
     expect(result.never).toMatchObject({ recurrence: null, unsupported: true });
   });

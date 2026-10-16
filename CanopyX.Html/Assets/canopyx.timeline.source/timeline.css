@@ -21,7 +21,8 @@
 .cx-tl-canvas { position:relative; }
 .cx-tl-layer { position:absolute;inset-inline-start:0;top:0;width:100%;pointer-events:none; }
 .cx-tl-weekend-col { position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--cx-text) 3.5%,transparent); }
-.cx-tl-range { position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--cx-bg-tone) 9%,transparent);box-shadow:inset calc(var(--cx-stripe,1) * var(--cx-size-2px)) 0 0 color-mix(in srgb,var(--cx-bg-tone) 50%,transparent); }
+.cx-tl-range { position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--cx-bg-tone) 9%,transparent);box-shadow:inset var(--cx-size-2px) 0 0 color-mix(in srgb,var(--cx-bg-tone) 50%,transparent); }
+:where(.cx-cal-rtl) .cx-tl-range { box-shadow:inset calc(-1 * var(--cx-size-2px)) 0 0 color-mix(in srgb,var(--cx-bg-tone) 50%,transparent); }
 .cx-tl-now { position:absolute;top:0;bottom:0;width:var(--cx-size-2px);margin-inline-start:calc(-1 * var(--cx-size-1px));background:var(--cx-tone-danger);z-index:1; }
 .cx-tl-lane { position:absolute;inset-inline-start:0;inset-inline-end:0;border-bottom:var(--cx-size-1px) solid color-mix(in srgb,var(--cx-line) 70%,transparent); }
 .cx-tl-lane.cx-tl-group { background:color-mix(in srgb,var(--cx-text) 2.5%,transparent); }
@@ -45,7 +46,8 @@
 .cx-tl-shade > span { position:sticky;inset-inline-start:0;display:block;width:max-content;max-width:100%;box-sizing:border-box;padding:var(--cx-size-2px) var(--cx-size-6px);font-size:var(--cx-size-11px);color:var(--cx-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .cx-tl-shade.cx-tl-off { background:color-mix(in srgb,var(--cx-text) 4.5%,transparent); }
 :is(.cx-tl-shade,.cx-tl-range).cx-tl-unavailable { background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--cx-text) 9%,transparent) 0 var(--cx-size-6px),transparent var(--cx-size-6px) var(--cx-size-12px));box-shadow:none; }
-.cx-tl-shade.cx-tl-bg { background:color-mix(in srgb,var(--cx-bg-tone) 12%,transparent);box-shadow:inset calc(var(--cx-stripe,1) * var(--cx-size-2px)) 0 0 color-mix(in srgb,var(--cx-bg-tone) 55%,transparent); }
+.cx-tl-shade.cx-tl-bg { background:color-mix(in srgb,var(--cx-bg-tone) 12%,transparent);box-shadow:inset var(--cx-size-2px) 0 0 color-mix(in srgb,var(--cx-bg-tone) 55%,transparent); }
+:where(.cx-cal-rtl) .cx-tl-shade.cx-tl-bg { box-shadow:inset calc(-1 * var(--cx-size-2px)) 0 0 color-mix(in srgb,var(--cx-bg-tone) 55%,transparent); }
 /* An opaque tile above the now line, so its count is never struck through. */
 .cx-tl-heat { position:absolute;z-index:2;background:var(--cx-surface);top:var(--cx-size-5px);bottom:var(--cx-size-5px);display:grid;place-items:center;border-radius:var(--cx-radius-sm);font-size:var(--cx-size-11d5px);font-weight:600;color:var(--cx-text);font-variant-numeric:tabular-nums;overflow:hidden;isolation:isolate; }
 .cx-tl-heat::before { content:"";position:absolute;inset:0 var(--cx-size-1px);z-index:-1;border-radius:inherit;background:var(--cx-bg-tone,var(--cx-accent));opacity:calc(.12 + var(--cx-heat,0) * .38); }
@@ -77,6 +79,7 @@
   .cx-tl-print-lane { position:relative;min-height:18px; }
   .cx-tl-print-unit,.cx-tl-print-heat { position:absolute;top:0;bottom:0;padding:0 var(--cx-size-2px);border-inline-start:var(--cx-size-1px) solid var(--cx-line);overflow:hidden;white-space:nowrap; }
   .cx-tl-print-bar.cx-tl-print-tiny { background:var(--cx-ev,var(--cx-accent));box-shadow:none; }
-  .cx-tl-print-bar { position:absolute;top:var(--cx-size-2px);bottom:var(--cx-size-2px);padding:0 var(--cx-size-2px);border-radius:var(--cx-size-2px);background:color-mix(in srgb,var(--cx-ev,var(--cx-accent)) 22%,#fff);box-shadow:inset calc(var(--cx-stripe,1) * var(--cx-size-2px)) 0 0 var(--cx-ev,var(--cx-accent));overflow:hidden;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
+  .cx-tl-print-bar { position:absolute;top:var(--cx-size-2px);bottom:var(--cx-size-2px);padding:0 var(--cx-size-2px);border-radius:var(--cx-size-2px);background:color-mix(in srgb,var(--cx-ev,var(--cx-accent)) 22%,#fff);box-shadow:inset var(--cx-size-2px) 0 0 var(--cx-ev,var(--cx-accent));overflow:hidden;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
+:where(.cx-cal-rtl) .cx-tl-print-bar { box-shadow:inset calc(-1 * var(--cx-size-2px)) 0 0 var(--cx-ev,var(--cx-accent)); }
 }
 @media (forced-colors:active) { .cx-tl-ghost > .cx-tl-ghost-label { background:Canvas;color:CanvasText;border-color:CanvasText; } }

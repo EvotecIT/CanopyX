@@ -73,7 +73,7 @@
     if (options.resources) used.add("resource");
     if (pick("sources")) used.add("source");
     // Creating or dropping all-day events needs the all-day column, though no event uses it yet.
-    if ((create || drop) && !(create && typeof create === "object" && create.allDay === false)) used.add("allDay");
+    if (drop || create && !(typeof create === "object" && create.allDay === false)) used.add("allDay");
     const writable = editable || !!create || drop;
     const columns = [{ id: "title", title: "Title", kind: "text", rowHeader: true, sortable: true, editable: writable },
       { id: "start", title: "Start", kind: "datetime", sortable: true, editable: writable }, { id: "end", title: "End", kind: "datetime", sortable: true, editable: writable },

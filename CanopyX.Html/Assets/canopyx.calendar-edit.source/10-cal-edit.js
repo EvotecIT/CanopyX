@@ -109,7 +109,8 @@
       if (cal.editable.commit === "manual") { this.calReload({ keep: true }); return true; }
       return this.calCommit([event.key], event.title);
     },
-    async calCommit(ids, title) {
+    /** Commits rows; a refused or failed save puts them back, unless keep leaves them unsaved for another try. */
+    async calCommit(ids, title, keep) {
       try {
         const result = await this.commitChanges({ ids });
         if (result && result.failed) {
@@ -119,7 +120,7 @@
         this.calNotice("", false);
         return true;
       } catch (error) {
-        this.revertChanges(ids);
+        if (!keep) this.revertChanges(ids);
         const text = fill(this.calLabels.calendarSaveFailed, { title: title || "", error: error.message });
         this.calNotice(text, true, true); this.calAnnounce(text);
         return false;

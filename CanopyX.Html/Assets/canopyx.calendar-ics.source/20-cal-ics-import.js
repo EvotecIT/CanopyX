@@ -46,8 +46,8 @@
 
   /**
    * Reads iCalendar text. Returns { events, skipped, notes } where each event is { uid, title, description, location,
-   * categories, status, start, end, allDay, recurrence, unsupported, exceptions, recurrenceId } with text values (ISO instants,
-   * or yyyy-MM-dd dates for all-day events). Throws when the text breaks a limit or holds no VCALENDAR.
+   * categories, status, start, end, allDay, recurrence, unsupported, cut, exceptions, recurrenceId } with text values (ISO
+   * instants; all-day events at UTC midnights of their dates, the end exclusive). Throws when the text breaks a limit or holds no VCALENDAR.
    */
   function calIcsParse(text) {
     const limits = CAL_ICS_LIMITS;
@@ -153,7 +153,8 @@
     if (rule.count === null) return { recurrence: text, cut: false };
     const all = calExpand(rule, at, 0, zone, -Infinity, Infinity, new Set(), new Set(), Math.min(rule.count, limits.count)), last = all[all.length - 1];
     const parts = text.replace(/^RRULE:/i, "").split(";").filter(part => part && !/^(COUNT|UNTIL)=/i.test(part.trim()));
-    const until = allDay ? calDayText(Math.floor(last / CAL_DAY)).replace(/-/g, "") : new Date(last).toISOString().slice(0, 19).replace(/[-:]/g, "") + "Z";
+    // A timed UNTIL just under an hour after the last occurrence keeps it when the calendar's series zone moves it by a DST hour.
+    const until = allDay ? calDayText(Math.floor(last / CAL_DAY)).replace(/-/g, "") : new Date(last + 3599000).toISOString().slice(0, 19).replace(/[-:]/g, "") + "Z";
     return { recurrence: [...parts, "UNTIL=" + until].join(";"), cut: rule.count > limits.count };
   }
 
@@ -186,7 +187,7 @@
     }
     // An all-day end is a date (a time rounds up to the next midnight); an end at or before the start is ignored.
     let endText = null;
-    if (allDay && end) { const day = end.time === undefined ? end.day : Math.ceil(end.time / CAL_DAY); if (day > start.day) endText = calDayText(day) + "T00:00:00"; }
+    if (allDay && end) { const day = end.time === undefined ? end.day : Math.ceil(end.time / CAL_DAY); if (day > start.day) endText = calDayText(day) + "T00:00:00Z"; }
     else if (!allDay && end) { const time = end.time ?? end.day * CAL_DAY; if (time > start.time) endText = calIso(time); }
     const exceptions = [];
     for (const { property, value } of item.exdates) {
@@ -204,7 +205,8 @@
     if (item["RECURRENCE-ID"] && !recurrenceId) return null;
     return {
       uid, title, description, location, categories: (item.categoryList || []).join(","), status,
-      start: allDay ? calDayText(start.day) : calIso(start.time), end: endText,
+      // All-day values are dates written as UTC midnights, as the calendar reads all-day records.
+      start: allDay ? calDayText(start.day) + "T00:00:00Z" : calIso(start.time), end: endText,
       allDay, recurrence, unsupported, cut, exceptions: exceptions.join(","),
       recurrenceId: recurrenceId ? (recurrenceId.time === undefined ? calDayText(recurrenceId.day) + "T00:00:00Z" : calIso(recurrenceId.time)) : null
     };
@@ -253,22 +255,23 @@
 
   /** Rows for the events of a source: ids from their UID (an overriding event adds its RECURRENCE-ID), values by name. */
   function calIcsRows(source, events) {
-    const rows = [], used = new Map(), byUid = new Map(), cancelled = [];
+    const rows = [], used = new Map(), emitted = new Set(), byUid = new Map(), cancelled = [];
     events.forEach((event, index) => {
       const series = "ics:" + source + ":" + (event.uid || "e" + (index + 1));
       if (event.recurrenceId) {
         if (event.status === "CANCELLED") { cancelled.push([series, event.recurrenceId]); return; }
       } else if (event.status === "CANCELLED") return;
       // A repeated identity gets a number: one lookup per event, whatever the file repeats.
-      const base = event.recurrenceId ? series + "@" + event.recurrenceId : series, seen = used.get(base) || 0, id = seen ? base + "+" + seen : base;
-      used.set(base, seen + 1);
+      const base = event.recurrenceId ? series + "@" + event.recurrenceId : series;
+      let seen = used.get(base) || 0, id = seen ? base + "+" + seen : base;
+      while (emitted.has(id)) id = base + "+" + ++seen;
+      used.set(base, seen + 1); emitted.add(id);
       const row = { id, cells: Object.create(null), external: source, fields: {
         title: event.title, start: event.start, end: event.end, allDay: event.allDay, recurrence: event.recurrenceId ? null : event.recurrence, exceptions: event.exceptions,
         series: event.recurrenceId ? series : null, recurrenceId: event.recurrenceId, description: event.description, location: event.location } };
       if (!event.recurrenceId && !byUid.has(series)) byUid.set(series, row);
       rows.push(row);
     });
-    // A cancelled occurrence of a series is an exception of it.
     // A cancelled occurrence of a series is an exception of it (at most 1,000 a series, as for EXDATE).
     const extra = new Map();
     for (const [series, at] of cancelled) { const list = extra.get(series) || extra.set(series, []).get(series); if (list.length < CAL_ICS_LIMITS.exdates) list.push(at); }

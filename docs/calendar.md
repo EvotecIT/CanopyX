@@ -309,6 +309,9 @@ With `create` (`true`, or `{ minutes, allDay }`; the `scheduler` preset turns it
   event then takes ([data-protocol.md](data-protocol.md#editing-and-commit)). A saved new record leaves the undo history: there
   are no deletes in the protocol. CanopyX.Data hands inserts only to writers that accept them.
 - The valid range and unavailable time refuse a proposal before the form opens, with the reason in the notice.
+- A new record carries the values of the grid's editable columns only (the writer refuses others): an overriding record or a
+  dropped row keeps a description, tone or status only where that column is editable. A new record that fails its checks
+  stays unsaved, and the notice says why.
 
 The start and title columns must be editable grid columns (`createCalendar` makes its own columns editable when it creates).
 
@@ -347,7 +350,9 @@ host's `calendar.occurrence(change)` hook may decide first (return a mode, false
   split (they would still name the old series). On the first occurrence it is the same as All events.
 - **All events** moves the whole series, as described under [Editing](#editing).
 
-Every way goes through the editing contract: updates, inserts, the writer and the conflict checks.
+Every way goes through the editing contract: updates, inserts, the writer and the conflict checks. This and following keeps
+the occurrence on its day (another day would leave the rule's weekdays and the exceptions behind); if the new series cannot
+be saved after the old one was cut, it stays unsaved with the reason, so it is not lost.
 
 ## Sources and iCalendar
 

@@ -41,6 +41,8 @@
       return id;
     },
     editInsert(row, source) {
+      // A row already in the change set (a redo while its first insert is still saving) is not added twice.
+      if (this.edit.changes.has(row.id)) return false;
       const state = this.edit, entry = { id: row.id, inserted: true, original: Object.create(null), values: Object.create(null), errors: Object.create(null), error: null,
         row: JSON.parse(JSON.stringify(row)), committed: false };
       for (const column of state.specs.keys()) entry.values[column] = cellValue(row.cells[column]) ?? null;
@@ -82,13 +84,16 @@
         this.emit("error", { error: new Error("CanopyX: the writer stored a new row as " + to + ", which another row has."), id: from });
         to = from;
       }
-      const record = entry.row;
+      // The record as stored: the writer's canonical cells, else the values sent. Values changed while it was saving are kept
+      // apart and become an ordinary change of the stored record below.
+      const record = entry.row, later = entry.saved ? Object.keys(entry.values).filter(column => JSON.stringify(entry.values[column]) !== JSON.stringify(entry.saved[column] ?? null) && state.specs.has(column)) : [];
+      for (const column of later) record.cells[column] = canonical && Object.hasOwn(canonical, column) ? canonical[column] : entry.saved[column];
       for (const [column, cell] of Object.entries(canonical || {})) record.cells[column] = cell;
       record.id = to;
       state.changes.delete(from); state.inserted.delete(from);
       if (this.view.source.kind === "inline") {
         const inline = this.view.rows.find(row => row.id === from);
-        if (inline) { inline.id = to; for (const [column, value] of Object.entries(entry.saved || {})) inline.cells[column] = JSON.parse(JSON.stringify(record.cells[column] ?? value)); Object.assign(inline.cells, JSON.parse(JSON.stringify(canonical || {}))); }
+        if (inline) { inline.id = to; for (const column of Object.keys(entry.saved || {})) if (Object.hasOwn(record.cells, column)) inline.cells[column] = JSON.parse(JSON.stringify(record.cells[column])); }
         if (!this.opts.source) this.source = inlineGridSource(this.view);
       }
       // A stored row cannot be taken back (gridCommit has no deletes): the undo steps that added it leave the history, with the
@@ -96,11 +101,10 @@
       for (const list of [state.undo, state.redo]) for (let at = list.length - 1; at >= 0; at--) if (list[at].some(step => step.insert && step.id === from)) list.splice(at, 1);
       if (to !== from) for (const steps of [...state.undo, ...state.redo]) for (const step of steps) if (step.id === from) { step.id = to; if (step.insert) step.insert.id = to; }
       if (to !== from) this.emit("rowIdChanged", { from, to });
-      // Values changed while the row was saving stay as an ordinary change of the stored record (no undo step: they already have one).
-      const stored = this.editRecord(to), outer = state.group;
-      if (stored && entry.saved) {
+      if (later.length) {
+        const outer = state.group, target = this.editRecord(to) || record;
         state.group = [];
-        try { for (const [column, value] of Object.entries(entry.values)) if (JSON.stringify(value) !== JSON.stringify(entry.saved[column] ?? null) && state.specs.has(column)) this.editApply(to, state.specs.get(column), value, "accept", stored); }
+        try { for (const column of later) this.editApply(to, state.specs.get(column), entry.values[column], "accept", target); }
         finally { state.group = outer; }
       }
       // The table's cached rows of an inline grid take the stored identity too.

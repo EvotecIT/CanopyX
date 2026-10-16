@@ -229,6 +229,8 @@
     redo() { return this.editHistory(this.edit.redo, this.edit.undo, "after", "redo"); },
     editHistory(from, to, key, source) {
       if (!from.length || this.destroyed) return false;
+      // A new row being saved cannot be taken back yet: the step stays until the writer answers.
+      if (key === "before" && from[from.length - 1].some(step => step.insert && this.edit.changes.get(step.id)?.status === "saving")) return false;
       this.cancelEdit();
       const steps = from.pop(), order = key === "before" ? [...steps].reverse() : steps;
       for (const step of order) {
