@@ -217,8 +217,9 @@ grid cell carries only "4 names") and, when asked, `row`.
 
 - **Record packs** (`CanopyRecordSource.Sidecar("records/", shards)`): `CanopyRecordSidecar.Write(pageFolder, view, records)`
   streams each record into pack `records/r<n>.js` (n is the FNV-1a hash of the id's UTF-16 code units modulo the shard
-  count). Packs are scripts, so they load from `file://`. About 200 records a pack keeps each pack small; the browser keeps
-  16 packs.
+  count). The writer keeps at most 16 pack files open and reopens a pack at its end when an interleaved record returns to
+  an evicted shard. This bounds file handles; frequent shard switches can add file-open and flush work. Packs are scripts,
+  so they load from `file://`. About 200 records a pack keeps each pack small; the browser keeps 16 packs.
 - **The host** (`CanopyRecordSource.Host()`, or any source): the `loadRecord(request, { signal })` option answers each
   `gridRecordQuery`.
 - **The remote protocol**: a hosted grid source's `record(request, { signal })` hook, which a remote client implements by
@@ -227,9 +228,16 @@ grid cell carries only "4 names") and, when asked, `row`.
 ```csharp
 var view = CertificateInventoryExample.View(CanopyRecordSource.Sidecar("records/", 1250));
 foreach (var row in rowsWithCellsOnly) view.Rows.Add(row);
-CanopyRecordSidecar.Write(outputFolder, view, ReadRecordDetails());   // streamed, one pack open per shard
+CanopyRecordSidecar.Write(outputFolder, view, ReadRecordDetails());   // streamed, at most 16 pack files open
 view.SaveHtmlPage(Path.Combine(outputFolder, "certificates.html"));
 ```
+
+Record-pack folders are unescaped local paths relative to the page and end with `/`. Spaces inside the path and Unicode
+are supported; an initial ASCII space, query or fragment delimiters (`?`, `#`), percent signs, control characters,
+absolute paths, backslashes and dot segments are rejected. Use a fresh output directory and publish it only after `Write`
+succeeds. The writer closes its pack files when enumeration or writing fails, preserves that error if host-enumerator
+cleanup also fails, and removes obsolete numbered packs only after successful
+finalization. It writes encountered packs directly, so it does not atomically replace an existing report.
 
 ## Phones
 

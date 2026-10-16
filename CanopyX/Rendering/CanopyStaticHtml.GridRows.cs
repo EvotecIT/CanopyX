@@ -9,8 +9,8 @@ public static partial class CanopyStaticHtml {
     /// The return value counts records of this grid only; wrappers and records of nested views do not alter its total.</summary>
     private static int AppendGridRecords(StringBuilder html, CanopyDataGridView view, IList<CanopyGridRow> rows,
         CanopyColumn[] columns, CanopyStaticHtmlOptions settings, CanopyStaticStyles styles, ref int remaining,
-        List<IReadOnlyList<string>>? captured, StringBuilder? detailText, out bool complete) {
-        var formats = view.FormatRules.Count > 0 ? new CanopyFormatEvaluator(view, rows) : null;
+        List<IReadOnlyList<string>>? captured, StringBuilder? detailText, out bool complete, IEnumerable<CanopyGridRow>? statsRows = null) {
+        var formats = view.FormatRules.Count > 0 ? new CanopyFormatEvaluator(view, statsRows ?? rows) : null;
         var shown = 0;
         complete = true;
         foreach (var row in rows) {

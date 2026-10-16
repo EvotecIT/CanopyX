@@ -3,7 +3,7 @@
 CanopyX has two interactive views: a **data grid** for flat records and a **tree grid** for hierarchies. Both can be written
 from typed C# or mounted from JavaScript, and both can render as a script-free table for email and print. This page lists
 what each view does today, grouped by capability, with links to the reference for each feature. For work that is planned
-but not built yet, see the [roadmap](roadmap.md). For short how-tos, see the [recipes](recipes.md).
+but not built yet, see [planned work](../TODO.md). For short how-tos, see the [recipes](recipes.md).
 
 - **Grid**: the flat data grid (`@evotecit/canopyx/grid`, `CanopyDataGridView`).
 - **Reporting**: the data grid with its reporting capabilities (`@evotecit/canopyx/reporting`, `CanopyDataGridView.Reporting`).

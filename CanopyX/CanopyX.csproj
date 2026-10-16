@@ -36,5 +36,6 @@
 
   <ItemGroup>
     <None Include="..\README.nuget.md" Pack="true" PackagePath="README.md" />
+    <None Include="Unicode-LICENSE.txt" Pack="true" PackagePath="licenses/Unicode-LICENSE.txt" />
   </ItemGroup>
 </Project>

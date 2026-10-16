@@ -77,7 +77,8 @@ public static partial class CanopyStaticHtml {
         AppendGridHeader(html, view, columns, styles);
         html.Append("</thead><tbody>");
         var remaining = settings.MaxRows;
-        var shown = AppendGridRecords(html, view, supplied, columns, settings, styles, ref remaining, printedRows, null, out var complete);
+        var shown = AppendGridRecords(html, view, supplied, columns, settings, styles, ref remaining, printedRows, null, out var complete,
+            view.Source.Kind == CanopyGridSourceKind.Inline ? view.Rows : supplied);
         html.Append("</tbody>");
         if (!matching.HasValue || shown < matching.Value) {
             html.Append("<tbody>");
