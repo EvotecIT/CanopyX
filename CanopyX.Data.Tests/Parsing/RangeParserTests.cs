@@ -211,6 +211,8 @@ public sealed class RangeParserTests {
         Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, calendarView: "fortnight"));
         Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, calendarView: "Month"));
         Assert.Equal("timeline", new CanopyRangeRequest(query, from, to, starts, calendarView: "timeline").CalendarView);
+        foreach (var view in new[] { "mini", "weekList", "dayList", "months" }) Assert.Equal(view, new CanopyRangeRequest(query, from, to, starts, calendarView: view).CalendarView);
+        Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, calendarView: "weeklist"));
         Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, resource: host, resources: new[] { new string('h', 4097) }));
         Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, resource: host, resources: new[] { "host-\uD800" }));
         Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, resource: host, resources: Enumerable.Range(0, 1001).Select(i => "host-" + i)));

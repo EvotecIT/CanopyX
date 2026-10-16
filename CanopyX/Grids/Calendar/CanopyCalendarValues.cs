@@ -54,6 +54,12 @@ internal static class CanopyCalendarValues {
     internal static string Iso(DateTime value) =>
         value.ToString(value.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
-    /// <summary>The lowercase wire name of an enum member.</summary>
-    internal static string Name<TEnum>(TEnum value) where TEnum : struct, Enum => value.ToString().ToLowerInvariant();
+    /// <summary>The camel-case wire name of an enum member (<c>month</c>, <c>weekList</c>).</summary>
+    internal static string Name<TEnum>(TEnum value) where TEnum : struct, Enum {
+        var name = value.ToString();
+        return char.ToLowerInvariant(name[0]) + name.Substring(1);
+    }
+
+    /// <summary>The wire form of a date: <c>yyyy-MM-dd</c>.</summary>
+    internal static string Date(DateTime value) => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

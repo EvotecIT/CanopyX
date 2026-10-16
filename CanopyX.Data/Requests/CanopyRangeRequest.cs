@@ -35,7 +35,7 @@ public sealed class CanopyRangeRequest {
     /// <paramref name="resource"/>.</param>
     /// <param name="limit">The most records to return, 1 to 10,000 (a handler also clamps it to its <c>MaxRangeRows</c> limit).</param>
     /// <param name="calendarView">The informational calendar view name (<c>month</c>, <c>week</c>, <c>day</c>, <c>days</c>, <c>agenda</c>,
-    /// <c>year</c> or <c>timeline</c>), or null.</param>
+    /// <c>year</c>, <c>timeline</c>, <c>mini</c>, <c>weekList</c>, <c>dayList</c> or <c>months</c>), or null.</param>
     /// <exception cref="ArgumentException">A column belongs to another schema or has the wrong kind, the window is empty or too
     /// long, the resources are invalid (empty, repeated, longer than 4,096 characters, not well-formed text, or more than 1,000)
     /// or have no resource column, or the view name is unknown.</exception>
@@ -74,7 +74,7 @@ public sealed class CanopyRangeRequest {
         Selection = BuildSelection();
     }
 
-    private static readonly string[] Views = { "month", "week", "day", "days", "agenda", "year", "timeline" };
+    private static readonly string[] Views = { "month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months" };
 
     private static bool WellFormed(string text) {
         for (var i = 0; i < text.Length; i++) {

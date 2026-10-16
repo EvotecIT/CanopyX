@@ -123,6 +123,33 @@ public sealed class CanopyCalendar<T> {
     /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
     public CanopyCalendar<T> Status<TValue>(Expression<Func<T, TValue>> member) { Definition.Status = Bind(member, false); return this; }
 
+    /// <summary>Sets the member that holds each event's description, shown in the details popover and the hover card.</summary>
+    /// <param name="member">The member.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> Description(Expression<Func<T, string?>> member) { Definition.Description = Bind(member, false); return this; }
+
+    /// <summary>Sets the member that holds each event's tone name, which wins over the status tone; a new column for it is hidden.</summary>
+    /// <param name="member">The member.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> Tone(Expression<Func<T, string?>> member) { Definition.Tone = Bind(member, true); return this; }
+
+    /// <summary>Sets the member that holds each event's source id, one of the calendar's sources; a new column for it is hidden.</summary>
+    /// <param name="member">The member.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> Source(Expression<Func<T, string?>> member) { Definition.Source = Bind(member, true); return this; }
+
+    /// <summary>Sets the defaults of a preset on <see cref="Definition"/> (see <see cref="CanopyCalendar.ApplyPreset"/>).</summary>
+    /// <param name="preset">The preset.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="preset"/> is not a known preset.</exception>
+    public CanopyCalendar<T> Preset(CanopyCalendarPreset preset) { Definition.ApplyPreset(preset); return this; }
+
     /// <summary>Sets the member that holds each event's recurrence rule text; a new column for it is hidden.</summary>
     /// <param name="member">The member.</param>
     /// <returns>This builder.</returns>

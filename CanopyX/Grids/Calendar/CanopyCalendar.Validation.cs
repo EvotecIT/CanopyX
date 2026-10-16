@@ -18,6 +18,7 @@ public sealed partial class CanopyCalendar {
     }
 
     internal void Validate(CanopyDataGridView view) {
+        SyncEventColumns(view);
         var columns = new Dictionary<string, CanopyColumn>(StringComparer.Ordinal);
         foreach (var column in view.Columns) if (column != null) columns[column.Id] = column;
         if (_start.Length == 0) throw new InvalidOperationException("A calendar needs a start column.");
@@ -36,9 +37,12 @@ public sealed partial class CanopyCalendar {
         Require(columns, _seriesEnd, "seriesEnd", CanopyColumnKind.DateTime);
         if ((_series == null) != (_recurrenceId == null)) throw new InvalidOperationException("A calendar's series and recurrenceId columns are set together.");
 
-        Distinct(Views, "Calendar views", value => value >= CanopyCalendarView.Month && value <= CanopyCalendarView.Timeline);
+        Require(columns, _description, "description", CanopyColumnKind.Text);
+        Require(columns, _tone, "tone", CanopyColumnKind.Text);
+        Require(columns, _source, "source", CanopyColumnKind.Text);
+
+        Distinct(Views, "Calendar views", value => value >= CanopyCalendarView.Month && value <= CanopyCalendarView.Months);
         var offered = EffectiveViews;
-        if (offered.Contains(CanopyCalendarView.Timeline) && Resources == null) throw new InvalidOperationException("The timeline view needs calendar resources.");
         if (View.HasValue && !offered.Contains(View.Value)) throw new InvalidOperationException("The calendar's first view must be one of its views.");
         if (PhoneView.HasValue && !offered.Contains(PhoneView.Value)) throw new InvalidOperationException("The calendar's phone view must be one of its views.");
         if (FirstDay.HasValue && (FirstDay.Value < DayOfWeek.Sunday || FirstDay.Value > DayOfWeek.Saturday)) throw new ArgumentOutOfRangeException(nameof(FirstDay), FirstDay, "Unknown weekday.");
@@ -67,6 +71,50 @@ public sealed partial class CanopyCalendar {
         foreach (var range in Ranges) (range ?? throw new InvalidOperationException("A calendar cannot have a null range.")).Validate();
         if (Availability.Count > 10000) throw new InvalidOperationException("A calendar has at most 10,000 business hours.");
         foreach (var hours in Availability) (hours ?? throw new InvalidOperationException("A calendar cannot have null business hours.")).Validate();
+        ValidateOptions(view, columns);
+    }
+
+    /// <summary>Checks the chrome, details, sources, creation and view settings.</summary>
+    private void ValidateOptions(CanopyDataGridView view, Dictionary<string, CanopyColumn> columns) {
+        if (Sources.Count > 50) throw new InvalidOperationException("A calendar has at most 50 sources.");
+        var sourceIds = new HashSet<string>(StringComparer.Ordinal);
+        var everyIcs = true;
+        foreach (var source in Sources) {
+            if (source == null || !sourceIds.Add(source.Id)) throw new InvalidOperationException("Calendar sources have unique ids and cannot be null.");
+            if (source.Ics == null) everyIcs = false;
+        }
+        if (Sources.Count > 0 && !everyIcs && _source == null) throw new InvalidOperationException("Calendar sources without an iCalendar file need the calendar's source column.");
+
+        if (!Toolbar && ToolbarItems.Count > 0) throw new InvalidOperationException("A calendar without a toolbar lists no toolbar controls.");
+        Distinct(ToolbarItems, "Calendar toolbar controls", value => value >= CanopyCalendarToolbarItem.Search && value <= CanopyCalendarToolbarItem.More);
+        if (Details != CanopyCalendarDetails.Drawer && Details != CanopyCalendarDetails.Popover) throw new ArgumentOutOfRangeException(nameof(Details), Details, "Unknown event details.");
+        if (Create != null || Drop) {
+            var what = Create != null ? "Creating events" : "Dropping events";
+            if (!columns[_start].Editable) throw new InvalidOperationException(what + " needs an editable start column.");
+            var title = TitleColumn(view);
+            if (title == null || !title.Editable) throw new InvalidOperationException(what + " needs an editable title column.");
+        }
+        if (Occurrence.HasValue) {
+            var occurrence = Occurrence.Value;
+            if (occurrence < CanopyCalendarOccurrence.Ask || occurrence > CanopyCalendarOccurrence.All) throw new ArgumentOutOfRangeException(nameof(Occurrence), occurrence, "Unknown occurrence setting.");
+            if ((occurrence == CanopyCalendarOccurrence.This || occurrence == CanopyCalendarOccurrence.Following) && (_series == null || _recurrenceId == null))
+                throw new InvalidOperationException("Changing one occurrence or the following ones needs the calendar's series and recurrenceId columns.");
+        }
+        if (WeekNumbers < CanopyCalendarWeekNumbers.None || WeekNumbers > CanopyCalendarWeekNumbers.Locale) throw new ArgumentOutOfRangeException(nameof(WeekNumbers), WeekNumbers, "Unknown week numbers.");
+        if (_validStart.HasValue && _validEnd.HasValue && _validEnd.Value <= _validStart.Value) throw new InvalidOperationException("The calendar's valid range ends after it starts.");
+        if (AgendaSpan < CanopyCalendarAgendaSpan.Day || AgendaSpan > CanopyCalendarAgendaSpan.Year) throw new ArgumentOutOfRangeException(nameof(AgendaSpan), AgendaSpan, "Unknown agenda span.");
+    }
+
+    /// <summary>The column of each event's title as the browser picks it: the title column, else the row header, else the first visible column.</summary>
+    private CanopyColumn? TitleColumn(CanopyDataGridView view) {
+        CanopyColumn? header = null, visible = null;
+        foreach (var column in view.Columns) {
+            if (column == null) continue;
+            if (_title != null && column.Id == _title) return column;
+            if (column.RowHeader && header == null) header = column;
+            if (!column.Hidden && visible == null) visible = column;
+        }
+        return _title != null ? null : header ?? visible;
     }
 
     private static void Require(Dictionary<string, CanopyColumn> columns, string? id, string role, CanopyColumnKind? kind) {

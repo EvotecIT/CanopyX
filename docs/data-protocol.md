@@ -126,6 +126,8 @@ The grid state carries `formatRules` when the grid's rules differ from the view'
 
 Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Optional `autoRowHeight: true` enables measured records and uses that height as both the minimum and the estimate for unseen rows. Without the flag, rows retain their fixed height. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 28) as shorthand. In .NET, use `CanopyColumn.Wrap` and `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height.
 
+Optional `dragRows: true` (default false; .NET `CanopyDataGridView.DragRows`) lets readers drag rows out of the grid to a calendar that accepts drops (`calendar.drop`), or pick a row up with F2 from row focus and drop it with Enter (`gridRowPicked` is announced).
+
 Measurements preserve the first visible row and its offset while overscan rows grow or shrink. ResizeObserver also measures host-rendered content that changes later. Page Up/Down moves by the viewport's pixel height. Logical offsets remain independent of the native scrollbar's 8,000,000-pixel cap. Previously measured offscreen rows retain their last height as an estimate after a column width changes and are remeasured when recycled into view. Automatic mode retains sparse height information for visited rows; fixed mode avoids that work.
 
 #### Search highlighting and layout modes
@@ -248,7 +250,7 @@ capability `range(request, { signal })`, as value lists use `facet`. Without the
   column ids of the view. A server accepts only columns on its allow-list that it allows filtering on, with the right kind.
 - `resources` (optional, 1..1,000 unique nonempty strings of at most 4,096 code units) requires `resource` and keeps the
   records whose resource is one of them, with the semantics of an `in` predicate on that column.
-- `calendarView` (optional: `month`, `week`, `day`, `days`, `agenda`, `year` or `timeline`) is informational; servers never
+- `calendarView` (optional: `month`, `week`, `day`, `days`, `agenda`, `year`, `timeline`, `mini`, `weekList`, `dayList` or `months`) is informational; servers never
   let it change the answer.
 - `limit` is 1..10,000; a server lowers it to its own maximum.
 
@@ -408,10 +410,10 @@ not change.
 ### Calendar
 
 A grid's optional `calendar` object presents its records as events ([calendar.md](calendar.md)): month, week, day, N-day
-(`days`), agenda and year views, and a resource timeline. Only `start` is required; every other key is written only when it
+(`days`), agenda, year, mini month (`mini`), week and day lists (`weekList`, `dayList`) and stacked months (`months`) views, and a timeline. Only `start` is required; every other key is written only when it
 differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
 date-and-time columns; `allDay` (booleans), `resource`, `recurrence` (rule text), `exceptions` (ISO instants or `yyyy-MM-dd`
-dates), `series`, `display` and `editable.allowedResources` name text columns; `title`, `subtitle` and `status` may name any
+dates), `series`, `display`, `description`, `tone` (tone names), `source` (source ids) and `editable.allowedResources` name text columns; `title`, `subtitle` and `status` may name any
 column. `series` and `recurrenceId` (an override record replacing one occurrence) go together.
 
 ```json
@@ -428,10 +430,22 @@ boundaries), `workingHours`, `nowIndicator`, `eventLimit` (1 to 20 or `auto`), `
 of `move`, `resize`, `resources`, `overlap`, `workingHours`, `allowedResources`, `snapMinutes` and `commit` (`auto` or
 `manual`); without it the calendar is read-only. `resources` holds a complete tree `view` document (inline roots or a remote
 source) whose node ids are the resource ids, with `width` (120 to 800), `label` and per-column `aggregates` (`count`, `busy`,
-`overlap`); the timeline view needs it. `zoom` and `zooms` choose the timeline's scale (`hour` to `quarter`), `capacity` adds a
-concurrency lane with rising tone `thresholds`, `ranges` (at most 1,000) draws static background or unavailable ranges,
+`overlap`); without it the timeline packs the events into rows by overlap. `zoom` and `zooms` choose the timeline's scale (`hour` to `quarter`), `capacity` adds a
+concurrency lane with rising tone `thresholds`, `ranges` (at most 1,000) draws static background or unavailable ranges (`inverse: true` shades everything outside the inverse ranges of the same resource instead),
 `availability` (at most 10,000) sets business hours per resource, and `limit` (1 to 100,000, default 20,000) caps the
 occurrences one range shows.
+
+The chrome and interaction keys are `toolbar` (`true`, `false` for the calendar's own bar only, or the grid toolbar controls
+to show: `search`, `filters`, `columns`, `views`, `export`, `more`), `details` (`drawer` or `popover`), `print` (a Print
+button), `sources` (1 to 50 `{ id, label, tone?, ics?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
+iCalendar file read within the iCalendar import limits; without `ics` on every source, `source` is required),
+`create` (`true` or `{ minutes, allDay }`, minutes 5 to 1,440, default 60) and `drop` (external drops), both needing editable
+start and title columns and saved as inserts ([Editing and commit](#editing-and-commit)), `occurrence` (`ask`, `this`,
+`following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),
+`weekNumbers` (`false`, `iso` or `locale`), `navLinks`, `validRange` (`{ start?, end? }` dates, end exclusive),
+`fixedWeeks`, `outsideDays`, `span` (`{ count: 1..366, unit: day|week|month }` for the timeline), `menu`, `hover`,
+`yearEvents`, `agendaSpan` (`day`, `week`, `month` or `year`; default `month`) and `months` (2 to 24, default 6). The
+C# presets (`CanopyCalendarPreset`) and basic calendars built from events (`new CanopyCalendar(events)`) only write these keys.
 
 Recurrence rules are the RRULE subset of RFC 5545 that `CanopyRecurrence` (C#) and the browser share: `FREQ` (`DAILY`,
 `WEEKLY`, `MONTHLY`, `YEARLY`), `INTERVAL`, `COUNT` or `UNTIL`, `BYDAY` (numbered weekdays only in monthly and yearly rules),

@@ -120,6 +120,9 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
     public bool AutoRowHeight { get; set; }
 
+    /// <summary>Gets or sets whether rows can be dragged out of the grid, to a calendar that accepts drops (<see cref="CanopyCalendar.Drop"/>), and picked up with F2 from row focus. Defaults to false.</summary>
+    public bool DragRows { get; set; }
+
     /// <summary>Gets or sets the requested result-page size, between 1 and 10,000.</summary>
     /// <remarks>Paging follows full-dataset filtering and sorting; it is not a limit on the inline dataset.</remarks>
     public int PageSize {
@@ -197,6 +200,7 @@ public sealed partial class CanopyDataGridView {
             writer.EndArray();
         }
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
+        if (DragRows) writer.Property("dragRows", true);
         WriteRowPresentationJson(writer);
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)

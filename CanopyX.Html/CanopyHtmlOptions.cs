@@ -10,6 +10,7 @@ public sealed class CanopyHtmlOptions {
     private string _assetBaseUrl = "assets/";
     private string _language = "en";
     private string? _nonce;
+    private CanopyTextDirection _direction;
 
     /// <summary>
     /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
@@ -127,6 +128,16 @@ public sealed class CanopyHtmlOptions {
 
     /// <summary>Gets or sets the page title. Defaults to the view label.</summary>
     public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text direction: a page writes it as the <c>dir</c> attribute of its <c>html</c> element, a fragment on its
+    /// host element. Defaults to <see cref="CanopyTextDirection.Auto"/>, which writes none.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The value is not a known direction.</exception>
+    public CanopyTextDirection Direction {
+        get => _direction;
+        set => _direction = value < CanopyTextDirection.Auto || value > CanopyTextDirection.Rtl ? throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown text direction.") : value;
+    }
 
     /// <summary>Gets or sets the page language, used for the <c>lang</c> attribute and number formatting. Defaults to <c>en</c>.</summary>
     /// <exception cref="ArgumentException">The value is null or empty.</exception>

@@ -8,7 +8,7 @@ namespace CanopyX.Data;
 
 public static partial class CanopyRequestParser {
     private static readonly Regex UtcInstant = new Regex(@"^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d(?:\.\d{1,7})?)?Z$", RegexOptions.CultureInvariant);
-    private static readonly string[] CalendarViews = { "month", "week", "day", "days", "agenda", "year", "timeline" };
+    private static readonly string[] CalendarViews = { "month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months" };
 
     /// <summary>Parses a <c>gridRangeQuery</c> document: the records of a complete query that overlap a UTC window.</summary>
     /// <param name="json">The document.</param>
@@ -40,7 +40,7 @@ public static partial class CanopyRequestParser {
         var resources = RangeResources(root, resource != null, limits);
         var calendarView = OptionalString(root, "calendarView");
         if (calendarView != null && Array.IndexOf(CalendarViews, calendarView) < 0)
-            throw CanopyRequestException.Document("The calendar view is month, week, day, days, agenda, year or timeline.");
+            throw CanopyRequestException.Document("The calendar view is month, week, day, days, agenda, year, timeline, mini, weekList, dayList or months.");
         var limit = OptionalInteger(root, "limit") ?? limits.MaxRangeRows;
         if (limit < 1 || limit > 10000) throw CanopyRequestException.Document("A range returns 1 to 10,000 records.");
         if (!root.TryGetProperty("query", out var queryElement) || queryElement.ValueKind == JsonValueKind.Null)

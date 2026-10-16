@@ -68,7 +68,7 @@ public sealed class CanopyGridRangeQuery {
     public IList<string> Resources { get; } = new List<string>();
 
     /// <summary>Gets or sets the calendar view that asks, for logging and host decisions: <c>month</c>, <c>week</c>, <c>day</c>,
-    /// <c>days</c>, <c>agenda</c>, <c>year</c> or <c>timeline</c>. Servers do not trust it.</summary>
+    /// <c>days</c>, <c>agenda</c>, <c>year</c>, <c>timeline</c>, <c>mini</c>, <c>weekList</c>, <c>dayList</c> or <c>months</c>. Servers do not trust it.</summary>
     public string? CalendarView { get; set; }
 
     /// <summary>Gets or sets the most records the answer may hold, from 1 to 10,000. Default 5,000; servers may lower it.</summary>
@@ -97,7 +97,7 @@ public sealed class CanopyGridRangeQuery {
         if (Resources.Count > 0 && Resource == null) throw new InvalidOperationException("A resource restriction needs the resource column.");
         CanopyGridRanges.Resources(Resources);
         if (CalendarView != null && Array.IndexOf(CanopyGridRanges.CalendarViews, CalendarView) < 0)
-            throw new InvalidOperationException("The calendar view is month, week, day, days, agenda, year or timeline.");
+            throw new InvalidOperationException("The calendar view is month, week, day, days, agenda, year, timeline, mini, weekList, dayList or months.");
         var writer = new CanopyJsonWriter();
         writer.BeginObject().Envelope("gridRangeQuery").Property("view", view.Id).Name("query");
         Query.WriteJson(writer, view);

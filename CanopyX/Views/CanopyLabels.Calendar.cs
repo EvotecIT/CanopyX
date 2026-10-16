@@ -154,4 +154,79 @@ public sealed partial class CanopyLabels {
 
     /// <summary>Gets or sets what a screen reader hears when search highlights events, including <c>{count}</c>, with plural forms. Default "[one]{count} event highlighted[other]{count} events highlighted".</summary>
     public string CalendarHighlighted { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the name of the small month view. Default "Mini month".</summary>
+    public string CalendarMini { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the name of the week list view. Default "Week list".</summary>
+    public string CalendarWeekList { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the name of the day list view. Default "Day list".</summary>
+    public string CalendarDayList { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the name of the stacked months view. Default "Months".</summary>
+    public string CalendarMonths { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of a week number, including <c>{number}</c>. Default "Week {number}".</summary>
+    public string CalendarWeekNumber { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the short week number shown beside a week, including <c>{number}</c>. Default "W{number}".</summary>
+    public string CalendarWeekShort { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the heading of the form that creates an event. Default "New event".</summary>
+    public string CalendarNewEvent { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the label of a new event's title field. Default "Title".</summary>
+    public string CalendarEventTitle { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that adds a new event. Default "Add".</summary>
+    public string CalendarCreate { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that closes the new event form without adding it. Default "Cancel".</summary>
+    public string CalendarCancel { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets what a screen reader hears after an event was created, including <c>{title}</c> and <c>{time}</c>. Default "{title} added on {time}".</summary>
+    public string CalendarCreated { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets what a screen reader hears after a dropped item became an event, including <c>{title}</c> and <c>{time}</c>. Default "{title} scheduled on {time}".</summary>
+    public string CalendarReceived { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the heading of the choice of what moving an occurrence changes. Default "Change a repeating event".</summary>
+    public string CalendarOccurrenceTitle { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the choice that changes only the moved occurrence. Default "This event".</summary>
+    public string CalendarThisEvent { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the choice that changes the moved occurrence and the ones after it. Default "This and following events".</summary>
+    public string CalendarThisAndFollowing { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the choice that changes every occurrence. Default "All events".</summary>
+    public string CalendarAllEvents { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the legend of event sources. Default "Calendars".</summary>
+    public string CalendarSources { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the note when an iCalendar file could not be read, including <c>{source}</c> and <c>{error}</c>. Default "Could not read {source}: {error}".</summary>
+    public string CalendarImportFailed { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of an event's context menu, including <c>{title}</c>. Default "Actions for {title}".</summary>
+    public string CalendarActions { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the context menu item that opens an event. Default "Open".</summary>
+    public string CalendarOpen { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the context menu item that starts moving an event. Default "Move".</summary>
+    public string CalendarMove { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the context menu item that creates an event at a slot or day. Default "New event here".</summary>
+    public string CalendarNewHere { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the note when a date is outside the calendar's valid range. Default "Outside the dates this calendar shows".</summary>
+    public string CalendarOutsideRange { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that closes the details popover. Default "Close".</summary>
+    public string CalendarClose { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of an event's details popover, including <c>{title}</c>. Default "Details of {title}".</summary>
+    public string CalendarDetailsOf { get => Get(); set => Set(value); }
 }

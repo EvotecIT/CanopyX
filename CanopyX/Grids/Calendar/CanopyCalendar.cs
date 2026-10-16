@@ -5,7 +5,7 @@ namespace CanopyX;
 
 /// <summary>
 /// A calendar of a flat grid's records: each record is an event that starts at its <see cref="Start"/> cell, shown in month, week,
-/// day, N-day, agenda and year views, or as a resource timeline. The grid's search, filters and saved views apply to it.
+/// day, N-day, agenda, year, mini month, list and stacked months views, or as a timeline. The grid's search, filters and saved views apply to it.
 /// </summary>
 /// <remarks>
 /// <para>Set it on <see cref="CanopyDataGridView.Calendar"/>. Every setting names columns of the same grid by id; only the start
@@ -26,6 +26,7 @@ public sealed partial class CanopyCalendar {
     private int? _limit;
     private string? _timeZone;
     private DateTime? _date;
+    private CanopyCalendarResources? _resources;
 
     /// <summary>Creates a calendar of the grid's records.</summary>
     /// <param name="start">The id of the date-and-time column that holds each event's start.</param>
@@ -159,8 +160,15 @@ public sealed partial class CanopyCalendar {
     /// <summary>Gets or sets how events are moved and resized; null (the default) keeps the calendar read-only.</summary>
     public CanopyCalendarEditing? Editing { get; set; }
 
-    /// <summary>Gets or sets the resources of the timeline and the resource columns; null for none.</summary>
-    public CanopyCalendarResources? Resources { get; set; }
+    /// <summary>
+    /// Gets or sets the resources of the timeline and the resource columns; null for none. Set after a preset
+    /// (<see cref="ApplyPreset"/>), they complete it: the basic preset keeps the timeline out of empty <see cref="Views"/>, and
+    /// the scheduler adds its concurrency lane when <see cref="Capacity"/> is null.
+    /// </summary>
+    public CanopyCalendarResources? Resources {
+        get => _resources;
+        set { _resources = value; if (value != null) CompletePreset(); }
+    }
 
     /// <summary>Gets or sets the timeline's zoom level. Defaults to <see cref="CanopyCalendarZoom.Day"/>, or to the first of <see cref="Zooms"/> when they leave Day out.</summary>
     public CanopyCalendarZoom Zoom { get; set; } = CanopyCalendarZoom.Day;

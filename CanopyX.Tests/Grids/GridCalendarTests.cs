@@ -141,7 +141,7 @@ public sealed class GridCalendarTests {
         Refused((_, calendar) => calendar.Series = "series");
         Refused((_, calendar) => calendar.RecurrenceId = "originalStart");
         Refused((_, calendar) => { calendar.Views.Add(CanopyCalendarView.Week); calendar.Views.Add(CanopyCalendarView.Week); });
-        Refused((_, calendar) => calendar.Views.Add(CanopyCalendarView.Timeline));
+        // A timeline without resources is allowed, but it is not one of the default views.
         Refused((_, calendar) => calendar.View = CanopyCalendarView.Timeline);
         Refused((_, calendar) => calendar.View = CanopyCalendarView.Year);
         Refused((_, calendar) => { calendar.Views.Add(CanopyCalendarView.Month); calendar.PhoneView = CanopyCalendarView.Agenda; });

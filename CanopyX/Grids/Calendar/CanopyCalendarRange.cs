@@ -59,6 +59,13 @@ public sealed class CanopyCalendarRange {
     /// <summary>Gets or sets a rule that repeats the range from its start (for example a weekly maintenance window); null for once.</summary>
     public CanopyRecurrence? Recurrence { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the range shades everything outside it instead: outside the union of the inverse ranges of the same
+    /// <see cref="Resource"/> (or of the inverse ranges without a resource), for example to show when something is available.
+    /// Defaults to false.
+    /// </summary>
+    public bool Inverse { get; set; }
+
     private static string CheckLabel(string label) => CanopyCalendarValues.Label(label ?? throw new ArgumentException("A range needs a label.", nameof(label)), nameof(label))!;
 
     internal void Validate() {
@@ -70,6 +77,8 @@ public sealed class CanopyCalendarRange {
         writer.BeginObject().Property("start", CanopyCalendarValues.Iso(_start)).Property("end", CanopyCalendarValues.Iso(_end)).Property("label", _label)
             .OptionalProperty("tone", Tone.Name).OptionalProperty("resource", _resource);
         if (Kind == CanopyCalendarRangeKind.Unavailable) writer.Property("kind", "unavailable");
-        writer.OptionalProperty("recurrence", Recurrence?.ToString()).EndObject();
+        writer.OptionalProperty("recurrence", Recurrence?.ToString());
+        if (Inverse) writer.Property("inverse", true);
+        writer.EndObject();
     }
 }

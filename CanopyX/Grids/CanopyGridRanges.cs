@@ -16,7 +16,7 @@ internal static class CanopyGridRanges {
     internal const int MaxResourceLength = 4096;
 
     /// <summary>The informational calendar view names a range request may carry.</summary>
-    internal static readonly string[] CalendarViews = { "month", "week", "day", "days", "agenda", "year", "timeline" };
+    internal static readonly string[] CalendarViews = { "month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months" };
 
     private static readonly DateTime Earliest = new DateTime(2, 1, 1, 0, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime Latest = new DateTime(9998, 12, 31, 23, 59, 59, DateTimeKind.Utc);

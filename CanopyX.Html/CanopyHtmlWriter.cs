@@ -59,6 +59,7 @@ internal static class CanopyHtmlWriter {
     private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null) {
         var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
         builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        builder.Append(DirectionAttribute(options.Direction));
         if (!options.AutoMount) {
             builder.Append(" data-cx-mount=\"manual\"");
         } else if (options.MountWhenVisible) {
@@ -89,6 +90,7 @@ internal static class CanopyHtmlWriter {
         fragmentOptions.Parts.UnionWith(options.Parts);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["dir"] = DirectionAttribute(options.Direction),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(RuntimeFor(view, options), options),
@@ -133,6 +135,7 @@ internal static class CanopyHtmlWriter {
         if (view == null) throw new ArgumentNullException(nameof(view));
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["dir"] = DirectionAttribute(options.Direction),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
@@ -152,6 +155,13 @@ internal static class CanopyHtmlWriter {
 
         return "<style" + nonce + ">\n" + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script" + nonce + ">\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>";
     }
+
+    /// <summary>The <c>dir</c> attribute of a direction, with its leading space; empty for <see cref="CanopyTextDirection.Auto"/>.</summary>
+    private static string DirectionAttribute(CanopyTextDirection direction) => direction switch {
+        CanopyTextDirection.Ltr => " dir=\"ltr\"",
+        CanopyTextDirection.Rtl => " dir=\"rtl\"",
+        _ => string.Empty
+    };
 
     private static string ThemeName(CanopyTheme theme) => theme switch {
         CanopyTheme.Light => "light",

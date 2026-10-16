@@ -425,7 +425,7 @@ calendar definition: each column is checked against the allow-list.
 | `end`, `seriesEnd` | Optional allowed, filterable date columns. |
 | `recurrence`, `resource` | Optional allowed, filterable text columns. |
 | `resources` | Optional, 1 to 1,000 unique nonempty strings (at most `MaxInValues`, each at most `MaxOperandLength` and 4,096); requires `resource`. |
-| `calendarView` | Optional, one of `month`, `week`, `day`, `days`, `agenda`, `year`, `timeline`. Informational only (logging, host decisions); it never changes the answer. |
+| `calendarView` | Optional, one of `month`, `week`, `day`, `days`, `agenda`, `year`, `timeline`, `mini`, `weekList`, `dayList`, `months`. Informational only (logging, host decisions); it never changes the answer. |
 | `limit` | 1 to 10,000; default and ceiling `MaxRangeRows` (5,000). A larger value is lowered, not rejected. |
 
 An unknown column answers `unknownColumn`, a column that cannot be filtered `columnNotFilterable`, a column of the wrong kind

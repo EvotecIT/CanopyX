@@ -3,7 +3,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 public sealed partial class CanopyDataGridView {
-    /// <summary>Gets or sets a calendar of the grid's records: month, week, day, N-day, agenda and year views and a resource timeline,
+    /// <summary>Gets or sets a calendar of the grid's records: month, week, day, N-day, agenda, year, list and stacked months views and a timeline,
     /// with recurring events. Null, the default, shows none.</summary>
     public CanopyCalendar? Calendar { get; set; }
 

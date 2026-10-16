@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -12,7 +11,8 @@ public sealed partial class CanopyCalendar {
             .OptionalProperty("end", _end).OptionalProperty("title", _title).OptionalProperty("subtitle", _subtitle)
             .OptionalProperty("allDay", _allDay).OptionalProperty("resource", _resource).OptionalProperty("status", _status)
             .OptionalProperty("recurrence", _recurrence).OptionalProperty("exceptions", _exceptions).OptionalProperty("series", _series)
-            .OptionalProperty("recurrenceId", _recurrenceId).OptionalProperty("display", _display).OptionalProperty("seriesEnd", _seriesEnd);
+            .OptionalProperty("recurrenceId", _recurrenceId).OptionalProperty("display", _display).OptionalProperty("seriesEnd", _seriesEnd)
+            .OptionalProperty("description", _description).OptionalProperty("tone", _tone).OptionalProperty("source", _source);
         var offered = EffectiveViews;
         if (View.HasValue && View.Value != offered[0]) writer.Property("view", CanopyCalendarValues.Name(View.Value));
         if (Views.Count > 0 && !SameViews(Views)) {
@@ -20,7 +20,7 @@ public sealed partial class CanopyCalendar {
             foreach (var view in Views) writer.String(CanopyCalendarValues.Name(view));
             writer.EndArray();
         }
-        if (_date.HasValue) writer.Property("date", _date.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        if (_date.HasValue) writer.Property("date", CanopyCalendarValues.Date(_date.Value));
         if (_days != 3) writer.Property("days", _days);
         if (FirstDay.HasValue) writer.Property("firstDay", (int)FirstDay.Value);
         if (HiddenDays.Count > 0) CanopyCalendarValues.WriteDays(writer, "hiddenDays", HiddenDays);
@@ -54,8 +54,48 @@ public sealed partial class CanopyCalendar {
         }
         writer.OptionalProperty("limit", _limit);
         if (PhoneView.HasValue && PhoneView.Value != DefaultPhoneView(offered)) writer.Property("phone", CanopyCalendarValues.Name(PhoneView.Value));
+        WriteOptionsJson(writer);
         writer.EndObject();
     }
+
+    /// <summary>Writes the chrome, details, sources, creation and view settings that differ from their defaults.</summary>
+    private void WriteOptionsJson(CanopyJsonWriter writer) {
+        if (Sources.Count > 0) {
+            writer.Name("sources").BeginArray();
+            foreach (var source in Sources) source.WriteJson(writer);
+            writer.EndArray();
+        }
+        if (!Toolbar) writer.Property("toolbar", false);
+        else if (ToolbarItems.Count > 0) {
+            writer.Name("toolbar").BeginArray();
+            foreach (var item in ToolbarItems) writer.String(CanopyCalendarValues.Name(item));
+            writer.EndArray();
+        }
+        if (Details == CanopyCalendarDetails.Popover) writer.Property("details", "popover");
+        if (Create != null) { writer.Name("create"); Create.WriteJson(writer); }
+        if (Drop) writer.Property("drop", true);
+        if (Occurrence.HasValue && Occurrence.Value != DefaultOccurrence) writer.Property("occurrence", CanopyCalendarValues.Name(Occurrence.Value));
+        if (WeekNumbers != CanopyCalendarWeekNumbers.None) writer.Property("weekNumbers", CanopyCalendarValues.Name(WeekNumbers));
+        if (!NavLinks) writer.Property("navLinks", false);
+        if (_validStart.HasValue || _validEnd.HasValue) {
+            writer.Name("validRange").BeginObject();
+            if (_validStart.HasValue) writer.Property("start", CanopyCalendarValues.Date(_validStart.Value));
+            if (_validEnd.HasValue) writer.Property("end", CanopyCalendarValues.Date(_validEnd.Value));
+            writer.EndObject();
+        }
+        if (FixedWeeks) writer.Property("fixedWeeks", true);
+        if (!OutsideDays) writer.Property("outsideDays", false);
+        if (Span != null) { writer.Name("span"); Span.WriteJson(writer); }
+        if (!Menu) writer.Property("menu", false);
+        if (!Hover) writer.Property("hover", false);
+        if (YearEvents) writer.Property("yearEvents", true);
+        if (AgendaSpan != CanopyCalendarAgendaSpan.Month) writer.Property("agendaSpan", CanopyCalendarValues.Name(AgendaSpan));
+        if (_months != 6) writer.Property("months", _months);
+        if (Print) writer.Property("print", true);
+    }
+
+    /// <summary>What moving an occurrence changes without a setting: ask when override records are possible, else every occurrence.</summary>
+    private CanopyCalendarOccurrence DefaultOccurrence => _series != null && _recurrenceId != null ? CanopyCalendarOccurrence.Ask : CanopyCalendarOccurrence.All;
 
     /// <summary>Whether a views list is the default list, which needs no writing.</summary>
     private bool SameViews(IList<CanopyCalendarView> views) {
