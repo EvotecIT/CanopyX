@@ -44,6 +44,7 @@
       dayHeader: value => day({ weekday: "short", day: "numeric" }, value),
       longDay: value => day({ weekday: "long", day: "numeric", month: "long", year: "numeric" }, value),
       shortDay: value => day({ day: "numeric", month: "short" }, value),
+      date: value => day({ day: "numeric", month: "short", year: "numeric" }, value),
       year: value => day({ year: "numeric" }, value),
       dayRange: (from, to) => range({ day: "numeric", month: "short", year: "numeric" }, from, to),
       monthRange: (from, to) => range({ month: "short", year: "numeric" }, from, to),

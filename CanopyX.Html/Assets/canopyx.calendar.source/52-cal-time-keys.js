@@ -33,7 +33,11 @@
       const first = cal.minMinutes, last = cal.maxMinutes - slot;
       if (key === "ArrowLeft" || key === "ArrowRight") {
         event.preventDefault();
-        const next = column + (key === "ArrowLeft" ? -1 : 1);
+        const next = column + (key === "ArrowLeft" ? -1 : 1), pages = this.calResourcePages;
+        // Past the edge of a page of resource columns (phones), the next page comes before the next period.
+        if (pages && (next < 0 ? pages.page > 0 : next >= columns.length && pages.page < pages.pages - 1)) {
+          this.calResourceFirst = (pages.page + (next < 0 ? -1 : 1)) * pages.size; this.calPaint({ keep: true }); go(next < 0 ? "last" : 0, minutes); return;
+        }
         if (next < 0 || next >= columns.length) { this.calendarStep(next < 0 ? -1 : 1).then(() => go(next < 0 ? "last" : 0, minutes)); return; }
         go(next, minutes);
       } else if (key === "ArrowUp" || key === "ArrowDown") {

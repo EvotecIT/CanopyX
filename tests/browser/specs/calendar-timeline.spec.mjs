@@ -143,7 +143,13 @@ test.describe("resource timeline", () => {
       await openCalendar(page, "calendar-timeline.html", { dark, width: 390, height: 844 });
       await api(page, "api => api.setCalendarView('timeline')");
       await nextFrames(page);
-      expect(Math.round(await page.evaluate(() => document.querySelector(".cx-tl-side").getBoundingClientRect().width))).toBeLessThanOrEqual(140);
+      // Names only: no hidden-column counts, and about 110 pixels of name even at the third level.
+      expect(Math.round(await page.evaluate(() => document.querySelector(".cx-tl-side").getBoundingClientRect().width))).toBeLessThanOrEqual(180);
+      expect(await page.locator(".cx-tl-tree .cx-hidden-fields:visible").count()).toBe(0);
+      const name = await page.evaluate(() => { const row = document.querySelector('.cx-tl-tree .cx-row[aria-level="3"]'), width = selector => row.querySelector(selector).getBoundingClientRect().width, text = row.querySelector(".cx-text");
+        return { room: Math.round(width(".cx-cell") - width(".cx-indent") - width(".cx-exp")), cut: text.scrollWidth > text.clientWidth }; });
+      expect(name.room).toBeGreaterThanOrEqual(100);
+      expect(name.cut).toBe(false);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       for (const [id, rowTop, laneTop] of await alignment(page)) expect(laneTop, "lane of " + id).toBe(rowTop);
       expect(await axe(page)).toEqual([]);

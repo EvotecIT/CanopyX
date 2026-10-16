@@ -168,9 +168,10 @@ test.describe("calendar views", () => {
     await page.locator(".cx-cal-view[data-cx-cal-view=week]").click();
     await expect(page.locator(".cx-cal-view[data-cx-cal-view=week]")).toHaveAttribute("aria-pressed", "true");
     await expect(live(page)).toHaveText(/^Week, /);
-    await page.locator(".cx-cal-jump").fill("2027-02-10");
-    await page.locator(".cx-cal-jump").dispatchEvent("change");
+    // The native picker sits behind a button that writes the date in the page language where the browser can open it.
+    await page.locator(".cx-cal-jump").evaluate(input => { input.value = "2027-02-10"; input.dispatchEvent(new Event("change")); });
     await expect(page.locator(".cx-cal-title")).toHaveText("Feb 8 – 14, 2027");
+    if (await page.locator(".cx-cal-jumpbtn").count()) await expect(page.locator(".cx-cal-jumpbtn")).toHaveText("Feb 10, 2027");
     const state = await api(page, "api => api.getState()");
     expect(state.calendar).toEqual({ view: "week", date: "2027-02-10", zoom: "day" });
     await page.locator(".cx-cal-gotoday").click();
@@ -190,9 +191,14 @@ test.describe("calendar views", () => {
     await expect(page.locator(".cx-cal-dayhead")).toHaveCount(3);
     await api(page, "api => api.setCalendarView('month')");
     await expect(page.locator(".cx-cal-dots").first()).toBeVisible();
+    // Today's list follows the short weeks of dots, in view without scrolling.
+    await expect(page.locator(".cx-cal-daylist-h")).toHaveText("Friday, October 16, 2026");
+    await expect(page.locator(".cx-cal-daylist-h")).toBeInViewport();
+    await expect(page.locator('.cx-cal-day[data-cx-listed]')).toHaveAttribute("data-cx-day", String(day("2026-10-16")));
     await page.locator('.cx-cal-day[data-cx-day="' + day("2026-10-19") + '"]').click();
     await expect(page.locator(".cx-cal-daylist-h")).toHaveText("Monday, October 19, 2026");
     await expect(page.locator(".cx-cal-daylist .cx-cal-ev")).not.toHaveCount(0);
+    await expect(page.locator('.cx-cal-day[data-cx-listed]')).toHaveAttribute("data-cx-day", String(day("2026-10-19")));
     await capture(page, "month-phone-light-390");
   });
 

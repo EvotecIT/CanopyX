@@ -3,7 +3,7 @@
   // so 5,000 resources and 100,000 events paint as fast as twenty. A lane stacks overlapping events in up to four sub-rows.
   // A group's lane shows its capacity instead: the most events at once among its resources in each unit, toned by the
   // capacity thresholds. Business hours (hour zoom), unavailable time and background ranges shade the lanes behind events.
-  const TL_MARGIN = 480, TL_STACK = 4;
+  const TL_MARGIN = 480, TL_STACK = 4, TL_MIN_BAR = 8, TL_SOLID_BAR = 16;
 
   Object.assign(DataGrid.prototype, {
     /** Events by resource, sorted by start, with their sub-rows; background events apart. */
@@ -84,18 +84,26 @@
       this.tlPaintShade(lane, id, left, right);
       const stack = Math.min(TL_STACK, events.lanes || 1), inner = height - 6, bar = Math.max(6, inner / stack - (stack > 1 ? 2 : 0));
       const firstVisible = cells.length ? Number(cells[0].dataset.cxUnit) : 0;
+      // The start of the next event in the same sub-row, so a widened short bar never covers its neighbour.
+      const nextInRow = new Map(), after = new Map();
+      for (let i = events.length - 1; i >= 0; i--) { const row = Math.min(events[i].tlLane, stack - 1); nextInRow.set(events[i], after.get(row)); after.set(row, events[i].start); }
       for (const event of events) {
         if (event.end < axis.from || event.start >= axis.to) continue;
         const x1 = axis.x(event.start), x2 = event.end > event.start ? axis.x(event.end) : x1;
         if (x2 < left || x1 > right) continue;
-        const element = this.calEventElement(event, "lane"), slot = Math.min(event.tlLane, stack - 1), width = Math.max(event.marker ? 0 : 3, x2 - x1);
+        // A short event keeps a solid bar of TL_MIN_BAR pixels (its times stay in its name and tooltip); one too short even to
+        // span a pixel is drawn as a marker.
+        const span = x2 - x1, point = event.marker || span < 1;
+        const element = this.calEventElement(event, "lane"), slot = Math.min(event.tlLane, stack - 1), room = nextInRow.get(event) === undefined ? Infinity : axis.x(nextInRow.get(event)) - x1 - 1, width = point ? 0 : Math.max(Math.min(span, 2), Math.min(Math.max(TL_MIN_BAR, span), room));
         const unit = Math.max(firstVisible, axis.unitOf(event.start)), cell = cells.find(item => Number(item.dataset.cxUnit) === unit) || cells[0];
         const offset = cell ? Number.parseFloat(cell.style.left) : 0;
         element.style.left = (x1 - offset) + "px"; element.style.width = width + "px"; element.style.top = (3 + slot * (inner / stack)) + "px"; element.style.height = bar + "px";
         if (bar < 16) element.classList.add("cx-tl-thin");
-        if (event.marker) element.classList.add("cx-tl-point");
+        if (point) element.classList.add("cx-tl-point");
+        // Bars too narrow to read as a filled shape with an edge are solid.
+        else if (span < TL_SOLID_BAR) { element.classList.add("cx-tl-tiny"); element.title = this.calEventName(event); }
         // Past the hour zoom points sit too close for their names; the name stays in the accessible name and the tooltip.
-        if (event.marker && axis.zoom !== "hour") { element.classList.add("cx-tl-bare"); element.title = this.calEventName(event); }
+        if (point && (axis.zoom !== "hour" || !event.marker)) { element.classList.add("cx-tl-bare"); element.title = this.calEventName(event); }
         if (width < 40) element.classList.add("cx-tl-narrow");
         if (event.start < axis.from) element.classList.add("cx-cal-cont-start");
         if (event.end > axis.to) element.classList.add("cx-cal-cont-end");

@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "d533d697f2b72b45",
+      "version": "4a557e85be24522f",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -367,7 +367,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "8350c673ac8ab571",
+      "version": "3e014830701c8a06",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [

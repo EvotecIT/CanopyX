@@ -34,7 +34,7 @@ grid.View.Calendar.Resources!.Aggregates["busy"] = CanopyCalendarAggregate.Busy;
 | Field | Meaning |
 | --- | --- |
 | `view` | A tree `view` document: inline roots, or a remote source whose children load when a group opens. Node ids are the resource ids the grid's `resource` column holds. Its columns are extra resource columns (site, owner), sortable and filterable as tree columns. |
-| `width` | The resource pane's width, 120–800 pixels (default 280; phones use 136). |
+| `width` | The resource pane's width, 120–800 pixels (default 280; phones use 176 and show names only). |
 | `label` | The resource pane's heading in print (default "Resources"). |
 | `aggregates` | Tree column ids filled with `count` (events in the visible span), `busy` (hours covered, overlapping events counted once) or `overlap` (events that overlap another). A group adds up its resources. |
 

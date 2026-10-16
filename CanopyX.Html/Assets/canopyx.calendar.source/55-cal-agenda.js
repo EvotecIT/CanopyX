@@ -84,7 +84,7 @@
               if (count) cell.dataset.cxHeat = String(Math.min(4, Math.ceil(count / most * 4)));
               if (day === today) { cell.classList.add("cx-cal-today"); cell.setAttribute("aria-current", "date"); }
               cell.setAttribute("aria-label", this.calDayName(day, count, this.calBackgroundsOn(day)));
-              cell.title = count ? calCount(this, this.calLabels.calendarEvents, count) : "";
+              cell.title = fmt.longDay(day) + " · " + calCount(this, this.calLabels.calendarEvents, count);
             }
             row.appendChild(cell);
           }
@@ -92,7 +92,15 @@
         }
         box.appendChild(grid); year.appendChild(box);
       }
-      this.calBody.replaceChildren(year);
+      // A legend for the shading, from one event to the busiest day's count; each day's name already says its own.
+      if (!counts.size) { this.calBody.replaceChildren(year); this.calGrid = year; return; }
+      const legend = h("div", "cx-cal-ylegend"), low = h("span"), high = h("span");
+      legend.setAttribute("aria-hidden", "true");
+      setText(low, calCount(this, this.calLabels.calendarEvents, 1)); setText(high, calCount(this, this.calLabels.calendarEvents, most));
+      legend.appendChild(low);
+      for (let heat = 1; heat <= 4; heat++) { const swatch = h("i", "cx-cal-yswatch"); swatch.dataset.cxHeat = String(heat); legend.appendChild(swatch); }
+      legend.appendChild(high);
+      this.calBody.replaceChildren(year, legend);
       this.calGrid = year;
     },
     calKeyYear(event, cell) {

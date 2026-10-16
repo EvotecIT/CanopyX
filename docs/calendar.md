@@ -239,8 +239,13 @@ writes them in a canonical order (`ToString()`), parses them (`Parse`, `TryParse
 
 The calendar uses the grid's tokens, so it follows the light, dark and `auto` themes and a host's palette; forced colours draw
 events, today, selections and the now line with system colours. Event tones are the grid's tones. At 640 pixels and less the view
-buttons become a list, the month shows dots with the focused day's list under it, the N-day view shows three days and phones
-start in the agenda.
+buttons become a list, the month shows short weeks of dots with the selected day's list under it (today until another day is
+tapped), the N-day view shows three days, day and week views with resource columns show two resources (one a day in longer
+views) with a picker for the others, and phones start in the agenda.
+
+The go-to-date control shows the date in the calendar's language and opens the browser's date picker kept behind it; where a
+browser cannot open the picker from a script, the native date input shows instead. The year view has a legend for its shading,
+and each day's tooltip and accessible name give its number of events. The now line runs beneath events and capacity counts.
 
 ## API
 

@@ -27,6 +27,22 @@
       this.calTitle = h("h2", "cx-cal-title"); this.calTitle.id = this.id + "-cal-title";
       const jump = this.calJump = h("input", "cx-cal-jump"); jump.type = "date"; jump.setAttribute("aria-label", labels.calendarGoTo); jump.title = labels.calendarGoTo;
       jump.addEventListener("change", () => { const day = calParseDay(jump.value); if (Number.isFinite(day)) this.setCalendarDate(jump.value); });
+      // The native picker writes the date in the browser's format; where the browser can open it from a script, a button in
+      // the calendar's language shows the date and opens the picker kept behind it.
+      const jumpBox = h("span", "cx-cal-jumpbox");
+      if (typeof HTMLInputElement === "function" && "showPicker" in HTMLInputElement.prototype) {
+        const open = this.calJumpButton = h("button", "cx-cal-jumpbtn"); open.type = "button";
+        jump.tabIndex = -1; jump.setAttribute("aria-hidden", "true"); jump.classList.add("cx-cal-jump-behind");
+        open.addEventListener("click", () => {
+          try { jump.showPicker(); }
+          catch {
+            // A frame that may not open pickers (a cross-origin embed): the native input comes back in place of the button.
+            jump.classList.remove("cx-cal-jump-behind"); jump.removeAttribute("aria-hidden"); jump.removeAttribute("tabindex");
+            open.remove(); this.calJumpButton = null; jump.focus();
+          }
+        });
+        jumpBox.append(jump, open);
+      } else jumpBox.append(jump);
       const views = this.calViewGroup = h("div", "cx-cal-views"); views.setAttribute("role", "group"); views.setAttribute("aria-label", labels.calendarViews);
       this.calViewButtons = new Map();
       for (const view of this.cal.views) {
@@ -41,7 +57,7 @@
       for (const level of this.cal.zooms) { const option = h("option"); option.value = level; setText(option, labels["calendarZoom" + level[0].toUpperCase() + level.slice(1)]); zoom.appendChild(option); }
       zoom.addEventListener("change", () => this.setCalendarZoom(zoom.value));
       if (this.cal.views.length < 2) { views.hidden = true; select.hidden = true; }
-      bar.append(nav, this.calTitle, h("span", "cx-spacer"), jump, zoom, views, select);
+      bar.append(nav, this.calTitle, h("span", "cx-spacer"), jumpBox, zoom, views, select);
       return bar;
     },
 
@@ -61,6 +77,7 @@
       const title = this.calRangeTitle();
       setText(this.calTitle, title);
       this.calJump.value = calDayText(this.calDate);
+      if (this.calJumpButton) { setText(this.calJumpButton, this.calFmt.date(this.calDate)); this.calJumpButton.setAttribute("aria-label", this.calLabels.calendarGoTo + ", " + this.calFmt.date(this.calDate)); this.calJumpButton.title = this.calLabels.calendarGoTo; }
       const today = this.calZone.day(Date.now());
       // aria-disabled keeps focus on the button when today comes into view (a disabled button would drop it).
       this.calTodayButton.setAttribute("aria-disabled", String(today >= range.firstDay && today <= range.lastDay));

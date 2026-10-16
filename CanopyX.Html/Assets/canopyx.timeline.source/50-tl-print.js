@@ -2,7 +2,9 @@
   // Printing a timeline cannot rely on virtual rows and a scrolled axis, so beforeprint writes a static copy: the resources the
   // tree shows (indented, at most 400), each with its events as bars placed by share of the span across the page width, the
   // span's header and the capacity of groups as numbers. It is shown only in print and removed afterwards.
-  const TL_PRINT_ROWS = 400;
+  // Bars are placed by share of the lane; the lane is about TL_PRINT_LANE CSS pixels wide on a landscape page, which decides
+  // whether a bar gets the minimum solid width and whether its title fits (about TL_PRINT_CHAR pixels a character at 10px).
+  const TL_PRINT_ROWS = 400, TL_PRINT_LANE = 760, TL_PRINT_CHAR = 5.6;
   Object.assign(DataGrid.prototype, {
     tlPrint(on) {
       this.tlPrintView?.remove(); this.tlPrintView = null;
@@ -26,9 +28,13 @@
         } else for (const event of this.tlIndex.byResource.get(row.key) || []) {
           if (event.end <= axis.from || event.start >= axis.to) continue;
           const bar = h("span", "cx-tl-print-bar");
-          bar.style.left = share(Math.max(event.start, axis.from)); bar.style.width = "max(3px, calc(" + share(Math.min(event.end, axis.to)) + " - " + share(Math.max(event.start, axis.from)) + "))";
+          const from = Math.max(event.start, axis.from), to = Math.min(event.end, axis.to), pixels = (axis.x(to) - axis.x(from)) / axis.total * TL_PRINT_LANE;
+          bar.style.left = share(from); bar.style.width = "max(6px, calc(" + share(to) + " - " + share(from) + "))";
           if (event.tone) bar.style.setProperty("--cx-ev", "var(--cx-tone-" + event.tone + ",var(--cx-accent))");
-          setText(bar, event.title); bar.title = this.calEventName(event); lane.appendChild(bar);
+          // A short bar is solid; a title is printed only where it fits whole.
+          if (pixels < 16) bar.classList.add("cx-tl-print-tiny");
+          if (pixels >= event.title.length * TL_PRINT_CHAR + 8) setText(bar, event.title);
+          bar.title = this.calEventName(event); lane.appendChild(bar);
         }
         line.append(name, lane); view.appendChild(line);
       }

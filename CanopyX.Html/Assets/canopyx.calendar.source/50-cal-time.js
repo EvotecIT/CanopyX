@@ -8,13 +8,34 @@
   Object.assign(DataGrid.prototype, {
     /** The time grid's columns: one per shown day, or per day and resource when resource columns apply. */
     calTimeColumns(days) {
-      const resources = this.calResourceColumns?.() || null;
-      if (!resources) return days.map(day => ({ day, resource: null }));
+      const all = this.calResourceColumns?.() || null;
+      this.calResourcePages = null;
+      if (!all) return days.map(day => ({ day, resource: null }));
+      // Phones show two resources of a day (one a day in longer views) at a time, so titles stay readable; a picker above
+      // the grid chooses which.
+      // The first resource shown is kept, not a page number, so day and week views show the same resources after a switch.
+      const size = this.calPhone && !this.calPrinting && all.length > 2 ? (days.length === 1 ? 2 : 1) : all.length, pages = Math.ceil(all.length / size);
+      const page = Math.min(Math.floor((this.calResourceFirst || 0) / size), pages - 1);
+      if (pages > 1) this.calResourcePages = { all, size, pages, page };
+      const resources = all.slice(page * size, page * size + size);
       const out = [];
       for (const day of days) for (const resource of resources) out.push({ day, resource: resource.id, label: resource.label, group: resource.group });
       return out;
     },
 
+    /** The phone's choice of resource columns: one option per page, named by its resources. */
+    calResourcePicker() {
+      const { all, size, pages, page } = this.calResourcePages, bar = h("div", "cx-cal-rpick"), select = h("select", "cx-cal-rpick-select");
+      select.setAttribute("aria-label", this.calLabels.calendarResources);
+      for (let at = 0; at < pages; at++) {
+        const option = h("option"); option.value = String(at);
+        setText(option, all.slice(at * size, at * size + size).map(item => item.label).join(", ")); select.appendChild(option);
+      }
+      select.value = String(page);
+      select.addEventListener("change", () => { this.calResourceFirst = Number(select.value) * size; this.calPaint({ keep: true }); this.calBody.querySelector(".cx-cal-rpick-select")?.focus(); });
+      bar.appendChild(select);
+      return bar;
+    },
     calPaintTime() {
       const cal = this.cal, range = this.calRange, days = this.calShownDays(range.firstDay, range.lastDay), columns = this.calTimeColumns(days);
       const today = this.calZone.day(Date.now()), slot = cal.slotMinutes, ppm = CAL_SLOT_PX / slot, labels = this.calLabels, fmt = this.calFmt;
@@ -96,7 +117,7 @@
       });
       if (cal.now) { this.calNowLine = h("div", "cx-cal-now"); this.calNowLine.setAttribute("aria-hidden", "true"); slots.appendChild(this.calNowLine); this.calNowColumns = columns; }
       scroller.appendChild(slots); grid.appendChild(scroller);
-      this.calBody.replaceChildren(grid);
+      this.calBody.replaceChildren(...(this.calResourcePages ? [this.calResourcePicker()] : []), grid);
       this.calGrid = grid;
       if (cal.now) this.calTick();
       // The header leaves room for the slots' scrollbar, so the day columns line up.

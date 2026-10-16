@@ -41,7 +41,20 @@ internal static class CalendarExample {
         foreach (var (suffix, labels, language) in new[] { ("pl", CanopyLabels.Polish(), "pl"), ("de", CanopyLabels.German(), "de") }) {
             var grid = Create().View;
             grid.Labels = labels;
+            Translate(grid, suffix);
             grid.SaveHtmlPage(Path.Combine(output, "calendar-" + suffix + ".html"), new CanopyHtmlOptions { Title = "Operations calendar", Height = "760px", Language = language });
+        }
+    }
+
+    /// <summary>The example's own words in the page language: the noun and the status texts (the values stay, so tones and filters keep working).</summary>
+    private static void Translate(CanopyDataGridView grid, string language) {
+        var polish = language == "pl";
+        grid.Noun = polish ? "zdarzenia" : "Ereignisse";
+        var statuses = polish
+            ? new Dictionary<string, string> { ["Incident"] = "Incydent", ["Expired"] = "Wygasło", ["Warning"] = "Ostrzeżenie", ["Running"] = "W toku", ["Planned"] = "Zaplanowane", ["Done"] = "Zakończone" }
+            : new Dictionary<string, string> { ["Incident"] = "Störung", ["Expired"] = "Abgelaufen", ["Warning"] = "Warnung", ["Running"] = "Läuft", ["Planned"] = "Geplant", ["Done"] = "Erledigt" };
+        foreach (var row in grid.Rows) {
+            if (row.Cells.TryGetValue("status", out var cell) && cell?.Value is string value && statuses.TryGetValue(value, out var text)) row.Cells["status"] = new CanopyCell(value) { Text = text };
         }
     }
 

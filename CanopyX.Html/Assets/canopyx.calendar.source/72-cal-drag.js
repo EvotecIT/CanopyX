@@ -97,6 +97,8 @@
       if (this.calView !== "month" && !calInAllDayRow(event) && this.calScroller) {
         const slots = this.calScroller.firstChild, columns = [...this.calGrid.querySelectorAll(".cx-cal-allcell")];
         const index = columns.findIndex(item => Number(item.dataset.cxDay) === sd && (proposal.resource == null || item.dataset.cxResource === undefined || item.dataset.cxResource === proposal.resource));
+        // A resource on another page of the phone's resource columns has no column here: no ghost, the announcement names it.
+        if (index < 0) { ghost.remove(); return; }
         const top = this.calZone.parts(proposal.start).minutes - this.cal.minMinutes, length = Math.max(this.calMinSegment, (proposal.end - proposal.start) / CAL_MINUTE);
         ghost.className = "cx-cal-ghost cx-cal-ghost-block" + (drag.problem ? " cx-cal-conflict" : "");
         ghost.style.setProperty("--d", String(Math.max(0, index))); ghost.style.setProperty("--t", String(top)); ghost.style.setProperty("--h", String(length));
@@ -148,7 +150,8 @@
       moving.proposal = { start, end, resource, allDay: event.allDay };
       moving.problem = this.calCheck(event, moving.proposal);
       this.calDrawGhost(moving);
-      this.calAnnounce(this.calTimeText({ ...event, start, end, sd: this.calZone.day(start), ed: this.calZone.day(Math.max(start, end - 1)) }) + (moving.problem ? ", " + moving.problem : ""));
+      const named = resource != null && resource !== event.resource && this.calResourceName ? ", " + this.calResourceName(resource) : "";
+      this.calAnnounce(this.calTimeText({ ...event, start, end, sd: this.calZone.day(start), ed: this.calZone.day(Math.max(start, end - 1)) }) + named + (moving.problem ? ", " + moving.problem : ""));
       return true;
     },
     calStopMoving() {

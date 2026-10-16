@@ -116,8 +116,8 @@ test.describe("calendar editing", () => {
     const before = await startOf(page, record);
     await event.focus();
     await page.keyboard.press("F2");
-    // Ada works 7:00 to 15:00: twelve hours later is outside her shift.
-    for (let i = 0; i < 48; i++) await page.keyboard.press("ArrowDown");
+    // Ada works 7:00 to 15:00: twelve hours later (24 steps of the 30-minute snap) is outside her shift, on the same day.
+    for (let i = 0; i < 24; i++) await page.keyboard.press("ArrowDown");
     await expect(page.locator(".cx-cal-ghost.cx-cal-conflict")).toContainText("Outside working hours");
     await page.keyboard.press("Enter");
     await expect(page.locator(".cx-cal .cx-live")).toHaveText("Outside working hours");

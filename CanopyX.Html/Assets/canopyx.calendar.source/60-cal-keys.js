@@ -48,6 +48,8 @@
     },
     calFocusIn(event) {
       const element = event.target, eventElement = element.closest(".cx-cal-ev"), cell = element.closest("[data-cx-day]");
+      // Controls in the body (the phone's resource picker) keep the grid's tab stop where it is.
+      if (!eventElement && !cell) return;
       if (eventElement?._calEvent) this.calFocus = { day: eventElement._calEvent.sd, minutes: null, event: eventElement._calEvent.id };
       else if (cell) this.calFocus = { day: Number(cell.dataset.cxDay), minutes: cell.dataset.cxMinutes !== undefined ? Number(cell.dataset.cxMinutes) : null, event: null, resource: cell.dataset.cxResource, agendaRow: cell.dataset.cxEventRow, unit: cell.dataset.cxUnit !== undefined ? Number(cell.dataset.cxUnit) : null };
       for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) if (other !== element) other.tabIndex = -1;

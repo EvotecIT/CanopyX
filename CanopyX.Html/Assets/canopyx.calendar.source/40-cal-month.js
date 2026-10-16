@@ -52,7 +52,7 @@
       grid.appendChild(this.calWeekdayRow("cx-cal-dow"));
       const weeks = h("div", "cx-cal-weeks"); weeks.setAttribute("role", "rowgroup"); grid.appendChild(weeks);
       const weekCount = Math.round((range.lastDay - range.firstDay + 1) / 7);
-      const available = body.clientHeight - CAL_NUMBER - 4, rowHeight = this.calPhone ? 52 : Math.max(96, Math.floor(available / weekCount));
+      const available = body.clientHeight - CAL_NUMBER - 4, rowHeight = this.calPhone ? 44 : Math.max(96, Math.floor(available / weekCount));
       const fit = Math.max(1, Math.floor((rowHeight - CAL_NUMBER - 4) / CAL_LANE));
       // Print shows every event: rows grow to their lanes instead of folding into "+N more".
       const limit = this.calPrinting ? Infinity : this.calPhone ? 0 : this.cal.eventLimit === "auto" ? fit : Math.min(this.cal.eventLimit, Math.max(fit, 1));
@@ -119,8 +119,13 @@
         weeks.appendChild(row);
       }
       body.replaceChildren(grid);
-      if (this.calPhone) body.appendChild(this.calDayList(this.calFocus?.day ?? this.calDate));
       this.calGrid = grid;
+      if (this.calPhone) { const day = this.calFocus?.day ?? this.calDate; body.appendChild(this.calDayList(day)); this.calMarkListedDay(day); }
+    },
+    /** The phone month marks the day its list shows. */
+    calMarkListedDay(day) {
+      for (const cell of this.calBody.querySelectorAll(".cx-cal-day[data-cx-listed]")) cell.removeAttribute("data-cx-listed");
+      this.calBody.querySelector('.cx-cal-day[data-cx-day="' + day + '"]')?.setAttribute("data-cx-listed", "");
     },
 
     /** The phone month's list of one day's events, under the month. */
@@ -179,6 +184,7 @@
       if (this.calPhone && view === "month") {
         // The day's list under the month changes; the live region says which day and how many events it holds.
         this.calBody.querySelector(".cx-cal-daylist")?.replaceWith(this.calDayList(day));
+        this.calMarkListedDay(day);
         const count = this.calEventsOn(day).length;
         this.calAnnounce(this.calFmt.longDay(day) + ", " + (count ? calCount(this, this.calLabels.calendarEvents, count) : this.calLabels.calendarNoEvents));
       }
