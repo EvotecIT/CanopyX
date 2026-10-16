@@ -252,7 +252,7 @@ top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h)
 .cx-cal-create-h{margin:0;font-size:var(--cx-size-14px);font-weight:600;}
 .cx-cal-create-l{margin-top:var(--cx-size-4px);font-weight:600;color:var(--cx-text-2);font-size:var(--cx-size-12px);}
 .cx-cal-create-input{min-height:var(--cx-size-34px);padding:0 var(--cx-size-8px);font:inherit;color:inherit;background:var(--cx-surface);border:var(--cx-size-1px) solid var(--cx-line);border-radius:var(--cx-radius);}
-.cx-cal-create-add{background:var(--cx-accent);border-color:var(--cx-accent);color:var(--cx-on-accent);}
+.cx-cal-create .cx-btn.cx-cal-create-add{background:var(--cx-accent);border-color:var(--cx-accent);color:var(--cx-on-accent);}
 .cx-cal-create-input:focus-visible{outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-1px);}
 :is(.cx-cal-create-actions,.cx-cal-ask-actions){display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--cx-size-6px);margin-top:var(--cx-size-6px);}
 .cx-cal-ask-actions{flex-direction:column;align-items:stretch;}
