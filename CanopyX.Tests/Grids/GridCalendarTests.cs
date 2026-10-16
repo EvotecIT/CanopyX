@@ -155,7 +155,7 @@ public sealed class GridCalendarTests {
         Refused((_, calendar) => calendar.Editing = new CanopyCalendarEditing { AllowedResources = "missing" });
         Refused((_, calendar) => calendar.Editing = new CanopyCalendarEditing { AllowedResources = "load" });
         Refused((_, calendar) => { calendar.Zooms.Add(CanopyCalendarZoom.Hour); calendar.Zooms.Add(CanopyCalendarZoom.Hour); });
-        Refused((_, calendar) => calendar.Zooms.Add(CanopyCalendarZoom.Month));
+        Refused((_, calendar) => { calendar.Zooms.Add(CanopyCalendarZoom.Month); calendar.Zoom = CanopyCalendarZoom.Week; });
         Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity());
         Refused((_, calendar) => calendar.Capacity = new CanopyCalendarCapacity().Add(3, CanopyTone.Warning).Add(3, CanopyTone.Danger));
         Refused((_, calendar) => { calendar.Capacity = new CanopyCalendarCapacity(); for (var at = 1; at <= 9; at++) calendar.Capacity.Add(at, CanopyTone.Warning); });
@@ -169,6 +169,11 @@ public sealed class GridCalendarTests {
             calendar.Resources.Aggregates["missing"] = CanopyCalendarAggregate.Count;
         });
         Refused((_, calendar) => calendar.Resources = new CanopyCalendarResources(new CanopyTreeView("empty", "Empty")));
+        // The default zoom left out of the zooms means their first, as the browser reads it: no zoom is written.
+        var monthly = Grid();
+        monthly.Calendar = new CanopyCalendar("starts");
+        monthly.Calendar.Zooms.Add(CanopyCalendarZoom.Month);
+        Assert.Equal("{\"start\":\"starts\",\"zooms\":[\"month\"]}", Calendar(monthly));
         // A typed builder's calendar has no start until one is set.
         var typed = new CanopyDataGridView<string>("typed", "Typed", item => item);
         typed.Column(item => item.Length);

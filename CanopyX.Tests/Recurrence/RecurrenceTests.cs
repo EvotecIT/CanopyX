@@ -92,10 +92,22 @@ public sealed class RecurrenceTests {
     [InlineData("FREQ=DAILY;UNTIL=tomorrow")]
     [InlineData("FREQ=DAILY;")]
     [InlineData("FREQ=DAILY;COUNT")]
+    [InlineData("FREQ=MONTHLY;BYDAY=001MO")]
+    [InlineData("FREQ=MONTHLY;BYDAY=-001FR")]
     public void Parse_RefusesTextOutsideTheSubset(string text) {
         Assert.Throws<FormatException>(() => CanopyRecurrence.Parse(text));
         Assert.False(CanopyRecurrence.TryParse(text, out var rule));
         Assert.Null(rule);
+    }
+
+    [Fact]
+    public void Parse_ReadsRulesUpTo1024Characters_AndKeepsTheTextOutOfItsMessage() {
+        var padded = "FREQ=DAILY" + new string(' ', 1024 - 10);
+        Assert.Equal(1024, padded.Length);
+        Assert.Equal("FREQ=DAILY", CanopyRecurrence.Parse(padded).ToString());
+        Assert.False(CanopyRecurrence.TryParse(padded + " ", out _));
+        var error = Assert.Throws<FormatException>(() => CanopyRecurrence.Parse("FREQ=HOURLY;X-SECRET=<script>"));
+        Assert.DoesNotContain("<script>", error.Message);
     }
 
     [Fact]
@@ -162,6 +174,22 @@ public sealed class RecurrenceTests {
         Assert.Equal("6 7 8 9 10", Days("2026-10-05T09:00:00"));
         Assert.Throws<FormatException>(() => rule.Occurrences(start, utc, exceptions: "next tuesday"));
         Assert.Throws<FormatException>(() => rule.Occurrences(start, utc, exceptions: "2026-13-01"));
+        // Semicolons separate as commas and white space do; a series takes at most 1,000 exceptions.
+        Assert.Equal("5 8 10", Days("2026-10-06;2026-10-07T09:00;2026-10-09T09:00:00.0000000"));
+        Assert.Equal("5 6 7 8 9 10", Days(string.Join(";", Enumerable.Repeat("2026-01-01", 1000))));
+        Assert.Throws<FormatException>(() => rule.Occurrences(start, utc, exceptions: string.Join(";", Enumerable.Repeat("2026-01-01", 1001))).ToList());
+    }
+
+    [Fact]
+    public void Occurrences_UntilBeforeTheStart_HaveNone_AndRangesAtTheCalendarsEdgesDoNotOverflow() {
+        var utc = TimeZoneInfo.Utc;
+        Assert.Empty(CanopyRecurrence.Daily().Until(new DateTime(2026, 10, 1)).Occurrences(new DateTime(2026, 10, 5, 9, 0, 0), utc));
+        Assert.Empty(CanopyRecurrence.Daily().Until(new DateTimeOffset(2026, 10, 5, 8, 0, 0, TimeSpan.Zero)).Occurrences(new DateTime(2026, 10, 5, 9, 0, 0), utc));
+        Assert.Equal(3, CanopyRecurrence.Yearly().Times(3).Occurrences(new DateTime(2026, 1, 1), utc, DateTimeOffset.MinValue, DateTimeOffset.MaxValue).Count());
+        Assert.Equal(2, CanopyRecurrence.Daily().Occurrences(new DateTime(9999, 12, 30), utc, to: DateTimeOffset.MaxValue).Count());
+        // COUNT stops the walk at its last occurrence, and the start skips counted dates far before the range.
+        Assert.Single(CanopyRecurrence.Yearly().InMonths(2).OnMonthDays(29).Times(2).Occurrences(new DateTime(2024, 2, 29), utc, new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero)));
+        Assert.Equal(new[] { 2026 }, CanopyRecurrence.Daily().Times(3000).Occurrences(new DateTime(2020, 1, 1), utc, new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero)).Select(item => item.Year));
     }
 
     [Fact]

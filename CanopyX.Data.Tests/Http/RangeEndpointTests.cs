@@ -128,7 +128,8 @@ public sealed class RangeEndpointTests : IAsyncLifetime {
     public void Script_WiresTheRangeHookForViewsWithAFilterableDateColumn() {
         var script = CanopyRemoteScript.Script(Schedule.Map().Schema, "/api/open/");
         Assert.Contains("\"range\":true", script);
-        Assert.Contains("if (settings.range) source.range = (request, options) => post(\"/range\", request, options.signal).then(response => response.json());", script);
+        // An endpoint whose provider answers "unsupported" drops the method, so the calendar reads periods through queries.
+        Assert.Contains("if (settings.range) source.range = (request, options) => post(\"/range\", request, options.signal).then(response => response.json()).catch(error => { if (error.code === \"unsupported\") delete source.range; throw error; });", script);
         var view = new CanopyDataGridView("names", "Names");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Contains("\"range\":false", CanopyRemoteScript.Script(new CanopyDataSchema(view), "/api/names"));

@@ -662,6 +662,37 @@ void facetSaved;
 // @ts-expect-error A facet is a list or a range.
 const badFacet: GridFacetPanelDefinition = { columns: [{ column: "region", kind: "chart" }] };
 void badFacet;
+// The calendar (docs/calendar.md): a definition in the view, resources, the template hook, the API, range sources and state.
+import type { GridCalendarDefinition, GridCalendarState, GridCalendarEvent, GridRangeQuery, GridRangePage, GridOccurrenceChange } from "@evotecit/canopyx/grid";
+type ShiftRow = { id: string; cells: { title: string; starts: string; ends: string | null; host: string; rule: string | null } };
+const shiftCalendar: GridCalendarDefinition<ShiftRow> = { start: "starts", end: "ends", title: "title", resource: "host", recurrence: "rule", view: "week",
+  views: ["month", "week", "day", "days", "agenda", "year", "timeline"], days: 4, firstDay: 1, hiddenDays: [0, 6], slotMinutes: 15, minTime: "06:00", maxTime: "22:00",
+  workingHours: { start: "08:00", end: "17:00" }, eventLimit: "auto", eventStyle: "strong", timeZone: "Europe/Warsaw", zoom: "day", zooms: ["hour", "day", "week"],
+  editable: { move: true, resize: true, overlap: false, snapMinutes: 15, commit: "manual" }, capacity: { thresholds: [{ at: 3, tone: "warning" }] },
+  ranges: [{ start: "2026-10-26T00:00:00Z", end: "2026-10-31T00:00:00Z", label: "Freeze", kind: "background" }], availability: [{ resource: "h1", start: "07:00", end: "15:00" }],
+  resources: { view: { protocol: "canopyx/2", type: "view", id: "hosts", label: "Hosts", rowHeight: 34, pageSize: 200, selection: "single", columns: [{ id: "name", title: "Host", width: 150, kind: "text" }], source: { kind: "inline" }, roots: [{ id: "h1", label: "h1" }] },
+    aggregates: { name: "count" } } };
+const calendarGrid = createDataGrid<ShiftRow>(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "shifts", label: "Shifts", pageSize: 100, selection: "single", search: true, source: { kind: "inline" },
+    columns: [{ id: "title", title: "Title", kind: "text" }, { id: "starts", title: "Starts", kind: "datetime" }, { id: "ends", title: "Ends", kind: "datetime" },
+      { id: "host", title: "Host", kind: "text" }, { id: "rule", title: "Rule", kind: "text" }], rows: [], calendar: shiftCalendar },
+  calendar: { render: ({ event, element }) => { element.textContent = event.title; return true; } },
+  onCalendar: (state: GridCalendarState) => void state.view, onOccurrenceChange: (change: GridOccurrenceChange) => change.start !== change.end });
+void calendarGrid.setCalendarView("timeline").then(state => state.zoom);
+void calendarGrid.setCalendarDate("2026-10-16"); void calendarGrid.calendarStep(-1); void calendarGrid.setCalendarZoom("hour");
+void calendarGrid.exportCalendar({ scope: "visible" }).then(file => file.text.startsWith("BEGIN:VCALENDAR"));
+void Promise.resolve(calendarGrid.getCalendarEvents()).then((events: readonly GridCalendarEvent[]) => events[0]?.record);
+const calendarSaved = calendarGrid.getState().calendar?.view;
+void calendarSaved;
+const rangeSource = { query: () => { throw new Error("unused"); }, range: (request: GridRangeQuery): GridRangePage<ShiftRow> =>
+  ({ protocol: "canopyx/2", type: "gridRangePage", view: request.view, revision: "r1", from: request.from, to: request.to, matched: 0, truncated: false, items: [] }) };
+void rangeSource;
+// @ts-expect-error A calendar names its start column.
+const badCalendar: GridCalendarDefinition<ShiftRow> = { end: "ends" };
+void badCalendar;
+// @ts-expect-error Calendar columns are the row type's columns.
+const wrongColumn: GridCalendarDefinition<ShiftRow> = { start: "opened" };
+void wrongColumn;
 // Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
 ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });

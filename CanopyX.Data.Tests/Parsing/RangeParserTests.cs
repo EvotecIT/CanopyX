@@ -200,6 +200,36 @@ public sealed class RangeParserTests {
         Assert.Equal(DateTimeKind.Utc, local.From.Kind);
     }
 
+    [Fact]
+    public void RangeRequest_CodeBuilt_KeepsTheWireBoundsForLimitViewAndResources() {
+        var query = new CanopyDataRequest(Schema);
+        var starts = Schema.GetColumn("starts");
+        var host = Schema.GetColumn("host");
+        DateTime from = Schedule.Epoch, to = Schedule.Epoch.AddDays(1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRangeRequest(query, from, to, starts, limit: 10001));
+        Assert.Equal(10000, new CanopyRangeRequest(query, from, to, starts, limit: 10000).Limit);
+        Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, calendarView: "fortnight"));
+        Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, calendarView: "Month"));
+        Assert.Equal("timeline", new CanopyRangeRequest(query, from, to, starts, calendarView: "timeline").CalendarView);
+        Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, resource: host, resources: new[] { new string('h', 4097) }));
+        Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, resource: host, resources: new[] { "host-\uD800" }));
+        Assert.Throws<ArgumentException>(() => new CanopyRangeRequest(query, from, to, starts, resource: host, resources: Enumerable.Range(0, 1001).Select(i => "host-" + i)));
+        Assert.Equal(1000, new CanopyRangeRequest(query, from, to, starts, resource: host, resources: Enumerable.Range(0, 1000).Select(i => "host-" + i)).Resources!.Count);
+        Assert.Single(new CanopyRangeRequest(query, from, to, starts, resource: host, resources: new[] { new string('h', 4096) }).Resources!);
+    }
+
+    [Fact]
+    public async Task RangeAsync_CodeBuiltRequest_IsClampedToTheEndpointLimit() {
+        var options = new CanopyRemoteOptions();
+        options.Limits.MaxRangeRows = 3;
+        var slots = Schedule.Slots(300);
+        var request = new CanopyRangeRequest(new CanopyDataRequest(Schema), Schedule.Epoch.AddDays(-20), Schedule.Epoch.AddDays(20), Schema.GetColumn("starts"), limit: 40);
+        using var page = System.Text.Json.JsonDocument.Parse(await Schedule.Reference(Schema, slots, options).RangeAsync(request));
+        Assert.Equal(3, page.RootElement.GetProperty("items").GetArrayLength());
+        Assert.True(page.RootElement.GetProperty("truncated").GetBoolean());
+        Assert.Equal(await Schedule.Linq(Map, slots, options).RangeAsync(request), await Schedule.Reference(Schema, slots, options).RangeAsync(request));
+    }
+
     private class PlainProvider : ICanopyDataProvider {
         public ValueTask<string> GetRevisionAsync(CancellationToken cancellationToken) => new ValueTask<string>("r1");
         public ValueTask<CanopyPageResult> QueryAsync(CanopyDataRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
