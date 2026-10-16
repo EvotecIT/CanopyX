@@ -121,7 +121,7 @@
       this.calGrid = grid;
       if (cal.now) this.calTick();
       // The header leaves room for the slots' scrollbar, so the day columns line up.
-      head.style.paddingRight = Math.max(0, scroller.offsetWidth - scroller.clientWidth) + "px";
+      head.style.paddingInlineEnd = Math.max(0, scroller.offsetWidth - scroller.clientWidth) + "px";
       if (!this.calScrolled || this.calScrolledView !== this.calView) {
         this.calScrolled = true; this.calScrolledView = this.calView;
         // scrollTime first; today's now line comes into view when it would sit below the first screen.
@@ -192,7 +192,7 @@
         add(at, 1440, "cx-cal-off");
       }
       const zone = this.calZone, dayStart = zone.start(column.day), dayEnd = zone.start(column.day + 1);
-      for (const range of this.calBackgroundsOn(column.day, column.resource ?? undefined)) {
+      for (const range of this.calBackgroundsOn(column.day, column.resource ?? undefined, true)) {
         const from = range.start <= dayStart ? 0 : zone.parts(range.start).minutes, to = range.end >= dayEnd ? 1440 : zone.parts(range.end).minutes;
         add(from, to, range.kind === "unavailable" ? "cx-cal-unavailable" : "cx-cal-bgrange", range.label, range.kind === "unavailable" ? null : range.tone);
       }

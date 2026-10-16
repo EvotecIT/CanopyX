@@ -8,6 +8,9 @@
       if (this.tl) return;
       const resources = this.cal.resources;
       this.tl = { names: new Map(), parent: new Map(), children: new Map(), order: [], learned: new Set(), stats: null, heat: new Map() };
+      // Without resources the timeline's rows are its events packed by overlap, and there is no resource pane.
+      this.tlSolo = !resources;
+      if (this.tlSolo) { this.tlInline = true; return; }
       const inline = !resources.view.source || resources.view.source.kind === "inline";
       if (inline) this.tlLearnNodes(resources.view.roots || [], null);
       this.tlInline = inline;
@@ -42,13 +45,14 @@
     },
     /** The resource before (-1) or after (1) another, in the tree's visible order, for the keyboard move mode. */
     calResourceStep(resource, sign) {
+      if (this.tlSolo) return resource;
       const rows = this.tlTree ? this.tlTree.rows.filter(row => !row.status && !this.tl.children.has(row.key)).map(row => row.key) : this.tl.order.filter(id => !this.tl.children.has(id));
       const at = rows.indexOf(resource);
       return rows[Math.max(0, Math.min(rows.length - 1, (at < 0 ? 0 : at) + sign))] ?? resource;
     },
     /** The visible leaf resources of a hosted timeline, which its range requests name. */
     calResourceWindow() {
-      if (this.calView !== "timeline" || this.view.source.kind === "inline" && !this.opts.source) return null;
+      if (this.calView !== "timeline" || this.tlSolo || this.view.source.kind === "inline" && !this.opts.source) return null;
       // The first load comes before the first paint: the tree is built now, so even that load names only the resources in view,
       // and before the lanes have a height the rows of a tall screen stand in for the visible ones.
       this.tlEnsure();
@@ -76,10 +80,11 @@
       return this.tlTree.ready?.catch(() => { });
     },
 
-    calTimelineRange(date) { return tlSpan(this.calZoom, date, this.cal.firstDay); },
-    calTimelineStep(date, direction) { return tlStep(this.calZoom, date, direction); },
+    calTimelineRange(date) { return this.cal.span ? tlCustomSpan(this.cal.span, date, this.cal.firstDay) : tlSpan(this.calZoom, date, this.cal.firstDay); },
+    calTimelineStep(date, direction) { return this.cal.span ? tlCustomStep(this.cal.span, date, direction) : tlStep(this.calZoom, date, direction); },
     calTimelineTitle() {
       const range = this.calRange, fmt = this.calFmt;
+      if (this.cal.span) return range.firstDay === range.lastDay ? fmt.longDay(range.firstDay) : fmt.dayRange(range.firstDay, range.lastDay);
       if (this.calZoom === "hour") return fmt.longDay(range.firstDay);
       if (this.calZoom === "day") return fmt.monthTitle(range.firstDay);
       if (this.calZoom === "week") return fmt.monthRange(range.firstDay, range.lastDay);
@@ -90,13 +95,22 @@
     /** Builds the timeline once: the tree host on the left, the time header and lanes on the right. */
     tlEnsure() {
       if (this.tlRoot) return;
-      const resources = this.cal.resources, root = this.tlRoot = h("div", "cx-tl"), side = h("div", "cx-tl-side"), host = this.tlTreeHost = h("div", "cx-tl-tree");
-      root.style.setProperty("--cx-tl-side", resources.width + "px");
+      const resources = this.cal.resources, root = this.tlRoot = h("div", "cx-tl" + (this.tlSolo ? " cx-tl-solo" : "")), side = h("div", "cx-tl-side"), host = this.tlTreeHost = h("div", "cx-tl-tree");
       const main = this.tlMain = h("div", "cx-tl-main"), head = this.tlHead = h("div", "cx-tl-head"), canvas = this.tlCanvas = h("div", "cx-tl-canvas");
       head.setAttribute("aria-hidden", "true");
       const upper = this.tlUpper = h("div", "cx-tl-hrow cx-tl-upper"), lower = this.tlLower = h("div", "cx-tl-hrow cx-tl-lower");
       head.append(upper, lower);
       canvas.setAttribute("role", "grid"); canvas.setAttribute("aria-labelledby", this.calTitle.id); canvas.setAttribute("aria-readonly", String(!this.cal.editable));
+      if (this.tlSolo) {
+        // The rows are lanes of packed events, kept in a small stand-in for the tree (tlIndexEvents fills it).
+        root.append(main); main.append(head, canvas);
+        const signal = this.lifetime.signal;
+        this.tlTree = { rows: [], tops: [0], rowH: this.rowH || 34, version: 0, destroyed: false, ready: Promise.resolve(), grid: side,
+          scheduleRender: () => this.tlScheduleLanes(), setState: () => Promise.resolve(), destroy() { this.destroyed = true; } };
+        main.addEventListener("scroll", () => this.tlScheduleLanes(), { passive: true, signal });
+        return;
+      }
+      root.style.setProperty("--cx-tl-side", resources.width + "px");
       main.append(head, canvas); side.appendChild(host); root.append(side, main);
       host.setAttribute("data-cx-theme", this.host.getAttribute("data-cx-theme") || "auto");
       const aggregates = resources.aggregates, renderers = {};
@@ -174,7 +188,7 @@
       this.tlCanvas.style.width = axis.total + "px"; this.tlHead.style.width = axis.total + "px";
       // The larger periods keep their names in view while the axis scrolls under them (a sticky label inside each cell).
       const header = tlHeader(this, axis), paint = (row, cells, cls) => {
-        row.replaceChildren(...cells.map(cell => { const element = h("div", cls + (cell.weekend ? " cx-tl-weekend" : "")), text = h("span", "cx-tl-hlabel"); element.style.left = cell.x + "px"; element.style.width = cell.width + "px"; setText(text, cell.text); element.appendChild(text); element.title = cell.label; return element; }));
+        row.replaceChildren(...cells.map(cell => { const element = h("div", cls + (cell.weekend ? " cx-tl-weekend" : "")), text = h("span", "cx-tl-hlabel"); element.style.insetInlineStart = cell.x + "px"; element.style.width = cell.width + "px"; setText(text, cell.text); element.appendChild(text); element.title = cell.label; return element; }));
       };
       paint(this.tlUpper, header.upper, "cx-tl-hcell cx-tl-hupper"); paint(this.tlLower, header.lower, "cx-tl-hcell");
       this.tlHeader = header;
@@ -182,15 +196,18 @@
       if (this.tlScrolledFor !== this.calZoom + ":" + span.firstDay) {
         this.tlScrolledFor = this.calZoom + ":" + span.firstDay;
         const now = Date.now(), target = now >= axis.from && now < axis.to ? axis.x(now) - this.tlMain.clientWidth / 3 : 0;
-        this.tlMain.scrollLeft = Math.max(0, target);
+        this.tlScrollTo(Math.max(0, target));
       }
       this.tlTree.version++; this.tlTree.scheduleRender();
       this.tlPaintLanes();
     },
-    calTimelineScroll() { return this.tlMain ? { timeline: true, top: this.tlMain.scrollTop, left: this.tlMain.scrollLeft, view: "timeline", date: this.calDate, zoom: this.calZoom } : null; },
+    /** The axis position at the scroller's start edge, and scrolling to one (right to left scrolls with negative positions). */
+    tlScrollX() { return Math.abs(this.tlMain.scrollLeft); },
+    tlScrollTo(x) { this.tlMain.scrollLeft = this.calRtl ? -x : x; },
+    calTimelineScroll() { return this.tlMain ? { timeline: true, top: this.tlMain.scrollTop, left: this.tlScrollX(), view: "timeline", date: this.calDate, zoom: this.calZoom } : null; },
     calRestoreTimelineScroll(state) {
       if (state.zoom !== this.calZoom || state.date !== this.calDate) return false;
-      this.tlMain.scrollTop = state.top; this.tlMain.scrollLeft = state.left;
+      this.tlMain.scrollTop = state.top; this.tlScrollTo(state.left);
       return true;
     }
   });

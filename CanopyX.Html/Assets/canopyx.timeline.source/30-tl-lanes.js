@@ -9,6 +9,7 @@
     /** Events by resource, sorted by start, with their sub-rows; background events apart. */
     tlIndexEvents() {
       const byResource = new Map(), backgrounds = new Map();
+      if (this.tlSolo) return this.tlIndexSolo(backgrounds);
       for (const event of this.calEvents) {
         const target = event.background ? backgrounds : byResource, key = event.resource ?? "";
         if (!target.has(key)) target.set(key, []);
@@ -24,6 +25,26 @@
         }
         list.lanes = Math.max(1, ends.length);
       }
+      this.tl.stats = null;
+      return { byResource, backgrounds };
+    },
+    /** Without resources: each row is a lane of events that do not overlap, filled first come first served. */
+    tlIndexSolo(backgrounds) {
+      const byResource = new Map(), ends = [], tree = this.tlTree, events = this.calEvents.filter(event => !event.background).sort((a, b) => a.start - b.start || b.end - a.end);
+      for (const event of this.calEvents) if (event.background) { if (!backgrounds.has("")) backgrounds.set("", []); backgrounds.get("").push(event); }
+      for (const event of events) {
+        let lane = ends.findIndex(end => end <= event.start);
+        if (lane < 0) { lane = ends.length; ends.push(0); }
+        ends[lane] = Math.max(event.end, event.start + 1);
+        const key = "lane-" + lane; event.tlLane = 0; event.tlRow = key;
+        if (!byResource.has(key)) { const list = []; list.lanes = 1; byResource.set(key, list); }
+        byResource.get(key).push(event);
+      }
+      const count = Math.max(1, ends.length);
+      tree.rows = Array.from({ length: count }, (_, index) => ({ key: "lane-" + index, level: 1, status: null, h: { label: String(index + 1) } }));
+      tree.tops = Array.from({ length: count + 1 }, (_, index) => index * tree.rowH);
+      for (const row of tree.rows) this.tl.names.set(row.key, row.h.label);
+      tree.version++;
       this.tl.stats = null;
       return { byResource, backgrounds };
     },
@@ -43,8 +64,8 @@
       if (!tree || !axis || this.calView !== "timeline" || !canvas.isConnected) return;
       const rows = tree.rows, tops = tree.tops, total = tops[rows.length] || 0, main = this.tlMain;
       canvas.style.height = total + "px"; canvas.setAttribute("aria-rowcount", String(rows.length));
-      const visible = this.tlVisibleRows(3), bucket = Math.floor(main.scrollLeft / TL_MARGIN), left = (bucket - 1) * TL_MARGIN, right = (bucket + 2) * TL_MARGIN + main.clientWidth;
-      const lanes = this.tlLanes ||= new Map(), keep = new Set(), signature = [this.calEpoch, this.calVersion, axis.zoom, axis.from, bucket, this.linkHighlight?.size || 0, this.calSelection?.resource ?? ""].join("|");
+      const visible = this.tlVisibleRows(3), bucket = Math.floor(this.tlScrollX() / TL_MARGIN), left = (bucket - 1) * TL_MARGIN, right = (bucket + 2) * TL_MARGIN + main.clientWidth;
+      const lanes = this.tlLanes ||= new Map(), keep = new Set(), signature = [this.calEpoch, this.calVersion, this.calSourceVersion || 0, axis.zoom, axis.from, bucket, this.linkHighlight?.size || 0, this.calSelection?.resource ?? ""].join("|");
       for (let i = visible.first; i <= visible.last; i++) {
         const row = rows[i], key = row.status ? "status:" + i : row.key;
         keep.add(key);
@@ -76,7 +97,7 @@
         if (unit.x + axis.width <= left || unit.x > right) return;
         const cell = h("div", "cx-tl-cell"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1;
         cell.dataset.cxDay = String(unit.first); cell.dataset.cxUnit = String(index); cell.dataset.cxResource = id;
-        cell.style.left = unit.x + "px"; cell.style.width = axis.width + "px";
+        cell.style.insetInlineStart = unit.x + "px"; cell.style.width = axis.width + "px";
         cell.setAttribute("aria-label", name + ", " + this.tlUnitLabel(unit));
         cells.push(cell); lane.appendChild(cell);
       });
@@ -96,8 +117,8 @@
         const span = x2 - x1, point = event.marker || span < 1;
         const element = this.calEventElement(event, "lane"), slot = Math.min(event.tlLane, stack - 1), room = nextInRow.get(event) === undefined ? Infinity : axis.x(nextInRow.get(event)) - x1 - 1, width = point ? 0 : Math.max(Math.min(span, 2), Math.min(Math.max(TL_MIN_BAR, span), room));
         const unit = Math.max(firstVisible, axis.unitOf(event.start)), cell = cells.find(item => Number(item.dataset.cxUnit) === unit) || cells[0];
-        const offset = cell ? Number.parseFloat(cell.style.left) : 0;
-        element.style.left = (x1 - offset) + "px"; element.style.width = width + "px"; element.style.top = (3 + slot * (inner / stack)) + "px"; element.style.height = bar + "px";
+        const offset = cell ? Number.parseFloat(cell.style.insetInlineStart) : 0;
+        element.style.insetInlineStart = (x1 - offset) + "px"; element.style.width = width + "px"; element.style.top = (3 + slot * (inner / stack)) + "px"; element.style.height = bar + "px";
         if (bar < 16) element.classList.add("cx-tl-thin");
         if (point) element.classList.add("cx-tl-point");
         // Bars too narrow to read as a filled shape with an edge are solid.
@@ -121,13 +142,14 @@
         const x1 = axis.x(start), x2 = axis.x(end);
         if (x2 <= x1 || x2 < left || x1 > right) return;
         const block = h("div", "cx-tl-shade " + cls); block.setAttribute("aria-hidden", "true");
-        block.style.left = x1 + "px"; block.style.width = (x2 - x1) + "px";
+        block.style.insetInlineStart = x1 + "px"; block.style.width = (x2 - x1) + "px";
         if (tone) block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-tone-info))");
         if (label && x2 - x1 > 60) { const text = h("span"); setText(text, label); block.appendChild(text); }
         lane.appendChild(block);
       };
-      if (axis.zoom === "hour") {
-        const day = axis.units[0].first, hours = this.calHoursFor(id, calDow(day)) ?? (this.cal.working ? (this.cal.working.days.has(calDow(day)) ? [this.cal.working] : []) : null);
+      // Business hours shade each day the hour zoom shows (a custom span shows several).
+      if (axis.zoom === "hour") for (let day = axis.units[0].first; day <= axis.units[axis.units.length - 1].last; day++) {
+        const hours = this.calHoursFor(id, calDow(day)) ?? (this.cal.working ? (this.cal.working.days.has(calDow(day)) ? [this.cal.working] : []) : null);
         if (hours) { let at = 0; for (const span of hours.slice().sort((a, b) => a.start - b.start)) { add(this.calZone.instant(day, at), this.calZone.instant(day, span.start), "cx-tl-off"); at = Math.max(at, span.end); } add(this.calZone.instant(day, at), this.calZone.instant(day, 1440), "cx-tl-off"); }
       }
       for (const range of this.calRanges) if (range.resource === id) add(range.start, range.end, range.kind === "unavailable" ? "cx-tl-unavailable" : "cx-tl-bg", range.label, range.kind === "unavailable" ? null : range.tone);
@@ -138,22 +160,22 @@
       const axis = this.tlAxis, layer = this.tlLayer ||= h("div", "cx-tl-layer");
       layer.setAttribute("aria-hidden", "true"); layer.style.height = total + "px";
       const blocks = [];
-      for (const cell of this.tlHeader.lower) if (cell.weekend && cell.x + cell.width >= left && cell.x <= right) { const block = h("div", "cx-tl-weekend-col"); block.style.left = cell.x + "px"; block.style.width = cell.width + "px"; blocks.push(block); }
+      for (const cell of this.tlHeader.lower) if (cell.weekend && cell.x + cell.width >= left && cell.x <= right) { const block = h("div", "cx-tl-weekend-col"); block.style.insetInlineStart = cell.x + "px"; block.style.width = cell.width + "px"; blocks.push(block); }
       const global = [...this.calRanges.filter(range => range.resource == null), ...(this.tlIndex.backgrounds.get("") || []).map(event => ({ start: event.start, end: event.end, label: event.title, tone: event.tone || "info", kind: "background" }))];
       for (const range of global) {
         const x1 = axis.x(range.start), x2 = axis.x(range.end);
         if (x2 <= x1 || x2 < left || x1 > right) continue;
-        const block = h("div", "cx-tl-range" + (range.kind === "unavailable" ? " cx-tl-unavailable" : "")); block.style.left = x1 + "px"; block.style.width = (x2 - x1) + "px";
+        const block = h("div", "cx-tl-range" + (range.kind === "unavailable" ? " cx-tl-unavailable" : "")); block.style.insetInlineStart = x1 + "px"; block.style.width = (x2 - x1) + "px";
         if (range.kind !== "unavailable") block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + range.tone + ",var(--cx-tone-info))");
         block.title = range.label; blocks.push(block);
       }
       const now = Date.now();
-      if (this.cal.now && now >= axis.from && now < axis.to) { const line = h("div", "cx-tl-now"); line.style.left = axis.x(now) + "px"; line.title = this.calLabels.calendarNow + " " + this.calFmt.time(now); blocks.push(line); }
+      if (this.cal.now && now >= axis.from && now < axis.to) { const line = h("div", "cx-tl-now"); line.style.insetInlineStart = axis.x(now) + "px"; line.title = this.calLabels.calendarNow + " " + this.calFmt.time(now); blocks.push(line); }
       layer.replaceChildren(...blocks);
       if (layer.parentNode !== this.tlCanvas) this.tlCanvas.prepend(layer);
       // Ranges for every resource are named in a third header row, which the tree's header matches in height.
       const labels = this.tlRangeLabels ||= h("div", "cx-tl-range-labels"), named = global.filter(range => axis.x(range.end) - axis.x(range.start) > 50);
-      labels.replaceChildren(...named.map(range => { const label = h("span", "cx-tl-range-label"); label.style.left = axis.x(range.start) + "px"; label.style.width = (axis.x(range.end) - axis.x(range.start)) + "px"; setText(label, range.label); label.title = range.label; return label; }));
+      labels.replaceChildren(...named.map(range => { const label = h("span", "cx-tl-range-label"); label.style.insetInlineStart = axis.x(range.start) + "px"; label.style.width = (axis.x(range.end) - axis.x(range.start)) + "px"; setText(label, range.label); label.title = range.label; return label; }));
       if (labels.parentNode !== this.tlHead) this.tlHead.appendChild(labels);
       if (this.tlHead.classList.contains("cx-tl-has-ranges") !== named.length > 0) {
         this.tlHead.classList.toggle("cx-tl-has-ranges", named.length > 0);
@@ -161,7 +183,7 @@
         this.tlTree.scheduleRender();
       }
     },
-    calTickTimeline() { if (this.calView === "timeline") this.tlPaintCanvas(this.tlMain.scrollLeft - TL_MARGIN, this.tlMain.scrollLeft + this.tlMain.clientWidth + TL_MARGIN, this.tlTree.tops[this.tlTree.rows.length] || 0); },
+    calTickTimeline() { if (this.calView === "timeline") this.tlPaintCanvas(this.tlScrollX() - TL_MARGIN, this.tlScrollX() + this.tlMain.clientWidth + TL_MARGIN, this.tlTree.tops[this.tlTree.rows.length] || 0); },
 
     /** A group's capacity: per unit, the most events at once among its resources, toned by the thresholds. */
     tlPaintHeat(lane, id, left, right) {
@@ -170,7 +192,7 @@
         const unit = axis.units[index];
         if (!value || unit.x + axis.width < left || unit.x > right) return;
         const block = h("div", "cx-tl-heat"), tone = thresholds.reduce((found, item) => value >= item.at ? item.tone : found, null);
-        block.style.left = unit.x + "px"; block.style.width = axis.width + "px";
+        block.style.insetInlineStart = unit.x + "px"; block.style.width = axis.width + "px";
         block.style.setProperty("--cx-heat", String(Math.min(1, value / most)));
         if (tone) { block.dataset.cxTone = tone; block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-accent))"); }
         block.setAttribute("aria-hidden", "true"); block.title = fill(this.calLabels.calendarCapacityAt, { count: numberFormat(this.lang).format(value) });

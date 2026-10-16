@@ -12,24 +12,24 @@
       const axis = this.tlAxis, tree = this.tlTree, view = this.tlPrintView = h("div", "cx-tl-print"), share = time => (axis.x(time) / axis.total * 100) + "%";
       view.setAttribute("aria-hidden", "true");
       const head = h("div", "cx-tl-print-row cx-tl-print-head"), corner = h("div", "cx-tl-print-name"), scale = h("div", "cx-tl-print-lane");
-      setText(corner, this.cal.resources.label || this.calLabels.calendarResources);
+      setText(corner, this.tlSolo ? "" : this.cal.resources?.label || this.calLabels.calendarResources);
       for (const cell of this.tlHeader.lower) {
-        const mark = h("span", "cx-tl-print-unit"); mark.style.left = (cell.x / axis.total * 100) + "%"; mark.style.width = (cell.width / axis.total * 100) + "%";
+        const mark = h("span", "cx-tl-print-unit"); mark.style.insetInlineStart = (cell.x / axis.total * 100) + "%"; mark.style.width = (cell.width / axis.total * 100) + "%";
         setText(mark, cell.text); scale.appendChild(mark);
       }
       head.append(corner, scale); view.appendChild(head);
       for (const row of tree.rows.filter(item => !item.status).slice(0, TL_PRINT_ROWS)) {
         const line = h("div", "cx-tl-print-row"), name = h("div", "cx-tl-print-name"), lane = h("div", "cx-tl-print-lane"), group = this.tl.children.has(row.key);
-        name.style.paddingLeft = (4 + (row.level - 1) * 12) + "px"; setText(name, this.calResourceName(row.key));
+        name.style.paddingInlineStart = (4 + (row.level - 1) * 12) + "px"; setText(name, this.tlSolo ? "" : this.calResourceName(row.key));
         if (group) {
           line.classList.add("cx-tl-print-group");
           this.tlHeat(row.key).forEach((value, index) => { if (!value) return; const unit = axis.units[index], mark = h("span", "cx-tl-print-heat");
-            mark.style.left = (unit.x / axis.total * 100) + "%"; mark.style.width = (axis.width / axis.total * 100) + "%"; setText(mark, String(value)); lane.appendChild(mark); });
+            mark.style.insetInlineStart = (unit.x / axis.total * 100) + "%"; mark.style.width = (axis.width / axis.total * 100) + "%"; setText(mark, String(value)); lane.appendChild(mark); });
         } else for (const event of this.tlIndex.byResource.get(row.key) || []) {
           if (event.end <= axis.from || event.start >= axis.to) continue;
           const bar = h("span", "cx-tl-print-bar");
           const from = Math.max(event.start, axis.from), to = Math.min(event.end, axis.to), pixels = (axis.x(to) - axis.x(from)) / axis.total * TL_PRINT_LANE;
-          bar.style.left = share(from); bar.style.width = "max(6px, calc(" + share(to) + " - " + share(from) + "))";
+          bar.style.insetInlineStart = share(from); bar.style.width = "max(6px, calc(" + share(to) + " - " + share(from) + "))";
           if (event.tone) bar.style.setProperty("--cx-ev", "var(--cx-tone-" + event.tone + ",var(--cx-accent))");
           // A short bar is solid; a title is printed only where it fits whole.
           if (pixels < 16) bar.classList.add("cx-tl-print-tiny");

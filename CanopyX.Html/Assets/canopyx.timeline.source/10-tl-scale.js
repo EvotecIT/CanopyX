@@ -21,6 +21,15 @@
     if (zoom === "month") return { firstDay: calDayNumber(parts.y, 1, 1), lastDay: calDayNumber(parts.y + 1, 1, 1) - 1 };
     return { firstDay: calDayNumber(parts.y, 1, 1), lastDay: calDayNumber(parts.y + 3, 1, 1) - 1 };
   }
+  /** A custom span (span: { count, unit }) from a date: days from it, whole weeks or whole months around it. */
+  function tlCustomSpan(span, date, firstDay) {
+    if (span.unit === "day") return { firstDay: date, lastDay: date + span.count - 1 };
+    if (span.unit === "week") { const first = calWeekStart(date, firstDay); return { firstDay: first, lastDay: first + 7 * span.count - 1 }; }
+    const month = calMonthStart(date); return { firstDay: month, lastDay: calAddMonths(month, span.count) - 1 };
+  }
+  function tlCustomStep(span, date, direction) {
+    return span.unit === "month" ? calAddMonths(date, span.count * direction) : date + (span.unit === "week" ? 7 : 1) * span.count * direction;
+  }
   function tlStep(zoom, date, direction) {
     if (zoom === "hour") return date + direction;
     if (zoom === "day") return calAddMonths(date, direction);
@@ -33,7 +42,7 @@
     const units = [], width = TL_ZOOMS[zoom].width;
     const push = (first, last, start, end) => units.push({ first, last, start, end, x: units.length * width });
     if (zoom === "hour") {
-      for (let at = zone.start(span.firstDay), end = zone.start(span.lastDay + 1); at < end; at += CAL_HOUR) push(span.firstDay, span.firstDay, at, Math.min(at + CAL_HOUR, end));
+      for (let at = zone.start(span.firstDay), end = zone.start(span.lastDay + 1); at < end; at += CAL_HOUR) { const day = zone.day(at); push(day, day, at, Math.min(at + CAL_HOUR, end)); }
     } else if (zoom === "day") {
       for (let day = span.firstDay; day <= span.lastDay; day++) push(day, day, zone.start(day), zone.start(day + 1));
     } else if (zoom === "week") {

@@ -6,12 +6,16 @@
   Object.assign(DataGrid.prototype, {
     calPaint(options = {}) {
       if (!this.calBody || this.destroyed) return;
-      const owned = this.calRoot.contains(document.activeElement) && !this.calMore;
-      this.calCloseMore(false);
+      // Focus in the body comes back after the repaint; focus in the bar, the legend, a popover or a menu stays where it is.
+      const owned = this.calBody.contains(document.activeElement) && !this.calMore;
+      this.calCloseMore(false); this.calHideHover();
       const scroll = options.keep ? this.calScrollState?.() : null;
       const view = this.calView;
       this.host.setAttribute("data-cx-calendar-view", view);
       if (view === "month") this.calPaintMonth();
+      else if (view === "mini") this.calPaintMini();
+      else if (view === "months") this.calPaintMonths();
+      else if (view === "weekList" || view === "dayList") this.calPaintList();
       else if (view === "week" || view === "day" || view === "days") this.calPaintTime();
       else if (view === "agenda") this.calPaintAgenda();
       else if (view === "year") this.calPaintYear();
@@ -41,24 +45,30 @@
     /** Gives the focus target the tab stop, and DOM focus when the calendar held it (or force). */
     calRestoreFocus(force) {
       const target = this.calFocusTarget();
-      for (const element of this.calBody.querySelectorAll('[tabindex="0"]')) if (element !== target) element.tabIndex = -1;
+      // The year's event lists keep their own tab stops.
+      for (const element of this.calBody.querySelectorAll('[tabindex="0"]')) if (element !== target && !element.closest(".cx-cal-ylist")) element.tabIndex = -1;
       if (!target) return;
       target.tabIndex = 0;
       if (force) target.focus({ preventScroll: false });
     },
     calFocusIn(event) {
       const element = event.target, eventElement = element.closest(".cx-cal-ev"), cell = element.closest("[data-cx-day]");
-      // Controls in the body (the phone's resource picker) keep the grid's tab stop where it is.
-      if (!eventElement && !cell) return;
+      // Controls in the body (the phone's resource picker, the year's event lists) keep the grid's tab stop where it is.
+      if (!eventElement && !cell || element.closest(".cx-cal-ylist")) return;
       if (eventElement?._calEvent) this.calFocus = { day: eventElement._calEvent.sd, minutes: null, event: eventElement._calEvent.id };
       else if (cell) this.calFocus = { day: Number(cell.dataset.cxDay), minutes: cell.dataset.cxMinutes !== undefined ? Number(cell.dataset.cxMinutes) : null, event: null, resource: cell.dataset.cxResource, agendaRow: cell.dataset.cxEventRow, unit: cell.dataset.cxUnit !== undefined ? Number(cell.dataset.cxUnit) : null };
-      for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) if (other !== element) other.tabIndex = -1;
+      for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) if (other !== element && !other.closest(".cx-cal-ylist")) other.tabIndex = -1;
       if (element.tabIndex < 0 && (eventElement || cell)) element.tabIndex = 0;
     },
 
     calKey(event) {
       if (event.defaultPrevented || event.altKey && !this.calMoving) return;
-      if (this.calEditKey?.(event)) return;
+      // Right to left, Left goes forward in time and Right back: every handler below reads the swapped key.
+      if (this.calRtl && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+        const real = event, key = event.key === "ArrowLeft" ? "ArrowRight" : "ArrowLeft";
+        event = new Proxy(real, { get: (target, name) => name === "key" ? key : typeof target[name] === "function" ? target[name].bind(target) : target[name] });
+      }
+      if (this.calEditKey?.(event) || this.calMenuKey(event)) return;
       const target = event.target, eventElement = target.closest(".cx-cal-ev"), more = target.closest(".cx-cal-more-btn");
       if ((event.ctrlKey || event.metaKey) && (event.key === "z" || event.key === "y" || event.key === "Z")) {
         if (!this.cal.editable) return;
@@ -70,9 +80,11 @@
       }
       if (eventElement && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); this.calOpenEvent(eventElement._calEvent, true, eventElement).catch(error => this.emit("error", { error })); return; }
       if (more && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); this.calOpenMore(Number(more.dataset.cxDay), this.calEventsOn(Number(more.dataset.cxDay)), more); return; }
-      const view = this.calView;
-      if (view === "month" && (eventElement || more) && this.calKeyInDay(event, eventElement || more)) return;
-      if (view === "month") { const cell = target.closest(".cx-cal-day"); if (cell) this.calKeyMonth(event, cell); return; }
+      const view = this.calView, dayCell = !eventElement && !more && target.closest("[data-cx-day]");
+      if (this.cal.drop && dayCell && this.calDropFromKey?.(event, dayCell)) return;
+      if (this.cal.create && dayCell && this.calCreateFromKey?.(event, dayCell)) return;
+      if (calDayGrid(view) && (eventElement || more) && this.calKeyInDay(event, eventElement || more)) return;
+      if (calDayGrid(view)) { const cell = target.closest(".cx-cal-day"); if (cell) this.calKeyMonth(event, cell); return; }
       if (view === "week" || view === "day" || view === "days") { this.calKeyTime(event, target, eventElement); return; }
       if (view === "agenda") { this.calKeyAgenda(event, target); return; }
       if (view === "year") { const cell = target.closest(".cx-cal-yday"); if (cell) this.calKeyYear(event, cell); return; }
@@ -85,8 +97,10 @@
       if (eventElement) { this.calOpenEvent(eventElement._calEvent, false, eventElement).catch(error => this.emit("error", { error })); return; }
       if (more) { this.calOpenMore(Number(more.dataset.cxDay), this.calEventsOn(Number(more.dataset.cxDay)), more); return; }
       if (this.calView === "timeline") { this.calTimelineClick?.(event); return; }
+      // Days outside the valid range take no clicks: no selection, no day link, no new event.
+      if (target.closest(".cx-cal-invalid")) return;
       const number = target.closest(".cx-cal-num,.cx-cal-dayhead,.cx-cal-yday");
-      if (number && this.cal.views.includes("day") && !this.calPhone && target.closest(".cx-cal-num,.cx-cal-dayhead")) {
+      if (number && this.cal.navLinks && this.cal.views.includes("day") && !this.calPhone && this.calView !== "mini" && target.closest(".cx-cal-num,.cx-cal-dayhead")) {
         const day = Number(number.closest("[data-cx-day]")?.dataset.cxDay ?? number.dataset.cxDay);
         if (Number.isFinite(day)) { this.calGo(day, "day", true); return; }
       }
@@ -96,9 +110,13 @@
       if (this.calView === "year") { if (this.cal.views.includes("day")) this.calGo(day, "day", true); else this.calFocusDay(day); return; }
       if (cell.dataset.cxMinutes !== undefined) { const minutes = Number(cell.dataset.cxMinutes); this.calSelectSlots(day, minutes, minutes + this.cal.slotMinutes, cell.dataset.cxResource); }
       else this.calSelectDays(day, day);
-      if (this.calPhone && this.calView === "month") this.calFocusDay(day);
+      if (this.calPhone && this.calView === "month" || this.calView === "mini") this.calFocusDay(day);
+      // With create on, a click on an empty slot or day proposes an event there (not on a phone's month of dots or the mini month).
+      else if (this.cal.create && !cell.classList.contains("cx-cal-invalid")) this.calCreateFromClick?.(cell)?.catch?.(error => this.emit("error", { error }));
     },
 
+    /** A cell's resource: none in a timeline without resources, whose rows are only lanes of packed events. */
+    calCellResource(cell) { return this.tlSolo && cell.classList.contains("cx-tl-cell") ? null : cell.dataset.cxResource ?? null; },
     /** Selects whole days (a click, Space or Enter on an empty day) and reports the range. */
     calSelectDays(first, last, resource) {
       const zone = this.calZone;
