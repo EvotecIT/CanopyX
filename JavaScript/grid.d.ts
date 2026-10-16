@@ -19,7 +19,9 @@ export * from "./column-groups.js";
 export * from "./cell-ranges.js";
 import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
 import type { GridFacetPanelDefinition, GridFacetPanelOptions, GridFacetPanelApi } from "./facets.js";
+import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, GridCalendarState, GridCalendarSavedState, GridOccurrenceChange, GridRangeSource } from "./calendar.js";
 export * from "./facets.js";
+export * from "./calendar.js";
 export * from "./live.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -357,6 +359,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   live?: GridLiveDefinition;
   /** A facet panel beside or above the grid: value lists with counts and ranges with histograms (facets.d.ts). */
   facets?: GridFacetPanelDefinition<Row>;
+  /** Shows the records as a calendar: month, week, day, N days, agenda, year and the resource timeline (calendar.d.ts). */
+  calendar?: GridCalendarDefinition<Row>;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -426,7 +430,7 @@ export interface GridFacetPage {
 export interface GridFacetSource<Q extends AcceptedGridQuery = AcceptedGridQuery> {
   facet?(request: GridFacetQuery<Q>, options: { signal: AbortSignal }): GridFacetPage | PromiseLike<GridFacetPage>;
 }
-export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSource<GridQuery> {
+export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSource<GridQuery>, GridRangeSource<Row> {
   readonly navigation?: "offset";
   query(query: GridQuery, options: { signal: AbortSignal }): GridPage<Row> | PromiseLike<GridPage<Row>>;
   /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
@@ -639,6 +643,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   highlight?: boolean;
   /** Whether the reader left the facet panel open, in a grid with facets. */
   facets?: { open: boolean };
+  /** The calendar's view, date, zoom and collapsed resources, in a grid with a calendar. */
+  calendar?: GridCalendarSavedState;
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -752,6 +758,12 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   facets?: GridFacetPanelOptions<Row>;
   /** After the reader opened or collapsed the facet panel; canopyx:facetPanel carries the same detail. */
   onFacetPanel?: (event: { open: boolean }) => void;
+  /** Calendar options: the template hook that draws event content (calendar.d.ts). */
+  calendar?: GridCalendarOptions;
+  /** After the calendar painted a view or range; canopyx:calendar carries the same detail. */
+  onCalendar?: (event: GridCalendarState) => void;
+  /** Before one occurrence of a series moves; returning false (or cancelling canopyx:occurrenceChange) keeps the series. */
+  onOccurrenceChange?: (event: GridOccurrenceChange) => boolean | void;
   /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
   onPaste?: (event: GridPasteEvent) => boolean | void;
   /** After the cell ranges changed. */
@@ -769,7 +781,7 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;

@@ -1,0 +1,158 @@
+  // ---------- calendar: recurrence rules (an RFC 5545 RRULE subset) and their expansion ----------
+  // FREQ is DAILY, WEEKLY, MONTHLY or YEARLY, with INTERVAL, COUNT or UNTIL, BYDAY (with ordinals such as 2TU or -1FR in
+  // monthly and yearly rules), BYMONTHDAY (negative days count from the month's end), BYMONTH, BYSETPOS and WKST. Times keep
+  // the wall-clock time of the first occurrence in the series' zone, so a 09:00 window stays at 09:00 across DST changes.
+  // The first occurrence is the series' own start and always counts, as RFC 5545 says. A series expands only as far as the
+  // range asked for; COUNT is counted from the start, so a long series is walked, never stored.
+  const CAL_WEEKDAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"], CAL_FREQS = ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"];
+  const CAL_RULE_CACHE = new Map(), CAL_MAX_PERIODS = 60000;
+
+  /** Parses an RRULE ("RRULE:" prefix optional); throws for a rule outside the subset. */
+  function calRule(text) {
+    if (CAL_RULE_CACHE.has(text)) return CAL_RULE_CACHE.get(text);
+    if (typeof text !== "string" || text.length > 1024) throw new Error("CanopyX: a recurrence rule is text of at most 1024 characters.");
+    const rule = { interval: 1, byDay: null, byMonthDay: null, byMonth: null, bySetPos: null, wkst: 1, count: null, until: null };
+    const seen = new Set(), list = (value, check) => value.split(",").map(item => { if (!check(item)) throw new Error("CanopyX: invalid recurrence value " + item + "."); return item; });
+    const integer = (value, min, max) => /^[+-]?\d{1,4}$/.test(value) && +value >= min && +value <= max && +value !== 0;
+    for (const part of text.trim().replace(/^RRULE:/i, "").split(";")) {
+      const at = part.indexOf("="), name = part.slice(0, at).trim().toUpperCase(), value = part.slice(at + 1).trim().toUpperCase();
+      if (at < 1 || !value || seen.has(name)) throw new Error("CanopyX: invalid recurrence rule part " + part + ".");
+      seen.add(name);
+      if (name === "FREQ") { if (!CAL_FREQS.includes(value)) throw new Error("CanopyX: recurrence FREQ is DAILY, WEEKLY, MONTHLY or YEARLY."); rule.freq = value; }
+      else if (name === "INTERVAL") { if (!integer(value, 1, 9999)) throw new Error("CanopyX: invalid recurrence INTERVAL."); rule.interval = +value; }
+      else if (name === "COUNT") { if (!integer(value, 1, 9999)) throw new Error("CanopyX: invalid recurrence COUNT."); rule.count = +value; }
+      else if (name === "UNTIL") rule.until = calRuleTime(value);
+      else if (name === "BYDAY") rule.byDay = list(value, item => /^([+-]?\d{1,2})?(SU|MO|TU|WE|TH|FR|SA)$/.test(item) && (!/\d/.test(item) || integer(item.slice(0, -2), -53, 53)))
+        .map(item => ({ n: item.length > 2 ? +item.slice(0, -2) : 0, dow: CAL_WEEKDAYS.indexOf(item.slice(-2)) }));
+      else if (name === "BYMONTHDAY") rule.byMonthDay = list(value, item => integer(item, -31, 31)).map(Number);
+      else if (name === "BYMONTH") rule.byMonth = list(value, item => integer(item, 1, 12)).map(Number);
+      else if (name === "BYSETPOS") rule.bySetPos = list(value, item => integer(item, -366, 366)).map(Number);
+      else if (name === "WKST") { if (!CAL_WEEKDAYS.includes(value)) throw new Error("CanopyX: invalid recurrence WKST."); rule.wkst = CAL_WEEKDAYS.indexOf(value); }
+      else throw new Error("CanopyX: recurrence rules do not support " + name + ".");
+    }
+    if (!rule.freq || rule.count !== null && rule.until !== null) throw new Error("CanopyX: a recurrence rule needs FREQ, and COUNT or UNTIL, not both.");
+    if (rule.byDay && rule.byDay.some(item => item.n) && (rule.freq === "DAILY" || rule.freq === "WEEKLY"))
+      throw new Error("CanopyX: numbered BYDAY values belong to monthly and yearly rules.");
+    if (rule.byMonthDay && rule.freq === "WEEKLY") throw new Error("CanopyX: weekly rules do not take BYMONTHDAY.");
+    if (CAL_RULE_CACHE.size > 512) CAL_RULE_CACHE.clear();
+    CAL_RULE_CACHE.set(text, rule);
+    return rule;
+  }
+
+  /** An UNTIL value: { day } for a date, { time } for a UTC date-time, { day, minutes } for a floating one. */
+  function calRuleTime(value) {
+    const match = /^(\d{4})(\d\d)(\d\d)(?:T(\d\d)(\d\d)(\d\d)(Z)?)?$/.exec(value) || /^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d):(\d\d)(Z)?)?$/.exec(value);
+    const day = match ? calParseDay(match[1] + "-" + match[2] + "-" + match[3]) : NaN;
+    if (!Number.isFinite(day) || match[4] !== undefined && (+match[4] > 23 || +match[5] > 59 || +match[6] > 59)) throw new Error("CanopyX: invalid recurrence UNTIL.");
+    if (match[4] === undefined) return { day };
+    const minutes = +match[4] * 60 + +match[5], seconds = +match[6];
+    return match[7] ? { time: day * CAL_DAY + minutes * CAL_MINUTE + seconds * 1000 } : { day, minutes: minutes + seconds / 60 };
+  }
+
+  // The candidate days of one period, before BYSETPOS: a sorted array of day numbers.
+  function calPeriodDays(rule, period, first) {
+    const days = [];
+    const monthDays = (y, m) => {
+      const count = calMonthDays(y, m), start = calDayNumber(y, m, 1), out = [];
+      let picked = null;
+      if (rule.byMonthDay) picked = new Set(rule.byMonthDay.map(d => d > 0 ? d : count + d + 1).filter(d => d >= 1 && d <= count));
+      if (rule.byDay) {
+        const byDay = new Set();
+        for (const item of rule.byDay) {
+          const matches = [];
+          for (let d = 1; d <= count; d++) if (calDow(start + d - 1) === item.dow) matches.push(d);
+          if (!item.n) matches.forEach(d => byDay.add(d));
+          else { const d = item.n > 0 ? matches[item.n - 1] : matches[matches.length + item.n]; if (d) byDay.add(d); }
+        }
+        picked = picked ? new Set([...picked].filter(d => byDay.has(d))) : byDay;
+      }
+      if (!picked) picked = new Set(first.d <= count ? [first.d] : []);
+      for (const d of [...picked].sort((a, b) => a - b)) out.push(start + d - 1);
+      return out;
+    };
+    if (rule.freq === "DAILY") {
+      const day = period, parts = calDayParts(day);
+      if ((!rule.byMonth || rule.byMonth.includes(parts.m)) && (!rule.byDay || rule.byDay.some(item => item.dow === parts.dow)) &&
+          (!rule.byMonthDay || rule.byMonthDay.some(d => (d > 0 ? d : calMonthDays(parts.y, parts.m) + d + 1) === parts.d))) days.push(day);
+    } else if (rule.freq === "WEEKLY") {
+      const dows = rule.byDay ? rule.byDay.map(item => item.dow) : [first.dow];
+      for (let i = 0; i < 7; i++) {
+        const day = period + i, parts = calDayParts(day);
+        if (dows.includes(parts.dow) && (!rule.byMonth || rule.byMonth.includes(parts.m))) days.push(day);
+      }
+    } else if (rule.freq === "MONTHLY") {
+      const y = Math.floor(period / 12), m = period - y * 12 + 1;
+      if (!rule.byMonth || rule.byMonth.includes(m)) days.push(...monthDays(y, m));
+    } else {
+      const y = period;
+      if (!rule.byMonth && (rule.byDay || rule.byMonthDay)) {
+        // Without BYMONTH a yearly rule's days come from the whole year, and a numbered weekday counts through the year
+        // (20MO is the year's 20th Monday), as the C# CanopyRecurrence reads it.
+        const start = calDayNumber(y, 1, 1), count = calDayNumber(y + 1, 1, 1) - start;
+        for (let d = 0; d < count; d++) {
+          const day = start + d, parts = calDayParts(day);
+          if (rule.byMonthDay && !rule.byMonthDay.some(value => (value > 0 ? value : calMonthDays(parts.y, parts.m) + value + 1) === parts.d)) continue;
+          if (rule.byDay && !rule.byDay.some(item => item.dow === parts.dow && (!item.n || item.n === Math.floor(d / 7) + 1 || item.n === -(Math.floor((count - 1 - d) / 7) + 1)))) continue;
+          days.push(day);
+        }
+      } else for (const m of rule.byMonth || [first.m]) days.push(...monthDays(y, m));
+      days.sort((a, b) => a - b);
+    }
+    if (!rule.bySetPos) return days;
+    return [...new Set(rule.bySetPos.map(pos => pos > 0 ? days[pos - 1] : days[days.length + pos]).filter(day => day !== undefined))].sort((a, b) => a - b);
+  }
+
+  /**
+   * The starts of a series' occurrences that overlap [from, to): a series starting at start (an instant) in zone, each
+   * occurrence lasting duration milliseconds (0 for a marker). excluded holds the starts EXDATE removes (instants) and
+   * excludedDays the days it removes. At most limit starts are returned.
+   */
+  function calExpand(rule, start, duration, zone, from, to, excluded, excludedDays, limit) {
+    const first = zone.parts(start), out = [], minutes = first.minutes + (start % CAL_MINUTE) / CAL_MINUTE;
+    const until = rule.until ? rule.until.time ?? (rule.until.minutes === undefined ? zone.instant(rule.until.day + 1, 0) - 1 : zone.instant(rule.until.day, rule.until.minutes)) : Infinity;
+    let count = 0, period;
+    if (rule.freq === "DAILY") period = first.day;
+    else if (rule.freq === "WEEKLY") period = first.day - (first.dow - rule.wkst + 7) % 7;
+    else if (rule.freq === "MONTHLY") period = first.y * 12 + first.m - 1;
+    else period = first.y;
+    const stride = rule.freq === "WEEKLY" ? 7 * rule.interval : rule.interval;
+    const periodDay = value => rule.freq === "DAILY" || rule.freq === "WEEKLY" ? value : rule.freq === "MONTHLY" ? calDayNumber(Math.floor(value / 12), value % 12 + 1, 1) : calDayNumber(value, 1, 1);
+    // Without COUNT nothing before the range matters: the walk starts a period or two before it.
+    if (rule.count === null && Number.isFinite(from)) {
+      const target = zone.day(from - Math.max(duration, 0)) - 1, at = zone.parts(zone.start(target));
+      const index = rule.freq === "DAILY" || rule.freq === "WEEKLY" ? target : rule.freq === "MONTHLY" ? at.y * 12 + at.m - 1 : at.y;
+      const steps = Math.floor((index - period) / stride) - 1;
+      if (steps > 0) period += steps * stride;
+    }
+    const take = time => {
+      count++;
+      if (time + Math.max(duration, 0) > from && time < to || duration <= 0 && time >= from && time < to) {
+        const day = zone.day(time);
+        if (!excluded.has(time) && !excludedDays.has(day)) out.push(time);
+      }
+    };
+    // The start is the first occurrence, unless UNTIL ends the series before it (C# CanopyRecurrence reads it the same way).
+    if (start > until) return out;
+    take(start);
+    for (let step = 0; step < CAL_MAX_PERIODS && out.length < limit; step++, period += stride) {
+      if (zone.start(periodDay(period)) - CAL_DAY >= Math.min(to, until)) break;
+      let past = false;
+      for (const day of calPeriodDays(rule, period, first)) {
+        if (day < first.day) continue;
+        const time = zone.instant(day, minutes);
+        if (time <= start) continue;
+        if (time > until || rule.count !== null && count >= rule.count) { past = true; break; }
+        if (time >= to) { past = true; break; }
+        take(time);
+      }
+      if (past) break;
+    }
+    return out;
+  }
+
+  /** The last occurrence's end of a finite series, or Infinity for one without COUNT or UNTIL. */
+  function calSeriesEnd(rule, start, duration, zone) {
+    if (rule.count === null && rule.until === null) return Infinity;
+    const all = calExpand(rule, start, duration, zone, -Infinity, Infinity, new Set(), new Set(), rule.count ?? 100000);
+    return all.length ? all[all.length - 1] + Math.max(duration, 0) : start + Math.max(duration, 0);
+  }

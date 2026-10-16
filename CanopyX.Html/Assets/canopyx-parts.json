@@ -347,6 +347,41 @@
       "features": [
         "record"
       ]
+    },
+    {
+      "name": "calendar",
+      "label": "calendar",
+      "version": "2d18227d7ca6a656",
+      "script": "canopyx-calendar.js",
+      "style": "canopyx-calendar.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendar"
+      ]
+    },
+    {
+      "name": "timeline",
+      "label": "resource timeline",
+      "version": "8350c673ac8ab571",
+      "script": "canopyx-timeline.js",
+      "style": "canopyx-timeline.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarResources"
+      ],
+      "requires": [
+        "calendar"
+      ]
     }
   ]
 }

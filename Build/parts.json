@@ -355,6 +355,41 @@
       "styles": [
         "CanopyX.Html/Assets/canopyx.record-panel.source/record-panel.css"
       ]
+    },
+    {
+      "name": "calendar",
+      "label": "calendar",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendar"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
+        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validStructuralCount", "checkDocument", "numberFormat",
+        "loadPart", "PROTOCOL"],
+      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calRule, calExpand, calSeriesEnd, calLanes, calColumns, calIcsText, calIcsFold, calExceptions };",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calendar.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.calendar.source/calendar.css"
+      ]
+    },
+    {
+      "name": "timeline",
+      "label": "resource timeline",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendarResources"],
+      "key": "DataGrid.prototype",
+      "requires": ["calendar"],
+      "context": ["DataGrid", "TreeGrid", "h", "setText", "fill", "numberFormat"],
+      "start": "const { CAL_DAY, CAL_HOUR, CAL_MINUTE, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthStart, calWeekStart } = DataGrid.prototype.calKit;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.timeline.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.timeline.source/timeline.css"
+      ]
     }
   ]
 }
