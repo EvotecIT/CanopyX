@@ -1,0 +1,201 @@
+using System;
+using System.Collections.Generic;
+
+namespace CanopyX;
+
+public sealed partial class CanopyRecurrence {
+    /// <summary>
+    /// Expands the series that starts at <paramref name="start"/>: its occurrences in order, as moments with the series' time zone
+    /// offset, from the series start (which always counts first) to the end of the rule, or within a range.
+    /// </summary>
+    /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment.</param>
+    /// <param name="zone">The series' time zone, whose wall-clock time the occurrences keep; UTC for all-day series.</param>
+    /// <param name="from">The first moment of the range: occurrences that start earlier are left out (they still count toward <see cref="Count"/>). Null for none.</param>
+    /// <param name="to">The end of the range, exclusive: occurrences that start at or after it are left out. Null for none.</param>
+    /// <param name="exceptions">Excluded occurrences (<c>EXDATE</c>), as a calendar's <c>exceptions</c> column holds them: ISO instants
+    /// (an instant without an offset is a wall time in <paramref name="zone"/>) remove the occurrence that starts then, and
+    /// <c>yyyy-MM-dd</c> dates remove every occurrence that starts on that day; separated by commas or spaces. Null for none.</param>
+    /// <returns>The occurrences, lazily; a series without an end and without <paramref name="to"/> never ends.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="to"/> is before <paramref name="from"/>.</exception>
+    /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
+    public IEnumerable<DateTimeOffset> Occurrences(DateTime start, TimeZoneInfo zone, DateTimeOffset? from = null, DateTimeOffset? to = null, string? exceptions = null) {
+        if (zone == null) throw new ArgumentNullException(nameof(zone));
+        return Occurrences(Wall(start, zone), zone, from, to, exceptions, nameof(to));
+    }
+
+    /// <summary>Expands the series that starts at a moment, as <see cref="Occurrences(DateTime, TimeZoneInfo, DateTimeOffset?, DateTimeOffset?, string?)"/> does.</summary>
+    /// <param name="start">The series start; its wall-clock time in <paramref name="zone"/> is the time every occurrence keeps.</param>
+    /// <param name="zone">The series' time zone; UTC for all-day series.</param>
+    /// <param name="from">The first moment of the range, or null.</param>
+    /// <param name="to">The end of the range, exclusive, or null.</param>
+    /// <param name="exceptions">Excluded occurrences, as a calendar's <c>exceptions</c> column holds them, or null.</param>
+    /// <returns>The occurrences, lazily.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="to"/> is before <paramref name="from"/>.</exception>
+    /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
+    public IEnumerable<DateTimeOffset> Occurrences(DateTimeOffset start, TimeZoneInfo zone, DateTimeOffset? from = null, DateTimeOffset? to = null, string? exceptions = null) {
+        if (zone == null) throw new ArgumentNullException(nameof(zone));
+        return Occurrences(TimeZoneInfo.ConvertTime(start, zone).DateTime, zone, from, to, exceptions, nameof(to));
+    }
+
+    /// <summary>
+    /// Returns the end of the series' last occurrence (its start plus <paramref name="duration"/>), for a host's <c>seriesEnd</c>
+    /// column, which lets a server find the series that reach into a range; null for a series without an end.
+    /// </summary>
+    /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment.</param>
+    /// <param name="duration">How long each occurrence lasts; zero for markers.</param>
+    /// <param name="zone">The series' time zone; UTC for all-day series.</param>
+    /// <param name="exceptions">Excluded occurrences, as a calendar's <c>exceptions</c> column holds them, or null.</param>
+    /// <returns>The end of the last occurrence, with the zone's offset; the end of the first when exceptions remove every occurrence; null when the rule has neither <see cref="Count"/> nor an until bound.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="duration"/> is negative.</exception>
+    /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
+    public DateTimeOffset? SeriesEnd(DateTime start, TimeSpan duration, TimeZoneInfo zone, string? exceptions = null) {
+        if (zone == null) throw new ArgumentNullException(nameof(zone));
+        return LastEnd(Wall(start, zone), duration, zone, exceptions);
+    }
+
+    /// <summary>Returns the end of the last occurrence of the series that starts at a moment, as <see cref="SeriesEnd(DateTime, TimeSpan, TimeZoneInfo, string?)"/> does.</summary>
+    /// <param name="start">The series start.</param>
+    /// <param name="duration">How long each occurrence lasts; zero for markers.</param>
+    /// <param name="zone">The series' time zone; UTC for all-day series.</param>
+    /// <param name="exceptions">Excluded occurrences, as a calendar's <c>exceptions</c> column holds them, or null.</param>
+    /// <returns>The end of the last occurrence, or null for a series without an end.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="zone"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="duration"/> is negative.</exception>
+    /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
+    public DateTimeOffset? SeriesEnd(DateTimeOffset start, TimeSpan duration, TimeZoneInfo zone, string? exceptions = null) {
+        if (zone == null) throw new ArgumentNullException(nameof(zone));
+        return LastEnd(TimeZoneInfo.ConvertTime(start, zone).DateTime, duration, zone, exceptions);
+    }
+
+    private DateTimeOffset? LastEnd(DateTime wallStart, TimeSpan duration, TimeZoneInfo zone, string? exceptions) {
+        if (duration < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(duration), duration, "A duration cannot be negative.");
+        if (!_count.HasValue && !_until.HasValue) return null;
+        DateTimeOffset? last = null;
+        foreach (var occurrence in Occurrences(wallStart, zone, null, null, exceptions, nameof(exceptions))) last = occurrence;
+        var end = (last ?? CanopyRecurrenceZone.Resolve(wallStart, zone)).Add(duration);
+        return TimeZoneInfo.ConvertTime(end, zone);
+    }
+
+    private IEnumerable<DateTimeOffset> Occurrences(DateTime wallStart, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, string? exceptions, string parameter) {
+        if (from.HasValue && to.HasValue && to.Value < from.Value) throw new ArgumentException("The end of the range is before its start.", parameter);
+        return Expand(DateTime.SpecifyKind(wallStart, DateTimeKind.Unspecified), zone, from, to, CanopyRecurrenceExclusions.Parse(exceptions, zone));
+    }
+
+    private static DateTime Wall(DateTime start, TimeZoneInfo zone) => start.Kind switch {
+        DateTimeKind.Utc => TimeZoneInfo.ConvertTimeFromUtc(start, zone),
+        DateTimeKind.Local => TimeZoneInfo.ConvertTime(start, zone),
+        _ => start
+    };
+
+    private IEnumerable<DateTimeOffset> Expand(DateTime wallStart, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, CanopyRecurrenceExclusions exclusions) {
+        var time = wallStart.TimeOfDay;
+        // No period after this wall date can hold an occurrence that is still returned.
+        DateTime? lastDate = to.HasValue ? TimeZoneInfo.ConvertTime(to.Value, zone).Date.AddDays(1) : (DateTime?)null;
+        DateTime? untilDate = null;
+        DateTimeOffset? untilInstant = null;
+        if (_until.HasValue) {
+            if (_untilIsDate) untilDate = _until.Value.Date;
+            else untilInstant = _until.Value.Kind == DateTimeKind.Utc ? new DateTimeOffset(_until.Value, TimeSpan.Zero) : CanopyRecurrenceZone.Resolve(_until.Value, zone);
+            var bound = (untilDate ?? TimeZoneInfo.ConvertTime(untilInstant!.Value, zone).Date).AddDays(1);
+            if (!lastDate.HasValue || bound < lastDate.Value) lastDate = bound;
+        }
+        var generated = 0;
+        foreach (var date in Dates(wallStart.Date, lastDate)) {
+            if (_count.HasValue && generated >= _count.Value) yield break;
+            var occurrence = CanopyRecurrenceZone.Resolve(date + time, zone);
+            if (untilDate.HasValue ? date > untilDate.Value : untilInstant.HasValue && occurrence > untilInstant.Value) yield break;
+            generated++;
+            if (to.HasValue && occurrence >= to.Value) yield break;
+            if (from.HasValue && occurrence < from.Value || exclusions.Removes(occurrence, date)) continue;
+            yield return occurrence;
+        }
+    }
+
+    /// <summary>The series' dates in order: the start, then every later date the rule makes, period by period.</summary>
+    private IEnumerable<DateTime> Dates(DateTime start, DateTime? lastDate) {
+        yield return start;
+        var days = new List<CanopyRecurrenceDay>(_days);
+        var monthDays = new List<int>(_monthDays);
+        var months = new List<int>(_months);
+        // Without days the rule repeats on the start's weekday, day of the month, or date.
+        if (Frequency == CanopyRecurrenceFrequency.Weekly && days.Count == 0) days.Add(new CanopyRecurrenceDay(start.DayOfWeek));
+        if ((Frequency == CanopyRecurrenceFrequency.Monthly || Frequency == CanopyRecurrenceFrequency.Yearly) && days.Count == 0 && monthDays.Count == 0) {
+            monthDays.Add(start.Day);
+            if (Frequency == CanopyRecurrenceFrequency.Yearly && months.Count == 0) months.Add(start.Month);
+        }
+        var period = Frequency switch {
+            CanopyRecurrenceFrequency.Daily => start,
+            CanopyRecurrenceFrequency.Weekly => start.AddDays(-((7 + (int)start.DayOfWeek - (int)WeekStart) % 7)),
+            CanopyRecurrenceFrequency.Monthly => new DateTime(start.Year, start.Month, 1),
+            _ => new DateTime(start.Year, 1, 1)
+        };
+        var monthScope = Frequency == CanopyRecurrenceFrequency.Monthly || months.Count > 0;
+        var candidates = new List<DateTime>();
+        var chosen = new List<DateTime>();
+        while (!lastDate.HasValue || period <= lastDate.Value) {
+            candidates.Clear();
+            var length = Frequency switch {
+                CanopyRecurrenceFrequency.Daily => 1,
+                CanopyRecurrenceFrequency.Weekly => 7,
+                CanopyRecurrenceFrequency.Monthly => DateTime.DaysInMonth(period.Year, period.Month),
+                _ => DateTime.IsLeapYear(period.Year) ? 366 : 365
+            };
+            for (var offset = 0; offset < length; offset++) {
+                if (DateTime.MaxValue.Date.Subtract(period).Days < offset) break;
+                var day = period.AddDays(offset);
+                if (Matches(day, days, monthDays, months, monthScope)) candidates.Add(day);
+            }
+            Choose(candidates, chosen);
+            foreach (var day in chosen) if (day > start) yield return day;
+            if (!TryAdvance(ref period)) yield break;
+        }
+    }
+
+    private static bool Matches(DateTime day, List<CanopyRecurrenceDay> days, List<int> monthDays, List<int> months, bool monthScope) {
+        if (months.Count > 0 && !months.Contains(day.Month)) return false;
+        var monthLength = DateTime.DaysInMonth(day.Year, day.Month);
+        if (monthDays.Count > 0) {
+            var hit = false;
+            foreach (var monthDay in monthDays) if (monthDay == day.Day || monthDay < 0 && monthLength + 1 + monthDay == day.Day) { hit = true; break; }
+            if (!hit) return false;
+        }
+        if (days.Count == 0) return true;
+        foreach (var entry in days) {
+            if (entry.Day != day.DayOfWeek) continue;
+            if (entry.Ordinal == 0) return true;
+            // A numbered weekday counts within the month, or within the year for a yearly rule without months.
+            var index = monthScope ? day.Day : day.DayOfYear;
+            var length = monthScope ? monthLength : DateTime.IsLeapYear(day.Year) ? 366 : 365;
+            if (entry.Ordinal == (index - 1) / 7 + 1 || entry.Ordinal == -((length - index) / 7 + 1)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>The period's days that count: all of them, or those at the positions (<c>BYSETPOS</c>), in order.</summary>
+    private void Choose(List<DateTime> candidates, List<DateTime> chosen) {
+        chosen.Clear();
+        if (_positions.Count == 0) { chosen.AddRange(candidates); return; }
+        foreach (var position in _positions) {
+            var index = position > 0 ? position - 1 : candidates.Count + position;
+            if (index >= 0 && index < candidates.Count && !chosen.Contains(candidates[index])) chosen.Add(candidates[index]);
+        }
+        chosen.Sort();
+    }
+
+    private bool TryAdvance(ref DateTime period) {
+        try {
+            period = Frequency switch {
+                CanopyRecurrenceFrequency.Daily => period.AddDays(_interval),
+                CanopyRecurrenceFrequency.Weekly => period.AddDays(7.0 * _interval),
+                CanopyRecurrenceFrequency.Monthly => period.AddMonths(_interval),
+                _ => period.AddYears(_interval)
+            };
+            return true;
+        } catch (ArgumentOutOfRangeException) {
+            return false;
+        }
+    }
+}

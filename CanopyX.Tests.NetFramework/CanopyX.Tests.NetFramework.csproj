@@ -33,6 +33,10 @@
     <Compile Include="..\CanopyX.Tests\Grids\GridColumnGroupTests.cs" Link="Grids\GridColumnGroupTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedGridTests.cs" Link="Grids\TypedGridTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\RecordFrameworkTests.cs" Link="Records\RecordFrameworkTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Recurrence\RecurrenceFixture.cs" Link="Recurrence\RecurrenceFixture.cs" />
+    <Compile Include="..\CanopyX.Tests\Recurrence\RecurrenceFixtureTests.cs" Link="Recurrence\RecurrenceFixtureTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Recurrence\RecurrenceTests.cs" Link="Recurrence\RecurrenceTests.cs" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\tests\fixtures\recurrence-cases.json" Link="Fixtures\recurrence-cases.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
