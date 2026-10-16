@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "7a6a134ff8f5aeb3",
+      "version": "37aefb2ff94cb423",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "648ae9e4c4537efd",
+      "version": "6347fb0a4587a97d",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "fe5fb6e9a765a1ae",
+      "version": "7c776f7cfb5bb19b",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "7fd05d2a68346edf",
+      "version": "21031ca54485efce",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
