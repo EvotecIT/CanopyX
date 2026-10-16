@@ -28,6 +28,13 @@ namespace CanopyX.Data;
 /// then refuses such a save, and the row answers a conflict.
 /// </para>
 /// <para>
+/// <b>Inserts.</b> A row with <see cref="CanopyCommitOperation.Insert"/> is saved only when
+/// <see cref="CanopyQueryableWriterOptions{T}.NewRecord"/> is set and the store implements <see cref="ICanopyInsertStore{T}"/>;
+/// otherwise it answers <see cref="CanopyCommitMessages.InsertRefused"/>. The new record gets the editable values of the row
+/// (never the key), runs <see cref="CanopyQueryableWriterOptions{T}.Saving"/>, is added and saved, and answers its stored key
+/// as <see cref="CanopyCommitRowResult.NewId"/>; with a scope, a new record outside it is rolled back.
+/// </para>
+/// <para>
 /// A saved row answers with canonical cells of its changed columns, read back from the record and formatted like page rows.
 /// An exception stops its row only: the row answers with a generic message, or a conflict when the store reports a
 /// concurrency failure (an exception type named <c>DbUpdateConcurrencyException</c>, as EF Core raises for concurrency tokens).
@@ -42,6 +49,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
     private readonly Dictionary<string, MemberWriter<T>> _members = new Dictionary<string, MemberWriter<T>>(StringComparer.Ordinal);
     private readonly ParameterExpression _row = Expression.Parameter(typeof(T), "row");
     private readonly Expression _key;
+    private readonly Func<T, object?> _readKey;
 
     /// <summary>Creates a writer.</summary>
     /// <param name="map">The column allow-list; its editable columns must map members of the record.</param>
@@ -63,6 +71,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
             _members[column.Id] = writer;
         }
         _key = new Rebinder(map.KeyExpression!.Parameters[0], _row).Visit(map.KeyExpression.Body)!;
+        _readKey = Expression.Lambda<Func<T, object?>>(Expression.Convert(_key, typeof(object)), _row).Compile();
     }
 
     private CanopyCommitMessages Messages => _options.Messages ?? DefaultMessages;
@@ -172,6 +181,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
 
     /// <summary>Loads, checks, applies and saves one row inside the current transaction.</summary>
     private async Task<CanopyCommitRowResult> RowAsync(CanopyCommitBatch batch, CanopyCommitRow row, string revision, CancellationToken cancellationToken) {
+        if (row.Operation == CanopyCommitOperation.Insert) return await InsertAsync(batch, row, cancellationToken).ConfigureAwait(false);
         try {
             var record = await LoadAsync(row.Id, cancellationToken).ConfigureAwait(false);
             if (record == null) return CanopyCommitRowResult.Conflict(row.Id, Messages.Missing);
@@ -183,22 +193,57 @@ public sealed class CanopyQueryableWriter<T> : ICanopyDataWriter where T : class
                     if (!_members[pair.Key].Same(record, pair.Value)) return CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict);
                 }
             }
-            var errors = new Dictionary<string, string>(StringComparer.Ordinal);
-            var converted = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach (var pair in row.Values) {
-                var column = _map.Schema.GetColumn(pair.Key);
-                var problem = _members[pair.Key].Convert(pair.Value, Messages, out var value);
-                if (problem != null) errors[pair.Key] = column.Validation?.Message ?? CanopyCommitMessages.Fill(problem, column);
-                else converted[pair.Key] = value;
-            }
-            if (errors.Count > 0) return CanopyCommitRowResult.Failed(row.Id, null, errors);
-            foreach (var pair in converted) _members[pair.Key].Set(record, pair.Value);
+            var failed = Apply(record, row);
+            if (failed != null) return failed;
             if (_options.Saving != null) {
                 var refusal = await _options.Saving(new CanopyWriteContext<T>(record, row, batch), cancellationToken).ConfigureAwait(false);
                 if (refusal != null) return CanopyCommitRowResult.Failed(row.Id, refusal);
             }
             await _store.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return CanopyCommitRowResult.Saved(row.Id, Cells(record, row));
+        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            throw;
+        } catch (Exception error) {
+            _options.Failed?.Invoke(row, error);
+            return Concurrency(error) ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
+        }
+    }
+
+    /// <summary>Converts a row's values to the member types and applies them; a result when a value cannot be held, else null.</summary>
+    private CanopyCommitRowResult? Apply(T record, CanopyCommitRow row) {
+        var errors = new Dictionary<string, string>(StringComparer.Ordinal);
+        var converted = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var pair in row.Values) {
+            var column = _map.Schema.GetColumn(pair.Key);
+            // Only editable columns have members; a batch built in code that names another column is refused, never written.
+            if (!_members.TryGetValue(pair.Key, out var member)) throw new InvalidOperationException("The column is not editable.");
+            var problem = member.Convert(pair.Value, Messages, out var value);
+            if (problem != null) errors[pair.Key] = column.Validation?.Message ?? CanopyCommitMessages.Fill(problem, column);
+            else converted[pair.Key] = value;
+        }
+        if (errors.Count > 0) return CanopyCommitRowResult.Failed(row.Id, null, errors);
+        foreach (var pair in converted) _members[pair.Key].Set(record, pair.Value);
+        return null;
+    }
+
+    /// <summary>Creates, fills, adds and saves a new record inside the current transaction; it answers the stored identity.</summary>
+    private async Task<CanopyCommitRowResult> InsertAsync(CanopyCommitBatch batch, CanopyCommitRow row, CancellationToken cancellationToken) {
+        if (_options.NewRecord == null || !(_store is ICanopyInsertStore<T> inserts)) return CanopyCommitRowResult.Failed(row.Id, Messages.InsertRefused);
+        try {
+            var record = _options.NewRecord(row) ?? throw new InvalidOperationException("NewRecord returned no record.");
+            var failed = Apply(record, row);
+            if (failed != null) return failed;
+            if (_options.Saving != null) {
+                var refusal = await _options.Saving(new CanopyWriteContext<T>(record, row, batch), cancellationToken).ConfigureAwait(false);
+                if (refusal != null) return CanopyCommitRowResult.Failed(row.Id, refusal);
+            }
+            inserts.Add(record);
+            await _store.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var id = RecordKeys.Format(_readKey(record));
+            // A record without an identity, or outside what the caller may read, is not kept: the transaction rolls it back.
+            if (id == null) throw new InvalidOperationException("The new record has no key after saving.");
+            if (_options.Scope != null && await LoadAsync(id, cancellationToken).ConfigureAwait(false) == null) return CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
+            return CanopyCommitRowResult.Saved(row.Id, Cells(record, row), id);
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             throw;
         } catch (Exception error) {

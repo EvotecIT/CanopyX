@@ -55,6 +55,9 @@ public sealed class CanopyCommitMessages {
     /// <summary>Gets or sets the message for a row the store refused, without its internal reason.</summary>
     public string NotSaved { get; set; } = "The row could not be saved.";
 
+    /// <summary>Gets or sets the message for a new row when the writer does not add records.</summary>
+    public string InsertRefused { get; set; } = "New rows cannot be added here.";
+
     /// <summary>Gets or sets the message for a row that was valid but not saved because another row of an all-or-nothing batch failed.</summary>
     public string BatchNotSaved { get; set; } = "Not saved: another row of this batch could not be saved.";
 

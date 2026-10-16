@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace CanopyX.Data.Tests;
 
 /// <summary>The EF Core adapter of the reference writer, as docs/remote-dotnet.md shows it.</summary>
-public sealed class EfCoreWriteStore<T> : ICanopyWriteStore<T> where T : class {
+public sealed class EfCoreWriteStore<T> : ICanopyInsertStore<T> where T : class {
     private readonly DbContext _db;
 
     public EfCoreWriteStore(DbContext db) { _db = db; }
@@ -17,6 +17,8 @@ public sealed class EfCoreWriteStore<T> : ICanopyWriteStore<T> where T : class {
     public async ValueTask SaveChangesAsync(CancellationToken cancellationToken) => await _db.SaveChangesAsync(cancellationToken);
 
     public void DiscardChanges() => _db.ChangeTracker.Clear();
+
+    public void Add(T record) => _db.Set<T>().Add(record);
 
     private sealed class Transaction : ICanopyWriteTransaction {
         private readonly IDbContextTransaction _transaction;

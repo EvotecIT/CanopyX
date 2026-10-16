@@ -14,6 +14,16 @@ public sealed class CanopyQueryableWriterOptions<T> where T : class {
     /// <remarks>Set it whenever callers may read only some records, so a caller cannot change a record it cannot see.</remarks>
     public Func<IQueryable<T>>? Scope { get; set; }
 
+    /// <summary>
+    /// Gets or sets how a new record of an insert row is created, before the row's values are applied: set the fields the caller
+    /// owns or must not choose (tenant, owner, audit fields) here. Null (the default) refuses inserts with
+    /// <see cref="CanopyCommitMessages.InsertRefused"/>; the store must also implement <see cref="ICanopyInsertStore{T}"/>.
+    /// </summary>
+    /// <remarks>An insert writes only editable columns, as an update does, and never the key: the store assigns it, or this
+    /// callback does. With <see cref="Scope"/> set, a new record that is not in the scope after saving is rolled back and answers
+    /// as not saved, so a caller cannot add a record it could not read.</remarks>
+    public Func<CanopyCommitRow, T>? NewRecord { get; set; }
+
     /// <summary>Gets or sets whether rows are written in a transaction each (default) or the batch in one, all or nothing.</summary>
     public CanopyCommitTransaction Transaction { get; set; }
 

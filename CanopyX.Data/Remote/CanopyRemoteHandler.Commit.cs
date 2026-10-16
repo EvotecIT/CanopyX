@@ -29,7 +29,9 @@ public sealed partial class CanopyRemoteHandler {
     /// writer's answer for the others, in the batch's order, with the dataset revision after the commit.</returns>
     /// <remarks>
     /// Every value is checked against its column's kind, the view's <see cref="CanopyCellValidation"/> and its editor (step,
-    /// choices, toggles) with <see cref="CanopyRemoteOptions.CommitMessages"/>; only rows that pass reach the writer. Once the
+    /// choices, toggles) with <see cref="CanopyRemoteOptions.CommitMessages"/>, and an insert also for the required columns it leaves
+    /// out; only rows that pass reach the writer. A saved insert's <see cref="CanopyCommitRowResult.NewId"/> is answered as
+    /// <c>newId</c> when it is a well-formed identity. Once the
     /// writer has answered, rows may already be committed, so its answer never turns into a failure of the request: rows it was
     /// not asked about or answered twice, cells that break the page rules or belong to other columns, messages for other
     /// columns, and an invalid revision are left out (and reported to <see cref="CanopyRemoteOptions.WriterProblem"/>),
@@ -86,17 +88,23 @@ public sealed partial class CanopyRemoteHandler {
             json.WriteString("view", Schema.ViewId);
             if (after != null) json.WriteString("revision", after);
             json.WriteStartArray("rows");
-            foreach (var row in batch.Rows) if (answers.TryGetValue(row.Id, out var answer)) WriteCommitRow(json, answer);
+            foreach (var row in batch.Rows) if (answers.TryGetValue(row.Id, out var answer)) WriteCommitRow(json, answer, row.Operation == CanopyCommitOperation.Insert);
             json.WriteEndArray();
             json.WriteEndObject();
         }
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 
-    private void WriteCommitRow(Utf8JsonWriter json, CanopyCommitRowResult row) {
+    private void WriteCommitRow(Utf8JsonWriter json, CanopyCommitRowResult row, bool insert) {
         json.WriteStartObject();
         json.WriteString("id", row.Id);
         json.WriteString("status", row.Status == CanopyCommitStatus.Saved ? "saved" : row.Status == CanopyCommitStatus.Conflict ? "conflict" : "error");
+        if (row.NewId != null) {
+            // Only a saved insert names its stored identity, and only a well-formed one.
+            if (row.Status != CanopyCommitStatus.Saved || !insert) Problem("The data writer gave a new id for a row that is not a saved insert; it is left out.");
+            else if (!ValidRevision(row.NewId)) Problem("The data writer gave a new id that is not a valid identity; it is left out.");
+            else json.WriteString("newId", row.NewId);
+        }
         if (row.Cells.Count > 0) {
             var cells = row.Status == CanopyCommitStatus.Saved ? Cells(row) : null;
             if (row.Status != CanopyCommitStatus.Saved) Problem("The data writer gave cells for a row that was not saved; they are left out.");

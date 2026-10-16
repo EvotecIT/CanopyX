@@ -608,6 +608,9 @@ or the source's `commit(batch, { signal })`. A remote source posts it, for examp
 - `revision` is the dataset revision the grid read (the accepted query's), or `null` before one was accepted.
 - `rows` holds at least one row: its `id`, the raw `values` of its changed columns, and the raw `original` values the reader
   started from for those columns (`null` for a missing value). Only rows whose checks passed are sent.
+- A row may carry `op`: `update` (the default) or `insert`. An insert adds a record (a calendar's created or dropped event, for
+  example): `{ "op": "insert", "id": "new-1", "values": { ... } }` with every value of the new record and no `original`. Its
+  `id` is a client id the runtime chooses (`new-1`, `new-2`, ...); only editable columns may be written, as for updates.
 
 The writer answers with a `gridCommitResult`, one entry per row it handled:
 
@@ -621,6 +624,8 @@ The writer answers with a `gridCommitResult`, one entry per row it handled:
 - `status` is `saved`, `error` or `conflict`. A saved row may carry canonical `cells` (grid cells, validated like page rows)
   that replace the shown ones; other rows may carry an `error` message and `errors` by column. A row the answer leaves out
   was not saved.
+- A saved insert may carry `newId`, the stored identity of the new record (an identifier); the runtime then replaces the
+  client id with it. Without `newId` the row keeps the client id. Only saved rows carry `newId`.
 - `revision` is optional: the dataset revision after the commit. The grid reports it in the commit result and keeps
   reading pages at the revision it accepted; a host whose source no longer serves that revision reloads the grid.
 - A transport failure (a non-success status, invalid JSON, a document that does not answer the batch: another view, an
@@ -629,7 +634,9 @@ The writer answers with a `gridCommitResult`, one entry per row it handled:
 
 **What a writer does.** It authorizes the caller and every changed column (editable columns are a presentation contract,
 not authority), validates the values with its own rules (the view's `validation` mirrors them), and executes each row
-independently, so one row's failure does not discard the others. For concurrency it checks the batch `revision` against
+independently, so one row's failure does not discard the others. It authorizes inserts as updates (every written column must
+be one the caller may write; fields the caller must not choose, such as the key, owner or tenant, come from the writer), and
+checks the required values an insert leaves out. For concurrency it checks the batch `revision` against
 its current one and, where they differ, compares each row's `original` values with what it stores: a row whose stored
 values differ is a `conflict` and is not written. A writer that cannot check rows individually may answer every row of a
 stale batch with `conflict`. It answers with the revision after the commit. Writes are the writer's own, governed by its

@@ -24,6 +24,7 @@ CanopyX.Data.CanopyCommitMessages.System.String BatchNotSaved { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Choice { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Conflict { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Date { get; set; }
+CanopyX.Data.CanopyCommitMessages.System.String InsertRefused { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Maximum { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String MaximumLength { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Minimum { get; set; }
@@ -36,24 +37,31 @@ CanopyX.Data.CanopyCommitMessages.System.String Required { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Step { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Type { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String WholeNumber { get; set; }
+CanopyX.Data.CanopyCommitOperation : enum System.Int32
+CanopyX.Data.CanopyCommitOperation.const CanopyX.Data.CanopyCommitOperation Insert = 1
+CanopyX.Data.CanopyCommitOperation.const CanopyX.Data.CanopyCommitOperation Update = 0
 CanopyX.Data.CanopyCommitResult : sealed class
 CanopyX.Data.CanopyCommitResult..ctor(System.Collections.Generic.IEnumerable<CanopyX.Data.CanopyCommitRowResult> rows, System.String? revision = null)
 CanopyX.Data.CanopyCommitResult.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyCommitRowResult> Rows { get; }
 CanopyX.Data.CanopyCommitResult.System.String? Revision { get; }
 CanopyX.Data.CanopyCommitRow : sealed class
 CanopyX.Data.CanopyCommitRow..ctor(System.String id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> values, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> original)
+CanopyX.Data.CanopyCommitRow.CanopyX.Data.CanopyCommitOperation Operation { get; }
 CanopyX.Data.CanopyCommitRow.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> Original { get; }
 CanopyX.Data.CanopyCommitRow.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> Values { get; }
 CanopyX.Data.CanopyCommitRow.System.String Id { get; }
+CanopyX.Data.CanopyCommitRow.static CanopyX.Data.CanopyCommitRow Insert(System.String id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> values)
 CanopyX.Data.CanopyCommitRowResult : sealed class
 CanopyX.Data.CanopyCommitRowResult.CanopyX.Data.CanopyCommitStatus Status { get; }
 CanopyX.Data.CanopyCommitRowResult.System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.CanopyCell> Cells { get; }
 CanopyX.Data.CanopyCommitRowResult.System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> Errors { get; }
 CanopyX.Data.CanopyCommitRowResult.System.String Id { get; }
 CanopyX.Data.CanopyCommitRowResult.System.String? Error { get; }
+CanopyX.Data.CanopyCommitRowResult.System.String? NewId { get; }
 CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Conflict(System.String id, System.String? error = null)
 CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Failed(System.String id, System.String? error, System.Collections.Generic.IDictionary<System.String, System.String>? errors = null)
 CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Saved(System.String id, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyCell>? cells = null)
+CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Saved(System.String id, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyCell>? cells, System.String? newId)
 CanopyX.Data.CanopyCommitStatus : enum System.Int32
 CanopyX.Data.CanopyCommitStatus.const CanopyX.Data.CanopyCommitStatus Conflict = 2
 CanopyX.Data.CanopyCommitStatus.const CanopyX.Data.CanopyCommitStatus Error = 1
@@ -255,6 +263,7 @@ CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyCommitTransactio
 CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyQueryExecutor Executor { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Action<CanopyX.Data.CanopyCommitRow, System.Exception>? Failed { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Boolean AlwaysCompareOriginals { get; set; }
+CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<CanopyX.Data.CanopyCommitRow, T>? NewRecord { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<CanopyX.Data.CanopyWriteContext<T>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String?>>? Saving { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<System.Linq.IQueryable<T>>? Scope { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String>>? Revision { get; set; }
@@ -487,6 +496,8 @@ CanopyX.Data.ICanopyExportFormat.System.String ContentType { get; }
 CanopyX.Data.ICanopyExportFormat.System.String Extension { get; }
 CanopyX.Data.ICanopyExportFormat.System.String Id { get; }
 CanopyX.Data.ICanopyExportFormat.abstract System.Threading.Tasks.Task WriteAsync(CanopyX.Data.CanopyExportContext context, System.IO.Stream output, System.Threading.CancellationToken cancellationToken)
+CanopyX.Data.ICanopyInsertStore<T> : interface (CanopyX.Data.ICanopyWriteStore<T>) where T : class
+CanopyX.Data.ICanopyInsertStore<T>.abstract System.Void Add(T record)
 CanopyX.Data.ICanopyRangeProvider : interface
 CanopyX.Data.ICanopyRangeProvider.abstract System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.ICanopyRecordProvider : interface

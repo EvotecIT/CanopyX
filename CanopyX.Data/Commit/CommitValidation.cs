@@ -16,7 +16,7 @@ internal static class CommitValidation {
     private static readonly Regex IsoInstant = new Regex(@"^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$", RegexOptions.CultureInvariant);
     private static readonly ConcurrentDictionary<string, Regex> Patterns = new ConcurrentDictionary<string, Regex>(StringComparer.Ordinal);
 
-    /// <summary>Checks a row; returns the typed row, or null with messages by column.</summary>
+    /// <summary>Checks a row (an insert also for the required columns it leaves out); returns the typed row, or null with messages by column.</summary>
     internal static CanopyCommitRow? Check(CanopyDataSchema schema, CanopyCommitRow row, CanopyCommitMessages messages, Dictionary<string, string> errors) {
         var values = new Dictionary<string, object?>(StringComparer.Ordinal);
         var original = new Dictionary<string, object?>(StringComparer.Ordinal);
@@ -25,8 +25,18 @@ internal static class CommitValidation {
             if (!column.Editable) throw new CanopyRequestException(CanopyRequestError.ColumnNotEditable, "The column cannot be edited on this endpoint.");
             var error = Value(column, pair.Value, messages, out var typed);
             if (error != null) errors[column.Id] = error; else values[column.Id] = typed;
-            row.Original.TryGetValue(pair.Key, out var start);
-            original[column.Id] = Original(column, start);
+            if (row.Operation == CanopyCommitOperation.Update) {
+                row.Original.TryGetValue(pair.Key, out var start);
+                original[column.Id] = Original(column, start);
+            }
+        }
+        if (row.Operation == CanopyCommitOperation.Insert) {
+            // A new record holds only the values it is given: a required editable column it leaves out is empty.
+            foreach (var column in schema.EditableColumns) {
+                if (column.Validation?.Required == true && !row.Values.ContainsKey(column.Id) && !errors.ContainsKey(column.Id))
+                    errors[column.Id] = column.Validation.Message ?? CanopyCommitMessages.Fill(messages.Required, column);
+            }
+            return errors.Count == 0 ? CanopyCommitRow.Insert(row.Id, values) : null;
         }
         return errors.Count == 0 ? new CanopyCommitRow(row.Id, values, original) : null;
     }

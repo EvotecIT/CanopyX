@@ -551,6 +551,14 @@ CancellationToken token)` answers per row with `CanopyCommitRowResult.Saved(id, 
 `Conflict(id, error)`, and the revision after the commit (null lets the endpoint read it from the provider). A row the
 result leaves out was not saved.
 
+**Inserts.** A row with `"op": "insert"` (a calendar's created or dropped event, for example) arrives as a `CanopyCommitRow`
+whose `Operation` is `CanopyCommitOperation.Insert`: its `Id` is the client's temporary id (`new-1`), its `Values` are the new
+record's values and its `Original` is empty. The endpoint checks it like an update (only editable, allowed columns; an
+`original` on an insert, or an unknown `op`, rejects the batch) and also answers `Required` errors for required editable
+columns the insert leaves out. A writer answers a saved insert with `CanopyCommitRowResult.Saved(id, cells, newId)`; the
+endpoint writes `newId` only for a saved insert whose new id is a well-formed identity (other cases are left out and
+reported to `WriterProblem`). Inserts count towards `MaxCommitRows` like any row.
+
 Custom writers declare their transaction boundary with `CanopyCommitTransaction Transaction { get; }`. Return `PerRow`
 for independent row saves or `PerBatch` for an atomic batch. If any input row fails endpoint validation, a per-batch
 writer is not called and every row answers as not saved; the invalid rows retain their specific validation messages.
@@ -582,15 +590,23 @@ writer is not called and every row answers as not saved; the invalid rows retain
   `BatchNotSaved`; a failed commit of the batch answers every row as not saved. After any row that is not saved the
   writer rolls back (a failing rollback does not hide the row's answer) and discards the store's unsaved changes.
 - A saved row answers canonical cells of its changed columns, formatted by the map like page rows.
+- **Inserts** are refused (`CommitMessages.InsertRefused`, "New rows cannot be added here.") unless `Options.NewRecord`
+  creates the new record and the store implements `ICanopyInsertStore<T>` (`Add(record)`). `NewRecord` runs first, so it sets
+  what the caller must not choose (owner, tenant, audit fields); the row's editable values follow (never the key, which the
+  store or `NewRecord` assigns), then `Saving`, `Add` and the save. The answer carries the stored key as `newId` and canonical
+  cells. With `Options.Scope`, a new record that is not in the scope after saving is rolled back and answers as not saved, so a
+  caller cannot add a record it could not read. In a `PerBatch` commit an insert is kept only when every row is saved.
 
-The writer reaches the store through `ICanopyWriteStore<T>`, so `CanopyX.Data` stays free of EF Core. The EF Core adapter:
+The writer reaches the store through `ICanopyWriteStore<T>` (and `ICanopyInsertStore<T>` for inserts), so `CanopyX.Data` stays
+free of EF Core. The EF Core adapter:
 
 ```csharp
-public sealed class EfCoreWriteStore<T>(DbContext db) : ICanopyWriteStore<T> where T : class {
+public sealed class EfCoreWriteStore<T>(DbContext db) : ICanopyInsertStore<T> where T : class {
     public IQueryable<T> Records => db.Set<T>().AsTracking();   // tracked, also when the context reads without tracking
     public async ValueTask<ICanopyWriteTransaction> BeginTransactionAsync(CancellationToken token) => new Transaction(await db.Database.BeginTransactionAsync(token));
     public async ValueTask SaveChangesAsync(CancellationToken token) => await db.SaveChangesAsync(token);
     public void DiscardChanges() => db.ChangeTracker.Clear();
+    public void Add(T record) => db.Set<T>().Add(record);           // inserts; implement ICanopyWriteStore<T> alone to refuse them
     sealed class Transaction(IDbContextTransaction transaction) : ICanopyWriteTransaction {
         public ValueTask CommitAsync(CancellationToken token) => new(transaction.CommitAsync(token));
         public ValueTask RollbackAsync(CancellationToken token) => new(transaction.RollbackAsync(token));
