@@ -32,7 +32,7 @@
       const resources = this.calResourceWindow?.() || null, key = JSON.stringify([gridResultShape(query), query.revision, from, to, resources]);
       this.calWindowKey = JSON.stringify(resources);
       const cache = this.calCache ||= new Map();
-      if (cache.has(key)) { const hit = cache.get(key); cache.delete(key); cache.set(key, hit); return { ...hit, rows: this.calEdited(hit.rows) }; }
+      if (cache.has(key)) { const hit = cache.get(key); cache.delete(key); cache.set(key, hit); return { ...hit, rows: this.calEdited(hit.rows, true) }; }
       let answer;
       if (typeof this.source.range === "function" && !this.calNoRange) {
         // A server that cannot answer ranges (code "unsupported") is asked through ordinary queries from then on.
@@ -42,12 +42,18 @@
       answer ||= await this.calFallbackRequest(query, from, to, signal);
       cache.set(key, answer);
       while (cache.size > CAL_CACHE) cache.delete(cache.keys().next().value);
-      return { ...answer, rows: this.calEdited(answer.rows) };
+      return { ...answer, rows: this.calEdited(answer.rows, true) };
     },
-    /** Records with their unsaved edits: the editing part keeps changed copies, which the calendar shows in their place. */
-    calEdited(rows) {
+    /**
+     * Records with their unsaved edits: the editing part keeps changed copies, which the calendar shows in their place. A hosted
+     * calendar adds the new records the writer has not stored yet (inline ones are in the rows already).
+     */
+    calEdited(rows, hosted) {
       const changes = this.edit?.changes;
-      return changes?.size ? rows.map(row => changes.get(row.id)?.row || row) : rows;
+      if (!changes?.size) return rows;
+      const out = rows.map(row => changes.get(row.id)?.row || row);
+      if (hosted && this.edit.inserted?.size) { const ids = new Set(rows.map(row => row.id)); for (const [id, row] of this.edit.inserted) if (!ids.has(id)) out.push(row); }
+      return out;
     },
 
     calRangeRequest(query, from, to, resources, signal) {
@@ -101,7 +107,9 @@
       this.calPrevLifetime?.abort(); this.calPrevLifetime = lifetime;
       let answer;
       const slow = setTimeout(() => { if (epoch === this.calEpoch) this.calNotice(this.calLabels.calendarLoading, false); }, 200);
-      try { answer = await this.calRecords(from, to, signal); }
+      // iCalendar sources load once (the iCalendar part fetches and reads them); their events join every range read-only.
+      if (this.cal.sources.some(source => source.ics) && !this.calIcsLoad) this.calIcsLoad = this.calLoadPart("calendar-ics").then(() => this.calLoadIcs()).catch(error => { this.calIcsLoad = null; throw error; });
+      try { answer = await this.calRecords(from, to, signal); if (this.calIcsLoad) await this.calIcsLoad; }
       catch (error) {
         clearTimeout(slow);
         if (epoch !== this.calEpoch || error.name === "AbortError" || this.destroyed) return;
@@ -110,14 +118,15 @@
       }
       clearTimeout(slow);
       if (epoch !== this.calEpoch || this.destroyed) return;
-      const events = calOccurrences(this, answer.rows, from, to);
-      this.calEvents = events; this.calRanges = calStaticRanges(this, from, to);
+      const events = calOccurrences(this, this.calIcsRows?.length ? [...answer.rows, ...this.calIcsRows] : answer.rows, from, to);
+      this.calAllEvents = events; this.calEvents = this.calShownEvents(events); this.calRanges = calStaticRanges(this, from, to);
       // A refused or failed edit stays said while the same period reloads around it (a commit, live data); another period
       // or view drops it. A truncated period says so as well.
       const sticky = this.calSticky?.at === this.calStickyKey() ? this.calSticky.text : "";
       const truncated = answer.truncated || events.truncated ? fill(this.calLabels.calendarTruncated, { count: numberFormat(this.lang).format(events.length) }) : "";
-      setText(this.calNoticeElement, [sticky, truncated].filter(Boolean).join(" ")); this.calNoticeElement.hidden = !sticky && !truncated;
-      this.calNoticeElement.classList.toggle("cx-cal-error", !!sticky);
+      const imported = this.calIcsErrors?.join(" ") || "";
+      setText(this.calNoticeElement, [sticky, truncated, imported].filter(Boolean).join(" ")); this.calNoticeElement.hidden = !sticky && !truncated && !imported;
+      this.calNoticeElement.classList.toggle("cx-cal-error", !!sticky || !!imported);
       this.calPaint(options);
       this.host.setAttribute("data-cx-calendar-ready", "true");
       this.emit("calendar", this.calSnapshot());

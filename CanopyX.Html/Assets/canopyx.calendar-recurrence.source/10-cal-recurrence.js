@@ -156,3 +156,25 @@
     const all = calExpand(rule, start, duration, zone, -Infinity, Infinity, new Set(), new Set(), rule.count ?? 100000);
     return all.length ? all[all.length - 1] + Math.max(duration, 0) : start + Math.max(duration, 0);
   }
+
+  const CAL_EXCEPTION = /^(\d{4}-\d\d-\d\d)T(\d\d):(\d\d)(?::(\d\d)(\.\d{1,7})?)?(Z|[+-]\d\d:\d\d)?$/;
+  /**
+   * EXDATE values, as C# CanopyRecurrence reads them: yyyy-MM-dd dates remove every occurrence on that day; ISO date-times
+   * (HH:mm, or with seconds and a fraction) remove the occurrence starting then, read in the series zone when they carry no Z
+   * or offset. Separated by commas, semicolons or white space; at most 1000.
+   */
+  function calExceptions(value, zone) {
+    const excluded = new Set(), excludedDays = new Set();
+    if (typeof value !== "string") return { excluded, excludedDays };
+    const items = value.split(/[\s,;]+/).filter(Boolean);
+    if (items.length > 1000) throw new Error("CanopyX: a series takes at most 1000 exceptions.");
+    for (const item of items) {
+      const day = calParseDay(item), match = CAL_EXCEPTION.exec(item);
+      if (Number.isFinite(day)) { excludedDays.add(day); continue; }
+      const date = match ? calParseDay(match[1]) : NaN;
+      if (!Number.isFinite(date) || +match[2] > 23 || +match[3] > 59 || match[4] !== undefined && +match[4] > 59) throw new Error("CanopyX: invalid recurrence exception.");
+      const minutes = +match[2] * 60 + +match[3], seconds = +(match[4] || 0) + +(match[5] || 0);
+      excluded.add(match[6] ? Date.parse(match[1] + "T" + match[2] + ":" + match[3] + ":" + String(match[4] || "00") + match[6]) + Math.round(+(match[5] || 0) * 1000) : zone.instant(date, minutes) + Math.round(seconds * 1000));
+    }
+    return { excluded, excludedDays };
+  }

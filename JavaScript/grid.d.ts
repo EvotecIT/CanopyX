@@ -19,7 +19,7 @@ export * from "./column-groups.js";
 export * from "./cell-ranges.js";
 import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
 import type { GridFacetPanelDefinition, GridFacetPanelOptions, GridFacetPanelApi } from "./facets.js";
-import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, GridCalendarState, GridCalendarSavedState, GridOccurrenceChange, GridRangeSource } from "./calendar.js";
+import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, GridCalendarState, GridCalendarSavedState, GridOccurrenceChange, GridRangeSource, GridEventCreate, GridEventReceive, CalendarOptions } from "./calendar.js";
 export * from "./facets.js";
 export * from "./calendar.js";
 export * from "./live.js";
@@ -361,6 +361,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   facets?: GridFacetPanelDefinition<Row>;
   /** Shows the records as a calendar: month, week, day, N days, agenda, year and the resource timeline (calendar.d.ts). */
   calendar?: GridCalendarDefinition<Row>;
+  /** Rows can be dragged out (or picked up with F2) onto a calendar that accepts drops. */
+  dragRows?: boolean;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -763,6 +765,10 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   onCalendar?: (event: GridCalendarState) => void;
   /** Before one occurrence of a series moves; returning false (or cancelling canopyx:occurrenceChange) keeps the series. */
   onOccurrenceChange?: (event: GridOccurrenceChange) => boolean | void;
+  /** Before the calendar proposes a new event; returning false (or cancelling canopyx:eventCreate) lets the host open its own form. */
+  onCreate?: (event: GridEventCreate) => boolean | void;
+  /** Before a dropped item becomes a record; returning false (or cancelling canopyx:eventReceive) lets the host schedule it. */
+  onReceive?: (event: GridEventReceive) => boolean | void;
   /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
   onPaste?: (event: GridPasteEvent) => boolean | void;
   /** After the cell ranges changed. */
@@ -905,6 +911,8 @@ type GridNamedRow<Row> = [Row][Row extends unknown ? 0 : never];
 // The row type is named, never inferred from the options: without one, rows are plain GridRow.
 export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: GridOptions<GridNamedRow<Row>>): DataGrid<GridQuery, Row>;
 export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: CursorGridOptions<GridNamedRow<Row>>): DataGrid<GridCursorQuery, Row>;
+/** A calendar from a list of events, with no grid schema to write: a preset (basic by default) and options over it (calendar.d.ts). */
+export function createCalendar(host: HTMLElement, options?: CalendarOptions): DataGrid<GridQuery, GridRow>;
 /** Registers options before either a tree or flat-grid fragment mounts. */
 export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery>): () => void;
 /**
@@ -914,5 +922,5 @@ export function configure(viewId: string, options: HostOptions | GridHostOptions
  */
 export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
 
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;

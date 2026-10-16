@@ -10,7 +10,15 @@ import type{
   GridRow,GridColumnId,GridQuery
 }
 from "./grid.js";
-export type GridCalendarView="month"|"week"|"day"|"days"|"agenda"|"year"|"timeline";
+export type GridCalendarView="month"|"week"|"day"|"days"|"agenda"|"year"|"timeline"|"mini"|"weekList"|"dayList"|"months";
+export type GridCalendarToolbarItem="search"|"filters"|"columns"|"views"|"export"|"more";
+export interface GridCalendarSource{
+  id:string;
+  label:string;
+  tone?:string;
+  ics?:string;
+  hidden?:boolean;
+}
 export type GridCalendarZoom="hour"|"day"|"week"|"month"|"quarter";
 export type GridCalendarTime=`${number}:${number}`;
 export type GridCalendarWeekday=0|1|2|3|4|5|6;
@@ -38,6 +46,7 @@ export interface GridCalendarRange{
   resource?:string;
   kind?:"background"|"unavailable";
   recurrence?:string;
+  inverse?:boolean;
 }
 export interface GridCalendarDefinition<Row extends GridRow=GridRow>{
   start:GridColumnId<Row>;
@@ -77,6 +86,27 @@ export interface GridCalendarDefinition<Row extends GridRow=GridRow>{
   availability?:readonly{resource?:string;days?:readonly GridCalendarWeekday[];start:GridCalendarTime;end:GridCalendarTime}[];
   limit?:number;
   phone?:GridCalendarView;
+  toolbar?:boolean|readonly GridCalendarToolbarItem[];
+  details?:"drawer"|"popover";
+  description?:GridColumnId<Row>;
+  tone?:GridColumnId<Row>;
+  source?:GridColumnId<Row>;
+  sources?:readonly GridCalendarSource[];
+  create?:boolean|{minutes?:number;allDay?:boolean};
+  drop?:boolean;
+  occurrence?:"ask"|"this"|"following"|"all";
+  weekNumbers?:false|"iso"|"locale";
+  navLinks?:boolean;
+  validRange?:{start?:string;end?:string};
+  fixedWeeks?:boolean;
+  outsideDays?:boolean;
+  span?:{count:number;unit:"day"|"week"|"month"};
+  menu?:boolean;
+  hover?:boolean;
+  yearEvents?:boolean;
+  agendaSpan?:"day"|"week"|"month"|"year";
+  months?:number;
+  print?:boolean;
 }
 export interface GridCalendarEvent{
   readonly id:string;
@@ -90,8 +120,72 @@ export interface GridCalendarEvent{
   readonly background?:boolean;
 }
 export type GridCalendarTemplate=(context:{readonly event:GridCalendarEvent;readonly row:GridRow;readonly element:HTMLElement;readonly kind:"bar"|"chip"|"block"|"item"|"lane";readonly labels:Readonly<Record<string,string>>;}) => boolean|void;
+export interface GridCalendarMenuContext{
+  readonly kind:"event"|"slot"|"day"|"resource";
+  readonly event?:GridCalendarEvent;
+  readonly day?:string;
+  readonly minutes?:number|null;
+  readonly resource?:string|null;
+}
+export interface GridCalendarMenuItem{
+  id?:string|null;
+  label?:string;
+  run?:(context:GridCalendarMenuContext) => unknown;
+  disabled?:boolean;
+}
 export interface GridCalendarOptions{
   render?:GridCalendarTemplate;
+  menu?:(context:GridCalendarMenuContext,defaults:readonly{readonly id:string;readonly label:string}[]) => readonly GridCalendarMenuItem[]|null|false|void;
+  occurrence?:(change:GridOccurrenceChange) => "this"|"following"|"all"|false|void|PromiseLike<"this"|"following"|"all"|false|void>;
+}
+export interface GridEventCreate{
+  readonly start:string;
+  readonly end:string;
+  readonly allDay:boolean;
+  readonly resource:string|null;
+}
+export interface GridEventReceive extends GridEventCreate{
+  readonly item:{readonly source:"grid"|"element";readonly view?:string;readonly id:string|null;readonly title:string;readonly minutes:number|null;readonly allDay:boolean;readonly cells:Readonly<Record<string,string|number|boolean|null>>};
+}
+export interface CalendarEventInput{
+  id?:string;
+  title:string;
+  start:Date|string;
+  end?:Date|string|null;
+  allDay?:boolean;
+  description?:string;
+  tone?:string;
+  resource?:string;
+  recurrence?:string;
+  exceptions?:string;
+  source?:string;
+}
+export interface CalendarOptions{
+  events?:readonly CalendarEventInput[];
+  preset?:"basic"|"standard"|"scheduler";
+  id?:string;
+  label?:string;
+  views?:readonly GridCalendarView[];
+  view?:GridCalendarView;
+  date?:string;
+  timeZone?:string;
+  firstDay?:GridCalendarWeekday;
+  toolbar?:boolean|readonly GridCalendarToolbarItem[];
+  details?:"drawer"|"popover";
+  drawer?:boolean;
+  export?:boolean;
+  editable?:boolean|GridCalendarEditing;
+  create?:boolean|{minutes?:number;allDay?:boolean};
+  drop?:boolean;
+  print?:boolean;
+  sources?:readonly GridCalendarSource[];
+  resources?:readonly{id:string;label?:string;parent?:string|null}[]|InlineView|RemoteView;
+  timeline?:boolean;
+  live?:boolean|object;
+  facets?:readonly string[]|object;
+  links?:boolean;
+  calendar?:Omit<Partial<GridCalendarDefinition>,"menu">&Omit<GridCalendarOptions,"menu">&{menu?:boolean|GridCalendarOptions["menu"]};
+  [hostOption:string]:unknown;
 }
 export interface GridCalendarState{
   readonly view:GridCalendarView;
@@ -157,6 +251,7 @@ export interface GridCalendarApi{
   exportCalendar(options?:{scope?:"visible"|"filtered"|"selected"|"all";fileName?:string;download?:boolean}):Promise<{blob:Blob;fileName:string;text:string}>;
   openCalendarEvent(id:string):Promise<unknown>;
   clearCalendarSelection():void|Promise<void>;
+  setCalendarSource(id:string,visible?:boolean):boolean|Promise<boolean>;
 }
 
 // ---- JavaScript/cell-ranges.d.ts ----
@@ -312,6 +407,7 @@ export interface CanopyCellEditor{
 }
 export interface GridChange{
   readonly id:string;
+  readonly op?:"update"|"insert";
   readonly values:Readonly<Record<string,CellValue>>;
   readonly original:Readonly<Record<string,CellValue>>;
   readonly errors?:Readonly<Record<string,string>>;
@@ -321,6 +417,7 @@ export interface GridChange{
 export interface GridCommitRowResult{
   status:"saved"|"error"|"conflict";
   cells?:Record<string,Cell>;
+  newId?:string;
   error?:string;
   errors?:Record<string,string>;
 }
@@ -329,7 +426,7 @@ export interface GridCommit{
   readonly type:"gridCommit";
   readonly view:string;
   readonly revision:string|null;
-  readonly rows:readonly{readonly id:string;readonly values:Readonly<Record<string,CellValue>>;readonly original:Readonly<Record<string,CellValue>>}[];
+  readonly rows:readonly({readonly op?:"update";readonly id:string;readonly values:Readonly<Record<string,CellValue>>;readonly original:Readonly<Record<string,CellValue>>}|{readonly op:"insert";readonly id:string;readonly values:Readonly<Record<string,CellValue>>})[];
 }
 export interface GridCommitResult{
   protocol:"canopyx/2";
@@ -391,6 +488,7 @@ export interface GridEditingApi{
   cancelEdit():void;
   isEditing():boolean;
   setCellValue(id:string,column:string,value:CellValue):Promise<{applied:boolean;valid:boolean;error?:string}>;
+  insertRow(input:{id?:string;cells:Readonly<Record<string,Cell>>}):Promise<{id:string;applied:boolean;valid:boolean;errors?:Record<string,string>}>;
   getChanges():GridChange[];
   hasChanges():boolean;
   revertChanges(ids?:readonly string[]):void;
@@ -715,7 +813,7 @@ import type{
 }
 from "./facets.js";
 import type{
-  GridCalendarDefinition,GridCalendarOptions,GridCalendarApi,GridCalendarState,GridCalendarSavedState,GridOccurrenceChange,GridRangeSource
+  GridCalendarDefinition,GridCalendarOptions,GridCalendarApi,GridCalendarState,GridCalendarSavedState,GridOccurrenceChange,GridRangeSource,GridEventCreate,GridEventReceive,CalendarOptions
 }
 from "./calendar.js";
 export * from "./facets.js";
@@ -1040,6 +1138,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   live?:GridLiveDefinition;
   facets?:GridFacetPanelDefinition<Row>;
   calendar?:GridCalendarDefinition<Row>;
+  dragRows?:boolean;
   stateKey?:string;
   timeZone?:TimeZone;
   labels?:Partial<CanopyLabels>;
@@ -1373,6 +1472,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   calendar?:GridCalendarOptions;
   onCalendar?:(event:GridCalendarState) => void;
   onOccurrenceChange?:(event:GridOccurrenceChange) => boolean|void;
+  onCreate?:(event:GridEventCreate) => boolean|void;
+  onReceive?:(event:GridEventReceive) => boolean|void;
   onPaste?:(event:GridPasteEvent) => boolean|void;
   onCellRangeChange?:(event:{ranges:readonly GridCellRange[]}) => void;
 }
@@ -1466,10 +1567,12 @@ export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends Grid
 type GridNamedRow<Row>=[Row][Row extends unknown?0:never];
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:GridOptions<GridNamedRow<Row>>):DataGrid<GridQuery,Row>;
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:CursorGridOptions<GridNamedRow<Row>>):DataGrid<GridCursorQuery,Row>;
+export function createCalendar(host:HTMLElement,options?:CalendarOptions):DataGrid<GridQuery,GridRow>;
 export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>):() => void;
 export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>>;
 declare const gridRuntime:Omit<typeof CanopyX,"configure"|"mount">&{
   createDataGrid:typeof createDataGrid;
+  createCalendar:typeof createCalendar;
   enhance:typeof enhance;
   grid:typeof grid;
   configure:typeof configure;

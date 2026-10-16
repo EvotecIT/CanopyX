@@ -52,7 +52,7 @@
         if (event.subtitle) { const subtitle = h("span", "cx-cal-ev-sub"); setText(subtitle, event.subtitle); element.appendChild(subtitle); }
         const column = this.cal.status;
         if (column && (kind !== "lane") && cellValue(event.row.cells[column.id]) != null) {
-          const status = h("span", "cx-cal-ev-status");
+          const status = h("span", "cx-cal-ev-status" + (event.base?.toneFromStatus ? " cx-cal-status-tone" : ""));
           if (column.render) { try { column.render(event.row, status, { column: column.id, index: 0, signal: this.lifetime.signal, onDispose() {} }); } catch (error) { this.emit("error", { error }); } }
           else setText(status, this.calStatusText(event));
           element.appendChild(status);
@@ -62,15 +62,21 @@
       return element;
     },
     calPublicEvent(event) {
-      return gridFreeze({ id: event.id, record: event.key, start: calIso(event.start), end: calIso(event.end), allDay: event.allDay, title: event.title, resource: event.resource, recurring: event.recurring });
+      // source names the event's source; external marks an iCalendar event, whose record id is not a record of the grid.
+      return gridFreeze({ id: event.id, record: event.key, start: calIso(event.start), end: calIso(event.end), allDay: event.allDay, title: event.title, resource: event.resource, recurring: event.recurring,
+        source: event.base?.source ?? null, external: !!event.base?.external });
     },
 
     /** Opens an event's record: canopyx:rowActivate first (cancelable), then the host's onDetails or the record drawer. */
     async calOpenEvent(event, keyboard, returnFocus) {
+      // An event of an iCalendar source has no record in the grid: it always shows its details.
+      if (event.base?.external) return this.calShowDetails(event, this.calBody.querySelector('[data-cx-event="' + CSS.escape(event.id) + '"]') || returnFocus);
       const row = gridFreeze(JSON.parse(JSON.stringify(event.row)));
       if (!this.emit("rowActivate", { id: event.key, row, keyboard: !!keyboard, occurrence: event.recurring ? calIso(event.start) : null })) return;
       if (typeof this.opts.onDetails === "function")
         return this.runGridHook(signal => this.opts.onDetails({ row, query: this.acceptedQuery, signal, returnFocus, occurrence: event.recurring ? calIso(event.start) : null }), this.dataLifetime.signal);
+      // A basic calendar shows a small details popover instead of the record drawer.
+      if (this.cal.details === "popover") return this.calShowDetails(event, this.calBody.querySelector('[data-cx-event="' + CSS.escape(event.id) + '"]') || returnFocus);
       await this.requirePart("filter-editor");
       if (this.recordNeeded(event.row)) await this.loadRecordPanel();
       if (this.destroyed) return;

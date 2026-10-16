@@ -3,10 +3,12 @@
   // subtitle, allDay, resource, status, recurrence, exceptions, the series and recurrenceId of an overridden occurrence, display
   // ("background" marks a background range) and seriesEnd (what a server reads to find series in a range). The rest are the
   // views and how they look. Everything is optional except start; an unknown key or a column of the wrong kind is an error.
-  const CAL_VIEWS = ["month", "week", "day", "days", "agenda", "year", "timeline"], CAL_ZOOMS = ["hour", "day", "week", "month", "quarter"];
+  const CAL_VIEWS = ["month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months"], CAL_ZOOMS = ["hour", "day", "week", "month", "quarter"];
   const CAL_KEYS = new Set(["start", "end", "title", "subtitle", "allDay", "resource", "status", "recurrence", "exceptions", "series", "recurrenceId", "display",
     "seriesEnd", "view", "views", "date", "days", "firstDay", "hiddenDays", "slotMinutes", "minTime", "maxTime", "scrollTime", "workingHours", "nowIndicator",
-    "eventLimit", "eventStyle", "timeZone", "editable", "resources", "zoom", "zooms", "capacity", "ranges", "availability", "limit", "phone"]);
+    "eventLimit", "eventStyle", "timeZone", "editable", "resources", "zoom", "zooms", "capacity", "ranges", "availability", "limit", "phone",
+    "toolbar", "details", "description", "tone", "source", "sources", "create", "drop", "occurrence", "weekNumbers", "navLinks", "validRange", "fixedWeeks",
+    "outsideDays", "span", "menu", "hover", "yearEvents", "agendaSpan", "months", "print"]);
   const CAL_TONE = /^[a-z][a-z0-9-]{0,31}$/;
 
   function calInvalid(message) { throw new Error("CanopyX: " + message); }
@@ -41,7 +43,6 @@
     if (!settings.series !== !settings.recurrenceId) calInvalid("calendar series and recurrenceId come together.");
     const views = input.views === undefined ? ["month", "week", "day", "agenda"].concat(input.resources ? ["timeline"] : []) : input.views;
     if (!Array.isArray(views) || !views.length || new Set(views).size !== views.length || views.some(view => !CAL_VIEWS.includes(view))) calInvalid("calendar views list unique views.");
-    if (views.includes("timeline") && !input.resources) calInvalid("the timeline view needs calendar resources.");
     const view = input.view === undefined ? views[0] : input.view;
     if (!views.includes(view)) calInvalid("the calendar's first view must be one of its views.");
     settings.views = views; settings.view = view;
@@ -88,6 +89,7 @@
     settings.capacity = calCapacity(input.capacity);
     settings.ranges = calRanges(input.ranges);
     settings.availability = calAvailability(input.availability);
+    calSettingsMore(input, column, settings);
     return settings;
   }
 
@@ -134,12 +136,12 @@
     if (!Array.isArray(list) || list.length > 1000) calInvalid("calendar ranges are a list of at most 1000.");
     return list.map(item => {
       const start = calInstant(item?.start), end = calInstant(item?.end);
-      if (!item || typeof item !== "object" || Object.keys(item).some(key => !["start", "end", "label", "tone", "resource", "kind", "recurrence"].includes(key)) ||
+      if (!item || typeof item !== "object" || Object.keys(item).some(key => !["start", "end", "label", "tone", "resource", "kind", "recurrence", "inverse"].includes(key)) || item.inverse !== undefined && typeof item.inverse !== "boolean" ||
           !(start < end) || typeof item.label !== "string" || !item.label.trim() || item.label.length > 256 || item.tone !== undefined && !CAL_TONE.test(item.tone) ||
           item.resource !== undefined && typeof item.resource !== "string" || item.kind !== undefined && !["background", "unavailable"].includes(item.kind))
         calInvalid("a calendar range has start before end, a label, and optional tone, resource, kind and recurrence.");
-      if (item.recurrence !== undefined) calRule(item.recurrence);
-      return { start, end, label: item.label, tone: calSafeTone(item.tone) || (item.kind === "unavailable" ? "neutral" : "info"), resource: item.resource ?? null, kind: item.kind || "background", recurrence: item.recurrence || null };
+      if (item.recurrence !== undefined) calRec().calRule(item.recurrence);
+      return { start, end, label: item.label, tone: calSafeTone(item.tone) || (item.kind === "unavailable" ? "neutral" : "info"), resource: item.resource ?? null, kind: item.kind || "background", recurrence: item.recurrence || null, inverse: item.inverse === true };
     });
   }
 

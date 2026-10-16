@@ -109,27 +109,23 @@
   }
 
   Object.assign(DataGrid.prototype, {
-    /** The Export menu's iCalendar format for this grid: the records of the menu's scope, from the export capture. */
-    calExportFormat() {
-      const grid = this;
-      return { id: "ics", label: this.calLabels.calendarExport, extension: "ics", mime: "text/calendar",
-        async write(capture, context) {
-          const rows = [];
-          for await (const record of capture.rows({ signal: context.signal })) {
-            const cells = {};
-            for (const [id, cell] of Object.entries(record.cells)) cells[id] = cell && typeof cell === "object" && "value" in cell ? cell.value : cell;
-            rows.push({ id: record.id, cells });
-            context.progress(rows.length);
-          }
-          grid.calVersion++;
-          return new Blob([calIcs(grid, rows)], { type: "text/calendar;charset=utf-8" });
-        } };
+    /** Writes the Export menu's iCalendar file: the records of the menu's scope, from the export capture (calExportFormat). */
+    async calIcsWrite(capture, context) {
+      const rows = [];
+      for await (const record of capture.rows({ signal: context.signal })) {
+        const cells = {};
+        for (const [id, cell] of Object.entries(record.cells)) cells[id] = cell && typeof cell === "object" && "value" in cell ? cell.value : cell;
+        rows.push({ id: record.id, cells });
+        context.progress(rows.length);
+      }
+      this.calVersion++;
+      return new Blob([calIcs(this, rows)], { type: "text/calendar;charset=utf-8" });
     },
     /**
-     * Exports iCalendar text: scope "visible" (the default) takes the records of the occurrences shown, "filtered", "selected" and
+     * Exports iCalendar text (exportCalendar): scope "visible" (the default) takes the records of the occurrences shown, "filtered", "selected" and
      * "all" the records of the grid's export scopes. Resolves with { blob, fileName, text }; download: true saves the file.
      */
-    async exportCalendar(options = {}) {
+    async calIcsExport(options = {}) {
       const scope = options.scope || "visible";
       if (!["visible", "filtered", "selected", "all"].includes(scope)) throw new Error("CanopyX: calendar export scopes are visible, filtered, selected and all.");
       let text;

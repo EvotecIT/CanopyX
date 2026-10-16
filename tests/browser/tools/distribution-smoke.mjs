@@ -30,7 +30,7 @@ try {
     "CanopyX.Html/Assets/canopyx-formatting.js", "CanopyX.Html/Assets/canopyx-formatting.css", "CanopyX.Html/Assets/canopyx-format-editor.js", "CanopyX.Html/Assets/canopyx-format-editor.css",
     "CanopyX.Html/Assets/canopyx-column-groups.js", "CanopyX.Html/Assets/canopyx-column-groups.css", "CanopyX.Html/Assets/canopyx-cell-range.js", "CanopyX.Html/Assets/canopyx-cell-range.css",
     "CanopyX.Html/Assets/canopyx-highlight.js", "CanopyX.Html/Assets/canopyx-highlight.css", "CanopyX.Html/Assets/canopyx-layouts.js", "CanopyX.Html/Assets/canopyx-layouts.css", "CanopyX.Html/Assets/canopyx-record-panel.js", "CanopyX.Html/Assets/canopyx-record-panel.css", "CanopyX.Html/Assets/canopyx-live.js", "CanopyX.Html/Assets/canopyx-live.css", "CanopyX.Html/Assets/canopyx-facets.js", "CanopyX.Html/Assets/canopyx-facets.css",
-    "CanopyX.Html/Assets/canopyx-calendar.js", "CanopyX.Html/Assets/canopyx-calendar.css", "CanopyX.Html/Assets/canopyx-timeline.js", "CanopyX.Html/Assets/canopyx-timeline.css",
+    "CanopyX.Html/Assets/canopyx-calendar.js", "CanopyX.Html/Assets/canopyx-calendar.css", "CanopyX.Html/Assets/canopyx-calendar-recurrence.js", "CanopyX.Html/Assets/canopyx-calendar-edit.js", "CanopyX.Html/Assets/canopyx-calendar-ics.js", "CanopyX.Html/Assets/canopyx-timeline.js", "CanopyX.Html/Assets/canopyx-timeline.css",
     ...['pl','de','es','fr','it'].flatMap(code=>[`JavaScript/locales/${code}.mjs`,`JavaScript/locales/${code}.d.ts`,`CanopyX.Html/Assets/canopyx-labels-${code}.js`])];
   assert.deepEqual(packed.files.map(file => file.path).sort(), expected.sort(), "Package only the declared user assets and types.");
   const metadata = JSON.parse(await fs.readFile(path.join(repo, "package.json"), "utf8"));
@@ -48,7 +48,7 @@ try {
     "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--lib", "ES2022,DOM", "consumer.ts"], consumer);
   const importCheck = `import assert from 'node:assert/strict';
     import CanopyX, * as runtime from '@evotecit/canopyx';
-    import GridRuntime, { createDataGrid, enhance, grid } from '@evotecit/canopyx/grid';
+    import GridRuntime, { createDataGrid, createCalendar, enhance, grid } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
@@ -60,7 +60,7 @@ try {
     assert.equal(Object.hasOwn(globalThis, 'CanopyXLocales'), false);
     assert.equal(runtime.protocol, 'canopyx/2');
     assert.equal(runtime.createTreeGrid, CanopyX.createTreeGrid);
-    assert.equal(createDataGrid, GridRuntime.createDataGrid);
+    assert.equal(createDataGrid, GridRuntime.createDataGrid); assert.equal(createCalendar, GridRuntime.createCalendar);
     assert.equal(enhance, GridRuntime.enhance); assert.equal(grid, GridRuntime.grid); assert.equal(typeof ReportingRuntime.enhance, 'function');
     assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
     assert.equal(typeof runtime.use, 'function'); assert.equal(runtime.registerPart, CanopyX.registerPart);

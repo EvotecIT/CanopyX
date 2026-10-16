@@ -35,7 +35,18 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyTreeView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        return Parts.Where(part => part.IsNeededBy(view)).ToList().AsReadOnly();
+        return WithRequired(Parts.Where(part => part.IsNeededBy(view)));
+    }
+
+    /// <summary>The parts with every part they require (Build/parts.json requires), in manifest order: a part the page carries
+    /// never has to fetch another from beside the page.</summary>
+    private static IReadOnlyList<CanopyHtmlPart> WithRequired(IEnumerable<CanopyHtmlPart> needed) {
+        var names = new HashSet<string>(needed.Select(part => part.Name), StringComparer.Ordinal);
+        var pending = new Stack<string>(names);
+        while (pending.Count > 0) {
+            foreach (var required in GetPart(pending.Pop()).Requires) if (names.Add(required)) pending.Push(required);
+        }
+        return Parts.Where(part => names.Contains(part.Name)).ToList().AsReadOnly();
     }
 
     /// <summary>Gets the parts a flat grid loads, whose payloads a single-file page carries: the filter editor and export parts, the
@@ -55,9 +66,9 @@ public static partial class CanopyHtmlAssets {
         // A record collection held as tree nodes shows as a nested tree in the record panel, which loads the tree tools.
         var treeCollection = view.Source.Kind == CanopyGridSourceKind.Host || view.Record != null && view.Record.Source.Kind != CanopyRecordSourceKind.Inline ||
             view.Rows.Any(row => TreeCollection(row.Cells.Values) || row.HasFields && TreeCollection(row.Fields.Values));
-        return Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree) ||
+        return WithRequired(Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree) ||
             resourceTree != null && part.IsNeededBy(resourceTree) ||
-            treeCollection && part.Name == "tree-tools").ToList().AsReadOnly();
+            treeCollection && part.Name == "tree-tools"));
     }
 
     private static bool TreeCollection(IEnumerable<CanopyCell> cells) {

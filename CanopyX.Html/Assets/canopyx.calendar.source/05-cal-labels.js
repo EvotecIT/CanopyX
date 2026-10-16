@@ -17,7 +17,13 @@
     calendarMoveHelp: "Arrow keys move, Shift with arrow keys changes the end, Alt with Up or Down changes the resource, Enter saves, Escape cancels.",
     calendarEdit: "Move or resize {title}", calendarSaveFailed: "{title} was not saved: {error}", calendarExport: "iCalendar (.ics)",
     calendarTimeRange: "{start} – {end}", calendarSelected: "Selected {range}", calendarLane: "{resource}, {events}",
-    calendarHighlighted: "[one]{count} event highlighted[other]{count} events highlighted"
+    calendarHighlighted: "[one]{count} event highlighted[other]{count} events highlighted",
+    calendarMini: "Mini month", calendarWeekList: "Week list", calendarDayList: "Day list", calendarMonths: "Months", calendarWeekNumber: "Week {number}",
+    calendarWeekShort: "W{number}", calendarNewEvent: "New event", calendarEventTitle: "Title", calendarCreate: "Add", calendarCancel: "Cancel",
+    calendarCreated: "{title} added on {time}", calendarReceived: "{title} scheduled on {time}", calendarOccurrenceTitle: "Change a repeating event",
+    calendarThisEvent: "This event", calendarThisAndFollowing: "This and following events", calendarAllEvents: "All events", calendarSources: "Calendars",
+    calendarImportFailed: "Could not read {source}: {error}", calendarActions: "Actions for {title}", calendarOpen: "Open", calendarMove: "Move",
+    calendarNewHere: "New event here", calendarOutsideRange: "Outside the dates this calendar shows", calendarClose: "Close", calendarDetailsOf: "Details of {title}"
   };
   /** The calendar's texts: the English defaults, then whatever the view and the host translated. */
   function calLabelsFor(labels) {

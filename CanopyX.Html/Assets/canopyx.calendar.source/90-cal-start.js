@@ -15,30 +15,44 @@
       this.calSeriesZone = calZone(this.cal.zoneFixed && this.cal.zoneName !== "local" ? this.cal.zoneName : "utc");
       this.calMinSegment = Math.max(15, this.cal.slotMinutes * 0.75);
       this.calView = this.cal.view; this.calZoom = this.cal.zoom;
-      this.calDate = this.cal.date ?? this.calZone.day(Date.now());
+      this.calDate = this.calClampDay(this.cal.date ?? this.calZone.day(Date.now()));
       this.calCollapsed = new Set();
       this.defaultState.calendar = { view: this.cal.view, date: null, zoom: this.cal.zoom };
       const signal = this.lifetime.signal, host = this.host;
       host.classList.add("cx-calendar");
+      // Only the grid toolbar controls the definition asks for; none at all for calendar chrome only.
+      if (this.cal.toolbar === false) host.classList.add("cx-cal-bare");
+      else if (this.cal.toolbar !== true) {
+        for (const item of CAL_TOOLBAR) if (!this.cal.toolbar.has(item)) host.classList.add("cx-cal-no-" + item);
+        // Without More, Views and Export stay in the toolbar on phones too instead of moving into a hidden menu.
+        if (!this.cal.toolbar.has("more") && this.overflow) { this.placeMenus?.(false); this.overflow.details.remove(); this.overflow = null; }
+      }
       host.setAttribute("data-cx-event-style", this.cal.eventStyle);
       const root = this.calRoot = h("div", "cx-cal");
       root.setAttribute("role", "region"); root.setAttribute("aria-label", this.view.label);
       this.calNoticeElement = h("div", "cx-cal-notice"); this.calNoticeElement.hidden = true; this.calNoticeElement.setAttribute("role", "status");
       this.calBody = h("div", "cx-cal-body");
       this.calLive = h("div", "cx-live cx-sr-only"); this.calLive.setAttribute("aria-live", "polite");
-      root.append(this.calBuildBar(), this.calNoticeElement, this.calBody, this.calLive);
+      root.append(...[this.calBuildBar(), this.calBuildLegend(), this.calNoticeElement, this.calBody, this.calLive].filter(Boolean));
       this.grid.before(root);
+      // Right to left follows the page (dir="rtl" on the host or above it): logical CSS sides, mirrored arrow keys and pointer x.
+      this.calRtl = getComputedStyle(host).direction === "rtl"; host.classList.toggle("cx-cal-rtl", this.calRtl);
       this.calPhone = host.clientWidth > 0 && host.clientWidth <= 640;
       if (this.calPhone && !this.initialState?.calendar) this.calView = this.cal.phone || (this.cal.views.includes("agenda") ? "agenda" : this.calView);
       this.calBody.addEventListener("keydown", event => this.calKey(event), { signal });
       this.calBody.addEventListener("click", event => this.calClick(event), { signal });
       this.calBody.addEventListener("focusin", event => this.calFocusIn(event), { signal });
+      this.calBody.addEventListener("pointerover", event => this.calHoverOver(event), { signal });
+      this.calBody.addEventListener("pointerout", event => this.calHoverOut(event), { signal });
+      for (const type of ["pointerdown", "keydown", "wheel"]) this.calBody.addEventListener(type, () => this.calHideHover(), { signal, passive: true });
+      this.calMenuStart();
       host.addEventListener("canopyx:query", () => { this.calCache?.clear(); this.calReload(); }, { signal });
       host.addEventListener("canopyx:rowsChanged", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:commit", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:cellValueChanged", () => { this.calVersion++; this.calReload({ keep: true }); }, { signal });
-      if (this.cal.editable) {
+      if (this.cal.editable || this.cal.create || this.cal.drop) {
         host.setAttribute("data-cx-calendar-editable", "true");
+        this.calEditStart?.();
         this.calBody.addEventListener("pointerdown", event => this.calDragStart(event), { signal });
         this.calBody.addEventListener("pointermove", event => this.calDragMove(event), { signal });
         this.calBody.addEventListener("pointerup", event => this.calDragEnd(event, false), { signal });
@@ -57,7 +71,7 @@
         // Only the month (its rows and "+N more" follow the height) and a phone switch rebuild; other views follow by CSS.
         if (switched || this.calView === "month") this.calPaint({ keep: true, resize: true });
         else if (this.calView === "timeline") this.tlPaintLanes?.();
-        else if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingRight = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
+        else if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
       }));
       observer.observe(root);
       host.classList.toggle("cx-cal-phone", this.calPhone);
@@ -67,7 +81,7 @@
       global.addEventListener("beforeprint", () => print(true), { signal }); global.addEventListener("afterprint", () => print(false), { signal });
       signal.addEventListener("abort", () => {
         observer.disconnect(); clearInterval(timer); clearTimeout(this.calAnnounceTimer); this.calPrevLifetime?.abort();
-        root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone"); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");
+        root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone", "cx-cal-bare", "cx-cal-rtl", ...CAL_TOOLBAR.map(item => "cx-cal-no-" + item)); this.calHideHover(); this.calCloseDetails(false); this.calCloseMenu(false); this.calCloseCreate?.(false); this.calCloseAsk?.(null); clearTimeout(this.calPressTimer); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");
       }, { once: true });
       calWrapHighlight();
       // The Export menu offers iCalendar on this grid only, as a format a plugin given to one grid would.
@@ -81,18 +95,27 @@
     /** The first and last day a view shows for a date. */
     calRangeOf(view, date) {
       const cal = this.cal;
-      if (view === "month") {
-        const month = calMonthStart(date), end = calAddMonths(month, 1) - 1;
-        return { firstDay: calWeekStart(month, cal.firstDay), lastDay: calWeekStart(end, cal.firstDay) + 6, month };
+      if (view === "month" || view === "mini") {
+        // The mini month and a fixedWeeks month always show six weeks, so they keep their height from month to month.
+        const month = calMonthStart(date), end = calAddMonths(month, 1) - 1, first = calWeekStart(month, cal.firstDay);
+        return { firstDay: first, lastDay: view === "mini" || cal.fixedWeeks ? first + 41 : calWeekStart(end, cal.firstDay) + 6, month };
       }
-      if (view === "week") { const first = calWeekStart(date, cal.firstDay); return { firstDay: first, lastDay: first + 6 }; }
-      if (view === "day") return { firstDay: date, lastDay: date };
+      if (view === "months") { const month = calMonthStart(date); return { firstDay: month, lastDay: calAddMonths(month, cal.months) - 1, month }; }
+      if (view === "week" || view === "weekList") { const first = calWeekStart(date, cal.firstDay); return { firstDay: first, lastDay: first + 6 }; }
+      if (view === "day" || view === "dayList") return { firstDay: date, lastDay: date };
       if (view === "days") {
         let last = date;
         for (let shown = 0; shown < this.calDaysCount(); last++) if (!cal.hidden.has(calDow(last))) shown++;
         return { firstDay: date, lastDay: last - 1 };
       }
-      if (view === "agenda") { const month = calMonthStart(date); return { firstDay: month, lastDay: calAddMonths(month, 1) - 1, month }; }
+      if (view === "agenda") {
+        // The agenda lists a day, a week, a month (the default) or a year.
+        const span = cal.agendaSpan;
+        if (span === "day") return { firstDay: date, lastDay: date };
+        if (span === "week") { const first = calWeekStart(date, cal.firstDay); return { firstDay: first, lastDay: first + 6 }; }
+        if (span === "year") { const parts = calDayParts(date); return { firstDay: calDayNumber(parts.y, 1, 1), lastDay: calDayNumber(parts.y + 1, 1, 1) - 1 }; }
+        const month = calMonthStart(date); return { firstDay: month, lastDay: calAddMonths(month, 1) - 1, month };
+      }
       if (view === "year") { const parts = calDayParts(date); return { firstDay: calDayNumber(parts.y, 1, 1), lastDay: calDayNumber(parts.y + 1, 1, 1) - 1 }; }
       return this.calTimelineRange(date);
     },
@@ -110,26 +133,39 @@
 
     calendarStep(direction) {
       if (direction !== 1 && direction !== -1) throw new Error("CanopyX: calendarStep takes 1 or -1.");
+      const next = this.calStepDate(direction);
+      // A period with no day of the valid range is not shown: the step stays where it is.
+      if (!this.calInValid(this.calRangeOf(this.calView, next))) return Promise.resolve(this.getCalendar());
+      return this.calGo(next, this.calView);
+    },
+    /** Whether a range shows a day of the valid range (always, without one). */
+    calInValid(range) { const valid = this.cal.validRange; return !valid || range.lastDay >= valid.first && range.firstDay <= valid.last; },
+    /** A day moved into the valid range. */
+    calClampDay(day) { const valid = this.cal.validRange; return valid ? Math.min(Math.max(day, valid.first), valid.last) : day; },
+    /** The date one period before (-1) or after (1) the current one, in the current view. */
+    calStepDate(direction) {
       const date = this.calDate, view = this.calView;
       let next;
-      if (view === "month" || view === "agenda") next = calAddMonths(date, direction);
-      else if (view === "year") next = calAddMonths(date, 12 * direction);
-      else if (view === "week") next = date + 7 * direction;
-      else if (view === "day") next = this.calShownDay(date + direction, direction);
+      const span = view === "agenda" ? this.cal.agendaSpan : null;
+      if (view === "month" || view === "mini" || span === "month") next = calAddMonths(date, direction);
+      else if (view === "months") next = calAddMonths(date, this.cal.months * direction);
+      else if (view === "year" || span === "year") next = calAddMonths(date, 12 * direction);
+      else if (view === "week" || view === "weekList" || span === "week") next = date + 7 * direction;
+      else if (view === "day" || view === "dayList" || span === "day") next = this.calShownDay(date + direction, direction);
       else if (view === "days") { const range = this.calRangeOf("days", date); next = direction > 0 ? range.lastDay + 1 : this.calStepBack(date); }
       else next = this.calTimelineStep(date, direction);
-      return this.calGo(next, view);
+      return next;
     },
     calStepBack(date) {
       let day = date;
       for (let shown = 0; shown < this.calDaysCount();) { day--; if (!this.cal.hidden.has(calDow(day))) shown++; }
       return day;
     },
-    calendarToday() { return this.calGo(this.calZone.day(Date.now()), this.calView, true); },
+    calendarToday() { return this.calGo(this.calClampDay(this.calZone.day(Date.now())), this.calView, true); },
     setCalendarDate(date) {
       const day = typeof date === "number" ? date : calParseDay(String(date).slice(0, 10));
       if (!Number.isFinite(day)) throw new Error("CanopyX: a calendar date is yyyy-MM-dd.");
-      return this.calGo(day, this.calView, true);
+      return this.calGo(this.calClampDay(day), this.calView, true);
     },
     setCalendarView(view) {
       if (!this.cal.views.includes(view)) throw new Error("CanopyX: the calendar has no view '" + view + "'.");
@@ -143,6 +179,8 @@
     },
     /** Moves to a date and view. focus: true focuses the date, a day number focuses that day, otherwise the focus steps along. */
     async calGo(date, view, focus) {
+      date = this.calClampDay(date);
+      if (typeof focus === "number") focus = this.calClampDay(focus);
       const changed = view !== this.calView || date !== this.calDate, shift = date - this.calDate;
       // Stepping keeps the focused day's place in the period (the same weekday a week later); a jump focuses the date itself.
       const day = typeof focus === "number" ? focus : !focus && this.calFocus && view === this.calView ? this.calFocus.day + shift : date;
@@ -174,7 +212,7 @@
     calApplyState(input) {
       const state = input && typeof input === "object" && !Array.isArray(input) ? input : {};
       const view = this.cal.views.includes(state.view) ? state.view : this.cal.view, zoom = this.cal.zooms.includes(state.zoom) ? state.zoom : this.cal.zoom;
-      const saved = typeof state.date === "string" ? calParseDay(state.date) : NaN, date = Number.isFinite(saved) ? saved : this.cal.date ?? this.calZone.day(Date.now());
+      const saved = typeof state.date === "string" ? calParseDay(state.date) : NaN, date = this.calClampDay(Number.isFinite(saved) ? saved : this.cal.date ?? this.calZone.day(Date.now()));
       const collapsed = Array.isArray(state.collapsed) && state.collapsed.length <= 10000 ? state.collapsed.filter(id => typeof id === "string") : [];
       this.calZoom = zoom; this.calCollapsed = new Set(collapsed);
       this.calApplyCollapsed?.();
@@ -208,7 +246,7 @@
 
   /** The calendar methods need a calendar: a grid without one says so instead of failing deep inside. */
   function calNeed(grid) { if (!grid.cal) throw new Error("CanopyX: this grid has no calendar."); }
-  for (const name of ["setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents", "exportCalendar", "openCalendarEvent", "clearCalendarSelection"]) {
+  for (const name of ["setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents", "exportCalendar", "openCalendarEvent", "clearCalendarSelection", "setCalendarSource"]) {
     const method = DataGrid.prototype[name];
     if (method) DataGrid.prototype[name] = function (...args) { calNeed(this); return method.apply(this, args); };
   }

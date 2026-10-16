@@ -23,12 +23,15 @@ public sealed class GridCalendarPartTests {
             Assert.DoesNotContain("cx-cal-month", CanopyHtmlAssets.GetStyle(runtime));
         }
         Assert.Contains("function calSettings(", part.Script);
-        Assert.Contains("function calExpand(", part.Script);
         Assert.Contains("const CALENDAR_LABELS={", part.Script);
+        // What a basic calendar does not use lives in parts of its own.
+        Assert.DoesNotContain("function calExpand(", part.Script);
+        Assert.DoesNotContain("calCreateForm(proposal", part.Script);
+        Assert.DoesNotContain("function calIcsParse(", part.Script);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
-        // The new part's size plus about 15%.
-        Assert.True(Gzip(part.Script) <= 40400, "The calendar part is " + Gzip(part.Script) + " bytes gzip; the guard is 40,400 (35,124 measured + 15%).");
-        Assert.True(Gzip(part.Style!) <= 4500, "The calendar stylesheet is " + Gzip(part.Style!) + " bytes gzip; the guard is 4,500 (3,917 measured + 15%).");
+        // The part's size plus about 15%.
+        Assert.True(Gzip(part.Script) <= 40000, "The calendar part is " + Gzip(part.Script) + " bytes gzip; the guard is 40,000 (34,796 measured + 15%).");
+        Assert.True(Gzip(part.Style!) <= 6400, "The calendar stylesheet is " + Gzip(part.Style!) + " bytes gzip; the guard is 6,400 (5,522 measured + 15%).");
 
         var plain = Grid();
         Assert.DoesNotContain("x-canopyx-calendar\"", plain.ToHtmlFragment());
@@ -39,6 +42,47 @@ public sealed class GridCalendarPartTests {
         Assert.Contains("calendar", required);
         Assert.DoesNotContain("timeline", required);
         Assert.Contains("<script type=\"application/x-canopyx-calendar\" data-cx-version=\"" + part.Version + "\">", calendar.ToHtmlFragment());
+    }
+
+    [Theory]
+    [InlineData("calendar-recurrence", "calendar recurrence", "function calExpand(", 3800)]
+    [InlineData("calendar-edit", "calendar editing", "calCreateForm(proposal", 11200)]
+    [InlineData("calendar-ics", "iCalendar", "function calIcsParse(", 7300)]
+    public void CalendarSubParts_AreBoundedAndOutsideTheCore(string name, string label, string marker, int guard) {
+        var part = CanopyHtmlAssets.GetPart(name);
+        Assert.Equal(label, part.Label);
+        Assert.Matches("^[a-f0-9]{16}$", part.Version);
+        Assert.Contains(marker, part.Script);
+        Assert.DoesNotContain(marker, CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid));
+        Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
+        Assert.True(Gzip(part.Script) <= guard, "The " + name + " part is " + Gzip(part.Script) + " bytes gzip; the guard is " + guard + " (measured + 15%).");
+    }
+
+    [Fact]
+    public void CalendarSubParts_ComeWithTheOptionsThatUseThem() {
+        // A basic calendar: events only, no toolbar, read-only.
+        var basic = new CanopyCalendar(new[] { new CanopyCalendarEvent("Planning", new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc)) });
+        var required = CanopyHtmlAssets.GetRequiredParts(basic.Grid!).Select(item => item.Name).ToList();
+        Assert.Contains("calendar", required);
+        foreach (var name in new[] { "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }) Assert.DoesNotContain(name, required);
+        // Recurrence, editing, the Export menu (iCalendar) and the timeline view each bring their part.
+        var scheduler = new CanopyCalendar(new[] { new CanopyCalendarEvent("Stand-up", new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc)) { Recurrence = CanopyRecurrence.Daily() } }, CanopyCalendarPreset.Scheduler);
+        scheduler.Views.Add(CanopyCalendarView.Timeline);
+        required = CanopyHtmlAssets.GetRequiredParts(scheduler.Grid!).Select(item => item.Name).ToList();
+        foreach (var name in new[] { "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }) Assert.Contains(name, required);
+        var source = new CanopyCalendar(new[] { new CanopyCalendarEvent("Planning", new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc)) });
+        source.Sources.Add(new CanopyCalendarSource("ext", "External") { Ics = "holidays.ics" });
+        required = CanopyHtmlAssets.GetRequiredParts(source.Grid!).Select(item => item.Name).ToList();
+        Assert.Contains("calendar-ics", required);
+        Assert.Contains("calendar-recurrence", required);
+        // A calendar whose toolbar shows Export carries the iCalendar part and the recurrence part it requires, though no event repeats.
+        var exporting = Grid();
+        exporting.Calendar = new CanopyCalendar("starts");
+        required = CanopyHtmlAssets.GetRequiredParts(exporting).Select(item => item.Name).ToList();
+        foreach (var name in new[] { "calendar", "calendar-recurrence", "calendar-ics" }) Assert.Contains(name, required);
+        // Creating needs the editing part even when the host asks for the parts before the grid is written.
+        var creating = new CanopyCalendar(new[] { new CanopyCalendarEvent("Planning", new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc)) }) { Create = new CanopyCalendarCreate() };
+        Assert.Contains("editing", CanopyHtmlAssets.GetRequiredParts(creating.Grid!).Select(item => item.Name));
     }
 
     [Fact]
