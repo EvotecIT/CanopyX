@@ -51,8 +51,8 @@ public sealed partial class CanopyCalendar {
 
     /// <summary>
     /// Gets or sets what moving or resizing an occurrence of a series changes; null (the default) asks when <see cref="Series"/> and
-    /// <see cref="RecurrenceId"/> are set and changes every occurrence otherwise. <see cref="CanopyCalendarOccurrence.This"/> and
-    /// <see cref="CanopyCalendarOccurrence.Following"/> need <see cref="Series"/> and <see cref="RecurrenceId"/>.
+    /// <see cref="RecurrenceId"/> are set and their columns are editable, and changes every occurrence otherwise. Every setting but
+    /// <see cref="CanopyCalendarOccurrence.All"/> needs <see cref="Series"/> and <see cref="RecurrenceId"/> with editable columns.
     /// </summary>
     public CanopyCalendarOccurrence? Occurrence { get; set; }
 

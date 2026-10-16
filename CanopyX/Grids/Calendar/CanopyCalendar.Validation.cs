@@ -97,8 +97,9 @@ public sealed partial class CanopyCalendar {
         if (Occurrence.HasValue) {
             var occurrence = Occurrence.Value;
             if (occurrence < CanopyCalendarOccurrence.Ask || occurrence > CanopyCalendarOccurrence.All) throw new ArgumentOutOfRangeException(nameof(Occurrence), occurrence, "Unknown occurrence setting.");
-            if ((occurrence == CanopyCalendarOccurrence.This || occurrence == CanopyCalendarOccurrence.Following) && (_series == null || _recurrenceId == null))
-                throw new InvalidOperationException("Changing one occurrence or the following ones needs the calendar's series and recurrenceId columns.");
+            // The records a change of one occurrence writes carry the series link, so its columns must be editable.
+            if (occurrence != CanopyCalendarOccurrence.All && (_series == null || _recurrenceId == null || !columns[_series].Editable || !columns[_recurrenceId].Editable))
+                throw new InvalidOperationException("Asking, or changing one occurrence or the following ones, needs the calendar's series and recurrenceId columns, both editable.");
         }
         if (WeekNumbers < CanopyCalendarWeekNumbers.None || WeekNumbers > CanopyCalendarWeekNumbers.Locale) throw new ArgumentOutOfRangeException(nameof(WeekNumbers), WeekNumbers, "Unknown week numbers.");
         if (_validStart.HasValue && _validEnd.HasValue && _validEnd.Value <= _validStart.Value) throw new InvalidOperationException("The calendar's valid range ends after it starts.");

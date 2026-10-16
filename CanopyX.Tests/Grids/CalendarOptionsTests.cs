@@ -18,6 +18,9 @@ public sealed class CalendarOptionsTests {
         // With override records the default is to ask, so asking writes nothing and every occurrence is written.
         calendar.Series = "series";
         calendar.RecurrenceId = "originalStart";
+        // The records a change of one occurrence writes carry the series link, so asking needs those columns editable.
+        view.GetColumn("series").Editable = true;
+        view.GetColumn("originalStart").Editable = true;
         Assert.Contains("\"occurrence\":\"all\"", Calendar(view));
         calendar.Occurrence = CanopyCalendarOccurrence.Ask;
         Assert.DoesNotContain("occurrence", Calendar(view));
@@ -34,6 +37,8 @@ public sealed class CalendarOptionsTests {
         var view = Grid();
         view.GetColumn("starts").Editable = true;
         view.GetColumn("name").Editable = true;
+        view.GetColumn("series").Editable = true;
+        view.GetColumn("originalStart").Editable = true;
         var calendar = new CanopyCalendar("starts") {
             Series = "series", RecurrenceId = "originalStart", Description = "notes", Tone = "tone", Source = "calendar",
             Toolbar = true, Details = CanopyCalendarDetails.Popover, Create = new CanopyCalendarCreate { Minutes = 30, AllDay = false }, Drop = true,
@@ -108,6 +113,7 @@ public sealed class CalendarOptionsTests {
         Refused((view, calendar) => { view.GetColumn("name").Editable = true; calendar.Drop = true; });
         Refused((view, calendar) => { view.GetColumn("starts").Editable = true; view.GetColumn("name").Editable = true; calendar.Title = "host"; calendar.Drop = true; });
         Refused((_, calendar) => calendar.Occurrence = CanopyCalendarOccurrence.This);
+        Refused((view, calendar) => { calendar.Series = "series"; calendar.RecurrenceId = "originalStart"; calendar.Occurrence = CanopyCalendarOccurrence.Ask; });
         Refused((_, calendar) => calendar.Occurrence = CanopyCalendarOccurrence.Following);
         Refused((_, calendar) => calendar.Occurrence = (CanopyCalendarOccurrence)9);
         Refused((_, calendar) => calendar.WeekNumbers = (CanopyCalendarWeekNumbers)3);
