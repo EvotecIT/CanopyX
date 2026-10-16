@@ -111,6 +111,7 @@ OrdersByRegionExample.Write(output);
 SupportTicketsExample.Write(output);
 QuarterlyBudgetExample.Write(output);
 CertificateInventoryExample.Write(output);
+CalendarBasicExample.Write(output);
 CalendarExample.Write(output);
 CalendarTimelineExample.Write(output);
 CalendarCertificatesExample.Write(output);
