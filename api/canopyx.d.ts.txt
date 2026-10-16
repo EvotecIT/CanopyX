@@ -10,6 +10,14 @@ import type{
   GridRow,GridColumnId,GridQuery
 }
 from "./grid.js";
+import type{
+  GridLiveDefinition
+}
+from "./live.js";
+import type{
+  GridFacetPanelDefinition
+}
+from "./facets.js";
 export type GridCalendarView="month"|"week"|"day"|"days"|"agenda"|"year"|"timeline"|"mini"|"weekList"|"dayList"|"months";
 export type GridCalendarToolbarItem="search"|"filters"|"columns"|"views"|"export"|"more";
 export interface GridCalendarSource{
@@ -118,6 +126,8 @@ export interface GridCalendarEvent{
   readonly resource:string|null;
   readonly recurring:boolean;
   readonly background?:boolean;
+  readonly source?:string|null;
+  readonly external?:boolean;
 }
 export type GridCalendarTemplate=(context:{readonly event:GridCalendarEvent;readonly row:GridRow;readonly element:HTMLElement;readonly kind:"bar"|"chip"|"block"|"item"|"lane";readonly labels:Readonly<Record<string,string>>;}) => boolean|void;
 export interface GridCalendarMenuContext{
@@ -181,10 +191,10 @@ export interface CalendarOptions{
   sources?:readonly GridCalendarSource[];
   resources?:readonly{id:string;label?:string;parent?:string|null}[]|InlineView|RemoteView;
   timeline?:boolean;
-  live?:boolean|object;
-  facets?:readonly string[]|object;
+  live?:boolean|GridLiveDefinition;
+  facets?:readonly string[]|GridFacetPanelDefinition;
   links?:boolean;
-  calendar?:Omit<Partial<GridCalendarDefinition>,"menu">&Omit<GridCalendarOptions,"menu">&{menu?:boolean|GridCalendarOptions["menu"]};
+  calendar?:Omit<Partial<GridCalendarDefinition>,"menu"|"occurrence">&Omit<GridCalendarOptions,"menu"|"occurrence">&{menu?:boolean|GridCalendarOptions["menu"];occurrence?:GridCalendarDefinition["occurrence"]|GridCalendarOptions["occurrence"]};
   [hostOption:string]:unknown;
 }
 export interface GridCalendarState{
@@ -405,11 +415,17 @@ export interface CanopyEditorInstance{
 export interface CanopyCellEditor{
   create(context:CanopyEditorContext):CanopyEditorInstance;
 }
-export interface GridChange{
-  readonly id:string;
-  readonly op?:"update"|"insert";
-  readonly values:Readonly<Record<string,CellValue>>;
+export type GridChange=GridUpdateChange|GridInsertChange;
+export interface GridUpdateChange extends GridChangeState{
+  readonly op?:"update";
   readonly original:Readonly<Record<string,CellValue>>;
+}
+export interface GridInsertChange extends GridChangeState{
+  readonly op:"insert";
+}
+export interface GridChangeState{
+  readonly id:string;
+  readonly values:Readonly<Record<string,CellValue>>;
   readonly errors?:Readonly<Record<string,string>>;
   readonly error?:string;
   readonly status?:"saving"|"error"|"conflict";
@@ -455,12 +471,13 @@ export interface GridCellValueChange{
   readonly value:CellValue;
   readonly previous:CellValue;
   readonly row:Readonly<GridRow>;
-  readonly source:"edit"|"form"|"api"|"undo"|"redo"|"revert"|"paste"|"fill";
+  readonly source:"edit"|"form"|"api"|"undo"|"redo"|"revert"|"paste"|"fill"|"calendar"|"accept";
 }
 export interface GridRowCommit{
   readonly id:string;
+  readonly op?:"update"|"insert";
   readonly values:Readonly<Record<string,CellValue>>;
-  readonly original:Readonly<Record<string,CellValue>>;
+  readonly original?:Readonly<Record<string,CellValue>>;
   readonly row:Readonly<GridRow>;
   readonly revision:string|null;
   respondWith(result:GridCommitRowResult|true|PromiseLike<GridCommitRowResult|true>):void;
