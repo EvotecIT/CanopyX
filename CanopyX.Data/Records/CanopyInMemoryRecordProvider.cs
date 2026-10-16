@@ -60,16 +60,21 @@ public sealed class CanopyInMemoryRecordProvider<T> : ICanopyRecordProvider {
         // The same identity rule as the queryable provider: only a key's own text, never text that would not reach a store.
         if (RecordKeys.Parse(request.Id, _translator.Key.Type) == null) return new ValueTask<CanopyGridRecord?>((CanopyGridRecord?)null);
         var matches = new List<T>(2);
+        var visible = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in _records()) {
-            if (RecordKeys.Format(_key(item)) != request.Id) continue;
+            cancellationToken.ThrowIfCancellationRequested();
+            var id = RecordKeys.Format(_key(item));
+            if (id != null) visible.Add(id);
+            if (id != request.Id) continue;
             matches.Add(item);
             if (matches.Count > 1) throw new InvalidOperationException("The record key is not unique: two records answer one identity.");
         }
+        cancellationToken.ThrowIfCancellationRequested();
         if (matches.Count == 0) return new ValueTask<CanopyGridRecord?>((CanopyGridRecord?)null);
         var found = matches[0];
         var record = new CanopyGridRecord(request.Id);
-        // The identities of the records the caller may read, for fields kept within the grid; read only when one asks.
-        var context = new RecordReadContext<T>(null, () => new HashSet<string>(_records().Select(item => RecordKeys.Format(_key(item))).OfType<string>(), StringComparer.Ordinal),
+        // Link and collection scope uses the same identity snapshot as the lookup, including a single-use enumerable.
+        var context = new RecordReadContext<T>(null, () => visible,
             Map.Columns.KeyExpression!, true, null, request.MaxTextLength);
         if (request.Field != null) {
             record.Fields[request.Field.Id] = ((RecordChildMap<T>)Map.Field(request.Field.Id)).Evaluate(found, context, request.Offset, request.Limit, request.FirstRows(request.Field), true)!;

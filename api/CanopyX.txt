@@ -1602,6 +1602,7 @@ CanopyX.Rendering.CanopyStaticHtmlOptions.System.String? HiddenRowsTitle { get; 
 CanopyX.Rendering.CanopyStaticHtmlOptions.System.String? OverflowNote { get; set; }
 CanopyX.Rendering.CanopyStaticHtmlResult : sealed class
 CanopyX.Rendering.CanopyStaticHtmlResult.System.Boolean HasUnknownTotal { get; }
+CanopyX.Rendering.CanopyStaticHtmlResult.System.Boolean IsComplete { get; }
 CanopyX.Rendering.CanopyStaticHtmlResult.System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.String>> Rows { get; }
 CanopyX.Rendering.CanopyStaticHtmlResult.System.Int64 TotalRows { get; }
 CanopyX.Rendering.CanopyStaticHtmlResult.System.String Html { get; }

@@ -53,6 +53,7 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
     public async ValueTask<CanopyGridRecord?> GetRecordAsync(CanopyRecordRequest request, CancellationToken cancellationToken) {
         if (request == null) throw new ArgumentNullException(nameof(request));
         if (!ReferenceEquals(request.Schema, Schema)) throw new ArgumentException("The request belongs to another record schema.", nameof(request));
+        cancellationToken.ThrowIfCancellationRequested();
         var source = _source();
         var memory = source.Provider is EnumerableQuery;
         var translator = Map.Columns.Translator(memory ? CanopyTextComparison.Canonical : CanopyTextComparison.Lowercase, memory);
@@ -69,9 +70,11 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
 
         if (request.Field != null) {
             var keys = await Executor.ToListAsync(scoped.Select(Expression.Lambda<Func<T, object?>>(boxedKey, translator.Row)).Take(2), cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!Single(keys, request.Id)) return null;
             var child = (RecordChildMap<T>)Map.Field(request.Field.Id);
             record.Fields[request.Field.Id] = (await child.QueryAsync(scoped, context, request.Offset, request.Limit, request.FirstRows(request.Field), true, cancellationToken).ConfigureAwait(false))!;
+            cancellationToken.ThrowIfCancellationRequested();
             return record;
         }
 
@@ -99,6 +102,7 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
         foreach (var column in rowColumns) parts.Add(Expression.Convert(translator.Value(column), typeof(object)));
         var projection = Expression.Lambda<Func<T, object?[]>>(Expression.NewArrayInit(typeof(object), parts), translator.Row);
         var rows = await Executor.ToListAsync(scoped.Select(projection).Take(2), cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
         if (!Single(rows.Select(row => row[0]).ToList(), request.Id)) return null;
         var found = rows[0];
         foreach (var (map, start, cell, scope) in values) {
@@ -118,6 +122,7 @@ public sealed class CanopyQueryableRecordProvider<T> : ICanopyRecordProvider {
             if (!(Map.Field(field.Id) is RecordChildMap<T> child)) continue;
             var take = child.Collection ? request.FirstRows(field) : Math.Min(child.Size, request.MaxItems);
             var cell = await child.QueryAsync(scoped, context, 0, take, take, false, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             if (cell != null) record.Fields[field.Id] = cell;
         }
         return record;

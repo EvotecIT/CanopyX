@@ -120,7 +120,13 @@ public sealed partial class CanopyCell {
             if (change == null) throw new InvalidOperationException("A change list cannot contain a null change.");
             change.Before?.ValidateStructure(depth + 1); change.After?.ValidateStructure(depth + 1);
         }
-        if (_events != null) foreach (var item in _events) if (item == null) throw new InvalidOperationException("A timeline cannot contain a null event.");
+        if (_events != null) foreach (var item in _events) {
+            if (item == null) throw new InvalidOperationException("A timeline cannot contain a null event.");
+            foreach (var change in item.Changes) {
+                if (change == null) throw new InvalidOperationException("An event cannot contain a null change.");
+                change.Before?.ValidateStructure(depth + 1); change.After?.ValidateStructure(depth + 1);
+            }
+        }
         Records?.Validate(depth);
         return depth;
     }

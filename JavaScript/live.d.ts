@@ -27,14 +27,14 @@ export interface GridLiveOptions<Row extends GridRow = GridRow, Q extends Accept
   load?: (context: { signal: AbortSignal; query: Q; rows: number }) => GridLiveAnswer<Row> | PromiseLike<GridLiveAnswer<Row>>;
 }
 
-/** A row update: the id, and the cells to change (null clears one); tone, className, fields and detail replace the row's when given. */
+/** A row update: the id, and the cells to change (null clears a nullable cell); tone, className, fields and detail replace the row's when given. */
 export interface GridRowUpdate<Row extends GridRow = GridRow> {
   id: string;
-  cells?: { [Column in keyof Row["cells"]]?: Row["cells"][Column] | null };
+  cells?: { [Column in keyof Row["cells"]]?: Row["cells"][Column] };
   tone?: string | null;
   className?: string | null;
   fields?: Row extends { fields?: infer Fields } ? Fields : Record<string, unknown>;
-  detail?: unknown;
+  detail?: Row["detail"];
 }
 
 /**

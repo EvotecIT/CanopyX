@@ -187,7 +187,7 @@ test.describe("live data", () => {
     // A gridTransaction document, as the C# CanopyGridTransaction writes it, applies like the object form.
     const result = await api(page, "live-endpoints", "api => api.applyTransaction({ protocol: 'canopyx/2', type: 'gridTransaction', view: 'live-endpoints', update: [{ id: 'ep-01', cells: { errors: null } }] })");
     expect(result.updated).toEqual(["ep-01"]);
-    expect(await api(page, "live-endpoints", "api => 'errors' in api.view.rows.find(row => row.id === 'ep-01').cells")).toBe(false);
+    expect(await api(page, "live-endpoints", "api => api.view.rows.find(row => row.id === 'ep-01').cells.errors")).toBe(null);
   });
 
   test("a hosted grid refreshes by revision: an unchanged one changes nothing, a new one updates rows in place", async ({ page }) => {

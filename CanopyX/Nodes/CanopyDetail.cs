@@ -41,6 +41,31 @@ public abstract class CanopyDetail {
 
     internal abstract string Type { get; }
 
+    /// <summary>Checks detail values at the enclosing row's cell depth before a value writer can restart validation.</summary>
+    internal void ValidateStructure(int depth) {
+        if (depth > CanopyCell.MaxStructureDepth) throw new InvalidOperationException("Structured values nest at most " + CanopyCell.MaxStructureDepth + " levels.");
+        switch (this) {
+            case CanopyPropertiesDetail properties:
+                foreach (var item in properties.Items) {
+                    if (item == null) throw new InvalidOperationException("A properties detail cannot contain a null item.");
+                    item.Value.ValidateShape(depth);
+                }
+                break;
+            case CanopyTableDetail table:
+                foreach (var row in table.Rows) {
+                    if (row == null) throw new InvalidOperationException("A table detail cannot contain a null row.");
+                    foreach (var cell in row) cell?.ValidateShape(depth);
+                }
+                break;
+            case CanopyGridRowsDetail grid:
+                CanopyGridRows.Validate(grid.Rows, structureDepth: depth + 1);
+                break;
+            case CanopyTreeDetail tree:
+                CanopyTreeValidator.Validate(tree.Roots, "A nested detail tree", structureDepth: depth + 1);
+                break;
+        }
+    }
+
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("type", Type);
         if (_height > 0) {

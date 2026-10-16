@@ -36,6 +36,10 @@ id (`Owner.Team` and `OwnerTeam`) are refused: give one an explicit id. `CanopyG
 yourself with a selector per column; it validates the view as it creates it, while a typed grid's view is validated when it
 is written. Values are read through the compiled member expressions (interpreted under native AOT).
 
+Explicit conversions keep their C# behavior: `grid.Column("load", x => (double)x.Cores)` writes a double, and a checked
+conversion reports overflow when a row is read. The result type determines the column kind; boxing a member as `object`
+keeps its underlying kind. Member chains with converted receivers still leave null links empty.
+
 `TypedGridExample` in `CanopyX.Examples` writes `typed-grid.html` (and a dark palette).
 
 ## TypeScript: a row type
@@ -59,6 +63,11 @@ Without a row type, `createDataGrid(element, options)` works as before: rows are
 row type is never inferred from the options, so an untyped grid never ends up with a narrow row type by accident.
 `GridColumnId<Row>` names a row type's column ids. Declare the cells as a type literal (as above) or a type alias: an
 interface of cells does not satisfy `GridRow`'s cell map.
+
+Live updates respect that row type's nullability. A cell declared as `string | null`, such as `site` above, can be cleared
+with `null`; a required `string` cell cannot. A specialized detail payload also keeps its declared type during an update.
+Untyped rows support clearing any cell. These checks apply to row objects; compact row encodings and JSON text retain
+their runtime serialization boundary, and editing callbacks use plain rows.
 
 ## API safety
 

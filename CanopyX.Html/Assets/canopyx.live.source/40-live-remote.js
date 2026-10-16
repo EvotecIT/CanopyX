@@ -67,7 +67,7 @@
      * drawn again over them. Returns the rows that changed and whether a change touched the sort, filters or search.
      */
     liveSetHeld(changes, merge) {
-      const changed = new Map(), pages = new Set(), query = this.acceptedQuery, used = new Set(query.sort.map(sort => sort.column));
+      const changed = new Map(), loaded = new Set(), pages = new Set(), query = this.acceptedQuery, used = new Set(query.sort.map(sort => sort.column));
       const walk = group => { if (!group) return; for (const filter of group.filters) used.add(filter.column); group.groups.forEach(walk); };
       for (const filter of query.filters) used.add(filter.column);
       walk(query.filterGroup);
@@ -76,6 +76,7 @@
       for (const row of this.rowCache.values()) {
         const change = !row.status && changes.get(row.key);
         if (!change) continue;
+        loaded.add(row.key);
         const after = merge ? liveMerged(row.h, change) : liveCopy(change), columns = liveChangedColumns(row.h, after);
         if (!columns.size && liveSameRow(row.h, after)) continue;
         row.h = after; changed.set(row.key, columns); pages.add(Math.floor(row._ri / this.pageSize) * this.pageSize);
@@ -87,7 +88,7 @@
         const positions = new Map([...this.rowCache.values()].map(row => [row.key, row._ri]));
         this.liveAfterChange(changed, [], id => positions.get(id) ?? -1, false);
       }
-      return { changed, moved };
+      return { changed, moved, loaded };
     }
   });
 

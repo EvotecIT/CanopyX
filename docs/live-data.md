@@ -62,6 +62,8 @@ source }`. An update or removal of an id the grid does not have is skipped and l
 removal keeps going. A row with an undeclared column or a value its column cannot hold rejects the whole transaction, and
 nothing changes. A transaction changes at most 100,000 rows.
 
+Clearing a cell keeps its column key with a `null` value in row data and host callbacks.
+
 A host can also send a `gridTransaction` document, which the C# `CanopyGridTransaction` writes and `applyTransaction` accepts
 as it is:
 
@@ -167,6 +169,8 @@ createDataGrid(element, { view, live: { pollMs: 10000, load: async ({ signal }) 
 `load({ signal, query, rows })` answers complete rows (a full replacement, as `setRows`), a transaction, or nothing. A poll
 is skipped while the previous one runs and while the page is hidden; when the page shows again, a poll that came due runs
 at once (`pauseWhenHidden: false` keeps polling). `refresh()` polls now, also while paused or hidden. Errors are reported through the grid's `error` event and polling goes on.
+Manual refreshes and polls load and apply their answers in request order. An API update requested while a load is pending
+applies after that answer.
 Destroying the grid stops it; `getLiveState().polling` tells whether a poller runs.
 
 ## Events
@@ -178,6 +182,10 @@ element.addEventListener("canopyx:rowsChanged", event => {
   const { added, updated, removed, missing, orderChanged, newData, revision, source } = event.detail;   // source: "api", "poll" or "refresh"
 });
 ```
+
+An accepted hosted revision also raises this event, so complete-source consumers such as facets can refresh even when the
+held rows have the same cells. Its identity arrays describe observed changes; they can be empty when membership or values
+changed outside the loaded pages. Refreshing an unchanged revision raises no event.
 
 ## Options
 

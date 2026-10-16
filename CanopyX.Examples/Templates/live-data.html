@@ -110,13 +110,13 @@
     // One message of the stream: new readings for a few endpoints, and now and then an endpoint that appears or goes away.
     function step() {
       tick++;
-      const rows = monitor.view.rows, update = [];
+      const rows = monitor.view.rows, update = new Map();
       for (let i = 0; i < 4 && rows.length; i++) {
         const row = pick(rows), latency = Math.max(8, Math.round(row.cells.latency * (0.6 + random() * 0.8))), errors = random() < 0.12 ? 10 + Math.floor(random() * 50) : Math.floor(random() * 4);
-        update.push({ id: row.id, cells: { latency, errors, status: errors > 30 ? "Down" : errors > 8 || latency > 280 ? "Degraded" : "Healthy",
+        update.set(row.id, { id: row.id, cells: { latency, errors, status: errors > 30 ? "Down" : errors > 8 || latency > 280 ? "Degraded" : "Healthy",
           requests: 300 + Math.floor(random() * 900), updated: time() } });
       }
-      const change = { update };
+      const change = { update: [...update.values()] };
       if (tick % 6 === 0) change.add = [endpoint()];
       if (tick % 9 === 0 && rows.length > 30) change.remove = [pick(rows).id];
       return monitor.applyTransaction(change);

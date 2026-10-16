@@ -16,7 +16,8 @@ namespace CanopyX;
 /// as words, and its kind follows the member type: numbers are <see cref="CanopyColumnKind.Number"/>, <see cref="DateTime"/>,
 /// <see cref="DateTimeOffset"/> (and <c>DateOnly</c> on .NET 6 or later, as UTC midnight) are <see cref="CanopyColumnKind.DateTime"/>,
 /// everything else is text (booleans stay booleans, enumerations their names). Each of these can be given instead. Values
-/// are read through the compiled member expression (interpreted under native AOT).</para>
+/// are read through the compiled member expression (interpreted under native AOT). Explicit conversions run as written,
+/// including checked overflow; a converted value's type determines its kind, while boxing retains the underlying kind.</para>
 /// <para><see cref="View"/> is the untyped <see cref="CanopyDataGridView"/> underneath; every other setting (reporting, the record
 /// panel, live data, formatting) is set there, and the untyped API keeps working on it.</para>
 /// </remarks>
@@ -71,7 +72,7 @@ public sealed class CanopyDataGridView<T> {
     private CanopyColumn AddColumn<TValue>(string id, Expression<Func<T, TValue>> member, IReadOnlyList<MemberInfo>? path, Action<CanopyColumn>? configure, Func<TValue, CanopyCell?>? cell, string title) {
         foreach (var existing in View.Columns) if (existing.Id == id) throw new ArgumentException("The grid already has a column '" + id + "'.", nameof(id));
         if (View.Record != null) foreach (var field in View.Record.Fields) if (field.Id == id) throw new ArgumentException("The record panel already has a field '" + id + "'.", nameof(id));
-        var column = new CanopyColumn(id, title) { Kind = CanopyTypedMembers.Kind(path != null ? CanopyTypedMembers.MemberType(path) : typeof(TValue)) };
+        var column = new CanopyColumn(id, title) { Kind = CanopyTypedMembers.Kind(CanopyTypedMembers.ValueType(member)) };
         configure?.Invoke(column);
         _cells.Add(new KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>(column, Writer(member, path, cell)));
         View.Columns.Add(column);
@@ -112,7 +113,7 @@ public sealed class CanopyDataGridView<T> {
         foreach (var existing in View.Columns) if (existing.Id == id) throw new ArgumentException("The grid already has a column '" + id + "'.", nameof(id));
         var record = View.Record ??= new CanopyRecordPanel();
         foreach (var existing in record.Fields) if (existing.Id == id) throw new ArgumentException("The record panel already has a field '" + id + "'.", nameof(id));
-        var field = new CanopyColumn(id, title) { Kind = CanopyTypedMembers.Kind(path != null ? CanopyTypedMembers.MemberType(path) : typeof(TValue)) };
+        var field = new CanopyColumn(id, title) { Kind = CanopyTypedMembers.Kind(CanopyTypedMembers.ValueType(member)) };
         configure?.Invoke(field);
         _fields.Add(new KeyValuePair<string, Func<T, CanopyCell?>>(field.Id, Writer(member, path, cell)));
         record.Fields.Add(field);
@@ -121,10 +122,7 @@ public sealed class CanopyDataGridView<T> {
 
     // A member chain reads null links as nothing (an empty cell); any other expression runs as written.
     private static Func<T, CanopyCell?> Writer<TValue>(Expression<Func<T, TValue>> member, IReadOnlyList<MemberInfo>? path, Func<TValue, CanopyCell?>? cell) {
-        Func<T, object?> read;
-        if (path != null) {
-            try { read = CanopyTypedMembers.Reader<T>(path); } catch (ArgumentException) { read = Plain(member); }
-        } else read = Plain(member);
+        var read = path != null ? CanopyTypedMembers.Reader(member) : Plain(member);
         return record => {
             var value = read(record);
             if (ReferenceEquals(value, CanopyTypedMembers.Missing) || value == null && default(TValue) != null) return null;

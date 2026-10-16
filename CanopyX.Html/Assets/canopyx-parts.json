@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "aa726226b866ca4f",
+      "version": "b1e9e2b43b9e75de",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "fedbac8a03dd5ab0",
+      "version": "55a4f786bf384529",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -317,7 +317,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "e2f3cdfcb1f696bc",
+      "version": "1fdd61b82edb9d9d",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

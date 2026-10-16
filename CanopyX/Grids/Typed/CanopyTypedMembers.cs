@@ -34,31 +34,45 @@ internal static class CanopyTypedMembers {
         return expression;
     }
 
-    /// <summary>The type the last member of a chain holds, whatever the expression converts it to.</summary>
-    internal static Type MemberType(IReadOnlyList<MemberInfo> path) => path[path.Count - 1] switch {
-        PropertyInfo property => property.PropertyType,
-        FieldInfo field => field.FieldType,
-        _ => typeof(object)
-    };
+    /// <summary>The selector's result type; boxing and reference upcasts retain the value's original kind.</summary>
+    internal static Type ValueType(LambdaExpression member) {
+        var value = member.Body;
+        while (value is UnaryExpression conversion &&
+               (conversion.NodeType == ExpressionType.Convert || conversion.NodeType == ExpressionType.ConvertChecked) &&
+               conversion.Method == null && conversion.Type.IsAssignableFrom(conversion.Operand.Type)) value = conversion.Operand;
+        return value.Type;
+    }
 
     /// <summary>
     /// A reader for a member chain that answers <see cref="Missing"/> when a link of the chain is null, as <c>?.</c> would,
     /// instead of throwing: <c>x =&gt; x.Owner.Team</c> reads nothing for a record without an owner.
     /// </summary>
-    internal static Func<T, object?> Reader<T>(IReadOnlyList<MemberInfo> path) {
-        var record = Expression.Parameter(typeof(T), "record");
+    internal static Func<T, object?> Reader<T, TValue>(Expression<Func<T, TValue>> member) {
+        var record = member.Parameters[0];
         var done = Expression.Label(typeof(object), "done");
         var missing = Expression.Constant(Missing, typeof(object));
         var steps = new List<Expression>();
         var variables = new List<ParameterExpression>();
-        Expression current = record;
-        foreach (var member in path) {
-            if (CanBeNull(current.Type)) steps.Add(Expression.IfThen(Expression.Equal(current, Expression.Constant(null, current.Type)), Expression.Return(done, missing)));
-            var next = Expression.Variable(MemberType(new[] { member }), member.Name);
+        Expression Read(Expression expression) {
+            if (expression == record) return record;
+            Expression value;
+            string name;
+            if (expression is MemberExpression access && access.Expression != null) {
+                var receiver = Read(access.Expression);
+                if (CanBeNull(receiver.Type)) steps.Add(Expression.IfThen(Expression.Equal(receiver, Expression.Constant(null, receiver.Type)), Expression.Return(done, missing)));
+                value = Expression.MakeMemberAccess(receiver, access.Member);
+                name = access.Member.Name;
+            } else if (expression is UnaryExpression conversion &&
+                       (conversion.NodeType == ExpressionType.Convert || conversion.NodeType == ExpressionType.ConvertChecked)) {
+                value = conversion.Update(Read(conversion.Operand));
+                name = "converted";
+            } else throw new ArgumentException("A null-safe reader requires a member chain.", nameof(member));
+            var next = Expression.Variable(value.Type, name);
             variables.Add(next);
-            steps.Add(Expression.Assign(next, Expression.MakeMemberAccess(current, member)));
-            current = next;
+            steps.Add(Expression.Assign(next, value));
+            return next;
         }
+        var current = Read(member.Body);
         steps.Add(Expression.Label(done, Expression.Convert(current, typeof(object))));
         return Expression.Lambda<Func<T, object?>>(Expression.Block(typeof(object), variables, steps), record).Compile();
     }

@@ -32,7 +32,13 @@
     <Compile Include="..\CanopyX.Tests\Grids\GridFormattingEvaluationTests.cs" Link="Grids\GridFormattingEvaluationTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\GridColumnGroupTests.cs" Link="Grids\GridColumnGroupTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedGridTests.cs" Link="Grids\TypedGridTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\TypedConversionTests.cs" Link="Grids\TypedConversionTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\GridDetailWriterTests.cs" Link="Grids\GridDetailWriterTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Records\TimelineDepthTests.cs" Link="Records\TimelineDepthTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\RecordFrameworkTests.cs" Link="Records\RecordFrameworkTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\RecordDetailWriterTests.cs" Link="Grids\RecordDetailWriterTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\NestedDetailFixture.cs" Link="Grids\NestedDetailFixture.cs" />
+    <Compile Include="..\CanopyX.Tests\Records\CollectionDepthTests.cs" Link="Records\CollectionDepthTests.cs" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

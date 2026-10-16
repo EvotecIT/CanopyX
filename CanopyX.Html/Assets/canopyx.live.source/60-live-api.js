@@ -5,9 +5,10 @@
   // any query in flight have finished, so they apply to the accepted result.
   Object.assign(DataGrid.prototype, {
     startLive() {
+      if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
       this.liveOpts = liveOptions(this.view, this.opts);
-      this.liveQueue = new Map(); this.liveWaiters = [];
+      this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set();
       if (this.liveOpts.flashMs) this.host.style.setProperty("--cx-live-flash-ms", this.liveOpts.flashMs + "ms");
       // A new accepted query (another sort, search or filters, a reload) starts from a freshly sorted order.
       this.host.addEventListener("canopyx:query", () => {
@@ -22,12 +23,17 @@
       if (this.liveOpts.pollMs) this.livePoll({ intervalMs: this.liveOpts.pollMs });
     },
     liveStatus() {
+      const queued = new Set(this.liveQueue?.keys());
+      for (const { change } of this.liveScheduled || []) if (change) {
+        for (const row of [...change.add, ...change.update]) queued.add(row.id);
+        change.remove.forEach(id => queued.add(id));
+      }
       return gridFreeze({ orderChanged: !!(this.liveOrder?.dirty || this.livePending?.pages || this.liveMoved), newData: !!this.livePending?.cursor,
-        pending: this.liveQueue?.size || 0, polling: !!this.livePoller?.active, revision: this.snapshot?.revision ?? null });
+        pending: queued.size, polling: !!this.livePoller?.active, revision: this.snapshot?.revision ?? null });
     },
     /** Runs a live task after the ones before it, once the accepted result is settled. */
     liveRun(task) {
-      return this.liveChain = (this.liveChain || Promise.resolve()).catch(() => {}).then(async () => { await this.liveSettle(); return task(); });
+      return this.liveChain = (this.liveChain || Promise.resolve()).catch(() => {}).then(async () => { this.startLive(); await this.liveSettle(); return task(); });
     },
     applyTransaction(input) { return this.liveQueueChange(liveTransaction(this, input), "api"); },
     addRows(rows) { return this.applyTransaction({ add: rows }); },
@@ -35,37 +41,55 @@
     removeRows(ids) { return this.applyTransaction({ remove: ids }); },
     async setRows(rows) {
       if (!this.liveInline()) throw new Error("CanopyX: setRows replaces inline rows; a hosted grid's rows change at its source, then refreshRows().");
-      validateGridRows(liveCopy(rows), this.view.columns);
-      // Changes queued before take effect first, so the replacement is what remains.
-      await this.flushTransactions().catch(() => {});
-      return this.liveQueueChange(liveTransaction(this, liveDiff(rows, this.liveRows())), "api");
+      validateGridRows(rows, this.view.columns);
+      const owned = liveCopy(rows);
+      return this.liveQueueChange(null, "api", owned);
     },
-    liveQueueChange(change, source) {
+    liveQueueChange(change, source, replacement) {
       if (this.destroyed) return Promise.reject(new DOMException("Grid was destroyed.", "AbortError"));
+      this.startLive();
       if (this.view.source.kind === "inline" && this.opts.source)
         return Promise.reject(new Error("CanopyX: this grid's rows belong to its own source; change them through it (an enhanced grid's setData, addRows and removeRows)."));
       if (!this.liveInline() && (change.add.length || change.remove.length))
         return Promise.reject(new Error("CanopyX: rows of a hosted grid are added and removed at its source; call refreshRows() after."));
+      const scheduled = { change };
+      this.liveScheduled.add(scheduled);
+      let waiter;
+      const promise = new Promise((resolve, reject) => { waiter = { resolve, reject }; });
+      // Queue insertion has the same request order as loads and replacements, even before the first task can start.
+      this.liveRun(async () => {
+        if (replacement) {
+          await this.liveFlush().catch(() => {});
+          change = liveTransaction(this, liveDiff(replacement, this.liveRows()));
+        }
+        this.liveScheduled.delete(scheduled);
+        this.liveEnqueueChange(change, source, waiter);
+      }).catch(error => { this.liveScheduled.delete(scheduled); waiter.reject(error); });
+      return promise;
+    },
+    liveEnqueueChange(change, source, waiter) {
       liveEnqueue(this.liveQueue, change);
-      const promise = new Promise((resolve, reject) => this.liveWaiters.push({ resolve, reject }));
+      this.liveWaiters.push(waiter);
       this.liveSource = this.liveSource && this.liveSource !== source ? "api" : source;
       if (!this.liveOpts.batchMs) this.flushTransactions().catch(() => {});
       else if (!this.liveTimer) this.liveTimer = setTimeout(() => this.flushTransactions().catch(() => {}), this.liveOpts.batchMs);
-      return promise;
     },
     /** Applies the queued changes now (after the live tasks before them). */
     flushTransactions() {
       clearTimeout(this.liveTimer); this.liveTimer = 0;
-      return this.liveRun(async () => {
-        // The queue is taken once the result is settled, so changes made meanwhile join this batch.
-        const queue = this.liveQueue, waiters = this.liveWaiters.splice(0), source = this.liveSource || "api";
-        this.liveQueue = new Map(); this.liveSource = null;
-        try {
-          const result = queue.size ? await this.liveApply(queue, source) : liveResult();
-          waiters.forEach(waiter => waiter.resolve(result));
-          return result;
-        } catch (error) { waiters.forEach(waiter => waiter.reject(error)); throw error; }
-      });
+      return this.liveRun(() => this.liveFlush());
+    },
+    /** Drains a batch within its already serialized task, without entering the live chain again. */
+    async liveFlush() {
+      clearTimeout(this.liveTimer); this.liveTimer = 0;
+      // The queue is taken once the result is settled, so changes made meanwhile join this batch.
+      const queue = this.liveQueue, waiters = this.liveWaiters.splice(0), source = this.liveSource || "api";
+      this.liveQueue = new Map(); this.liveSource = null;
+      try {
+        const result = queue.size ? await this.liveApply(queue, source) : liveResult();
+        waiters.forEach(waiter => waiter.resolve(result));
+        return result;
+      } catch (error) { waiters.forEach(waiter => waiter.reject(error)); throw error; }
     },
     /** The first query, decoding of compact row data and a query in flight finish before a change applies. */
     async liveSettle() {
@@ -106,9 +130,9 @@
         outcome = { ...result, orderChanged: !!this.liveOrder?.dirty };
       } else {
         const updates = new Map([...queue.values()].map(change => [change.id, change.row]));
-        const { changed, moved } = this.liveSetHeld(updates, true);
+        const { changed, moved, loaded } = this.liveSetHeld(updates, true);
         if (moved) this.liveMoved = true;
-        outcome = { added: [], updated: [...changed.keys()], removed: [], missing: [...updates.keys()].filter(id => !changed.has(id)), orderChanged: this.liveMoved };
+        outcome = { added: [], updated: [...changed.keys()], removed: [], missing: [...updates.keys()].filter(id => !loaded.has(id)), orderChanged: this.liveMoved };
       }
       // What happened to the open record matters more to a reader in its drawer than the counts.
       const recordNote = !!this.liveNotes?.length;
@@ -120,35 +144,36 @@
     liveReport(outcome, source) {
       const detail = gridFreeze({ added: outcome.added || [], updated: outcome.updated || [], removed: outcome.removed || [], missing: outcome.missing || [],
         orderChanged: !!outcome.orderChanged, newData: !!outcome.newData, revision: outcome.revision ?? this.snapshot?.revision ?? null, source });
-      if (detail.added.length || detail.updated.length || detail.removed.length || detail.newData || detail.orderChanged) this.emit("rowsChanged", detail);
+      if (detail.added.length || detail.updated.length || detail.removed.length || detail.newData || detail.orderChanged || outcome.refreshed) this.emit("rowsChanged", detail);
       return detail;
     },
     /** Asks the source again: a hosted grid's revision-aware refresh, or the live load function of an inline grid. */
     refreshRows() { return this.liveRefresh("refresh"); },
-    async liveRefresh(source) {
-      if (this.liveInline()) {
-        await this.liveSettle();
-        if (!this.liveOpts.load) return liveResult();
-        const answer = await this.runGridHook(signal => this.liveOpts.load({ signal, query: this.acceptedQuery, rows: this.view.rows.length }), this.dataLifetime.signal);
-        if (answer == null) return liveResult();
-        if (Array.isArray(answer)) { validateGridRows(liveCopy(answer), this.view.columns); await this.flushTransactions().catch(() => {}); }
-        const promise = this.liveQueueChange(liveTransaction(this, Array.isArray(answer) ? liveDiff(answer, this.liveRows()) : answer), source);
-        if (this.liveTimer) this.flushTransactions().catch(() => {});
-        return promise;
-      }
-      if (this.view.source.kind === "inline") return liveResult();
+    liveRefresh(source) {
       return this.liveRun(async () => {
+        if (this.liveInline()) {
+          if (!this.liveOpts.load) return liveResult();
+          await this.liveFlush().catch(() => {});
+          let answer = await this.runGridHook(signal => this.liveOpts.load({ signal, query: this.acceptedQuery, rows: this.view.rows.length }), this.dataLifetime.signal);
+          if (answer == null) return liveResult();
+          if (Array.isArray(answer)) { validateGridRows(answer, this.view.columns); answer = liveCopy(answer); }
+          const change = liveTransaction(this, Array.isArray(answer) ? liveDiff(answer, this.liveRows()) : answer), queue = new Map();
+          // Updates asked for while loading stay in the next batch, after this answer.
+          liveEnqueue(queue, change);
+          return this.liveApply(queue, source);
+        }
+        if (this.view.source.kind === "inline") return liveResult();
         const outcome = await this.liveRefreshHost(false);
         if (!outcome) return liveResult();
         const changed = [...outcome.changed].filter(([, columns]) => columns !== "*").map(([id]) => id);
         this.liveSpeak();
-        return this.liveReport({ updated: changed, orderChanged: outcome.orderChanged, newData: outcome.newData, revision: outcome.revision }, source);
+        return this.liveReport({ updated: changed, orderChanged: outcome.orderChanged, newData: outcome.newData, revision: outcome.revision, refreshed: true }, source);
       });
     },
     /** Shows the sorted order: kept rows move to their places, a hosted grid shows its newest result, a cursor grid its first page. */
     resort() {
       return this.liveRun(async () => {
-        const pending = this.livePending;
+        const pending = this.livePending, revision = this.snapshot?.revision;
         if (pending?.cursor) { this.livePending = null; this.liveSyncPrompt(); await this.setQuery({ ...this.acceptedQuery, cursor: undefined, revision: undefined }, { pageLength: this.pageLength }); return; }
         if (this.liveInline()) {
           this.liveOrder = null; this.liveMoved = false;
@@ -161,6 +186,7 @@
           this.liveSwap(pending.snapshot, () => pending.pages, id => position.get(id) ?? -1, new Map(), []);
         } else { this.liveMoved = false; await this.liveRefreshHost(true); }
         this.liveSyncPrompt();
+        if (!this.liveInline() && this.snapshot?.revision !== revision) this.liveReport({ refreshed: true, revision: this.snapshot.revision }, "refresh");
         this.liveNote(this.labels.gridLiveSorted); this.liveSpeak();
       });
     },
@@ -171,6 +197,7 @@
      */
     async poll(options = {}) { return this.livePoll(options); },
     livePoll(options) {
+      this.startLive();
       if (!options || typeof options !== "object" || Array.isArray(options)) throw new Error("CanopyX: poll takes options.");
       const interval = options.intervalMs ?? this.liveOpts.pollMs, hidden = options.pauseWhenHidden ?? this.liveOpts.pauseWhenHidden;
       if (!Number.isInteger(interval) || interval < 250 || interval > 86400000 || typeof hidden !== "boolean" || options.load !== undefined && typeof options.load !== "function")

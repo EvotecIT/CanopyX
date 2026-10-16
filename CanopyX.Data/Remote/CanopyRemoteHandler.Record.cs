@@ -34,12 +34,13 @@ public sealed partial class CanopyRemoteHandler {
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>The record document, with the dataset revision.</returns>
     /// <remarks>
-    /// The revision is checked before the record is looked up, so a stale request never learns whether a record exists. A record
+    /// The revision is checked before the record is looked up, so a stale request never learns whether a record exists, and
+    /// again after the provider completes so a concurrent change never stamps newer details with an older revision. A record
     /// that is missing, outside the caller's scope, or whose identity cannot be a key answers alike with
     /// <see cref="CanopyRequestError.RecordNotFound"/>. The provider's answer is checked: a field or drawer value that was not
-    /// asked for, more collection rows or items than allowed, or a row of another record fails the request as a server error
+    /// asked for (including fields on its returned parent row), more collection rows or items than allowed, or a row of another record fails the request as a server error
     /// instead of reaching the caller. Text longer than <see cref="CanopyRecordRequest.MaxTextLength"/> is then shortened, ellipsis
-    /// included, to that length whatever the provider (identities, link keys and the record's row never are). An answer larger
+    /// included, to that length whatever the provider (identities, link keys, trusted HTML and the record's row never are). An answer larger
     /// than <see cref="CanopyRemoteLimits.MaxRecordBytes"/> is refused.
     /// </remarks>
     public async Task<string> RecordAsync(CanopyRecordRequest request, CancellationToken cancellationToken = default) {
@@ -53,13 +54,14 @@ public sealed partial class CanopyRemoteHandler {
             throw CanopyRequestException.Limit("The request allows more than this endpoint does.");
         var revision = await RevisionAsync(request.Revision, cancellationToken).ConfigureAwait(false);
         var record = await records.GetRecordAsync(request, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         if (record == null) throw new CanopyRequestException(CanopyRequestError.RecordNotFound, "The record is not available.");
         CheckRecord(record, request, limits.MaxRecordPageSize);
         // Every provider is held to the text bound, custom ones included; an answer whose text alone exceeds the byte limit is
         // refused before it is serialized.
         if (RecordAnswerText.Clip(record, request.MaxTextLength) > limits.MaxRecordBytes) throw CanopyRequestException.Limit("The record is larger than this endpoint answers.");
         record.Revision = revision;
-        var json = record.ToJson(Schema.View);
+        var json = record.ToJson(request.Schema.ProtocolView);
         if (Encoding.UTF8.GetByteCount(json) > limits.MaxRecordBytes) throw CanopyRequestException.Limit("The record is larger than this endpoint answers.");
         return json;
     }
@@ -75,9 +77,18 @@ public sealed partial class CanopyRemoteHandler {
                 throw new InvalidOperationException("The record provider answered a collection page with more rows than asked for, tree roots or no total.");
             return;
         }
+        CheckRecordFields(record.Fields, request, maxPageSize);
+        if (record.Row?.HasFields == true) CheckRecordFields(record.Row.Fields, request, maxPageSize);
+        var cells = new HashSet<string>(request.Cells, StringComparer.Ordinal);
+        foreach (var key in record.Cells.Keys) if (!cells.Contains(key)) throw new InvalidOperationException("The record provider answered a drawer value that was not asked for.");
+        if (request.Row != (record.Row != null)) throw new InvalidOperationException(request.Row ? "The record provider answered without the record's row." : "The record provider answered a row that was not asked for.");
+    }
+
+    /// <summary>Record fields obey the same read policy and shape bounds at the top level and on a returned parent row.</summary>
+    private static void CheckRecordFields(IDictionary<string, CanopyCell> fields, CanopyRecordRequest request, int maxPageSize) {
         var allowed = new Dictionary<string, CanopyRecordField>(StringComparer.Ordinal);
         foreach (var field in request.Fields) allowed[field.Id] = field;
-        foreach (var pair in record.Fields) {
+        foreach (var pair in fields) {
             if (!allowed.TryGetValue(pair.Key, out var field)) throw new InvalidOperationException("The record provider answered a field that was not asked for.");
             var cell = pair.Value;
             if (cell == null) continue;
@@ -88,9 +99,6 @@ public sealed partial class CanopyRemoteHandler {
                 throw new InvalidOperationException("The record provider answered a value field with a collection or too many items.");
             }
         }
-        var cells = new HashSet<string>(request.Cells, StringComparer.Ordinal);
-        foreach (var key in record.Cells.Keys) if (!cells.Contains(key)) throw new InvalidOperationException("The record provider answered a drawer value that was not asked for.");
-        if (request.Row != (record.Row != null)) throw new InvalidOperationException(request.Row ? "The record provider answered without the record's row." : "The record provider answered a row that was not asked for.");
     }
 
     /// <summary>A collection whose total covers its rows and whose page size (what Load more asks for) the endpoint accepts.</summary>

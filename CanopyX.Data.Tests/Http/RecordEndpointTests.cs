@@ -21,6 +21,7 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
     private readonly List<Asset> _assets = Assets.Create(120, seed: 3);
     private WebApplication? _app;
     private HttpClient _client = null!;
+    private string _customRevision = "r1";
 
     public async Task InitializeAsync() {
         var builder = WebApplication.CreateBuilder();
@@ -41,8 +42,31 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         });
         var secured = Assets.Columns(Assets.View());
         _app.MapCanopyRemote("/api/secured", _ => Assets.Scoped(_assets).AsQueryable(), Assets.Records(secured));
+        var decorated = Assets.Columns(Assets.View()).DecorateRows(row => row.Fields["secret"] = "sensitive");
+        _app.MapCanopyRemote("/api/decorated", _ => Assets.Scoped(_assets).AsQueryable(), Assets.Records(decorated), options => {
+            options.AllowAnonymous = true;
+            options.CanReadRecordField = (http, field) => field != "secret" || http.Request.Headers["X-Test-Role"] == "admin";
+        });
         var plain = Assets.Columns(Assets.View());
         _app.MapCanopyRemote("/api/plain", _ => _assets.AsQueryable(), plain, options => options.AllowAnonymous = true);
+        var customColumns = Assets.Columns(Assets.View());
+        var customRecords = Assets.Records(customColumns);
+        _app.MapCanopyRemote("/api/custom", _ => _assets.AsQueryable(), customColumns, options => {
+            options.AllowAnonymous = true;
+            options.Query.Revision = _ => new ValueTask<string>(_customRevision);
+            options.Records = http => new Custom(customRecords.Schema, request => {
+                var kind = http.Request.Headers["X-Test-Failure"].ToString();
+                if (kind == "provider") throw new InvalidOperationException("private provider error");
+                var record = new CanopyGridRecord(request.Id);
+                if (kind == "revision") _customRevision = "r2";
+                else {
+                    var cell = new CanopyCell();
+                    cell.Fields.Add(new CanopyCellField("self", cell));
+                    record.Fields["notes"] = cell;
+                }
+                return record;
+            });
+        });
         await _app.StartAsync();
         _client = _app.GetTestClient();
     }
@@ -84,6 +108,20 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         var admin = await (await Post("/api/assets/record", Assets.Query(id), role: "admin")).Content.ReadAsStringAsync();
         Assert.DoesNotContain("secret-", reader);
         Assert.Contains("secret-" + id, admin);
+    }
+
+    [Fact]
+    public async Task Record_RowFieldReadPolicyFailsClosedThroughHttp() {
+        using var reader = await Post("/api/decorated/record", Assets.Query(VisibleId(), ",\"row\":true"));
+        var text = await reader.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.InternalServerError, reader.StatusCode);
+        Assert.DoesNotContain("sensitive", text);
+        using var error = JsonDocument.Parse(text);
+        Assert.Equal("serverError", error.RootElement.GetProperty("error").GetString());
+        using var admin = await Post("/api/decorated/record", Assets.Query(VisibleId(), ",\"row\":true"), role: "admin");
+        Assert.Equal(HttpStatusCode.OK, admin.StatusCode);
+        using var answer = JsonDocument.Parse(await admin.Content.ReadAsStringAsync());
+        Assert.Equal("sensitive", answer.RootElement.GetProperty("row").GetProperty("fields").GetProperty("secret").GetString());
     }
 
     [Theory]
@@ -147,6 +185,26 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         Assert.Equal(HttpStatusCode.OK, (await Post("/api/secured/query", "{\"padding\":\"" + new string('x', 20000) + "\"}", user: "reader")).StatusCode);
     }
 
+    [Theory]
+    [InlineData("revision", 409, "staleRevision")]
+    [InlineData("provider", 500, "serverError")]
+    [InlineData("cycle", 500, "serverError")]
+    public async Task CustomRecordFailures_ReturnTypedHttpErrorsWithoutProviderDetails(string kind, int status, string code) {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/custom/record") {
+            Content = new StringContent(Assets.Query("1", ",\"revision\":\"r1\""), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Add("X-Test-Failure", kind);
+        using var response = await _client.SendAsync(request);
+        Assert.Equal(status, (int)response.StatusCode);
+        var text = await response.Content.ReadAsStringAsync();
+        using var error = JsonDocument.Parse(text);
+        Assert.Equal(code, error.RootElement.GetProperty("error").GetString());
+        Assert.DoesNotContain("private provider error", text);
+        Assert.DoesNotContain("Structured values", text);
+        Assert.DoesNotContain("Exception", text);
+        Assert.DoesNotContain("   at ", text);
+    }
+
     [Fact]
     public void Mapping_RefusesTwoRecordProviders_AndKeepsEarlierCallsUnambiguous() {
         var builder = WebApplication.CreateBuilder();
@@ -177,6 +235,13 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
     }
 
     private sealed class RecordMarker { }
+
+    private sealed class Custom : ICanopyRecordProvider {
+        private readonly Func<CanopyRecordRequest, CanopyGridRecord> _answer;
+        internal Custom(CanopyRecordSchema schema, Func<CanopyRecordRequest, CanopyGridRecord> answer) { Schema = schema; _answer = answer; }
+        public CanopyRecordSchema Schema { get; }
+        public ValueTask<CanopyGridRecord?> GetRecordAsync(CanopyRecordRequest request, CancellationToken cancellationToken) => new(_answer(request));
+    }
 
     /// <summary>Authenticates requests that carry an X-Test-User header.</summary>
     private sealed class HeaderAuthentication : AuthenticationHandler<AuthenticationSchemeOptions> {
