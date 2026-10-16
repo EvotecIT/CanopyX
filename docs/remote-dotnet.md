@@ -200,6 +200,9 @@ returned by the column descriptors do not change the endpoint contract; create a
 | Exports | export request → file | Full: `filtered`, `selected` (ids or all-matching with exclusions) and `all` scopes, chosen columns, raw or display values, streamed. |
 | Cursor navigation | `gridCursorQuery` | Not served; rejected with `unsupported`. Offset navigation covers the protocol's hosted grids. |
 
+Return a stable revision that changes when the dataset changes, and keep its lookup cheap. The handler reads it before
+and after pages, facets and summaries, and checks exports after counting and around streaming. A provider that always
+returns the same revision, such as `live`, does not provide a snapshot guarantee.
 ## Text, numbers and dates
 
 The protocol defines exact rules (see [Filter semantics](data-protocol.md#flat-grid-documents)): text matching is
@@ -219,11 +222,20 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
   table before choosing their ordered prefix and counting distinct values. This includes Unicode spellings the database's
   `LOWER` keeps apart. Query filters and quick search still follow `TextComparison` above. Use a binary collation when raw
   spelling matters: the adapter cannot recover spellings the store already merged into one group.
+- **Numeric value lists.** Search reads the protocol's binary64 number text, including exponent spelling and full precision.
+  With a nonempty search, the adapter streams the database's ordered numeric groups, merges equivalent values, then counts
+  matches and retains the requested prefix. Empty search keeps the database distinct count and limited prefix query.
 - **Enumerations and booleans** evaluate every member against the exact rule and send the matching members as an `IN`
   test, so `contains "ux"` on an enumeration becomes `os IN (Linux)`. Enumerations sort by their raw text (an `[EnumMember]` value or the member name).
   Flags include unnamed combinations of up to eight declared bits (at most 256 values). Map larger flag domains to host-projected text.
 - **Integers** accept fractional operands as the protocol's binary64 comparison would: `gt 4.5` becomes `> 4`, `eq 4.5`
   matches nothing, and out-of-range operands become always/never true.
+- **Decimal numbers.** Cells retain their exact decimal JSON text. Numeric operations use the binary64 value a browser reads
+  from it: comparisons, default sorting, group keys, value lists, distinct counts and aggregate inputs round once with ties
+  to even. In-memory fractional decimal conversion uses temporary exact integer arithmetic; database expressions use a
+  translated binary64 cast. Consider the conversion and cast cost for large decimal datasets.
+  On .NET Framework, request readers normalize exactly representable decimal JSON spellings before converting them;
+  number texts outside decimal's precision or range retain the platform JSON parser's rounding.
 - **Dates** become half-open bounds: `eq t` is `t ≤ v < t + 1 ms`, `gt t` is `v ≥ t + 1 ms`. Store UTC; `DateTime` values
   without a kind are read as UTC. In-memory ordering compares UTC milliseconds and breaks ties by record identity.
   Database ordering requires an explicit `SortBy` mapping whose values have the same ordering and ties, usually an indexed
@@ -234,8 +246,10 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
 - **Large numbers.** Number columns follow the protocol's binary64 range: comparisons are bounded to ±2^53−1, so store
   larger identifiers as text.
 - **Search over numbers and dates.** In memory, quick search reads every searchable column's raw text. Databases search
-  number columns through their text form only when the view lists them in `SearchColumns`, and never search date columns
-  (there is no portable text form). Value-list search on a date column answers `unsupported`.
+  number columns through the store's text form only when the view lists them in `SearchColumns`; this spelling can differ
+  from protocol number text. Use `SearchBy` with a stored canonical text column when quick search needs the exact protocol
+  spelling. Databases never search date columns without a `SearchBy` text mapping (there is no portable text form).
+  Value-list search on a date column answers `unsupported`.
 
 ## Grouping levels
 
@@ -272,6 +286,9 @@ view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
   its revision. The offset is zero; the accepted limit, search, predicate shape and operands are retained, and the
   effective grouping levels lead the sort. For code-built requests, an unused summary limit outside 1–10,000 is echoed
   as the view's page size. Ignored input fields do not become part of the response.
+  Typed summaries return `unsupported` before provider access for constant filters, identity restrictions, or grouping
+  overrides that a fixed or ungrouped view cannot express. These shapes remain supported in ordinary typed queries and
+  direct provider requests; use runtime grouping for query-owned grouping levels.
 
 ## Safety
 
@@ -413,6 +430,8 @@ records from the provider straight to the response, never materializing the resu
   and are added to `CanopyRemoteOptions.ExportFormats`. `CanopyExportContext` supplies the ordered records and
   `GetValue`/`GetText` helpers that respect the request's value mode.
 
+A prepared export is checked again before writing. If the revision changes while streaming, the job fails and the
+ASP.NET Core host aborts a response that has already started. Other hosts must discard a file whose `WriteAsync` fails.
 ## Saving edits
 
 A grid with editable columns (`CanopyColumn.Editable`, with an optional `Editor` and `Validation`) keeps changes in its
@@ -707,6 +726,8 @@ Notes:
   prefix are finalized. They retain one canonical key per distinct matching value and at most the requested prefix's
   values and counts; they do not buffer records or the complete grouped result. For high-cardinality columns, consider
   host-normalized text with suitable indexes, or a host provider that groups and counts indexed canonical keys in the store.
+  Nonempty numeric value-list search also transfers every distinct numeric group to search its canonical text; retained
+  values/counts stay proportional to the requested limit. Empty numeric search retains the database-limited prefix path.
 - **Large parameter lists.** Selected exports send up to 10,000 identities and a membership filter up to 1,000 values as
   one parameterized collection. On SQL Server, whose limit is 2,100 parameters per command, configure EF Core to send
   parameterized collections as one JSON parameter, or lower `MaxSelectedIds` and `MaxInValues`.

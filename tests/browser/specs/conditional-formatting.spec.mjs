@@ -245,7 +245,7 @@ test("forced colours keep the non-colour cues and draw accents in system colours
   await expect(row(page, "srv-00003").locator(".cx-cell").nth(1).locator(".cx-fmt-icon")).toBeVisible();
 });
 
-test("evaluation stays within budget on 100,000 rows: painted rows evaluate once and repaint from the cache", async ({ page }) => {
+test("scroll navigation stays within budget on 100,000 rows with formatting and cached repaints", async ({ page }) => {
   test.setTimeout(120000);
   const view = healthView(100000);
   view.formatting = { legend: true };
@@ -254,17 +254,33 @@ test("evaluation stays within budget on 100,000 rows: painted rows evaluate once
     await page.unrouteAll(); await open(page, copy);
     // The first rows paint after the rules compile and the automatic bounds of the bar and the scale span all 100,000 rows.
     return page.evaluate(async () => {
-      const api = document.querySelector("[data-canopyx-host]").canopyx, frames = [], frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      for (let pass = 0; pass < 2; pass++) for (let i = 0; i < 24; i++) {
-        const start = performance.now(); await api.scrollToRow((i * 4111) % 99000); await frame(); frames.push(performance.now() - start);
+      const api = document.querySelector("[data-canopyx-host]").canopyx, navigation = [], completeIntervals = [], rafFloor = [];
+      const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      for (let i = 0; i < 48; i++) {
+        const start = performance.now(); await frame(); rafFloor.push(performance.now() - start);
       }
-      return frames;
+      for (let pass = 0; pass < 2; pass++) for (let i = 0; i < 24; i++) {
+        const index = (i * 4111) % 99000, start = performance.now();
+        // Budget the public navigation, rule evaluation and DOM updates. The two explicit settling frames have their
+        // own host-dependent cadence; retain the full presentation interval without charging idle frames to evaluation.
+        await api.scrollToRow(index); navigation.push(performance.now() - start);
+        await frame(); completeIntervals.push(performance.now() - start);
+        const target = document.querySelector('.cx-row[data-cx-id="srv-' + String(index).padStart(5, "0") + '"]');
+        if (!target || target.getAttribute("aria-rowindex") !== String(index + 2)) throw new Error("Requested row was not rendered: " + index);
+        const grid = target.closest(".cx-grid"), bounds = target.getBoundingClientRect(), viewport = grid.getBoundingClientRect();
+        const visibleTop = Math.max(viewport.top, grid.querySelector(".cx-head").getBoundingClientRect().bottom);
+        if (bounds.bottom <= visibleTop || bounds.top >= viewport.bottom) throw new Error("Requested row is outside the viewport: " + index);
+      }
+      return { navigation, completeIntervals, rafFloor };
     });
   };
   const plain = await measure([]);
   const formatted = await measure(view.formatRules);
-  const base = median(plain), cost = median(formatted);
-  console.log("formatting budget: median frame " + cost.toFixed(1) + " ms with rules, " + base.toFixed(1) + " ms without");
+  const base = median(plain.navigation), cost = median(formatted.navigation);
+  console.log("formatting budget: median navigation " + cost.toFixed(1) + " ms with rules, " + base.toFixed(1) + " ms without");
+  console.log("formatting presentation: median complete interval " + median(formatted.completeIntervals).toFixed(1) + " ms with rules, " +
+    median(plain.completeIntervals).toFixed(1) + " ms without; two-RAF floor " + median(formatted.rafFloor).toFixed(1) + "/" + median(plain.rafFloor).toFixed(1) + " ms");
+  console.log("formatting samples: " + JSON.stringify({ plain, formatted }));
   expect(cost).toBeLessThan(base * 2 + 12);
   expect(cost).toBeLessThan(60);
 });

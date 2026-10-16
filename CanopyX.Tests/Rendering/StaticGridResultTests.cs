@@ -84,6 +84,7 @@ public sealed class StaticGridResultTests {
         Assert.Empty(result.Rows);
         Assert.Equal(0L, result.TotalRows);
         Assert.False(result.HasUnknownTotal);
+        Assert.True(result.IsComplete);
         Assert.Throws<ArgumentNullException>(() => CanopyStaticHtml.RenderGridWithResult(null!));
         Assert.Throws<ArgumentNullException>(() => CanopyStaticHtml.RenderGridWithResult(Hosted(true), (CanopyGridCursorPage)null!));
     }

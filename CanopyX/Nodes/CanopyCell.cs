@@ -190,7 +190,7 @@ public sealed partial class CanopyCell {
     }
 
     /// <summary>ISO 8601 UTC, with milliseconds only when they are not zero.</summary>
-    private static string FormatIso(DateTime date) =>
+    internal static string FormatIso(DateTime date) =>
         date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
     /// <summary>Checks a node's cells, walking the dictionary without an enumerator object.</summary>

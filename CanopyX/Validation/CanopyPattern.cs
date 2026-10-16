@@ -5,7 +5,7 @@ namespace CanopyX;
 
 /// <summary>The shared bounded pattern grammar for browser editing and formatting. Arbitrary backtracking expressions
 /// cannot run safely on the browser UI thread; authoring rejects them before a document is written.</summary>
-internal static class CanopyPattern {
+internal static partial class CanopyPattern {
     internal static void Validate(string source, bool whole = false) {
         const string message = "Patterns require literals, character classes and at most one variable repetition anchored at the start; groups, alternatives and backreferences are unsupported.";
         if (source.Length > 256) throw new InvalidOperationException(message);

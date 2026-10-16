@@ -58,7 +58,7 @@ internal sealed partial class QueryTranslator<T> {
             yield break;
         }
         if (mapped.Shape == ValueShape.Real || mapped.Shape == ValueShape.Decimal) {
-            yield return (Expression.Convert(value, ExpressionTools.IsNullable(value.Type) ? typeof(double?) : typeof(double)), key.Descending, null);
+            yield return (Binary64(value), key.Descending, null);
             yield break;
         }
         if (mapped.Shape == ValueShape.Enum) {

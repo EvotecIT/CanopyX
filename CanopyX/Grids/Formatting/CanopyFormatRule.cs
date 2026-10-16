@@ -41,7 +41,7 @@ public sealed class CanopyFormatRule {
     /// <summary>Gets or sets the rule's name: its legend entry and default description (at most 200 characters).</summary>
     public string? Label { get => _label; set { CanopyFormatStyle.ValidateText(value, 200, nameof(value)); _label = value; } }
 
-    /// <summary>Gets or sets what screen readers hear on a formatted cell (at most 1,000 characters). Null uses the label.</summary>
+    /// <summary>Gets or sets what screen readers hear on a formatted cell (at most 1,000 characters). Null uses the label, then the rule identifier.</summary>
     public string? Description { get => _description; set { CanopyFormatStyle.ValidateText(value, 1000, nameof(value)); _description = value; } }
 
     /// <summary>Gets or sets whether the rule applies. Defaults to true.</summary>

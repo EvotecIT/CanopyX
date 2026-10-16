@@ -24,14 +24,14 @@ the rule editor; `conditional-formatting-static.html` is the same grid as a scri
 | --- | --- |
 | `id` | Unique within the grid: a letter or digit, then up to 63 letters, digits, `_`, `.`, `:` and `-`. |
 | `label` | The rule's name: its legend entry, its name in the editor and its default description. |
-| `description` | What screen readers hear on a formatted cell. Defaults to the label. |
+| `description` | What screen readers hear on a formatted cell. Defaults to the label, then the rule ID. A legend entry still requires a label. |
 | `enabled` | `false` keeps the rule without applying it. |
 | `when` | The condition. Without one the rule matches every row, the usual choice for bars and scales. |
 | `column` | The cell a `cell` rule paints, and the value a bar, scale or band reads. |
 | `target` | `cell` (default), `row`, or `columns` with `columns: [ids]`. |
 | `details` | `false` keeps the formatting out of the record drawer. Default true. |
 | `style` | How the rule paints (below). |
-| `stopIfTrue` | A match ends the rules after this one for that row. |
+| `stopIfTrue` | A match ends the rules after this one for that row, even when a missing or nonnumeric value prevents its bar, scale or band from painting. |
 
 A grid holds at most 64 rules, in priority order. For each target cell or row, the first matched rule that sets an aspect
 (tone, emphasis, icon, badge, cue, bar, scale) wins it, and every matched rule adds its description. So a rule that draws a
@@ -56,8 +56,8 @@ A predicate is `{ "column", "operator", "values" }` with optional fields:
 | --- | --- |
 | `eq`, `ne`, `gt`, `ge`, `lt`, `le` | one |
 | `contains`, `notContains`, `startsWith`, `endsWith` | one |
-| `like`, `notLike` | one wildcard pattern: `*` any text, `?` one character |
-| `matches`, `notMatches` | a bounded regular expression of at most 256 characters; it tests the first 4,096 characters |
+| `like`, `notLike` | one wildcard pattern: `*` any text, `?` one character; it tests the first 4,096 UTF-16 code units |
+| `matches`, `notMatches` | a bounded regular expression of at most 256 characters; it tests the first 4,096 UTF-16 code units |
 | `in`, `notIn` | 1 to 1,000 |
 | `between` (inclusive), `betweenExclusive` | two, lower first |
 | `isNull`, `isNotNull` | none |

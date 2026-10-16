@@ -42,6 +42,13 @@
     element.textContent = value == null ? "" : String(value);
   }
 
+  /** A removable chip keeps its text shrinkable and its removal mark visible. */
+  function filterChipContent(button, text) {
+    const label = h("span", "cx-chip-label"), remove = h("span", "cx-chip-remove");
+    setText(label, text); setText(remove, " ×"); remove.setAttribute("aria-hidden", "true");
+    button.classList.add("cx-filter-chip"); button.replaceChildren(label, remove);
+  }
+
   function validStructuralCount(value) {
     return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }

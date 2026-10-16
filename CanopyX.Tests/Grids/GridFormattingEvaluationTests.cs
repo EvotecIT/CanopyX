@@ -71,9 +71,9 @@ public sealed class GridFormattingEvaluationTests {
         Assert.Contains("width:100%;", Row(html, 3));
         Assert.Contains("width:33.3%;", Row(html, 1));
         Assert.NotEqual(Background(Row(html, 0), 3), Background(Row(html, 3), 3));
-        Assert.Contains("title=\"Low\"", Row(html, 0));
-        Assert.Contains("title=\"Busy\"", Row(html, 2));
-        Assert.Contains("title=\"Hot\"", Row(html, 3));
+        Assert.Contains("title=\"bands, Low\"", Row(html, 0));
+        Assert.Contains("title=\"bands, Busy\"", Row(html, 2));
+        Assert.Contains("title=\"bands, Hot\"", Row(html, 3));
     }
 
     private static string Background(string row, int cell) {

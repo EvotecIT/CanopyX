@@ -108,6 +108,7 @@ LiveDataExample.Write(output);
 FacetPanelExample.Write(output);
 TypedGridExample.Write(output);
 OrdersByRegionExample.Write(output);
+NestedTreeDetailExample.Write(output);
 SupportTicketsExample.Write(output);
 QuarterlyBudgetExample.Write(output);
 CertificateInventoryExample.Write(output);

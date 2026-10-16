@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -21,7 +20,7 @@ public sealed class CanopyGridGrouping {
     public bool Descending { get; }
     /// <summary>Creates the group-value comparer used by complete-query host ordering.</summary>
     /// <param name="view">Owning definition containing this grouping column and optional text order.</param>
-    /// <returns>A comparer with missing values last and exact raw-value ties separating groups.</returns>
+    /// <returns>A comparer with missing values last and protocol-value ties separating groups.</returns>
     /// <remarks>Use this key before secondary row sorts and stable record identity. Display text is ignored.</remarks>
     public IComparer<CanopyCell> CreateComparer(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
@@ -51,7 +50,7 @@ public sealed class CanopyGridGrouping {
         return Descending ? -result : result;
     }
     private static double Number(object value) {
-        var number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        var number = CanopyNumericValues.ToDouble(value);
         if (Math.Abs(number) > 9007199254740991d)
             throw new InvalidOperationException("Numeric group values must stay within the safe integer magnitude.");
         return number;

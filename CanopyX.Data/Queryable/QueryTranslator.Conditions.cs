@@ -26,7 +26,7 @@ internal sealed partial class QueryTranslator<T> {
             case ValueShape.Decimal:
                 // Request numbers already are binary64. Narrowing an operand to float/decimal changes boundaries
                 // that the browser sees, so promote the stored value instead (also a portable SQL CAST).
-                var number = Expression.Convert(value, nullable ? typeof(double?) : typeof(double));
+                var number = Binary64(value);
                 test = Compare(number, op, condition.Values); break;
             default: test = DateCondition(value, mapped.Shape, op, condition.Values, guard); break;
         }
