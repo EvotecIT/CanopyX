@@ -4,19 +4,23 @@ on:
   pull_request:
     paths:
       - "Website/**"
+      - "Directory.Build.props"
+      - "CanopyX.sln"
       - "CanopyX/**"
       - "CanopyX.Html/**"
-      - "CanopyX.Examples/SyntheticFileTree.cs"
-      - "CanopyX.Examples/ExampleViews.cs"
+      - "CanopyX.Examples/**"
+      - "docs/**"
       - ".github/workflows/website-ci.yml"
   push:
     branches: [main]
     paths:
       - "Website/**"
+      - "Directory.Build.props"
+      - "CanopyX.sln"
       - "CanopyX/**"
       - "CanopyX.Html/**"
-      - "CanopyX.Examples/SyntheticFileTree.cs"
-      - "CanopyX.Examples/ExampleViews.cs"
+      - "CanopyX.Examples/**"
+      - "docs/**"
       - ".github/workflows/website-ci.yml"
   workflow_dispatch:
 
