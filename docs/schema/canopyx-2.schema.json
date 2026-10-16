@@ -1896,7 +1896,20 @@
             "linkFiltered": { "$ref": "#/$defs/accessibleLabel" },
             "linkHighlighted": { "$ref": "#/$defs/accessibleLabel" },
             "linkHighlightedRows": { "$ref": "#/$defs/accessibleLabel" },
-            "linkCleared": { "$ref": "#/$defs/accessibleLabel" }
+            "linkCleared": { "$ref": "#/$defs/accessibleLabel" },
+            "calendarToday": { "type": "string" }, "calendarPrevious": { "type": "string" }, "calendarNext": { "type": "string" }, "calendarViews": { "type": "string" },
+            "calendarMonth": { "type": "string" }, "calendarWeek": { "type": "string" }, "calendarDay": { "type": "string" }, "calendarDays": { "type": "string" },
+            "calendarAgenda": { "type": "string" }, "calendarYear": { "type": "string" }, "calendarTimeline": { "type": "string" }, "calendarGoTo": { "type": "string" },
+            "calendarAllDay": { "type": "string" }, "calendarMore": { "type": "string" }, "calendarMoreLabel": { "type": "string" }, "calendarDayEvents": { "type": "string" },
+            "calendarNoEvents": { "type": "string" }, "calendarEvents": { "type": "string" }, "calendarShowing": { "type": "string" }, "calendarRepeats": { "type": "string" },
+            "calendarTruncated": { "type": "string" }, "calendarLoading": { "type": "string" }, "calendarLoadError": { "type": "string" }, "calendarNow": { "type": "string" },
+            "calendarZoom": { "type": "string" }, "calendarZoomHour": { "type": "string" }, "calendarZoomDay": { "type": "string" }, "calendarZoomWeek": { "type": "string" },
+            "calendarZoomMonth": { "type": "string" }, "calendarZoomQuarter": { "type": "string" }, "calendarResources": { "type": "string" }, "calendarCapacity": { "type": "string" },
+            "calendarCapacityAt": { "type": "string" }, "calendarBusy": { "type": "string" }, "calendarOverlaps": { "type": "string" }, "calendarUnavailable": { "type": "string" },
+            "calendarOutsideHours": { "type": "string" }, "calendarConflict": { "type": "string" }, "calendarNotAllowed": { "type": "string" }, "calendarMoved": { "type": "string" },
+            "calendarResized": { "type": "string" }, "calendarSeriesMoved": { "type": "string" }, "calendarMoveHelp": { "type": "string" }, "calendarEdit": { "type": "string" },
+            "calendarSaveFailed": { "type": "string" }, "calendarExport": { "type": "string" }, "calendarTimeRange": { "type": "string" }, "calendarSelected": { "type": "string" },
+            "calendarLane": { "type": "string" }, "calendarHighlighted": { "type": "string" }
           }
         },
         "source": { "$ref": "#/$defs/source" },
