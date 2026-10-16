@@ -104,6 +104,43 @@ test("keyboard and host position navigation cross page boundaries with global ro
   expect(await page.evaluate(controller + ".getPaging().pageIndex")).toBe(22);
 });
 
+test("cached public position navigation reveals recycled rows without taking focus from a details drawer", async ({ page }) => {
+  await open(page, definition({ presentation: "continuous" }));
+  await page.evaluate(controller + ".openDetails('row-0')");
+  const drawer = page.locator("dialog.cx-drawer"), control = drawer.getByRole("button", { name: "Close record details", exact: true });
+  await expect(drawer).toBeVisible(); await control.focus(); await expect(control).toBeFocused();
+  for (const index of [110, 0, 110]) {
+    await page.evaluate(index => document.querySelector('[data-canopyx-host]').canopyx.scrollToRow(index), index);
+    const target = page.locator('.cx-row[data-cx-id="row-' + index + '"]');
+    await expect(target).toBeInViewport(); await expect(target).toContainText("Row " + index);
+    await expect(target).toHaveAttribute("aria-rowindex", String(index + 2));
+    await expect(control).toBeFocused();
+  }
+  await page.screenshot({ path: test.info().outputPath("cached-drawer-navigation.png") });
+});
+
+for (const action of ["destroy", "query"]) test(`public position navigation rejects a delayed source row after ${action}`, async ({ page }) => {
+  const view = definition({ presentation: "continuous" }); view.source = { kind: "host" }; delete view.rows;
+  await open(page, view, `window.pending=[];CanopyX.configure('inventory',{source:{query(query){
+    const result={protocol:'canopyx/2',type:'gridPage',view:'inventory',revision:'r1',offset:query.offset,total:137,matched:137,
+      items:Array.from({length:Math.min(query.limit,137-query.offset)},(_,i)=>({id:'row-'+(query.offset+i),cells:{name:'Row '+(query.offset+i),amount:query.offset+i}}))};
+    return query.offset>=70?new Promise(resolve=>pending.push(()=>resolve(result))):result;
+  }}});`);
+  await page.evaluate(() => {
+    window.navigation = document.querySelector('[data-canopyx-host]').canopyx.scrollToRow(110)
+      .then(() => "completed", error => error.name);
+  });
+  await expect.poll(() => page.evaluate(() => pending.length)).toBeGreaterThan(0);
+  await page.evaluate(async action => {
+    const api = document.querySelector('[data-canopyx-host]').canopyx;
+    if (action === "destroy") api.destroy();
+    else await api.setQuery({ ...api.getQuery(), search: "changed", offset: 0, revision: undefined });
+    pending.splice(0).forEach(finish => finish());
+  }, action);
+  expect(await page.evaluate(() => navigation)).toBe("AbortError");
+  if (action === "query") await expect(page.locator('.cx-row[data-cx-id="row-110"]')).toHaveCount(0);
+});
+
 test("paged saved positions become global positions when the definition becomes continuous", async ({ page }) => {
   await open(page, definition({ pageLength: 100 }));
   const state = await page.evaluate(async () => {

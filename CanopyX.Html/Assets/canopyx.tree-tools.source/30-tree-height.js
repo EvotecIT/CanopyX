@@ -11,6 +11,9 @@
       if (!this.fitReady || this.view.autoHeight === false || this.total === this.heightTotal) return;
       this.heightTotal = this.total;
       clearTimeout(this.heightTimer);
+      // Fit the first measurable rows before their first paint. Delaying that initial shrink can move the page
+      // between a reader's pointer press and release; later expansion changes still settle through the debounce.
+      if (!this.heightFitted) { this.fitHeight(); return; }
       this.heightTimer = setTimeout(() => this.destroyed || this.fitHeight(), TREE_HEIGHT_DELAY);
     },
 
@@ -25,5 +28,7 @@
       const content = [...grid.children].reduce((sum, child) => sum + child.offsetHeight, grid.offsetHeight - grid.clientHeight);
       const value = this.rows.length ? Math.min(this.heightMax, Math.ceil(this.host.offsetHeight - grid.offsetHeight + content)) + "px" : this.heightInline;
       if (style.maxHeight !== value) style.maxHeight = value;
+      // An empty or hidden host must not consume the first fit of actual rows when data or visibility arrives.
+      if (this.rows.some(row => !row.status)) this.heightFitted = true;
     }
   });

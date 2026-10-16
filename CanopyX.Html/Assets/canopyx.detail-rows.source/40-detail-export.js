@@ -20,13 +20,14 @@
       const options = this.opts.detail || {}, view = this.view.reporting?.detail?.view;
       let payload = typeof options.export === "function" ? options.export(gridFreeze(JSON.parse(JSON.stringify(row)))) : row.detail;
       if (payload == null) return null;
-      if ((payload.type === "grid" || payload.type === "tree") && view?.type === payload.type) {
-        const columns = view.columns.filter(column => !column.hidden), rows = [], fmt = this.fmt;
+      if (payload.type === "grid" && view?.type === "grid" || payload.type === "tree" && view?.type === "view") {
+        const columns = view.columns.filter(column => !column.hidden), rows = [];
+        const fmt = formatting(this.lang, view.timeZone === "local", labelsFor(view.labels, this.opts.labels));
         const text = (cells, column) => cellText(cells?.[column.id], column, fmt);
         if (payload.type === "grid") for (const item of payload.rows || []) rows.push(columns.map(column => text(item.cells, column)));
         else {
           const walk = (nodes, level) => { for (const node of nodes || []) {
-            rows.push(columns.map((column, index) => index ? text(node.cells, column) : "  ".repeat(level) + (node.cells?.[column.id] != null ? text(node.cells, column) : node.label)));
+            rows.push(columns.map((column, index) => index ? text(node.cells, column) : "  ".repeat(level) + (Object.hasOwn(node.cells || {}, column.id) ? text(node.cells, column) : node.label)));
             walk(node.children, level + 1);
           } };
           walk(payload.roots, 0);

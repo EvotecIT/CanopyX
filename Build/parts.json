@@ -240,7 +240,7 @@
       "runtimes": ["tree", "grid"],
       "views": [],
       "key": "LINK_IMPL",
-      "context": ["LINK_IMPL", "h", "setText", "fill", "numberFormat", "cellValue", "setAttr", "cellMatches"],
+      "context": ["LINK_IMPL", "h", "setText", "filterChipContent", "fill", "numberFormat", "cellValue", "setAttr", "cellMatches"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.link.source"
       ],
@@ -255,7 +255,7 @@
       "views": ["grid"],
       "features": ["grouping", "detail"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "gridButton", "gridFreeze", "cellText", "requireIdentifier", "GridRowOffsets",
+      "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "gridButton", "gridFreeze", "cellText", "formatting", "labelsFor", "requireIdentifier", "GridRowOffsets",
         "TreeGrid", "createDataGrid", "createTreeGrid", "disposeRowHostCells", "OWN_ARROWS", "hostHtml"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.detail-rows.source"

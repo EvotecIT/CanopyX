@@ -113,9 +113,10 @@
     linkChip(source, run) {
       const filters = this.linkCommitted.filter(item => item.source === source), first = filters[0];
       const values = filters.map(item => linkValuesText(this, item)).join("; ");
+      const text = fill(this.labels.linkFilteredBy, { source: first.sourceLabel, values });
       const button = h("button", "cx-button cx-link-chip" + (this.kind === "grid" ? " cx-grid-chip" : ""));
-      button.type = "button"; setText(button, fill(this.labels.linkFilteredBy, { source: first.sourceLabel, values }) + " ×");
-      button.title = button.textContent.slice(0, -2);
+      button.type = "button"; filterChipContent(button, text);
+      button.title = text;
       button.setAttribute("aria-label", fill(this.labels.linkRemoveFilter, { source: first.sourceLabel, values }));
       button.setAttribute("data-cx-condition", "link-" + source); button.setAttribute("data-cx-link-source", source);
       button.onclick = () => { button.focus({ preventScroll: true }); run(); };

@@ -61,7 +61,7 @@
         ["template", "renderer", "view"].filter(key => detail[key] !== undefined).length > 1 ||
         detail.template !== undefined && (typeof detail.template !== "string" || !/^[A-Za-z][\w:.-]{0,255}$/.test(detail.template)) ||
         detail.renderer !== undefined && (typeof detail.renderer !== "string" || !/^[a-z][a-z\d-]{0,31}$/.test(detail.renderer)) ||
-        detail.view !== undefined && (!detail.view || typeof detail.view !== "object" || !["grid", "tree"].includes(detail.view.type)) ||
+        detail.view !== undefined && (!detail.view || typeof detail.view !== "object" || !["grid", "view"].includes(detail.view.type)) ||
         detail.print !== undefined && typeof detail.print !== "boolean" ||
         detail.label !== undefined && (typeof detail.label !== "string" || !detail.label.trim() || detail.label.length > 256)))
       throw new Error("CanopyX: invalid detail rows definition.");
@@ -129,7 +129,7 @@
 
   // The parts install on the grid's first page request; every later request (pages, exports, ranges) waits for the same load.
   const DETAIL_ROWS = definePart(DataGrid, "detail-rows", "detail rows", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, gridButton, gridFreeze,
-    cellText, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS, hostHtml }));
+    cellText, formatting, labelsFor, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS, hostHtml }));
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, numberFormat,
     formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,

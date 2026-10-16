@@ -169,6 +169,10 @@
 }
 
 .cx-host *,.cx-host *::before,.cx-host *::after { box-sizing:border-box;}
+.cx-host .cx-button.cx-filter-chip { display:inline-flex;align-items:center;justify-content:flex-start;gap:var(--cx-size-6px);min-width:0; }
+.cx-filter-chip > .cx-chip-label { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.cx-filter-chip > .cx-chip-remove { flex:none; }
+@media print { .cx-filter-chip > .cx-chip-label { white-space:normal;overflow:visible;text-overflow:clip; } }
 
 @media not (forced-colors:active) {
   :where(.cx-host,.cx-host *) { scrollbar-color:var(--cx-scrollbar-thumb) var(--cx-scrollbar-track);scrollbar-width:thin;}

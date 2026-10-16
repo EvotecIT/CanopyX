@@ -83,8 +83,8 @@
         throw new Error("CanopyX: a nested detail returns { view, source?, options? }.");
       if (!spec && !declared.view) throw new Error("CanopyX: a detail source needs the definition's detail view.");
       const source = spec ? spec.source : typeof options.source === "function" ? await options.source(row, context) : undefined;
-      const view = JSON.parse(JSON.stringify(spec ? spec.view : declared.view)), tree = view.type === "tree", payload = row.detail;
-      if (!view || !["grid", "tree"].includes(view.type)) throw new Error("CanopyX: a nested detail view is a grid or a tree document.");
+      const view = JSON.parse(JSON.stringify(spec ? spec.view : declared.view)), tree = view?.type === "view", payload = row.detail;
+      if (!view || !["grid", "view"].includes(view.type)) throw new Error("CanopyX: a nested detail view is a grid or a tree document.");
       // A view without its own data takes the record's payload as inline data.
       if (!source && view.source?.kind !== "host" && (tree ? !view.roots?.length : !view.rows?.length)) {
         if (tree ? payload?.type !== "tree" || !Array.isArray(payload.roots) : payload?.type !== "grid" || !Array.isArray(payload.rows))

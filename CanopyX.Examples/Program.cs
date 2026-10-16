@@ -105,6 +105,7 @@ EditingExample.Write(output);
 ConditionalFormattingExample.Write(output);
 LinkedViewsExample.Write(output);
 OrdersByRegionExample.Write(output);
+NestedTreeDetailExample.Write(output);
 SupportTicketsExample.Write(output);
 QuarterlyBudgetExample.Write(output);
 CertificateInventoryExample.Write(output);
