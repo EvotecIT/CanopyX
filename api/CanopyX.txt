@@ -38,6 +38,140 @@ CanopyX.CanopyBadge..ctor(System.String text, CanopyX.CanopyTone tone)
 CanopyX.CanopyBadge.CanopyX.CanopyTone Tone { get; set; }
 CanopyX.CanopyBadge.System.String Text { get; }
 CanopyX.CanopyBadge.System.String? Title { get; set; }
+CanopyX.CanopyCalendar : sealed class
+CanopyX.CanopyCalendar..ctor(System.String start)
+CanopyX.CanopyCalendar.CanopyX.CanopyCalendarCapacity? Capacity { get; set; }
+CanopyX.CanopyCalendar.CanopyX.CanopyCalendarEditing? Editing { get; set; }
+CanopyX.CanopyCalendar.CanopyX.CanopyCalendarEventStyle EventStyle { get; set; }
+CanopyX.CanopyCalendar.CanopyX.CanopyCalendarHours? WorkingHours { get; set; }
+CanopyX.CanopyCalendar.CanopyX.CanopyCalendarResources? Resources { get; set; }
+CanopyX.CanopyCalendar.CanopyX.CanopyCalendarZoom Zoom { get; set; }
+CanopyX.CanopyCalendar.System.Boolean NowIndicator { get; set; }
+CanopyX.CanopyCalendar.System.Collections.Generic.IList<CanopyX.CanopyCalendarAvailability> Availability { get; }
+CanopyX.CanopyCalendar.System.Collections.Generic.IList<CanopyX.CanopyCalendarRange> Ranges { get; }
+CanopyX.CanopyCalendar.System.Collections.Generic.IList<CanopyX.CanopyCalendarView> Views { get; }
+CanopyX.CanopyCalendar.System.Collections.Generic.IList<CanopyX.CanopyCalendarZoom> Zooms { get; }
+CanopyX.CanopyCalendar.System.Collections.Generic.IList<System.DayOfWeek> HiddenDays { get; }
+CanopyX.CanopyCalendar.System.Int32 Days { get; set; }
+CanopyX.CanopyCalendar.System.Int32 SlotMinutes { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<CanopyX.CanopyCalendarView> PhoneView { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<CanopyX.CanopyCalendarView> View { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.DateTime> Date { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.DayOfWeek> FirstDay { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.Int32> EventLimit { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.Int32> Limit { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.TimeSpan> MaxTime { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.TimeSpan> MinTime { get; set; }
+CanopyX.CanopyCalendar.System.Nullable<System.TimeSpan> ScrollTime { get; set; }
+CanopyX.CanopyCalendar.System.String Start { get; set; }
+CanopyX.CanopyCalendar.System.String? AllDay { get; set; }
+CanopyX.CanopyCalendar.System.String? Display { get; set; }
+CanopyX.CanopyCalendar.System.String? End { get; set; }
+CanopyX.CanopyCalendar.System.String? Exceptions { get; set; }
+CanopyX.CanopyCalendar.System.String? Recurrence { get; set; }
+CanopyX.CanopyCalendar.System.String? RecurrenceId { get; set; }
+CanopyX.CanopyCalendar.System.String? Resource { get; set; }
+CanopyX.CanopyCalendar.System.String? Series { get; set; }
+CanopyX.CanopyCalendar.System.String? SeriesEnd { get; set; }
+CanopyX.CanopyCalendar.System.String? Status { get; set; }
+CanopyX.CanopyCalendar.System.String? Subtitle { get; set; }
+CanopyX.CanopyCalendar.System.String? TimeZone { get; set; }
+CanopyX.CanopyCalendar.System.String? Title { get; set; }
+CanopyX.CanopyCalendar<T> : sealed class
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar Definition { get; }
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> AllDay(System.Linq.Expressions.Expression<System.Func<T, System.Boolean>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> AllDay(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.Boolean>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> End(System.Linq.Expressions.Expression<System.Func<T, System.DateTime>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> End(System.Linq.Expressions.Expression<System.Func<T, System.DateTimeOffset>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> End(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTime>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> End(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTimeOffset>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Exceptions(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Recurrence(System.Linq.Expressions.Expression<System.Func<T, CanopyX.CanopyRecurrence?>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Recurrence(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Resource(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> SeriesEnd(System.Linq.Expressions.Expression<System.Func<T, System.DateTime>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> SeriesEnd(System.Linq.Expressions.Expression<System.Func<T, System.DateTimeOffset>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> SeriesEnd(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTime>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> SeriesEnd(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTimeOffset>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Start(System.Linq.Expressions.Expression<System.Func<T, System.DateTime>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Start(System.Linq.Expressions.Expression<System.Func<T, System.DateTimeOffset>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Start(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTime>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Start(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTimeOffset>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Status<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Subtitle<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Title<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
+CanopyX.CanopyCalendarAggregate : enum System.Int32
+CanopyX.CanopyCalendarAggregate.const CanopyX.CanopyCalendarAggregate Busy = 1
+CanopyX.CanopyCalendarAggregate.const CanopyX.CanopyCalendarAggregate Count = 0
+CanopyX.CanopyCalendarAggregate.const CanopyX.CanopyCalendarAggregate Overlap = 2
+CanopyX.CanopyCalendarAvailability : sealed class
+CanopyX.CanopyCalendarAvailability..ctor(System.TimeSpan start, System.TimeSpan end)
+CanopyX.CanopyCalendarAvailability.System.Collections.Generic.IList<System.DayOfWeek> Days { get; }
+CanopyX.CanopyCalendarAvailability.System.String? Resource { get; set; }
+CanopyX.CanopyCalendarAvailability.System.TimeSpan End { get; set; }
+CanopyX.CanopyCalendarAvailability.System.TimeSpan Start { get; set; }
+CanopyX.CanopyCalendarCapacity : sealed class
+CanopyX.CanopyCalendarCapacity..ctor()
+CanopyX.CanopyCalendarCapacity.CanopyX.CanopyCalendarCapacity Add(System.Int32 at, CanopyX.CanopyTone tone)
+CanopyX.CanopyCalendarCapacity.System.Collections.Generic.IList<CanopyX.CanopyCalendarThreshold> Thresholds { get; }
+CanopyX.CanopyCalendarCapacity.System.String? Label { get; set; }
+CanopyX.CanopyCalendarCommit : enum System.Int32
+CanopyX.CanopyCalendarCommit.const CanopyX.CanopyCalendarCommit Auto = 0
+CanopyX.CanopyCalendarCommit.const CanopyX.CanopyCalendarCommit Manual = 1
+CanopyX.CanopyCalendarEditing : sealed class
+CanopyX.CanopyCalendarEditing..ctor()
+CanopyX.CanopyCalendarEditing.CanopyX.CanopyCalendarCommit Commit { get; set; }
+CanopyX.CanopyCalendarEditing.System.Boolean Move { get; set; }
+CanopyX.CanopyCalendarEditing.System.Boolean Overlap { get; set; }
+CanopyX.CanopyCalendarEditing.System.Boolean Resize { get; set; }
+CanopyX.CanopyCalendarEditing.System.Boolean Resources { get; set; }
+CanopyX.CanopyCalendarEditing.System.Boolean WorkingHoursOnly { get; set; }
+CanopyX.CanopyCalendarEditing.System.Nullable<System.Int32> SnapMinutes { get; set; }
+CanopyX.CanopyCalendarEditing.System.String? AllowedResources { get; set; }
+CanopyX.CanopyCalendarEventStyle : enum System.Int32
+CanopyX.CanopyCalendarEventStyle.const CanopyX.CanopyCalendarEventStyle Quiet = 0
+CanopyX.CanopyCalendarEventStyle.const CanopyX.CanopyCalendarEventStyle Strong = 1
+CanopyX.CanopyCalendarHours : sealed class
+CanopyX.CanopyCalendarHours..ctor(System.TimeSpan start, System.TimeSpan end)
+CanopyX.CanopyCalendarHours.System.Collections.Generic.IList<System.DayOfWeek> Days { get; }
+CanopyX.CanopyCalendarHours.System.TimeSpan End { get; set; }
+CanopyX.CanopyCalendarHours.System.TimeSpan Start { get; set; }
+CanopyX.CanopyCalendarRange : sealed class
+CanopyX.CanopyCalendarRange..ctor(System.DateTime start, System.DateTime end, System.String label)
+CanopyX.CanopyCalendarRange.CanopyX.CanopyCalendarRangeKind Kind { get; set; }
+CanopyX.CanopyCalendarRange.CanopyX.CanopyRecurrence? Recurrence { get; set; }
+CanopyX.CanopyCalendarRange.CanopyX.CanopyTone Tone { get; set; }
+CanopyX.CanopyCalendarRange.System.DateTime End { get; set; }
+CanopyX.CanopyCalendarRange.System.DateTime Start { get; set; }
+CanopyX.CanopyCalendarRange.System.String Label { get; set; }
+CanopyX.CanopyCalendarRange.System.String? Resource { get; set; }
+CanopyX.CanopyCalendarRangeKind : enum System.Int32
+CanopyX.CanopyCalendarRangeKind.const CanopyX.CanopyCalendarRangeKind Background = 0
+CanopyX.CanopyCalendarRangeKind.const CanopyX.CanopyCalendarRangeKind Unavailable = 1
+CanopyX.CanopyCalendarResources : sealed class
+CanopyX.CanopyCalendarResources..ctor(CanopyX.CanopyTreeView view)
+CanopyX.CanopyCalendarResources.CanopyX.CanopyTreeView View { get; set; }
+CanopyX.CanopyCalendarResources.System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyCalendarAggregate> Aggregates { get; }
+CanopyX.CanopyCalendarResources.System.Nullable<System.Int32> Width { get; set; }
+CanopyX.CanopyCalendarResources.System.String? Label { get; set; }
+CanopyX.CanopyCalendarThreshold : sealed class
+CanopyX.CanopyCalendarThreshold..ctor(System.Int32 at, CanopyX.CanopyTone tone)
+CanopyX.CanopyCalendarThreshold.CanopyX.CanopyTone Tone { get; }
+CanopyX.CanopyCalendarThreshold.System.Int32 At { get; }
+CanopyX.CanopyCalendarView : enum System.Int32
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Agenda = 4
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Day = 2
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Days = 3
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Month = 0
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Timeline = 6
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Week = 1
+CanopyX.CanopyCalendarView.const CanopyX.CanopyCalendarView Year = 5
+CanopyX.CanopyCalendarZoom : enum System.Int32
+CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Day = 1
+CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Hour = 0
+CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Month = 3
+CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Quarter = 4
+CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Week = 2
 CanopyX.CanopyCell : sealed class
 CanopyX.CanopyCell..ctor()
 CanopyX.CanopyCell..ctor(System.Boolean value)
@@ -210,6 +344,7 @@ CanopyX.CanopyCounts.System.String ToJson()
 CanopyX.CanopyCounts.System.String? Revision { get; set; }
 CanopyX.CanopyDataGridView : sealed class
 CanopyX.CanopyDataGridView..ctor(System.String id, System.String label)
+CanopyX.CanopyDataGridView.CanopyX.CanopyCalendar? Calendar { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyColumn GetColumn(System.String id)
 CanopyX.CanopyDataGridView.CanopyX.CanopyFacetPanel? FacetPanel { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyFormatOptions? Formatting { get; set; }
@@ -258,6 +393,7 @@ CanopyX.CanopyDataGridView.System.String? StateKey { get; set; }
 CanopyX.CanopyDataGridView.System.Void Validate()
 CanopyX.CanopyDataGridView<T> : sealed class
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.String> identity)
+CanopyX.CanopyDataGridView<T>.CanopyX.CanopyCalendar<T> Calendar()
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.String id, System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Field<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
@@ -894,6 +1030,56 @@ CanopyX.CanopyLabels.System.Boolean RequiresDataGridRuntime { get; }
 CanopyX.CanopyLabels.System.Boolean RequiresInteractiveRuntime { get; }
 CanopyX.CanopyLabels.System.Boolean RequiresReportingRuntime { get; }
 CanopyX.CanopyLabels.System.String Actions { get; set; }
+CanopyX.CanopyLabels.System.String CalendarAgenda { get; set; }
+CanopyX.CanopyLabels.System.String CalendarAllDay { get; set; }
+CanopyX.CanopyLabels.System.String CalendarBusy { get; set; }
+CanopyX.CanopyLabels.System.String CalendarCapacity { get; set; }
+CanopyX.CanopyLabels.System.String CalendarCapacityAt { get; set; }
+CanopyX.CanopyLabels.System.String CalendarConflict { get; set; }
+CanopyX.CanopyLabels.System.String CalendarDay { get; set; }
+CanopyX.CanopyLabels.System.String CalendarDayEvents { get; set; }
+CanopyX.CanopyLabels.System.String CalendarDays { get; set; }
+CanopyX.CanopyLabels.System.String CalendarEdit { get; set; }
+CanopyX.CanopyLabels.System.String CalendarEvents { get; set; }
+CanopyX.CanopyLabels.System.String CalendarExport { get; set; }
+CanopyX.CanopyLabels.System.String CalendarGoTo { get; set; }
+CanopyX.CanopyLabels.System.String CalendarHighlighted { get; set; }
+CanopyX.CanopyLabels.System.String CalendarLane { get; set; }
+CanopyX.CanopyLabels.System.String CalendarLoadError { get; set; }
+CanopyX.CanopyLabels.System.String CalendarLoading { get; set; }
+CanopyX.CanopyLabels.System.String CalendarMonth { get; set; }
+CanopyX.CanopyLabels.System.String CalendarMore { get; set; }
+CanopyX.CanopyLabels.System.String CalendarMoreLabel { get; set; }
+CanopyX.CanopyLabels.System.String CalendarMoveHelp { get; set; }
+CanopyX.CanopyLabels.System.String CalendarMoved { get; set; }
+CanopyX.CanopyLabels.System.String CalendarNext { get; set; }
+CanopyX.CanopyLabels.System.String CalendarNoEvents { get; set; }
+CanopyX.CanopyLabels.System.String CalendarNotAllowed { get; set; }
+CanopyX.CanopyLabels.System.String CalendarNow { get; set; }
+CanopyX.CanopyLabels.System.String CalendarOutsideHours { get; set; }
+CanopyX.CanopyLabels.System.String CalendarOverlaps { get; set; }
+CanopyX.CanopyLabels.System.String CalendarPrevious { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRepeats { get; set; }
+CanopyX.CanopyLabels.System.String CalendarResized { get; set; }
+CanopyX.CanopyLabels.System.String CalendarResources { get; set; }
+CanopyX.CanopyLabels.System.String CalendarSaveFailed { get; set; }
+CanopyX.CanopyLabels.System.String CalendarSelected { get; set; }
+CanopyX.CanopyLabels.System.String CalendarSeriesMoved { get; set; }
+CanopyX.CanopyLabels.System.String CalendarShowing { get; set; }
+CanopyX.CanopyLabels.System.String CalendarTimeRange { get; set; }
+CanopyX.CanopyLabels.System.String CalendarTimeline { get; set; }
+CanopyX.CanopyLabels.System.String CalendarToday { get; set; }
+CanopyX.CanopyLabels.System.String CalendarTruncated { get; set; }
+CanopyX.CanopyLabels.System.String CalendarUnavailable { get; set; }
+CanopyX.CanopyLabels.System.String CalendarViews { get; set; }
+CanopyX.CanopyLabels.System.String CalendarWeek { get; set; }
+CanopyX.CanopyLabels.System.String CalendarYear { get; set; }
+CanopyX.CanopyLabels.System.String CalendarZoom { get; set; }
+CanopyX.CanopyLabels.System.String CalendarZoomDay { get; set; }
+CanopyX.CanopyLabels.System.String CalendarZoomHour { get; set; }
+CanopyX.CanopyLabels.System.String CalendarZoomMonth { get; set; }
+CanopyX.CanopyLabels.System.String CalendarZoomQuarter { get; set; }
+CanopyX.CanopyLabels.System.String CalendarZoomWeek { get; set; }
 CanopyX.CanopyLabels.System.String CancelEdit { get; set; }
 CanopyX.CanopyLabels.System.String CancelMove { get; set; }
 CanopyX.CanopyLabels.System.String ColumnWidth { get; set; }
@@ -1469,6 +1655,53 @@ CanopyX.CanopyRecordTarget.System.Collections.Generic.IList<CanopyX.CanopyCell> 
 CanopyX.CanopyRecordTarget.System.Collections.Generic.IList<CanopyX.CanopyGridFilter> Filters { get; }
 CanopyX.CanopyRecordTarget.System.String View { get; }
 CanopyX.CanopyRecordTarget.System.String? Column { get; set; }
+CanopyX.CanopyRecurrence : sealed class
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence AtPositions(params System.Int32[] positions)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence Every(System.Int32 interval)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence InMonths(params System.Int32[] months)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence On(System.Int32 ordinal, System.DayOfWeek day)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence On(params System.DayOfWeek[] days)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence OnMonthDays(params System.Int32[] days)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence Times(System.Int32 count)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence Until(System.DateTime until)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence Until(System.DateTimeOffset until)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrence WeekStartsOn(System.DayOfWeek day)
+CanopyX.CanopyRecurrence.CanopyX.CanopyRecurrenceFrequency Frequency { get; }
+CanopyX.CanopyRecurrence.System.Boolean UntilIsDate { get; }
+CanopyX.CanopyRecurrence.System.Collections.Generic.IEnumerable<System.DateTimeOffset> Occurrences(System.DateTime start, System.TimeZoneInfo zone, System.Nullable<System.DateTimeOffset> from = null, System.Nullable<System.DateTimeOffset> to = null, System.String? exceptions = null)
+CanopyX.CanopyRecurrence.System.Collections.Generic.IEnumerable<System.DateTimeOffset> Occurrences(System.DateTimeOffset start, System.TimeZoneInfo zone, System.Nullable<System.DateTimeOffset> from = null, System.Nullable<System.DateTimeOffset> to = null, System.String? exceptions = null)
+CanopyX.CanopyRecurrence.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyRecurrenceDay> Days { get; }
+CanopyX.CanopyRecurrence.System.Collections.Generic.IReadOnlyList<System.Int32> MonthDays { get; }
+CanopyX.CanopyRecurrence.System.Collections.Generic.IReadOnlyList<System.Int32> Months { get; }
+CanopyX.CanopyRecurrence.System.Collections.Generic.IReadOnlyList<System.Int32> Positions { get; }
+CanopyX.CanopyRecurrence.System.DayOfWeek WeekStart { get; }
+CanopyX.CanopyRecurrence.System.Int32 Interval { get; }
+CanopyX.CanopyRecurrence.System.Nullable<System.DateTime> UntilValue { get; }
+CanopyX.CanopyRecurrence.System.Nullable<System.DateTimeOffset> SeriesEnd(System.DateTime start, System.TimeSpan duration, System.TimeZoneInfo zone, System.String? exceptions = null)
+CanopyX.CanopyRecurrence.System.Nullable<System.DateTimeOffset> SeriesEnd(System.DateTimeOffset start, System.TimeSpan duration, System.TimeZoneInfo zone, System.String? exceptions = null)
+CanopyX.CanopyRecurrence.System.Nullable<System.Int32> Count { get; }
+CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Daily()
+CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Monthly()
+CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Parse(System.String text)
+CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Weekly(params System.DayOfWeek[] days)
+CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Yearly()
+CanopyX.CanopyRecurrence.static System.Boolean TryParse(System.String? text, out CanopyX.CanopyRecurrence? rule)
+CanopyX.CanopyRecurrence.virtual System.String ToString()
+CanopyX.CanopyRecurrenceDay : struct (System.IEquatable<CanopyX.CanopyRecurrenceDay>)
+CanopyX.CanopyRecurrenceDay..ctor(System.DayOfWeek day, System.Int32 ordinal = 0)
+CanopyX.CanopyRecurrenceDay.System.Boolean Equals(CanopyX.CanopyRecurrenceDay other)
+CanopyX.CanopyRecurrenceDay.System.DayOfWeek Day { get; }
+CanopyX.CanopyRecurrenceDay.System.Int32 Ordinal { get; }
+CanopyX.CanopyRecurrenceDay.static System.Boolean op_Equality(CanopyX.CanopyRecurrenceDay left, CanopyX.CanopyRecurrenceDay right)
+CanopyX.CanopyRecurrenceDay.static System.Boolean op_Inequality(CanopyX.CanopyRecurrenceDay left, CanopyX.CanopyRecurrenceDay right)
+CanopyX.CanopyRecurrenceDay.virtual System.Boolean Equals(System.Object? obj)
+CanopyX.CanopyRecurrenceDay.virtual System.Int32 GetHashCode()
+CanopyX.CanopyRecurrenceDay.virtual System.String ToString()
+CanopyX.CanopyRecurrenceFrequency : enum System.Int32
+CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Daily = 0
+CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Monthly = 2
+CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Weekly = 1
+CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Yearly = 3
 CanopyX.CanopyRowCompression : enum System.Int32
 CanopyX.CanopyRowCompression.const CanopyX.CanopyRowCompression Gzip = 1
 CanopyX.CanopyRowCompression.const CanopyX.CanopyRowCompression None = 0
