@@ -125,6 +125,12 @@ function Resolve-PowerForgeRoot {
 # Resolve PowerForge.Web.Cli executable (prefer local fresh build)
 $PowerForge = $null
 $PowerForgeArgs = @()
+$PowerForgeReleaseExe = $null
+$PowerForgeReleaseAppHost = $null
+$PowerForgeReleaseDll = $null
+$PowerForgeDebugExe = $null
+$PowerForgeDebugAppHost = $null
+$PowerForgeDebugDll = $null
 $PowerForgeRoot = Resolve-PowerForgeRoot -RequestedRoot $PowerForgeRoot
 if (-not [string]::IsNullOrWhiteSpace($PowerForgeRoot)) {
     $PowerForgeCliProject = Join-Path $PowerForgeRoot (Join-Path 'PowerForge.Web.Cli' 'PowerForge.Web.Cli.csproj')
@@ -155,6 +161,20 @@ if (-not $SkipBuildTool -and $PowerForgeCliProject -and (Test-Path $PowerForgeCl
     Write-Host "Building PowerForge.Web.Cli..." -ForegroundColor Cyan
     dotnet build $PowerForgeCliProject -c Release | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "PowerForge.Web.Cli build failed (exit code $LASTEXITCODE)" }
+
+    # Select only after the build so a stale executable discovered above cannot win.
+    $PowerForgeReleaseExe = $null
+    $PowerForgeReleaseAppHost = $null
+    $PowerForgeReleaseDll = $null
+    foreach ($tfm in $tfms) {
+        $releaseFramework = Join-Path (Join-Path (Join-Path $cliRoot 'bin') 'Release') $tfm
+        $candidate = Join-Path $releaseFramework 'PowerForge.Web.Cli.exe'
+        if (-not $PowerForgeReleaseExe -and (Test-Path -LiteralPath $candidate -PathType Leaf)) { $PowerForgeReleaseExe = $candidate }
+        $candidate = Join-Path $releaseFramework 'PowerForge.Web.Cli'
+        if (-not $PowerForgeReleaseAppHost -and (Test-Path -LiteralPath $candidate -PathType Leaf)) { $PowerForgeReleaseAppHost = $candidate }
+        $candidate = Join-Path $releaseFramework 'PowerForge.Web.Cli.dll'
+        if (-not $PowerForgeReleaseDll -and (Test-Path -LiteralPath $candidate -PathType Leaf)) { $PowerForgeReleaseDll = $candidate }
+    }
 }
 
 if ($PowerForgeReleaseExe -and (Test-Path $PowerForgeReleaseExe)) {

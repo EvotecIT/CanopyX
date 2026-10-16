@@ -40,7 +40,7 @@
       "Input": "content/docs",
       "Output": "/docs",
       "DefaultLayout": "docs",
-      "UseToc": false,
+      "UseToc": true,
       "Include": [
         "*.md",
         "**/*.md"
