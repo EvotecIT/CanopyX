@@ -405,6 +405,42 @@ revision with the accepted one, so a source that changes its revision when its d
 applies only updates of loaded rows; its rows are added and removed at the source. The wire format of queries and pages does
 not change.
 
+### Calendar
+
+A grid's optional `calendar` object presents its records as events ([calendar.md](calendar.md)): month, week, day, N-day
+(`days`), agenda and year views, and a resource timeline. Only `start` is required; every other key is written only when it
+differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
+date-and-time columns; `allDay` (booleans), `resource`, `recurrence` (rule text), `exceptions` (ISO instants or `yyyy-MM-dd`
+dates), `series`, `display` and `editable.allowedResources` name text columns; `title`, `subtitle` and `status` may name any
+column. `series` and `recurrenceId` (an override record replacing one occurrence) go together.
+
+```json
+"calendar": { "start": "starts", "end": "ends", "resource": "host", "recurrence": "rule", "seriesEnd": "seriesEnd",
+  "views": ["month", "week", "agenda", "timeline"], "slotMinutes": 15, "workingHours": { "start": "08:00", "end": "17:00" },
+  "editable": { "commit": "manual" }, "resources": { "view": { "protocol": "canopyx/2", "type": "view", "...": "..." } } }
+```
+
+The presentation keys are `view` (first view; default the first of `views`), `views` (default `month`, `week`, `day`,
+`agenda`, plus `timeline` with `resources`), `date` (`yyyy-MM-dd`), `days` (2 to 14), `firstDay` and `hiddenDays` (0 is
+Sunday), `slotMinutes` (5, 10, 15, 20, 30 or 60), `minTime`, `maxTime` and `scrollTime` (`HH:mm`, the visible hours on slot
+boundaries), `workingHours`, `nowIndicator`, `eventLimit` (1 to 20 or `auto`), `eventStyle` (`quiet` or `strong`), `timeZone`
+(`utc`, `local` or an IANA zone; default the grid's) and `phone` (the view phones start in). `editable` is `true` or an object
+of `move`, `resize`, `resources`, `overlap`, `workingHours`, `allowedResources`, `snapMinutes` and `commit` (`auto` or
+`manual`); without it the calendar is read-only. `resources` holds a complete tree `view` document (inline roots or a remote
+source) whose node ids are the resource ids, with `width` (120 to 800), `label` and per-column `aggregates` (`count`, `busy`,
+`overlap`); the timeline view needs it. `zoom` and `zooms` choose the timeline's scale (`hour` to `quarter`), `capacity` adds a
+concurrency lane with rising tone `thresholds`, `ranges` (at most 1,000) draws static background or unavailable ranges,
+`availability` (at most 10,000) sets business hours per resource, and `limit` (1 to 100,000, default 20,000) caps the
+occurrences one range shows.
+
+Recurrence rules are the RRULE subset of RFC 5545 that `CanopyRecurrence` (C#) and the browser share: `FREQ` (`DAILY`,
+`WEEKLY`, `MONTHLY`, `YEARLY`), `INTERVAL`, `COUNT` or `UNTIL`, `BYDAY` (numbered weekdays only in monthly and yearly rules),
+`BYMONTHDAY` (not in weekly rules), `BYMONTH`, `BYSETPOS` and `WKST`; any other part is an error. The series start always counts
+as the first occurrence, occurrences keep its wall-clock time in the display zone (a skipped time moves forward by the daylight
+saving gap, a repeated time is its first occurrence), and all-day series expand in UTC. `tests/fixtures/recurrence-cases.json`
+holds the cases both implementations check. A view with `calendar` loads the `calendar` part, and the `timeline` part with
+`resources`.
+
 ### Record panel
 
 A grid's or tree view's optional `record` is its record panel ([record-panel.md](record-panel.md)): the record drawer with
