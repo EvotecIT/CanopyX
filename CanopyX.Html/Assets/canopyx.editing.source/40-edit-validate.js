@@ -103,6 +103,8 @@
 
     // A change as the protocol carries it: the new values and the values the row started from.
     editChangeOf(entry) {
+      // A new row carries every value it was given and nothing it started from.
+      if (entry.inserted) return editCopy({ op: "insert", id: entry.id, values: { ...entry.values } });
       const change = { id: entry.id, values: { ...entry.values }, original: Object.create(null) };
       for (const column of Object.keys(entry.values)) change.original[column] = cellValue(entry.original[column]);
       return editCopy(change);

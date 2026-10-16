@@ -7,11 +7,11 @@
     cellValue, cellText, isCellObject, gridFreeze, numberFormat, gridQuery, foldText, requireIdentifier, checkDocument, validateGridRows, inlineGridSource, PROTOCOL, boundedPattern, validateGridFacetPage }));
   const GRID_EDIT_INIT = DataGrid.prototype.initializeState;
   // The API members the part implements; createDataGrid looks them up on each call, so they switch to the part once it is in.
-  // Until then the first six load the part and run, the next eight answer false and getChanges an empty list.
-  const GRID_EDIT_API = ["beginEdit", "endEdit", "setCellValue", "validate", "commitRow", "commitChanges", "isEditing", "hasChanges", "undo", "redo",
+  // Until then the first seven load the part and run, the next eight answer false and getChanges an empty list.
+  const GRID_EDIT_API = ["beginEdit", "endEdit", "setCellValue", "validate", "commitRow", "commitChanges", "insertRow", "isEditing", "hasChanges", "undo", "redo",
     "canUndo", "canRedo", "cancelEdit", "revertChanges", "getChanges", "setReadOnly"];
   GRID_EDIT_API.forEach((name, index) => {
-    DataGrid.prototype[name] = index < 6 ? function (...args) { return this.loadEditing().then(() => this[name](...args)); } : index < 14 ? () => false : () => [];
+    DataGrid.prototype[name] = index < 7 ? function (...args) { return this.loadEditing().then(() => this[name](...args)); } : index < 15 ? () => false : () => [];
   });
   DataGrid.prototype.setReadOnly = function (value) { this.editReadOnly = !!value; };
   DataGrid.prototype.loadEditing = function () {

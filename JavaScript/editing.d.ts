@@ -103,11 +103,21 @@ export interface CanopyCellEditor {
   create(context: CanopyEditorContext): CanopyEditorInstance;
 }
 
-/** A row's change: the new values and the values the row started from. */
-export interface GridChange {
+/** A row's change: the new values and the values the row started from; a new row (op "insert") has no original. */
+export type GridChange = GridUpdateChange | GridInsertChange;
+/** A change of a stored row. */
+export interface GridUpdateChange extends GridChangeState {
+  readonly op?: "update";
+  readonly original: Readonly<Record<string, CellValue>>;
+}
+/** A new row from insertRow: every value, no original. */
+export interface GridInsertChange extends GridChangeState {
+  readonly op: "insert";
+}
+/** What every change carries. */
+export interface GridChangeState {
   readonly id: string;
   readonly values: Readonly<Record<string, CellValue>>;
-  readonly original: Readonly<Record<string, CellValue>>;
   /** Messages by column of the failed checks. */
   readonly errors?: Readonly<Record<string, string>>;
   /** The row's own message: a row check or a failed save. */
@@ -120,6 +130,8 @@ export interface GridCommitRowResult {
   status: "saved" | "error" | "conflict";
   /** Saved rows: canonical cells that replace the shown ones. */
   cells?: Record<string, Cell>;
+  /** A saved insert: the identity the writer stored the new row under (the client id new-<n> is replaced). */
+  newId?: string;
   error?: string;
   errors?: Record<string, string>;
 }
@@ -131,7 +143,9 @@ export interface GridCommit {
   readonly view: string;
   /** The dataset revision the grid read, or null. */
   readonly revision: string | null;
-  readonly rows: readonly { readonly id: string; readonly values: Readonly<Record<string, CellValue>>; readonly original: Readonly<Record<string, CellValue>> }[];
+  /** Updates carry the original values; inserts (op "insert", a client id new-<n> or the host's) carry every value and no original. */
+  readonly rows: readonly ({ readonly op?: "update"; readonly id: string; readonly values: Readonly<Record<string, CellValue>>; readonly original: Readonly<Record<string, CellValue>> }
+    | { readonly op: "insert"; readonly id: string; readonly values: Readonly<Record<string, CellValue>> })[];
 }
 
 /** A writer's answer to gridCommit. A row it leaves out was not saved; revision is the dataset revision after the commit. */
@@ -170,14 +184,15 @@ export interface GridCellValueChange {
   readonly previous: CellValue;
   readonly row: Readonly<GridRow>;
   /** paste and fill come from the cell range part (docs/cell-ranges.md): pasted cells and the fill handle go through editing. */
-  readonly source: "edit" | "form" | "api" | "undo" | "redo" | "revert" | "paste" | "fill";
+  readonly source: "edit" | "form" | "api" | "undo" | "redo" | "revert" | "paste" | "fill" | "calendar" | "accept";
 }
 
-/** canopyx:rowCommit and onRowCommit: a row whose edits are complete and valid. */
+/** canopyx:rowCommit and onRowCommit: a row whose edits are complete and valid (a new row: op "insert" and no original). */
 export interface GridRowCommit {
   readonly id: string;
+  readonly op?: "update" | "insert";
   readonly values: Readonly<Record<string, CellValue>>;
-  readonly original: Readonly<Record<string, CellValue>>;
+  readonly original?: Readonly<Record<string, CellValue>>;
   readonly row: Readonly<GridRow>;
   readonly revision: string | null;
   /** Answers for the row from an event listener: a result, true for saved, or a promise of one. */
@@ -223,6 +238,8 @@ export interface GridEditingApi {
   isEditing(): boolean;
   /** A host's change with the same events, history and checks as an edit; read-only rules do not apply. */
   setCellValue(id: string, column: string, value: CellValue): Promise<{ applied: boolean; valid: boolean; error?: string }>;
+  /** Adds a new record (id: new-<n>, or the host's, which starts with new- too) as an insert in the change set: validated, undoable, committed as op "insert". */
+  insertRow(input: { id?: string; cells: Readonly<Record<string, Cell>> }): Promise<{ id: string; applied: boolean; valid: boolean; errors?: Record<string, string> }>;
   getChanges(): GridChange[];
   hasChanges(): boolean;
   /** Puts rows (all by default) back to their starting values, as one undoable step. */

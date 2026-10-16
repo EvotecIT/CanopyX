@@ -149,6 +149,8 @@ public sealed partial class CanopyCalendar {
     private void SyncEventColumns(CanopyDataGridView view) {
         if (!ReferenceEquals(view, Grid)) return;
         var editable = Editing != null || Create != null || Drop;
+        // Creating or dropping all-day events needs the all-day column, though no event uses it yet.
+        if ((Create != null && Create.AllDay || Drop) && _allDay == null) _allDay = Optional(view, ColumnAllDay, "All day", true);
         foreach (var column in view.Columns) {
             if (column != null && Array.IndexOf(EditedColumns, column.Id) >= 0 && column.Editor == null && column.Validation == null) column.Editable = editable;
         }

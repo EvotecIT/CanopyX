@@ -10,7 +10,7 @@
     /** Whether an event can be moved (move true) or resized: the settings, the editable columns and the record. */
     calCanEdit(event, resize) {
       const edit = this.cal.editable;
-      if (!edit || !event || event.background || this.editReadOnly) return false;
+      if (!edit || !event || event.background || event.base?.external || this.editReadOnly) return false;
       if (resize ? !edit.resize || event.marker : !edit.move) return false;
       const columns = [this.cal.start, resize || !event.marker ? this.cal.end : null].filter(Boolean);
       return columns.every(column => column.editable) && (!event.recurring || !!this.cal.recurrence);
@@ -21,7 +21,8 @@
       const edit = this.cal.editable, labels = this.calLabels;
       const resource = proposal.resource;
       // A series moves within its own day: changing its day would leave its rule's days, exceptions and moved occurrences behind.
-      if (event.recurring) {
+      // When one occurrence may change alone (occurrence "ask", "this" or "following"), the choice comes after the drop.
+      if (event.recurring && this.cal.occurrence === "all") {
         const zone = event.allDay ? calZone("utc") : this.calSeriesZone;
         if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true ||
             event.base.excluded?.size && !this.cal.exceptions?.editable) return labels.calendarSeriesTime;
@@ -55,6 +56,17 @@
       if (problem) { this.calAnnounce(problem); this.calNotice(problem, true, true); return false; }
       if (event.recurring && !this.emit("occurrenceChange", { id: event.key, occurrence: calIso(event.start), start: calIso(proposal.start), end: calIso(proposal.end), resource: proposal.resource ?? null }))
         return false;
+      if (event.recurring && this.cal.occurrence !== "all") {
+        const mode = await this.calOccurrenceMode(event, proposal);
+        if (!mode) return false;
+        if (mode === "this") return this.calApplyThis(event, proposal);
+        if (mode === "following" && event.start !== event.base.start) return this.calApplyFollowing(event, proposal);
+        // "All events" (or the series' first occurrence and the ones after it): the series rules apply now.
+        const zone = event.allDay ? calZone("utc") : this.calSeriesZone;
+        if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true || event.base.excluded?.size && !this.cal.exceptions?.editable) {
+          this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false;
+        }
+      }
       // A hosted calendar cannot see overriding records outside the rows it loaded: unless the host took the occurrence above,
       // a series that may have them stays where it is.
       if (event.recurring && this.calOverridden(event) !== false) { this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false; }

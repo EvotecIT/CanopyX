@@ -12,12 +12,14 @@
   function editCommitAnswer(result, batch, columns) {
     checkDocument(result, "gridCommitResult");
     if (result.view !== batch.view || !Array.isArray(result.rows)) throw new Error("CanopyX: the commit result does not answer its batch.");
-    const asked = new Set(batch.rows.map(row => row.id)), rows = new Map(), text = value => value === undefined || typeof value === "string";
+    const asked = new Set(batch.rows.map(row => row.id)), inserts = new Set(batch.rows.filter(row => row.op === "insert").map(row => row.id)), rows = new Map(), text = value => value === undefined || typeof value === "string";
     for (const row of result.rows) {
       if (!row || !asked.has(row.id) || rows.has(row.id) || !["saved", "error", "conflict"].includes(row.status) || !text(row.error) ||
           row.errors !== undefined && (Object(row.errors) !== row.errors || Array.isArray(row.errors) || !Object.values(row.errors).every(text)) ||
-          row.cells !== undefined && (row.status !== "saved" || Object(row.cells) !== row.cells))
+          row.cells !== undefined && (row.status !== "saved" || Object(row.cells) !== row.cells) ||
+          row.newId !== undefined && (row.status !== "saved" || !inserts.has(row.id) || typeof row.newId !== "string"))
         throw new Error("CanopyX: malformed commit result row.");
+      if (row.newId !== undefined) requireIdentifier(row.newId, "saved row ID");
       if (row.cells !== undefined) validateGridRows([{ id: row.id, cells: row.cells }], columns);
       rows.set(row.id, row);
     }
@@ -62,7 +64,7 @@
       if (!answered) return editCopy({ id, ok: true, status: "pending" });
       return this.editSave([id], () => Promise.resolve(response).then(value =>
         editCommitAnswer({ protocol: PROTOCOL, type: "gridCommitResult", view: this.view.id, rows: [value === true ? { id, status: "saved" } : { ...value, id }] },
-          { view: this.view.id, rows: [{ id }] }, this.view.columns))).then(rows => rows[0]);
+          { view: this.view.id, rows: [entry.inserted ? { id, op: "insert" } : { id }] }, this.view.columns))).then(rows => rows[0]);
     },
 
     async commitChanges(options = {}) {
@@ -112,7 +114,10 @@
         if (state.changes.get(id) !== entry) return { id, ok: false, status: "superseded" };
         entry.status = undefined;
         if (row?.status === "saved") {
-          try { this.editAccept(entry, row.cells); return { id, ok: true, status: "saved" }; } catch (error) { problem = error; }
+          try {
+            if (entry.inserted) { this.editAcceptInsert(entry, row.cells, row.newId); return { id, ok: true, status: "saved", ...(row.newId && row.newId !== id ? { newId: row.newId } : {}) }; }
+            this.editAccept(entry, row.cells); return { id, ok: true, status: "saved" };
+          } catch (error) { problem = error; }
         }
         const status = row && row.status !== "saved" ? row.status : "error";
         entry.status = status; entry.saved = null;

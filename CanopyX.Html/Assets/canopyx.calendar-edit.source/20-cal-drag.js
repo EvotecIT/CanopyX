@@ -10,9 +10,11 @@
   Object.assign(DataGrid.prototype, {
     calDragStart(pointer) {
       const element = pointer.target.closest(".cx-cal-ev"), event = element?._calEvent;
+      // A press on empty slots or days may become a range to create.
+      if (!element) { this.calRangeStart(pointer); return; }
       if (!event || pointer.button !== 0 || !this.calCanEdit(event, false) && !this.calCanEdit(event, true)) return;
       const box = element.getBoundingClientRect(), block = element.classList.contains("cx-cal-ev-block"), lane = element.classList.contains("cx-cal-ev-lane");
-      const vertical = block, edge = vertical ? box.bottom - pointer.clientY : box.right - pointer.clientX, top = vertical ? pointer.clientY - box.top : pointer.clientX - box.left;
+      const vertical = block, rtl = this.calRtl, edge = vertical ? box.bottom - pointer.clientY : rtl ? pointer.clientX - box.left : box.right - pointer.clientX, top = vertical ? pointer.clientY - box.top : rtl ? box.right - pointer.clientX : pointer.clientX - box.left;
       const mode = edge <= CAL_EDGE && this.calCanEdit(event, true) && !event.marker ? "end" : top <= CAL_EDGE && (vertical || lane) && this.calCanEdit(event, true) && !event.marker ? "start" : this.calCanEdit(event, false) ? "move" : null;
       if (!mode) return;
       const origin = this.calPointAt(pointer.clientX, pointer.clientY);
@@ -21,6 +23,7 @@
       element.setPointerCapture?.(pointer.pointerId);
     },
     calDragMove(pointer) {
+      if (this.calCreateDrag) { this.calRangeMove(pointer); return; }
       const drag = this.calDrag;
       if (!drag || pointer.pointerId !== drag.id) return;
       if (!drag.started && Math.hypot(pointer.clientX - drag.x, pointer.clientY - drag.y) < CAL_DRAG_START) return;
@@ -35,6 +38,7 @@
       });
     },
     async calDragEnd(pointer, cancel) {
+      if (this.calCreateDrag) { this.calRangeEnd(pointer, cancel); return; }
       const drag = this.calDrag;
       if (!drag || pointer && pointer.pointerId !== drag.id) return;
       this.calDrag = null; cancelAnimationFrame(drag.frame);
@@ -51,17 +55,17 @@
     calPointAt(x, y) {
       if (this.calView === "timeline") return this.calTimelinePoint?.(x, y) || null;
       const target = document.elementFromPoint(x, y)?.closest?.("[data-cx-day]");
-      if (this.calView === "month" || !this.calScroller) return target?.dataset.cxDay ? { day: Number(target.dataset.cxDay), minutes: null, resource: target.dataset.cxResource ?? null } : null;
+      if (calDayGrid(this.calView) || !this.calScroller) return target?.dataset.cxDay ? { day: Number(target.dataset.cxDay), minutes: null, resource: target.dataset.cxResource ?? null } : null;
       const slots = this.calScroller.firstChild, box = slots.getBoundingClientRect(), cal = this.cal;
       if (target?.classList.contains("cx-cal-allcell")) return { day: Number(target.dataset.cxDay), minutes: null, resource: target.dataset.cxResource ?? null, allDayRow: true };
       const columns = [...this.calGrid.querySelectorAll(".cx-cal-allcell")], width = (box.width - CAL_GUTTER) / columns.length;
-      const index = Math.max(0, Math.min(columns.length - 1, Math.floor((x - box.left - CAL_GUTTER) / width)));
+      const index = Math.max(0, Math.min(columns.length - 1, Math.floor(((this.calRtl ? box.right - x : x - box.left) - CAL_GUTTER) / width)));
       const minutes = Math.max(cal.minMinutes, Math.min(cal.maxMinutes, cal.minMinutes + (y - box.top) / (CAL_SLOT_PX / cal.slotMinutes)));
       return { day: Number(columns[index].dataset.cxDay), minutes, resource: columns[index].dataset.cxResource ?? null, column: index };
     },
     /** The proposal a drag or a key gives: new start, end and resource, checked, and drawn as the ghost. */
     calPropose(drag, point) {
-      const event = drag.event, zone = event.allDay ? calZone("utc") : this.calZone, snap = this.calView === "timeline" ? this.tlSnap() : this.cal.editable.snap, origin = drag.origin;
+      const event = drag.event, zone = event.allDay ? calZone("utc") : this.calZone, snap = this.calView === "timeline" ? this.tlSnap() : this.cal.editable?.snap ?? this.cal.slotMinutes, origin = drag.origin;
       const snapped = minutes => Math.round(minutes / snap) * snap;
       let start = event.start, end = event.end;
       const timed = point.minutes != null && origin.minutes != null && !event.allDay;
@@ -89,12 +93,13 @@
       const ghost = this.calGhost ||= h("div", "cx-cal-ghost");
       ghost.setAttribute("aria-hidden", "true");
       ghost.classList.toggle("cx-cal-conflict", !!drag.problem);
-      const label = this.calTimeText({ ...event, start: proposal.start, end: proposal.end, sd: this.calZone.day(proposal.start), ed: this.calZone.day(Math.max(proposal.start, proposal.end - 1)) });
+      // A dropped item is named on its ghost; a moved event is already in view under it.
+      const label = (drag.drop ? event.title + " · " : "") + this.calTimeText({ ...event, start: proposal.start, end: proposal.end, sd: this.calZone.day(proposal.start), ed: this.calZone.day(Math.max(proposal.start, proposal.end - 1)) });
       setText(ghost, drag.problem ? label + " · " + drag.problem : label);
       ghost.title = ghost.textContent;
       const sd = event.allDay ? Math.floor(proposal.start / CAL_DAY) : this.calZone.day(proposal.start);
-      const cell = this.calBody.querySelector('.cx-cal-day[data-cx-day="' + sd + '"],.cx-cal-allcell[data-cx-day="' + sd + '"]' + (proposal.resource != null && this.calView !== "month" ? '[data-cx-resource="' + CSS.escape(proposal.resource) + '"]' : ""));
-      if (this.calView !== "month" && !calInAllDayRow(event) && this.calScroller) {
+      const cell = this.calBody.querySelector('.cx-cal-day[data-cx-day="' + sd + '"],.cx-cal-allcell[data-cx-day="' + sd + '"]' + (proposal.resource != null && !calDayGrid(this.calView) ? '[data-cx-resource="' + CSS.escape(proposal.resource) + '"]' : ""));
+      if (!calDayGrid(this.calView) && !calInAllDayRow(event) && this.calScroller) {
         const slots = this.calScroller.firstChild, columns = [...this.calGrid.querySelectorAll(".cx-cal-allcell")];
         const index = columns.findIndex(item => Number(item.dataset.cxDay) === sd && (proposal.resource == null || item.dataset.cxResource === undefined || item.dataset.cxResource === proposal.resource));
         // A resource on another page of the phone's resource columns has no column here: no ghost, the announcement names it.
@@ -118,14 +123,25 @@
       if (!moving) {
         if (key.key !== "F2" || !target?._calEvent || !this.calCanEdit(target._calEvent, false) && !this.calCanEdit(target._calEvent, true)) return false;
         key.preventDefault();
+        return this.calStartMove(target);
+      }
+      return this.calMoveKey(key, moving);
+    },
+    /** Starts the keyboard move mode on an event element (F2, or Move in its context menu). */
+    calStartMove(target) {
+      {
         const event = target._calEvent;
+        if (!event || !this.calCanEdit(event, false) && !this.calCanEdit(event, true)) return false;
         this.calMoving = { event, element: target, mode: "move", origin: { day: event.sd, minutes: 0 }, proposal: { start: event.start, end: event.end, resource: event.resource, allDay: event.allDay } };
         target.classList.add("cx-cal-dragging"); this.calAnnounce(this.calLabels.calendarMoveHelp);
         // Focus leaving the event (a click elsewhere, a repaint) ends the move mode.
         this.calMoving.blur = () => this.calStopMoving(); target.addEventListener("blur", this.calMoving.blur);
+        target.focus({ preventScroll: true });
         return true;
       }
-      const event = moving.event, proposal = moving.proposal, timeView = this.calView !== "month" && this.calView !== "timeline" && !calInAllDayRow(event);
+    },
+    calMoveKey(key, moving) {
+      const event = moving.event, proposal = moving.proposal, timeView = !calDayGrid(this.calView) && this.calView !== "timeline" && !calInAllDayRow(event);
       const zone = event.allDay ? calZone("utc") : this.calZone, step = this.cal.editable.snap * CAL_MINUTE;
       // Whole days move in wall-clock terms, so a step over a DST change keeps the time of day.
       const days = (time, count) => zone.instant(zone.day(time) + count, zone.parts(time).minutes + (time % CAL_MINUTE) / CAL_MINUTE);
