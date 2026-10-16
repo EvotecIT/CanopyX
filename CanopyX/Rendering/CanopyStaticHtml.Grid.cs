@@ -149,7 +149,7 @@ public static partial class CanopyStaticHtml {
             var table = new CanopyTableDetail(definition.Label).AddColumns(columns.Select(column => column.Title).ToArray());
             foreach (var row in rows.Rows.Take(remaining)) table.AddRow(columns.Select(column => {
                 row.Cells.TryGetValue(column.Id, out var cell);
-                return ProjectStaticCell(cell, cell?.DisplayText(column.Kind, labels) ?? string.Empty);
+                return ProjectStaticCell(cell, cell?.DisplayText(column.Kind, definition.View.Labels) ?? string.Empty);
             }).ToArray());
             remaining -= table.Rows.Count;
             if (table.Rows.Count < rows.Rows.Count) overflow = DetailOverflow(table.Rows.Count, rows.Rows.Count, settings, labels);
@@ -165,8 +165,9 @@ public static partial class CanopyStaticHtml {
                 var (node, level) = pending.Pop();
                 total++;
                 if (table.Rows.Count < remaining) table.AddRow(columns.Select((column, index) => {
-                    var text = TreeCellText(node, column, index == 0, labels, out var cell);
-                    return ProjectStaticCell(cell, (index == 0 ? new string('\u00A0', level * 2) : string.Empty) + text);
+                    var text = TreeCellText(node, column, index == 0, definition.TreeView.Labels, out var cell);
+                    return ProjectStaticCell(cell, (index == 0 ? new string('\u00A0', level * 2) : string.Empty) + text,
+                        index == 0 && node.HasBadges ? node.Badges : null);
                 }).ToArray());
                 for (var child = node.Children.Count - 1; child >= 0; child--) pending.Push((node.Children[child], level + 1));
             }
@@ -177,9 +178,11 @@ public static partial class CanopyStaticHtml {
         return detail is CanopyTableDetail || detail is CanopyPropertiesDetail || detail is CanopyHtmlDetail ? detail : null;
     }
 
-    /// <summary>Keeps an ordinary cell's presentation while its typed value becomes formatted nested-table text.</summary>
-    private static CanopyCell ProjectStaticCell(CanopyCell? cell, string text) {
+    /// <summary>Keeps a cell's presentation while its typed value becomes formatted nested-table text; tree identity
+    /// cells retain node badges before cell badges, matching the standalone outline.</summary>
+    private static CanopyCell ProjectStaticCell(CanopyCell? cell, string text, IEnumerable<CanopyBadge>? nodeBadges = null) {
         var projected = new CanopyCell(text) { Tone = cell?.Tone ?? CanopyTone.None, Title = cell?.Title };
+        if (nodeBadges != null) foreach (var badge in nodeBadges) projected.Badges.Add(badge);
         if (cell != null && cell.HasBadges) foreach (var badge in cell.Badges) projected.Badges.Add(badge);
         return projected;
     }

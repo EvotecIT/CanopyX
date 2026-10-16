@@ -63,7 +63,9 @@ public static partial class CanopyRequestParser {
             if (whole.Count != 1) throw CanopyRequestException.Document("Give the query document once.");
             return ParseQuery(whole[0], schema, limits);
         }
-        return ParseQuery(FlatToJson(values, schema), schema, limits);
+        // The decoded parameters already spent the transport budget. Internal JSON escaping adds no client input.
+        using var document = ReadDocument(FlatToJson(values, schema));
+        return Query(document.RootElement, schema, limits, false);
     }
 
     /// <summary>Parses a <c>gridQuery</c> document that requests a complete-query summary; it must carry its accepted revision.</summary>
@@ -125,6 +127,10 @@ public static partial class CanopyRequestParser {
         if (json == null) throw new ArgumentNullException(nameof(json));
         if (json.Length > limits.MaxRequestBytes || Encoding.UTF8.GetByteCount(json) > limits.MaxRequestBytes)
             throw CanopyRequestException.Limit("The request is too large.");
+        return ReadDocument(json);
+    }
+
+    private static JsonDocument ReadDocument(string json) {
         try {
             return JsonDocument.Parse(json, DocumentOptions);
         } catch (JsonException) {

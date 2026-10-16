@@ -76,6 +76,78 @@ public sealed class StaticNestedTreeProjectionTests {
         Assert.Contains("--cx-tone-success", badge.Attribute("style")!.Value);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NestedDetail_UsesItsOwnCellLabelsAndOuterOverflowPolicy(bool useTree) {
+        var labels = new CanopyLabels { Yes = "Tak", No = "Nie", UtcTime = "{time} czasu UTC", OverflowNote = "Nested overflow {shown}/{total}" };
+        var columns = new[] {
+            new CanopyColumn("name", "Identity"), new CanopyColumn("enabled", "Enabled"),
+            new CanopyColumn("seen", "Seen") { Kind = CanopyColumnKind.DateTime }
+        };
+        var date = new DateTime(2026, 10, 15, 12, 34, 0, DateTimeKind.Utc);
+        CanopyDataGridView outer;
+        if (useTree) {
+            var tree = new CanopyTreeView("nested-tree", "Nested tree") { Labels = labels };
+            foreach (var column in columns) tree.Columns.Add(column);
+            tree.Roots.Add(new CanopyNode("first", "Wrong identity") { Cells = { ["name"] = true, ["enabled"] = false, ["seen"] = date } });
+            tree.Roots.Add(new CanopyNode("second", "Second"));
+            outer = Outer(tree);
+        } else {
+            var nested = new CanopyDataGridView("nested-grid", "Nested grid") { Labels = labels };
+            foreach (var column in columns) nested.Columns.Add(column);
+            var detail = new CanopyGridRowsDetail();
+            detail.Rows.Add(new CanopyGridRow("first") { Cells = { ["name"] = true, ["enabled"] = false, ["seen"] = date } });
+            detail.Rows.Add(new CanopyGridRow("second"));
+            outer = Grid(); outer.Reporting = new CanopyGridReporting { Detail = new CanopyGridDetail { View = nested } };
+            outer.Rows[0].Detail = detail;
+        }
+        outer.Labels = new CanopyLabels { Yes = "Outer yes", No = "Outer no", UtcTime = "Outer {time}", OverflowNote = "Outer overflow {shown}/{total}" };
+
+        var html = CanopyStaticHtml.RenderGrid(outer, options: new CanopyStaticHtmlOptions { MaxRows = 2 });
+        var row = Assert.Single(InnerTable(html).Element("tbody")!.Elements("tr"));
+
+        Assert.Equal(new[] { "Tak", "Nie", "2026-10-15 12:34 czasu UTC" }, row.Elements("td").Select(cell => cell.Value).ToArray());
+        Assert.Contains("Outer overflow 1/2", html);
+        Assert.DoesNotContain("Nested overflow", html);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NestedTree_NullIdentityKeepsNodeBadgesBeforeCellBadges(bool nullCellReference) {
+        var tree = Tree(); tree.Columns.Add(new CanopyColumn("other", "Other"));
+        var node = new CanopyNode("row", "Wrong null identity");
+        node.Badges.Add(new CanopyBadge("Node <&>", CanopyTone.Danger) { Title = "Node \"<&>\"" });
+        if (nullCellReference) {
+            node.Cells["name"] = null!;
+        } else {
+            var identity = new CanopyCell((string?)null) { Title = "Cell \"<&>\"", Tone = CanopyTone.Warning };
+            identity.Badges.Add(new CanopyBadge("Cell <&>", CanopyTone.Success) { Title = "Badge \"<&>\"" });
+            node.Cells["name"] = identity;
+        }
+        node.Cells["other"] = new CanopyCell("Other text") { Badges = { new CanopyBadge("Other badge", CanopyTone.Muted) } };
+        tree.Roots.Add(node);
+
+        var html = CanopyStaticHtml.RenderGrid(Outer(tree), options: new CanopyStaticHtmlOptions { UseThemeVariables = true });
+        var cells = InnerTable(html).Element("tbody")!.Element("tr")!.Elements("td").ToArray();
+        var badges = cells[0].Elements("span").ToArray();
+
+        Assert.Equal(nullCellReference ? new[] { "Node <&>" } : new[] { "Node <&>", "Cell <&>" }, badges.Select(badge => badge.Value).ToArray());
+        Assert.Equal("Node \"<&>\"", badges[0].Attribute("title")?.Value);
+        Assert.Contains("--cx-tone-danger", badges[0].Attribute("style")!.Value);
+        Assert.Contains("Node &lt;&amp;&gt;", html);
+        Assert.Contains("title=\"Node &quot;&lt;&amp;&gt;&quot;\"", html);
+        Assert.DoesNotContain("Wrong null identity", html);
+        if (!nullCellReference) {
+            Assert.Equal("Cell \"<&>\"", cells[0].Attribute("title")?.Value);
+            Assert.Contains("--cx-tone-warning", cells[0].Attribute("style")!.Value);
+            Assert.Equal("Badge \"<&>\"", badges[1].Attribute("title")?.Value);
+            Assert.Contains("--cx-tone-success", badges[1].Attribute("style")!.Value);
+        }
+        Assert.Equal("Other badge", Assert.Single(cells[1].Elements("span")).Value);
+    }
+
     private static XElement InnerTable(string html) => Assert.Single(XElement.Parse(html).Descendants("table"));
 
     private static CanopyTreeView Tree() {
@@ -92,7 +164,7 @@ public sealed class StaticNestedTreeProjectionTests {
     }
 
     private static CanopyDataGridView Outer(CanopyTreeView tree) {
-        var template = new CanopyTreeView(tree.Id, tree.Label);
+        var template = new CanopyTreeView(tree.Id, tree.Label) { Labels = tree.Labels };
         foreach (var column in tree.Columns) template.Columns.Add(column);
         var detail = new CanopyTreeDetail(); foreach (var root in tree.Roots) detail.Roots.Add(root);
         var grid = Grid(); grid.Reporting = new CanopyGridReporting { Detail = new CanopyGridDetail { TreeView = template } };
