@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "86fd8d6dd53c4f06",
+      "version": "166ed129b6dbf1b8",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "4a557e85be24522f",
+      "version": "c6b868264f0a2175",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -365,9 +365,64 @@
       ]
     },
     {
+      "name": "calendar-recurrence",
+      "label": "calendar recurrence",
+      "version": "a73a9cabdeb1079d",
+      "script": "canopyx-calendar-recurrence.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarRecurrence"
+      ],
+      "requires": [
+        "calendar"
+      ]
+    },
+    {
+      "name": "calendar-edit",
+      "label": "calendar editing",
+      "version": "c05dd64c15f9b740",
+      "script": "canopyx-calendar-edit.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarEditing"
+      ],
+      "requires": [
+        "calendar"
+      ]
+    },
+    {
+      "name": "calendar-ics",
+      "label": "iCalendar",
+      "version": "775ad2ed684a9319",
+      "script": "canopyx-calendar-ics.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarIcs"
+      ],
+      "requires": [
+        "calendar",
+        "calendar-recurrence"
+      ]
+    },
+    {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "3e014830701c8a06",
+      "version": "98a22404240bd1a8",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
