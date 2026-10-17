@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "6875972ae0e45581",
+      "version": "b90554bbf43523b7",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "6347fb0a4587a97d",
+      "version": "cc5155ad7943f8aa",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "7c776f7cfb5bb19b",
+      "version": "4681ea89f2547dfc",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -333,7 +333,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "e776ece53a116200",
+      "version": "d0ddb6c6c1bf1539",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

@@ -42,12 +42,18 @@
     const date = typeof value === "string" ? new Date(value) : null;
     if (!date || Number.isNaN(date.getTime())) return null;
     const get = name => date[(local ? "get" : "getUTC") + name]();
-    return { date: editPad(get("FullYear"), 4) + "-" + editPad(get("Month") + 1) + "-" + editPad(get("Date")), time: editPad(get("Hours")) + ":" + editPad(get("Minutes")) };
+    const seconds = get("Seconds"), milliseconds = get("Milliseconds");
+    const time = editPad(get("Hours")) + ":" + editPad(get("Minutes")) +
+      (seconds || milliseconds ? ":" + editPad(seconds) + (milliseconds ? "." + editPad(milliseconds, 3) : "") : "");
+    return { date: editPad(get("FullYear"), 4) + "-" + editPad(get("Month") + 1) + "-" + editPad(get("Date")), time };
   }
   function editFromParts(date, time, local) {
-    const [year, month, day] = date.split("-").map(Number), [hours, minutes] = time.split(":").map(Number);
-    const moment = gridMomentFromParts(year, month, day, hours, minutes, 0, local);
-    return moment ? moment.toISOString().replace(".000Z", "Z") : null;
+    const [clock, fraction = ""] = time.split("."), milliseconds = Number(fraction.padEnd(3, "0"));
+    const [year, month, day] = date.split("-").map(Number), [hours, minutes, seconds = 0] = clock.split(":").map(Number);
+    const moment = gridMomentFromParts(year, month, day, hours, minutes, seconds, local);
+    if (!moment || !Number.isInteger(milliseconds) || milliseconds < 0 || milliseconds > 999) return null;
+    moment.setUTCMilliseconds(milliseconds);
+    return moment.toISOString().replace(".000Z", "Z");
   }
 
   // Date, time and date-and-time. On a datetime column the input shows the moment in the grid's time zone (local or UTC)
@@ -56,6 +62,7 @@
   function editDateEditor(context, withDate, withTime) {
     const local = context.timeZone === "local", moment = context.column.kind === "datetime";
     const input = editInput(context, withDate && withTime ? "datetime-local" : withDate ? "date" : "time");
+    if (moment && withTime) input.step = "0.001";
     const parts = moment ? editMoment(context.value, local) : null;
     const start = !moment ? typeof context.value === "string" ? context.value : "" : !parts ? "" :
       withDate && withTime ? parts.date + "T" + parts.time : withDate ? parts.date : parts.time;
@@ -76,6 +83,12 @@
       error: () => input.validity?.badInput || moment && input.value && read() === null ? fill(context.labels.gridEditDate, { column: context.column.title }) : null };
   }
 
+  // A step's decimal places include its exponent; native toFixed accepts at most 100 places.
+  function editNumberPlaces(value) {
+    const [coefficient, exponent = "0"] = String(value).split("e");
+    return Math.max(0, (coefficient.split(".")[1] || "").length - Number(exponent));
+  }
+
   const EDIT_EDITORS = {
     text: { create(context) {
       const input = editInput(context);
@@ -86,20 +99,21 @@
     // Locale-aware text entry; Up and Down step by the editor's step within min and max.
     number: { create(context) {
       const input = editInput(context), step = context.editor.step || 1, rules = context.rules;
+      const decimals = Math.max(editNumberPlaces(step), editNumberPlaces(rules.min ?? 0));
       let plain;
-      try { plain = new Intl.NumberFormat(context.locale || undefined, { useGrouping: false, maximumFractionDigits: 20 }); }
-      catch (error) { plain = new Intl.NumberFormat(undefined, { useGrouping: false, maximumFractionDigits: 20 }); }
+      try { plain = new Intl.NumberFormat(context.locale || undefined, { useGrouping: false, maximumSignificantDigits: 21 }); }
+      catch (error) { plain = new Intl.NumberFormat(undefined, { useGrouping: false, maximumSignificantDigits: 21 }); }
       input.inputMode = "decimal";
       input.value = context.initial ?? (typeof context.value === "number" ? plain.format(context.value) : "");
       const read = () => input.value.trim() === "" ? null : editParseNumber(input.value, context.locale);
       input.addEventListener("keydown", event => {
         if (event.key !== "ArrowUp" && event.key !== "ArrowDown" || event.altKey) return;
-        const value = read(), decimals = (String(step).split(".")[1] || "").length;
+        const value = read();
         if (!Number.isNaN(value)) {
           let next = (value ?? 0) + (event.key === "ArrowUp" ? step : -step);
           if (typeof rules.min === "number") next = Math.max(rules.min, next);
           if (typeof rules.max === "number") next = Math.min(rules.max, next);
-          input.value = plain.format(Number(next.toFixed(decimals)));
+          input.value = plain.format(decimals <= 100 ? Number(next.toFixed(decimals)) : next);
         }
         event.preventDefault();
       });

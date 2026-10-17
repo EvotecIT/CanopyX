@@ -34,6 +34,7 @@
     <Compile Include="..\CanopyX.Tests\Grids\TypedGridTests.cs" Link="Grids\TypedGridTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedConversionTests.cs" Link="Grids\TypedConversionTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\GridDetailWriterTests.cs" Link="Grids\GridDetailWriterTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\EditingMomentBoundsTests.cs" Link="Grids\EditingMomentBoundsTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\TimelineDepthTests.cs" Link="Records\TimelineDepthTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\RecordFrameworkTests.cs" Link="Records\RecordFrameworkTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\RecordDetailWriterTests.cs" Link="Grids\RecordDetailWriterTests.cs" />

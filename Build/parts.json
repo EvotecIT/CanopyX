@@ -347,7 +347,7 @@
       "views": ["tree", "grid"],
       "features": ["record"],
       "key": "RECORD_IMPL",
-      "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors",
+      "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
         "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"

@@ -1,34 +1,6 @@
   // ---------- flat-grid wire boundaries ----------
   function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
 
-  // ids carries the identities of the earlier chunks of the same rows (the data part validates rowData chunk by chunk).
-  function validateGridRows(rows, columns, ids = new Set()) {
-    if (!Array.isArray(rows)) throw new Error("CanopyX: grid rows must be an array.");
-    const declared = new Map(columns.map(column => [column.id, column]));
-    for (const row of rows) {
-      requireIdentifier(row && row.id, "grid row ID");
-      if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
-      ids.add(row.id);
-      if (!row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
-        throw new Error("CanopyX: invalid flat row fields.");
-      gridDecoration(row.tone, row.className);
-      for (const id of Object.keys(row.cells)) {
-        if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
-        const cell = row.cells[id];
-        if (isCellObject(cell)) {
-          if (Array.isArray(cell) ||
-              ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
-              cell.secondary !== undefined && cell.secondary.length > 4096 || cell.sort !== undefined && !(typeof cell.sort === "string" ? cell.sort.length <= 4096 : Number.isFinite(cell.sort)) || cell.series !== undefined && !gridSeriesValid(cell.series) ||
-              cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
-                ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
-            throw new Error("CanopyX: malformed grid cell.");
-        }
-        gridScalar(cell, declared.get(id));
-      }
-    }
-    return rows;
-  }
-
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
     if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
