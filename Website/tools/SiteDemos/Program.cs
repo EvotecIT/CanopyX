@@ -180,7 +180,7 @@ internal static class FeatureTable {
         Add("Selection", "Single or multiple selection and hierarchical checkboxes", "Single or multiple selection with stable record IDs");
         Add("Presentation", "Badges, details, custom cells and light and dark themes", "Links, progress, wrapped text, row highlighting and light and dark themes");
         Add("Reporting", "Static outline for email and print", "Grouping, aggregates, saved views, CSV export and row copying");
-        Add("Delivery", "Single HTML file, sidecar bundle or hosted data", "Single HTML file or hosted data");
+        Add("Delivery", "Single HTML file, sidecar bundle or hosted data", "Single HTML file, row-chunk sidecar bundle or hosted data");
         return view;
 
         void Add(string area, string tree, string grid) {

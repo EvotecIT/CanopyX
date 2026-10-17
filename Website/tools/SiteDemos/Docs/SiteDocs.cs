@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using CanopyX;
 using CanopyX.Examples;
 using CanopyX.Html;
@@ -274,7 +275,8 @@ internal sealed class SiteDocs {
         foreach (var (group, topics) in new[] {
             ("Start", new[] { ("Getting started", "Tree and grid"), ("JavaScript", "Mounted view") }),
             ("Build", new[] { ("Reporting grids", "Grouped grid"), ("Email and print", "Static table") }),
-            ("Ship", new[] { ("Delivery modes", "File layouts"), ("Data protocol", "Messages") })
+            ("Ship", new[] { ("Delivery modes", "File layouts"), ("Data protocol", "Messages") }),
+            ("Reference", new[] { ("Authoring guide", "Options") })
         }) {
             var node = new CanopyNode(group.ToLowerInvariant(), group) { Expanded = true, Group = true };
             foreach (var (title, output) in topics) {
@@ -361,7 +363,8 @@ internal sealed class SiteDocs {
             }
 
             if (!inSection || !line.StartsWith('|') || line.StartsWith("| ---", StringComparison.Ordinal)) continue;
-            var cells = line.Trim('|').Split('|').Select(cell => cell.Trim().Replace("`", string.Empty, StringComparison.Ordinal)).ToArray();
+            var cells = line.Trim('|').Split('|').Select(cell =>
+                Regex.Replace(cell.Trim().Replace("`", string.Empty, StringComparison.Ordinal), @"\[([^\]]+)\]\([^)]+\)", "$1")).ToArray();
             rows.Add(cells);
         }
 

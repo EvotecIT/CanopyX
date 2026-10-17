@@ -9,11 +9,11 @@ The same view definition can reach readers in three ways. Each tab below shows t
 
 {{< cnx-modes >}}
 
-Tree grids support all three. Data grids support a single HTML file or hosted data.
+Tree grids and data grids support all three. A data-grid bundle writes row chunks as sidecar files, so a large grid can open from disk or a file share without a server.
 
 ## Working with larger datasets
 
-Virtual rows keep the rendered page small. Tree bundles split data into sidecar files, and hosted sources let your application fetch records as the reader navigates. Flat-grid queries filter and sort the complete dataset before paging; loading one page does not mean the rest of the results are available in the browser.
+Virtual rows keep the rendered page small. Tree bundles split branches into sidecar files; data-grid bundles split rows into chunks. Hosted sources let your application fetch records as the reader navigates. Flat-grid queries filter and sort the complete dataset before paging; loading one page does not mean the rest of the results are available in the browser.
 
 The [file explorer demo](/demos/) is a bundle of more than 100,000 nodes served as static files. Sidecar data files are scripts rather than JSON because browsers block `fetch` of local files on `file://`; a script tag loads from a file share, a web server or SharePoint alike.
 

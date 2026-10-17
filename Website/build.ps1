@@ -265,8 +265,13 @@ try {
             if ($Watch) {
                 Write-Host 'Watching for changes...' -ForegroundColor Cyan
                 & $PowerForge @PowerForgeArgs @pipelineArgs
+                if ($LASTEXITCODE -ne 0) { throw "Watch failed (exit code $LASTEXITCODE)" }
             } else {
-                Wait-Process -Id $serveProcess.Id
+                $serveProcess.WaitForExit()
+            }
+            $serveProcess.Refresh()
+            if ($serveProcess.HasExited -and $serveProcess.ExitCode -ne 0) {
+                throw "Dev server failed (exit code $($serveProcess.ExitCode))"
             }
         } finally {
             if ($serveProcess -and -not $serveProcess.HasExited) {

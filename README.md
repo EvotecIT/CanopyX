@@ -38,7 +38,7 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Selection | Single/multiple selection and hierarchical checkboxes | Single/multiple selection with stable record IDs, and cell ranges with copy, paste and a fill handle |
 | Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting, conditional formatting and light/dark themes |
 | Grouping and details | Nested branches and detail rows | Multi-level row groups with labelled aggregates, and expandable detail rows holding a template, HTML or a nested grid or tree |
-| Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
+| Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file, row-chunk sidecar bundle or hosted data |
 
 Both views use virtual rows and support keyboard navigation. Both can mark search and filter matches with a match count and next/previous navigation ([search highlighting](docs/search-highlight.md)), and let readers switch between fitting the width, scrolling sideways and (on grids) cards, in three densities ([layout modes](docs/layout-modes.md)). Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). Grids and trees can open each record in a record panel: record-only fields in tabs and sections, lists, objects and nested collections, links between records, timelines, record deep links, and copy, print and export of one record, with details loaded on demand for large reports (see [docs/record-panel.md](docs/record-panel.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
