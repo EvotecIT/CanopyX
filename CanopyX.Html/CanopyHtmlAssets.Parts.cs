@@ -35,7 +35,18 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyTreeView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        return Parts.Where(part => part.IsNeededBy(view)).ToList().AsReadOnly();
+        return WithRequired(Parts.Where(part => part.IsNeededBy(view)));
+    }
+
+    /// <summary>The parts with every part they require (Build/parts.json requires), in manifest order: a part the page carries
+    /// never has to fetch another from beside the page.</summary>
+    internal static IReadOnlyList<CanopyHtmlPart> WithRequired(IEnumerable<CanopyHtmlPart> needed) {
+        var names = new HashSet<string>(needed.Select(part => part.Name), StringComparer.Ordinal);
+        var pending = new Stack<string>(names);
+        while (pending.Count > 0) {
+            foreach (var required in GetPart(pending.Pop()).Requires) if (names.Add(required)) pending.Push(required);
+        }
+        return Parts.Where(part => names.Contains(part.Name)).ToList().AsReadOnly();
     }
 
     /// <summary>Gets the parts a flat grid loads, whose payloads a single-file page carries: the filter editor and export parts, the
@@ -47,8 +58,7 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        var required = RequiredGridParts(view);
-        return Parts.Where(required.Contains).ToList().AsReadOnly();
+        return WithRequired(RequiredGridParts(view));
     }
 
     private static HashSet<CanopyHtmlPart> RequiredGridParts(CanopyDataGridView view) {
@@ -77,6 +87,7 @@ public static partial class CanopyHtmlAssets {
                         required.Add(treeTools);
                     if (gridView.Reporting?.Detail?.View != null) pending.Push(gridView.Reporting.Detail.View);
                     if (gridView.Reporting?.Detail?.TreeView != null) pending.Push(gridView.Reporting.Detail.TreeView);
+                    if (gridView.Calendar?.Resources?.View != null) pending.Push(gridView.Calendar.Resources.View);
                     foreach (var row in gridView.Rows) QueueRow(row);
                     break;
                 case CanopyTreeView treeView:

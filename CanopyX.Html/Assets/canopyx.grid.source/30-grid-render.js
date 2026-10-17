@@ -38,6 +38,10 @@
           this.activateRow(row, false);
       }, { signal });
       grid.addEventListener("keydown", event => this.onKey(event), { signal });
+      if (this.view.dragRows) {
+        grid.addEventListener("dragstart", event => this.gridDragStart(event), { signal });
+        grid.addEventListener("dragend", () => { GRID_DRAG.item = null; }, { signal });
+      }
       this.canvas.addEventListener("focusin", event => {
         const element = event.target.closest(".cx-row");
         if (element && element._w && this.pendingNavigation && this.pendingQuery && element._w._ri !== this.pendingNavigation.index)
@@ -123,6 +127,7 @@
         this.measureNeeded = true;
       }
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
+      setAttr(element, "draggable", this.view.dragRows && !row.status ? "true" : null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
       if (row.status) element._cells[0].text.data = row.status === "error" ? fill(this.labels.loadError, {
         error: ((this.pages.get(Math.floor(row._ri / this.pageSize) * this.pageSize) || {}).error || {}).message || ""

@@ -17,7 +17,9 @@ internal static class GroupedGridExample {
         view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(180), Sortable = true });
         view.Columns.Add(new CanopyColumn("category", "Category") { Sizing = CanopyColumnSizing.Preferred(150), Sortable = true });
         view.Columns.Add(new CanopyColumn("updated", "Updated") { Sizing = CanopyColumnSizing.Preferred(180), Kind = CanopyColumnKind.DateTime, Sortable = true });
-        view.Columns.Add(new CanopyColumn("amount", "Amount") { Sizing = CanopyColumnSizing.Preferred(120), Kind = CanopyColumnKind.Number, Sortable = true });
+        view.Columns.Add(new CanopyColumn("amount", "Amount") {
+            Sizing = CanopyColumnSizing.Preferred(120), Kind = CanopyColumnKind.Number, Sortable = true, Format = CanopyGridNumberFormat.Fixed(1)
+        });
         view.Columns.Add(new CanopyColumn("state", "State") { Sizing = CanopyColumnSizing.Preferred(140), Presenter = CanopyGridPresenter.State() });
         view.GetColumn("name").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural);
         view.GetColumn("category").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.Ordinal,
@@ -35,7 +37,8 @@ internal static class GroupedGridExample {
         view.GetColumn("amount").ResponsivePriority = 2;
         view.Reporting.FacetColumns.Add("category");
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
-        view.Reporting.Aggregates.Add(new CanopyGridAggregate("average", "amount", CanopyGridAggregateOperation.Average, "Average amount"));
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("average", "amount", CanopyGridAggregateOperation.Average, "Average",
+            CanopyGridNumberFormat.Fixed(2)));
         var categories = new[] { "Complete", "In progress", "Needs review" };
         for (var i = 0; i < 137; i++) {
             var row = new CanopyGridRow("record-" + i.ToString("D3", CultureInfo.InvariantCulture));
@@ -43,9 +46,7 @@ internal static class GroupedGridExample {
             row.Cells["category"] = categories[i % categories.Length];
             row.Cells["state"] = new CanopyCell(i % 13 == 0 ? "Failed" : "Healthy") { Tone = i % 13 == 0 ? CanopyTone.Danger : CanopyTone.Success };
             row.Cells["updated"] = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc).AddDays(i);
-            row.Cells["amount"] = i % 11 == 0 ? new CanopyCell() : new CanopyCell(i / 10d) {
-                Text = (i / 10d).ToString("N1", CultureInfo.InvariantCulture)
-            };
+            row.Cells["amount"] = i % 11 == 0 ? new CanopyCell() : new CanopyCell(i / 10d);
             view.Rows.Add(row);
         }
         foreach (var presentation in new[] { CanopyGridPresentation.Paged, CanopyGridPresentation.Continuous }) {

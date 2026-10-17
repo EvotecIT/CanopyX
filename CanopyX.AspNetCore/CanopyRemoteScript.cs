@@ -9,7 +9,9 @@ namespace CanopyX.AspNetCore;
 
 /// <summary>Writes the small browser script that connects a hosted CanopyX grid to endpoints mapped by <see cref="CanopyRemoteEndpointExtensions"/>.</summary>
 /// <remarks>
-/// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c>, <c>summary</c>,
+/// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c>, <c>summary</c>, for a view with a
+/// filterable date column <c>range</c> (calendar and timeline periods, posted to <c>{endpoint}/range</c>; when the endpoint's provider
+/// answers <c>unsupported</c> the method is dropped and the calendar reads periods through ordinary queries),
 /// for a view with editable columns <c>commit</c>, and for a record schema <c>record</c> hooks post to the endpoints (with the
 /// grid's cancellation signal), and registers one export format per server format so the Export menu offers a complete
 /// server-side download. After a commit saves rows without a revision or answers with a different dataset revision the grid
@@ -77,7 +79,11 @@ public static class CanopyRemoteScript {
         if (string.IsNullOrEmpty(endpoint)) throw new ArgumentException("The endpoint is required.", nameof(endpoint));
         if (exportFormats == null || exportFormats.Length == 0) exportFormats = DefaultFormats;
         var facets = false;
-        foreach (var column in schema.Columns) facets |= column.Facetable;
+        var range = false;
+        foreach (var column in schema.Columns) {
+            facets |= column.Facetable;
+            range |= column.Filterable && column.Kind == CanopyColumnKind.DateTime;
+        }
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream)) {
             writer.WriteStartObject();
@@ -85,6 +91,7 @@ public static class CanopyRemoteScript {
             writer.WriteString("endpoint", endpoint.TrimEnd('/'));
             writer.WriteBoolean("facets", facets);
             writer.WriteBoolean("summary", schema.HasSummary);
+            writer.WriteBoolean("range", range);
             writer.WriteBoolean("commit", schema.EditableColumns.Count > 0);
             writer.WriteBoolean("records", records);
             writer.WriteStartArray("formats");
@@ -150,6 +157,7 @@ function reopenAtCurrentRevision(id) {
 }
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
+if (settings.range) source.range = (request, options) => post("/range", request, options.signal).then(response => response.json()).catch(error => { if (error.code === "unsupported") delete source.range; throw error; });
 if (settings.commit) {
   // Saving can retire the snapshot even when the server cannot read its new revision after the rows were committed.
   // Grid events do not bubble, so the document listens in the capture phase.

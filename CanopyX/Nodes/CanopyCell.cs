@@ -179,6 +179,17 @@ public sealed partial class CanopyCell {
     /// <summary>Returns the text a reader sees: the display text when set, otherwise the formatted value.</summary>
     internal string DisplayText(CanopyColumnKind kind, CanopyLabels labels) => Text ?? FormatValue(kind, labels);
 
+    /// <summary>Returns the display text, formatting a raw number with the flat-grid column format when one is declared.</summary>
+    internal string DisplayText(CanopyColumn column, CanopyLabels labels) {
+        if (Text != null || column.Format == null || column.Kind != CanopyColumnKind.Number) return DisplayText(column.Kind, labels);
+        switch (_value) {
+            case long whole: return column.Format.Format(whole);
+            case double real: return column.Format.Format(real);
+            case decimal exact: return column.Format.Format(CanopyNumericValues.DecimalToDouble(exact));
+            default: return FormatValue(column.Kind, labels);
+        }
+    }
+
     /// <summary>Gets whether <see cref="Badges"/> holds at least one badge, without creating the collection.</summary>
     public bool HasBadges => _badges != null && _badges.Count > 0;
 

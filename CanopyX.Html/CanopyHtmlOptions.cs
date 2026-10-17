@@ -10,6 +10,7 @@ public sealed class CanopyHtmlOptions {
     private string _assetBaseUrl = "assets/";
     private string _language = "en";
     private string? _nonce;
+    private CanopyTextDirection _direction;
 
     /// <summary>
     /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
@@ -66,11 +67,13 @@ public sealed class CanopyHtmlOptions {
     public bool MountWhenVisible { get; set; }
 
     /// <summary>
-    /// Gets or sets how a flat grid with an inline source carries its rows. Null (the default) writes them as objects in the
-    /// grid document. Options write them as compact row data (<see cref="CanopyGridRowData"/>): arrays in column order, in
-    /// chunks inside the grid's host element that the browser decodes one at a time after the first rows have painted,
-    /// optionally gzip-compressed. Single-file fragments then also carry the row data part (<c>canopyx-data.js</c>). Trees
-    /// and hosted grids ignore it.
+    /// Gets or sets how a flat grid with an inline source carries its rows. Null uses the defaults: the format is chosen from
+    /// the rows (<see cref="CanopyRowFormat.Auto"/>): row objects in the grid document for up to
+    /// <see cref="CanopyRowDataOptions.CompactAboveRows"/> rows, compact row data (<see cref="CanopyGridRowData"/>) above that,
+    /// in chunks inside the grid's host element that the browser decodes one at a time after the first rows have painted, and
+    /// gzip-compressed chunks when their JSON comes to more than <see cref="CanopyRowDataOptions.GzipAboveBytes"/>.
+    /// <see cref="CanopyRowDataOptions.Format"/> sets a format explicitly. Fragments and pages with compact rows also carry the
+    /// row data part (<c>canopyx-data.js</c>). Bundles always write compact rows. Trees and hosted grids ignore it.
     /// </summary>
     public CanopyRowDataOptions? RowData { get; set; }
 
@@ -125,6 +128,16 @@ public sealed class CanopyHtmlOptions {
 
     /// <summary>Gets or sets the page title. Defaults to the view label.</summary>
     public string? Title { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text direction: a page writes it as the <c>dir</c> attribute of its <c>html</c> element, a fragment on its
+    /// host element. Defaults to <see cref="CanopyTextDirection.Auto"/>, which writes none.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The value is not a known direction.</exception>
+    public CanopyTextDirection Direction {
+        get => _direction;
+        set => _direction = value < CanopyTextDirection.Auto || value > CanopyTextDirection.Rtl ? throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown text direction.") : value;
+    }
 
     /// <summary>Gets or sets the page language, used for the <c>lang</c> attribute and number formatting. Defaults to <c>en</c>.</summary>
     /// <exception cref="ArgumentException">The value is null or empty.</exception>

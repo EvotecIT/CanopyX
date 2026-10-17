@@ -33,7 +33,7 @@ public sealed class CanopyHtmlPart {
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail",
-        "searchHighlight", "layout", "record", "live", "facets"
+        "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -142,14 +142,14 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>
     /// Whether a grid uses a view feature: pager settings, an editable column, formatting rules or the rule editor, column
-    /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes, the record panel, live data or a facet panel. Compact
+    /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes, the record panel, live data, a facet panel, or a calendar and its resources. Compact
     /// row data (<c>rowData</c>) is a writer option, not a view setting: the HTML writer adds the parts that serve it.
     /// </summary>
     private static bool Uses(CanopyDataGridView view, string feature) {
         var reporting = view.Reporting;
         return feature switch {
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
-            "editable" => view.Columns.Any(column => column.Editable),
+            "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,
             "formatEditor" => view.Formatting?.Editor == true,
             "columnGroups" => view.ColumnGroups.Count > 0,
@@ -161,9 +161,22 @@ public sealed class CanopyHtmlPart {
             "record" => UsesRecordPanel(view),
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,
+            "calendar" => view.Calendar != null,
+            "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
+            "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null)),
+            "calendarEditing" => view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
+            "calendarIcs" => view.Calendar != null && UsesCalendarIcs(view.Calendar),
             _ => false
         };
     }
+
+    /// <summary>
+    /// Whether a calendar uses the iCalendar part: an iCalendar source, or the Export menu (which offers iCalendar) in its
+    /// toolbar, so a page written as one file can still export.
+    /// </summary>
+    private static bool UsesCalendarIcs(CanopyCalendar calendar) =>
+        calendar.Sources.Any(source => source.Ics != null) ||
+        calendar.Toolbar && (calendar.ToolbarItems.Count == 0 || calendar.ToolbarItems.Contains(CanopyCalendarToolbarItem.Export));
 
     /// <summary>Whether a tree uses a view feature: search highlighting, layout modes or the record panel.</summary>
     private static bool Uses(CanopyTreeView view, string feature) => feature switch {

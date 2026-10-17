@@ -10,8 +10,9 @@ namespace CanopyX.Data;
 /// server internals in them.
 /// </remarks>
 public sealed class CanopyCommitRowResult {
-    private CanopyCommitRowResult(string id, CanopyCommitStatus status, IDictionary<string, CanopyCell>? cells, string? error, IDictionary<string, string>? errors) {
+    private CanopyCommitRowResult(string id, CanopyCommitStatus status, IDictionary<string, CanopyCell>? cells, string? error, IDictionary<string, string>? errors, string? newId = null) {
         Id = id ?? throw new ArgumentNullException(nameof(id));
+        NewId = newId;
         Status = status;
         Cells = new ReadOnlyDictionary<string, CanopyCell>(cells == null ? new Dictionary<string, CanopyCell>(StringComparer.Ordinal) : new Dictionary<string, CanopyCell>(cells, StringComparer.Ordinal));
         Error = error;
@@ -24,6 +25,14 @@ public sealed class CanopyCommitRowResult {
     /// would read them), or null.</param>
     /// <returns>The result.</returns>
     public static CanopyCommitRowResult Saved(string id, IDictionary<string, CanopyCell>? cells = null) => new CanopyCommitRowResult(id, CanopyCommitStatus.Saved, cells, null, null);
+
+    /// <summary>A saved row; for an insert, with the stored identity of the new record.</summary>
+    /// <param name="id">The row identity (the client's temporary one for an insert).</param>
+    /// <param name="cells">Canonical cells by column identity that replace the shown ones, or null.</param>
+    /// <param name="newId">The stored identity of an inserted record, which replaces the client's id in the grid; null keeps it.
+    /// The endpoint answers it only for inserts, and only when it is a well-formed identity.</param>
+    /// <returns>The result.</returns>
+    public static CanopyCommitRowResult Saved(string id, IDictionary<string, CanopyCell>? cells, string? newId) => new CanopyCommitRowResult(id, CanopyCommitStatus.Saved, cells, null, null, newId);
 
     /// <summary>A row that was not saved because of its values or the store.</summary>
     /// <param name="id">The row identity.</param>
@@ -40,6 +49,9 @@ public sealed class CanopyCommitRowResult {
 
     /// <summary>Gets the row identity.</summary>
     public string Id { get; }
+
+    /// <summary>Gets the stored identity of an inserted record, or null.</summary>
+    public string? NewId { get; }
 
     /// <summary>Gets the outcome.</summary>
     public CanopyCommitStatus Status { get; }

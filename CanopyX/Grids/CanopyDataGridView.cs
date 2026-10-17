@@ -120,6 +120,9 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
     public bool AutoRowHeight { get; set; }
 
+    /// <summary>Gets or sets whether rows can be dragged out of the grid, to a calendar that accepts drops (<see cref="CanopyCalendar.Drop"/>), and picked up with F2 from row focus. Defaults to false.</summary>
+    public bool DragRows { get; set; }
+
     /// <summary>Gets or sets the requested result-page size, between 1 and 10,000.</summary>
     /// <remarks>Paging follows full-dataset filtering and sorting; it is not a limit on the inline dataset.</remarks>
     public int PageSize {
@@ -197,6 +200,7 @@ public sealed partial class CanopyDataGridView {
             writer.EndArray();
         }
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
+        if (DragRows) writer.Property("dragRows", true);
         WriteRowPresentationJson(writer);
         writer.Property("pageSize", PageSize)
             .Property("selection", CanopyJsonNames.Selection(Selection)).Property("search", Search)
@@ -215,6 +219,7 @@ public sealed partial class CanopyDataGridView {
         WriteFormattingJson(writer);
         WriteLiveJson(writer);
         WriteFacetPanelJson(writer);
+        WriteCalendarJson(writer);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Record != null) { writer.Name("record"); Record.WriteJson(writer, grid: true); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
@@ -282,6 +287,7 @@ public sealed partial class CanopyDataGridView {
             column.Validation?.Validate(column);
             column.Presenter?.Validate(column, Columns);
             if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
+            if (column.Format != null && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Number formats require numeric columns.");
             if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
             column.ValidateLayout(Columns);
             if (column.Ordering != null && (Reporting == null || !column.Sortable || column.Kind != CanopyColumnKind.Text))
@@ -302,6 +308,7 @@ public sealed partial class CanopyDataGridView {
         ValidateFormatting();
         Reporting?.Validate(Columns);
         ValidateFacetPanel();
+        ValidateCalendar();
         if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");
         if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))

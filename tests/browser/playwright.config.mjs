@@ -17,6 +17,10 @@ const customChromium = !!(process.env.CANOPYX_BROWSER_CHANNEL || process.env.CAN
 const visual = !benchmarks && (process.env.CANOPYX_VISUAL === "1" ||
   (process.env.CANOPYX_VISUAL !== "0" && browserNames.includes("chromium") && process.platform === "win32" && !customChromium));
 const visualSpec = /visual-baselines\.spec\.mjs$/;
+// Explicit benchmark runs include the calendar measurements on Chromium after the other selected projects finish.
+// Ordinary correctness CI does not create this project.
+const calendarPerformanceSpec = /calendar-performance\.spec\.mjs$/;
+const calendarPerformance = benchmarks && browserNames.includes("chromium") && !customChromium;
 
 export default defineConfig({
   testDir: "specs",
@@ -37,7 +41,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
   outputDir: "test-results",
   projects: [
-    ...browserNames.map(browserName => ({ name: browserName, testIgnore: visualSpec, use: {
+    ...browserNames.map(browserName => ({ name: browserName, testIgnore: [visualSpec, calendarPerformanceSpec], use: {
       browserName,
       ...(browserName === "chromium" ? {
         channel: process.env.CANOPYX_BROWSER_CHANNEL || undefined,
@@ -49,6 +53,7 @@ export default defineConfig({
         launchOptions: { firefoxUserPrefs: { "ui.primaryPointerCapabilities": 6, "ui.allPointerCapabilities": 6 } }
       } : {})
     } })),
+    ...(calendarPerformance ? [{ name: "calendar-performance", testMatch: calendarPerformanceSpec, dependencies: [...browserNames, ...(visual ? ["visual"] : [])], use: { browserName: "chromium" } }] : []),
     ...(visual ? [{ name: "visual", testMatch: visualSpec, use: {
       browserName: "chromium",
       // Grayscale anti-aliasing, unhinted glyphs and an sRGB output keep the pixels independent of display settings.

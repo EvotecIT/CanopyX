@@ -59,7 +59,7 @@
         sort: input.sort.filter(sort => sort && known(sort.column)), filters: input.filters.filter(filter => filter && known(filter.column)),
         [LINK_IMPL.queryOwn]: true }), true);
       const parsed = { version: 1, view: this.view.id, columns, query,
-        timeZone: state.timeZone, selection, scrollTop: state.scrollTop, formatRules: state.formatRules };
+        timeZone: state.timeZone, selection, scrollTop: state.scrollTop, formatRules: state.formatRules, calendar: state.calendar };
       if (this.paged || state.paging) {
         const paging = state.paging || this.defaultState.paging;
         if (!paging || !Number.isInteger(paging.pageLength) || paging.pageLength < 1 || paging.pageLength > Math.max(10000,this.view.source.kind==="inline"?(this.view.rowData?.count??this.view.rows.length):0) || paging.allRows!==undefined&&(typeof paging.allRows!=="boolean"||paging.allRows&&this.view.source.kind!=="inline") ||

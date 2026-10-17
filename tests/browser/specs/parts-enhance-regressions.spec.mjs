@@ -136,7 +136,20 @@ test("impossible ISO calendar dates stay text while a real leap day infers datet
 
 const compactView = rowData => ({ protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact", pageSize: 50,
   selection: "none", search: false, columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }],
-  source: { kind: "inline" }, rowData });
+  source: { kind: "inline" }, ...(rowData === undefined ? {} : { rowData: { version: 1, ...rowData } }) });
+
+test("compact descriptors keep encoding version one and reject missing or unknown versions", async ({ page }) => {
+  await servePage(page, "<div id='compact'></div>");
+  const results = await page.evaluate(async view => {
+    const errors = [];
+    for (const version of [undefined, 2]) {
+      const api = CanopyX.createDataGrid(document.querySelector("#compact"), { view: { ...view, rowData: { ...view.rowData, version } } });
+      errors.push(await api.ready.then(() => "accepted", error => error.message)); api.destroy();
+    }
+    return errors;
+  }, compactView({ columns: ["name", "size"], count: 1, chunks: [[["ada", "Ada", 7]]] }));
+  expect(results).toEqual(["CanopyX: invalid grid rowData.", "CanopyX: invalid grid rowData."]);
+});
 
 test("compact host chunks preserve invalid numeric values until validation rejects them", async ({ page }) => {
   await servePage(page, "<div id='compact'></div>");
@@ -156,7 +169,7 @@ test("compact host chunks preserve invalid numeric values until validation rejec
 for (const encoding of ["json", "gzip"]) {
   test("decoded embedded row scripts release their encoded text after success (" + encoding + ")", async ({ page }) => {
     const rows = JSON.stringify([["ada", "Ada", 7]]), text = encoding === "gzip" ? gzipSync(rows).toString("base64") : rows;
-    const view = compactView({ version: 1, columns: ["name", "size"], count: 1, chunks: 1, ...(encoding === "gzip" ? { encoding } : {}) });
+    const view = compactView({ columns: ["name", "size"], count: 1, chunks: 1, ...(encoding === "gzip" ? { encoding } : {}) });
     const html = viewPage(view).replace("</script></div>", '</script><script type="application/x-canopyx-rows">' + text + "</script></div>");
     await page.route(ORIGIN + "/embedded", route => route.fulfill({ contentType: "text/html", body: html }));
     await page.goto(ORIGIN + "/embedded");
@@ -178,7 +191,7 @@ test("destroying a grid during a sidecar read prevents decoding the returned chu
   });
   await page.evaluate(view => {
     window.api = CanopyX.createDataGrid(document.querySelector("#compact"), { view }); api.ready.catch(() => {});
-  }, compactView({ version: 1, columns: ["name", "size"], count: 1, chunks: 1, base: "/data/" }));
+  }, compactView({ columns: ["name", "size"], count: 1, chunks: 1, base: "/data/" }));
   await expect.poll(() => requested).toBe(true);
   await page.evaluate(() => api.destroy()); release();
   await page.waitForFunction(() => window.sidecarReturned);

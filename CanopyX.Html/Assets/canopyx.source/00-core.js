@@ -187,22 +187,6 @@
     }
   }
 
-  const numberFormats = new Map();
-  function numberFormat(lang) {
-    const key = lang || "";
-    let format = numberFormats.get(key);
-    if (!format) {
-      try {
-        format = new Intl.NumberFormat(lang || undefined, { maximumFractionDigits: 3 });
-      } catch (e) {
-        format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
-      }
-      if (numberFormats.size >= 16) numberFormats.delete(numberFormats.keys().next().value);
-      numberFormats.set(key, format);
-    }
-    return format;
-  }
-
   function pad2(value) {
     return value < 10 ? "0" + value : String(value);
   }
@@ -250,8 +234,8 @@
     return texts ? (fmt.local ? fmt.utc[0] + texts[0] + fmt.utc[1] : fmt.other[0] + texts[1] + fmt.other[1]) : null;
   }
 
-  /** Formats a value without display text, following the protocol's default formatting table. */
-  function formatValue(value, kind, fmt) {
+  /** Formats a value without display text, following the protocol's default formatting table or a declared number format. */
+  function formatValue(value, kind, fmt, format) {
     if (value === null || value === undefined) {
       return "";
     }
@@ -259,7 +243,7 @@
       return value ? fmt.labels.yes : fmt.labels.no;
     }
     if (typeof value === "number" && kind === "number") {
-      return numberFormat(fmt.lang).format(value);
+      return numberText(value, fmt.lang, format);
     }
     if (typeof value === "string" && kind === "datetime") {
       return formatDate(value, fmt);
@@ -271,7 +255,7 @@
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }
-    return formatValue(cellValue(cell), column.kind, fmt);
+    return formatValue(cellValue(cell), column.kind, fmt, column.format);
   }
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });

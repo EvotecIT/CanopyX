@@ -19,6 +19,7 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 - **HTML reports** that include their own runtime and data and can be opened from disk or a file share.
 - **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
 - **Email and print tables** rendered from the same .NET view without JavaScript.
+- **Calendars and resource timelines** of the same records: month, week, day, agenda and year views, resources grouped as a tree with capacity per group, recurring events, drag to reschedule through the grid's editing, and iCalendar export.
 
 ![File explorer in the light theme, with sizes, dates, owners and an expanded detail row](docs/images/tree-grid-light.png)
 
@@ -211,6 +212,10 @@ Mark flat-grid columns `editable` and give them typed editors (text, number, dat
 
 `formatRules` (in .NET, `CanopyDataGridView.FormatRules`) tints cells and rows, adds icons, badges and cues, and draws data bars, colour scales and threshold bands, with conditions from the filter builder. Readers can change the rules in a rule editor, and their rules are kept in saved views. See [docs/conditional-formatting.md](docs/conditional-formatting.md).
 
+### Show records as a calendar
+
+Give a grid a `calendar` (in .NET, `CanopyDataGridView.Calendar`, or `grid.Calendar().Start(x => x.Starts).End(x => x.Ends)` on a typed grid) and its records show as a month, week, day, N-day, agenda or year calendar, or, with resources, a resource timeline whose resources are a CanopyX tree. The grid's search, filters, facets, saved views, record panel, linked views, live data and editing keep working on the same records; recurring events, time zones with correct DST, iCalendar export and print come with it. See [docs/calendar.md](docs/calendar.md) and [docs/resource-timeline.md](docs/resource-timeline.md).
+
 ### Link views together
 
 A chart, a list or another grid can filter a grid or tree (`setExternalFilter`, shown as a removable chip and sent to a host source in its query) or highlight its rows (`setHighlight`), and a view with `linkEvents` reports its selection and own conditions as neutral `canopyx:linkchange` payloads. See [docs/linked-views.md](docs/linked-views.md).
@@ -229,7 +234,7 @@ Virtual rows keep the rendered DOM small. Tree bundles split data into sidecar f
 
 `CanopyX.Data` answers a hosted grid's queries on the server, so a table over millions of database rows pages, sorts, filters, groups, counts value lists and exports without loading the result into the browser, and saves the rows readers edit through a writer the host controls ([docs/remote-dotnet.md](docs/remote-dotnet.md)).
 
-Large single-file reports have three more choices: views that mount only when they come into view (`MountWhenVisible`), compact row data that the browser decodes chunk by chunk after the first rows have painted, optionally gzip-compressed (`RowData`), and grid bundles whose rows load from sidecar files (`SaveHtmlBundle`). See [docs/large-data.md](docs/large-data.md) for when to use which, with measured numbers.
+Large single-file reports need no switch for their rows: grids of more than 5,000 rows are written as compact row data that the browser decodes chunk by chunk after the first rows have painted, gzip-compressed when large (`RowData` and its `Format` choose otherwise). Views can mount only when they come into view (`MountWhenVisible`), and grid bundles load their rows from sidecar files (`SaveHtmlBundle`). See [docs/large-data.md](docs/large-data.md) for when to use which, with measured numbers.
 
 CSV export and copying distinguish filtered results, selected records and all records. Register your own export formats, such as an Excel or PDF writer, with `CanopyX.registerExportFormat`, and they join the grid's Export menu with the same scope choice, progress and cancellation; tree grids export their visible, selected or all rows through the same writers. For application actions, connect your own callbacks to the view.
 

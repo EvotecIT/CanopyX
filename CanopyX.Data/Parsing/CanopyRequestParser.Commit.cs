@@ -5,7 +5,9 @@ using System.Text.Json;
 namespace CanopyX.Data;
 
 public static partial class CanopyRequestParser {
-    /// <summary>Parses a <c>gridCommit</c> document: the changed rows a grid asks the endpoint to save.</summary>
+    /// <summary>Parses a <c>gridCommit</c> document: the changed and new rows a grid asks the endpoint to save.</summary>
+    /// <remarks>A row with <c>"op": "insert"</c> is a new record (<see cref="CanopyCommitRow.Insert"/>): its values name editable
+    /// columns only, as an update's do, and it has no original values.</remarks>
     /// <param name="json">The document.</param>
     /// <param name="schema">The column allow-list.</param>
     /// <param name="limits">Safety limits; null uses the defaults.</param>
@@ -34,8 +36,14 @@ public static partial class CanopyRequestParser {
             var id = RequireString(row, "id");
             RequireIdentifier(id, "row identity");
             if (!ids.Add(id)) throw CanopyRequestException.Document("A commit lists each row once.");
+            var insert = Operation(row);
+            // A new row's id is the runtime's temporary id, never one that could name a stored record.
+            if (insert && !id.StartsWith("new-", StringComparison.Ordinal)) throw CanopyRequestException.Document("A new row's id starts with new-.");
             if (!row.TryGetProperty("values", out var values) || values.ValueKind != JsonValueKind.Object) throw CanopyRequestException.Document("A changed row needs its values.");
-            if (!row.TryGetProperty("original", out var original) || original.ValueKind != JsonValueKind.Object) throw CanopyRequestException.Document("A changed row needs its original values.");
+            var original = default(JsonElement);
+            if (insert) {
+                if (row.TryGetProperty("original", out _)) throw CanopyRequestException.Document("A new row has no original values.");
+            } else if (!row.TryGetProperty("original", out original) || original.ValueKind != JsonValueKind.Object) throw CanopyRequestException.Document("A changed row needs its original values.");
             var changed = new Dictionary<string, object?>(StringComparer.Ordinal);
             foreach (var property in values.EnumerateObject()) {
                 var column = schema.GetColumn(property.Name);
@@ -45,6 +53,7 @@ public static partial class CanopyRequestParser {
                 changed[column.Id] = Scalar(property.Value, limits);
             }
             if (changed.Count == 0) throw CanopyRequestException.Document("A changed row changes at least one column.");
+            if (insert) { list.Add(CanopyCommitRow.Insert(id, changed)); continue; }
             var started = new Dictionary<string, object?>(StringComparer.Ordinal);
             foreach (var property in original.EnumerateObject()) {
                 if (!changed.ContainsKey(property.Name) || started.ContainsKey(property.Name))
@@ -55,6 +64,14 @@ public static partial class CanopyRequestParser {
             list.Add(new CanopyCommitRow(id, changed, started));
         }
         return new CanopyCommitBatch(schema, revision, list);
+    }
+
+    /// <summary>Whether a row is an insert: <c>"op": "insert"</c>; absent or <c>"update"</c> is an update, anything else malformed.</summary>
+    private static bool Operation(JsonElement row) {
+        if (!row.TryGetProperty("op", out var op)) return false;
+        if (op.ValueKind == JsonValueKind.String && op.ValueEquals("insert")) return true;
+        if (op.ValueKind == JsonValueKind.String && op.ValueEquals("update")) return false;
+        throw CanopyRequestException.Document("A row's op is update or insert.");
     }
 
     private static object? Scalar(JsonElement value, CanopyRemoteLimits limits) {

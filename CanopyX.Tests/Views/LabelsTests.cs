@@ -98,11 +98,17 @@ public sealed class LabelsTests {
         // The conditional formatting parts carry the English texts of their format* labels themselves.
         var runtime = RuntimeLabels(CanopyX.Html.CanopyRuntime.ReportingGrid);
         // The editing part brings its gridEdit… labels: names the core accepts for it without defining them.
-        var editing = PartLabels("editing");
+        var editing = PartLabels("editing", "EDIT_LABELS");
         Assert.NotEmpty(editing);
         Assert.All(editing.Keys, name => Assert.StartsWith("gridEdit", name));
         Assert.All(editing.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
         foreach (var (name, text) in editing) runtime.Add(name, text);
+        // The calendar part brings its calendar… labels the same way.
+        var calendar = PartLabels("calendar", "CALENDAR_LABELS");
+        Assert.NotEmpty(calendar);
+        Assert.All(calendar.Keys, name => Assert.StartsWith("calendar", name));
+        Assert.All(calendar.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
+        foreach (var (name, text) in calendar) runtime.Add(name, text);
         foreach (var (name, text) in FormattingPartLabels()) runtime.Add(name, text);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();
@@ -168,9 +174,9 @@ public sealed class LabelsTests {
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }
 
-    // The labels a part brings with its English texts: its EDIT_LABELS-style object of name: "text" pairs.
-    private static Dictionary<string, string?> PartLabels(string part) {
-        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, @"const EDIT_LABELS=\{(?<body>.*?)\};", System.Text.RegularExpressions.RegexOptions.Singleline);
+    // The labels a part brings with its English texts: its constant (EDIT_LABELS, CALENDAR_LABELS) of name: "text" pairs.
+    private static Dictionary<string, string?> PartLabels(string part, string constant) {
+        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, "const " + constant + @"=\{(?<body>.*?)\};", System.Text.RegularExpressions.RegexOptions.Singleline);
         return System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value, "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }

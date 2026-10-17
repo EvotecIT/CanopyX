@@ -67,7 +67,7 @@
       if (!extend && !range.lowOpen && range.low === first.low && range.high === first.high && range.open === first.open) { panel.apply(facet, { low: null, high: null }); return; }
       panel.apply(facet, { low: wire(first.low), high: wire(last.high), open: last.open });
     });
-    const label = value => date ? new Intl.DateTimeFormat(grid.lang, { dateStyle: "medium", timeZone: grid.local ? undefined : "UTC" }).format(value) : numbers.format(value);
+    const label = value => date ? new Intl.DateTimeFormat(grid.lang, { dateStyle: "medium", timeZone: grid.local ? undefined : "UTC" }).format(value) : cellText(value, column, grid.fmt);
     function draw() {
       const counts = state.counts, range = current();
       if (!from.input.matches(":focus")) from.input.value = toInput(range.low);

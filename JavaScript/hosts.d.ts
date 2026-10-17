@@ -265,6 +265,8 @@ export interface LinkChange {
   readonly keys: readonly string[];
   readonly values: Readonly<Record<string, readonly LinkValue[]>>;
   readonly label: string;
+  /** A calendar's selected day, slots or resource: the instants on its start column, [from, to). */
+  readonly range?: { readonly column: string; readonly from: string; readonly to: string } | null;
 }
 /** The link methods of trees and flat grids. The first call loads the link part; the getters answer without it. */
 export interface LinkedView {

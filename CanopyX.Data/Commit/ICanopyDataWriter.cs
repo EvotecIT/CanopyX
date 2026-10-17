@@ -22,6 +22,10 @@ namespace CanopyX.Data;
 /// only records its caller may read: the endpoint authorizes the caller, the writer restricts the records.
 /// <see cref="CanopyQueryableWriter{T}"/> is the reference writer over a column map.
 /// </para>
+/// <para>
+/// A batch a writer receives holds updates only, unless the writer implements <see cref="ICanopyInsertWriter"/> and accepts
+/// inserts: then it also holds <see cref="CanopyCommitOperation.Insert"/> rows, whose ids are the client's temporary ids.
+/// </para>
 /// </remarks>
 public interface ICanopyDataWriter {
     /// <summary>Gets the writer's transaction boundary. A per-batch writer receives no rows when any input row fails

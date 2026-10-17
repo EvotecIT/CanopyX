@@ -15,8 +15,8 @@ public sealed class EditingPartAssetsTests {
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         var size = Gzip(part.Script) + Gzip(part.Style!);
-        // Combined roadmap integration: its size plus about 15%.
-        Assert.True(size <= 20480, "The editing part is " + size + " bytes gzip; the guard is 20 KiB.");
+        // Wave 3's combined editing and insertion contracts: 21,085 bytes plus about 15%, rounded to KiB.
+        Assert.True(size <= 24 * 1024, "The editing part is " + size + " bytes gzip; the guard is 24 KiB.");
     }
 
     [Fact]

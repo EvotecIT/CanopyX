@@ -5,6 +5,8 @@
   // recomputed when that set changes. Rules apply in order: for each target the first rule that sets an aspect (tone, icon,
   // badge, cue, bar, scale, css) wins it, every matched rule adds its description, and stopIfTrue ends the row's rules.
   function formatStats(grid) {
+    // An enhanced table's store counts its changes; compact row data arrives chunk by chunk into the same array and new rows
+    // (insertRow) are pushed onto it, so the inline key follows the store's version and the rows' length together.
     const inline = grid.view.source.kind === "inline" && (!grid.opts.source || grid.enhanceStore),
       key = inline ? "inline:" + (grid.enhanceStore?.version ?? 0) + ":" + grid.view.rows.length : grid.queryEpoch + ":" + (grid.snapshot?.revision || "") + ":" + [...grid.pages.keys()].join(",");
     if (grid.formatStatsKey === key) return grid.formatStatsCache;

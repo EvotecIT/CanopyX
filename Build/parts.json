@@ -355,6 +355,85 @@
       "styles": [
         "CanopyX.Html/Assets/canopyx.record-panel.source/record-panel.css"
       ]
+    },
+    {
+      "name": "calendar",
+      "label": "calendar",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendar"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
+        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
+        "HostCellContext", "disposeHostSlot", "loadPart", "PROTOCOL"],
+      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calendar.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.calendar.source/calendar.css"
+      ]
+    },
+    {
+      "name": "calendar-recurrence",
+      "label": "calendar recurrence",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendarRecurrence"],
+      "key": "DataGrid.prototype",
+      "requires": ["calendar"],
+      "context": ["DataGrid"],
+      "start": "const { CAL_DAY, CAL_MINUTE, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay } = DataGrid.prototype.calKit;",
+      "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, CAL_WEEKDAYS });",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calendar-recurrence.source"
+      ]
+    },
+    {
+      "name": "calendar-edit",
+      "label": "calendar editing",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendarEditing"],
+      "key": "DataGrid.prototype",
+      "requires": ["calendar"],
+      "context": ["DataGrid", "h", "setText", "fill", "cellValue", "GRID_DRAG"],
+      "start": "const { CAL_DAY, CAL_GUTTER, CAL_MINUTE, CAL_SLOT_PX, calDayText, calDow, calInAllDayRow, calIso, calOverlaps, calZone, calDayGrid } = DataGrid.prototype.calKit;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calendar-edit.source"
+      ]
+    },
+    {
+      "name": "calendar-ics",
+      "label": "iCalendar",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendarIcs"],
+      "key": "DataGrid.prototype",
+      "requires": ["calendar", "calendar-recurrence"],
+      "context": ["DataGrid", "h", "fill"],
+      "start": "const { CAL_DAY, CAL_MINUTE, calBase, calDayNumber, calDayText, calMonthDays, CAL_WEEKDAYS, calZone, calIso, calParseDay, calRule, calExpand } = DataGrid.prototype.calKit;",
+      "end": "Object.assign(DataGrid.prototype.calKit, { calIcsText, calIcsFold, calIcsParse });",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calendar-ics.source"
+      ]
+    },
+    {
+      "name": "timeline",
+      "label": "resource timeline",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calendarResources"],
+      "key": "DataGrid.prototype",
+      "requires": ["calendar"],
+      "context": ["DataGrid", "TreeGrid", "h", "setText", "fill", "numberFormat"],
+      "start": "const { CAL_DAY, CAL_HOUR, CAL_MINUTE, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthStart, calWeekStart } = DataGrid.prototype.calKit;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.timeline.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.timeline.source/timeline.css"
+      ]
     }
   ]
 }

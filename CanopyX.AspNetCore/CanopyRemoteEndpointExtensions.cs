@@ -19,6 +19,8 @@ namespace CanopyX.AspNetCore;
 /// <list type="bullet">
 /// <item><c>POST query</c>: a <c>gridQuery</c> body, answered with a <c>gridPage</c>; with <see cref="CanopyRemoteEndpointOptions.AllowGetQueries"/>, <c>GET query</c> reads the same query from the query string.</item>
 /// <item><c>POST facet</c>: a <c>gridFacetQuery</c> body, answered with a <c>gridFacetPage</c> (value lists).</item>
+/// <item><c>POST range</c>: a <c>gridRangeQuery</c> body, answered with a <c>gridRangePage</c> (the records that overlap a date window,
+/// for calendar and timeline views); a provider without <see cref="ICanopyRangeProvider"/> answers 400 <c>unsupported</c>.</item>
 /// <item><c>POST summary</c>: a <c>gridQuery</c> body with its revision, answered with a <c>gridSummary</c> (groups and aggregates).</item>
 /// <item><c>POST export/{format}</c>: the grid's export request, answered with a streamed file.</item>
 /// <item><c>GET view</c>: the grid definition document.</item>
@@ -147,6 +149,7 @@ public static class CanopyRemoteEndpointExtensions {
         }
         group.MapPost("/facet", Json(Handler, options.Limits, FacetAnswer));
         group.MapPost("/summary", Json(Handler, options.Limits, SummaryAnswer));
+        group.MapPost("/range", Json(Handler, options.Limits, RangeAnswer));
         group.MapPost("/export/{format}", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, async token => {
             var body = await CanopyRemoteHttp.ReadJsonBodyAsync(context, options.Limits, token).ConfigureAwait(false);
             if (body == null) return;
@@ -161,6 +164,7 @@ public static class CanopyRemoteEndpointExtensions {
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> QueryAnswer = (handler, body, token) => handler.QueryAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> FacetAnswer = (handler, body, token) => handler.FacetAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> SummaryAnswer = (handler, body, token) => handler.SummaryAsync(body, token);
+    private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> RangeAnswer = (handler, body, token) => handler.RangeAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> CommitAnswer = (handler, body, token) => handler.CommitAsync(body, token);
 
     private static RequestDelegate Json(Func<HttpContext, CanopyRemoteHandler> handler, CanopyRemoteLimits limits,

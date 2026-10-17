@@ -132,6 +132,7 @@ values. The edit bar (toggle with `editBar`) shows the number of unsaved changes
 | `revertChanges(ids?)` | Puts the rows (all by default) back to their starting values, as one step undo brings back. |
 | `setCellValue(id, column, value)` | A host's own change, with the same events, history and checks; read-only rules do not apply. Resolves with `{ applied, valid, error? }`. |
 | `validate(ids?)` | Checks the changed rows; resolves with `{ valid, rows: [{ id, valid, errors, error }] }`. |
+| `insertRow({ id?, cells })` | Adds a new record to the change set (a calendar creates and drops events this way): its id is `new-<n>`, or the host's, which starts with `new-` too. It shows at once, is validated as an edit, and commits as `{ "op": "insert", "id", "values" }` with no `original` (the values of the editable columns, as for updates); a writer may answer `newId`, which the row takes. Until it is saved, undo removes it and `revertChanges` drops it; once saved it leaves the undo history (the protocol has no deletes). `getChanges()` lists it with `op: "insert"`. Resolves with `{ id, applied, valid, errors? }`; `canopyx:rowInserting` (cancelable) comes first and `canopyx:rowAdded` after. |
 
 ### Events
 
@@ -232,7 +233,7 @@ part brings their English texts; the core accepts those names before the part lo
 
 ## API summary
 
-`beginEdit(id, column?, { initial? })`, `endEdit()`, `cancelEdit()`, `isEditing()`, `setCellValue(id, column, value)`,
+`beginEdit(id, column?, { initial? })`, `endEdit()`, `cancelEdit()`, `isEditing()`, `setCellValue(id, column, value)`, `insertRow({ id?, cells })`,
 `getChanges()`, `hasChanges()`, `revertChanges(ids?)`, `validate(ids?)`, `commitRow(id)`, `commitChanges({ ids?, signal? })`,
 `undo()`, `redo()`, `canUndo()`, `canRedo()`, `setReadOnly(readOnly)`. They are members of every flat grid's API; before
 the part has loaded the reads answer empty and the actions load it first. TypeScript types: `GridEditingApi`,

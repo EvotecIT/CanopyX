@@ -44,7 +44,7 @@ public sealed class CanopyExportContext {
     /// <returns>The text; empty for a missing value.</returns>
     /// <remarks>
     /// Display text is the cell's own text when the server supplied one; otherwise numbers use the request culture with up
-    /// to three decimals, dates <c>yyyy-MM-dd HH:mm UTC</c> and booleans <c>Yes</c> or <c>No</c>. The server cannot know a
+    /// to three decimals (or the declared column format), dates <c>yyyy-MM-dd HH:mm UTC</c> and booleans <c>Yes</c> or <c>No</c>. The server cannot know a
     /// reader's local time zone, so local-time requests also receive UTC.
     /// </remarks>
     public string GetText(CanopyGridRow row, CanopyDataColumn column) {
@@ -59,7 +59,7 @@ public sealed class CanopyExportContext {
             bool flag => flag ? "Yes" : "No",
             DateTime date => date.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + " UTC",
             string text => text,
-            var number => CanopyDataValues.ToDouble(number).ToString("#,0.###", Culture)
+            var number => column.NumberFormat?.Format(CanopyDataValues.ToDouble(number), Culture) ?? CanopyDataValues.ToDouble(number).ToString("#,0.###", Culture)
         };
     }
 }

@@ -8,6 +8,21 @@ namespace CanopyX;
 internal static class CanopyNumericValues {
     internal static double ToDouble(object value) => value is decimal number ? DecimalToDouble(number) : Convert.ToDouble(value, CultureInfo.InvariantCulture);
 
+    /// <summary>Rounds the magnitude of a finite binary64 value times 10^digits to an integer, halfway away from zero.</summary>
+    /// <remarks>The explicit display format uses the same binary value as JavaScript's toFixed, without decimal or CLR double rounding.</remarks>
+    internal static BigInteger RoundFractionMagnitude(double value, int digits) {
+        var bits = BitConverter.DoubleToInt64Bits(value);
+        var exponent = (int)((bits >> 52) & 0x7ff);
+        BigInteger coefficient = bits & 0x000fffffffffffffL;
+        if (exponent != 0) coefficient += 1L << 52;
+        var scaled = coefficient * BigInteger.Pow(10, digits);
+        var shift = exponent == 0 ? -1074 : exponent - 1075;
+        if (shift >= 0) return scaled << shift;
+        var denominator = BigInteger.One << -shift;
+        var rounded = BigInteger.DivRem(scaled, denominator, out var remainder);
+        return (remainder << 1) >= denominator ? rounded + BigInteger.One : rounded;
+    }
+
     /// <summary>Rounds the exact decimal coefficient once, to nearest binary64 with ties to even.</summary>
     /// <remarks>Older CLR decimal casts and floating-point parsers can double round. Decimal has a bounded 96-bit
     /// coefficient and scale 0–28; every nonzero decimal is a normal binary64 value, so subnormal/overflow paths are unnecessary.</remarks>

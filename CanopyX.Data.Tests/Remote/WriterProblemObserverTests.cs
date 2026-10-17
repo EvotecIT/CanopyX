@@ -211,6 +211,64 @@ public sealed class WriterProblemObserverTests {
             null, new CanopyQueryableWriter<Host>(map, store, options));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ThrowingInsertLogger_PreservesOriginalFailureCleanupAndOtherPerRowSaves(bool canceledObserver) {
+        var map = Fleet.Map(Fleet.EditableView());
+        var store = new InsertObserverStore();
+        var failures = new List<Exception>();
+        var writer = new CanopyQueryableWriter<Host>(map, store, new CanopyQueryableWriterOptions<Host> {
+            NewRecord = _ => new Host { Id = ++store.NextId },
+            Failed = (_, error) => { failures.Add(error); throw canceledObserver ? new OperationCanceledException("logger canceled") : new IOException("logger unavailable"); }
+        });
+        var handler = new CanopyRemoteHandler(map.Schema,
+            new CanopyQueryableProvider<Host>(store.Records, map, new CanopyQueryOptions { Revision = _ => new ValueTask<string>("r5") }), null, writer);
+        const string request = "{\"protocol\":\"canopyx/2\",\"type\":\"gridCommit\",\"view\":\"fleet\",\"revision\":\"r5\",\"rows\":[" +
+            "{\"op\":\"insert\",\"id\":\"new-1\",\"values\":{\"name\":\"host-first\"}}," +
+            "{\"op\":\"insert\",\"id\":\"new-2\",\"values\":{\"name\":\"host-bad\"}}," +
+            "{\"op\":\"insert\",\"id\":\"new-3\",\"values\":{\"name\":\"host-last\"}}]}";
+
+        using var document = JsonDocument.Parse(await handler.CommitAsync(request));
+
+        var rows = document.RootElement.GetProperty("rows").EnumerateArray().ToArray();
+        Assert.Equal(new[] { "saved", "error", "saved" }, rows.Select(row => row.GetProperty("status").GetString()));
+        Assert.Equal("40", rows[0].GetProperty("newId").GetString());
+        Assert.Equal("42", rows[2].GetProperty("newId").GetString());
+        Assert.Equal("The row could not be saved.", rows[1].GetProperty("error").GetString());
+        Assert.Same(store.Failure, Assert.Single(failures));
+        Assert.Equal(new[] { "host-first", "host-last" }, store.Saved.Select(row => row.Name));
+        Assert.Equal(2, store.Commits);
+        Assert.Equal(1, store.Rollbacks);
+        Assert.Equal(1, store.Discards);
+        Assert.Equal(3, store.Disposals);
+    }
+
+    private sealed class InsertObserverStore : ICanopyInsertStore<Host> {
+        internal int NextId = 39;
+        internal IOException Failure { get; } = new IOException("insert store unavailable");
+        internal List<Host> Saved { get; } = new List<Host>();
+        private Host? _pending, _savedPending;
+        internal int Commits, Rollbacks, Disposals, Discards;
+        // A successful Save is queryable inside the transaction before it becomes committed state.
+        public IQueryable<Host> Records => _savedPending == null ? Saved.AsQueryable() : Saved.Concat(new[] { _savedPending }).AsQueryable();
+        public void Add(Host record) => _pending = record;
+        public ValueTask<ICanopyWriteTransaction> BeginTransactionAsync(CancellationToken cancellationToken) => new ValueTask<ICanopyWriteTransaction>(new Transaction(this));
+        public ValueTask SaveChangesAsync(CancellationToken cancellationToken) {
+            if (_pending?.Name == "host-bad") throw Failure;
+            _savedPending = _pending;
+            return default;
+        }
+        public void DiscardChanges() { Discards++; _pending = null; _savedPending = null; }
+        private sealed class Transaction : ICanopyWriteTransaction {
+            private readonly InsertObserverStore _store;
+            internal Transaction(InsertObserverStore store) { _store = store; }
+            public ValueTask CommitAsync(CancellationToken cancellationToken) { _store.Commits++; _store.Saved.Add(_store._savedPending!); _store._pending = null; _store._savedPending = null; return default; }
+            public ValueTask RollbackAsync(CancellationToken cancellationToken) { _store.Rollbacks++; _store._pending = null; _store._savedPending = null; return default; }
+            public ValueTask DisposeAsync() { _store.Disposals++; return default; }
+        }
+    }
+
     private static CanopyRemoteHandler Handler(AnswerWriter writer, Action<string> observer,
         Func<CancellationToken, ValueTask<string>>? revision = null) {
         var map = Fleet.Map(Fleet.EditableView());

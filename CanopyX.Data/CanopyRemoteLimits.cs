@@ -30,6 +30,7 @@ public sealed class CanopyRemoteLimits {
     private int _maxRecordTextLength = 8192;
     private int _maxRecordOffset = 10000;
     private int _maxRecordRequestBytes = 16384;
+    private int _maxRangeRows = 5000;
 
     /// <summary>Gets or sets the largest page a client may request, from 1 to 10,000. Default 1,000.</summary>
     public int MaxPageSize { get => _maxPageSize; set => _maxPageSize = Check(value, 1, 10000, nameof(MaxPageSize)); }
@@ -111,6 +112,11 @@ public sealed class CanopyRemoteLimits {
     /// <summary>Gets or sets the largest record request body in bytes, from 1 KiB to 1 MiB, within <see cref="MaxRequestBytes"/>. Default 16 KiB.</summary>
     /// <remarks>A <c>gridRecordQuery</c> carries an identity, a revision and a field name, so it needs far less than a query.</remarks>
     public int MaxRecordRequestBytes { get => _maxRecordRequestBytes; set => _maxRecordRequestBytes = Check(value, 1024, 1048576, nameof(MaxRecordRequestBytes)); }
+
+    /// <summary>Gets or sets the most records one date-range answer holds, from 1 to 10,000. Default 5,000.</summary>
+    /// <remarks>A <c>gridRangeQuery</c> asks for up to 10,000 records; a larger request is lowered to this limit rather than rejected,
+    /// and the answer reports <c>truncated</c> when more records overlap the window.</remarks>
+    public int MaxRangeRows { get => _maxRangeRows; set => _maxRangeRows = Check(value, 1, 10000, nameof(MaxRangeRows)); }
 
     private static int Check(int value, int minimum, int maximum, string name) {
         if (value < minimum || value > maximum) throw new ArgumentOutOfRangeException(name, value, "The limit must be from " + minimum + " to " + maximum + ".");

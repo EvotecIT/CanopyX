@@ -3,9 +3,11 @@ param([switch] $Check)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $source = Get-Content -LiteralPath (Join-Path $root 'CanopyX/Views/Locales/labels.json') -Raw | ConvertFrom-Json
-$defaults = [regex]::Matches([System.IO.File]::ReadAllText((Join-Path $root 'CanopyX/Views/CanopyLabels.cs')),
+# The English defaults live in their own file, so CanopyLabels.cs and the label partials stay within the file size budget.
+$defaults = [regex]::Matches([System.IO.File]::ReadAllText((Join-Path $root 'CanopyX/Views/CanopyLabels.Defaults.cs')),
     '\[nameof\((\w+)\)\] = ("(?:[^"\\]|\\.)*")')
 $names = @($defaults | ForEach-Object { $_.Groups[1].Value })
+if ($names.Count -lt 100 -or @($names | Sort-Object -Unique).Count -ne $names.Count) { throw 'CanopyLabels.Defaults.cs must declare every label default once.' }
 $actual = @($source.PSObject.Properties.Name)
 if (@(Compare-Object $names $actual).Count) { throw 'Every locale must declare exactly the CanopyLabels keys.' }
 $outline = @('OverflowNote', 'UnknownTotal', 'HiddenRows', 'FullReport')
