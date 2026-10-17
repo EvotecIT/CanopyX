@@ -699,7 +699,8 @@ A cell is either a bare value (string, number, boolean, or null) or an object:
 ```
 
 - `value` is used for sorting and, when `text` is absent, for display. Dates are ISO 8601 UTC strings, `yyyy-MM-ddTHH:mm:ssZ` or with milliseconds `yyyy-MM-ddTHH:mm:ss.fffZ`.
-- `sort` (text of at most 4,096 code units, or a number) is the key the cell sorts by when it differs from its value:
+- `sort` (text of at most 4,096 code units, or a finite number from −9,007,199,254,740,991 to 9,007,199,254,740,991) is the key the cell sorts by when it differs from its value.
+  This is a magnitude bound; fractions within it are valid. For example,
   a run named "Nightly 42" sorts by its ISO start time while its
   column filter, value list and search read the name. Only sorting reads it (inline flat grids, which reject a malformed key, and trees, which ignore one;
   a host source sorts on its own). The grouping column of a grouped grid orders by its values, so groups stay whole, and a column with a text

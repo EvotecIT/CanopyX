@@ -61,13 +61,13 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     public ValueTask<CanopyPageResult> QueryAsync(CanopyDataRequest request, CancellationToken cancellationToken) {
         Own(request);
         var all = Load(cancellationToken);
-        var selected = Select(all, request);
+        var selected = Select(all, request, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var matches = Arrange(selected, request);
+        var matches = Arrange(selected, request, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         var rows = matches.Skip(request.Offset).Take(request.Limit).Select(record => {
             cancellationToken.ThrowIfCancellationRequested();
-            return Row(record);
+            return Row(record, cancellationToken);
         });
         var result = new CanopyPageResult(all.Count, matches.Count, rows);
         cancellationToken.ThrowIfCancellationRequested();
@@ -77,7 +77,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     /// <inheritdoc />
     public ValueTask<int> CountAsync(CanopyDataRequest request, CancellationToken cancellationToken) {
         Own(request);
-        var count = Select(Load(cancellationToken), request).Count;
+        var count = Select(Load(cancellationToken), request, cancellationToken).Count;
         cancellationToken.ThrowIfCancellationRequested();
         return new ValueTask<int>(count);
     }
@@ -86,13 +86,13 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     public async IAsyncEnumerable<CanopyGridRow> ReadAsync(CanopyDataRequest request, [EnumeratorCancellation] CancellationToken cancellationToken) {
         Own(request);
         await Task.Yield();
-        var selected = Select(Load(cancellationToken), request);
+        var selected = Select(Load(cancellationToken), request, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var records = Arrange(selected, request);
+        var records = Arrange(selected, request, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         foreach (var record in records.Skip(request.Offset).Take(request.Limit)) {
             cancellationToken.ThrowIfCancellationRequested();
-            yield return Row(record);
+            yield return Row(record, cancellationToken);
         }
     }
 
@@ -100,7 +100,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     public ValueTask<CanopyFacetResult> FacetAsync(CanopyFacetRequest request, CancellationToken cancellationToken) {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
-        var matches = Select(Load(cancellationToken), request.Query);
+        var matches = Select(Load(cancellationToken), request.Query, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         var ordinal = request.Column.Ordinal;
         var term = CanopyTextFolding.Fold(request.Search)!;
@@ -114,7 +114,10 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
                 ? (string.CompareOrdinal(existing.Value as string, value as string) <= 0 ? existing.Value : value, existing.Count + 1)
                 : (value, 1);
         }
-        var ordered = buckets.Values.OrderBy(bucket => bucket.Value, FacetOrder.Instance).Take(request.Limit).Select(bucket => {
+        var ordered = buckets.Values.OrderBy(bucket => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return bucket.Value;
+        }, FacetOrder.Instance).Take(request.Limit).Select(bucket => {
             cancellationToken.ThrowIfCancellationRequested();
             return new CanopyFacetBucket(bucket.Value, bucket.Count);
         });
@@ -128,39 +131,47 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
         foreach (var aggregate in request.Aggregates) Supported(aggregate);
-        var matches = Select(Load(cancellationToken), request.Query);
+        var matches = Select(Load(cancellationToken), request.Query, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var groups = request.Levels.Count == 0 ? new List<CanopySummaryGroup>() : Groups(request, matches, 0);
+        var groups = request.Levels.Count == 0 ? new List<CanopySummaryGroup>() : Groups(request, matches, 0, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        var result = new CanopySummaryResult(matches.Count, Aggregate(request, matches), groups);
+        var result = new CanopySummaryResult(matches.Count, Aggregate(request, matches, cancellationToken), groups);
         cancellationToken.ThrowIfCancellationRequested();
         return new ValueTask<CanopySummaryResult>(result);
     }
 
     /// <summary>The groups of one level over some records, each with the groups of the next level; the handler orders them.</summary>
-    private static List<CanopySummaryGroup> Groups(CanopySummaryRequest request, List<Record> records, int depth) {
+    private static List<CanopySummaryGroup> Groups(CanopySummaryRequest request, List<Record> records, int depth, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
         var ordinal = request.Levels[depth].Column.Ordinal;
         var groups = new List<CanopySummaryGroup>();
-        foreach (var group in records.GroupBy(record => CanopyRemoteHandler.GroupKey(record.Values[ordinal]), StringComparer.Ordinal)) {
+        foreach (var group in records.GroupBy(record => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return CanopyRemoteHandler.GroupKey(record.Values[ordinal]);
+        }, StringComparer.Ordinal)) {
+            cancellationToken.ThrowIfCancellationRequested();
             var members = group.ToList();
-            var inner = depth + 1 < request.Levels.Count ? Groups(request, members, depth + 1) : null;
-            groups.Add(new CanopySummaryGroup(members[0].Values[ordinal], members.Count, Aggregate(request, members), inner));
+            var inner = depth + 1 < request.Levels.Count ? Groups(request, members, depth + 1, cancellationToken) : null;
+            groups.Add(new CanopySummaryGroup(members[0].Values[ordinal], members.Count, Aggregate(request, members, cancellationToken), inner));
         }
         return groups;
     }
 
-    private static Dictionary<string, double?> Aggregate(CanopySummaryRequest request, IReadOnlyList<Record> records) {
+    private static Dictionary<string, double?> Aggregate(CanopySummaryRequest request, IReadOnlyList<Record> records, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
         var values = new Dictionary<string, double?>(StringComparer.Ordinal);
-        foreach (var aggregate in request.Aggregates) values[aggregate.Id] = Aggregate(aggregate, records);
+        foreach (var aggregate in request.Aggregates) values[aggregate.Id] = Aggregate(aggregate, records, cancellationToken);
         return values;
     }
 
-    private static double? Aggregate(CanopySummaryAggregate aggregate, IReadOnlyList<Record> records) {
+    private static double? Aggregate(CanopySummaryAggregate aggregate, IReadOnlyList<Record> records, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
         var ordinal = aggregate.Column.Ordinal;
         int count = 0;
         double sum = 0, compensation = 0, minimum = double.MaxValue, maximum = double.MinValue;
         var distinct = aggregate.Operation == CanopyGridAggregateOperation.DistinctCount ? new HashSet<string>(StringComparer.Ordinal) : null;
         foreach (var record in records) {
+            cancellationToken.ThrowIfCancellationRequested();
             var raw = record.Values[ordinal];
             if (raw == null) continue;
             count++;
@@ -225,46 +236,78 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
         return list;
     }
 
-    private List<Record> Select(List<Record> records, CanopyDataRequest request) {
-        var ids = request.Ids == null ? null : new HashSet<string>(request.Ids, StringComparer.Ordinal);
-        var excluded = new HashSet<string>(request.ExcludedIds, StringComparer.Ordinal);
-        var terms = request.SearchTerms.Select(term => CanopyTextFolding.Fold(term)!).ToList();
-        return records.Where(record => (ids == null || ids.Contains(record.Id)) && !excluded.Contains(record.Id) &&
-            terms.All(term => Schema.SearchColumns.Any(column => ProtocolSemantics.ContainsTerm(record.Values[column.Ordinal], term))) &&
-            (request.Filter == null || Matches(record, request.Filter))).ToList();
+    private List<Record> Select(List<Record> records, CanopyDataRequest request, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
+        var ids = request.Ids == null ? null : new HashSet<string>(StringComparer.Ordinal);
+        if (request.Ids != null) foreach (var id in request.Ids) {
+            cancellationToken.ThrowIfCancellationRequested();
+            ids!.Add(id);
+        }
+        var excluded = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var id in request.ExcludedIds) {
+            cancellationToken.ThrowIfCancellationRequested();
+            excluded.Add(id);
+        }
+        var terms = request.SearchTerms.Select(term => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return CanopyTextFolding.Fold(term)!;
+        }).ToList();
+        return records.Where(record => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return (ids == null || ids.Contains(record.Id)) && !excluded.Contains(record.Id) &&
+                terms.All(term => Schema.SearchColumns.Any(column => {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return ProtocolSemantics.ContainsTerm(record.Values[column.Ordinal], term);
+                })) && (request.Filter == null || Matches(record, request.Filter, cancellationToken));
+        }).ToList();
     }
 
-    private static bool Matches(Record record, CanopyFilterNode node) => node switch {
-        CanopyFilterConstant constant => constant.Value,
-        CanopyFilterCondition condition => ProtocolSemantics.Matches(record.Values[condition.Column.Ordinal], condition.Column.Kind, condition.Operator, condition.Values),
-        CanopyFilterGroup group => group.Junction == CanopyGridFilterJunction.All
-            ? group.Children.All(child => Matches(record, child))
-            : group.Children.Any(child => Matches(record, child)),
-        _ => false
-    };
+    private static bool Matches(Record record, CanopyFilterNode node, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
+        return node switch {
+            CanopyFilterConstant constant => constant.Value,
+            CanopyFilterCondition condition => ProtocolSemantics.Matches(record.Values[condition.Column.Ordinal], condition.Column.Kind, condition.Operator, condition.Values),
+            CanopyFilterGroup group => group.Junction == CanopyGridFilterJunction.All
+                ? group.Children.All(child => Matches(record, child, cancellationToken))
+                : group.Children.Any(child => Matches(record, child, cancellationToken)),
+            _ => false
+        };
+    }
 
     /// <summary>Orders matching records: level by level (each level's groups in their order: by value, or by an aggregate of the
     /// group), then by the other sort keys inside the innermost groups, and by record identity last.</summary>
-    private List<Record> Arrange(List<Record> records, CanopyDataRequest request) =>
-        request.Levels.Count == 0 ? Order(records, request.Sort) : Arrange(records, request.Levels, 0, request.InnerSort);
+    private List<Record> Arrange(List<Record> records, CanopyDataRequest request, CancellationToken cancellationToken) =>
+        request.Levels.Count == 0 ? Order(records, request.Sort, cancellationToken) : Arrange(records, request.Levels, 0, request.InnerSort, cancellationToken);
 
-    private List<Record> Arrange(List<Record> records, IReadOnlyList<CanopySummaryLevel> levels, int depth, IReadOnlyList<CanopySortKey> inner) {
-        if (depth == levels.Count) return Order(records, inner);
+    private List<Record> Arrange(List<Record> records, IReadOnlyList<CanopySummaryLevel> levels, int depth, IReadOnlyList<CanopySortKey> inner, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (depth == levels.Count) return Order(records, inner, cancellationToken);
         var level = levels[depth];
         var ordinal = level.Column.Ordinal;
         if (level.Aggregate != null) Supported(level.Aggregate);
-        var groups = records.GroupBy(record => CanopyRemoteHandler.GroupKey(record.Values[ordinal]), StringComparer.Ordinal).Select(group => {
+        var groups = records.GroupBy(record => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return CanopyRemoteHandler.GroupKey(record.Values[ordinal]);
+        }, StringComparer.Ordinal).Select(group => {
+            cancellationToken.ThrowIfCancellationRequested();
             var members = group.ToList();
-            return (Value: members[0].Values[ordinal], Members: members, Aggregate: level.Aggregate == null ? null : Aggregate(level.Aggregate, members));
+            return (Value: members[0].Values[ordinal], Members: members, Aggregate: level.Aggregate == null ? null : Aggregate(level.Aggregate, members, cancellationToken));
         }).ToList();
+        cancellationToken.ThrowIfCancellationRequested();
         groups.Sort(GroupOrdering.Create<(object? Value, List<Record> Members, double? Aggregate)>(Schema, level, group => group.Value, group => group.Aggregate));
+        cancellationToken.ThrowIfCancellationRequested();
         var ordered = new List<Record>(records.Count);
-        foreach (var group in groups) ordered.AddRange(Arrange(group.Members, levels, depth + 1, inner));
+        foreach (var group in groups) {
+            cancellationToken.ThrowIfCancellationRequested();
+            ordered.AddRange(Arrange(group.Members, levels, depth + 1, inner, cancellationToken));
+        }
         return ordered;
     }
 
-    private static List<Record> Order(List<Record> records, IReadOnlyList<CanopySortKey> sort) {
+    private static List<Record> Order(List<Record> records, IReadOnlyList<CanopySortKey> sort, CancellationToken cancellationToken) {
+        cancellationToken.ThrowIfCancellationRequested();
         var ordered = records.ToArray();
+        cancellationToken.ThrowIfCancellationRequested();
         // A stable sort over an explicit comparison; identity is the last key, so the order is total.
         Array.Sort(ordered, (left, right) => {
             foreach (var key in sort) {
@@ -275,12 +318,16 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
             }
             return string.CompareOrdinal(left.Id, right.Id);
         });
+        cancellationToken.ThrowIfCancellationRequested();
         return ordered.ToList();
     }
 
-    private CanopyGridRow Row(Record record) {
+    private CanopyGridRow Row(Record record, CancellationToken cancellationToken) {
         var row = new CanopyGridRow(record.Id);
-        foreach (var column in Schema.Columns) row.Cells[column.Id] = record.Cells[column.Ordinal]!;
+        foreach (var column in Schema.Columns) {
+            cancellationToken.ThrowIfCancellationRequested();
+            row.Cells[column.Id] = record.Cells[column.Ordinal]!;
+        }
         return row;
     }
 

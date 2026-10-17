@@ -51,7 +51,7 @@ if(typeof value==="string"&&kind==="datetime"){return formatDate(value,fmt)}
 return String(value)}
 function cellText(cell,column,fmt){if(isCellObject(cell)&&typeof cell.text==="string"){return cell.text}
 return formatValue(cellValue(cell),column.kind,fmt)}
-const collator=new Intl.Collator(undefined,{numeric:true,sensitivity:"base"});function sortKey(cell,column){let value=isCellObject(cell)&&(typeof cell.sort==="string"||Number.isFinite(cell.sort))?cell.sort:cellValue(cell);if((value===null||value==="")&&isCellObject(cell)&&typeof cell.text==="string"&&cell.text!==""){value=cell.text}
+const collator=new Intl.Collator(undefined,{numeric:true,sensitivity:"base"});const safeGridNumber=value=>Number.isFinite(value)&&Math.abs(value)<=Number.MAX_SAFE_INTEGER;function sortKey(cell,column){let value=isCellObject(cell)&&(typeof cell.sort==="string"||safeGridNumber(cell.sort))?cell.sort:cellValue(cell);if((value===null||value==="")&&isCellObject(cell)&&typeof cell.text==="string"&&cell.text!==""){value=cell.text}
 if(value===null||value===""){return{rank:2,value:0}}
 if(typeof value==="boolean"){return{rank:0,value:value?1:0}}
 if(typeof value==="number"){return{rank:0,value}}
@@ -112,7 +112,7 @@ return svg}
 function gridExportField(value,delimiter,typed=false){if(value==null)return "";let text=String(value);if(typeof value!=="number"&&!typed&&/^(?:[\t\r]|\s*[=+\-@\uFF1D\uFF0B\uFF0D\uFF20])/.test(text)) text = "'" + text;
 return text.includes(delimiter)||/["\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
 }
-function gridScalar(cell,column){const value=cellValue(cell);if(value==null)return null;if(column.kind==="number"){if(typeof value!=="number"||!Number.isFinite(value)||Math.abs(value)>Number.MAX_SAFE_INTEGER)
+function gridScalar(cell,column){const value=cellValue(cell);if(value==null)return null;if(column.kind==="number"){if(!safeGridNumber(value))
 throw new Error("CanopyX: numeric grid cells need finite values within the safe integer magnitude.");return value}
 if(column.kind==="datetime"){const date=typeof value==="string"&&/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) ? Date.parse(value) : NaN;
 if(!Number.isFinite(date))
@@ -126,7 +126,7 @@ throw new Error("CanopyX: invalid flat row fields.");gridDecoration(row.tone,row
 cell.secondary!==undefined&&cell.secondary.length>4096||cell.sort!==undefined&&!(typeof cell.sort==="string"?cell.sort.length<=4096:Number.isFinite(cell.sort))||cell.series!==undefined&&!gridSeriesValid(cell.series)||
 cell.badges!==undefined&&(!Array.isArray(cell.badges)||cell.badges.some(badge=>!badge||typeof badge.text!=="string"||
 ["tone","title"].some(name=>badge[name]!==undefined&&typeof badge[name]!=="string"))))
-throw new Error("CanopyX: malformed grid cell.")}
+throw new Error("CanopyX: malformed grid cell.");if(typeof cell.sort==="number")gridScalar(cell.sort,{kind:"number"})}
 gridScalar(cell,declared.get(id))}}
 return rows}
 function gridDecoration(tone,className){if(tone!==undefined&&(typeof tone!=="string"||!/^[a-z][a-z0-9-]{0,31}$/.test(tone) || tone.endsWith("-bg")) ||
