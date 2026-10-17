@@ -87,15 +87,19 @@
       for (const value of counts.values || []) tallies[place(value)]++;
       for (const pair of pairs || []) tallies[place(pair.value)] += pair.count;
       const highest = Math.max(1, ...tallies);
-      state.bins = tallies.map((tally, index) => ({ start: min + index * width, end: index === count - 1 ? max : min + (index + 1) * width, count: tally }));
-      chart.replaceChildren(...state.bins.map((bin, index) => {
-        const last = index === count - 1, bar = h("span", "cx-facet-bar");
+      const bins = tallies.map((tally, index) => ({ start: min + index * width, end: index === count - 1 ? max : min + (index + 1) * width, count: tally }));
+      // A query can repaint between pointer press and release. Keep its target while the bin boundaries stay the same.
+      const sameBins = bins.length === state.bins.length && bins.every((bin, index) => bin.start === state.bins[index].start && bin.end === state.bins[index].end);
+      state.bins = bins;
+      const bars = sameBins ? Array.from(chart.children) : bins.map(() => h("span", "cx-facet-bar"));
+      bins.forEach((bin, index) => {
+        const last = index === count - 1, bar = bars[index];
         const inside = (range.low == null || (last && !range.lowOpen ? bin.end >= range.low : bin.end > range.low)) && (range.high == null || (range.open ? bin.start < range.high : bin.start <= range.high));
         bar.setAttribute("data-cx-bin", String(index)); bar.style.height = Math.max(bin.count ? 6 : 0, Math.round(bin.count / highest * 100)) + "%";
         bar.classList.toggle("cx-facet-in", inside && (range.low != null || range.high != null));
         bar.title = fill(grid.labels.gridFacetBin, { from: label(bin.start), to: label(bin.end), count: numbers.format(bin.count) });
-        return bar;
-      }));
+      });
+      if (!sameBins) chart.replaceChildren(...bars);
       setText(low, label(min)); setText(high, label(max));
     }
     return { draw, search: () => "", update(counts) { state.counts = counts; draw(); } };
