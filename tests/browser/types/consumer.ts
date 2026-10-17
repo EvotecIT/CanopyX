@@ -43,7 +43,7 @@ const compactView: CompactGridView = { protocol: "canopyx/2", type: "grid", id: 
   columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }, { id: "notes", title: "Notes", kind: "text" }],
   rowData: { version: 1, columns: ["name", "size", "notes"], count: 2, ordered: true, chunks: [compactRows] } };
 createDataGrid(document.createElement("div"), { view: compactView });
-const sidecarRows: CompactGridView["rowData"] = { columns: ["name"], count: 10000, encoding: "gzip", base: "data/compact/", chunks: 2 };
+const sidecarRows: CompactGridView["rowData"] = { version: 1, columns: ["name"], count: 10000, encoding: "gzip", base: "data/compact/", chunks: 2 };
 // @ts-expect-error A compact grid has no rows beside its row data.
 const bothRows: CompactGridView = { ...compactView, rows: [] };
 mountViews(document.querySelector("[data-canopyx-host]") ?? document);

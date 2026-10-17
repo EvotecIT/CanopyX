@@ -107,7 +107,7 @@ public sealed class LargeDataHtmlTests {
         Assert.Equal("compact", Format(Config(compact)));
         Assert.Contains(part.Markup, compact.ToHtmlFragment());
         Assert.Contains(part.Markup, compact.ToHtmlPage());
-        Assert.False(Config(compact).GetProperty("rowData").TryGetProperty("version", out _));
+        Assert.Equal(1, Config(compact).GetProperty("rowData").GetProperty("version").GetInt32());
         // Several fragments of one document carry the part once.
         var document = new CanopyHtmlDocument();
         var first = compact.ToHtmlFragment(new CanopyHtmlOptions { Document = document });

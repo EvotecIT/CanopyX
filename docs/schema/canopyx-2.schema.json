@@ -2047,7 +2047,7 @@
             "calendarMini": { "type": "string" }, "calendarWeekList": { "type": "string" }, "calendarDayList": { "type": "string" }, "calendarMonths": { "type": "string" },
             "calendarWeekNumber": { "type": "string" }, "calendarWeekShort": { "type": "string" }, "calendarNewEvent": { "type": "string" }, "calendarEventTitle": { "type": "string" },
             "calendarCreate": { "type": "string" }, "calendarCancel": { "type": "string" }, "calendarCreated": { "type": "string" }, "calendarReceived": { "type": "string" },
-            "calendarOccurrenceTitle": { "type": "string" }, "calendarThisEvent": { "type": "string" }, "calendarThisAndFollowing": { "type": "string" }, "calendarAllEvents": { "type": "string" },
+            "calendarOccurrenceReadOnly": { "type": "string" }, "calendarOccurrenceTitle": { "type": "string" }, "calendarThisEvent": { "type": "string" }, "calendarThisAndFollowing": { "type": "string" }, "calendarAllEvents": { "type": "string" },
             "calendarSources": { "type": "string" }, "calendarImportFailed": { "type": "string" }, "calendarActions": { "type": "string" }, "calendarOpen": { "type": "string" },
             "calendarMove": { "type": "string" }, "calendarNewHere": { "type": "string" }, "calendarOutsideRange": { "type": "string" }, "calendarClose": { "type": "string" },
             "calendarDetailsOf": { "type": "string" }
