@@ -58,30 +58,79 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        // A nested detail grid or tree loads its own parts in the same page.
-        var nestedGrid = view.Reporting?.Detail?.View;
-        var nestedTree = view.Reporting?.Detail?.TreeView;
-        // A calendar's resources are a tree beside its timeline, which loads the parts that tree needs.
-        var resourceTree = view.Calendar?.Resources?.View;
-        // A record collection held as tree nodes shows as a nested tree in the record panel, which loads the tree tools.
-        var treeCollection = view.Source.Kind == CanopyGridSourceKind.Host || view.Record != null && view.Record.Source.Kind != CanopyRecordSourceKind.Inline ||
-            view.Rows.Any(row => TreeCollection(row.Cells.Values) || row.HasFields && TreeCollection(row.Fields.Values));
-        return WithRequired(Parts.Where(part => part.IsNeededBy(view) || nestedGrid != null && part.IsNeededBy(nestedGrid) || nestedTree != null && part.IsNeededBy(nestedTree) ||
-            resourceTree != null && part.IsNeededBy(resourceTree) ||
-            treeCollection && part.Name == "tree-tools"));
+        var required = RequiredGridParts(view);
+        return Parts.Where(required.Contains).ToList().AsReadOnly();
     }
 
-    private static bool TreeCollection(IEnumerable<CanopyCell> cells) {
-        var pending = new Stack<CanopyCell>(cells.Where(cell => cell != null));
-        while (pending.Count > 0) {
-            var cell = pending.Pop();
-            if (cell.Records != null) {
-                if (cell.Records.Roots.Count > 0) return true;
-                foreach (var row in cell.Records.Rows) foreach (var inner in row.Cells.Values) if (inner != null) pending.Push(inner);
-            }
-            if (cell.Fields.Count > 0) foreach (var field in cell.Fields) if (field?.Value != null) pending.Push(field.Value);
+    private static HashSet<CanopyHtmlPart> RequiredGridParts(CanopyDataGridView view) {
+        // These model objects use reference equality. Shared values and definitions need only one visit; invalid cycles
+        // must not trap asset discovery before Core's shape validation can reject them.
+        var pending = new Stack<object>();
+        var visited = new HashSet<object>();
+        var required = new HashSet<CanopyHtmlPart>();
+        var treeTools = GetPart("tree-tools");
+        void QueueCell(CanopyCell? cell) { if (cell?.IsStructured == true) pending.Push(cell); }
+        void QueueRow(CanopyGridRow? row) {
+            if (row == null) return;
+            if (row.HasFields || row.Detail != null) { pending.Push(row); return; }
+            // Ordinary scalar rows need no graph entry or retained identity, even in very large inline grids.
+            foreach (var cell in row.Cells.Values) if (cell?.IsStructured == true) { pending.Push(row); break; }
         }
-        return false;
+        pending.Push(view);
+        while (pending.Count > 0) {
+            var current = pending.Pop();
+            if (!visited.Add(current)) continue;
+            switch (current) {
+                case CanopyDataGridView gridView:
+                    // Every nested definition loads its own companions in this page, even when a sibling already needs tree tools.
+                    foreach (var part in Parts) if (part.IsNeededBy(gridView)) required.Add(part);
+                    if (gridView.Source.Kind == CanopyGridSourceKind.Host || gridView.Record != null && gridView.Record.Source.Kind != CanopyRecordSourceKind.Inline)
+                        required.Add(treeTools);
+                    if (gridView.Reporting?.Detail?.View != null) pending.Push(gridView.Reporting.Detail.View);
+                    if (gridView.Reporting?.Detail?.TreeView != null) pending.Push(gridView.Reporting.Detail.TreeView);
+                    if (gridView.Calendar?.Resources?.View != null) pending.Push(gridView.Calendar.Resources.View);
+                    foreach (var row in gridView.Rows) QueueRow(row);
+                    break;
+                case CanopyTreeView treeView:
+                    foreach (var part in Parts) if (part.IsNeededBy(treeView)) required.Add(part);
+                    break;
+                case CanopyGridRow gridRow:
+                    foreach (var cell in gridRow.Cells.Values) QueueCell(cell);
+                    if (gridRow.HasFields) foreach (var cell in gridRow.Fields.Values) QueueCell(cell);
+                    if (gridRow.Detail != null) pending.Push(gridRow.Detail);
+                    break;
+                case CanopyCell value:
+                    if (!value.IsStructured) break;
+                    if (value.Records != null) {
+                        if (value.Records.Roots.Count > 0) required.Add(treeTools);
+                        foreach (var record in value.Records.Rows) QueueRow(record);
+                    }
+                    foreach (var field in value.Fields) QueueCell(field?.Value);
+                    foreach (var change in value.Changes) if (change != null) pending.Push(change);
+                    foreach (var item in value.Events) if (item != null) pending.Push(item);
+                    break;
+                case CanopyFieldChange fieldChange:
+                    QueueCell(fieldChange.Before);
+                    QueueCell(fieldChange.After);
+                    break;
+                case CanopyRecordEvent recordEvent:
+                    foreach (var change in recordEvent.Changes) if (change != null) pending.Push(change);
+                    break;
+                case CanopyPropertiesDetail properties:
+                    foreach (var property in properties.Items) QueueCell(property?.Value);
+                    break;
+                case CanopyTableDetail table:
+                    foreach (var cells in table.Rows) if (cells != null) foreach (var cell in cells) QueueCell(cell);
+                    break;
+                case CanopyGridRowsDetail gridDetail:
+                    foreach (var row in gridDetail.Rows) QueueRow(row);
+                    break;
+                case CanopyTreeDetail _:
+                    required.Add(treeTools);
+                    break;
+            }
+        }
+        return required;
     }
 
     /// <summary>Writes a part's script and stylesheet under a naming; content-hashed files are written once.</summary>

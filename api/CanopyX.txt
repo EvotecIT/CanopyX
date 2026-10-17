@@ -387,6 +387,8 @@ CanopyX.CanopyColumn.CanopyX.CanopyGridPresenter? Presenter { get; set; }
 CanopyX.CanopyColumn.System.Boolean Aggregatable { get; set; }
 CanopyX.CanopyColumn.System.Boolean AlwaysVisible { get; set; }
 CanopyX.CanopyColumn.System.Boolean Editable { get; set; }
+CanopyX.CanopyColumn.System.Boolean Exportable { get; set; }
+CanopyX.CanopyColumn.System.Boolean Filterable { get; set; }
 CanopyX.CanopyColumn.System.Boolean Hidden { get; set; }
 CanopyX.CanopyColumn.System.Boolean RowHeader { get; set; }
 CanopyX.CanopyColumn.System.Boolean ShowInDrawer { get; set; }
@@ -1501,6 +1503,7 @@ CanopyX.CanopyLabels.System.String GridNextPage { get; set; }
 CanopyX.CanopyLabels.System.String GridNextRecord { get; set; }
 CanopyX.CanopyLabels.System.String GridNoData { get; set; }
 CanopyX.CanopyLabels.System.String GridNoDefaultView { get; set; }
+CanopyX.CanopyLabels.System.String GridNoExportColumns { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatches { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatchesReason { get; set; }
 CanopyX.CanopyLabels.System.String GridOfThese { get; set; }

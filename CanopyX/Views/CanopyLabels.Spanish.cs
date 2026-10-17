@@ -4,6 +4,7 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Spanish labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels Spanish() => new CanopyLabels {
+        GridNoExportColumns = "Ninguna columna visible permite exportar.",
         SearchPlaceholder = "Buscar",
         SearchResults = "Resultados de búsqueda",
         SearchResultCount = "{count} resultados",

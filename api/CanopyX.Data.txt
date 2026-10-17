@@ -83,6 +83,7 @@ CanopyX.Data.CanopyDataColumn.CanopyX.CanopyColumnKind Kind { get; }
 CanopyX.Data.CanopyDataColumn.CanopyX.CanopyGridOrdering? Ordering { get; }
 CanopyX.Data.CanopyDataColumn.System.Boolean Editable { get; }
 CanopyX.Data.CanopyDataColumn.System.Boolean ExplicitlySearchable { get; }
+CanopyX.Data.CanopyDataColumn.System.Boolean Exportable { get; }
 CanopyX.Data.CanopyDataColumn.System.Boolean Facetable { get; }
 CanopyX.Data.CanopyDataColumn.System.Boolean Filterable { get; }
 CanopyX.Data.CanopyDataColumn.System.Boolean Hidden { get; }

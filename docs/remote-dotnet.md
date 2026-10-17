@@ -71,6 +71,10 @@ app.MapGet("/machines", () => Results.Content(
         .Replace("</head>", CanopyRemoteScript.Element(map.Schema, "/api/machines") + "</head>"), "text/html"));
 ```
 
+For a page with a nonce-based Content Security Policy, pass the response's nonce to both `CanopyHtmlOptions.Nonce`
+and `CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/machines", nonce)`. The configuration script must run
+before the grid mounts. See [Content Security Policy](security.md#content-security-policy).
+
 The default executor already counts through EF Core's asynchronous query provider and enumerates EF queries
 asynchronously, without a dependency on EF Core. An executor of your own uses other operators, for example:
 
@@ -90,14 +94,16 @@ CanopyX.configure("machines", { source: {
   query: (query, { signal }) => post("/query", query, signal).then(r => r.json()),
   facet: (request, { signal }) => post("/facet", request, signal).then(r => r.json()),
   summary: (query, { signal }) => post("/summary", query, signal).then(r => r.json()),
-  // Views with editable columns: save through the commit endpoint, and reload once the revision changed.
+  // Views with editable columns save through the commit endpoint.
   commit: (batch, { signal }) => post("/commit", batch, signal).then(r => r.json()),
   // Views whose record panel loads details on demand (CanopyRemoteScript also answers null for a 404 recordNotFound).
   record: (request, { signal }) => post("/record", request, signal).then(r => r.json())
 } });
 document.addEventListener("canopyx:commit", event => {
-  const grid = event.target.canopyx;
-  if (event.detail.revision && event.detail.revision !== grid.getQuery().revision) grid.reload();
+  const grid = event.target.canopyx, result = event.detail, revision = result && result.revision;
+  if (!grid || grid.view.id !== "machines") return;
+  if (revision ? revision !== grid.getQuery()?.revision : result && result.saved > 0)
+    grid.reload().catch(() => {}); // The grid displays the reload error and calls onError.
 }, true); // grid events do not bubble, so listen in the capture phase
 ```
 
@@ -640,9 +646,10 @@ public sealed class EfCoreWriteStore<T>(DbContext db) : ICanopyInsertStore<T> wh
 ```
 
 **Revisions.** A commit changes the data, so give the dataset a revision the writer changes (`Saving` above, a row
-version, a change counter) and answer it. The grid keeps reading pages at the revision it accepted; once a commit answers
-with a new one, `CanopyRemoteScript` reloads the grid, and readers of an older revision elsewhere get `staleRevision` and
-reload too.
+version, a change counter) and answer it. The grid keeps reading pages at the revision it accepted. `CanopyRemoteScript`
+reloads after a commit reports a different revision, or after rows were saved without a revision because the server could
+not read it after the write. Reload keeps the reader's latest query and page length. If it fails, the grid displays the
+error and offers Retry. Readers of an older revision elsewhere get `staleRevision` and reload too.
 
 ## Record details
 

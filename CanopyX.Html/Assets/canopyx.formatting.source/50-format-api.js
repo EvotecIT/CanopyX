@@ -3,7 +3,7 @@
   // differ from the view's are part of the grid state, so saved views and the remembered state keep them; resetting or
   // applying a view without rules returns to the view's. Export records carry each cell's resolved format for writers that
   // paint (a styled spreadsheet, a print snapshot); CSV and plain text read only values and text, so they are unchanged.
-  const FORMAT_EDITOR = definePart(DataGrid, "format-editor", "formatting rule editor", () => ({ DataGrid, h, setText, fill, gridButton, gridOption,
+  const FORMAT_EDITOR = definePart(DataGrid, "format-editor", "formatting rule editor", () => ({ DataGrid, h, setText, fill, gridButton, gridOption, gridDateInputMoment,
     gridInputLabel, gridIcon, gridDecorateButton, announceMenu, formatCompile, formatToneVar, formatError, FORMAT_ICONS, FORMAT_TONE_ICONS, FORMAT_OPERATORS, svgIcon }));
   function formatPick(labels) {
     const own = {};

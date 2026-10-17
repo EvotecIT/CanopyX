@@ -26,7 +26,7 @@ internal sealed class MemberWriter<T> {
         _set = Expression.Lambda<Action<T, object?>>(Expression.Assign(Expression.MakeMemberAccess(record, member), Expression.Convert(value, type)), record, value).Compile();
         if (_underlying.IsEnum) {
             _members = new Dictionary<string, object>(StringComparer.Ordinal);
-            foreach (Enum item in Enum.GetValues(_underlying)) {
+            foreach (Enum item in EnumDomains.Members(_underlying)) {
                 var text = CanopyDataValues.EnumText(item);
                 if (!_members.ContainsKey(text)) _members[text] = item;
             }

@@ -41,7 +41,7 @@
       "runtimes": ["grid"],
       "views": ["grid"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridQuery", "gridQueryStart",
+      "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
         "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
         "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "fill", "announceMenu", "reportingRangeRows",
         "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL"],
@@ -144,7 +144,7 @@
       "key": "DataGrid.prototype",
       "requires": ["filter-editor"],
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
-        "gridFreeze", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage"],
+        "gridFreeze", "gridMomentFromParts", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage", "RECORD_IMPL"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.editing.source"
       ],
@@ -176,7 +176,7 @@
       "features": ["rangeSelection"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
-        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
+        "numberFormat", "gridFreeze", "gridMomentFromParts", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.cell-range.source"
       ],
@@ -217,7 +217,7 @@
       "views": ["grid"],
       "features": ["formatting"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
+      "context": ["DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "gridDateInputMoment", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
         "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
@@ -229,7 +229,7 @@
       "views": ["grid"],
       "features": ["formatEditor"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridOption", "gridDateInputMoment", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
         "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS", "svgIcon"],
       "requires": ["filter-editor", "formatting"],
       "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
@@ -347,7 +347,7 @@
       "views": ["tree", "grid"],
       "features": ["record"],
       "key": "RECORD_IMPL",
-      "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors",
+      "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
         "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"

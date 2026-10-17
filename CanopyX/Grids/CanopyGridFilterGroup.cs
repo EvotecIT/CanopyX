@@ -40,7 +40,7 @@ public sealed class CanopyGridFilterGroup {
         if (Filters.Count == 0 && Groups.Count == 0) throw new InvalidOperationException("A grid filter group cannot be empty.");
         foreach (var filter in Filters) {
             if (++predicates > 64) throw new InvalidOperationException("A grid query supports at most 64 predicates across all groups.");
-            if (filter == null || !columns.TryGetValue(filter.Column, out var column)) throw new InvalidOperationException("Grid predicates must identify declared columns.");
+            if (filter == null || !columns.TryGetValue(filter.Column, out var column) || !column.Filterable) throw new InvalidOperationException("Grid predicates must identify declared filterable columns.");
             filter.Validate(column);
         }
         foreach (var group in Groups) {

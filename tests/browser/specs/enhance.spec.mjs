@@ -42,6 +42,19 @@ test("a table gives the grid its columns, header groups, rows, ids, sort and sea
   expect(new Set(await page.evaluate(() => grid.getRows("filtered").map(record => record[1])))).toEqual(new Set(["Warsaw"]));
 });
 
+test("the default first page paints 25 rows and counts the complete table", async ({ page }) => {
+  await servePage(page, serverTable({ rows: 125 }));
+  await enhance(page);
+  await ready(page);
+  expect(await rowIds(page)).toHaveLength(25);
+  expect(await page.evaluate(() => grid.getPaging())).toMatchObject({ pageLength: 25, matched: 125 });
+  await expect(page.locator(".cx-grid-page-range")).toHaveText("Showing 1 to 25 of 125 rows");
+  await page.getByRole("button", { name: "Page 5", exact: true }).click();
+  await expect(page.locator('.cx-row[data-cx-id="srv-101"]')).toBeVisible();
+  expect(await rowIds(page)).toHaveLength(25);
+  await expect(page.locator(".cx-grid-page-range")).toHaveText("Showing 101 to 125 of 125 rows");
+});
+
 test("options come from data attributes on the table and header cells, and script options win", async ({ page }) => {
   await servePage(page, serverTable({ attributes: "data-page-length='5' data-order='[[2,\"desc\"]]' data-search-text='Berlin' data-info='\"range\"'",
     columnAttributes: { link: "data-sortable='false' data-searchable='false'", seen: "data-visible='false'", load: "data-type='text'" } }));

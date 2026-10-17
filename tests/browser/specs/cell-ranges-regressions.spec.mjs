@@ -65,6 +65,37 @@ test("display copies keep negative numbers without the formula apostrophe", asyn
   expect(text).toBe("'-not a number\tPlatform\t-1,234\r\n");
 });
 
+test("numeric and date display overrides keep formula protection while raw values stay typed", async ({ page, browserName }) => {
+  const texts = ["=1+1", "\uFF1D1+1", "\tplain", "\rplain", "custom label"], date = "2026-01-10T10:30:00Z";
+  const view = budgetView({ rangeSelection: true, columnGroups: [],
+    columns: [{ id: "amount", title: "Amount", kind: "number" }, { id: "moment", title: "Moment", kind: "datetime" },
+      { id: "ordinaryNumber", title: "Ordinary number", kind: "number" }, { id: "ordinaryDate", title: "Ordinary date", kind: "datetime" }],
+    rows: texts.map((text, index) => ({ id: rowId(index), cells: { amount: { value: 1, text }, moment: { value: date, text }, ordinaryNumber: -1234, ordinaryDate: date } })) });
+  await serveGrid(page, view);
+  const result = await page.evaluate(() => {
+    api.setCellRanges([{ startRow: 0, endRow: 4, startColumn: "amount", endColumn: "ordinaryDate" }]);
+    return Promise.all([api.getCellRangeText(), api.getCellRangeText({ values: "display" }), api.getCellRangeText({ values: "raw" })]);
+  });
+  const display = "'=1+1\t'=1+1\t-1,234\t2026-01-10 10:30 UTC\r\n" +
+    "'\uFF1D1+1\t'\uFF1D1+1\t-1,234\t2026-01-10 10:30 UTC\r\n" +
+    "\"'\tplain\"\t\"'\tplain\"\t-1,234\t2026-01-10 10:30 UTC\r\n" +
+    "\"'\rplain\"\t\"'\rplain\"\t-1,234\t2026-01-10 10:30 UTC\r\n" +
+    "custom label\tcustom label\t-1,234\t2026-01-10 10:30 UTC\r\n";
+  expect(result[0]).toBe(display);
+  expect(result[1]).toBe(display);
+  expect(result[2]).toBe(Array(texts.length).fill("1\t2026-01-10 10:30:00\t-1234\t2026-01-10 10:30:00").join("\r\n") + "\r\n");
+  // Only Chromium grants clipboard permissions; all engines exercise the public text-producing API above.
+  if (browserName === "chromium") {
+    expect(await page.evaluate(() => api.copyCellRanges())).toBe(display);
+    const copied = await page.evaluate(async () => {
+      const item = (await navigator.clipboard.read()).find(item => item.types.includes("text/plain"));
+      return (await item.getType("text/plain")).text();
+    });
+    // The Windows clipboard expands lone carriage returns to CRLF.
+    expect(copied.replace(/\r\n|\r/g, "\n")).toBe(display.replace(/\r\n|\r/g, "\n"));
+  }
+});
+
 test("right-clicking a link in a cell keeps the browser's menu", async ({ page }) => {
   await serveGrid(page, budgetView({ rangeSelection: true }), { options: "{ renderers: { line: (row, element) => { const link = document.createElement('a'); link.href = '#' + row.id; link.textContent = row.cells.line; element.appendChild(link); return true; } } }" });
   const prevented = await page.locator(".cx-canvas .cx-row").first().locator("a").evaluate(link => !link.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })));

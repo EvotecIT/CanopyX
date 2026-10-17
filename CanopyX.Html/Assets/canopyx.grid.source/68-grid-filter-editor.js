@@ -1,6 +1,6 @@
   // Query parsing and matching stay in the core. The editor part (menus, editors, drawer, selected aggregates) and the export
   // part install on first use through the runtime's part loader (82-parts.js).
-  const FILTER_EDITOR=definePart(DataGrid,"filter-editor","filter editor",()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
+  const FILTER_EDITOR=definePart(DataGrid,"filter-editor","filter editor",()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridDateInputMoment,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
     reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,announceMenu,applyTone,toneOf,badgeElement,isCellObject,RECORD_IMPL,
     GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null}));
@@ -9,7 +9,7 @@
   Object.assign(DataGrid.prototype,{
     buildGridFilters(){
       this.reportingFacetStops=new Set();this.reportingFacetSequence=0;
-      if(this.tools.filters===false)return;
+      if(this.tools.filters===false||!this.columns.some(column=>column.filterable!==false))return;
       this.reportingFilters=this.controlPanel(this.labels.gridFilters,"cx-grid-filters",panel=>this.renderGridFilters(panel));
     },
     async renderGridFilters(panel){

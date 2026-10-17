@@ -12,7 +12,7 @@
     const part = name => local ? date["get" + name]() : date["getUTC" + name]();
     return part("FullYear") + "-" + crPad(part("Month") + 1) + "-" + crPad(part("Date")) + " " + crPad(part("Hours")) + ":" + crPad(part("Minutes")) + ":" + crPad(part("Seconds"));
   }
-  // typed marks the formatted text of a number or date cell, which needs no protection against formulas.
+  // typed marks raw values or generated number/date text; a host's display text still needs formula protection.
   function crField(value, typed) {
     return gridExportField(value, "\t", typed);
   }
@@ -21,12 +21,13 @@
   /** One cell as plain text and as a typed table cell. */
   function crCell(grid, row, column, values) {
     const cell = row.h.cells[column.id], value = cellValue(cell), shown = cellText(cell, column, grid.fmt);
+    const typed = values === "raw" || !isCellObject(cell) || typeof cell.text !== "string";
     if (value == null || value === "") return { text: values === "raw" ? "" : shown, html: "<td>" + crHtml(values === "raw" ? "" : shown) + "</td>" };
     if (column.kind === "number" && typeof value === "number")
-      return { typed: true, text: values === "raw" ? value : shown, html: '<td x:num="' + value + "\" data-sheets-value='{\"1\":3,\"3\":" + value + "}' style=\"mso-number-format:General\">" + crHtml(values === "raw" ? String(value) : shown) + "</td>" };
+      return { typed, text: values === "raw" ? value : shown, html: '<td x:num="' + value + "\" data-sheets-value='{\"1\":3,\"3\":" + value + "}' style=\"mso-number-format:General\">" + crHtml(values === "raw" ? String(value) : shown) + "</td>" };
     if (column.kind === "datetime") {
       const text = crDate(value, grid.local);
-      return { typed: true, text: values === "raw" ? text : shown, html: '<td style="mso-number-format:\'yyyy\\-mm\\-dd\\ hh\\:mm\\:ss\'">' + crHtml(text) + "</td>" };
+      return { typed, text: values === "raw" ? text : shown, html: '<td style="mso-number-format:\'yyyy\\-mm\\-dd\\ hh\\:mm\\:ss\'">' + crHtml(text) + "</td>" };
     }
     if (typeof value === "boolean") return { text: values === "raw" ? (value ? "TRUE" : "FALSE") : shown, html: '<td x:bool="' + (value ? "TRUE" : "FALSE") + '">' + crHtml(value ? "TRUE" : "FALSE") + "</td>" };
     const text = values === "raw" ? String(value) : shown;

@@ -91,7 +91,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
         string? after = null;
         if (_options.Revision != null) {
             // The rows are committed; a revision that cannot be read now leaves it to the endpoint, never fails the answer.
-            try { after = await _options.Revision(cancellationToken).ConfigureAwait(false); } catch (Exception error) when (!(error is OperationCanceledException)) { _options.Failed?.Invoke(batch.Rows[0], error); }
+            try { after = await _options.Revision(cancellationToken).ConfigureAwait(false); } catch (Exception error) when (!(error is OperationCanceledException)) { ReportFailure(batch.Rows[0], error); }
         }
         return new CanopyCommitResult(results, after);
     }
@@ -104,7 +104,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
             try { transaction = await _store.BeginTransactionAsync(cancellationToken).ConfigureAwait(false); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) {
-                _options.Failed?.Invoke(row, error);
+                ReportFailure(row, error);
                 results.Add(CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved));
                 continue;
             }
@@ -142,7 +142,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
                 } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
                     throw;
                 } catch (Exception error) {
-                    _options.Failed?.Invoke(batch.Rows[0], error);
+                    ReportFailure(batch.Rows[0], error);
                     var conflict = Concurrency(error);
                     return batch.Rows.Select(row => conflict ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved)).ToList();
                 }
@@ -167,7 +167,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             throw;
         } catch (Exception error) {
-            _options.Failed?.Invoke(row, error);
+            ReportFailure(row, error);
             await RollbackAsync(transaction, row).ConfigureAwait(false);
             return Concurrency(error) ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
         }
@@ -175,11 +175,18 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
 
     /// <summary>Rolls back without letting a failed rollback hide the row's own answer.</summary>
     private async Task RollbackAsync(ICanopyWriteTransaction transaction, CanopyCommitRow row) {
-        try { await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false); } catch (Exception error) { _options.Failed?.Invoke(row, error); }
+        try { await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false); } catch (Exception error) { ReportFailure(row, error); }
     }
 
     private async Task DisposeAsync(ICanopyWriteTransaction transaction, CanopyCommitRow row) {
-        try { await transaction.DisposeAsync().ConfigureAwait(false); } catch (Exception error) { _options.Failed?.Invoke(row, error); }
+        try { await transaction.DisposeAsync().ConfigureAwait(false); } catch (Exception error) { ReportFailure(row, error); }
+    }
+
+    private void ReportFailure(CanopyCommitRow row, Exception error) {
+        try { _options.Failed?.Invoke(row, error); }
+        catch (Exception) {
+            // A logger must not change a row's result, skip cleanup, or replace the operation's cancellation.
+        }
     }
 
     /// <summary>Loads, checks, applies and saves one row inside the current transaction.</summary>
@@ -207,7 +214,7 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             throw;
         } catch (Exception error) {
-            _options.Failed?.Invoke(row, error);
+            ReportFailure(row, error);
             return Concurrency(error) ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
         }
     }

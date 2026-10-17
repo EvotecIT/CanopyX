@@ -23,7 +23,8 @@ namespace CanopyX.Data;
 /// <para>
 /// The endpoint checks the revision before and after calling, sets the answer's revision, and checks the answer: it fails the request
 /// rather than send a field or cell that was not asked for (including record fields carried on the returned parent row),
-/// more rows than allowed, or a row of another record.
+/// more rows than allowed, or a row of another record. A returned non-null collection field must carry its
+/// <see cref="CanopyCell.Records"/> and <see cref="CanopyRecordList.Total"/>; an empty field may be omitted or null.
 /// </para>
 /// <para>
 /// The endpoint also holds every answer to <see cref="CanopyRecordRequest.MaxTextLength"/>: text in fields, drawer values,

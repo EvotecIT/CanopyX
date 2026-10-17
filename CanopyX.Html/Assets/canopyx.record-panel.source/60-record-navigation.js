@@ -92,6 +92,7 @@
   // It works offline in single-file pages: the address is all it reads.
   const recordLinkKey = view => view.view.record?.deepLink?.key || "record";
   const recordLinkParams = () => (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
+  const recordLinkPath = ids => ids.map(encodeURIComponent).join("/");
   function recordLinkRead(view) {
     const prefix = recordLinkKey(view) + "=";
     for (const param of recordLinkParams()) {
@@ -110,7 +111,7 @@
   function recordLinkFor(view, record) {
     const ids = [];
     if (view.kind === "tree") for (let w = view.keyMap.get(record.id); w && w !== view.root && w.key != null; w = w.parent) ids.unshift(w.key);
-    return recordLinkKey(view) + "=" + encodeURIComponent(view.view.id) + ":" + (ids.length ? ids : [record.id]).map(encodeURIComponent).join("/");
+    return recordLinkKey(view) + "=" + encodeURIComponent(view.view.id) + ":" + recordLinkPath(ids.length ? ids : [record.id]);
   }
   // This view's parameter in the address; another view with the same key keeps its own.
   const recordLinkPrefix = view => recordLinkKey(view) + "=" + encodeURIComponent(view.view.id) + ":";
@@ -119,10 +120,12 @@
     params.push(recordLinkFor(view, record));
     return global.location.href.replace(/#.*$/, "") + "#" + params.join("&");
   }
-  function recordLinkWrite(view, record) {
+  function recordLinkWrite(view, record, dialog) {
     if (!view.view.record?.deepLink) return;
+    const link = record && recordLinkFor(view, record);
+    view._recordLinkOwner = record ? { dialog, link } : null;
     const prefix = recordLinkPrefix(view), params = recordLinkParams().filter(param => !param.startsWith(prefix));
-    if (record) params.push(recordLinkFor(view, record));
+    if (record) params.push(link);
     const hash = params.length ? "#" + params.join("&") : "";
     if ((global.location.hash || "") === hash) return;
     try { global.history.replaceState(global.history.state, "", hash || global.location.pathname + global.location.search); }
@@ -130,19 +133,22 @@
       // A sandboxed page keeps its address.
     }
     // What the address now names is open already: reading it again does nothing.
-    view._recordLinkOpen = record ? (recordLinkRead(view) || []).join("/") : null;
+    view._recordLinkOpen = record ? recordLinkPath(recordLinkRead(view) || []) : null;
   }
   RECORD_IMPL.start = view => {
     if (view._recordStarted || !view.view.record?.deepLink) return;
     view._recordStarted = true;
     const read = () => {
-      const ids = recordLinkRead(view), key = ids?.join("/") ?? null;
-      if (!ids) { view._recordLinkOpen = null; return; }
-      if (key === view._recordLinkOpen) return;
+      const ids = recordLinkRead(view), key = ids ? recordLinkPath(ids) : null, owner = view._recordLinkOwner?.dialog;
+      if (!ids) { view._recordLinkOpen = null; view._recordLinkOwner = null; return; }
+      if (key === view._recordLinkOpen && (!owner || owner.open || owner._replaced)) return;
+      // Reading a new address retires the previous drawer's cleanup before opening can await a source.
+      view._recordLinkOwner = null;
       view._recordLinkOpen = key;
       RECORD_IMPL.open(view, ids[ids.length - 1], { path: ids }).catch(error => view.emit("error", { error }));
     };
     global.addEventListener("hashchange", read, { signal: view.lifetime.signal });
+    view.lifetime.signal.addEventListener("abort", () => { view._recordLinkOwner = null; view._recordLinkOpen = null; }, { once: true });
     Promise.resolve(view.ready).then(read, () => {});
   };
 
@@ -167,5 +173,15 @@
     dialog.addEventListener("keydown", event => {
       if (event.altKey && event.key === "ArrowLeft" && state.stack.length) { event.preventDefault(); recordBack(view, dialog); }
     });
-    dialog.addEventListener("close", () => { if (!dialog._replaced && !view.destroyed) { recordLinkWrite(view, null); view._recordLinkOpen = null; } }, { once: true });
+    dialog.addEventListener("close", () => {
+      if (view.destroyed) return;
+      const owner = view._recordLinkOwner;
+      if (owner?.dialog !== dialog) return;
+      // Replacement retains this view's address, but no longer retains its retired drawer.
+      if (dialog._replaced) { view._recordLinkOwner = null; return; }
+      const ids = recordLinkRead(view);
+      // A delayed native close removes only the address that this drawer still owns, never a newer intent.
+      if (ids && owner.link === recordLinkPrefix(view) + recordLinkPath(ids)) recordLinkWrite(view, null);
+      view._recordLinkOwner = null; view._recordLinkOpen = null;
+    }, { once: true });
   };

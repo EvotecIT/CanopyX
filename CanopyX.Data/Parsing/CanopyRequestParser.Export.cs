@@ -102,16 +102,17 @@ public static partial class CanopyRequestParser {
                 var id = item.ValueKind == JsonValueKind.String ? item.GetString()! : item.ValueKind == JsonValueKind.Object ? RequireString(item, "id") :
                     throw new CanopyRequestException(CanopyRequestError.InvalidExport, "An export column is an identity or an object with an id.");
                 var column = schema.GetColumn(id);
+                if (!column.Exportable) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "The column cannot be exported.");
                 if (!seen.Add(column.Id)) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "Export columns must be unique.");
                 columns.Add(column);
             }
         }
-        if (columns.Count == 0) foreach (var column in schema.Columns) if (!column.Hidden) columns.Add(column);
+        if (columns.Count == 0) foreach (var column in schema.Columns) if (!column.Hidden && column.Exportable) columns.Add(column);
         if (columns.Count == 0) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "An export needs at least one column.");
         return columns;
     }
 
-    /// <summary>Keeps letters, digits, spaces, dots, dashes and underscores; anything else becomes an underscore.</summary>
+    /// <summary>Keeps letters, digits, spaces, dots, dashes and underscores, and prefixes reserved Windows device names.</summary>
     internal static string SafeFileName(string? name, string fallback) {
         var source = string.IsNullOrWhiteSpace(name) ? fallback : name!;
         var builder = new StringBuilder(Math.Min(source.Length, 100));
@@ -120,8 +121,19 @@ public static partial class CanopyRequestParser {
             builder.Append(unit < 128 && (char.IsLetterOrDigit(unit) || unit == ' ' || unit == '-' || unit == '_' || unit == '.') ? unit : '_');
         }
         var text = builder.ToString().Trim().TrimEnd('.').TrimStart('.');
-        return text.Length == 0 ? "export" : text;
+        if (text.Length == 0) return "export";
+        // Windows reserves the device stem even when one or more file extensions follow it.
+        var dot = text.IndexOf('.');
+        var stem = (dot < 0 ? text : text.Substring(0, dot)).TrimEnd(' ');
+        if (IsWindowsDeviceName(stem)) text = "_" + text.Substring(0, Math.Min(text.Length, 99)).TrimEnd('.', ' ');
+        return text;
     }
+
+    private static bool IsWindowsDeviceName(string stem) =>
+        stem.Equals("CON", StringComparison.OrdinalIgnoreCase) || stem.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+        stem.Equals("AUX", StringComparison.OrdinalIgnoreCase) || stem.Equals("NUL", StringComparison.OrdinalIgnoreCase) ||
+        stem.Length == 4 && stem[3] >= '1' && stem[3] <= '9' &&
+        (stem.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || stem.StartsWith("LPT", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Only cultures the platform lists are accepted, so client text cannot grow the runtime's culture cache.</summary>
     private static readonly Lazy<Dictionary<string, string>> KnownCultures = new Lazy<Dictionary<string, string>>(() => {

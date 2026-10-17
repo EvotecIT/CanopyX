@@ -1,6 +1,7 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridNoExportColumns: "Nessuna colonna visibile consente l’esportazione.",
   searchPlaceholder: "Cerca",
   searchResults: "Risultati della ricerca",
   searchResultCount: "Risultati: {count}",

@@ -15,7 +15,8 @@
   }
   // A view kind's parts by name, each with the context its code installs into: definePart(TreeGrid, "tree-tools", ...).
   function definePart(View, name, label, context) {
-    const parts = Object.hasOwn(View.prototype, "parts") ? View.prototype.parts : View.prototype.parts = {};
+    // Interactive wrappers inherit the same view kind. A later lazy registration must keep that kind's existing parts.
+    const parts = View.prototype.parts ||= {};
     return parts[name] = { name, label, context, parts };
   }
   // Build/Sync-Assets.ps1 refuses requires that name no part of the same view kind or that form a cycle.

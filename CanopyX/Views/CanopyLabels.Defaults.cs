@@ -7,6 +7,7 @@ namespace CanopyX;
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",
         [nameof(SearchResultCount)] = "{count} results",

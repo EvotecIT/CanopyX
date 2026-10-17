@@ -352,7 +352,7 @@ test.describe("live data appearance and accessibility", () => {
 });
 
 test.describe("live data performance", () => {
-  test("a hundred updates on 100,000 rows apply and paint within a frame budget", async ({ page }) => {
+  test("a hundred updates on 100,000 rows apply and paint within a frame budget", { tag: "@benchmark" }, async ({ page }) => {
     const { script, style } = runtimeAssets("grid");
     await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: "<!DOCTYPE html><html lang=en><head><meta charset=utf-8><style>" + style +
       "</style><script>" + script + "</script></head><body class=cx-page><div id=host class=cx-host style='height:600px' data-cx-theme=light></div></body></html>" }));

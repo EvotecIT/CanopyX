@@ -41,7 +41,7 @@ async function measure(browser, body, setup) {
   return median(samples);
 }
 
-test("first rows paint within budget on a cold load", async ({ browser }) => {
+test("first rows paint within budget on a cold load", { tag: "@benchmark" }, async ({ browser }) => {
   const samples = [];
   for (let attempt = 0; attempt < 3; attempt++) {
     const page = await browser.newPage();
@@ -56,20 +56,20 @@ test("first rows paint within budget on a cold load", async ({ browser }) => {
   expect(ms).toBeLessThanOrEqual(FIRST_ROWS_MS);
 });
 
-test("expanding a folder, including its page load, stays within budget", async ({ browser }) => {
+test("expanding a folder, including its page load, stays within budget", { tag: "@benchmark" }, async ({ browser }) => {
   const ms = await measure(browser, "await api.expandPath(['share-b'], { expandLast: true, select: false, focus: false });");
   console.log("expand: " + ms.toFixed(1) + " ms");
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
 });
 
-test("a page of children behind show more stays within budget", async ({ browser }) => {
+test("a page of children behind show more stays within budget", { tag: "@benchmark" }, async ({ browser }) => {
   const ms = await measure(browser, "await api.loadMore('share-a/d0/p0');",
     "await api.expandPath(['share-a', 'share-a/d0', 'share-a/d0/p0'], { expandLast: true, select: false, focus: false });");
   console.log("show more: " + ms.toFixed(1) + " ms");
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
 });
 
-test("search to an expanded hit stays within budget", async ({ browser }) => {
+test("search to an expanded hit stays within budget", { tag: "@benchmark" }, async ({ browser }) => {
   const ms = await measure(browser, "const result = await api.search('quarterly review'); await api.expandPath(result.hits[result.hits.length - 1].path);");
   console.log("search to expanded hit: " + ms.toFixed(1) + " ms");
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
@@ -110,7 +110,7 @@ test("a search hit loads the pages on its path in one round and renders the path
   expect(result.renders).toBe(1);
 });
 
-test("a repeated search answers from the loaded index within budget", async ({ browser }) => {
+test("a repeated search answers from the loaded index within budget", { tag: "@benchmark" }, async ({ browser }) => {
   const ms = await measure(browser, "await api.search('quarterly review');", "await api.search('quarterly review');");
   console.log("repeated search: " + ms.toFixed(1) + " ms");
   expect(ms).toBeLessThanOrEqual(INTERACTION_MS);
@@ -150,22 +150,31 @@ test("scrolling a long expanded list never shows a blank viewport", async ({ pag
     const probes = [0.3, 0.6, 0.9].map((y) => [Math.round(box.left + 80), Math.round(box.top + box.height * y)]);
     window.__blank = 0;
     window.__samples = 0;
-    grid.addEventListener("scroll", () => requestAnimationFrame(() => {
+    window.__probeViewport = () => {
       window.__samples++;
       // A point counts as painted only if it lands on a row that shows a node with a label, not an empty recycled row.
       if (probes.some(([x, y]) => { const hit = document.elementFromPoint(x, y); const r = hit && hit.closest(".cx-row[data-cx-id]"); return !(r && r.textContent.trim()); })) {
         window.__blank++;
       }
-    }), { passive: true });
+    };
+    grid.addEventListener("scroll", () => requestAnimationFrame(window.__probeViewport), { passive: true });
   });
   const box = await page.locator(".cx-grid").boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  let direction = 1;
   for (let i = 0; i < 60; i++) {
-    await page.mouse.wheel(0, 500);
-    await page.waitForTimeout(16);
+    const before = await page.evaluate(() => {
+      const grid = document.querySelector(".cx-grid");
+      return { samples: window.__samples, top: grid.scrollTop, end: grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 1 };
+    });
+    if (direction > 0 && before.end) direction = -1;
+    else if (direction < 0 && before.top <= 0) direction = 1;
+    await page.mouse.wheel(0, direction * 500);
+    // The scroll listener probes in the frame after the runtime queued its row render. Await that observation,
+    // rather than requiring a minimum number of frames during a fixed wall-clock interval.
+    await page.waitForFunction(samples => window.__samples > samples, before.samples);
   }
   const result = await page.evaluate(() => ({ blank: window.__blank, samples: window.__samples }));
   console.log("scroll: " + result.blank + " blank of " + result.samples + " samples");
-  expect(result.samples).toBeGreaterThan(20);
   expect(result.blank).toBe(0);
 });

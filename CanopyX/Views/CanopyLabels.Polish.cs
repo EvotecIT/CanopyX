@@ -4,6 +4,7 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels Polish() => new CanopyLabels {
+        GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
         SearchPlaceholder = "Szukaj",
         SearchResults = "Wyniki wyszukiwania",
         SearchResultCount = "Wyniki: {count}",

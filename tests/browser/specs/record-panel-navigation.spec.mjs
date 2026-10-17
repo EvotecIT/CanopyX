@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { api, definition, open, drawer } from "./record-panel-fixtures.mjs";
+import { viewPage, nextFrames } from "./support.mjs";
 
 const title = page => drawer(page).locator("h4");
 
@@ -126,3 +127,118 @@ test("a configured deep link key and a record outside the current filter", async
   await expect(title(page)).toHaveText("host5.example.test");
   await expect(drawer(page).getByRole("button", { name: "Next record" })).toBeDisabled();
 });
+
+for (const kind of ["grid", "tree"]) {
+  const linkedView = () => {
+    const view = definition(); view.record.deepLink = { key: "cert" };
+    if (kind === "tree") {
+      view.type = "view";
+      view.roots = [{ id: "issuer", label: "Issuer", expanded: true,
+        children: view.rows.map(row => ({ ...row, label: row.cells.cn.value })) }];
+      delete view.rows;
+    }
+    return view;
+  };
+  const address = id => "other=1&cert=another-view:keep&cert=certificates:" + (kind === "tree" ? "issuer/" : "") + id;
+
+  test(`${kind} closing a record preserves a newer deep link from the host`, async ({ page }) => {
+    await open(page, linkedView(), "#" + address("c004"));
+    await expect(title(page)).toHaveText("host4.example.test");
+    // The native close event is queued. A normal bubbling host handler can accept a query and navigate first.
+    await page.evaluate(({ kind, next }) => {
+      document.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        const api = document.querySelector("[data-canopyx-host]").canopyx;
+        window.recordTransition = Promise.resolve(kind === "grid" ? api.setQuery({ search: "host1.example" }) : undefined)
+          .then(() => { location.hash = next; });
+      }, { once: true });
+    }, { kind, next: address("c005") });
+    await page.keyboard.press("Escape");
+    await page.evaluate(() => window.recordTransition);
+    await expect(title(page)).toHaveText("host5.example.test");
+    await expect.poll(() => new URL(page.url()).hash).toBe("#" + address("c005"));
+    if (kind === "grid") await expect(drawer(page).getByRole("button", { name: "Next record" })).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect.poll(() => new URL(page.url()).hash).toBe("#other=1&cert=another-view:keep");
+  });
+
+  test(`${kind} a queued close does not clear a public same-record reopening`, async ({ page }) => {
+    await open(page, linkedView(), "#" + address("c004"));
+    await expect(title(page)).toHaveText("host4.example.test");
+    await page.evaluate(() => {
+      window.closedRecord = document.querySelector("dialog.cx-drawer");
+      window.closedRecordEvent = new Promise(resolve => window.closedRecord.addEventListener("close", resolve, { once: true }));
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") window.recordTransition = document.querySelector("[data-canopyx-host]").canopyx.openRecord("c004");
+      }, { once: true });
+    });
+    await page.keyboard.press("Escape");
+    await page.evaluate(async () => { await window.recordTransition; await window.closedRecordEvent; });
+    await expect(title(page)).toHaveText("host4.example.test");
+    expect(await drawer(page).evaluate(dialog => dialog.open && dialog !== window.closedRecord)).toBe(true);
+    await expect.poll(() => new URL(page.url()).hash).toBe("#" + address("c004"));
+    // A failed public open owns no replacement address: the old closed panel's link still clears normally.
+    await page.evaluate(() => {
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") window.recordTransition = document.querySelector("[data-canopyx-host]").canopyx.openRecord("missing")
+          .then(() => "opened", error => error.message);
+      }, { once: true });
+    });
+    await page.keyboard.press("Escape");
+    expect(await page.evaluate(() => window.recordTransition)).toContain("not available");
+    await expect.poll(() => new URL(page.url()).hash).toBe("#other=1&cert=another-view:keep");
+    // A genuine later hashchange can name that same record again after its previous drawer closes.
+    await page.evaluate(hash => { location.hash = hash; }, address("c004"));
+    await expect(title(page)).toHaveText("host4.example.test");
+  });
+}
+
+test("tree deep link paths distinguish slashes inside identifiers from path separators", async ({ page }) => {
+  const view = definition(); view.type = "view"; view.record.deepLink = { key: "cert" }; delete view.rows;
+  view.roots = [
+    { id: "a/b", label: "First issuer", children: [{ id: "c", label: "First certificate", cells: { cn: "First certificate" } }] },
+    { id: "a", label: "Second issuer", children: [{ id: "b/c", label: "Second certificate", cells: { cn: "Second certificate" } }] }
+  ];
+  await open(page, view, "#cert=certificates:a%2Fb/c");
+  await expect(title(page)).toHaveText("First certificate");
+  await page.evaluate(() => { location.hash = "cert=certificates:a/b%2Fc"; });
+  await expect(title(page)).toHaveText("Second certificate");
+  expect(new URL(page.url()).hash).toBe("#cert=certificates:a/b%2Fc");
+});
+
+for (const [from, to] of [["grid", "grid"], ["tree", "tree"], ["grid", "tree"], ["tree", "grid"]]) {
+  test(`${from} to ${to} related navigation stays retired when an unrelated URL field changes`, async ({ page }) => {
+    const asKind = (view, kind) => {
+      if (kind === "tree") { view.type = "view"; view.roots = view.rows.map(row => ({ ...row, label: row.cells.cn.value })); delete view.rows; }
+      return view;
+    };
+    const first = asKind(definition(), from), second = asKind(definition({ id: "other", label: "Other inventory" }), to);
+    first[from === "tree" ? "roots" : "rows"][1].cells.owner = { value: "Other inventory", ref: { view: "other", id: "c002" } };
+    const body = html => html.slice(html.lastIndexOf('<body class="cx-page">') + '<body class="cx-page">'.length, html.lastIndexOf("</body>"));
+    // The grid runtime also mounts trees; both public views share the canonical record part.
+    const base = viewPage(definition()), html = base.replace(body(base), body(viewPage(first)) + body(viewPage(second)));
+    await page.route("http://canopyx.test/two.html", route => route.fulfill({ contentType: "text/html", body: html }));
+    await page.goto("http://canopyx.test/two.html");
+    await page.waitForFunction(() => document.querySelectorAll("[data-cx-ready]").length === 2);
+    await page.evaluate(async () => {
+      for (const host of document.querySelectorAll("[data-canopyx-host]")) await host.canopyx.ready;
+      await document.querySelector("[data-canopyx-host]").canopyx.openRecord("c001");
+      const dialog = document.querySelector("dialog.cx-drawer");
+      window.firstRecordClosed = new Promise(resolve => dialog.addEventListener("close", resolve, { once: true }));
+    });
+    await drawer(page).getByRole("button", { name: "Other inventory", exact: true }).click();
+    await expect(title(page)).toHaveText("host2.example.test");
+    await page.evaluate(() => window.firstRecordClosed);
+    await page.evaluate(() => {
+      window.fragmentChanged = new Promise(resolve => addEventListener("hashchange", resolve, { once: true }));
+      location.hash += "&hostTab=details";
+    });
+    await page.evaluate(() => window.fragmentChanged);
+    await nextFrames(page);
+    await expect(drawer(page)).toHaveCount(1);
+    await expect(drawer(page)).toHaveAttribute("data-cx-view", "other");
+    await expect(title(page)).toHaveText("host2.example.test");
+    await expect(drawer(page).getByRole("button", { name: "Back to host1.example.test" })).toBeVisible();
+    expect(new URL(page.url()).hash).toBe("#record=certificates:c001&record=other:c002&hostTab=details");
+  });
+}

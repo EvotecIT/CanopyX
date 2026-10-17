@@ -28,7 +28,7 @@
         for (const row of [...change.add, ...change.update]) queued.add(row.id);
         change.remove.forEach(id => queued.add(id));
       }
-      return gridFreeze({ orderChanged: !!(this.liveOrder?.dirty || this.livePending?.pages || this.liveMoved), newData: !!this.livePending?.cursor,
+      return gridFreeze({ orderChanged: !!(this.liveOrder?.dirty || this.livePending?.pages || this.livePending?.refresh || this.liveMoved), newData: !!this.livePending?.cursor,
         pending: queued.size, polling: !!this.livePoller?.active, revision: this.snapshot?.revision ?? null });
     },
     /** Runs a live task after the ones before it, once the accepted result is settled. */

@@ -23,7 +23,7 @@ grid.getExternalFilters();                             // [{ source, field, valu
 | `field` | A declared column; it may be hidden. On a tree, the first column's id matches the node label unless the node has a cell of that id. |
 | `values` | 1 to 1000 raw values: numbers for number columns, ISO dates with a time zone for date columns, strings or booleans otherwise. One value filters with `eq`, more with `in`. |
 | `range` | `[from, to]` on a number or date column, inclusive; either end may be `null`. It filters with `ge` and `le`. |
-| `label` | What the chip says instead of the values, for example `"Q3"` for a date range. |
+| `label` | What the chip says instead of the values, for example `"Q3"` for a date range. A labelled range's tooltip and accessible name also include its exact raw bounds. |
 | `sourceLabel` | The name the chip and the announcements use, for example `"Sites chart"`. Defaults to the source id. |
 | `persist` | Keep the filter in the state saved views and the remembered state store. Off by default: a link describes the page, not the reader's view. |
 

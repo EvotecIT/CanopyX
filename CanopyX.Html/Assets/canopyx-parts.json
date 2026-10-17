@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "b1e9e2b43b9e75de",
+      "version": "9781c04a2f055f6a",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "6875972ae0e45581",
+      "version": "116683dc8a0ae28a",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "6a00173784fba79f",
+      "version": "83554049dc50b9d3",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -77,7 +77,7 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "version": "a7953f9e20a4d24b",
+      "version": "31162b1ffa622bf8",
       "script": "canopyx-enhance.js",
       "runtimes": [
         "grid"
@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "8a498f7f0ddcf51f",
+      "version": "39194d417b23eba9",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "415e833f65531ab1",
+      "version": "01965774e28f70bf",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "1fb00f2b2ea31c56",
+      "version": "e99a39e7cccc57b1",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "d3ac680d3d985e62",
+      "version": "6f9f3c51b0ad2a0e",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -197,7 +197,7 @@
     {
       "name": "format-editor",
       "label": "formatting rule editor",
-      "version": "cea74bdba85525bb",
+      "version": "24f176a39c02944a",
       "script": "canopyx-format-editor.js",
       "style": "canopyx-format-editor.css",
       "runtimes": [
@@ -217,7 +217,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "485eec306ca57996",
+      "version": "3f7066f26d171fba",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "55a4f786bf384529",
+      "version": "96c8783d1a1f2f7f",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -317,7 +317,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "1fdd61b82edb9d9d",
+      "version": "2fa02b9178c6c5df",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -333,7 +333,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "d2dd03704d761dd3",
+      "version": "bcc06276c7933af6",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

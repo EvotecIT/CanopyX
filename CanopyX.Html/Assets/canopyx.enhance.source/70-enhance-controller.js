@@ -5,10 +5,12 @@
   function enhanceEvents(host, initial) {
     const handlers = new Map(), listening = new Set(), lifetime = new AbortController();
     let controller = null, api = null, previous = null, initialized = false;
+    const call = (handler, detail, event) => {
+      try { Promise.resolve(handler.call(controller, detail, controller, event)).catch(error => global.console?.error(error)); }
+      catch (error) { global.console?.error(error); }
+    };
     const emit = (name, detail, event) => {
-      for (const handler of [...(handlers.get(name) || [])]) {
-        try { handler.call(controller, detail, controller, event); } catch (error) { global.console?.error(error); }
-      }
+      for (const handler of [...(handlers.get(name) || [])]) call(handler, detail, event);
     };
     const on = (name, handler) => {
       if (typeof name !== "string" || !/^[A-Za-z][\w-]*$/.test(name) || typeof handler !== "function") throw new Error("CanopyX: on takes an event name and a function.");
@@ -17,7 +19,9 @@
         listening.add(name);
         host.addEventListener("canopyx:" + name, event => emit(name, event.detail, event), { signal: lifetime.signal });
       }
-      if (name === "init" && initialized) Promise.resolve().then(() => handler.call(controller, { query: api.getQuery() }, controller));
+      if (name === "init" && initialized) Promise.resolve().then(() => {
+        if (!lifetime.signal.aborted && handlers.get(name)?.has(handler)) call(handler, { query: api.getQuery() });
+      });
     };
     host.addEventListener("canopyx:query", event => {
       if (!api) return;
@@ -84,11 +88,14 @@
       setData(data) {
         local("setData");
         const built = enhanceRecordRows(data, columns, settings.rowId);
-        Object.assign(store, { rows: built.rows, records: built.records, markup: null, tableRecord: null });
+        // Explicit data replaces the pending URL source; refresh aborts that query and late answers no longer own rows.
+        Object.assign(store, { rows: built.rows, records: built.records, markup: null, tableRecord: null, loaded: true, loading: null });
         return refresh();
       },
       addRows(data) {
         local("addRows");
+        if (!Array.isArray(data)) throw new Error("CanopyX: data is an array of records.");
+        if (store.load && !store.loaded) return api.ready.then(() => controller.addRows(data));
         const built = enhanceRecordRows(data, columns, settings.rowId, store.rows.length, new Set(store.rows.map(row => row.id)));
         store.rows = store.rows.concat(built.rows); built.records.forEach((record, id) => store.records.set(id, record));
         return refresh();
@@ -96,6 +103,7 @@
       removeRows(ids) {
         local("removeRows");
         if (!Array.isArray(ids)) throw new Error("CanopyX: removeRows takes an array of row ids.");
+        if (store.load && !store.loaded) return api.ready.then(() => controller.removeRows(ids));
         const gone = new Set(ids);
         store.rows = store.rows.filter(row => !gone.has(row.id));
         gone.forEach(id => { store.records.delete(id); store.markup?.delete(id); });

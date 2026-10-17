@@ -18,4 +18,6 @@ The group serves `POST query`, `GET query`, `POST facet`, `POST summary`, `POST 
 With a `CanopyRecordMap<T>` (or `options.Records`) it serves `POST record`, the record panel's details on demand, looked up
 through the same query callback.
 `CanopyRemoteScript.Element(map.Schema, "/api/hosts")` writes the browser script that connects the grid to them.
+Under a nonce-based Content Security Policy, use `CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce)`
+with the same response nonce as the page.
 See `docs/remote-dotnet.md` in the repository.

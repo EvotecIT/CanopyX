@@ -33,9 +33,15 @@
     }
     const { group, decimal } = crSeparators.get(lang || ""), escape = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     // Spaces and apostrophes only ever group digits, in every language, so they go first.
-    let value = text.trim().replace(/^\((.*)\)$/, "-$1").replace(/[\s\u00a0\u202f'\u2019]/g, "").replace(/^[^\d+\-.,]+|[^\d.,]+$/g, "");
-    const negative = value[0] === "-";
-    value = value.replace(/^[-+]/, "");
+    const affixes = /^[^\d+\-.,()]+|[^\d+\-.,()]+$/g;
+    let value = text.trim().replace(/\u2212/g, "-").replace(/[\s\u00a0\u202f'\u2019]/g, "").replace(affixes, "");
+    const accounting = /^\(.*\)$/.test(value);
+    if (accounting) value = value.slice(1, -1).replace(affixes, "");
+    // Currency or units may surround the sign or sit inside accounting parentheses. Keep extra signs/parentheses so
+    // malformed amounts fail the numeric grammar instead of silently losing their sign.
+    const negative = accounting || value[0] === "-";
+    if (accounting && /^[-+]/.test(value)) return undefined;
+    value = value.replace(/^[-+]/, "").replace(affixes, "");
     const groups = /[\s\u2019']/.test(group) ? "(?!)" : escape(group), local = new RegExp("^\\d{1,3}(" + groups + "\\d{3})*(" + escape(decimal) + "\\d+)?$|^\\d+(" + escape(decimal) + "\\d+)?$");
     let number = NaN;
     if (local.test(value)) number = Number(value.replace(new RegExp(groups, "g"), "").replace(decimal, "."));
@@ -52,11 +58,18 @@
   function crDateValue(text, grid) {
     let value = text.trim();
     for (const affix of [...grid.fmt.utc, ...grid.fmt.other]) if (affix.trim()) value = value.split(affix.trim()).join("").trim();
-    if (/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) && Number.isFinite(Date.parse(value))) return new Date(value).toISOString();
-    let parts = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(value), year, month, day;
+    const zoned = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d)(?:\.\d+)?)?(?:Z|[+-]\d\d:\d\d)$/.exec(value);
+    if (zoned) {
+      // Date.parse accepts calendar rollover. Check the written wall time before applying its explicit offset.
+      const parts = zoned.slice(1).map(part => Number(part || 0));
+      if (!gridMomentFromParts(...parts, false)) return undefined;
+      const moment = Date.parse(value);
+      return Number.isFinite(moment) ? new Date(moment).toISOString() : undefined;
+    }
+    let parts = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/.exec(value), year, month, day;
     if (parts) [, year, month, day] = parts.map(Number);
     else {
-      parts = /^(\d{1,4})[./\-\s]+(\d{1,2})[./\-\s]+(\d{1,4})\.?(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(value);
+      parts = /^(\d{1,4})[./\-\s]+(\d{1,2})[./\-\s]+(\d{1,4})\.?(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/.exec(value);
       if (!parts) return undefined;
       const order = crDateOrder(grid.lang), read = {};
       order.forEach((name, index) => read[name] = Number(parts[index + 1]));
@@ -64,15 +77,20 @@
       if (year < 100) year += 2000;
     }
     const [hours = 0, minutes = 0, seconds = 0] = parts.slice(4, 7).map(item => item === undefined ? 0 : Number(item));
-    const date = grid.local ? new Date(year, month - 1, day, hours, minutes, seconds) : new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
-    const check = grid.local ? [date.getFullYear(), date.getMonth() + 1, date.getDate()] : [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
-    return check[0] === year && check[1] === month && check[2] === day && hours < 24 && minutes < 60 && seconds < 60 ? date.toISOString() : undefined;
+    const date = gridMomentFromParts(year, month, day, hours, minutes, seconds, grid.local);
+    // Match native editors: validate the written wall time first, then retain its millisecond fraction.
+    if (date) date.setTime(date.getTime() + Number((parts[7] || "").padEnd(3, "0")));
+    return date ? date.toISOString() : undefined;
   }
 
   /** A pasted text as a value of the column: undefined when it is not one. */
   function crValue(grid, column, text, previous) {
     const spec = grid.edit?.specs.get(column.id), trimmed = text.trim();
-    if (!trimmed) return column.kind === "text" && spec?.type !== "toggle" && typeof previous !== "boolean" ? "" : null;
+    if (!trimmed) return column.kind === "text" && !["toggle", "select"].includes(spec?.type) && typeof previous !== "boolean" ? "" : null;
+    const option = spec?.options?.find(item => foldText(item.label) === foldText(trimmed) || foldText(String(item.value)) === foldText(trimmed));
+    // A select's labels describe its raw values, including numeric, date and boolean choices. Other editors may accept
+    // free-form values, but a paste into a select must stay in its configured list, just like choosing in the editor.
+    if (spec?.type === "select") return option?.value;
     if (column.kind === "number") return crNumber(trimmed, grid.lang);
     if (column.kind === "datetime") return crDateValue(trimmed, grid);
     if (spec?.type === "toggle" || typeof previous === "boolean") {
@@ -81,7 +99,6 @@
       if (["false", "0", "no", foldText(grid.labels.no)].includes(folded)) return false;
       return undefined;
     }
-    const option = spec?.options?.find(item => foldText(item.label) === foldText(trimmed) || foldText(String(item.value)) === foldText(trimmed));
     return option ? option.value : text;
   }
 

@@ -97,7 +97,14 @@
     const specs0 = read ? enhanceTableColumns(read, settings.columns) : settings.columns;
     // Without columns or declared types, a URL source is read first so its records can define them.
     const typed = Array.isArray(specs0) && specs0.every(spec => spec && spec.type !== undefined && spec.type !== "auto");
-    if (urlSource && !server && records === undefined && !typed) records = enhanceRecordsOf(await enhanceRequest(urlSource, urlSource.url, enhanceExtra(urlSource)), urlSource.dataSrc);
+    if (urlSource && !server && records === undefined && !typed) {
+      const timeout = settings.requestTimeoutMs === undefined ? 30000 : settings.requestTimeoutMs;
+      if (!Number.isInteger(timeout) || timeout < 1 || timeout > 2147483647) throw new Error("CanopyX: invalid grid cache or request timeout.");
+      // Inference precedes the grid: its preparation has the same bounded request owner, without a second timer policy.
+      const preparation = { lifetime: new AbortController(), destroyed: false, requestTimeoutMs: timeout };
+      records = enhanceRecordsOf(await DataGrid.prototype.runGridHook.call(preparation,
+        signal => enhanceRequest(urlSource, urlSource.url, enhanceExtra(urlSource), signal)), urlSource.dataSrc);
+    }
     const columns = enhanceColumns(specs0 || enhanceRecordSpecs(records), settings.sortable !== false);
     if (server || urlSource && records === undefined) columns.forEach(column => { column.kind ||= "text"; column.grid.kind = column.kind; });
     const store = { rows: [], version: 0, loading: null, records: null, markup: null, grid: null };
@@ -109,13 +116,13 @@
     const paged = settings.paging !== false, pageLength = settings.pageLength === undefined ? 25 : settings.pageLength;
     const searchColumns = columns.filter(column => column.searchable).map(column => column.grid.id);
     const view = { protocol: PROTOCOL, type: "grid", id, label, columns: columns.map(column => column.grid), selection: settings.selection || "none",
-      search: settings.search !== false,
+      search: settings.search !== false && searchColumns.length > 0,
       // A server answers one page per request; browser-side rows are read in windows of at least 100.
       pageSize: Math.min(10000, Math.max(server && paged ? 1 : 100, Number.isInteger(pageLength) ? pageLength : 100)),
       source: { kind: server ? "host" : "inline" } };
     if (!server) view.rows = [];
     if (paged) Object.assign(view, { presentation: "paged", pageLength, pager: enhancePager(settings) });
-    if (searchColumns.length < columns.length) view.searchColumns = searchColumns;
+    if (searchColumns.length && searchColumns.length < columns.length) view.searchColumns = searchColumns;
     for (const name of ["noun", "density", "zebra"]) if (settings[name] !== undefined) view[name] = settings[name];
     view.query = { sort: enhanceOrder(settings.order, columns), search: settings.searchText === undefined ? "" : String(settings.searchText) };
     if (settings.searchMode !== undefined) view.query.searchMode = settings.searchMode;
@@ -134,17 +141,9 @@
         if (cell) { cellElement.append(...Array.from(cell.childNodes, node => node.cloneNode(true))); return true; }
       }])) : null;
     if (markup || settings.renderers) grid.renderers = { ...markup, ...settings.renderers };
-    const rowSource = server ? null : enhanceRowSource(store, view, GRID_REPORTING.compare?.(view) || gridCompare);
+    const rowSource = server ? null : enhanceRowSource(store, view, GRID_REPORTING.compare?.(view) || gridCompare, view.searchColumns || searchColumns);
     grid.source = server ? enhanceServerSource(urlSource, view, columns, settings.rowId, store) : rowSource;
-    if (urlSource && !server && records === undefined) {
-      store.load = () => store.loading = enhanceRequest(urlSource, urlSource.url, enhanceExtra(urlSource)).then(json => {
-        const loaded = enhanceRecordRows(enhanceRecordsOf(json, urlSource.dataSrc), columns, settings.rowId);
-        Object.assign(store, loaded, { loading: null, failed: false }); store.version++;
-        if (store.grid) store.grid.view.rows = store.rows;
-      }, error => { store.loading = null; store.failed = true; store.error = error; throw error; });
-      // The grid's first query takes up the outcome; a failure before it is not an unhandled rejection.
-      store.load().catch(() => {});
-    }
+    if (urlSource && !server && records === undefined) enhanceReadOnce(store, urlSource, columns, settings.rowId);
     const state = enhanceStateSettings(settings.stateSave, { ...view, timeZone: settings.view && settings.view.timeZone }), envelope = state ? await enhanceLoadState(state) : null;
     ENHANCE_SETUP.set(grid, created => {
       store.grid = created;

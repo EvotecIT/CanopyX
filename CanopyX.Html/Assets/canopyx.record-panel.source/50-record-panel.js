@@ -209,7 +209,7 @@
       note.appendChild(recordButton(ctx.labels.recordRetry, () => { view._recordPayloads.delete(recordCacheKey(view, record.id)); ctx.repaint(); }, "cx-record-retry"));
       panel.prepend(note);
     }
-    recordLinkWrite(view, record);
+    recordLinkWrite(view, record, dialog);
   };
 
   // The pinned summary under the title: the status and up to six facts the view's header names, when they have values.

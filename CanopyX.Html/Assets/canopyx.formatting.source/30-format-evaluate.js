@@ -19,7 +19,10 @@
         stats.set(id, min <= max ? { min, max } : null);
       }
     }
-    if (grid.formatStatsKey !== undefined && wanted.size) grid.formatVersion++;
+    if (grid.formatStatsKey !== undefined && wanted.size) {
+      grid.formatVersion++;
+      if (grid.recordDrawer) DataGrid.refreshDrawerHooks(grid, grid.recordDrawer);
+    }
     grid.formatStatsKey = key; grid.formatStatsCache = stats;
     return stats;
   }

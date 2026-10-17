@@ -101,8 +101,11 @@ test("a new rule is built from a condition, a target and a style, and saved into
   expect(added).toMatchObject({ id: "rule-1", label: "Busy memory", column: "memory", style: { tone: "danger", icon: "up" },
     when: { operator: "and", filters: [{ column: "memory", operator: "gt", values: [80] }], groups: [] } });
   await page.keyboard.press("Escape");
-  const memory = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].map(row => [Number(row.children[3].textContent.replace(/\D/g, "")), row.children[3].classList.contains("cx-fmt-fill")]));
-  expect(memory.filter(([value, formatted]) => (value > 80) !== formatted)).toEqual([]);
+  // Saving schedules a repaint. Wait for the rendered rule, retaining both matching and nonmatching row checks.
+  await expect.poll(async () => {
+    const memory = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].map(row => [Number(row.children[3].textContent.replace(/\D/g, "")), row.children[3].classList.contains("cx-fmt-fill")]));
+    return { hasMatches: memory.some(([value]) => value > 80), mismatches: memory.filter(([value, formatted]) => (value > 80) !== formatted) };
+  }).toEqual({ hasMatches: true, mismatches: [] });
 });
 
 test("styles switch between highlight, data bar, colour scale and threshold bands, and extended operators edit their values", async ({ page }) => {

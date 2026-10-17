@@ -168,5 +168,10 @@ public sealed partial class CanopyRemoteHandler {
         try { CanopyRequestParser.RequireIdentifier(text, "revision"); return true; } catch (CanopyRequestException) { return false; }
     }
 
-    private void Problem(string message) => Options.WriterProblem?.Invoke(message);
+    private void Problem(string message) {
+        try { Options.WriterProblem?.Invoke(message); }
+        catch (Exception) {
+            // Diagnostics cannot replace the answer for rows the writer may already have committed.
+        }
+    }
 }

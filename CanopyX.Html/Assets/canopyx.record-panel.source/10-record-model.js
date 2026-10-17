@@ -81,6 +81,8 @@
     if (link !== undefined && link !== true && (!link || typeof link !== "object" || link.key !== undefined && !RECORD_LINK_KEY.test(link.key))) recordFail("a record deep link is true or { key }.");
     if (source !== undefined && (!source || !["inline", "host", "sidecar"].includes(source.kind) || source.kind === "sidecar" &&
         (typeof source.base !== "string" || !Number.isInteger(source.shards) || source.shards < 1 || source.shards > 65536))) recordFail("a record source is inline, host, or a sidecar with a base and 1 to 65,536 shards.");
+    if (source?.kind === "sidecar" && (!source.base || /[?#]/.test(source.base)))
+      recordFail("a record sidecar base must be a non-empty folder path without a query or fragment.");
     for (const name of ["hideEmpty", "jumpList"]) if (spec[name] !== undefined && typeof spec[name] !== "boolean") recordFail("record " + name + " is a boolean.");
     if (spec.actions !== undefined && (!spec.actions || Object.entries(spec.actions).some(([name, value]) => !["copy", "print", "export", "link"].includes(name) || typeof value !== "boolean")))
       recordFail("record actions switch copy, print, export and link on or off.");
@@ -169,6 +171,9 @@
   }
   const recordCacheKey = (view, id, revision = recordRevision(view)) => JSON.stringify([revision, id]);
   const recordEntry = (view, id) => view._recordPayloads?.get(recordCacheKey(view, id));
+  // An accepted local save changes this record independently of the cache's query/revision key.
+  // Removing the entry also detaches a late loading result; its promise never inserts itself back into the cache.
+  RECORD_IMPL.invalidate = (view, id) => { view._recordPayloads?.delete(recordCacheKey(view, id)); };
   function recordPayload(view, id, doc, revision) {
     if (doc == null) return null;
     if (typeof doc !== "object" || Array.isArray(doc) || doc.protocol !== undefined && doc.protocol !== PROTOCOL || doc.type !== undefined && doc.type !== "gridRecord" ||
@@ -178,7 +183,12 @@
       recordFail("record " + name + " are an object of ids.");
     if (doc.row !== undefined && (!doc.row || doc.row.id !== id || !doc.row.cells || typeof doc.row.cells !== "object")) recordFail("a record's row is the requested record.");
     for (const cells of [doc.cells, doc.fields]) if (cells) Object.values(cells).forEach(cell => recordCheckValue(cell));
-    if (doc.row) recordCheckRows([doc.row], 0);
+    if (doc.row) {
+      // An unloaded flat record becomes a grid row, so it crosses the same boundary as a query page or inline row.
+      // Tree nodes retain their separate cell semantics; a tree record source supplies fields for its loaded node.
+      if (view.kind === "grid") validateGridRows([doc.row], view.columns);
+      recordCheckRows([doc.row], 0);
+    }
     return JSON.parse(JSON.stringify({ cells: doc.cells || null, fields: doc.fields || null, row: doc.row || null }));
   }
   function recordFetch(view, id, extra, signal) {
@@ -193,10 +203,15 @@
             recordFail("record pack r" + shard + " is not a gridRecordPack of this view.");
           return new Map(doc.records.map(item => [item.id, item]));
         });
-        pack.catch(() => RECORD_PACKS.delete(key)); RECORD_PACKS.set(key, pack);
+        RECORD_PACKS.set(key, pack);
         if (RECORD_PACKS.size > 16) RECORD_PACKS.delete(RECORD_PACKS.keys().next().value);
       }
-      return pack.then(records => recordPayload(view, id, records.get(id) || null, revision));
+      return pack.then(records => recordPayload(view, id, records.get(id) || null, revision)).catch(error => {
+        // A malformed record is a failed pack load too: Retry must be able to read the corrected file.
+        // A late failure never retires a replacement pack, and cancellation does not invalidate accepted data.
+        if (error.name !== "AbortError" && RECORD_PACKS.get(key) === pack) RECORD_PACKS.delete(key);
+        throw error;
+      });
     }
     const request = { protocol: PROTOCOL, type: "gridRecordQuery", view: view.view.id, id,
       ...(revision != null ? { revision } : {}), ...extra };

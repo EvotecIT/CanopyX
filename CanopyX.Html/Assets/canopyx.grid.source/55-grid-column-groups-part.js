@@ -13,7 +13,7 @@
     gridFillHandle: "Drag to fill the cells below", gridCellsFilled: "Filled {count} cells", gridCellMenu: "Cell actions", gridClearCellRanges: "Clear cell selection"
   }));
   const GRID_PART_CONTEXT = () => ({ DataGrid, h, setText, fill, columnWidth, foldText, gridButton, gridIcon, gridDecorateButton,
-    cellText, cellValue, isCellObject, numberFormat, gridFreeze, requireIdentifier, loadGridFilterEditor, CELL_CONTROLS, reachable, gridExportField });
+    cellText, cellValue, isCellObject, numberFormat, gridFreeze, gridMomentFromParts, requireIdentifier, loadGridFilterEditor, CELL_CONTROLS, reachable, gridExportField });
   const GRID_COLUMN_GROUPS = definePart(DataGrid, "column-groups", "column groups", GRID_PART_CONTEXT);
   const GRID_CELL_RANGE = definePart(DataGrid, "cell-range", "cell ranges", GRID_PART_CONTEXT);
   // The API members the parts implement; createDataGrid looks them up on each call, so they switch to a part once it is in.

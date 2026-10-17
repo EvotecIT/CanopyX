@@ -8,6 +8,7 @@ public sealed class CanopyFacet {
     private string? _label;
     private int? _limit;
     private int? _bins;
+    private CanopyFacetSort? _sort;
 
     /// <summary>Creates a facet for a column.</summary>
     /// <param name="column">The column id.</param>
@@ -44,8 +45,12 @@ public sealed class CanopyFacet {
         set => _bins = value < 2 || value > 60 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A histogram has 2 to 60 bars.") : value;
     }
 
-    /// <summary>Gets or sets how a value list orders its values. Defaults to <see cref="CanopyFacetSort.Count"/>, the most frequent first.</summary>
-    public CanopyFacetSort Sort { get; set; }
+    /// <summary>Gets or sets an explicit value-list order. If unassigned, the list follows the column's declared order, or counts when no order is declared.</summary>
+    /// <remarks>The getter returns <see cref="CanopyFacetSort.Count"/> when unassigned. Assigning it explicitly requests the most frequent values first even for an ordered column.</remarks>
+    public CanopyFacetSort Sort {
+        get => _sort ?? CanopyFacetSort.Count;
+        set => _sort = value;
+    }
 
     /// <summary>Gets or sets whether the facet starts collapsed to its heading.</summary>
     public bool Collapsed { get; set; }
@@ -57,13 +62,13 @@ public sealed class CanopyFacet {
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
-        if (Kind == CanopyFacetKind.Auto && _label == null && !_limit.HasValue && !_bins.HasValue && Sort == CanopyFacetSort.Count && !Collapsed) { writer.String(Column); return; }
+        if (Kind == CanopyFacetKind.Auto && _label == null && !_limit.HasValue && !_bins.HasValue && !_sort.HasValue && !Collapsed) { writer.String(Column); return; }
         writer.BeginObject().Property("column", Column);
         if (Kind != CanopyFacetKind.Auto) writer.Property("kind", Kind == CanopyFacetKind.List ? "list" : "range");
         writer.OptionalProperty("label", _label);
         if (_limit.HasValue) writer.Property("limit", _limit.Value);
         if (_bins.HasValue) writer.Property("bins", _bins.Value);
-        if (Sort == CanopyFacetSort.Value) writer.Property("sort", "value");
+        if (_sort.HasValue) writer.Property("sort", Sort == CanopyFacetSort.Count ? "count" : "value");
         if (Collapsed) writer.Property("collapsed", true);
         writer.EndObject();
     }

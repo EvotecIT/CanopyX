@@ -35,10 +35,9 @@
       return Number.isFinite(time) ? time : undefined;
     };
     const wire = value => value == null ? null : date ? new Date(value).toISOString() : value;
-    const current = () => {
-      const selection = panel.selection(facet);
+    const current = (selection = panel.selection(facet)) => {
       return { low: selection.low == null ? null : date ? Date.parse(selection.low) : selection.low, high: selection.high == null ? null : date ? Date.parse(selection.high) : selection.high,
-        open: !!selection.open, locked: !!selection.locked };
+        lowOpen: !!selection.lowOpen, open: !!selection.open, locked: !!selection.locked };
     };
     // A bar covers [start, end) and the last one also its end, the maximum. As a choice, a number bar ends before the next
     // bar's start (an exclusive bound); a date bar ends on the last whole millisecond before it; the last bar ends on the maximum.
@@ -48,11 +47,15 @@
       return { low: bin.start, high: bin.end, open: !last };
     };
     function submit(edge) {
-      const low = fromInput(from.input.value, "low"), high = fromInput(to.input.value, "high");
+      const selection = panel.selection(facet), range = current(selection);
+      // Preserve the other edge's operator and exact value unless its field also contains a new draft (two quick changes).
+      const lowChanged = edge === "low" || from.input.value !== toInput(range.low), highChanged = edge === "high" || to.input.value !== toInput(range.high);
+      const low = lowChanged ? fromInput(from.input.value, "low") : range.low, high = highChanged ? fromInput(to.input.value, "high") : range.high;
       if (low === undefined || high === undefined) { setText(note, grid.labels.gridFacetInvalid); note.hidden = false; return; }
       if (low !== null && high !== null && low > high) { setText(note, grid.labels.gridFacetReversed); note.hidden = false; (edge === "low" ? from : to).input.focus(); return; }
       note.hidden = true;
-      panel.apply(facet, { low: wire(low), high: wire(high), open: false });
+      panel.apply(facet, { low: lowChanged ? wire(low) : selection.low ?? null, high: highChanged ? wire(high) : selection.high ?? null,
+        lowOpen: !lowChanged && range.lowOpen, open: !highChanged && range.open });
     }
     let anchor = null;
     chart.addEventListener("click", event => {
@@ -61,7 +64,7 @@
       const index = Number(bar.getAttribute("data-cx-bin")), extend = event.shiftKey && anchor !== null && anchor < state.bins.length;
       const first = binChoice(extend ? Math.min(anchor, index) : index), last = binChoice(extend ? Math.max(anchor, index) : index);
       if (!extend) anchor = index;
-      if (!extend && range.low === first.low && range.high === first.high && range.open === first.open) { panel.apply(facet, { low: null, high: null }); return; }
+      if (!extend && !range.lowOpen && range.low === first.low && range.high === first.high && range.open === first.open) { panel.apply(facet, { low: null, high: null }); return; }
       panel.apply(facet, { low: wire(first.low), high: wire(last.high), open: last.open });
     });
     const label = value => date ? new Intl.DateTimeFormat(grid.lang, { dateStyle: "medium", timeZone: grid.local ? undefined : "UTC" }).format(value) : numbers.format(value);
@@ -84,15 +87,19 @@
       for (const value of counts.values || []) tallies[place(value)]++;
       for (const pair of pairs || []) tallies[place(pair.value)] += pair.count;
       const highest = Math.max(1, ...tallies);
-      state.bins = tallies.map((tally, index) => ({ start: min + index * width, end: index === count - 1 ? max : min + (index + 1) * width, count: tally }));
-      chart.replaceChildren(...state.bins.map((bin, index) => {
-        const last = index === count - 1, bar = h("span", "cx-facet-bar");
-        const inside = (range.low == null || (last ? bin.end >= range.low : bin.end > range.low)) && (range.high == null || (range.open ? bin.start < range.high : bin.start <= range.high));
+      const bins = tallies.map((tally, index) => ({ start: min + index * width, end: index === count - 1 ? max : min + (index + 1) * width, count: tally }));
+      // A query can repaint between pointer press and release. Keep its target while the bin boundaries stay the same.
+      const sameBins = bins.length === state.bins.length && bins.every((bin, index) => bin.start === state.bins[index].start && bin.end === state.bins[index].end);
+      state.bins = bins;
+      const bars = sameBins ? Array.from(chart.children) : bins.map(() => h("span", "cx-facet-bar"));
+      bins.forEach((bin, index) => {
+        const last = index === count - 1, bar = bars[index];
+        const inside = (range.low == null || (last && !range.lowOpen ? bin.end >= range.low : bin.end > range.low)) && (range.high == null || (range.open ? bin.start < range.high : bin.start <= range.high));
         bar.setAttribute("data-cx-bin", String(index)); bar.style.height = Math.max(bin.count ? 6 : 0, Math.round(bin.count / highest * 100)) + "%";
         bar.classList.toggle("cx-facet-in", inside && (range.low != null || range.high != null));
         bar.title = fill(grid.labels.gridFacetBin, { from: label(bin.start), to: label(bin.end), count: numbers.format(bin.count) });
-        return bar;
-      }));
+      });
+      if (!sameBins) chart.replaceChildren(...bars);
       setText(low, label(min)); setText(high, label(max));
     }
     return { draw, search: () => "", update(counts) { state.counts = counts; draw(); } };

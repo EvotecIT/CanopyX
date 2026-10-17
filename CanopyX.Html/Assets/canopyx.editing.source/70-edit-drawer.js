@@ -46,7 +46,8 @@
           form.fields.push(field);
         }
         field.label = term;
-        value.replaceChildren(field.host, field.message);
+        // Hook-only refreshes reuse this field. Moving its existing editor would interrupt focus while the reader types.
+        if (field.host.parentNode !== value || field.message.parentNode !== value) value.replaceChildren(field.host, field.message);
       }
       dialog.classList.toggle("cx-edit-form", form.fields.length > 0);
       let foot = dialog.querySelector(".cx-drawer-f");
