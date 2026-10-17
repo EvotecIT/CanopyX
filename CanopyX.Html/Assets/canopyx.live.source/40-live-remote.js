@@ -92,7 +92,7 @@
           items[index] = after;
           if (!liveSameRow(item, after) && (searched || [...columns].some(id => used.has(id)))) moved = true;
         }
-        if (moved) this.livePending = null;
+        if (moved) this.livePending = { refresh: true };
       }
       for (const offset of pages) { const page = this.pages.get(offset); if (page?.rows) this.storePage({ offset, items: page.rows.map(row => row.h) }); }
       if (changed.size) {
@@ -105,17 +105,31 @@
   });
 
   // Rows the grid has not loaded belong to the newer result: scrolling to them while the old order shows applies it first.
-  const LIVE_WINDOW = DataGrid.prototype.loadWindow;
-  DataGrid.prototype.loadWindow = function () {
+  // Both the rendered window and navigation (keyboard, record drawers and range reads) load pages through this fence.
+  const LIVE_PAGE = DataGrid.prototype.loadPage, LIVE_RETRY = DataGrid.prototype.retry;
+  DataGrid.prototype.loadPage = function (offset) {
     const pending = this.livePending;
-    if (pending?.pages && this.window && this.snapshot && !this.pendingQuery && !this.destroyed) {
-      const bounds = this.rowBounds();
-      for (const range of this.window.ranges || [this.window])
-        for (let index = Math.max(bounds.first, range.first); index <= Math.min(bounds.last, range.last); index++)
-          if (!this.rowCache.has(index)) {
-            if (!pending.applying) { pending.applying = true; queueMicrotask(() => this.destroyed || this.livePending !== pending || this.resort().catch(error => this.emit("error", { error }))); }
-            return;
-          }
-    }
-    return LIVE_WINDOW.call(this);
+    if (!(pending?.pages || pending?.refresh) || !this.snapshot || this.pendingQuery || this.destroyed) return LIVE_PAGE.call(this, offset);
+    if (this.pendingPages.has(offset)) return this.pendingPages.get(offset).promise;
+    const epoch = this.queryEpoch, lifetime = this.dataLifetime, token = {};
+    this.pendingPages.set(offset, token);
+    // A failed attempt stays shared until Retry or an explicit Re-sort, so painting another missing page cannot spin.
+    if (!pending.applying) pending.applying = this.resort().catch(error => { pending.error = error; throw error; });
+    token.promise = pending.applying.then(() => {
+      if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
+      if (this.pendingPages.get(offset) === token) this.pendingPages.delete(offset);
+      if (!this.pages.get(offset)?.rows) return LIVE_PAGE.call(this, offset);
+    }).catch(error => {
+      if (this.destroyed || epoch !== this.queryEpoch || lifetime !== this.dataLifetime || lifetime.signal.aborted) return;
+      this.pages.set(offset, { error, offset }); this.version++;
+      this.setNotice(fill(this.labels.loadError, { error: error.message }), true); this.emit("error", { error }); this.scheduleRender();
+    }).finally(() => {
+      if (this.pendingPages.get(offset) === token) { this.pendingPages.delete(offset); this.loadWindow(); }
+    });
+    return token.promise;
+  };
+  DataGrid.prototype.retry = function () {
+    const pending = this.livePending;
+    if (pending?.error) { pending.applying = null; delete pending.error; }
+    return LIVE_RETRY.call(this);
   };
