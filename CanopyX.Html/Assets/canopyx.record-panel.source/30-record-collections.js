@@ -14,6 +14,24 @@
   const recordRowRef = (list, row) => list.target?.view ? { view: list.target.view, id: row.id } :
     list.columns.map(column => row.cells?.[column.id]).find(cell => isCellObject(cell) && recordRefValid(cell.ref))?.ref || null;
 
+  const recordCollectionComplete = list => !!list.roots || !Number.isInteger(list.total) || list.rows.length >= list.total;
+  const recordTargetFilters = target => Array.isArray(target.filters) && target.filters.length ? target.filters : null;
+  const recordTargetValues = target => Array.isArray(target.values) && target.values.length ? target.values : null;
+  const recordCanOpenAll = list => !!recordTargetFilters(list.target) || !!(list.target.column && recordTargetValues(list.target)) ||
+    recordCollectionComplete(list) && (!list.target.column || !!recordCollectionIds(list, 1000)?.length);
+  function recordCollectionIds(list, maximum = Infinity) {
+    if (!list.roots) return list.rows.length > maximum ? null : list.rows.map(row => row.id);
+    const ids = [], pending = [list.roots[Symbol.iterator]()];
+    while (pending.length) {
+      const next = pending[pending.length - 1].next();
+      if (next.done) { pending.pop(); continue; }
+      if (ids.length >= maximum) return null;
+      const node = next.value; ids.push(node.id);
+      if (node.children?.length) pending.push(node.children[Symbol.iterator]());
+    }
+    return ids;
+  }
+
   function recordCollection(ctx, field, list, element) {
     if (!list || typeof list !== "object" || !Array.isArray(list.columns) || !list.columns.length || list.columns.some(column => !column || !column.id || !recordText(column.title)) ||
         (list.roots !== undefined ? !Array.isArray(list.roots) : list.rows !== undefined && !Array.isArray(list.rows))) recordFail("a collection has columns and rows (or tree roots).");
@@ -24,7 +42,11 @@
     setText(count, list.roots || total === rows.length ? fill(labels.recordItems, { count: recordCount(ctx, total) }) :
       fill(labels.recordCount, { shown: recordCount(ctx, rows.length), total: recordCount(ctx, total) }));
     if (total > 5 || total > rows.length || ctx.print) head.appendChild(count);
-    if (!ctx.print && list.target?.view) head.appendChild(recordButton(labels.recordOpenAll, () => recordOpenAll(ctx, field, list).catch(error => ctx.view.emit("error", { error })), "cx-record-open-all", "open"));
+    if (!ctx.print && list.target?.view) {
+      const openAll = recordButton(labels.recordOpenAll, () => recordOpenAll(ctx, field, list).catch(error => ctx.view.emit("error", { error })), "cx-record-open-all", "open");
+      // An implicit ID condition needs the whole collection; an explicit target describes it without loading every row.
+      openAll.disabled = !recordCanOpenAll(list); head.appendChild(openAll);
+    }
     const body = h("div", "cx-record-collection-b");
     if (head.firstChild) block.appendChild(head);
     block.appendChild(body);
@@ -118,11 +140,14 @@
       const page = (payload?.fields?.[field.id] ?? payload?.cells?.[field.id])?.records;
       if (!page || !Array.isArray(page.rows)) recordFail("a field page answers with the field's records.");
       const known = new Set(list.rows.map(row => row.id));
-      const added = page.rows.filter(row => row && typeof row.id === "string" && !known.has(row.id));
-      list.rows.push(...added);
-      if (Number.isInteger(page.total)) list.total = page.total;
-      // A page that adds nothing (an empty page, or rows already shown) ends the list, so Load more never loops.
-      if (!added.length) list.total = list.rows.length;
+      // Offset is the number of accepted identities. Reject an overlapping or malformed page as a whole so a retry
+      // asks for the same offset, rather than silently deduplicating it and guessing how far the source advanced.
+      validateGridRows(page.rows, list.columns.map(column => ({ kind: "text", ...column })), known);
+      const total = page.total ?? list.total;
+      if (total != null && (!Number.isInteger(total) || total < known.size)) recordFail("a collection page's total cannot be below its accepted rows.");
+      if (!page.rows.length && (!Number.isInteger(total) || total > known.size)) recordFail("a collection page cannot end before its declared total.");
+      list.rows.push(...page.rows);
+      if (page.total != null) list.total = page.total;
       ctx.repaint();
     } catch (error) {
       if (!button.isConnected) return;
@@ -134,16 +159,17 @@
   // "Open all in grid": the canopyx:openAll event (cancelable) and onOpenAll({ view, filters, ids, field, record, total }) come
   // first; then the target grid takes the filters (target.filters, or column in values or the rows' ids) and the drawer closes.
   async function recordOpenAll(ctx, field, list) {
-    const target = list.target, ids = list.rows.map(row => row.id);
-    const filters = Array.isArray(target.filters) ? target.filters : target.column ? [{ column: target.column, operator: "in", values: target.values || ids }] : null;
-    const detail = Object.freeze({ view: target.view, filters, ids, field: field.id, record: ctx.record.id, total: Number.isInteger(list.total) ? list.total : ids.length });
+    if (!recordCanOpenAll(list)) return;
+    const target = list.target, ids = recordCollectionIds(list), explicitFilters = recordTargetFilters(target);
+    const filters = explicitFilters || (target.column ? [{ column: target.column, operator: "in", values: recordTargetValues(target) || ids }] : null);
+    const detail = Object.freeze({ view: target.view, filters, ids, field: field.id, record: ctx.record.id, total: Number.isInteger(list.total) ? list.total : (list.roots || list.rows).length });
     if (!recordEmit(ctx.view, "openAll", detail)) return;
     const api = recordApi(target.view);
     if (!api || !filters || api.view.type !== "grid") { recordAnnounce(ctx.dialog, fill(ctx.labels.recordUnavailable, { id: target.view })); return; }
     // With the link part in, a one-column list goes through the grid's external filter API (linked views): a removable chip
     // that names the record and the field, combined with the reader's own conditions. Without it, and for filter groups the
     // host declared, the list replaces the query's filters and search.
-    const values = !Array.isArray(target.filters) && target.column && filters[0].values, linked = RECORD_IMPL.grid?.DataGrid?.prototype.setExternalFilter;
+    const values = !explicitFilters && target.column && filters[0].values, linked = RECORD_IMPL.grid?.DataGrid?.prototype.setExternalFilter;
     let external;
     if (values && typeof linked === "function" && !linked.linkStub && typeof api.setExternalFilter === "function") {
       // A chip names its source in at most 128 characters.

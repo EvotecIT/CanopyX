@@ -41,10 +41,10 @@ internal static class CommitValidation {
             if (rules?.Required == true) return Say(messages.Required);
             // An emptied number or date is a missing value; emptied text stays the empty string, which is a value.
             if (column.Kind != CanopyColumnKind.Text) typed = null;
-            // A select offers only its choices: an empty value passes only when one of them is empty.
-            if (editor?.Kind == CanopyCellEditorKind.Select && editor.Options.Count > 0) {
+            // The optional select's None choice is null. Empty text remains a value and must be listed explicitly.
+            if (typed != null && editor?.Kind == CanopyCellEditorKind.Select && editor.Options.Count > 0) {
                 var blank = false;
-                foreach (var option in editor.Options) blank |= option.Value is string choice && choice.Length == 0 && typed != null;
+                foreach (var option in editor.Options) blank |= option.Value is string choice && choice.Length == 0;
                 if (!blank) return Say(messages.Choice);
             }
             return null;
@@ -66,8 +66,8 @@ internal static class CommitValidation {
             }
             case CanopyColumnKind.DateTime: {
                 if (!TryInstant(raw, out var instant)) return Say(messages.Date);
-                if (rules?.Earliest.HasValue == true && instant < rules.Earliest.Value.UtcDateTime) return Say(messages.Minimum, "min", CanopyDataValues.FormatDate(rules.Earliest.Value.UtcDateTime));
-                if (rules?.Latest.HasValue == true && instant > rules.Latest.Value.UtcDateTime) return Say(messages.Maximum, "max", CanopyDataValues.FormatDate(rules.Latest.Value.UtcDateTime));
+                if (rules?.Earliest.HasValue == true && instant < CanopyDataValues.TruncateToMilliseconds(rules.Earliest.Value.UtcDateTime)) return Say(messages.Minimum, "min", CanopyDataValues.FormatDate(rules.Earliest.Value.UtcDateTime));
+                if (rules?.Latest.HasValue == true && instant > CanopyDataValues.TruncateToMilliseconds(rules.Latest.Value.UtcDateTime)) return Say(messages.Maximum, "max", CanopyDataValues.FormatDate(rules.Latest.Value.UtcDateTime));
                 typed = instant;
                 break;
             }
@@ -146,8 +146,10 @@ internal static class CommitValidation {
     internal static Regex Compile(string pattern) =>
         Patterns.GetOrAdd(pattern, value => new Regex("^(?:" + value + ")$", RegexOptions.ECMAScript, TimeSpan.FromMilliseconds(250)));
 
+    /// <summary>Matches a choice after validation, including date choices at the protocol's UTC millisecond precision.</summary>
     private static bool Same(object option, object? value) => option switch {
-        string text => value is string other && string.Equals(text, other, StringComparison.Ordinal),
+        string text => value is string other && string.Equals(text, other, StringComparison.Ordinal)
+            || value is DateTime instant && TryInstant(text, out var choice) && instant == choice,
         double number => value is double other && number.Equals(other),
         bool flag => value is bool other && flag == other,
         _ => false

@@ -132,6 +132,12 @@ tables with every row. Rows keep the order they come in.
   reader's own conditions. Otherwise, and for `Filters`, the list replaces the target's query filters and search. The cancelable `canopyx:openAll` event and the `onOpenAll` option come first with `{ view, filters, ids,
   field, record, total }`, so a host can filter a linked view or another page instead.
 
+  An implicit condition using row ids becomes available after every collection page has loaded and contains 1 to 1,000
+  ids, including inline tree descendants. Empty or larger ID sets cannot form that membership condition. Supply nonempty
+  `Filters` or `Values` when an authoritative condition can describe the whole collection before it has loaded. For a
+  larger complete collection, a host can handle `onOpenAll` with a target that leaves `Column` unset. Invalid page rows,
+  duplicate identities and totals below the accepted row count are rejected together; Load more retries the same offset.
+
 ## Related records and the back stack
 
 A value with a `ref` is a link. It opens the linked record in place of the current one: in the same grid, or in the grid or

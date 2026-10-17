@@ -174,12 +174,10 @@ public sealed class CommitTests {
         Assert.Equal(0, none.GetProperty("rows").GetArrayLength());
     }
 
-    [Theory]
-    [InlineData("{\"site\":null}")]
-    [InlineData("{\"site\":\"\"}")]
-    public async Task EmptyValues_StillChooseFromASelectsChoices(string values) {
+    [Fact]
+    public async Task EmptyText_StillChoosesFromASelectsChoices() {
         var (handler, writer) = Handler();
-        var json = await handler.CommitAsync(Commit("{\"id\":\"1\",\"values\":" + values + ",\"original\":{\"site\":\"Oslo\"}}"));
+        var json = await handler.CommitAsync(Commit("{\"id\":\"1\",\"values\":{\"site\":\"\"},\"original\":{\"site\":\"Oslo\"}}"));
         Assert.Equal("Choose Site from the list.", Rows(json)[0].GetProperty("errors").GetProperty("site").GetString());
         Assert.Null(writer.Batch);
     }

@@ -58,7 +58,14 @@
   function crDateValue(text, grid) {
     let value = text.trim();
     for (const affix of [...grid.fmt.utc, ...grid.fmt.other]) if (affix.trim()) value = value.split(affix.trim()).join("").trim();
-    if (/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) && Number.isFinite(Date.parse(value))) return new Date(value).toISOString();
+    const zoned = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d)(?:\.\d+)?)?(?:Z|[+-]\d\d:\d\d)$/.exec(value);
+    if (zoned) {
+      // Date.parse accepts calendar rollover. Check the written wall time before applying its explicit offset.
+      const parts = zoned.slice(1).map(part => Number(part || 0));
+      if (!gridMomentFromParts(...parts, false)) return undefined;
+      const moment = Date.parse(value);
+      return Number.isFinite(moment) ? new Date(moment).toISOString() : undefined;
+    }
     let parts = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(value), year, month, day;
     if (parts) [, year, month, day] = parts.map(Number);
     else {
@@ -77,7 +84,11 @@
   /** A pasted text as a value of the column: undefined when it is not one. */
   function crValue(grid, column, text, previous) {
     const spec = grid.edit?.specs.get(column.id), trimmed = text.trim();
-    if (!trimmed) return column.kind === "text" && spec?.type !== "toggle" && typeof previous !== "boolean" ? "" : null;
+    if (!trimmed) return column.kind === "text" && !["toggle", "select"].includes(spec?.type) && typeof previous !== "boolean" ? "" : null;
+    const option = spec?.options?.find(item => foldText(item.label) === foldText(trimmed) || foldText(String(item.value)) === foldText(trimmed));
+    // A select's labels describe its raw values, including numeric, date and boolean choices. Other editors may accept
+    // free-form values, but a paste into a select must stay in its configured list, just like choosing in the editor.
+    if (spec?.type === "select") return option?.value;
     if (column.kind === "number") return crNumber(trimmed, grid.lang);
     if (column.kind === "datetime") return crDateValue(trimmed, grid);
     if (spec?.type === "toggle" || typeof previous === "boolean") {
@@ -86,7 +97,6 @@
       if (["false", "0", "no", foldText(grid.labels.no)].includes(folded)) return false;
       return undefined;
     }
-    const option = spec?.options?.find(item => foldText(item.label) === foldText(trimmed) || foldText(String(item.value)) === foldText(trimmed));
     return option ? option.value : text;
   }
 

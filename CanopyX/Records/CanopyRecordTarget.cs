@@ -12,6 +12,10 @@ namespace CanopyX;
 /// "Open all in grid" applies <see cref="Filters"/> when there are any, otherwise <see cref="Column"/> in <see cref="Values"/> (or in
 /// the rows' ids when <see cref="Values"/> is empty). Hosts can take the action over with the browser's <c>canopyx:openAll</c> event
 /// or the <c>onOpenAll</c> option, for example to filter a linked view.
+/// An implicit condition becomes available after the collection is complete and contains 1 to 1,000 row ids, including
+/// inline tree descendants. Use nonempty <see cref="Filters"/> or <see cref="Values"/> for an authoritative condition that
+/// can be applied before every collection page is loaded. Larger collections can use such a condition or a host action
+/// without <see cref="Column"/>; the browser does not truncate their ids to fit a membership condition.
 /// </remarks>
 public sealed class CanopyRecordTarget {
     /// <summary>Creates a target.</summary>

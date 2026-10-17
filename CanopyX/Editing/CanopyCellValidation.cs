@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Text.RegularExpressions;
 using CanopyX.Json;
 
@@ -27,10 +26,10 @@ public sealed class CanopyCellValidation {
     /// <summary>Gets or sets the largest value of a number column.</summary>
     public double? Maximum { get; set; }
 
-    /// <summary>Gets or sets the earliest moment of a date-and-time column.</summary>
+    /// <summary>Gets or sets the earliest moment of a date-and-time column, compared at UTC millisecond precision.</summary>
     public DateTimeOffset? Earliest { get; set; }
 
-    /// <summary>Gets or sets the latest moment of a date-and-time column.</summary>
+    /// <summary>Gets or sets the latest moment of a date-and-time column, compared at UTC millisecond precision.</summary>
     public DateTimeOffset? Latest { get; set; }
 
     /// <summary>The largest <see cref="MinLength"/> or <see cref="MaxLength"/>, as the protocol bounds it.</summary>
@@ -84,13 +83,11 @@ public sealed class CanopyCellValidation {
         writer.BeginObject();
         if (Required) writer.Property("required", true);
         if (Minimum.HasValue) writer.Name("min").Number(Minimum.Value);
-        else if (Earliest.HasValue) writer.Property("min", Moment(Earliest.Value));
+        else if (Earliest.HasValue) writer.Property("min", CanopyCell.FormatIso(Earliest.Value.UtcDateTime));
         if (Maximum.HasValue) writer.Name("max").Number(Maximum.Value);
-        else if (Latest.HasValue) writer.Property("max", Moment(Latest.Value));
+        else if (Latest.HasValue) writer.Property("max", CanopyCell.FormatIso(Latest.Value.UtcDateTime));
         writer.OptionalProperty("minLength", MinLength).OptionalProperty("maxLength", MaxLength)
             .OptionalProperty("pattern", Pattern).OptionalProperty("message", Message);
         writer.EndObject();
     }
-
-    private static string Moment(DateTimeOffset value) => value.UtcDateTime.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'", CultureInfo.InvariantCulture);
 }
