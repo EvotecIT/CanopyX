@@ -27,8 +27,7 @@
     Skip the specified pipeline tasks (comma/semicolon separated), for example: optimize,doctor.
 
 .PARAMETER Watch
-    Run the pipeline in watch mode (rebuild on file changes).
-    When combined with `-Serve`, starts the static server and keeps rebuilding in the foreground.
+    Run the pipeline in watch mode (rebuild on file changes). For a live preview, run -Serve in a separate terminal.
 
 .PARAMETER Port
     Server port (default: 8080).
@@ -62,6 +61,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Serve -and $Watch) { throw 'Run -Serve and -Watch in separate terminals.' }
 Push-Location $PSScriptRoot
 
 function Get-PowerForgeRootCandidates {
@@ -249,49 +249,12 @@ try {
 
     if ($Serve) {
         Write-Host 'Building website...' -ForegroundColor Cyan
-        if ($Watch) {
-            # Ensure _site exists before we start the server.
-            & $PowerForge @PowerForgeArgs @pipelineArgsBase
-        } else {
-            & $PowerForge @PowerForgeArgs @pipelineArgs
-        }
+        & $PowerForge @PowerForgeArgs @pipelineArgs
         if ($LASTEXITCODE -ne 0) { throw "Build failed (exit code $LASTEXITCODE)" }
         Assert-SiteOutput -SiteRoot (Join-Path $PSScriptRoot '_site')
         Write-Host "Starting dev server on http://localhost:$Port ..." -ForegroundColor Cyan
-
-        $serveArgs = @($PowerForgeArgs + @('serve', '--path', '_site', '--port', $Port))
-        $serveProcess = Start-Process -FilePath $PowerForge -ArgumentList $serveArgs -NoNewWindow -PassThru
-        $watchProcess = $null
-        try {
-            if ($Watch) {
-                Write-Host 'Watching for changes...' -ForegroundColor Cyan
-                $watchProcess = Start-Process -FilePath $PowerForge -ArgumentList @($PowerForgeArgs + $pipelineArgs) -NoNewWindow -PassThru
-                while ($true) {
-                    if ($serveProcess.WaitForExit(250)) {
-                        if ($serveProcess.ExitCode -ne 0) { throw "Dev server failed (exit code $($serveProcess.ExitCode))" }
-                        break
-                    }
-                    $watchProcess.Refresh()
-                    if ($watchProcess.HasExited) {
-                        if ($watchProcess.ExitCode -ne 0) { throw "Watch failed (exit code $($watchProcess.ExitCode))" }
-                        break
-                    }
-                }
-            } else {
-                $serveProcess.WaitForExit()
-            }
-            $serveProcess.Refresh()
-            if ($serveProcess.HasExited -and $serveProcess.ExitCode -ne 0) {
-                throw "Dev server failed (exit code $($serveProcess.ExitCode))"
-            }
-        } finally {
-            if ($watchProcess -and -not $watchProcess.HasExited) {
-                Stop-Process -Id $watchProcess.Id -Force -ErrorAction SilentlyContinue
-            }
-            if ($serveProcess -and -not $serveProcess.HasExited) {
-                Stop-Process -Id $serveProcess.Id -Force -ErrorAction SilentlyContinue
-            }
-        }
+        & $PowerForge @PowerForgeArgs serve --path _site --port $Port
+        if ($LASTEXITCODE -ne 0) { throw "Dev server failed (exit code $LASTEXITCODE)" }
     } else {
         Write-Host 'Building website...' -ForegroundColor Cyan
         & $PowerForge @PowerForgeArgs @pipelineArgs
