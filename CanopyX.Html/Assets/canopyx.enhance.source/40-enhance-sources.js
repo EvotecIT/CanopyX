@@ -5,13 +5,13 @@
   // posts each canopyx/2 grid query to the URL and accepts a grid page, or a plain answer with total, matched and records.
 
   /** The browser-side source over a store of rows ({ rows, version, loading }), keeping page order for ties. */
-  function enhanceRowSource(store, view, compare) {
+  function enhanceRowSource(store, view, compare, searchColumns) {
     const columns = new Map(view.columns.map(column => [column.id, column]));
     let shape = null, version = -1, ordered = null;
     const order = query => {
       const key = gridResultShape(query);
       if (key === shape && version === store.version) return ordered;
-      const rows = gridQueryRows({ ...view, rows: store.rows }, query, columns, null);
+      const rows = gridQueryRows({ ...view, searchColumns, rows: store.rows }, query, columns, null);
       if (query.sort.length) rows.sort((a, b) => {
         for (const sort of query.sort) { const result = compare(a, b, columns.get(sort.column), sort.direction); if (result) return result; }
         return 0;

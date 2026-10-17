@@ -102,11 +102,12 @@ public static partial class CanopyRequestParser {
                 var id = item.ValueKind == JsonValueKind.String ? item.GetString()! : item.ValueKind == JsonValueKind.Object ? RequireString(item, "id") :
                     throw new CanopyRequestException(CanopyRequestError.InvalidExport, "An export column is an identity or an object with an id.");
                 var column = schema.GetColumn(id);
+                if (!column.Exportable) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "The column cannot be exported.");
                 if (!seen.Add(column.Id)) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "Export columns must be unique.");
                 columns.Add(column);
             }
         }
-        if (columns.Count == 0) foreach (var column in schema.Columns) if (!column.Hidden) columns.Add(column);
+        if (columns.Count == 0) foreach (var column in schema.Columns) if (!column.Hidden && column.Exportable) columns.Add(column);
         if (columns.Count == 0) throw new CanopyRequestException(CanopyRequestError.InvalidExport, "An export needs at least one column.");
         return columns;
     }

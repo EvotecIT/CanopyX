@@ -43,7 +43,7 @@
       add(this.labels.gridSortAscending,()=>sort("asc"),!column.sortable||this.view.reporting?.grouping?.column===id);
       add(this.labels.gridSortDescending,()=>sort("desc"),!column.sortable||this.view.reporting?.grouping?.column===id);
       add(this.labels.gridClearSort,()=>sort(null),!(this.getQuery()?.sort||[]).some(item=>item.column===id));
-      menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFilterColumn,()=>this.openColumnFilter(id,this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]')));
+      menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFilterColumn,()=>this.openColumnFilter(id,this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]')),column.filterable===false);
       menu.appendChild(h("hr","cx-menu-rule"));
       for(const [pin,label]of [["left","gridPinLeft"],["right","gridPinRight"],["none","gridUnpin"]])add(this.labels[label],()=>this.setColumnPinned(id,pin));
       menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFitContent,()=>this.autoFitColumn(id),!this.acceptedQuery||!!this.pendingQuery);

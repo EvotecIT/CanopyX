@@ -64,7 +64,8 @@
       multipleField.setAttribute("role", "group"); multipleField.setAttribute("aria-label", this.labels.gridConditionValue);
       let remove, input = h("input", "cx-grid-filter-value"), current;
       const legend = h("legend", "cx-sr-only"); setText(legend, this.labels.gridFilters); row.appendChild(legend);
-      for (const item of this.columns) column.appendChild(gridOption(item.id, item.title));
+      for (const item of this.columns) if (item.filterable !== false) column.appendChild(gridOption(item.id, item.title));
+      if (!column.options.length) return;
       if (predicate) column.value = predicate.column;
       for (const [value, name] of [["string", "gridText"], ["boolean", "gridBoolean"]]) {
         type.appendChild(gridOption(value, this.labels[name]));

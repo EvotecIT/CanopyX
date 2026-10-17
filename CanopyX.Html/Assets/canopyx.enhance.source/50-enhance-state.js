@@ -2,6 +2,23 @@
   // stateSave keeps what the grid already saves (sort, search, filters, page, page length, column widths, order and
   // visibility, selection and named views) between visits. The address form carries only what a shared link needs: the
   // sort, search, filters, page and page length. A state in the address wins over a stored one.
+  // A host may write asynchronously. Keep one active write and only the latest queued envelope per backing key, including
+  // the final write on destroy. Entries leave the map when settled; a new controller reads after those writes finish.
+  const ENHANCE_STATE_WRITES = new Map();
+  function enhanceWriteState(settings, envelope) {
+    let entry = ENHANCE_STATE_WRITES.get(settings.key);
+    if (entry) { entry.next = { settings, envelope }; return; }
+    entry = { next: { settings, envelope }, done: null };
+    ENHANCE_STATE_WRITES.set(settings.key, entry);
+    entry.done = Promise.resolve().then(async () => {
+      while (entry.next) {
+        const { settings, envelope } = entry.next; entry.next = null;
+        try { await settings.save({ key: settings.key, view: settings.view, state: envelope }); }
+        catch (_) { /* A failed host write does not discard a later queued state. */ }
+      }
+      ENHANCE_STATE_WRITES.delete(settings.key);
+    });
+  }
   function enhanceStateSettings(value, view) {
     if (value === undefined || value === null || value === false) return null;
     const options = value === true ? {} : value;
@@ -34,6 +51,8 @@
   async function enhanceLoadState(settings) {
     let envelope = null;
     try {
+      const pending = ENHANCE_STATE_WRITES.get(settings.key);
+      if (pending) await pending.done;
       envelope = settings.load ? await settings.load({ key: settings.key, view: settings.view }) : JSON.parse(enhanceStorage(settings)?.getItem(settings.key) || "null");
     } catch (_) { envelope = null; }
     if (!envelope || typeof envelope !== "object" || settings.duration && !(Number.isFinite(envelope.time) && Date.now() - envelope.time <= settings.duration * 1000)) envelope = null;
@@ -58,7 +77,7 @@
   function enhanceSaveState(settings, envelope) {
     envelope.time = Date.now();
     try {
-      if (settings.save) Promise.resolve(settings.save({ key: settings.key, view: settings.view, state: envelope })).catch(() => {});
+      if (settings.save) enhanceWriteState(settings, envelope);
       else enhanceStorage(settings)?.setItem(settings.key, JSON.stringify(envelope));
     } catch (_) { /* A full or blocked store leaves the grid usable. */ }
     if (!settings.url) return;

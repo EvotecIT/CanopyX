@@ -6,6 +6,7 @@ namespace CanopyX.Data;
 internal static class CanopyDataSnapshot {
     internal static CanopyColumn Column(CanopyColumn source) => new CanopyColumn(source.Id, source.Title) {
         Kind = source.Kind, Sortable = source.Sortable, Ordering = source.Ordering, Hidden = source.Hidden,
+        Filterable = source.Filterable, Exportable = source.Exportable,
         Editable = source.Editable, Editor = Editor(source.Editor), Validation = Validation(source.Validation),
         Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable,
         Section = source.Section, ShowInDrawer = source.ShowInDrawer, Renderer = source.Renderer,

@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "b1e9e2b43b9e75de",
+      "version": "9781c04a2f055f6a",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "41c183a7564aec7f",
+      "version": "0a46d4100b6725a5",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "6a00173784fba79f",
+      "version": "83554049dc50b9d3",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -77,7 +77,7 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "version": "a7953f9e20a4d24b",
+      "version": "51dd73e9203b1136",
       "script": "canopyx-enhance.js",
       "runtimes": [
         "grid"
@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "7beff2956980af5f",
+      "version": "e99a39e7cccc57b1",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "cab98a2873ded971",
+      "version": "932d946c362d03c2",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

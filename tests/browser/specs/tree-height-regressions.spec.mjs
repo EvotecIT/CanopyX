@@ -111,9 +111,8 @@ test("one root replacing an equal-height loading row finishes its initial fit be
   });
   expect(expansion.id).toBe("first-child");
   expect(expansion.focus).toBe("first-child");
-  // The first real row already fitted; later expansion keeps the normal height debounce.
-  expect(expansion.after).toBe(expansion.before);
-  await expect.poll(() => page.locator("#height-single-root").evaluate(host => host.getBoundingClientRect().height)).toBeGreaterThan(expansion.before);
+  // Newly revealed rows fit before they can be pressed; the first root still had its own earlier fit.
+  expect(expansion.after).toBeGreaterThan(expansion.before);
   await expect(page.locator('#height-single-root [data-cx-id="third-child"]')).toBeVisible();
   await expect(page.locator('#height-single-root [data-cx-id="first-child"]')).toBeFocused();
 });

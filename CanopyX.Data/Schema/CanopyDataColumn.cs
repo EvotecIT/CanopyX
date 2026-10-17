@@ -11,7 +11,8 @@ public sealed class CanopyDataColumn {
     internal CanopyDataColumn(CanopyColumn definition, int ordinal, bool filterable, bool searchable, bool explicitlySearchable, bool facetable) {
         _definition = CanopyDataSnapshot.Column(definition);
         Ordinal = ordinal;
-        Filterable = filterable;
+        Filterable = filterable && definition.Filterable;
+        _definition.Filterable = Filterable;
         Searchable = searchable;
         ExplicitlySearchable = explicitlySearchable;
         Facetable = facetable;
@@ -43,6 +44,9 @@ public sealed class CanopyDataColumn {
 
     /// <summary>Gets whether requests may filter on this column.</summary>
     public bool Filterable { get; }
+
+    /// <summary>Gets whether requests may export this allowed column.</summary>
+    public bool Exportable => _definition.Exportable;
 
     /// <summary>Gets whether quick search reads this column.</summary>
     public bool Searchable { get; }

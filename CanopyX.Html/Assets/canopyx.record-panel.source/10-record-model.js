@@ -183,7 +183,12 @@
       recordFail("record " + name + " are an object of ids.");
     if (doc.row !== undefined && (!doc.row || doc.row.id !== id || !doc.row.cells || typeof doc.row.cells !== "object")) recordFail("a record's row is the requested record.");
     for (const cells of [doc.cells, doc.fields]) if (cells) Object.values(cells).forEach(cell => recordCheckValue(cell));
-    if (doc.row) recordCheckRows([doc.row], 0);
+    if (doc.row) {
+      // An unloaded flat record becomes a grid row, so it crosses the same boundary as a query page or inline row.
+      // Tree nodes retain their separate cell semantics; a tree record source supplies fields for its loaded node.
+      if (view.kind === "grid") validateGridRows([doc.row], view.columns);
+      recordCheckRows([doc.row], 0);
+    }
     return JSON.parse(JSON.stringify({ cells: doc.cells || null, fields: doc.fields || null, row: doc.row || null }));
   }
   function recordFetch(view, id, extra, signal) {
@@ -198,10 +203,15 @@
             recordFail("record pack r" + shard + " is not a gridRecordPack of this view.");
           return new Map(doc.records.map(item => [item.id, item]));
         });
-        pack.catch(() => RECORD_PACKS.delete(key)); RECORD_PACKS.set(key, pack);
+        RECORD_PACKS.set(key, pack);
         if (RECORD_PACKS.size > 16) RECORD_PACKS.delete(RECORD_PACKS.keys().next().value);
       }
-      return pack.then(records => recordPayload(view, id, records.get(id) || null, revision));
+      return pack.then(records => recordPayload(view, id, records.get(id) || null, revision)).catch(error => {
+        // A malformed record is a failed pack load too: Retry must be able to read the corrected file.
+        // A late failure never retires a replacement pack, and cancellation does not invalidate accepted data.
+        if (error.name !== "AbortError" && RECORD_PACKS.get(key) === pack) RECORD_PACKS.delete(key);
+        throw error;
+      });
     }
     const request = { protocol: PROTOCOL, type: "gridRecordQuery", view: view.view.id, id,
       ...(revision != null ? { revision } : {}), ...extra };

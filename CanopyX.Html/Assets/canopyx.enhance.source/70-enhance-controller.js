@@ -5,10 +5,12 @@
   function enhanceEvents(host, initial) {
     const handlers = new Map(), listening = new Set(), lifetime = new AbortController();
     let controller = null, api = null, previous = null, initialized = false;
+    const call = (handler, detail, event) => {
+      try { Promise.resolve(handler.call(controller, detail, controller, event)).catch(error => global.console?.error(error)); }
+      catch (error) { global.console?.error(error); }
+    };
     const emit = (name, detail, event) => {
-      for (const handler of [...(handlers.get(name) || [])]) {
-        try { handler.call(controller, detail, controller, event); } catch (error) { global.console?.error(error); }
-      }
+      for (const handler of [...(handlers.get(name) || [])]) call(handler, detail, event);
     };
     const on = (name, handler) => {
       if (typeof name !== "string" || !/^[A-Za-z][\w-]*$/.test(name) || typeof handler !== "function") throw new Error("CanopyX: on takes an event name and a function.");
@@ -17,7 +19,9 @@
         listening.add(name);
         host.addEventListener("canopyx:" + name, event => emit(name, event.detail, event), { signal: lifetime.signal });
       }
-      if (name === "init" && initialized) Promise.resolve().then(() => handler.call(controller, { query: api.getQuery() }, controller));
+      if (name === "init" && initialized) Promise.resolve().then(() => {
+        if (!lifetime.signal.aborted && handlers.get(name)?.has(handler)) call(handler, { query: api.getQuery() });
+      });
     };
     host.addEventListener("canopyx:query", event => {
       if (!api) return;

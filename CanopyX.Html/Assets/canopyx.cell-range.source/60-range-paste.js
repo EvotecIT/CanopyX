@@ -66,10 +66,10 @@
       const moment = Date.parse(value);
       return Number.isFinite(moment) ? new Date(moment).toISOString() : undefined;
     }
-    let parts = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(value), year, month, day;
+    let parts = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/.exec(value), year, month, day;
     if (parts) [, year, month, day] = parts.map(Number);
     else {
-      parts = /^(\d{1,4})[./\-\s]+(\d{1,2})[./\-\s]+(\d{1,4})\.?(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(value);
+      parts = /^(\d{1,4})[./\-\s]+(\d{1,2})[./\-\s]+(\d{1,4})\.?(?:[,\sT]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/.exec(value);
       if (!parts) return undefined;
       const order = crDateOrder(grid.lang), read = {};
       order.forEach((name, index) => read[name] = Number(parts[index + 1]));
@@ -78,6 +78,8 @@
     }
     const [hours = 0, minutes = 0, seconds = 0] = parts.slice(4, 7).map(item => item === undefined ? 0 : Number(item));
     const date = gridMomentFromParts(year, month, day, hours, minutes, seconds, grid.local);
+    // Match native editors: validate the written wall time first, then retain its millisecond fraction.
+    if (date) date.setTime(date.getTime() + Number((parts[7] || "").padEnd(3, "0")));
     return date ? date.toISOString() : undefined;
   }
 

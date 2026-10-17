@@ -64,6 +64,10 @@ export interface GridExportColumn {
   readonly diagnostics?: readonly string[];
 }
 export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
+  /** Supports query predicates and filter controls. Default true; does not hide values, supported read-only facets, or presentation rules. */
+  filterable?: boolean;
+  /** Supports grid exports. Default true. Default export selection omits false; explicit requests reject it. */
+  exportable?: boolean;
   /** Readers can edit the column's cells; the editing part loads with the grid (docs/editing.md). */
   editable?: boolean;
   /** The column's typed editor; without one the column's kind chooses text, number or datetime. */
@@ -571,7 +575,7 @@ export interface GridRowActivation {
 }
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
-  /** Defaults to visible columns in their current order. */
+  /** Defaults to visible exportable columns in their current order. Explicit non-exportable columns are rejected. */
   columns?: string[];
   values?: GridExportRequest["values"];
   signal?: AbortSignal;

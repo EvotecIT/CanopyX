@@ -160,6 +160,8 @@ A paged grid is as tall as a page of rows (up to 100) and its chrome, as the tab
 
 `order` is a list of `[column, direction]` pairs, where the column is a position or an id, or of `{ column, direction }` objects. `searchText` is the first search, and `searchMode` is `substring` (the default) or `words`. A column is sortable unless it says otherwise; `sortable: false` makes every column unsortable unless a column says so.
 
+`searchable: false` excludes a column from local search, including `searchText` and queries set through the API. When every column is excluded, the search box is hidden and a non-empty local search has no matches.
+
 ## Saving the view
 
 `stateSave: true` keeps what the grid saves (sort, search, filters, page and page length, column widths, order and visibility, selection and named views) in session storage for two hours. An object chooses more:
@@ -171,7 +173,9 @@ A paged grid is as tall as a page of rows (up to 100) and its chrome, as the tab
 | `key` | the page path | Storage key prefix; the grid id is added. |
 | `url` | `false` | `"query"` or `"hash"` also keeps the shareable part (sort, search, filters, page and page length) in the address, so a copied link opens the same view. A view in the address wins over a stored one. The hash form uses the fragment only while it is empty or `name=value` pairs; a page with anchors or a hash router uses `"query"`. |
 | `parameter` | the grid id | The address parameter. |
-| `load({ key, view })`, `save({ key, view, state })` | | The host's own store instead of browser storage; `load` may return a promise. |
+| `load({ key, view })`, `save({ key, view, state })` | | The host's own store instead of browser storage; either callback may return a promise. |
+
+Asynchronous saves run one at a time for each key. While a save is pending, only the newest waiting state is kept. Destroying the grid queues its final state; recreating a grid with the same key waits for those saves before loading it. Other keys save and load independently. A failed save leaves the grid usable and allows the next queued save to run.
 
 ## Texts
 

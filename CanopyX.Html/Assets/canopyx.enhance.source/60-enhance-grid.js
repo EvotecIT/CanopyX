@@ -109,13 +109,13 @@
     const paged = settings.paging !== false, pageLength = settings.pageLength === undefined ? 25 : settings.pageLength;
     const searchColumns = columns.filter(column => column.searchable).map(column => column.grid.id);
     const view = { protocol: PROTOCOL, type: "grid", id, label, columns: columns.map(column => column.grid), selection: settings.selection || "none",
-      search: settings.search !== false,
+      search: settings.search !== false && searchColumns.length > 0,
       // A server answers one page per request; browser-side rows are read in windows of at least 100.
       pageSize: Math.min(10000, Math.max(server && paged ? 1 : 100, Number.isInteger(pageLength) ? pageLength : 100)),
       source: { kind: server ? "host" : "inline" } };
     if (!server) view.rows = [];
     if (paged) Object.assign(view, { presentation: "paged", pageLength, pager: enhancePager(settings) });
-    if (searchColumns.length < columns.length) view.searchColumns = searchColumns;
+    if (searchColumns.length && searchColumns.length < columns.length) view.searchColumns = searchColumns;
     for (const name of ["noun", "density", "zebra"]) if (settings[name] !== undefined) view[name] = settings[name];
     view.query = { sort: enhanceOrder(settings.order, columns), search: settings.searchText === undefined ? "" : String(settings.searchText) };
     if (settings.searchMode !== undefined) view.query.searchMode = settings.searchMode;
@@ -134,7 +134,7 @@
         if (cell) { cellElement.append(...Array.from(cell.childNodes, node => node.cloneNode(true))); return true; }
       }])) : null;
     if (markup || settings.renderers) grid.renderers = { ...markup, ...settings.renderers };
-    const rowSource = server ? null : enhanceRowSource(store, view, GRID_REPORTING.compare?.(view) || gridCompare);
+    const rowSource = server ? null : enhanceRowSource(store, view, GRID_REPORTING.compare?.(view) || gridCompare, view.searchColumns || searchColumns);
     grid.source = server ? enhanceServerSource(urlSource, view, columns, settings.rowId, store) : rowSource;
     if (urlSource && !server && records === undefined) {
       store.load = () => store.loading = enhanceRequest(urlSource, urlSource.url, enhanceExtra(urlSource)).then(json => {

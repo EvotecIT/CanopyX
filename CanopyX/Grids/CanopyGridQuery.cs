@@ -101,7 +101,7 @@ public sealed class CanopyGridQuery {
             }
         }
         foreach (var filter in Filters) {
-            if (filter == null || !columns.TryGetValue(filter.Column, out var column)) throw new InvalidOperationException("Grid predicates must identify declared columns.");
+            if (filter == null || !columns.TryGetValue(filter.Column, out var column) || !column.Filterable) throw new InvalidOperationException("Grid predicates must identify declared filterable columns.");
             filter.Validate(column);
         }
         if (GroupBy != null && view.Reporting?.DynamicGrouping != true) throw new InvalidOperationException("Grouping levels need a definition with runtime grouping.");

@@ -121,6 +121,41 @@ test("a tree host takes over Enter and double-click activation; Space, the expan
   await capture(page, "row-activation-tree");
 });
 
+for (const gesture of ["click", "dblclick"]) {
+  test("an expanded short tree keeps its row under a held native " + gesture, async ({ page }) => {
+    await open(page, treeView);
+    await page.evaluate(() => {
+      window.expansionPress = { firstFit: null, pointers: [] };
+      const host = document.querySelector("[data-canopyx-host]"), grid = host.querySelector(".cx-grid");
+      const observer = new MutationObserver(() => {
+        if (!host.querySelector('[data-cx-id="a1"]')) return;
+        // Observe the first render that shows the new rows, before an eventual timer can mask an undersized viewport.
+        expansionPress.firstFit = grid.scrollHeight <= grid.clientHeight + 1;
+        observer.disconnect();
+      });
+      observer.observe(host, { childList: true, subtree: true });
+      for (const type of ["pointerdown", "pointerup"]) document.addEventListener(type, event => {
+        if (event.button === 0) expansionPress.pointers.push({ type,
+          id: event.target.closest(".cx-row")?.dataset.cxId, scroll: grid.scrollTop, height: grid.clientHeight });
+      }, true);
+    });
+    await row(page, "a").focus();
+    await page.keyboard.press("Enter");
+    await expect(row(page, "a")).toHaveAttribute("aria-expanded", "true");
+    expect(await activations(page)).toEqual([{ id: "a", keyboard: true, row: true }]);
+    // A held press spans the former pending growth fit; no timing assertion or slower test allowance is needed.
+    await row(page, "b").locator(".cx-cell").nth(1)[gesture]({ delay: 80 });
+    await expect(row(page, "b")).toHaveAttribute("aria-selected", "true");
+    expect(await activations(page)).toEqual(gesture === "dblclick" ? [{ id: "b", keyboard: false, row: true }] : []);
+    const result = await page.evaluate(() => expansionPress);
+    expect(result.firstFit).toBe(true);
+    expect(result.pointers).toHaveLength(gesture === "dblclick" ? 4 : 2);
+    expect(result.pointers.every(event => event.id === "b")).toBe(true);
+    expect(new Set(result.pointers.map(event => event.scroll)).size).toBe(1);
+    expect(new Set(result.pointers.map(event => event.height)).size).toBe(1);
+  });
+}
+
 // The drawer's title: whether it has focus and shows a focus ring, and its subtitle.
 const drawerTitle = page => page.locator(".cx-drawer h4").evaluate(title => ({ focused: document.activeElement === title,
   ring: title.matches(":focus-visible") && getComputedStyle(title).outlineStyle !== "none", subtitle: title.nextElementSibling.hidden ? null : title.nextElementSibling.textContent }));

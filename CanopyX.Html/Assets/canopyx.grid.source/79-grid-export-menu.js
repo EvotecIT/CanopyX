@@ -22,6 +22,7 @@
     const status = h("p", "cx-grid-delivery-status"); status.setAttribute("role", "status");
     const meter = h("progress"); meter.setAttribute("aria-label", labels.gridExport); meter.hidden = true;
     let operation = null, formats = [];
+    panel.cxExportBusy = () => operation !== null;
     const cancel = gridButton(labels.gridCancelExport, () => operation?.abort()); cancel.hidden = true;
     const progress = value => {
       if (this.destroyed || !operation || operation.signal.aborted) return;
@@ -30,9 +31,10 @@
       if (value.total === null) meter.removeAttribute("value");
       else { meter.max = Math.max(1, value.total); meter.value = value.completed; }
     };
+    const canExport = () => this.view.type !== "grid" || this.defaultExportColumns().length > 0;
     const busy = state => {
       scope.disabled = state; cancel.hidden = meter.hidden = !state;
-      for (const button of [csv, ...formats, copy, this.printButton]) if (button) button.disabled = state;
+      for (const button of [csv, ...formats, copy, this.printButton]) if (button) button.disabled = state || !canExport();
     };
     // Ordinary grids take no progress option; the reporting runtime reports CSV and copy progress through it.
     const traced = (options, onProgress) => reporting ? { ...options, onProgress } : options;
@@ -65,6 +67,9 @@
           panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress }))), { value: format.id }));
       } catch (error) { formats = []; this.emit("error", { error }); }
       copy.before(...formats);
+      busy(false);
+      if (!canExport()) setText(status, labels.gridNoExportColumns);
+      else if (status.textContent === labels.gridNoExportColumns) setText(status, "");
     };
     panel.append(scope, csv, copy, cancel, meter, status);
     panel.cxFormats();
