@@ -2,7 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup,
+import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup, GridAggregate, GridNumberFormat,
   GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
 import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
@@ -59,7 +59,7 @@ const graphiteView: InlineGridView = {
     { id: "name", title: "Name", kind: "text", presenter: { kind: "identifier", mono: true }, section: "Identity" },
     { id: "enabled", title: "Enabled", kind: "text", presenter: { kind: "boolean", inverted: true } },
     { id: "state", title: "State", kind: "text", presenter: { kind: "state", tones: { Healthy: "success" } } },
-    { id: "amount", title: "Amount", kind: "number", aggregatable: true,
+    { id: "amount", title: "Amount", kind: "number", aggregatable: true, format: { maximumFractionDigits: 1, suffix: "%" },
       presenter: { kind: "sparklineLine", minimum: 0, scaleMaximum: 100, mark: "last", thresholds: [{ upperBound: 50, tone: "success" }] } },
     { id: "history", title: "History", kind: "text", presenter: { kind: "statusStrip" } }
   ], rows: [{ id: "one", cells: { name: { value: "Service", secondary: "Region" }, amount: { value: 20,
@@ -85,6 +85,11 @@ await kbTree.previousMatch();
 const treeLayout: string = kbTree.getLayout().mode;
 // @ts-expect-error Trees offer the fit and scroll layouts.
 const cardsTree: CanopyView = { protocol: "canopyx/2", type: "view", id: "bad", label: "Bad", rowHeight: 28, pageSize: 100, selection: "single", columns: [], layout: { mode: "cards" } };
+const amountSummary: GridAggregate = { id: "average", column: "amount", operation: "average", label: "Average amount",
+  format: { minimumFractionDigits: 0, maximumFractionDigits: 0, prefix: "~", suffix: "%" } };
+// @ts-expect-error Number format affixes are text.
+const badFormat: GridNumberFormat = { suffix: 1 };
+createDataGrid(document.createElement("div"), { view: { ...graphiteView, id: "graphite-summary", reporting: { aggregates: [amountSummary] } } });
 const graphite = createDataGrid(document.createElement("div"), { view: graphiteView,
   onChart: ({ signal, selection }) => { if (signal.aborted) return; }, onUngroup: ({ signal }) => {} });
 await graphite.setPageLength("all");

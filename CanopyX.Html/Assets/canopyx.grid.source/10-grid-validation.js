@@ -1,5 +1,10 @@
   // ---------- flat-grid wire boundaries ----------
   function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
+  function gridNumberFormat(format) {
+    const minimum = format?.minimumFractionDigits ?? 0, maximum = format?.maximumFractionDigits ?? 10;
+    if (!format || typeof format !== "object" || Array.isArray(format) || ![minimum, maximum].every(digits => Number.isInteger(digits) && digits >= 0 && digits <= 10) || minimum > maximum ||
+        [format.prefix, format.suffix].some(text => text !== undefined && (typeof text !== "string" || !text || text.length > 16))) throw new Error("CanopyX: invalid number format.");
+  }
 
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
@@ -21,6 +26,7 @@
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
+      if (column.format !== undefined) { if (column.kind !== "number") throw new Error("CanopyX: number formats need number columns."); gridNumberFormat(column.format); }
       if (column.aggregatable !== undefined && (typeof column.aggregatable !== "boolean" || column.aggregatable && column.kind !== "number") ||
           column.section !== undefined && (typeof column.section !== "string" || !column.section.trim() || column.section.length > 256))
         throw new Error("CanopyX: invalid column aggregate or drawer section.");

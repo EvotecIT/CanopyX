@@ -287,6 +287,7 @@ public sealed partial class CanopyDataGridView {
             column.Validation?.Validate(column);
             column.Presenter?.Validate(column, Columns);
             if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
+            if (column.Format != null && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Number formats require numeric columns.");
             if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
             column.ValidateLayout(Columns);
             if (column.Ordering != null && (Reporting == null || !column.Sortable || column.Kind != CanopyColumnKind.Text))

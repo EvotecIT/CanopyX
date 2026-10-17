@@ -68,7 +68,7 @@ The browser runtime is assembled from `CanopyX.Html/Assets/canopyx.source/*.js` 
 
 `./Build/Sync-Assets.ps1 -Check` fails when the assembled file is out of date; the quality loop runs it.
 
-The assembled file leaves out whole-line comments (`//` lines and `/* */` blocks on lines of their own), apart from the header of the first part, so document the parts freely: comments do not count against the 48 KB gzip budget. The rule works on lines, so the script refuses what it could misread: code on a line of a block comment, a block comment that opens after code on a line, template literals, and strings continued with a trailing backslash.
+The assembled file leaves out whole-line comments (`//` lines and `/* */` blocks on lines of their own), apart from the header of the first part, so document the parts freely: comments do not count against the gzip asset budgets. The rule works on lines, so the script refuses what it could misread: code on a line of a block comment, a block comment that opens after code on a line, template literals, and strings continued with a trailing backslash.
 
 ## Performance Evidence
 

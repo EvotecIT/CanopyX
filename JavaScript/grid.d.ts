@@ -67,6 +67,8 @@ export interface GridExportColumn {
   readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
   readonly wrap?: boolean; readonly alignment?: "left" | "right";
   readonly presenter?: GridPresenter;
+  /** The column number format that produced the display text. */
+  readonly format?: GridNumberFormat;
   readonly diagnostics?: readonly string[];
 }
 /**
@@ -74,6 +76,11 @@ export interface GridExportColumn {
  * methods against the row. Untyped rows (the default) take any string.
  */
 export type GridColumnId<Row extends GridRow = GridRow> = string extends keyof Row["cells"] ? string : Extract<keyof Row["cells"], string>;
+/** Fraction digits from 0 to 10 (defaults 0 and 3); a minimum above 3 requires an explicit maximum. Literal affixes have 1 to 16 code units. */
+export interface GridNumberFormat {
+  readonly minimumFractionDigits?: number; readonly maximumFractionDigits?: number;
+  readonly prefix?: string; readonly suffix?: string;
+}
 export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" | "editable" | "width"> & {
   /** The column's id; for a typed row, one of its cells. */
   id: GridColumnId<Row>;
@@ -90,6 +97,8 @@ export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" 
   wrap?: boolean;
   /** Declarative presentation; explicit host renderers take precedence. */
   presenter?: GridPresenter;
+  /** Number columns: display format of raw numbers without cell text, also used by summaries and selection totals. */
+  format?: GridNumberFormat;
   /** Include selected numeric values in the optional status bar. */
   aggregatable?: boolean;
   /** Record drawer section label. */
@@ -450,8 +459,11 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
 /** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
 export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
 export interface GridAggregate {
+  /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: GridAggregateOperation;
+  /** Explicit value format; otherwise the column format applies, except that count and distinctCount use whole numbers. */
+  readonly format?: GridNumberFormat;
 }
 /** One runtime grouping level: groups order by value, or by a declared aggregate (nulls last, ties by value). */
 export interface GridGroupLevel {

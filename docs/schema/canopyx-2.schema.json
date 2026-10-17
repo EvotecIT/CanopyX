@@ -642,7 +642,18 @@
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
         "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
-        "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
+        "label": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } }
+    },
+    "gridNumberFormat": {
+      "type": "object", "additionalProperties": false,
+      "description": "Display format of binary64 numbers. Defaults are minimum 0 and maximum 3. Minimum must not exceed maximum, so a minimum above 3 requires an explicit maximum. Halfway values round away from zero; literal prefixes follow the sign.",
+      "properties": {
+        "minimumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 0 },
+        "maximumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },
+        "prefix": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "suffix": { "type": "string", "minLength": 1, "maxLength": 16 }
+      }
     },
     "gridAggregateValues": {
       "type": "object", "maxProperties": 32, "propertyNames": { "$ref": "#/$defs/identifier" },
@@ -1440,6 +1451,10 @@
         },
         "presenter": {
           "$ref": "#/$defs/gridPresenter"
+        },
+        "format": {
+          "$ref": "#/$defs/gridNumberFormat",
+          "description": "Number columns only: display format of raw numbers without cell text, also used by summaries and selection totals."
         },
         "aggregatable": {
           "type": "boolean"

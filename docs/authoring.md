@@ -205,9 +205,14 @@ Grouped reporting views retain record-based paging and export scope:
 inventory.Reporting = new CanopyGridReporting {
     Grouping = new CanopyGridGrouping("category"), SelectionControls = true
 };
+inventory.GetColumn("amount").Format = CanopyGridNumberFormat.Fixed(2);
 inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
-    "total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
+    "total", "amount", CanopyGridAggregateOperation.Sum, "Total"));
+inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
+    "smallest", "amount", CanopyGridAggregateOperation.Minimum, "Smallest"));
 ```
+
+Group headings and the totals row show each aggregate as its label and value, such as `Total 1,234.50  Smallest 0.10`. A number column's `Format` / `format` formats raw cell values without host `Text` and the aggregates over that column; a `CanopyGridAggregate` format overrides it for one aggregate, and counts default to whole numbers. Declare the format, for example `Fixed(0, suffix: "%")`, instead of writing per-cell display text such as `88%`, so summaries match the cells. Number aggregates may extend over empty cells to their left; short labels still help in narrow layouts, where labels shorten first and the complete text remains in the accessible name and tooltip.
 
 The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts, column-aligned totals and the worst declared state tone; collapsing a group hides its rows without removing records from selections or exports. Hosted summaries supply optional `CanopyGridGroup.Cells` / `groups[].cells` for group display facts. The pinned summary row follows the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
 

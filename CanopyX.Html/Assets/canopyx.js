@@ -32,9 +32,6 @@ return tone}
 function applyTone(element,base,tone){element.className=base+tone.cls;toneColors(element,tone)}
 function toneColors(element,tone){if((element._tone||null)===tone.host){return}
 element._tone=tone.host;if(tone.host){element.style.setProperty("--cx-t","var(--cx-tone-"+tone.host+")");element.style.setProperty("--cx-t-bg","var(--cx-tone-"+tone.host+"-bg)")}else{element.style.removeProperty("--cx-t");element.style.removeProperty("--cx-t-bg")}}
-const numberFormats=new Map();function numberFormat(lang){const key=lang||"";let format=numberFormats.get(key);if(!format){try{format=new Intl.NumberFormat(lang||undefined,{maximumFractionDigits:3})}catch(e){format=new Intl.NumberFormat(undefined,{maximumFractionDigits:3})}
-if(numberFormats.size>=16)numberFormats.delete(numberFormats.keys().next().value);numberFormats.set(key,format)}
-return format}
 function pad2(value){return value<10?"0"+value:String(value)}
 const dateTexts=new Map();function dateText(value){let texts=dateTexts.get(value);if(texts===undefined){const time=Date.parse(value);const d=new Date(time);texts=isNaN(time)?null:[String(d.getUTCFullYear()).padStart(4,"0")+ "-"+pad2(d.getUTCMonth()+ 1)+ "-"+pad2(d.getUTCDate())+ " "+pad2(d.getUTCHours())+ ":"+pad2(d.getUTCMinutes()),String(d.getFullYear()).padStart(4,"0")+ "-"+pad2(d.getMonth()+ 1)+ "-"+pad2(d.getDate())+ " "+pad2(d.getHours())+ ":"+pad2(d.getMinutes())];if(dateTexts.size>=DATE_CACHE)dateTexts.clear();dateTexts.set(value,texts)}
 return texts}
@@ -42,13 +39,13 @@ function formatting(lang,local,labels){const split=(template)=>{const at=templat
 function formatDate(value,fmt){const texts=dateText(value);return texts?(fmt.local?texts[1]:fmt.utc[0]+ texts[0]+ fmt.utc[1]):String(value)}
 function otherZone(cell,column,fmt){const value=cellValue(cell);if(column.kind!=="datetime"||typeof value!=="string"||(isCellObject(cell)&&typeof cell.text==="string")){return null}
 const texts=dateText(value);return texts?(fmt.local?fmt.utc[0]+ texts[0]+ fmt.utc[1]:fmt.other[0]+ texts[1]+ fmt.other[1]):null}
-function formatValue(value,kind,fmt){if(value===null||value===undefined){return ""}
+function formatValue(value,kind,fmt,format){if(value===null||value===undefined){return ""}
 if(typeof value==="boolean"){return value?fmt.labels.yes:fmt.labels.no}
-if(typeof value==="number"&&kind==="number"){return numberFormat(fmt.lang).format(value)}
+if(typeof value==="number"&&kind==="number"){return numberText(value,fmt.lang,format)}
 if(typeof value==="string"&&kind==="datetime"){return formatDate(value,fmt)}
 return String(value)}
 function cellText(cell,column,fmt){if(isCellObject(cell)&&typeof cell.text==="string"){return cell.text}
-return formatValue(cellValue(cell),column.kind,fmt)}
+return formatValue(cellValue(cell),column.kind,fmt,column.format)}
 const collator=new Intl.Collator(undefined,{numeric:true,sensitivity:"base"});const safeGridNumber=value=>Number.isFinite(value)&&Math.abs(value)<=Number.MAX_SAFE_INTEGER;function sortKey(cell,column){let value=isCellObject(cell)&&(typeof cell.sort==="string"||safeGridNumber(cell.sort))?cell.sort:cellValue(cell);if((value===null||value==="")&&isCellObject(cell)&&typeof cell.text==="string"&&cell.text!==""){value=cell.text}
 if(value===null||value===""){return{rank:2,value:0}}
 if(typeof value==="boolean"){return{rank:0,value:value?1:0}}
@@ -67,6 +64,10 @@ function fill(template,values){return template.replace(/\{(\w+)\}/g, (match, nam
 const pluralRules=new Map();function plural(template,count,lang){if(!template.startsWith("["))return template;const forms={};for(const match of template.matchAll(/\[(zero|one|two|few|many|other)\]([^[]*)/g)) forms[match[1]] = match[2];
 let rules=pluralRules.get(lang);if(!rules){try{rules=new Intl.PluralRules(lang||"en")}catch(_){rules=new Intl.PluralRules("en")}pluralRules.set(lang,rules)}
 return forms[rules.select(Number(count))]??forms.other??template}
+const numberFormats=new Map();function numberFormat(lang,minimum=0,maximum=3){const key=(lang||"")+ "|"+minimum+"|"+maximum;let format=numberFormats.get(key);if(!format){const digits={minimumFractionDigits:minimum,maximumFractionDigits:maximum};try{format=new Intl.NumberFormat(lang||undefined,digits)}catch(e){format=new Intl.NumberFormat(undefined,digits)}
+if(numberFormats.size>=16)numberFormats.delete(numberFormats.keys().next().value);numberFormats.set(key,format)}
+return format}
+function numberText(value,lang,format){if(!format)return numberFormat(lang).format(value);const minimum=format.minimumFractionDigits??0,maximum=format.maximumFractionDigits??Math.max(3,minimum);const parts=numberFormat(lang,minimum,maximum).formatToParts(+value.toFixed(maximum)||0);const at=parts.findIndex(part=>!["minusSign","literal"].includes(part.type));return parts.map((part,index)=>(index===at&&format.prefix||"")+ part.value).join("")+(format.suffix||"")}
 let pageNonce=typeof document!=="undefined"&&document.currentScript?.nonce||"",trustPolicy;function setNonce(nonce){if(typeof nonce!=="string"||!nonce)throw new Error("CanopyX: invalid nonce.");pageNonce=nonce}
 function withNonce(element){const nonce=pageNonce||document.querySelector("script[nonce]")?.nonce;if(nonce)element.nonce=nonce;return element}
 function trusted(kind,value){if(trustPolicy===undefined){try{trustPolicy=global.trustedTypes?.createPolicy("canopyx",{createHTML:text=>text,createScript:text=>text,createScriptURL:text=>text})||null}

@@ -544,6 +544,8 @@ A remote adapter adds a record endpoint and routes the browser source's `record`
 
 ### Safe cell presenters
 
+Flat-grid number columns optionally declare `format: { minimumFractionDigits, maximumFractionDigits, prefix, suffix }`. Digits are 0 to 10 (defaults 0 and 3, minimum not above maximum); `prefix` and `suffix` are literal text of 1 to 16 code units, and the prefix follows any minus sign. The format applies to raw numbers without cell `text` in cells, presenters, facets, record details, copy, exports, group headings of a numeric grouping column, selection totals and summaries. Readers format the digits in the page `lang`; the static outline uses the invariant culture. A value that rounds to zero shows no minus sign. Raw values still drive search, filters, sorting and exported values.
+
 Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
 
 Graphite also provides `enum` and `state` with an optional raw-value `tones` map, `change` with a numeric `deltaColumn` and `higherIsGood`, `statusStrip`, `sparklineBars`, `sparklineLine`, `identifier` with `secondaryColumn` and `mono`, `tags` with a literal `separator`, and `missing`. Booleans accept `inverted`. Progress and sparklines accept up to 32 ascending `thresholds` (`upperBound`, `tone`); the first inclusive bound wins, and unmatched values use the cell tone. Sparkline `minimum` and `scaleMaximum` must be supplied together for a shared scale; otherwise each cell scales independently. `mark: "last"` selects the last point; the default marks the worst tone, then the least healthy value according to `higherIsGood`.
@@ -887,7 +889,7 @@ The runtime and the static outline show a cell without `text` the same way:
 
 | Value | `number` column | `datetime` column | `text` column |
 | --- | --- | --- | --- |
-| number | thousands separators, up to 3 decimals | as written | as written |
+| number | thousands separators, up to 3 decimals, or the flat-grid column `format` | as written | as written |
 | string | as written | ISO date shown as `yyyy-MM-dd HH:mm UTC`, or as `yyyy-MM-dd HH:mm` in the reader's time zone | as written |
 | boolean | `Yes` or `No` | `Yes` or `No` | `Yes` or `No` |
 | null or absent | empty | empty | empty |
