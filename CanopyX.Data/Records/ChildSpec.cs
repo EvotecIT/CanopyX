@@ -30,12 +30,10 @@ internal sealed class ChildSpec<TChild> {
     /// rows Load more asks for (the page size within the endpoint's limit).</summary>
     internal Func<IReadOnlyList<object?[]>, int?, int, CanopyCell> Build { get; }
 
-    /// <summary>Clips plain text to a bound without splitting a surrogate pair; blank text becomes an em dash.</summary>
+    /// <summary>Clips plain text with an ellipsis without splitting a surrogate pair; blank required text becomes an em dash.</summary>
     internal static string Text(object? value, int maximum, bool required) {
         var text = value as string;
         if (string.IsNullOrWhiteSpace(text)) return required ? "—" : string.Empty;
-        if (text!.Length <= maximum) return text;
-        var length = char.IsHighSurrogate(text[maximum - 1]) ? maximum - 1 : maximum;
-        return text.Substring(0, length);
+        return RecordText.Clip(text, maximum)!;
     }
 }

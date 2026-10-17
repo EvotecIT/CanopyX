@@ -74,3 +74,82 @@ test("accepting a pending hosted order refreshes facets at the accepted revision
     await expect(page.locator(".cx-facet-error")).toBeHidden();
   } finally { await page.evaluate(() => window.api.destroy()); }
 });
+
+test("accepting a pending hosted order retains pushed values in the grid and open record", async ({ page }) => {
+  await open(page);
+  try {
+    await page.evaluate(async () => {
+      await window.api.setQuery({ ...window.api.getQuery(), sort: [{ column: "value", direction: "desc" }] });
+      window.rows[990] = { ...window.rows[990], cells: { value: 5000, site: "B" } }; window.revision = "r2";
+      await window.api.refreshRows();
+      await window.api.openDetails("r0999");
+      await window.api.applyTransaction({ update: [{ id: "r0999", cells: { site: "Pushed" } }] });
+    });
+    const record = page.locator(".cx-drawer"), row = page.locator('.cx-row[data-cx-id="r0999"]');
+    await expect(record).toContainText("Pushed");
+    await expect(row).toContainText("Pushed");
+    expect(await page.evaluate(() => window.api.getLiveState().orderChanged)).toBe(true);
+    // An unchanged poll must leave both the held order and the push alone.
+    await page.evaluate(() => window.api.refreshRows());
+    await page.evaluate(() => window.api.resort());
+    expect(await page.evaluate(() => window.api.getQuery().revision)).toBe("r2");
+    await expect(row).toContainText("Pushed");
+    await expect(record).toContainText("Pushed");
+    expect(await page.evaluate(() => window.api.getLiveState().orderChanged)).toBe(false);
+  } finally { await page.evaluate(() => window.api.destroy()); }
+});
+
+test("a query-affecting push retires a pending hosted order before re-sort", async ({ page }) => {
+  await open(page);
+  try {
+    await page.evaluate(async () => {
+      await window.api.setQuery({ ...window.api.getQuery(), sort: [{ column: "value", direction: "desc" }] });
+      window.rows[990] = { ...window.rows[990], cells: { value: 5000, site: "B" } }; window.revision = "r2";
+      await window.api.refreshRows();
+      window.rows[999] = { ...window.rows[999], cells: { value: 6000, site: "Pushed" } }; window.revision = "r3";
+      await window.api.updateRows([{ id: "r0999", cells: { value: 6000, site: "Pushed" } }]);
+      await window.api.resort();
+    });
+    expect(await page.evaluate(() => window.api.getQuery().revision)).toBe("r3");
+    const rows = page.locator(".cx-row[data-cx-id]");
+    await expect(rows.first()).toHaveAttribute("data-cx-id", "r0999");
+    await expect(rows.first()).toContainText("6,000Pushed");
+    expect(await page.evaluate(() => window.api.getLiveState().orderChanged)).toBe(false);
+  } finally { await page.evaluate(() => window.api.destroy()); }
+});
+
+test("pending hosted pages keep source membership and are replaced by a newer revision", async ({ page }) => {
+  await open(page);
+  try {
+    const result = await page.evaluate(async () => {
+      await window.api.setQuery({ ...window.api.getQuery(), sort: [{ column: "value", direction: "desc" }] });
+      // The new row is only in the held snapshot; the removed row is still in the reader's old order.
+      window.rows = window.rows.filter(row => row.id !== "r0998");
+      window.rows.push({ id: "new", cells: { value: 6000, site: "Added" } });
+      window.rows.find(row => row.id === "r0990").cells.value = 5000; window.revision = "r2";
+      await window.api.refreshRows();
+      const pushed = await window.api.updateRows([{ id: "r0998", cells: { site: "Removed" } }, { id: "new", cells: { site: "Missing" } }]);
+      const errors = [];
+      for (const change of [{ add: [{ id: "illegal", cells: { value: 1 } }] }, { remove: ["r0999"] }])
+        try { await window.api.applyTransaction(change); } catch (error) { errors.push(error.message); }
+      await window.api.resort();
+      return { pushed, errors };
+    });
+    expect(result.pushed).toMatchObject({ updated: ["r0998"], missing: ["new"] });
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors.every(message => message.includes("at its source"))).toBe(true);
+    await expect(page.locator('.cx-row[data-cx-id="r0998"]')).toHaveCount(0);
+    await expect(page.locator('.cx-row[data-cx-id="new"]')).toContainText("Added");
+    await page.evaluate(async () => {
+      window.rows.find(row => row.id === "r0999").cells.value = 7000; window.revision = "r3";
+      await window.api.refreshRows();
+      await window.api.updateRows([{ id: "r0999", cells: { site: "Old push" } }]);
+      window.rows.find(row => row.id === "r0990").cells.value = 8000;
+      window.rows.find(row => row.id === "r0999").cells.site = "Newest"; window.revision = "r4";
+      await window.api.refreshRows();
+      await window.api.resort();
+    });
+    expect(await page.evaluate(() => window.api.getQuery().revision)).toBe("r4");
+    await expect(page.locator('.cx-row[data-cx-id="r0999"]')).toContainText("Newest");
+  } finally { await page.evaluate(() => window.api.destroy()); }
+});

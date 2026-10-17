@@ -82,6 +82,18 @@
         row.h = after; changed.set(row.key, columns); pages.add(Math.floor(row._ri / this.pageSize) * this.pageSize);
         if (searched || [...columns].some(id => used.has(id))) moved = true;
       }
+      // Re-sort accepts the held snapshot, so supported pushes must reach its copies of loaded rows too. A push that
+      // changes the query's order or membership retires that snapshot: only the source can give the new result.
+      if (merge && this.livePending?.pages) {
+        for (const items of this.livePending.pages.values()) for (let index = 0; index < items.length; index++) {
+          const item = items[index], change = loaded.has(item.id) && changes.get(item.id);
+          if (!change) continue;
+          const after = liveMerged(item, change), columns = liveChangedColumns(item, after);
+          items[index] = after;
+          if (!liveSameRow(item, after) && (searched || [...columns].some(id => used.has(id)))) moved = true;
+        }
+        if (moved) this.livePending = null;
+      }
       for (const offset of pages) { const page = this.pages.get(offset); if (page?.rows) this.storePage({ offset, items: page.rows.map(row => row.h) }); }
       if (changed.size) {
         this.version++; this.scheduleRender();
