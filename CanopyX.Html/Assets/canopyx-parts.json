@@ -77,7 +77,7 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "version": "51dd73e9203b1136",
+      "version": "31162b1ffa622bf8",
       "script": "canopyx-enhance.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "cc5155ad7943f8aa",
+      "version": "3502d377f5d377da",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [

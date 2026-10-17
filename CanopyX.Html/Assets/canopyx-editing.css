@@ -27,8 +27,8 @@
 .cx-data-grid .cx-editbar .icon{width:var(--cx-size-28px);padding:0;}
 .cx-host .cx-edit-save,.cx-host .cx-edit-save:hover{background:var(--cx-accent);border-color:var(--cx-accent);color:var(--cx-on-accent);}
 .cx-host .cx-edit-save:disabled{opacity:.45;}
-.cx-phone .cx-editbar{order:10;flex:1 1 100%;height:auto;min-height:var(--cx-size-44px);}
-.cx-phone .cx-editbar-text{margin-right:auto;}
+.cx-phone .cx-editbar{order:10;flex:1 1 100%;flex-wrap:wrap;height:auto;min-height:var(--cx-size-44px);padding-block:var(--cx-size-4px);}
+.cx-phone .cx-editbar-text{flex:1 1 100%;min-width:0;margin-right:0;white-space:normal;overflow-wrap:anywhere;}
 .cx-drawer.cx-edit-form .cx-dl dd .cx-editor{height:var(--cx-size-34px);border-color:var(--cx-control-border);}
 .cx-drawer.cx-edit-form .cx-dl dd .cx-editor:focus-visible{border-color:var(--cx-accent);}
 .cx-drawer.cx-edit-form .cx-dl dd .cx-editor[aria-invalid="true"]{border-color:var(--cx-tone-danger);}

@@ -123,6 +123,10 @@ CanopyX.grid("#orders", {
 
 When every column declares its type, the grid appears at once with its loading state and fills when the answer arrives; a failed request shows the grid's error with Retry, which asks again. Without declared types, the records are read first so the columns and kinds can come from them.
 
+Both reads use `requestTimeoutMs` (30 seconds by default). A timed-out read is canceled; Retry starts a fresh read. Without declared types, a timeout rejects the creation promise and leaves the original element intact, so the page can call `grid` or `enhance` again. A destroyed grid or superseded query cancels its pending read, and a late answer cannot replace newer rows. Custom `fetch` functions receive the cancellation signal in their request options.
+
+Once accepted, the URL's rows stay in the browser: sorting, search, paging and `reload()` use those cached rows. `setData` replaces a pending URL read with the supplied rows. `addRows` and `removeRows` called during the initial read wait for it before changing those rows; if that read fails or is canceled, their promises reject too.
+
 ### Server processing
 
 ```js

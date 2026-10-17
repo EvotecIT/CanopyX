@@ -62,6 +62,10 @@ app.MapGet("/machines", () => Results.Content(
         .Replace("</head>", CanopyRemoteScript.Element(map.Schema, "/api/machines") + "</head>"), "text/html"));
 ```
 
+For a page with a nonce-based Content Security Policy, pass the response's nonce to both `CanopyHtmlOptions.Nonce`
+and `CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/machines", nonce)`. The configuration script must run
+before the grid mounts. See [Content Security Policy](security.md#content-security-policy).
+
 The default executor already counts through EF Core's asynchronous query provider and enumerates EF queries
 asynchronously, without a dependency on EF Core. An executor of your own uses other operators, for example:
 

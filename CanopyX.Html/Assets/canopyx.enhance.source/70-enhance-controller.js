@@ -88,11 +88,14 @@
       setData(data) {
         local("setData");
         const built = enhanceRecordRows(data, columns, settings.rowId);
-        Object.assign(store, { rows: built.rows, records: built.records, markup: null, tableRecord: null });
+        // Explicit data replaces the pending URL source; refresh aborts that query and late answers no longer own rows.
+        Object.assign(store, { rows: built.rows, records: built.records, markup: null, tableRecord: null, loaded: true, loading: null });
         return refresh();
       },
       addRows(data) {
         local("addRows");
+        if (!Array.isArray(data)) throw new Error("CanopyX: data is an array of records.");
+        if (store.load && !store.loaded) return api.ready.then(() => controller.addRows(data));
         const built = enhanceRecordRows(data, columns, settings.rowId, store.rows.length, new Set(store.rows.map(row => row.id)));
         store.rows = store.rows.concat(built.rows); built.records.forEach((record, id) => store.records.set(id, record));
         return refresh();
@@ -100,6 +103,7 @@
       removeRows(ids) {
         local("removeRows");
         if (!Array.isArray(ids)) throw new Error("CanopyX: removeRows takes an array of row ids.");
+        if (store.load && !store.loaded) return api.ready.then(() => controller.removeRows(ids));
         const gone = new Set(ids);
         store.rows = store.rows.filter(row => !gone.has(row.id));
         gone.forEach(id => { store.records.delete(id); store.markup?.delete(id); });

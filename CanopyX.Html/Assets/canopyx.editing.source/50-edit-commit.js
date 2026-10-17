@@ -45,12 +45,13 @@
     },
 
     async editCommitRow(id, entry) {
-      const state = this.edit, check = await this.editValidateRow(id);
+      const state = this.edit, check = editCurrentValidation(this, await this.editValidateRow(id));
       if (!check.valid) return editCopy({ id, ok: false, status: "invalid", errors: check.errors, error: check.error });
       if (state.changes.get(id) !== entry || entry.status === "saving") return entry.saving || editCopy({ id, ok: true, status: "unchanged" });
       let response, answered = false;
       const respondWith = value => { if (answered) throw new Error("CanopyX: the row commit has an answer already."); answered = true; response = value; };
       const detail = { ...this.editChangeOf(entry), row: editCopy(entry.row), revision: this.snapshot?.revision ?? null, respondWith };
+      const admitted = { entry, values: { ...detail.values } };
       let go = this.host.dispatchEvent(new CustomEvent("canopyx:rowCommit", { detail, cancelable: true })), result;
       if (typeof this.opts.onRowCommit === "function") {
         try { result = this.opts.onRowCommit(detail); } catch (error) { result = Promise.reject(error); }
@@ -60,7 +61,7 @@
       if (!go) return editCopy({ id, ok: false, status: "cancelled" });
       entry.committed = true;
       if (!answered) return editCopy({ id, ok: true, status: "pending" });
-      return this.editSave([id], () => Promise.resolve(response).then(value =>
+      return this.editSave([admitted], () => Promise.resolve(response).then(value =>
         editCommitAnswer({ protocol: PROTOCOL, type: "gridCommitResult", view: this.view.id, rows: [value === true ? { id, status: "saved" } : { ...value, id }] },
           { view: this.view.id, rows: [{ id }] }, this.view.columns))).then(rows => rows[0]);
     },
@@ -72,7 +73,8 @@
       const ready = id => state.changes.get(id)?.status !== "saving" && Object.keys(state.changes.get(id)?.values || {}).length > 0;
       const ids = [...new Set(options.ids ?? state.changes.keys())];
       ids.forEach(id => requireIdentifier(id, "committed row ID"));
-      const checks = await Promise.all(ids.filter(ready).map(id => this.editValidateRow(id)));
+      const checks = (await Promise.all(ids.filter(ready).map(id => this.editValidateRow(id))))
+        .map(result => editCurrentValidation(this, result));
       const rows = checks.filter(check => !check.valid).map(check => ({ id: check.id, ok: false, status: "invalid", errors: check.errors, error: check.error }));
       const valid = checks.filter(check => check.valid && ready(check.id)).map(check => check.id);
       let revision;
@@ -81,7 +83,8 @@
           rows: valid.map(id => this.editChangeOf(state.changes.get(id))) });
         const writer = state.options.commit || (typeof this.source.commit === "function" ? (body, context) => this.source.commit(body, context) : null);
         const local = !writer && this.view.source.kind === "inline";
-        rows.push(...await this.editSave(valid, async signal => {
+        const admitted = valid.map((id, index) => ({ entry: state.changes.get(id), values: batch.rows[index].values }));
+        rows.push(...await this.editSave(admitted, async signal => {
           if (writer) { const answer = editCommitAnswer(await writer(batch, { signal }), batch, this.view.columns); revision = answer.revision; return answer; }
           return { rows: new Map(local ? valid.map(id => [id, { id, status: "saved" }]) : []) };
         }, options.signal));
@@ -95,9 +98,10 @@
 
     // Sends rows to a writer and applies its answer; resolves with a result per row. Each row's saving promise is the
     // answer a commit of that row gets while it saves.
-    editSave(ids, write, signal) {
-      const state = this.edit, entries = ids.map(id => state.changes.get(id));
-      for (const entry of entries) { entry.status = "saving"; entry.saved = { ...entry.values }; entry.error = null; }
+    editSave(admitted, write, signal) {
+      const entries = admitted.map(row => row.entry);
+      // A row hook may create a newer draft before it answers. Accept only the entry and values it was offered.
+      for (const { entry, values } of admitted) { entry.status = "saving"; entry.saved = { ...values }; entry.error = null; }
       this.editChanged();
       const run = this.runGridHook(write, signal).then(answer => this.editSaved(entries, answer, null), error => this.editSaved(entries, null, error));
       entries.forEach((entry, index) => { entry.saving = run.then(results => results[index]); });

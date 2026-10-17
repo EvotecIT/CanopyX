@@ -52,29 +52,45 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
     /// <inheritdoc />
     public ValueTask<string> GetRevisionAsync(CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
-        return new ValueTask<string>(_revision());
+        var revision = _revision();
+        cancellationToken.ThrowIfCancellationRequested();
+        return new ValueTask<string>(revision);
     }
 
     /// <inheritdoc />
     public ValueTask<CanopyPageResult> QueryAsync(CanopyDataRequest request, CancellationToken cancellationToken) {
         Own(request);
         var all = Load(cancellationToken);
-        var matches = Arrange(Select(all, request), request);
-        var rows = matches.Skip(request.Offset).Take(request.Limit).Select(Row);
-        return new ValueTask<CanopyPageResult>(new CanopyPageResult(all.Count, matches.Count, rows));
+        var selected = Select(all, request);
+        cancellationToken.ThrowIfCancellationRequested();
+        var matches = Arrange(selected, request);
+        cancellationToken.ThrowIfCancellationRequested();
+        var rows = matches.Skip(request.Offset).Take(request.Limit).Select(record => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Row(record);
+        });
+        var result = new CanopyPageResult(all.Count, matches.Count, rows);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new ValueTask<CanopyPageResult>(result);
     }
 
     /// <inheritdoc />
     public ValueTask<int> CountAsync(CanopyDataRequest request, CancellationToken cancellationToken) {
         Own(request);
-        return new ValueTask<int>(Select(Load(cancellationToken), request).Count);
+        var count = Select(Load(cancellationToken), request).Count;
+        cancellationToken.ThrowIfCancellationRequested();
+        return new ValueTask<int>(count);
     }
 
     /// <inheritdoc />
     public async IAsyncEnumerable<CanopyGridRow> ReadAsync(CanopyDataRequest request, [EnumeratorCancellation] CancellationToken cancellationToken) {
         Own(request);
         await Task.Yield();
-        foreach (var record in Arrange(Select(Load(cancellationToken), request), request).Skip(request.Offset).Take(request.Limit)) {
+        var selected = Select(Load(cancellationToken), request);
+        cancellationToken.ThrowIfCancellationRequested();
+        var records = Arrange(selected, request);
+        cancellationToken.ThrowIfCancellationRequested();
+        foreach (var record in records.Skip(request.Offset).Take(request.Limit)) {
             cancellationToken.ThrowIfCancellationRequested();
             yield return Row(record);
         }
@@ -85,10 +101,12 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
         var matches = Select(Load(cancellationToken), request.Query);
+        cancellationToken.ThrowIfCancellationRequested();
         var ordinal = request.Column.Ordinal;
         var term = CanopyTextFolding.Fold(request.Search)!;
         var buckets = new Dictionary<string, (object? Value, int Count)>(StringComparer.Ordinal);
         foreach (var record in matches) {
+            cancellationToken.ThrowIfCancellationRequested();
             var value = record.Values[ordinal];
             if (term.Length > 0 && !ProtocolSemantics.ContainsTerm(value, term)) continue;
             var key = CanopyQueryableProvider<T>.FacetKey(value);
@@ -96,8 +114,13 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
                 ? (string.CompareOrdinal(existing.Value as string, value as string) <= 0 ? existing.Value : value, existing.Count + 1)
                 : (value, 1);
         }
-        var ordered = buckets.Values.OrderBy(bucket => bucket.Value, FacetOrder.Instance).Take(request.Limit).Select(bucket => new CanopyFacetBucket(bucket.Value, bucket.Count));
-        return new ValueTask<CanopyFacetResult>(new CanopyFacetResult(matches.Count, buckets.Count, ordered));
+        var ordered = buckets.Values.OrderBy(bucket => bucket.Value, FacetOrder.Instance).Take(request.Limit).Select(bucket => {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new CanopyFacetBucket(bucket.Value, bucket.Count);
+        });
+        var result = new CanopyFacetResult(matches.Count, buckets.Count, ordered);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new ValueTask<CanopyFacetResult>(result);
     }
 
     /// <inheritdoc />
@@ -106,8 +129,12 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
         Own(request.Query);
         foreach (var aggregate in request.Aggregates) Supported(aggregate);
         var matches = Select(Load(cancellationToken), request.Query);
+        cancellationToken.ThrowIfCancellationRequested();
         var groups = request.Levels.Count == 0 ? new List<CanopySummaryGroup>() : Groups(request, matches, 0);
-        return new ValueTask<CanopySummaryResult>(new CanopySummaryResult(matches.Count, Aggregate(request, matches), groups));
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = new CanopySummaryResult(matches.Count, Aggregate(request, matches), groups);
+        cancellationToken.ThrowIfCancellationRequested();
+        return new ValueTask<CanopySummaryResult>(result);
     }
 
     /// <summary>The groups of one level over some records, each with the groups of the next level; the handler orders them.</summary>
@@ -168,16 +195,32 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider {
 
     private List<Record> Load(CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
+        var source = _records();
+        cancellationToken.ThrowIfCancellationRequested();
         var list = new List<Record>();
-        foreach (var item in _records()) {
+        using var items = source.GetEnumerator();
+        while (true) {
+            // Host enumeration and accessors can be slow or cancel the request themselves. Check both sides,
+            // including a final MoveNext(false), before invoking another callback or allocating another row.
+            cancellationToken.ThrowIfCancellationRequested();
+            var more = items.MoveNext();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!more) break;
+            var item = items.Current;
+            cancellationToken.ThrowIfCancellationRequested();
             var cells = new CanopyCell?[_values.Length];
             var raw = new object?[_values.Length];
             for (var i = 0; i < _values.Length; i++) {
+                cancellationToken.ThrowIfCancellationRequested();
                 var value = _values[i](item);
+                cancellationToken.ThrowIfCancellationRequested();
                 cells[i] = value as CanopyCell ?? CanopyDataValues.ToCell(value);
                 raw[i] = CanopyDataValues.Normalize(value is CanopyCell cell ? cell.Value : value);
             }
-            list.Add(new Record(_id(item), raw, cells));
+            cancellationToken.ThrowIfCancellationRequested();
+            var id = _id(item);
+            cancellationToken.ThrowIfCancellationRequested();
+            list.Add(new Record(id, raw, cells));
         }
         return list;
     }

@@ -26,6 +26,17 @@ public static class CanopyRemoteScript {
     public static string Element(CanopyDataSchema schema, string endpoint, params (string Id, string Label)[]? exportFormats) =>
         "<script>" + Script(schema, endpoint, exportFormats) + "</script>";
 
+    /// <summary>Creates the remote source script element with the response's Content Security Policy nonce.</summary>
+    /// <param name="schema">The schema the endpoints serve.</param>
+    /// <param name="endpoint">The route prefix the endpoints were mapped at.</param>
+    /// <param name="nonce">The response's nonce, or null for no nonce. Use the same value as the page's
+    /// <c>CanopyHtmlOptions.Nonce</c>; generate a fresh value for every response.</param>
+    /// <param name="exportFormats">Server export formats with their menu labels; null offers server CSV.</param>
+    /// <returns>A <c>&lt;script&gt;</c> element carrying the nonce when supplied.</returns>
+    /// <exception cref="ArgumentException">The nonce is not base64 or base64url characters with at most two trailing <c>=</c>.</exception>
+    public static string ElementWithNonce(CanopyDataSchema schema, string endpoint, string? nonce, params (string Id, string Label)[]? exportFormats) =>
+        "<script" + CanopyX.Html.CanopyContentSecurity.Attribute(nonce) + ">" + Script(schema, endpoint, exportFormats) + "</script>";
+
     /// <summary>Creates the script text for a grid, without the element.</summary>
     /// <param name="schema">The schema the endpoints serve.</param>
     /// <param name="endpoint">The route prefix.</param>

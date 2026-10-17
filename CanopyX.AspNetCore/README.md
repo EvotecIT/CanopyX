@@ -16,4 +16,6 @@ app.MapCanopyRemote("/api/hosts", http => http.RequestServices.GetRequiredServic
 The group serves `POST query`, `GET query`, `POST facet`, `POST summary`, `POST export/{format}` and `GET view`. With
 `options.Writer` it also serves `POST commit`, which requires `options.WriteAuthorizationPolicy` on top of the read policy.
 `CanopyRemoteScript.Element(map.Schema, "/api/hosts")` writes the browser script that connects the grid to them.
+Under a nonce-based Content Security Policy, use `CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce)`
+with the same response nonce as the page.
 See `docs/remote-dotnet.md` in the repository.
