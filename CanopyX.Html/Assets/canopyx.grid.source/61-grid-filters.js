@@ -6,7 +6,12 @@
       return Number(raw);
     }
     if (column.kind === "datetime") {
-      const text = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : grid.local ? new Date(raw).toISOString() : raw + "Z";
+      let text = raw;
+      if (!/(?:Z|[+-]\d\d:\d\d)$/.test(raw)) {
+        const moment = gridDateInputMoment(raw, grid.local);
+        if (!moment) throw new Error(grid.labels.gridInvalidFilter);
+        text = grid.local ? moment.toISOString() : raw + "Z";
+      }
       gridScalar(text, column); return text;
     }
     if (type === "boolean") {

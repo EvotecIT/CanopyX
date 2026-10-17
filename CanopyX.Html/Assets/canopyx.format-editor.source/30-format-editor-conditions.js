@@ -11,8 +11,8 @@
         like: labels.formatLike, notLike: labels.formatNotLike, matches: labels.formatMatches, notMatches: labels.formatNotMatches, between: labels.formatBetween,
         betweenExclusive: labels.formatBetweenExclusive, olderThan: labels.formatOlderThan, withinLast: labels.formatWithinLast }, ranged = operator => operator === "between" || operator === "betweenExclusive";
       const invalid = () => { throw new Error(grid.labels.gridInvalidFilter); };
-      const dateText = value => { const date = new Date(value); return Number.isFinite(date.getTime()) ? new Date(date.getTime() - (grid.local ? date.getTimezoneOffset() * 60000 : 0)).toISOString().slice(0, 19) : ""; };
-      const dateValue = text => { const date = new Date(grid.local ? text : text + "Z"); return Number.isFinite(date.getTime()) ? date.toISOString() : invalid(); };
+      const dateText = value => { const date = new Date(value); return Number.isFinite(date.getTime()) ? new Date(date.getTime() - (grid.local ? date.getTimezoneOffset() * 60000 : 0)).toISOString().slice(0, -1) : ""; };
+      const dateValue = text => { const date = gridDateInputMoment(text, grid.local); return date ? date.toISOString() : invalid(); };
       const typed = (column, text) => column.kind === "number" ? text.trim() && Number.isFinite(Number(text)) ? Number(text) : invalid() : column.kind === "datetime" ? dateValue(text) : text;
       const extend = (row, predicate) => {
         const fields = row._filter, upper = h("input", "cx-grid-filter-value"), upperField = gridInputLabel(this.labels.gridConditionUpperValue, upper);

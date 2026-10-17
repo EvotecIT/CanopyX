@@ -114,6 +114,52 @@ test("record packs beside a single-file page load from file:// when a drawer ope
   expect(packs).toBeGreaterThan(0);
 });
 
+for (const [name, base] of [["query", "records?version/"], ["fragment", "records#archive/"], ["empty", ""]])
+test("record sidecar base: " + name + " is rejected before loading a script", async ({ page }) => {
+  const view = definition({}, 1), requests = [];
+  view.record.source = { kind: "sidecar", base, shards: 1 };
+  delete view.rows[0].fields;
+  await page.route("http://canopyx.test/**", route => {
+    if (route.request().resourceType() === "document") return route.fulfill({ contentType: "text/html", body: viewPage(view) });
+    requests.push(route.request().url());
+    return route.abort();
+  });
+  await page.goto("http://canopyx.test/records.html");
+  await page.waitForSelector("[data-cx-ready]");
+  await page.evaluate(api + ".ready");
+  const error = page.evaluate(() => new Promise(resolve => document.querySelector("[data-canopyx-host]")
+    .addEventListener("canopyx:error", event => resolve(event.detail.error.message), { once: true })));
+  await page.evaluate(api + ".openDetails('c000')");
+  const message = await error;
+  expect(requests).toEqual([]);
+  expect(message).toContain("record sidecar base must be a non-empty folder path without a query or fragment");
+  await expect(drawer(page).locator("h4")).toHaveText("host0.example.test");
+});
+
+for (const [name, base] of [["relative spaces and Unicode", "record packs/Łódź/"], ["absolute web folder", "https://packs.test/archive/"]])
+test("record sidecar base: " + name + " loads and retries a missing pack", async ({ page }) => {
+  const view = definition({}, 1), requests = [], url = new URL(base + "r0.js", "http://canopyx.test/records.html").href;
+  view.record.source = { kind: "sidecar", base, shards: 1 };
+  delete view.rows[0].fields;
+  await page.route(url, route => {
+    requests.push(route.request().url());
+    if (requests.length === 1) return route.abort();
+    return route.fulfill({ contentType: "application/javascript", body: `(self.CanopyXSidecar = self.CanopyXSidecar || []).push(["certificates", "r0", ${JSON.stringify({
+      protocol: "canopyx/2", type: "gridRecordPack", view: "certificates", records: [{ id: "c000", fields: { team: "Loaded team" } }]
+    })}]);` });
+  });
+  await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/records.html");
+  await page.waitForSelector("[data-cx-ready]");
+  await page.evaluate(api + ".ready");
+  await page.evaluate(api + ".openDetails('c000')");
+  const error = drawer(page).locator(".cx-record-error");
+  await expect(error).toContainText("Sidecar file is missing: r0");
+  await error.getByRole("button", { name: "Retry" }).click();
+  await expect(drawer(page).locator('dd[data-cx-field="team"]')).toHaveText("Loaded team");
+  expect(requests).toEqual([url, url]);
+});
+
 test("the inline example embeds every record's fields, the sidecar page none", async () => {
   const fs = await import("node:fs");
   const inline = fs.readFileSync(new URL(exampleUrl("certificate-inventory.html")), "utf8"), sidecar = fs.readFileSync(new URL(exampleUrl("certificate-sidecar/index.html")), "utf8");

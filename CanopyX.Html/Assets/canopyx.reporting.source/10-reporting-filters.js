@@ -27,7 +27,12 @@
       if (!raw.trim()) throw new Error(labels.gridInvalidFilter);
       const value = Number(raw); gridScalar(value, column); return value;
     }
-    const value = /(?:Z|[+-]\d\d:\d\d)$/.test(raw) ? raw : local ? new Date(raw).toISOString() : raw + "Z";
+    let value = raw;
+    if (!/(?:Z|[+-]\d\d:\d\d)$/.test(raw)) {
+      const moment = gridDateInputMoment(raw, local);
+      if (!moment) throw new Error(labels.gridInvalidFilter);
+      value = local ? moment.toISOString() : raw + "Z";
+    }
     gridScalar(value, column); return value;
   }
 

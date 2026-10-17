@@ -1,4 +1,4 @@
-  function gridDateInput(value,local){const date=new Date(value);return Number.isFinite(date.getTime())?new Date(date.getTime()-(local?date.getTimezoneOffset()*60000:0)).toISOString().slice(0,19):"";}
+  function gridDateInput(value,local){const date=new Date(value);return Number.isFinite(date.getTime())?new Date(date.getTime()-(local?date.getTimezoneOffset()*60000:0)).toISOString().slice(0,-1):"";}
   const GRID_DATE_PRESETS=[["today","gridToday"],["yesterday","gridYesterday"],["last7","gridLastSevenDays"],["last30","gridLastThirtyDays"],["month","gridThisMonth"]];
   function gridDatePreset(local,preset){
     const start=new Date(),end=new Date(),zone=local?"":"UTC",
@@ -16,7 +16,9 @@
     const read=()=>{const predicates=[...rows.children].map(row=>{const {operator,input,original}=row._condition;
       if(["isNull","isNotNull"].includes(operator.value))return {column:column.id,operator:operator.value,values:[]};
       if(original&&input.value===original.input&&operator.value===original.filter.operator)return original.filter;
-      const value=column.kind==="number"?Number(input.value):date?(this.local?new Date(input.value).toISOString():new Date(input.value+"Z").toISOString()):input.value;
+      const moment=date?gridDateInputMoment(input.value,this.local):null;
+      if(date&&!moment)throw new Error(this.labels.gridInvalidFilter);
+      const value=column.kind==="number"?Number(input.value):date?moment.toISOString():input.value;
       if(column.kind==="number"&&!input.value.trim())throw new Error(this.labels.gridInvalidFilter);gridScalar(value,column);
       return {column:column.id,operator:operator.value,values:[value]};});
       return predicates.length===1?predicates[0]:{operator:join.value,filters:predicates,groups:[]};};
