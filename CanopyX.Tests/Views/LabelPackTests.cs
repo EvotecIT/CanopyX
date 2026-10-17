@@ -9,8 +9,10 @@ public sealed class LabelPackTests {
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
     public void ShippedPack_CoversEveryLabelAndPlaceholder_AndCarriesTranslationsToBothRenderers(int language) {
-        CanopyLabels Pack() => language switch { 0 => CanopyLabels.Polish(), 1 => CanopyLabels.German(), _ => CanopyLabels.Spanish() };
+        CanopyLabels Pack() => language switch { 0 => CanopyLabels.Polish(), 1 => CanopyLabels.German(), 2 => CanopyLabels.Spanish(), 3 => CanopyLabels.French(), _ => CanopyLabels.Italian() };
         var labels = Pack();
         var source = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "labels.json")))!.AsObject();
         var properties = typeof(CanopyLabels).GetProperties().Where(property => property.PropertyType == typeof(string)).ToArray();

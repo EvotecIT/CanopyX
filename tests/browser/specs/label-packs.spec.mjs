@@ -5,9 +5,11 @@ import axe from 'axe-core';
 import polish, { staticLabels as polishStatic } from '../../../JavaScript/locales/pl.mjs';
 import german, { staticLabels as germanStatic } from '../../../JavaScript/locales/de.mjs';
 import spanish, { staticLabels as spanishStatic } from '../../../JavaScript/locales/es.mjs';
+import french, { staticLabels as frenchStatic } from '../../../JavaScript/locales/fr.mjs';
+import italian, { staticLabels as italianStatic } from '../../../JavaScript/locales/it.mjs';
 import { repo, viewPage, nextFrames, openExample } from './support.mjs';
 
-const packs = [['pl',polish,polishStatic],['de',german,germanStatic],['es',spanish,spanishStatic]];
+const packs = [['pl',polish,polishStatic],['de',german,germanStatic],['es',spanish,spanishStatic],['fr',french,frenchStatic],['it',italian,italianStatic]];
 const canonical = JSON.parse(fs.readFileSync(path.join(repo,'CanopyX/Views/Locales/labels.json'),'utf8'));
 const wire = name => name[0].toLowerCase()+name.slice(1);
 for (const [language,labels,staticLabels] of packs) {
@@ -26,7 +28,14 @@ for (const [language,labels,staticLabels] of packs) {
       `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridCopy:'Host copy'}});</script></head>`);
     await page.route('http://canopyx.test/translated',route=>route.fulfill({contentType:'text/html',body:html}));
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
-    expect(Object.keys(labels).sort()).toEqual(await page.evaluate(()=>Object.keys(CanopyX.labels).sort()));
+    // The editing part brings its gridEdit… labels and the formatting parts their format… labels; the runtime defines the rest.
+    const runtimeNames = await page.evaluate(()=>Object.keys(CanopyX.labels));
+    const partNames = Object.keys(labels).filter(name=>!runtimeNames.includes(name));
+    expect(Object.keys(labels).filter(name=>runtimeNames.includes(name)).sort()).toEqual(runtimeNames.sort());
+    const editing = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-editing.js'),'utf8');
+    const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
+    expect(partNames.length).toBeGreaterThan(0);
+    for (const name of partNames) { expect(name).toMatch(/^(gridEdit|format)[A-Z]/); expect(/^format/.test(name)?formatting:editing).toContain(name+':"'); }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});
     await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await expect(page.locator('.cx-grid-columns > summary')).toHaveText(labels.columns);

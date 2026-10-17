@@ -3,7 +3,9 @@
     gridPaging: "Result pages", gridPageRange: "{first}–{last} of {count} rows",
     gridPageNumber: "Page", gridPageLength: "Rows per page", gridFirstPage: "First page",
     gridPreviousPage: "Previous page", gridNextPage: "Next page", gridLastPage: "Last page",
-    gridUnknownCount: "Result count unavailable", gridMatchedCount: "{count} matching rows", gridCursorRange: "Rows {first}–{last}"
+    gridUnknownCount: "Result count unavailable", gridMatchedCount: "{count} matching rows", gridCursorRange: "Rows {first}–{last}",
+    gridPageInfo: "Showing {first} to {last} of {count} rows", gridPageInfoFiltered: "Showing {first} to {last} of {count} rows (filtered from {total})",
+    gridPageButton: "Page {page}"
   }));
   function gridResultShape(query) { return JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]); }
 
@@ -38,8 +40,8 @@
       this.pendingPageNavigation = navigation; return navigation.promise;
     },
     setPageLength(length) {
-      const all=length==="all";if(all){if(this.view.source.kind!=="inline")throw new Error("CanopyX: All rows needs inline data.");length=Math.max(1,this.view.rows.length);}
-      if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > Math.max(10000,this.view.source.kind==="inline"?this.view.rows.length:0))
+      const all=length==="all";if(all){if(this.view.source.kind!=="inline")throw new Error("CanopyX: All rows needs inline data.");length=Math.max(1,(this.view.rowData?.count??this.view.rows.length));}
+      if (!this.paged || !this.acceptedQuery || !Number.isInteger(length) || length < 1 || length > Math.max(10000,this.view.source.kind==="inline"?(this.view.rowData?.count??this.view.rows.length):0))
         throw new Error("CanopyX: visible page length is an integer from 1 to 10000 for an accepted paged result.");
       const query = this.queryForChange(true), queuedSearch = query.search !== this.acceptedQuery.search;
       if (this.cursor) return this.setQuery(gridQueryStart(query), { pageLength: length, allRows: all });
@@ -78,7 +80,8 @@
     buildPager() {
       if (!this.paged) return;
       const pager = this.pager = h("form", "cx-grid-pager"), signal = this.lifetime.signal;
-      pager.hidden = this.opts.toolbar === false;
+      // A view with pager settings shows its pager once the pager part has rebuilt it (52-grid-pager-part.js).
+      pager.hidden = this.opts.toolbar === false || !!this.view.pager;
       pager.setAttribute("aria-label", this.labels.gridPaging);
       this.pageRange = h("span", "cx-grid-page-range"); this.pageRange.setAttribute("role", "status");
       const run = action => { try { Promise.resolve(action()).catch(() => {}); } catch (error) { this.emit("error", { error }); } };
@@ -147,8 +150,14 @@
         if (index < this.rowBounds().first || index > this.rowBounds().last)
           throw new Error("CanopyX: row position is outside the accepted result page.");
         const epoch = this.queryEpoch, ownsFocus = focus && this.canvas.contains(document.activeElement);
-        this.setFocus(this.rowItem(index), ownsFocus);
+        const initial = this.rowItem(index);
+        this.setFocus(initial, ownsFocus);
         navigation.epoch = epoch; this.pendingNavigation = navigation;
+        // A cached row is already revealed and painted. Reading scrollTop again would flush the new cell styles.
+        if (focus === false && column == null && control == null && initial && !initial.status &&
+            !this.destroyed && !this.dataLifetime.signal.aborted && epoch === this.queryEpoch && !this.pendingQuery &&
+            this.pendingNavigation === navigation && this.rowCache.get(index) === initial && this.focused === initial &&
+            this.rendered.get(initial)?.isConnected) return;
         const navigationTop = this.logicalTop();
         const row = await this.waitForRow(index, epoch);
         if (this.destroyed || epoch !== this.queryEpoch || this.pendingQuery) throw new DOMException("Grid navigation was superseded.", "AbortError");

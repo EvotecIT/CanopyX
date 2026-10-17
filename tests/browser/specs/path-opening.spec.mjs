@@ -3,7 +3,9 @@
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
 
-const view = { protocol: "canopyx/2", type: "view", id: "paths", label: "Paths", columns: [{ id: "name", title: "Name", width: 400 }],
+// The tree keeps the host's height: its debounced fit to the rows would add a resize, and a render, to whichever
+// measurement it happens to land in, at a time each engine schedules differently.
+const view = { protocol: "canopyx/2", type: "view", id: "paths", label: "Paths", autoHeight: false, columns: [{ id: "name", title: "Name", width: 400 }],
   source: { kind: "inline" }, roots: [] };
 
 /**

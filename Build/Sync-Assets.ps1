@@ -1,3 +1,4 @@
+#Requires -Version 7.0
 param(
     [switch] $Check
 )
@@ -88,7 +89,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css')
+        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx-grid.css'
     }
     @{
@@ -107,7 +108,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css')
+        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx-reporting.css'
     }
     @{
@@ -120,11 +121,44 @@ $assets = @(
     }
 )
 
-$filterEditorParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'filter-editor-parts.json') -Raw | ConvertFrom-Json)
-$filterEditorPaths = @($filterEditorParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
-
+# Lazy parts (Build/parts.json): each part's scripts and styles, the context its code receives and the entry points that know it.
+# Entry points leave out every script a part lists, unless that part also lists it as shared.
+$partList = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'parts.json') -Raw | ConvertFrom-Json).parts)
+# A part requires parts that exist for every entry point and view it has, without a cycle; the runtime loader relies on it.
+$partNames = @($partList | ForEach-Object name)
+foreach ($part in $partList) {
+    # View gating has one field: features lists the view features that make a view load the part (CanopyHtmlPart maps them).
+    foreach ($retired in 'feature', 'pager', 'editable') {
+        if ($part.PSObject.Properties.Name -contains $retired) { throw "Part '$($part.name)' uses '$retired'; list the view feature under features instead." }
+    }
+    if ($part.features -and @($part.features | Where-Object { $_ -isnot [string] -or $_ -notmatch '^[a-z][A-Za-z]{0,31}$' }).Count) {
+        throw "Part '$($part.name)' has an invalid feature name."
+    }
+    foreach ($name in @($part.requires | Where-Object { $_ })) {
+        $required = $partList | Where-Object name -EQ $name
+        if (-not $required) { throw "Part '$($part.name)' requires the unknown part '$name'." }
+        if (@($part.runtimes | Where-Object { $_ -notin $required.runtimes }).Count -or @($part.views | Where-Object { $_ -notin $required.views }).Count) {
+            throw "Part '$($part.name)' requires '$name', which some of its entry points or views do not have."
+        }
+    }
+}
+function Test-PartCycle([string] $Name, [string[]] $Chain) {
+    if ($Chain -contains $Name) { throw "Parts require each other: $(($Chain + $Name) -join ' -> ')." }
+    foreach ($next in @(($partList | Where-Object name -EQ $Name).requires | Where-Object { $_ })) { Test-PartCycle $next ($Chain + $Name) }
+}
+$partNames | ForEach-Object { Test-PartCycle $_ @() }
+$partOwnedPaths = @(foreach ($part in $partList) {
+    $shared = @($part.shared | Where-Object { $_ } | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+    foreach ($script in $part.scripts) {
+        $path = [IO.Path]::GetFullPath((Join-Path $root $script))
+        if ((Test-Path -LiteralPath $path -PathType Leaf) -and $path -notin $shared) { $path }
+    }
+})
+# Tree-only core parts define what the grid parts define again for flat grids (the tree menus' labels); grid runtimes leave them out.
+$treeOnlyParts = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'tree-only-parts.json') -Raw | ConvertFrom-Json)
+$treeOnlyPaths = @($treeOnlyParts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
 function Join-AssetSource {
-    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $IncludeFilterEditor)
+    param([string] $SourcePath, [string[]] $ExtensionPath, [switch] $PartSource, [switch] $GridRuntime)
 
     $parts = if (Test-Path -LiteralPath $SourcePath -PathType Leaf) { @(Get-Item -LiteralPath $SourcePath) }
         else { @(Get-ChildItem -LiteralPath $SourcePath -Filter '*.js' -File | Sort-Object Name) }
@@ -138,7 +172,8 @@ function Join-AssetSource {
         else { $parts = @($parts | Where-Object Name -LT '90-') + @($extra) + @($parts | Where-Object Name -GE '90-') }
     }
 
-    if (-not $IncludeFilterEditor) { $parts = @($parts | Where-Object FullName -NotIn $filterEditorPaths) }
+    if (-not $PartSource) { $parts = @($parts | Where-Object FullName -NotIn $partOwnedPaths) }
+    if ($GridRuntime) { $parts = @($parts | Where-Object FullName -NotIn $treeOnlyPaths) }
     if ($parts.Count -eq 0) {
         throw "No JavaScript source parts found in '$SourcePath'."
     }
@@ -216,15 +251,16 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
 '@
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
-const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels } = CanopyX;
-export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels };
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce };
 export default CanopyX;
 '@
+    # Parts load from files beside the module (Build/parts.json), as they do beside a classic runtime script.
+    $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
     if ($Grid) {
-        $header += "`nif (typeof document !== `"undefined`") runtimeHost.CanopyXFilterEditorBase = new URL(`"./`", import.meta.url).href;`n"
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, enhance, grid, configure')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
@@ -283,39 +319,69 @@ function Get-AssetHash([string] $Content) {
     finally { $sha.Dispose() }
 }
 
-$editorBody = Join-AssetSource -SourcePath $filterEditorPaths[0] -ExtensionPath $filterEditorPaths[1..($filterEditorPaths.Count - 1)] -IncludeFilterEditor
-$editorStyle = Compress-StyleSpacing (Join-AssetSource -SourcePath (Join-Path $root 'CanopyX.Html/Assets/canopyx.filter-editor.source/canopyx.css'))
-$editorVersion = Get-AssetHash ($editorBody + $editorStyle)
-$editorHeader = @'
-(function(global) {
-"use strict";
-const installed = new WeakSet();
-global.CanopyXFilterEditor = {version:"__VERSION__", install(context) {
-if (installed.has(context.DataGrid.prototype)) return;
-const {DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridQuery,gridQueryStart,
-GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
-reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,fill,reportingRangeRows} = context;
-const buildFilters = DataGrid.prototype.buildGridFilters;
-'@
-$editorFooter = @'
-DataGrid.prototype.buildGridFilters = buildFilters;
-context.GRID_REPORTING?.installFilters?.({gridDateInput});
-installed.add(DataGrid.prototype);
-}};
-})(typeof window !== "undefined" ? window : globalThis);
-'@
-$editorScript = Compress-ScriptSpacing (($editorHeader.Replace('__VERSION__', $editorVersion).Replace("`r`n", "`n")) + "`n" + $editorBody + $editorFooter.Replace("`r`n", "`n") + "`n")
-$editorScriptName = 'canopyx-filter-editor.' + (Get-AssetHash $editorScript) + '.js'
-$editorStyleName = 'canopyx-filter-editor.' + (Get-AssetHash $editorStyle) + '.css'
-$assets += @(@{ Generated = $editorScript; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.js' },
-    @{ Generated = $editorStyle; Target = 'CanopyX.Html/Assets/canopyx-filter-editor.css' })
-
+# Each part becomes canopyx-<name>.js (and .css): its scripts in the listed order inside a registration that destructures the
+# context the runtime hands its install function. The version hashes the complete generated install definition and style, so a runtime only
+# installs the part of its own build. Entry points read the manifest of the parts they know (__CX_PARTS__).
+$partBuilds = foreach ($part in $partList) {
+    $scriptPaths = @($part.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+    $body = Join-AssetSource -SourcePath $scriptPaths[0] -ExtensionPath @($scriptPaths | Select-Object -Skip 1) -PartSource
+    $style = ''
+    if ($part.styles) {
+        $stylePaths = @($part.styles | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
+        $style = Join-AssetSource -SourcePath $stylePaths[0] -ExtensionPath @($stylePaths | Select-Object -Skip 1) -PartSource
+        if ($part.styleScope) { $style = $style.Replace($part.styleScope[0], $part.styleScope[1]) }
+        $style = Compress-StyleSpacing $style
+    }
+    $version = '__CX_PART_VERSION__'
+    $requires = if ($part.requires) { ', requires:' + (ConvertTo-Json -InputObject @($part.requires) -Compress) } else { '' }
+    $key = 'context.' + $part.key
+    $header = "(function(global) {`n`"use strict`";`nconst installed = new WeakSet();`nconst part = {version:`"$version`"$requires, install(context) {`n" +
+        "if (installed.has($key)) return;`nconst {$($part.context -join ',')} = context;`n" + $(if ($part.start) { $part.start + "`n" } else { '' })
+    $footer = $(if ($part.end) { $part.end + "`n" } else { '' }) + "installed.add($key);`n}};`n" +
+        "(global.CanopyXParts ||= []).push([`"$($part.name)`", part]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
+    $script = Compress-ScriptSpacing ($header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"))
+    $version = Get-AssetHash ($script + $style)
+    $script = $script.Replace('__CX_PART_VERSION__', $version)
+    [pscustomobject]@{
+        Part = $part; Version = $version; Script = $script; Style = $style
+        ScriptName = 'canopyx-' + $part.name + '.' + (Get-AssetHash $script) + '.js'
+        StyleName = if ($style) { 'canopyx-' + $part.name + '.' + (Get-AssetHash $style) + '.css' } else { $null }
+    }
+}
+foreach ($build in $partBuilds) {
+    $assets += @{ Generated = $build.Script; Target = 'CanopyX.Html/Assets/canopyx-' + $build.Part.name + '.js' }
+    if ($build.Style) { $assets += @{ Generated = $build.Style; Target = 'CanopyX.Html/Assets/canopyx-' + $build.Part.name + '.css' } }
+}
+function Get-PartManifest([string] $Kind) {
+    $entries = foreach ($build in $partBuilds | Where-Object { $_.Part.runtimes -contains $Kind }) {
+        $files = @($build.Version, $build.ScriptName) + @($build.StyleName | Where-Object { $_ })
+        '"' + $build.Part.name + '":[' + (($files | ForEach-Object { '"' + $_ + '"' }) -join ',') + ']'
+    }
+    '{' + ($entries -join ',') + '}'
+}
+# CanopyX.Html reads this manifest to write each part beside the entry points that know it and to embed it in the fragments that need it.
+$partIndex = [ordered]@{ parts = @(foreach ($build in $partBuilds) {
+    $entry = [ordered]@{ name = $build.Part.name; label = $build.Part.label; version = $build.Version; script = 'canopyx-' + $build.Part.name + '.js' }
+    if ($build.Style) { $entry.style = 'canopyx-' + $build.Part.name + '.css' }
+    $entry.runtimes = @($build.Part.runtimes); $entry.views = @($build.Part.views)
+    if ($build.Part.sources) { $entry.sources = @($build.Part.sources) }
+    if ($build.Part.presenters) { $entry.presenters = @($build.Part.presenters) }
+    if ($build.Part.features) { $entry.features = @($build.Part.features) }
+    if ($build.Part.deepLink) { $entry.deepLink = $true }
+    if ($build.Part.requires) { $entry.requires = @($build.Part.requires) }
+    $entry
+}) }
+$assets += @{ Generated = (ConvertTo-Json -InputObject $partIndex -Depth 5).Replace("`r`n", "`n") + "`n"; Target = 'CanopyX.Html/Assets/canopyx-parts.json' }
 foreach ($asset in $assets) {
     $sourcePath = if ($asset.Source) { Join-Path $root $asset.Source } else { $null }
     $targetPath = Join-Path $root $asset.Target
     $extensionPath = if ($asset.Extension) { @($asset.Extension | ForEach-Object { Join-Path $root $_ }) } else { $null }
-    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath }
-    $generated = $generated.Replace('__CX_FILTER_VERSION__', $editorVersion).Replace('__CX_FILTER_SCRIPT__', $editorScriptName).Replace('__CX_FILTER_STYLE__', $editorStyleName)
+    $grid = [bool]($asset.Extension | Where-Object { $_ -like '*canopyx.grid.source' })
+    $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -GridRuntime:$grid }
+    if ($asset.Folding) {
+        if (-not $generated.Contains('__CX_PARTS__')) { throw 'The part manifest marker is missing.' }
+        $generated = $generated.Replace('__CX_PARTS__', (Get-PartManifest $(if ($grid) { 'grid' } else { 'tree' })))
+    }
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)

@@ -1,18 +1,45 @@
   // ---------- read-only host hooks, clipboard and record details ----------
+  // Parts that extend the record drawer register a hook once: every drawer a grid opens runs the hooks in order before its
+  // first paint, so each can follow the dialog's cx-drawer-paint events (editing 10, formatting 20, search highlighting 30).
+  DataGrid.drawerHooks = [];
+  DataGrid.activeDrawers = new Map();
+  DataGrid.applyDrawerHooks = (grid, dialog) => {
+    const applied = dialog._cxDrawerHooks ||= new Set();
+    for (const entry of DataGrid.drawerHooks) if (!applied.has(entry)) {
+      applied.add(entry);
+      try { entry.hook.call(grid, dialog); } catch (error) { grid.emit("error", { error }); }
+    }
+  };
+  DataGrid.refreshDrawerHooks = (grid, dialog) => {
+    if (dialog._cxHooksFrame) return;
+    // A newly installed part starts its per-grid state in the following microtasks. Paint after that state is ready.
+    dialog._cxHooksFrame = requestAnimationFrame(() => {
+      dialog._cxHooksFrame = 0;
+      if (grid.destroyed || !dialog.isConnected) return;
+      DataGrid.applyDrawerHooks(grid, dialog);
+      if (dialog._cxRecord) dialog.dispatchEvent(new CustomEvent("cx-drawer-paint", { detail: { id: dialog._cxRecord.id, index: dialog._cxIndex ?? null } }));
+    });
+  };
+  DataGrid.drawerHook = (order, hook) => {
+    DataGrid.drawerHooks.push({ order, hook }); DataGrid.drawerHooks.sort((a, b) => a.order - b.order);
+    for (const [dialog, grid] of DataGrid.activeDrawers) DataGrid.refreshDrawerHooks(grid, dialog);
+  };
   Object.assign(DataGrid.prototype, {
+    // The record drawer (filter editor part) focuses its title through this, with the ring after a key press only.
+    focusRing: focusDrawerTitle,
     scrollToRow(index) {
       if (this.destroyed || !this.acceptedQuery || this.pendingQuery || !Number.isInteger(index) ||
           index < (this.cursor ? this.pageOffset : 0) || index >= this.rowCount())
         throw new Error("CanopyX: invalid accepted row position.");
       return this.focusResult(index, false);
     },
-    async runGridHook(run, signal) {
+    async runGridHook(run, signal, timeout = this.requestTimeoutMs) {
       const controller = new AbortController(); let rejectHook;
       const cancelled = new Promise((resolve, reject) => { rejectHook = reject; });
       const abort = () => { controller.abort(); rejectHook(new DOMException("Grid cancelled.", "AbortError")); };
       this.lifetime.signal.addEventListener("abort", abort, { once: true });
       signal?.addEventListener("abort", abort, { once: true });
-      const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: operation timed out.")); }, this.requestTimeoutMs);
+      const timer = setTimeout(() => { controller.abort(); rejectHook(new Error("CanopyX: operation timed out.")); }, timeout);
       try {
         if (this.destroyed || signal?.aborted) abort();
         return await Promise.race([Promise.resolve().then(() => {
@@ -25,26 +52,6 @@
       }
     },
 
-    async copy(options) {
-      const exported = this.prepareExport(options);
-      const text = await this.exportText(exported, options.maxRows === undefined ? 10000 : options.maxRows, "\t", options.signal);
-      await this.writeClipboard(text, options.signal); return text;
-    },
-    writeClipboard(text, signal) {
-      return this.runGridHook(() => {
-        const clipboard = global.navigator.clipboard;
-        if (typeof clipboard?.writeText !== "function") throw new Error("CanopyX: clipboard unavailable.");
-        return clipboard.writeText(text);
-      }, signal);
-    },
-    copyFocused(row, cell) {
-      if (this.selected.size) return this.copy({ scope: "selected" });
-      const columns = this.visibleColumns(), index = cell ? this.rowCells(this.rendered.get(row)).indexOf(cell) : -1;
-      const text = index >= 0 ? gridExportField(cellText(row.h.cells[columns[index].id], columns[index], this.fmt), "\t") :
-        columns.map(column => gridExportField(cellText(row.h.cells[column.id], column, this.fmt), "\t")).join("\t");
-      return this.writeClipboard(text);
-    },
-
     openDetails(id) {
       requireIdentifier(id, "detail row ID");
       if (this.destroyed || !this.acceptedQuery || this.pendingQuery)
@@ -53,7 +60,8 @@
       if (!row) throw new Error("CanopyX: details require a loaded record.");
       if(typeof this.opts.onDetails!=="function"){
         const epoch=this.queryEpoch,returnFocus=document.activeElement;
-        return loadGridFilterEditor().then(()=>{if(!this.destroyed&&!this.pendingQuery&&epoch===this.queryEpoch)this.openGridDrawer(row.h,row._ri,returnFocus);});
+        // A record panel (sections, tabs, structured values) loads its part with the drawer.
+        return Promise.all([loadGridFilterEditor(),this.recordNeeded(row.h)&&loadRecordPanel()]).then(()=>{if(!this.destroyed&&!this.pendingQuery&&epoch===this.queryEpoch)this.openGridDrawer(row.h,row._ri,returnFocus);});
       }
       if (this.detailController) this.detailController.abort();
       const controller = this.detailController = new AbortController(), dataSignal = this.dataLifetime.signal;

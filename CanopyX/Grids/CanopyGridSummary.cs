@@ -24,7 +24,8 @@ public sealed class CanopyGridSummary {
     public string Revision { get; }
     /// <summary>Gets the full matching record count.</summary>
     public int Matched { get; }
-    /// <summary>Gets ordered groups covering every matched record. At most 10,000 groups are supported.</summary>
+    /// <summary>Gets the outermost level's ordered groups covering every matched record; inner levels nest in <see cref="CanopyGridGroup.Groups"/>.
+    /// At most 10,000 groups in all are supported.</summary>
     public IList<CanopyGridGroup> Groups { get; } = new List<CanopyGridGroup>();
     /// <summary>Gets full-query raw numeric aggregates keyed by declared aggregate identity.</summary>
     public IDictionary<string, double?> Aggregates { get; } = new Dictionary<string, double?>(StringComparer.Ordinal);
@@ -38,27 +39,15 @@ public sealed class CanopyGridSummary {
         if (Query.Revision != Revision || Query.Offset != 0 || Query.Cursor != null || Query.Limit != view.PageSize)
             throw new InvalidOperationException("Summary query ownership cannot change after construction.");
         var reporting = view.Reporting;
-        if (view.Id != View || reporting == null || reporting.Grouping == null && reporting.Aggregates.Count == 0)
+        if (view.Id != View || reporting == null || reporting.Grouping == null && !reporting.DynamicGrouping && reporting.Aggregates.Count == 0)
             throw new InvalidOperationException("Summary metadata needs its owning opted-in reporting view.");
-        if (Groups.Count > 10000 || (long)Matched + Groups.Count > int.MaxValue || reporting.Grouping == null && Groups.Count != 0)
-            throw new InvalidOperationException("Summary metadata supports at most 10,000 declared groups.");
-        CanopyColumn? column = null;
-        foreach (var declared in view.Columns) if (declared.Id == reporting.Grouping?.Column) column = declared;
-        var keys = new HashSet<string>(StringComparer.Ordinal); long offset = 0;
-        var compare = reporting.Grouping?.CreateComparer(view); CanopyGridGroup? previous = null;
-        foreach (var group in Groups) {
-            if (group == null || !keys.Add(group.Key) || group.Offset != offset)
-                throw new InvalidOperationException("Groups need unique stable keys and contiguous complete-query ranges.");
-            CanopyGridValues.Validate(group.Value?.Value, column!);
-            if (previous != null && compare!.Compare(previous.Value!, group.Value!) >= 0)
-                throw new InvalidOperationException("Groups must follow declared raw ordering without duplicate values.");
-            previous = group;
-            offset += group.Count;
-            if (offset > Matched) throw new InvalidOperationException("Group ranges exceed the matching record count.");
-        }
-        if (reporting.Grouping != null && offset != Matched)
-            throw new InvalidOperationException("Group ranges must account for every matching record.");
-        var writer = new CanopyJsonWriter();
+        var levels = new List<CanopyGridGroupLevel>();
+        if (reporting.Grouping != null) levels.Add(new CanopyGridGroupLevel(reporting.Grouping.Column, reporting.Grouping.Descending));
+        else levels.AddRange(Query.Levels(view));
+        if (levels.Count == 0 && Groups.Count != 0) throw new InvalidOperationException("An ungrouped summary has no groups.");
+        if ((long)Matched + Groups.Count > int.MaxValue) throw new InvalidOperationException("Summary metadata supports at most 10,000 declared groups.");
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        if (levels.Count != 0) CheckGroups(view, levels, 0, Groups, 0, Matched, keys);        var writer = new CanopyJsonWriter();
         writer.BeginObject().Envelope("gridSummary").Property("view", View).Property("revision", Revision).Property("matched", Matched);
         writer.Name("query"); Query.WriteJson(writer, view);
         WriteAggregates(writer, Aggregates, view, Matched);
@@ -68,6 +57,40 @@ public sealed class CanopyGridSummary {
         if (json.Length > 4194304) throw new InvalidOperationException("Summary metadata exceeds four million UTF-16 code units.");
         return json;
     }
+    // Each level's groups cover their parent's records in contiguous ranges, in the level's order; keys are unique across levels.
+    private static void CheckGroups(CanopyDataGridView view, IList<CanopyGridGroupLevel> levels, int depth, IList<CanopyGridGroup> groups, long start, long count, ISet<string> keys) {
+        var level = levels[depth];
+        CanopyColumn? column = null;
+        foreach (var declared in view.Columns) if (declared.Id == level.Column) column = declared;
+        var compare = new CanopyGridGrouping(level.Column, level.Descending).CreateComparer(view);
+        var ascending = new CanopyGridGrouping(level.Column).CreateComparer(view);
+        long offset = start; CanopyGridGroup? previous = null;
+        foreach (var group in groups) {
+            if (group == null || !keys.Add(group.Key) || keys.Count > 10000 || group.Offset != offset)
+                throw new InvalidOperationException("Groups need unique stable keys, at most 10,000 in all, and contiguous complete-query ranges.");
+            CanopyGridValues.Validate(group.Value?.Value, column!);
+            if (previous != null && Order(level, compare, ascending, previous, group) >= 0)
+                throw new InvalidOperationException("Groups must follow their level's order without duplicate values.");
+            previous = group;
+            if (depth + 1 < levels.Count) {
+                if (group.Groups.Count == 0) throw new InvalidOperationException("A group of an outer level lists its inner groups.");
+                CheckGroups(view, levels, depth + 1, group.Groups, group.Offset, group.Count, keys);
+            } else if (group.Groups.Count != 0) throw new InvalidOperationException("A group of the innermost level has no inner groups.");
+            offset += group.Count;
+            if (offset > start + count) throw new InvalidOperationException("Group ranges exceed the matching record count.");
+        }
+        if (offset != start + count) throw new InvalidOperationException("Group ranges must account for every matching record.");
+    }
+
+    private static int Order(CanopyGridGroupLevel level, IComparer<CanopyCell> compare, IComparer<CanopyCell> ascending, CanopyGridGroup left, CanopyGridGroup right) {
+        var empty = new CanopyCell();
+        if (level.Aggregate == null) return compare.Compare(left.Value ?? empty, right.Value ?? empty);
+        left.Aggregates.TryGetValue(level.Aggregate, out var x); right.Aggregates.TryGetValue(level.Aggregate, out var y);
+        if (!x.HasValue || !y.HasValue) return x.HasValue == y.HasValue ? ascending.Compare(left.Value ?? empty, right.Value ?? empty) : x.HasValue ? -1 : 1;
+        var result = level.Descending ? y.Value.CompareTo(x.Value) : x.Value.CompareTo(y.Value);
+        return result != 0 ? result : ascending.Compare(left.Value ?? empty, right.Value ?? empty);
+    }
+
     internal static void WriteAggregates(CanopyJsonWriter writer, IDictionary<string, double?> values, CanopyDataGridView view, int count) {
         var declarations = view.Reporting!.Aggregates;
         if (values.Count != declarations.Count) throw new InvalidOperationException("Summary values must match every declared aggregate.");
@@ -75,9 +98,9 @@ public sealed class CanopyGridSummary {
         foreach (var aggregate in declarations) {
             if (!values.TryGetValue(aggregate.Id, out var value) || value.HasValue && (double.IsNaN(value.Value) || double.IsInfinity(value.Value) || Math.Abs(value.Value) > 9007199254740991d))
                 throw new InvalidOperationException("Aggregate values must be declared finite numbers or null.");
-            if (aggregate.Operation == CanopyGridAggregateOperation.Count && (!value.HasValue || value < 0 || value > count || value != Math.Floor(value.Value)))
+            if (aggregate.Counting && (!value.HasValue || value < 0 || value > count || value != Math.Floor(value.Value)))
                 throw new InvalidOperationException("A nonmissing-value count must be an integer within its record count.");
-            if (count == 0 && aggregate.Operation != CanopyGridAggregateOperation.Count && value.HasValue)
+            if (count == 0 && !aggregate.Counting && value.HasValue)
                 throw new InvalidOperationException("An empty result has no numeric aggregate value.");
             writer.Name(aggregate.Id); if (value.HasValue) writer.Number(value.Value); else writer.Null();
         }

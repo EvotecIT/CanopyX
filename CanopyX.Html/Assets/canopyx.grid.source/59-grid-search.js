@@ -65,7 +65,8 @@
         this.setQuery(gridQueryStart(this.queryForChange(true), patch)).catch(() => {});
       };
       const chip = (text, label, id, run) => {
-        const button = gridButton(text + " ×", () => { button.focus({ preventScroll: true }); run(); }); button.classList.add("cx-grid-chip");
+        const button = gridButton("", () => { button.focus({ preventScroll: true }); run(); }); button.classList.add("cx-grid-chip");
+        filterChipContent(button, text);
         button.title = text;
         button.setAttribute("aria-label", label); button.setAttribute("data-cx-condition", id); this.queryChips.appendChild(button);
       };

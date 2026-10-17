@@ -32,7 +32,15 @@ async function open(page, options = {}) {
   if (options.manual) html = html.replace("<div class=\"cx-host\" data-canopyx-host", () => "<div class=\"cx-host\" data-canopyx-host data-cx-mount=\"manual\"");
   await page.route("https://canopyx.test/", (route) => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://canopyx.test/" + (options.hash || ""));
-  if (!options.manual) await page.waitForSelector("[data-cx-ready]");
+  if (!options.manual) {
+    await page.waitForSelector("[data-cx-ready]");
+    // A deep link expands this small inline tree before its later auto-height fit settles. Let every row fit
+    // before clicking: a height change between pointer-down and pointer-up can move the intended hit target.
+    await page.waitForFunction(() => {
+      const grid = document.querySelector(".cx-grid");
+      return grid.clientHeight >= grid.querySelector(".cx-head").offsetHeight + grid.querySelector(".cx-canvas").offsetHeight;
+    });
+  }
 }
 
 const row = (page, id) => page.locator('.cx-row[data-cx-id="' + id + '"]');
@@ -43,7 +51,7 @@ test("options configured before the page loads reach the fragment the runtime mo
   await row(page, "group").locator(".cx-exp").click();
   await expect(row(page, "r1").locator('[aria-colindex="2"]')).toHaveText("state: ok");
   await row(page, "r2").click();
-  expect(await page.evaluate(() => window.selected)).toEqual(["r2"]);
+  await expect.poll(() => page.evaluate(() => window.selected)).toEqual(["r2"]);
   // Once the view is mounted, configuring it would have no effect, so it says how to do it instead.
   expect(await page.evaluate(() => { try { CanopyX.configure("records", {}); return "accepted"; } catch (e) { return e.message; } })).toContain("already mounted");
 });
@@ -92,8 +100,10 @@ test("the host's link scheme is written on selection and opened on load and on c
   await expect(row(page, "r1/rev/2")).toHaveAttribute("aria-selected", "true");
   // Selecting a record writes the host's fragment; selecting a row the host has no link for leaves the URL alone.
   await row(page, "r2").click();
-  expect(await hash(page)).toBe("#record/r2");
+  await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => hash(page)).toBe("#record/r2");
   await row(page, "group").click();
+  await expect(row(page, "group")).toHaveAttribute("aria-selected", "true");
   expect(await hash(page)).toBe("#record/r2");
   // A link followed inside the page opens its row; a fragment that is not a link of this view is ignored.
   await page.evaluate(() => { window.selected = []; location.hash = "#record/r1/rev/1"; });
@@ -110,7 +120,8 @@ test("the default link scheme also follows a change of the fragment", async ({ p
   await page.evaluate(() => { location.hash = "#other=1&cx.records=group/r2"; });
   await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
   await row(page, "r1").click();
-  expect(await hash(page)).toBe("#other=1&cx.records=group/r1");
+  await expect(row(page, "r1")).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => hash(page)).toBe("#other=1&cx.records=group/r1");
 });
 
 test("a fragment the host writes itself is opened through readLocation or popstate, and Back and Forward reopen theirs", async ({ page }) => {

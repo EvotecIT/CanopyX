@@ -11,7 +11,11 @@
       super.build();
       this.interactionUiLifetime = new AbortController();
       const signal = this.interactionUiLifetime.signal;
-      this.grid.addEventListener("scroll", () => this.closeInteractionPanel(false), { signal, passive: true });
+      this.grid.addEventListener("scroll", () => {
+        const panel = this.interactionPanel;
+        // A reveal can queue its scroll event before a newly placed panel opens.
+        if (panel && (panel._cxScrollTop !== this.grid.scrollTop || panel._cxScrollLeft !== this.grid.scrollLeft)) this.closeInteractionPanel(false);
+      }, { signal, passive: true });
       global.addEventListener("resize", () => this.closeInteractionPanel(), { signal });
       document.addEventListener("pointerdown", event => {
         if (this.interactionPanel && !this.interactionPanel.contains(event.target)) this.closeInteractionPanel(false);
@@ -53,6 +57,7 @@
       const below = global.innerHeight - rect.bottom - 8, above = rect.top - 8;
       const top = below >= Math.min(bounds.height, 120) || below >= above ? rect.bottom : rect.top - bounds.height;
       panel.style.top = Math.max(8, Math.min(top, global.innerHeight - bounds.height - 8)) + "px";
+      panel._cxScrollTop = this.grid.scrollTop; panel._cxScrollLeft = this.grid.scrollLeft;
     }
 
     closeInteractionPanel(restoreFocus = true) {

@@ -1,9 +1,4 @@
   // ---------- declarative decorations use the existing typed predicates and tone palette ----------
-  function gridDecoration(tone, className) {
-    if (tone !== undefined && (typeof tone !== "string" || !/^[a-z][a-z0-9-]{0,31}$/.test(tone) || tone.endsWith("-bg")) ||
-        className !== undefined && (typeof className !== "string" || !className.trim() || className.length > 1024 || /[\u0000-\u001f\u007f-\u009f]/.test(className)))
-      throw new Error("CanopyX: invalid highlight tone or className.");
-  }
   function validateGridHighlights(view) {
     if (view.highlightRules === undefined) return;
     if (!Array.isArray(view.highlightRules) || view.highlightRules.length > 64) throw new Error("CanopyX: at most 64 highlight rules.");

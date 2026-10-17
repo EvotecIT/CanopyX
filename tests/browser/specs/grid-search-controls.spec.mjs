@@ -135,8 +135,9 @@ test("incremental controls include queued search text while explicit reset repla
   await page.getByRole("button", { name: "Remove condition: Amount ≥ 10", exact: true }).click();
   expect(await page.evaluate(controller + ".getQuery().search")).toBe("Alpha");
   expect(await page.evaluate(controller + ".getQuery().filters")).toEqual([]);
-  await page.locator(".cx-grid-filters > summary").click();
+  // Focus in the search box closes an open menu, so the text is queued before the Filters menu opens.
   await page.getByRole("searchbox").fill("Beta");
+  await page.locator(".cx-grid-filters > summary").click();
   await page.locator(".cx-grid-filters").getByRole("button", { name: "Done", exact: true }).click();
   expect(await page.evaluate(controller + ".getQuery().search")).toBe("Beta");
   await page.getByRole("searchbox").fill("Alpha");

@@ -25,6 +25,29 @@ public sealed class RuntimeSelectionTests {
     }
 
     [Fact]
+    public void TranslatedTrees_StayOnTheTreeRuntimesWithTheirMenuLabels() {
+        // The toolbar menus' labels are tree runtime labels: a tree translating them keeps the core runtime.
+        var view = new CanopyTreeView("records", "Records");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Labels.Columns = "Kolumny";
+        view.Labels.GridViews = "Widoki";
+        view.Labels.GridExport = "Eksport";
+        view.Labels.GridSortAscending = "Sortuj rosnąco";
+        Assert.Equal(CanopyRuntime.TreeGrid, CanopyHtmlAssets.GetRuntime(view));
+        var json = view.ToJson();
+        Assert.Contains("\"gridViews\":\"Widoki\"", json);
+        Assert.Contains("\"gridExport\":\"Eksport\"", json);
+        // A flat-grid label the tree never reads stays out of its document.
+        Assert.DoesNotContain("gridSortAscending", json);
+
+        // A complete pack keeps the interactive runtime its interaction texts need, not a grid runtime.
+        view.Labels = CanopyLabels.Polish();
+        Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(view));
+        Assert.Contains("\"gridViews\":\"" + CanopyLabels.Polish().GridViews + "\"", view.ToJson());
+        Assert.DoesNotContain("gridSortAscending", view.ToJson());
+    }
+
+    [Fact]
     public void FragmentHosts_CanPreferTheCompleteRuntimeForReadOnlyViews() {
         var view = new CanopyTreeView("records", "Records");
         Assert.Equal(CanopyRuntime.TreeGrid, CanopyHtmlAssets.GetRuntime(view));

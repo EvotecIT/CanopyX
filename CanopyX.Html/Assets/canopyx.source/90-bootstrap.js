@@ -5,7 +5,7 @@
    * @param {HTMLElement} host The element that receives the grid.
    * @param {{ view: object, source?: object, labels?: Object<string, string>, renderers?: Object<string, Function>, renderDetail?: Function,
    *           onSelect?: Function, onToggle?: Function, onLoad?: Function, isSelectable?: Function, beforeSelect?: Function,
-   *           formatLink?: Function, parseLink?: Function, requestTimeoutMs?: number, retainedNodeLimit?: number, inactiveNodeLimit?: number }} options
+   *           formatLink?: Function, parseLink?: Function, sanitizeHtml?: Function, requestTimeoutMs?: number, retainedNodeLimit?: number, inactiveNodeLimit?: number }} options
    *   `view` is a canopyx/2 view document. `labels` translates the texts the grid writes itself, on top of the view's
    *   own `labels` (names and placeholders as in docs/data-protocol.md). Callbacks are optional; the same events are also dispatched on the host
    *   as canopyx:select, canopyx:toggle, canopyx:load, canopyx:error, and canopyx:ready. canopyx:filter reports
@@ -23,6 +23,8 @@
    *   element is dropped, with any listener put on it: put listeners on content the renderer adds, or on the grid).
    *   renderDetail(node, element) returns true when it drew the detail row;
    *   element is the body of the row, which stays inside the visible width of the grid.
+   *   Html details and the view's icons are markup the host trusts; sanitizeHtml(html, { kind }) ("detail" or "icon") sees
+   *   it first and returns a string, TrustedHTML, or a Node (docs/security.md).
    *   With deepLink on the view, formatLink(path, node) returns the URL fragment for a selected row (without "#";
    *   null leaves the URL alone; with nothing selected path is empty and node null) and parseLink(fragment) returns
    *   the id path it names, a promise of it, or null. The two are given together. The grid follows hashchange and
@@ -35,10 +37,11 @@
     const existing = activeGrids.get(host);
     if (existing) return existing;
     const grid = new TreeGrid(host, options);
-    const api = Object.freeze(Object.assign({
+    const api = Object.assign({
       element: host,
       view: grid.view,
-      ready: grid.ready,
+      // Waits for the grid's plugins too (84-plugins.js), which start once this API exists.
+      ready: startPlugins(grid, () => api),
       expandPath: (ids, o) => grid.expandPath(ids, o),
       // A host predicate replaces the declared filters, so their switches and getActiveFilters stay truthful.
       setFilter: (filter, o) => { if (!grid.queryAware) grid.clearDeclaredFilters(); grid.setFilter(filter, o); },
@@ -72,6 +75,12 @@
       toOutline: () => grid.toOutline(),
       getState: () => grid.getState(),
       setState: (state) => grid.setState(state),
+      getLayout: () => grid.getLayout(),
+      setLayout: (change) => grid.setLayout(change),
+      getMatches: () => grid.getMatches(),
+      setSearchHighlight: (enabled) => grid.setSearchHighlight(enabled),
+      nextMatch: (options) => grid.nextMatch(options),
+      previousMatch: (options) => grid.previousMatch(options),
       search: (query, limit) => grid.search(query, limit || (grid.view.search && grid.view.search.maxResults) || 20),
       loadMore: (id) => {
         const w = id == null ? grid.root : grid.keyMap.get(id);
@@ -79,15 +88,29 @@
       },
       applyCounts: (doc) => grid.applyCounts(doc),
       refreshCounts: (ids) => grid.refreshCounts(ids),
+      // The toolbar and action menus come with the tree tools part; until it is installed there are none to close.
+      closeMenus: () => grid.closeMenus?.(),
       destroy: () => {
         grid.destroy();
         if (activeGrids.get(host) === api) activeGrids.delete(host);
         if (host.canopyx === api) delete host.canopyx;
       }
-    }, grid.interactionApi && grid.interactionApi()));
+    }, grid.interactionApi && grid.interactionApi(), linkApi(grid));
+    // Exports, named views and column order come with the tree tools part: they work once ready has resolved. Before that the
+    // methods that return a promise reject it, and the others throw.
+    for (const name of ["prepareExport", "exportAs", "getSavedViews", "saveView", "applySavedView", "removeSavedView", "resetView", "setColumnOrder", "resetColumns", "setColumnPinned", "openDetails", "openRecord"])
+      api[name] = (...args) => {
+        if (grid[name]) return grid[name](...args);
+        const error = new Error("CanopyX: " + name + " needs the tree tools part.");
+        if (/^(exportAs|applySavedView|resetView|openDetails|openRecord)$/.test(name)) return Promise.reject(error);
+        throw error;
+      };
+    api.ready = linkReady(grid, api.ready);
+    Object.freeze(api);
     activeGrids.set(host, api);
     host.setAttribute("data-canopyx-mounted", "true");
     host.canopyx = api;
+    recordStart(grid);
     return api;
   }
 
@@ -118,9 +141,24 @@
     return configured.delete(viewId);
   }
 
+  // Views the runtime parsed from the page: nothing else holds them, so a grid keeps their rows instead of copying them.
+  const parsedViews = new WeakSet();
+  // Fragments marked data-cx-mount="visible" mount when they come within half a viewport of the visible area (the observer
+  // also reports a hidden tab or a closed panel once it opens), before the page prints, or when CanopyX.mount is given the
+  // host itself. Until then their configuration and rows are not even parsed.
+  let watcher = null;
+  function mountWhenVisible(host) {
+    if (!watcher) {
+      watcher = new IntersectionObserver(entries => entries.forEach(entry => entry.isIntersecting && mount(entry.target)), { rootMargin: Math.ceil(global.innerHeight / 2) + "px 0px" });
+      global.addEventListener("beforeprint", () => document.querySelectorAll('[data-cx-mount="visible"]:not([data-canopyx-mounted])').forEach(host => mount(host)));
+    }
+    watcher.observe(host);
+  }
+
   /**
-   * Mounts every [data-canopyx-host] element under root that has a JSON configuration script. The automatic mount
-   * when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by the host.
+   * Mounts every [data-canopyx-host] element under root (or root itself, when it is one) that has a JSON configuration
+   * script. The automatic mount when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by
+   * the host; fragments marked data-cx-mount="visible" wait until they are near the viewport, unless root is the host.
    */
   function mount(root, automatic) {
     const scope = root || document;
@@ -146,15 +184,19 @@
       host.appendChild(notice);
       if (global.console) global.console.error(err);
     };
-    scope.querySelectorAll("[data-canopyx-host]:not([data-canopyx-mounted])").forEach((host) => {
-      const config = host.querySelector("script.cx-config");
-      if (!config || (automatic === true && host.getAttribute("data-cx-mount") === "manual")) {
+    const selector = "[data-canopyx-host]:not([data-canopyx-mounted])";
+    (scope.matches?.(selector) ? [scope] : scope.querySelectorAll(selector)).forEach((host) => {
+      const config = host.querySelector("script.cx-config"), mode = host.getAttribute("data-cx-mount");
+      if (!config || (automatic === true && mode === "manual")) {
         return;
       }
+      if (mode === "visible" && host !== scope && global.IntersectionObserver) return mountWhenVisible(host);
+      watcher?.unobserve(host);
       host.setAttribute("data-canopyx-mounted", "true");
       let view = null;
       try {
         view = JSON.parse(config.textContent);
+        if (view === Object(view)) parsedViews.add(view);
         const create = view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
         const api = create(host, Object.assign({}, view && configured.get(view.id), { view }));
         created.push(api);
@@ -179,8 +221,15 @@
     // A badge ({ text, tone?, title? }) drawn as the grid draws one, for cells and details a host renderer draws.
     badge: hostBadge,
     // The English texts and their names, for a host that builds its translations from them.
-    labels: DEFAULT_LABELS
-  }, typeof createDataGrid === "function" ? { createDataGrid } : {}));
+    labels: DEFAULT_LABELS,
+    // Export format providers for the Export menus and exportAs of every grid on the page.
+    registerExportFormat,
+    // Plugins for the grids and trees created afterwards, and the registration lazily loaded parts call (docs/plugins.md).
+    use,
+    registerPart,
+    // The Content Security Policy nonce for the scripts and stylesheets the runtime inserts (docs/security.md).
+    setNonce
+  }, typeof GRID_API === "object" ? GRID_API : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it

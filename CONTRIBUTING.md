@@ -18,7 +18,7 @@ dotnet test .\CanopyX.sln -c Release
 
 The solution also holds `CanopyX.Tests.NetFramework`, which runs the framework-sensitive contract tests (search folding) against the `net472` build. It builds on every platform and runs on Windows.
 
-Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging. `-BrowserTestTimeoutSeconds` separately bounds the browser suite; CI uses 2400 seconds for the full engine matrix.
+Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging. `-BrowserTestTimeoutSeconds` separately bounds the browser suite; CI runs one engine per job and gives it 1200 seconds (1500 on Windows).
 
 ## Browser Tests
 
@@ -40,9 +40,23 @@ cd ../..
 
 To rerun only the browser tests against the pages already generated, run `npm test` in `tests/browser` (it opens the Release examples; set `CANOPYX_EXAMPLES` to another output folder, for example after a Debug build). Set `CANOPYX_BROWSER_CHANNEL=msedge` (or `chrome`) to use an installed browser instead of Playwright's Chromium. After a visible change, refresh the README screenshots with `node tools/screenshots.mjs`.
 
-The local loop uses Chromium by default. Set `CANOPYX_TEST_BROWSERS=chromium,firefox,webkit` to run all three engines, or choose a comma-separated subset. Install the chosen engines with `dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium firefox webkit` in `tests/browser`. This test-only executable uses the published HtmlTinkerX installer and verifies that its Playwright version matches the browser tests. On Linux, set `HTMLTINKERX_PLAYWRIGHT_WITH_DEPS=1` when system dependencies also need installation; root CI runners install them automatically. Installed-browser channels and `CANOPYX_BROWSER_EXECUTABLE` apply only to the Chromium project. CI runs all three engines on Linux, Chromium and Firefox on Windows, and Chromium and WebKit on macOS.
+The local loop uses Chromium by default. Set `CANOPYX_TEST_BROWSERS=all` (or `chromium,firefox,webkit`) to run all three engines, or choose a comma-separated subset; `npm run test:all`, `npm run test:firefox` and `npm run test:webkit` in `tests/browser` do the same on any shell. Install the chosen engines with `dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium firefox webkit` in `tests/browser`. This test-only executable uses the published HtmlTinkerX installer and verifies that its Playwright version matches the browser tests. On Linux, set `HTMLTINKERX_PLAYWRIGHT_WITH_DEPS=1` when system dependencies also need installation; root CI runners install them automatically. Installed-browser channels and `CANOPYX_BROWSER_EXECUTABLE` apply only to the Chromium project. CI runs all three engines on Linux, Windows and macOS, one engine per job. Firefox reports the machine's own pointers, so the configuration pins a mouse for it: a laptop's touch screen would otherwise switch every page to the touch layout. Tests that need touch emulate it with `hasTouch`.
 
-The suite covers a smoke pass over every Must feature of the tree grid, an axe-core scan in light and dark themes, a keyboard walkthrough, and performance budgets on the large bundle example.
+The suite covers a smoke pass over every Must feature of the tree grid, an axe-core scan in light and dark themes, a keyboard walkthrough, and performance budgets on the large bundle example. `memory-leaks.spec.mjs` mounts and destroys a grid and a tree 200 times and checks, through the Chromium DevTools protocol, that the heap, the live and detached DOM nodes and the event listeners return to their baseline. `touch-phone.spec.mjs` drives the phone paths (the "+N" record drawer, sheets, menus, row activation and scrolling) with touch emulation and asserts behaviour, not pixels.
+
+### Visual Baselines
+
+`visual-baselines.spec.mjs` compares the curated examples at 1440 and 390 pixels, in the light and dark themes, with the PNG baselines in `tests/browser/specs/__screenshots__`. The baselines come from Playwright's Chromium on Windows, so this `visual` project runs when the engines include Chromium on Windows and no installed browser channel is selected; set `CANOPYX_VISUAL=0` to leave it out, or `CANOPYX_VISUAL=1` to run it elsewhere, which the `test:visual` npm scripts need there too (expect anti-aliasing differences on other platforms). Every element renders in the bundled Inter subset (`tests/browser/fonts`, SIL Open Font License), with grayscale text and an sRGB colour profile, so the images do not depend on installed fonts or display settings. Each image is the first view cropped to its top (420 pixels at 1440, 600 at 390). A pixel may differ by Playwright's default colour threshold, and at most 0.15% of an image may differ: a changed full-width border line fails at either width. Elements marked `data-cx-volatile` and host status lines are masked.
+
+After an intended visual change, regenerate the examples, then refresh and review the images:
+
+```powershell
+./Build.ps1 -Configuration Release -SkipPack -SkipBrowserTests
+cd tests/browser
+npm run test:visual:update
+```
+
+Open every changed image (`git diff --stat` lists them) and commit only the ones the change explains. When CI on another Windows machine disagrees with a baseline that looks right, take the `actual` image from the failed job's `canopyx-playwright-report` artifact rather than loosening the threshold.
 
 ## Runtime Source Parts
 

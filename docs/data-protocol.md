@@ -27,6 +27,11 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridCommit` | The editing part | A grid asks its writer to save changed rows ([Editing and commit](#editing-and-commit)) |
+| `gridCommitResult` | The host's writer | The writer answers per row: saved, error or conflict |
+| `gridRecordQuery` | The browser; `CanopyGridRecordQuery.ToJson()` | A record's drawer opens and its details load on demand ([Record details](#record-details)) |
+| `gridRecord` | `CanopyGridRecord.ToJson(view)` | A host answers a record request |
+| `gridRecordPack` | `CanopyRecordSidecar.Write` | A record's drawer opens and its details are in a record pack beside the page |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -54,25 +59,47 @@ Export rows are records. Group headings, collapsed display ranges and summary ro
 
 A later UI query does not change an export already prepared. A source must continue to serve its captured revision or reject it. Counts, duplicate identities and revision changes fail the export rather than silently mixing data.
 
-Choose `filtered` for the accepted search and predicates, `selected` for selected stable IDs across the full dataset, or `all` for the full dataset. All three retain the accepted sort order. Selected and all exports clear search and predicates; a selected ID absent from that revision is an error. Columns default to visible columns in their current order, or an explicit ordered list of declared IDs. `values: "display"` retains display text and date formatting; `values: "raw"` exports underlying typed values. The request's `matched` records the accepted filtered count even when its effective export query clears the filters.
+Choose `filtered` for the accepted search and predicates, `selected` for selected stable IDs across the full dataset, or `all` for the full dataset. All three retain the accepted sort order. Selected and all exports clear search and predicates; a selected ID absent from that revision is an error. Columns default to visible exportable columns in their current order, or an explicit ordered list of declared exportable IDs. An explicit request for a column with `exportable: false` is rejected; when no visible column supports export, the menu disables delivery actions and explains why. `values: "display"` retains display text and date formatting; `values: "raw"` exports underlying typed values. The request's `matched` records the accepted filtered count even when its effective export query clears the filters.
 
 `await grid.toCsv({ scope })` produces CSV with quoted fields and spreadsheet formula protection for text. The client limit is 50,000 rows by default; exceeding it fails without truncation. `await grid.copy({ scope })` produces tab-separated text with a default 10,000-row limit and rejects unavailable or denied clipboard access. Clipboard delivery observes cancellation, destruction and the configured host deadline; a write already handed to the browser may still finish after the operation is retired. Ctrl/Command+C copies selected records, or the focused cell or row when there is no selection; native controls and selected text keep their copying behavior.
 
-For large Office exports, configure `onExport` and call `grid.exportToHost("xlsx", { scope })`. The host receives the immutable request and a cancellation signal, and owns authorization, query replay, document generation and delivery. CanopyX does not load an Office engine or materialize the result first. Source requests and host hooks have bounded deadlines; caller cancellation and grid destruction settle operations even when a source ignores its signal.
+For large Office exports, configure `onExport` and call `grid.exportToHost("xlsx", { scope })`. The host receives the immutable request and a cancellation signal, and owns authorization, query replay, document generation and delivery. CanopyX does not load an Office engine or materialize the result first. Source requests have the `requestTimeoutMs` deadline (30 seconds by default) per page; the `onExport` hook is a writer and runs under the separate export safety timeout, `exportTimeoutMs` (600,000 ms by default, 1 to 2,147,483,647, or `timeoutMs` per call). Caller cancellation and grid destruction settle operations even when a source or hook ignores its signal.
+
+#### Export formats
+
+An export format is a browser writer `{ id, label, extension, mime?, write(capture, context) }`. `id` is 1–32 lowercase ASCII letters, digits and hyphens starting with a letter; `csv` is reserved for the built-in CSV. `label` is the Export menu button text, `extension` 1–16 ASCII letters or digits without a dot, and `mime` the type given to bytes a writer returns (default `application/octet-stream`). `write` returns a `Blob`, an `ArrayBuffer` or typed array, or a promise of one. `CanopyX.registerExportFormat(format)` (also a named module export) registers a format for the page, replacing an earlier one with the same id, and returns a disposer for this registration; invalid formats throw.
+
+A grid offers, in this order: the host's `exportFormats` option (ids of registered formats and provider objects; an empty array offers none), else the view's `exportFormats` (ids only), else every registered format in registration order. An id nobody registered is skipped, so a view may declare formats a page provides only sometimes. Optional view field `exportFormats` (flat grids and trees) is an array of unique format ids; the C# `CanopyDataGridView.ExportFormats` and `CanopyTreeView.ExportFormats` write it. The Export menu lists the formats after Download CSV and before Copy, resolving them each time it opens, and runs them with its scope picker, progress, Cancel export action and status. `grid.exportAs(id, { scope, columns?, values?, signal?, onProgress?, timeoutMs?, download? })` runs one from host code.
+
+`exportAs` captures synchronously, exactly as `prepareExport` with the same scope, columns and values, so invalid capture options throw before a promise is returned (as `toCsv`, `copy` and `exportToHost` do); an unknown format, invalid writer options or an invalid `timeoutMs`/`exportTimeoutMs` reject the promise when the writer would start; the reporting runtime's `fileName`, `locale` and `timeZone` options apply as well. The writer receives that capture (its `rows()` reads count toward progress) and a frozen context: `signal`, `fileName` (the suggested basename: the reporting file name, else the view id with characters outside `A–Z a–z 0–9 _ -` replaced by `_`), `format` (the id) and `progress(completed)`. Progress reports `reading` while records are read, `generating` when reading finishes or the writer reports written records, and `ready` at the end, with `total` the captured `recordCount`. Phases and counts only advance (a count is capped at a known total); a report that advances nothing, or a writer count that is not a nonnegative integer, is dropped. The signal aborts on cancellation, the export timeout and grid destruction; the export then rejects with an `AbortError` (or "CanopyX: export timed out.") even when the writer ignores it, and a later result is discarded. The file name is the name of a returned `File`, else `fileName + "." + extension`. With `download` not false CanopyX downloads the file; the promise resolves to `{ blob, fileName, format }`.
+
+Tree grids on every runtime offer `prepareExport({ scope?, columns?, values?, signal? })` and `exportAs(id, options)` with the same writers, the `exportFormats` and `exportTimeoutMs` options, and the same Export menu (scopes Visible rows, Selected rows and All rows, Download CSV, the formats, progress, Cancel export and status). They come with the tree tools part, so they work once the tree's `ready` has resolved. Scope `visible` (the default) captures the rows the reader can see in display order, without loading, status or detail rows; `selected` captures the loaded selected nodes in tree order, including those in collapsed branches; `all` captures every node in the current sort order: the whole tree of an inline source, collapsed branches included, and the loaded nodes of a sidecar or remote source (nodes a lazy source has not loaded are not read). Columns default to the shown columns in their current order, including columns hidden only for width. Tree CSV indents the tree column by two spaces a level. The request carries `kind: "tree"`, `scope`, `presentation: "text"`, `values`, `revision` (the accepted dataset revision or null), `recordCount`, `columns`, `locale` and `timeZone`. Each record is `{ id, level, path, cells }`: `level` 1 is a root, `path` is the id path from the root ending with the record's id, and each cell has `value`, the display `text` and `tone` when the cell declares one. The capture holds the rows and their node data at invocation; enumeration formats them and observes the grid's lifetime and the linked signals.
+
+Every runtime loads the Export menu body, CSV, copy, record enumeration and writers from the companion `canopyx-export.js` on first use (inline payload type `application/x-canopyx-export`, or the plain or content-hashed file beside the runtime). First use is the Export menu opening, an export method (`toCsv`, `copy`, `exportToHost`, `exportAs`, reporting `materializeExport` and `print`), Ctrl/Command+C on the grid, or the first read of a capture's `rows()`. Tree captures are in the tree tools part (see [View](#view)); a tree loads this part for its Export menu and writers. Hosts that serve runtime files therefore serve `canopyx-export.js` beside them, also when the Export menu is switched off. The methods are available before it loads; they capture first and complete once it is installed.
 
 The reporting runtime also captures `fileName`, `locale` and an optional `timeZone` override in an export request. A file name is a suggested basename of 1–100 UTF-16 units, without paths, controls, bidi overrides, trailing dots/spaces or reserved Windows device names; hosts append a format extension. A locale must be supported by the browser. These options affect this delivery, without changing the view. Display exports use the captured locale and time zone; raw exports keep typed values. The optional synchronous `onProgress` callback receives `phase` (`reading`, `generating`, `ready`), `completed` records and `total` records or `null` when unknown. Selected-query totals account for exclusions. A callback that throws rejects its operation.
 
 `await grid.materializeExport({ scope, maxRows: 1000 })` reads a complete immutable `{ request, rows }` snapshot for a host renderer. The maximum is 10,000 records and 4 Mi UTF-16 units of serialized snapshot text. Known oversized results fail before fetching; unknown counts are bounded during enumeration. An oversized result is an error, never a truncated successful report. `await grid.print({ scope })` passes the same snapshot to the required `onPrint({ snapshot, signal })` hook. The host renders it through its existing renderer, such as `CanopyStaticHtml.RenderGrid`, and governs print or download delivery. It honors cancellation before delivery. Print reads the captured query/revision and columns; collapsed groups and the mounted viewport do not change its record scope. Large reports use `exportToHost` so the host can stream without browser materialization.
 
-Reporting export controls expose progress and cancellation for CSV, copy and an optional host print action. Hosted Office generation receives an optional `reportProgress(phase, completed)` callback; its counts and phases must advance monotonically. Retired callbacks cannot update UI after cancellation, timeout or destruction. Offline reports retain bounded CSV/copy, and may link host-prepared Office files or script-free print artifacts. An offline report does not imply that an HTTP export service exists.
+Export controls expose progress and cancellation for CSV, copy, export formats and, on the reporting runtime, an optional host print action; CSV and copy report record progress on the reporting runtime. Hosted Office generation receives an optional `reportProgress(phase, completed)` callback; its counts and phases must advance monotonically. Retired callbacks cannot update UI after cancellation, timeout or destruction. Offline reports retain bounded CSV/copy, and may link host-prepared Office files or script-free print artifacts. An offline report does not imply that an HTTP export service exists.
 
-Enter on a row, double click, the Record details overflow action, and Ctrl/Command+Enter open a record drawer. F2 enters cell navigation. The built-in drawer shows every declared field using its cell presenter, supports previous/next records with Up/Down, and restores focus when Escape closes it. It docks beside the grid on wide screens and becomes a modal full-screen sheet on phones. Configure `onDetails` to supply a host-owned record view instead; its context retains an immutable raw row, accepted query, cancellation signal and `returnFocus`. A newer details request or query cancels an unfinished opening operation. Hosts own their completed view and focus restoration. On phones a plain row click also opens the drawer.
+Enter on a row, double click, the Record details overflow action, and Ctrl/Command+Enter open a record drawer. F2 enters cell navigation. The built-in drawer shows every declared field (except columns with `drawer: false`) as its cell shows it: its presenter, its host or plugin renderer, or its text with tone, tooltip and badges; a view's [record panel](#record-panel) structures it further. It supports previous/next records with Up/Down, and restores focus when Escape closes it. Its title is the identity column's text; its subtitle is that column's secondary text (a cell's `secondary`, or the presenter's `secondaryColumn`), and without one the drawer has no subtitle (it never shows the raw row id). Focus moves to the title; its focus ring shows when the drawer was opened from the keyboard, not by pointer. It docks beside the grid on wide screens and becomes a modal full-screen sheet on phones. Configure `onDetails` to supply a host-owned record view instead; its context retains an immutable raw row, accepted query, cancellation signal and `returnFocus`. A newer details request or query cancels an unfinished opening operation. Hosts own their completed view and focus restoration. On phones a plain row click also opens the drawer.
+
+Row activation (a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, and a plain click when `rowAction` is `details` or `link` or on a phone) first dispatches the cancelable `canopyx:rowActivate` event on the host element with `{ id, row, keyboard }` (`row` a frozen copy of the loaded record, `keyboard` true for Enter) and calls the `onRowActivate(detail)` option. Calling `preventDefault()` on the event, or returning `false` from the callback, keeps the row's own action (the drawer or `onDetails`, or the row's link) from running, so a host can open its own drawer for the row; otherwise the action runs as before. The Record details action, the phone "+N" button and `openDetails(id)` open details directly. On a row whose `rowAction` is `link`, Enter follows the link like a click (Ctrl/Command+Enter still opens details). Trees offer the same activation hook (see [View](#view)).
+
+Following a link presenter cell (a click, Enter on the link, or the row's link action) first dispatches the cancelable `canopyx:link` event on the host element with `{ id, row, column, href }` and calls `onLink(detail)`. Cancelling the event or returning `false` keeps the browser from following the link, so a host can route an address of its own (an entity link inside a report, for example) without matching resolved URLs. Trees have no link presenter, so they send no `canopyx:link`.
+
+Linked views add two events on grids and trees ([Linked views](linked-views.md)): `canopyx:externalfilter` with `{ filters, reason }` whenever another view's external filters change (reason `user` when the reader removed one), and, on a view created with `linkEvents`, `canopyx:linkchange` with `{ view, action, scope, keys, values, label }` for the reader's selection and own conditions. External filters reach a host source as ordinary `eq`, `in`, `ge` and `le` predicates after the reader's own `filters`; the wire format does not change.
 
 A `grid` definition contains `id`, `label`, `rowHeight`, `pageSize`, `selection`, `search`, `columns`, and `source`. Column definitions and cells have the same value, display text, tooltip, tone, and badge contract as tree views. Any column can start hidden, but at least one must remain visible. Flat-grid definitions do not expose tree edit proposals. Optional `stateKey`, `timeZone`, and `labels` retain their shared meanings.
 
-Optional `toolbar` switches toolbar controls off: `{ "filters": false, "columns": false, "views": false, "export": false, "more": false, "count": false }`, each optional and boolean. An absent switch keeps its control. A control switched off is removed: it is not built, or is taken out before the grid appears, so no hidden element, focus stop or listener of it stays in the page. The matching API methods stay available. `more` covers host actions, Record details and Print: with it off those entries are dropped, and the reporting runtime's print hook is reached through `api.print()`. With `export` off, a reporting grid that has an `onPrint` hook keeps a Print entry in the more menu for the filtered result. `count` is the result count shown with the query chips; `views` includes Reset view; with `filters` off, header filters keep working and a condition too complex for its column popover is removed through the query chips. The search box keeps its own `search` property. Browser hosts can override any switch, including `search`, with the `toolbar` option of `createDataGrid`; `toolbar: false` still hides the whole toolbar. The runtime rejects an unknown switch name or a non-boolean value in either object.
+Flat-grid columns can declare `filterable: false` or `exportable: false` (C# `CanopyColumn.Filterable` and `Exportable`); both default to true and the C# writer emits only false overrides. A non-filterable column stays visible and available in the record drawer, but does not appear in filter controls and is rejected in flat or nested query predicates. Search, supported read-only facet enumeration, formatting, highlights and direct cell access keep their own contracts. Exportability governs grid export captures, including CSV, selected-record copy, format writers and print snapshots; it is an operation capability, not a way to conceal values already supplied to the browser. Trees retain their existing column contract.
+
+Optional `toolbar` switches toolbar controls off: `{ "filters": false, "columns": false, "views": false, "export": false, "more": false, "count": false, "columnMenus": false }`, each optional and boolean. An absent switch keeps its control. A control switched off is removed: it is not built, or is taken out before the grid appears, so no hidden element, focus stop or listener of it stays in the page. The matching API methods stay available. `more` covers host actions, Record details and Print: with it off those entries are dropped, and the reporting runtime's print hook is reached through `api.print()`. With `export` off, a reporting grid that has an `onPrint` hook keeps a Print entry in the more menu for the filtered result. `count` is the result count shown with the query chips; `columnMenus` is each header's column menu button (switched off, column fitting keeps no room for it; an active header filter keeps its button, and readers start filters from the Filters menu); `views` includes Reset view; with `filters` off, header filters keep working and a condition too complex for its column popover is removed through the query chips. The search box keeps its own `search` property. Browser hosts can override any switch, including `search`, with the `toolbar` option of `createDataGrid`; `toolbar: false` still hides the whole toolbar. The runtime rejects an unknown switch name or a non-boolean value in either object.
 
 Optional `presentation` is `continuous` (the default) or `paged`. `pageLength` is the visible page length from 1 to 10,000, defaulting to 50. `pageSize` remains the independent source fetch size. Both presentations filter/sort the full source, retain global row indices and use the same selection, revision and export contracts. Paged presentation bounds the shared virtual viewport to one page; neither cached adjacent records nor retained focus can render outside that page.
+
+Optional `pager` changes a paged view's pager: `lengths` (page-size choices in menu order, at most 16: integers from 1 to 10,000, `"all"` for every row of inline data, or `{ "value", "label" }`), `lengthMenu` (boolean, default true), `numbers` (numbered page buttons, 0 or 5 to 15, default 0), `pageInput` (boolean; absent shows the page number field unless numbered pages show), `firstLast` (boolean, default true) and `info` (`range`, the default, `sentence` or `none`). The browser reads it with the pager part; continuous views ignore it, and an absent object keeps the built-in pager. See [paging.md](paging.md).
 
 The source's optional `navigation: "offset"` makes its known-count offset capability explicit; absent preserves the original offset contract. Offset sources support arbitrary offsets and exact `total`/`matched` counts. A hosted paged view can instead declare `navigation: "cursor"` and use the sequential documents below. Hosts own database traversal; CanopyX takes no database dependency.
 
@@ -88,11 +115,30 @@ Optional `highlightRules` holds at most 64 ordered rules with the same `column`,
 
 The .NET writer exposes `CanopyGridRow.Tone`, `ClassName` and `CanopyDataGridView.HighlightRules`. `CanopyGridHighlightRule` wraps a `CanopyGridFilter` and a row/cell target. The static renderer evaluates these conditions with the same raw-value folding and millisecond date semantics, emits encoded classes and inline tone colours, and retains script-free output.
 
+#### Conditional formatting rules
+
+Optional `formatRules` holds at most 64 ordered rules, `{ id, label?, description?, enabled?, when?, column?, target?, columns?, details?, style, stopIfTrue? }`, and optional `formatting` is `{ legend?, editor? }`. `when` is a filter group with a third junction, `none`; its predicates add `notContains`, `endsWith`, `like`, `notLike`, `matches`, `notMatches`, `notIn`, `between`, `betweenExclusive`, `olderThan` and `withinLast` to the filter operators, and optional `valueColumn`, `type` (`text`, `number`, `boolean`, `date`), `caseSensitive` and `culture`. `target` is `cell` (the rule's `column`), `row`, or `columns` with `columns`. `style` holds a theme `tone` with `emphasis` (`fill`, `text`, `strong`), `icon`, `badge` and `cue`, or one of `bar`, `scale` (two or three stops) and `bands` (rising, the last open), plus the `className` and `css` escape hatch. For each target the first matched rule that sets an aspect wins it; `stopIfTrue` ends a row's rules. A style that only colours gets its tone's icon unless `icon` is `none`. Rules change no data, query, selection or CSV. [Conditional formatting](conditional-formatting.md) describes the semantics, the editor and the parts that evaluate rules; the .NET `CanopyFormatRule` family writes the same schema and the static renderer evaluates it.
+
+The grid state carries `formatRules` when the grid's rules differ from the view's, and export records carry a cell's resolved `format` (`rules`, `tone`, `icon`, `badge`, `cue`, `band`, `bar: { fraction, tone }`, `color`, `description`) beside its value and text, and a row rule's `format` on the record.
+
 #### Wrapped cells and measured grid rows
 
 Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Optional `autoRowHeight: true` enables measured records and uses that height as both the minimum and the estimate for unseen rows. Without the flag, rows retain their fixed height. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 28) as shorthand. In .NET, use `CanopyColumn.Wrap` and `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height.
 
 Measurements preserve the first visible row and its offset while overscan rows grow or shrink. ResizeObserver also measures host-rendered content that changes later. Page Up/Down moves by the viewport's pixel height. Logical offsets remain independent of the native scrollbar's 8,000,000-pixel cap. Previously measured offscreen rows retain their last height as an estimate after a column width changes and are remeasured when recycled into view. Automatic mode retains sparse height information for visited rows; fixed mode avoids that work.
+
+#### Search highlighting and layout modes
+
+Optional `searchHighlight` (`true` or `{ enabled, search, filters, matchCase, ignoreAccents, minLength, filterTones }`) marks
+search and filter hits in cells and the record drawer, with a match count and next/previous navigation
+([search highlighting](search-highlight.md)). Optional `layout` (`{ mode, modes, density }`, modes `fit`, `scroll` and
+`cards`, densities `compact`, `default` and `comfortable`) adds the Layout menu ([layout modes](layout-modes.md)); a
+grid's `layout.density` takes the place of its `density`. Toolbar switches `matches` and `layout` leave their controls out.
+Grid state carries the reader's choices as optional `layout: { mode, density }` and `highlight` (a boolean); a saved mode
+the view no longer offers falls back to the declared one, and state from a view without the option ignores them. Tree
+documents take the same two fields, with the fit and scroll modes, and tree state the same two choices. A flat grid's
+`onPrint` hook receives `layout: "stacked"` from a grid in the card layout and `"table"` otherwise. These fields are
+additive; readers without them keep the fit layout and unmarked cells.
 
 #### Sequential sources and unknown counts
 
@@ -122,7 +168,7 @@ Counts satisfy `0 <= offset <= matched <= total`, and returned rows cannot exten
 
 A `gridQuery` contains `view`, `offset`, `limit`, `search`, `sort`, and `filters`, with an optional expected `revision`. A definition can contain an initial `query`. Search uses the protocol's canonical case folding over raw values of declared columns, independent of display text. A grid's optional `searchColumns` array restricts search to unique declared column IDs; absent searches all columns, including hidden columns. A cell's optional `searchText` replaces only its text-search input, without changing display, typed filtering, sorting or exports. An empty `searchText` contributes no searchable text. Tree search indexes retain their existing semantics.
 
-An absent `searchMode` means `substring`: the complete search text must be a substring of one searchable cell. `words` requires every whitespace-separated word or double-quoted phrase to match at least one searchable cell; different words may match different columns. A phrase matches within one cell, empty quoted phrases are ignored, and an unfinished quote extends to the end of the input. Words are partial matches, not regular expressions. Hosts implement the same folding and matching semantics and receive the resolved search mode in query documents.
+An absent `searchMode` means `substring`: the complete search text must be a substring of one searchable cell. `words` requires every whitespace-separated word or double-quoted phrase to match at least one searchable cell; different words may match different columns. A phrase matches within one cell, empty quoted phrases are ignored, and an unfinished quote extends to the end of the input. Words are partial matches, not regular expressions. Hosts implement the same folding and matching semantics and receive the resolved search mode in query documents. `CanopyTextFolding.Fold` is the folding in C#, and `CanopyX.Data` implements the hosted grid documents on the server (see [remote-dotnet.md](remote-dotnet.md)).
 
 The optional grid definition field `searchDelayMs` sets the search-input debounce from 0 to 5,000 milliseconds; browser options of the same name override it. Without a setting, inline sources apply input immediately and host sources wait 300 ms. Enter applies immediately except during input-method composition, whose partial input is never submitted. Sorting, filter edits and chip actions include queued search text in the same immediate request; they never include unfinished composition. Explicit `setQuery`, view restoration and reset replace queued text. Accepted-result counts and removable search, flat-predicate and grouped-filter chips update only after a query succeeds; pending or failed queries retain the previous summary. Clear search and filters removes both predicate forms, resets the offset and cancels any queued text.
 
@@ -188,13 +234,15 @@ Selected exports add `request.querySelection` when this mode is active. They ret
 
 ### Flat groups and complete-query totals
 
-Reporting definitions opt in through `grouping: { column, direction }`, `aggregates`, or both. Grouping uses one declared sortable raw column. Its key leads every query sort; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. These are flat-grid headings, with no tree hierarchy or tree keyboard semantics.
+Reporting definitions opt in through a fixed `grouping: { column, direction }`, runtime grouping (`groupBy` and/or `groupable`), `aggregates`, or a combination of grouping and aggregates; a fixed grouping cannot be combined with `groupBy` or `groupable`. A fixed grouping uses one declared sortable raw column. Runtime grouping uses up to four ordered levels `{ column, direction, aggregate? }` of declared sortable columns, declared in `groupBy` and changed by readers when `groupable` is true (see [grouping.md](grouping.md)). Grouping keys lead every query sort, outermost first; user sorts follow, with stable record identity last. Missing/null cells form one final group in either direction. Folded or natural ordering uses exact raw text and type to break equivalent-value ties, so distinct raw categories never interleave. Date groups normalize explicit-zone timestamps to UTC milliseconds. One level gives flat-grid headings, with no tree hierarchy or tree keyboard semantics; two or more levels make the grid a `treegrid` whose rows carry `aria-level`.
 
-Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
+Queries of a runtime-grouping definition always carry `groupBy`, the ordered levels (an empty array when ungrouped); input without it takes the declared levels. The levels' columns lead `sort`, each with its level's direction, or ascending for a level ordered by an aggregate; a sort entry for a grouped column that the reader sets turns that level's groups around. A level with `aggregate` orders its groups by that declared aggregate's value in `direction`, missing values last and equal values by raw value ascending; its records stay contiguous by value. Fixed-grouping queries keep their earlier shape, without `groupBy`.
+
+Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells and `distinctCount` distinct nonmissing raw values in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Any other operation name (a lowercase letter and up to 31 letters and digits) is a custom aggregate: a browser plugin computes it for inline data and a host source computes it itself; its value is a finite number or null. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
 
 Groups optionally carry `cells`, a map of declared column IDs to ordinary display cells. These cells use the column presenter; numeric aggregates and the first-column group label take precedence. Hosts supply complete-group states or other display facts. Inline summaries choose the worst semantic tone from each group's `state` and `enum` columns across the complete query, including records outside the current page. The severity order is danger, warning, info, success, neutral; unknown host tones rank with info. Display cells never become records or alter filtering, sorting, selection or export.
 
-Hosted sources provide `source.summary(query, { signal })`. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
+Hosted sources provide `source.summary(query, { signal })`. A source's `query` hook receives the same `groupBy` and must return records in the level order, as the summary describes it. The request is the complete normalized accepted query with offset zero, the definition's `pageSize` as its limit, and the page's accepted revision. That limit identifies the request; it never limits aggregate evaluation. Return a `gridSummary` document echoing that query:
 
 ```json
 { "protocol": "canopyx/2", "type": "gridSummary", "view": "inventory", "revision": "r1",
@@ -204,11 +252,165 @@ Hosted sources provide `source.summary(query, { signal })`. The request is the c
   "groups": [{ "key": "category-a", "value": "A", "offset": 0, "count": 3, "aggregates": { "total": 12 } }] }
 ```
 
-Groups cover every matching record in contiguous declared order. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges, aggregate bindings and page-to-group membership before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
+With several levels, every group of an outer level lists the next level's groups in `groups`, covering its records in contiguous ranges (absolute `offset`s into the complete query); groups of the innermost level omit `groups`:
 
-Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+```json
+"groups": [{ "key": "north", "value": "North", "offset": 0, "count": 3, "aggregates": { "total": 30 },
+  "groups": [{ "key": "north/open", "value": "Open", "offset": 0, "count": 2, "aggregates": { "total": 20 } },
+             { "key": "north/closed", "value": "Closed", "offset": 2, "count": 1, "aggregates": { "total": 10 } }] }]
+```
 
-`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)` and `getCollapsedGroups()` manage presentation. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+Groups cover every matching record in contiguous declared order, level by level. Keys are unique across the whole summary (an inner key usually extends its outer group's key), so collapse state names a group of any level. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups across all levels and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges at every level, level order, aggregate bindings and page-to-group membership (each record's value at each level) before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
+
+Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Each aggregate cell names its function through the `gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum`, `gridAggregateMaximum` and `gridAggregateDistinct` labels (a custom aggregate through the `{value}` label its plugin registers) (`{value}` is the formatted number, for example `avg 36.2`). Values use the column's precision (the most fraction digits among its loaded raw values, at most three; averages one more, counts none) and a compact form from one million (`sum 12.7M`); the cell's tooltip gives the aggregate's label and the full value. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
+
+`getSummary()` returns the accepted immutable metadata, or null before acceptance. `setGroupCollapsed(key, boolean)`, `setGroupLevelCollapsed(level, boolean)`, `expandAllGroups()`, `collapseAllGroups()` and `getCollapsedGroups()` manage presentation; `setGroupBy(levels)` and `getGroupBy()` change and read runtime levels. Group rows support expand/collapse with Left/Right and Enter/Space; Up/Down and Page keys traverse headings and records. Ctrl/Command+Home/End retains record navigation. Version-1 preference snapshots add bounded `collapsedGroups`; default reset expands groups, and sharing omits these query-specific keys. Generic CSV/copy exports remain record exports: they contain no synthetic heading identities or total rows. Exports of the filtered result add `request.grouping` (`levels` with titles, `aggregates`, `totals` and the nested `groups` with ranges, values, display `text` and aggregates) so a format writer can produce outline levels; selected and all-record exports carry none. Hosts that compose grouped Office output evaluate its explicit export scope and revision rather than borrowing filtered totals for a selected or all-record export.
+
+#### What a server adapter implements for multi-level grouping
+
+A summary endpoint that serves only a fixed grouping keeps working for definitions that declare `grouping`. For runtime
+grouping, an adapter such as `CanopyX.Data` (which serves single-level `gridSummary` today) adds:
+
+1. **Request parsing.** Read `groupBy` from `gridQuery` (absent for fixed-grouping definitions, always present otherwise):
+   up to four `{ column, direction, aggregate? }` levels of distinct declared sortable columns, allowed by the column
+   allow-list, with `aggregate` naming a declared aggregate. Reject a `groupBy` the definition does not allow.
+   `CanopySummaryRequest` exposes the ordered levels (for example `IReadOnlyList<CanopySummaryLevel> Levels` with the column,
+   descending flag and optional aggregate) in place of the single `GroupColumn`/`GroupDescending`.
+2. **Record order.** Page queries order records level by level before the remaining sorts and identity: by the level's
+   value, missing values last, with the protocol's raw-value ties (`CanopyGridGrouping.CreateComparer` for each level), or,
+   for an aggregate level, by the group's aggregate (a grouped subquery or window aggregate joined back to the records),
+   missing aggregates last and ties by value ascending.
+3. **Nested summaries.** The provider groups by every level prefix (for example `GROUP BY region` and
+   `GROUP BY region, status`, or one `GROUP BY` with rollup) and returns each group's count and aggregates; the handler
+   orders sibling groups by the level's order, assigns contiguous absolute offsets parent by parent, nests inner groups
+   under `groups`, and emits keys unique across levels (`GroupKey` of the outer key and the value, for example
+   `s:North/s:Open`). The 10,000-group limit counts every level; ungrouped requests (`groupBy: []`) return no groups.
+4. **Aggregates.** Add `distinctCount` (count of distinct nonmissing values in any column) and accept custom operation names
+   only when a registered provider computes them; reject unknown ones as unsupported.
+5. **Echo and checks.** Echo the normalized query including `groupBy`; validate sibling order, contiguity and
+   `sum(count) == matched` at every level before writing, as `CanopyGridSummary.ToJson` does for native responses.
+
+### Grid detail rows
+
+`reporting.detail` gives reporting grids expandable detail rows (see [grouping.md](grouping.md#detail-rows)). It holds at
+most one content source: `template` (the id of a page `<template>`), `renderer` (a plugin detail renderer name) or `view`
+(a nested `grid` or tree `view` document whose inline data comes from each record). Without one, records carry their own
+payloads. `print: false` leaves details out of exports and print snapshots; `label` describes the content.
+
+A grid row's optional `detail` is a table, properties or html payload (as on tree [detail rows](#detail-rows), without
+`height`: grid detail rows always measure their content), `{ "type": "grid", "rows": [...] }` for the nested grid or
+`{ "type": "tree", "roots": [...] }` for the nested tree. Detail payloads never join queries, sorting, search or record
+counts. Exports that include details add `details: true` to the request, and each exported record a `detail` table,
+properties or html payload (nested rows become a table of the nested view's visible columns).
+
+### Row data
+
+An inline grid can carry its rows as compact row data, `rowData`, instead of `rows` (never both; host grids have neither). Each row is an array in a declared column order rather than an object with repeated keys, and the rows come in chunks that the runtime decodes one at a time, so a large dataset costs fewer bytes and the page stays responsive while it loads. Use [large-data.md](large-data.md) to choose between row objects, row data and a bundle.
+
+```json
+"rowData": { "version": 1, "columns": ["name", "size", "status"], "count": 250000, "ordered": true, "encoding": "gzip", "chunks": 50 }
+```
+
+| Field | Meaning |
+| --- | --- |
+| `version` | `1`. The runtime rejects other values. |
+| `columns` | Declared column ids, unique, in the order of each row's cells. Columns not listed have no cells. |
+| `count` | The number of rows in all chunks; the runtime fails the load when the chunks hold another number. |
+| `ordered` | Optional. `true` declares the rows in ordinal order of their ids (UTF-16 code units), the order the grid shows when no sort applies. The runtime then answers the windows of an unsorted, unfiltered query without search as soon as the chunks that hold them are decoded, and fails the load when a row breaks the order. Without it, every query waits for all rows. |
+| `encoding` | Optional. `gzip`: each chunk given as a string is the base64 text of the gzip-compressed UTF-8 JSON of the chunk. The runtime inflates it with `DecompressionStream` (every current browser); a browser without it fails the load with a message. |
+| `base` | Optional. The folder, relative to the page, of the chunk files of a bundle; requires a chunk count. |
+| `chunks` | A count, or the chunks themselves. With a count and no `base`, the chunks are that many `<script type="application/x-canopyx-rows">` elements that are direct children of the grid's host element, in order. With `base`, they are the sidecar files `rows/0.js`, `rows/1.js` and so on under it, which register `[view id, "rows/<n>", chunk text]` as other sidecar files do (see [Sidecar](#sidecar)). As an array, each item is a chunk: an array of rows, or a string (the chunk's JSON text, or base64 gzip text with `encoding`). |
+
+A row is `[key, cell, cell, ...]`. `key` is the row id, or `{ "id": "...", "tone": "...", "className": "..." }` for a row with a tone or classes. The cells follow in the order of `columns`, in the cell format of [Cell](#cell); `null` is an empty cell, as is a cell after the end of a shorter array, so writers leave trailing empty cells out. A decoded row is exactly the row object with the same id, cells, tone and class; the runtime validates every chunk as it validates `rows`, including unique ids across chunks.
+
+```json
+[["a0000001", "Asset 1", 120, { "value": "Faulty", "tone": "danger" }], [{ "id": "a0000002", "tone": "warning" }, "Asset 2"]]
+```
+
+The order of the rows in the data never changes what the grid shows: it orders rows by their sort keys and then by id. `CanopyGridRowData` (the C# writer) therefore writes them in id order and declares `ordered`. While chunks are decoding, `view.rows` of the grid's API holds the rows decoded so far; reporting grids (which total and group the complete rows) and every sorted, filtered or searched query wait until all rows are decoded. Destroying the grid stops the decoding. A chunk that fails to load or decode fails the queries waiting for it, and a retry decodes from the first chunk again; the host request deadline (`requestTimeoutMs`) does not bound decoding unless the host sets it. The value lists of column filters and the facets of reporting grids wait for all rows.
+
+C# hosts write row data through `CanopyHtmlOptions.RowData` (fragments and pages carry the chunks inside the host element and the row data part, `canopyx-data.js`), `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
+
+### Record panel
+
+A grid's or tree view's optional `record` is its record panel ([record-panel.md](record-panel.md)): the record drawer with
+record-only fields, sections, tabs, a pinned summary, structured values, related records, deep links and record actions. A view
+that declares one, a column with a `structured` presenter, or a structured cell loads the `record-panel` part (payload
+`application/x-canopyx-record-panel`, or `canopyx-record-panel.js` and `.css` beside the runtime).
+
+| Field | Meaning |
+| --- | --- |
+| `fields` | Record-only fields `{ id, title, kind?, presenter?, wrap?, section? }`; ids differ from the column ids. Rows carry their values in `fields` (nodes too); they never join queries, search, sorting, the Columns menu, exports or saved views. Presenters apply on flat grids. |
+| `header` | `{ status?, facts? }`: the field shown first in the pinned summary, and up to six key facts. |
+| `sections` | `{ id, label, fields?, collapsed?, renderer?, sections? }`, nested up to three levels. A field shows in the first section that lists it; every other field joins a trailing "Other fields" section. Without sections, fields group by their section label. `renderer` names a plugin's `drawerSections` entry or the host's `recordSections`. |
+| `tabs` | `{ id, label, sections }` listing top-level sections; unlisted sections join the last tab. |
+| `hideEmpty` | Empty fields hide until the reader shows them. Default true. |
+| `jumpList` | A jump list of a tab's sections; absent shows it from four sections. |
+| `deepLink` | `true` or `{ key }`: the open record is written to the address as `#<key>=<view>:<id>` (key `record`; a tree writes the node's id path joined by `/`) and opened from it. |
+| `source` | `{ kind: "inline" }` (default), `{ kind: "host" }` or `{ kind: "sidecar", base, shards }`: where record details load from (below). |
+| `actions` | `{ copy?, print?, export?, link? }`: `false` switches a built-in record action off. |
+
+Columns accept `drawer: false`, which keeps a column out of the drawer and the record panel. Tree columns accept `section`,
+the drawer section of the column. Writers and readers check that every id is unique and that sections, tabs and the summary
+name declared fields and sections.
+
+#### Record details
+
+A record's details load when its drawer opens: from the host's `loadRecord(request, { signal })` option (whatever the
+declared source), from a hosted grid source's `record(request, { signal })` hook, or from record packs. The request is a
+`gridRecordQuery`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "revision": "r7" }
+{ "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "field": "sameName", "offset": 5, "limit": 50 }
+{ "protocol": "canopyx/2", "type": "gridRecordQuery", "view": "certificates", "id": "cert-0042", "row": true }
+```
+
+`revision` is the accepted dataset revision of a hosted grid or query-aware tree; ordinary inline sources omit it.
+`field`, `offset` and `limit` ask for the next rows of a collection field ("Load more"); `row: true` asks for the record's row
+too, because the browser has not loaded it (a deep link or a related record outside the loaded rows). The answer is a `gridRecord` (a plain object with the same
+members is accepted from browser hooks; `null` means no details):
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRecord", "view": "certificates", "id": "cert-0042", "revision": "r7",
+  "fields": { "thumbprint": "A1B2…", "contacts": { "records": { "columns": [...], "rows": [...], "total": 4 } } },
+  "cells": { "names": { "value": "a, b, c", "items": ["a", "b", "c"] } },
+  "row": { "id": "cert-0042", "cells": { ... } } }
+```
+
+`fields` holds record field values; `cells` holds values of grid columns that replace the row's cells in the drawer only;
+`row` is the record's row. An answer to a field page holds that field alone: `{ "fields": { "sameName": { "records": { "rows":
+[...], "total": 12 } } } }`, whose rows the panel appends (an empty page ends the list). The panel caches 64 records per view;
+a failed load shows Retry and reports the error.
+
+Record packs (`kind: "sidecar"`) are scripts beside the page, `<base>r<n>.js`, where `n` is the FNV-1a hash of the record id's
+UTF-16 code units (from 2166136261, multiplying by 16777619, unsigned 32-bit) modulo `shards`. Each registers, like the tree
+sidecar files, `[viewId, "r<n>", document]` with a `gridRecordPack`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRecordPack", "view": "certificates", "shard": 3,
+  "records": [{ "id": "cert-0042", "fields": { ... }, "cells": { ... } }] }
+```
+
+`CanopyRecordSidecar.Write(pageFolder, view, records)` writes them, streaming one record at a time; `CanopyGridRecord` and
+`CanopyGridRecordQuery` write the two exchange documents. Packs load from `file://`; the browser keeps 16 of them.
+
+#### What a server adapter implements for gridRecord
+
+A remote adapter (such as `CanopyX.Data`, which serves `gridQuery` today) adds a record endpoint and routes the browser
+source's `record` hook to it:
+
+1. **Request parsing.** Read `gridRecordQuery`: `view` (a configured grid), `id` (a record identity; bounded, not interpreted
+   as a key expression), optional `revision`, `field` with `offset` and `limit` (1 to 10,000), and `row`.
+2. **Authorization.** Check the caller may read the record and every field it returns; leave out fields the caller may not
+   see (a missing field is an empty field) and apply the field allow-list the adapter has for columns to record fields too.
+3. **Revision.** Answer from the requested revision or reject a stale one, as page requests do; echo `revision`.
+4. **Record lookup.** Find the record by its stable identity (an indexed key lookup, never a scan of the query result), map its
+   detail columns or joined tables to `fields` and fuller column values to `cells`, and include `row` when asked.
+5. **Collection pages.** For `field`, page that collection with the same ordering every time (a stable key last), return the
+   rows from `offset` (at most `limit`) and the collection's `total`; reject a field that is not a collection.
+6. **Limits.** Bound the answer's size (rows per page, serialized bytes) and the request rate per caller, and stream large
+   answers. Write the answer with `CanopyGridRecord.ToJson(view)`, which checks it against the definition.
 
 ### Safe cell presenters
 
@@ -224,7 +426,7 @@ Cell objects optionally include `secondary` and up to 4096 ordered `series` peri
 | `icon` | Required plain-text `glyph`, 1–32 nonblank code units | Decorative glyph beside the existing text alternative; no markup is interpreted. |
 | `progress` | Positive finite `maximum` within the safe-integer magnitude; optional `thresholds` | Numeric column with a slim threshold-coloured track and its formatted value, visually clamped from zero to maximum. The raw value is retained. |
 | `boolean` | Optional `inverted` | Boolean values show a check or muted dash, with translated accessible yes/no text. Inverted true values use the danger tone. |
-| `enum` / `state` | Optional raw-value `tones` map; optional `quietTones` | Enums use compact pills; the `success` tone and state columns use a dot and text, with quiet healthy styling. Tones listed in `quietTones` (at most 16) render as plain muted text, for example `["success"]` so passing values read quietly and chips remain for values that need attention. |
+| `enum` / `state` | Optional raw-value `tones` map; optional `quietTones`; optional `quietStyle` (`muted` or `plain`) | Enums use compact pills, each with a tinted fill and a border in its tone (a host tone takes its `--cx-tone-<name>-bg` fill when the theme defines one, otherwise a tint of its ink); the `success` tone and state columns use a dot and text, with quiet healthy styling. Tones listed in `quietTones` (at most 16) render as plain text, for example `["success"]` so passing values read quietly and chips remain for values that need attention. Quiet text is muted unless `quietStyle` is `plain`, which keeps the normal text colour (for values without a tone that are ordinary, not secondary). In an enum column quiet values keep the pills' inline start, so both line up. |
 | `change` | Numeric `deltaColumn`; optional `higherIsGood` | A directional delta beside the original formatted value; the column declares which direction is healthy. |
 | `statusStrip` | None | One segment per period, shrinking to two pixels before adjacent periods merge into worst-state buckets. Tooltips name the original period or merged range. |
 | `sparklineBars` / `sparklineLine` | Optional `thresholds`, paired `minimum` / `scaleMaximum`, `higherIsGood`, and `mark` | Compact history with a per-cell or declared shared scale and a marked worst or last point. |
@@ -233,12 +435,13 @@ Cell objects optionally include `secondary` and up to 4096 ordered `series` peri
 | `missing` | None | Empty values use a muted em dash. |
 | `list` | Required literal `separator`, 1–16 code units, and integer `limit`, 1–16 | Text column with a bounded delimiter-separated preview and a complete-text dialog when truncated. |
 | `longText` | Optional `mono` | Wrapped text is clamped to four lines with a fade and Show more; explicit fixed-height rows retain a one-line preview. The complete text opens in a dialog. |
+| `structured` | Optional `display` (`count`, `chips`, `first`), `limit` (1–16) and `countText` (with `{count}`, at most 256 code units) | A structured value's summary ([Cell](#cell)): a count, the first chips and +N, or the first item and +N; without `display` a list shows chips, an object its first value and the rest a count, and a cell's own `text` wins. Comes with the record panel part. |
 
 Links are limited to 8,192 code units and reject control characters. Long-text previews use a bounded estimate of five lines at the current column width and preserve surrogate pairs. Complete values remain available to queries and exports. Long-text and list dialogs retain text literally, return focus on ordinary close, and close when the accepted query retires or the grid is destroyed. The dialog follows the grid's resolved theme. `gridExpandCell` and `gridCloseCell` provide translated control labels; boolean values reuse `yes` and `no`.
 
 ### Reporting column layout
 
-Wire columns retain numeric `width`. Columns size to their content and fill the width as described in [column-layout.md](column-layout.md): an assigned width is preferred unless `fixed: true`, optional `minWidth`, `maxWidth`, `flex` (0 to 100), `autoSize` (`content`, `header`, `none`), `priority` (`essential`, `normal`, `optional`, or a DataTables-style integer), `pinned` (`left`, `right` or `null`) `rowHeader` and `alwaysVisible` describe intent, and the identity column (the row header, or the first column) defaults to essential and pinned left. Optional `autoWidth: true` marks a width the .NET writer did not assign; the JavaScript API also accepts an omitted width. Measuring reads the header and up to 200 loaded records, never fetches additional pages, and runs again when an accepted query arrives, on resize and when visibility changes, but not while scrolling. Saved user widths and manual resize choices take precedence. Hidden grids wait until revealed. These optional fields preserve existing `canopyx/2` documents.
+Wire columns retain numeric `width`. Columns size to their content and fill the width as described in [column-layout.md](column-layout.md): an assigned width is preferred unless `fixed: true`, optional `minWidth`, `maxWidth`, `flex` (0 to 100), `autoSize` (`content`, `header`, `none`), `priority` (`essential`, `normal`, `optional`, or an integer where 0 and 1 are essential and 10000 and above optional), `pinned` (`left`, `right` or `null`) `rowHeader` and `alwaysVisible` describe intent, and the identity column (the row header, or the first column) defaults to essential and pinned left. Optional `autoWidth: true` marks a width the .NET writer did not assign; the JavaScript API also accepts an omitted width. Measuring reads the header and up to 200 loaded records, never fetches additional pages, and runs again when an accepted query arrives, on resize and when visibility changes, but not while scrolling. Saved user widths and manual resize choices take precedence. Hidden grids wait until revealed. These optional fields preserve existing `canopyx/2` documents.
 
 `autoFitColumn(id)` and `autoFitColumns()` are available on ordinary and reporting grid controllers. Fit-all returns a frozen map from column ID to `{ width, sampled, scope: "loaded" }`, including hidden columns. Both methods require an accepted query and a measurable grid, and set a sticky user width (disabling flex). `autoSizeColumns(ids?)` drops user widths so columns return to automatic sizing; `setColumnPriority(id, priority)` and `setColumnPinned(id, side)` change priority and pins; `resetColumns()` restores the declared order, visibility, widths and pins while keeping the query. `canopyx:columnResize` reports `{ column, width }` and `canopyx:columnPin` reports `{ column, pin }`. The Columns menu lists each column with a drag handle, a checkbox and an ellipsized label; Alt+Up/Down or dragging reorders, a "Find a column…" field appears above eight columns, and Show all and Reset columns close the list (`gridFindColumn`, `gridShowAllColumns`, `gridResetColumns`, `gridReorderColumn`, `gridPinnedLeft`, `gridPinnedRight`). Fitting and pinning a single column live in each header menu (`gridFitContent`, `gridFitAllColumns`, `gridPinLeft`, `gridPinRight`, `gridUnpin`).
 
@@ -254,7 +457,97 @@ Effective pins leave `reporting.minimumCenterWidth` CSS pixels (default 128, ran
 
 `reporting.responsive: true` temporarily hides requested columns until their base widths fit, hiding larger priorities first and equal priorities from the end of current order. It retains at least one requested field and all `alwaysVisible` fields; protected fields wider than the viewport use horizontal scrolling. Explicit user visibility remains separate and survives viewport changes. Responsive hiding changes neither search/filter/sort meanings nor full record details. Default export columns include every user-visible column in the grouped display order, including temporarily hidden fields; an explicit export column list retains its caller-defined order. The chooser marks temporarily hidden fields and provides translated pin controls through `gridPinColumn`, `gridPinNone`, `gridPinLeft`, `gridPinRight` and `gridResponsiveHidden`.
 
+### Editing and commit
+
+Grid columns may declare `editable: true`, an `editor` and `validation`; the grid may declare `editing` (`readOnly`, `mode`
+`cell` or `row`, `drawer` `phone`, `always` or `never`, `editBar`). The fields are optional additions to `canopyx/2`;
+[editing.md](editing.md) describes the behaviour and `$defs/gridEditor`, `$defs/gridValidation` the shapes. `editor` is an
+editor name (`text`, `number`, `date`, `datetime`, `time`, `select`, `toggle`, `lookup`, or a name a plugin or the host
+registers) or `{ type, min?, max?, step?, placeholder?, options?, lookup? }`. `validation` is `{ required?, min?, max?,
+minLength?, maxLength?, pattern?, message? }`; `min` and `max` are numbers, or ISO 8601 moments for date-and-time columns.
+Edited values follow the cell rules of this document: numbers within the safe integer magnitude, ISO 8601 moments with an
+explicit time zone (the runtime writes UTC with `Z`), text and booleans.
+
+A grid saves changed rows by sending a `gridCommit` document to its writer: the host's `editing.commit(batch, { signal })`,
+or the source's `commit(batch, { signal })`. A remote source posts it, for example to `POST {pattern}/commit` beside its
+`query` and `facet` endpoints.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridCommit", "view": "assets", "revision": "r41",
+  "rows": [
+    { "id": "asset-003", "values": { "cost": 1250, "status": "Repair" }, "original": { "cost": 1180.5, "status": "In use" } },
+    { "id": "asset-007", "values": { "owner": "Chen Wu" }, "original": { "owner": "Ada Park" } } ] }
+```
+
+- `revision` is the dataset revision the grid read (the accepted query's), or `null` before one was accepted.
+- `rows` holds at least one row: its `id`, the raw `values` of its changed columns, and the raw `original` values the reader
+  started from for those columns (`null` for a missing value). Only rows whose checks passed are sent.
+
+The writer answers with a `gridCommitResult`, one entry per row it handled:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridCommitResult", "view": "assets", "revision": "r42",
+  "rows": [
+    { "id": "asset-003", "status": "saved", "cells": { "cost": { "value": 1250, "text": "1,250.00" } } },
+    { "id": "asset-007", "status": "conflict", "error": "Someone else changed the owner." } ] }
+```
+
+- `status` is `saved`, `error` or `conflict`. A saved row may carry canonical `cells` (grid cells, validated like page rows)
+  that replace the shown ones; other rows may carry an `error` message and `errors` by column. A row the answer leaves out
+  was not saved.
+- `revision` is optional: the dataset revision after the commit. The grid reports it in the commit result and keeps
+  reading pages at the revision it accepted; a host whose source no longer serves that revision reloads the grid.
+- A transport failure (a non-success status, invalid JSON, a document that does not answer the batch: another view, an
+  unknown or repeated row, an unknown status, `cells` on a row that was not saved) fails every row of the batch with the
+  reason. The grid keeps their changes.
+
+**What a writer does.** It authorizes the caller and every changed column (editable columns are a presentation contract,
+not authority), validates the values with its own rules (the view's `validation` mirrors them), and executes each row
+independently, so one row's failure does not discard the others. For concurrency it checks the batch `revision` against
+its current one and, where they differ, compares each row's `original` values with what it stores: a row whose stored
+values differ is a `conflict` and is not written. A writer that cannot check rows individually may answer every row of a
+stale batch with `conflict`. It answers with the revision after the commit. Writes are the writer's own, governed by its
+write policy; CanopyX only raises the request.
+
+### Column groups
+
+Optional `columnGroups` draws header rows above a grid's columns ([column-groups.md](column-groups.md)). Each group is `{ id, title, columns?, groups?, pinned? }`: a unique identifier, a title of 1 to 256 characters, the declared columns directly below it and nested groups, at least one of the two. Groups nest at most three levels; a column belongs to one group at most; `pinned` (`left`, `right` or `null`) is the initial pin of every column of a top-level group and is refused on nested groups. The .NET writer requires a group's columns to be adjacent in `columns`; the runtime gathers scattered ones where most of them are. Grid state needs no new field: saved column order and pins restore the groups.
+
+The header holds one `row` per group level above the column headers. Group cells are `columnheader`s with `aria-colindex` and `aria-colspan` over their visible columns; body rows' `aria-rowindex` and the grid's `aria-rowcount` count the extra header rows. `getColumnGroups()` returns `{ id, title, columns, visibleColumns, pin, groups }` in the current order and `setColumnGroupVisible(id, visible)` shows or hides a group's columns. The script-free fallback writes the same rows with `colspan` and `rowspan`.
+
+### Cell ranges and the clipboard
+
+Optional `rangeSelection` (`true`, or `{ enabled?, multiple?, fillHandle? }`) and `clipboard` (`{ copyHeaders?, copyValues?: "display" | "raw", paste? }`) turn on cell ranges ([cell-ranges.md](cell-ranges.md)); the host options of the same names override them. A range is `{ startRow, endRow, startColumn, endColumn }`: inclusive row positions in the shown order and column ids. `canopyx:cellRangeChange` reports `{ ranges }`. A new query clears the ranges; a reload of the same query keeps them.
+
+Copies write tab-separated text (with spreadsheet formula protection for text, as CSV) and an HTML table with typed cells. Pastes and fills raise the cancelable `canopyx:paste` with `{ source: "clipboard" | "api" | "fill", cells, refused, respondWith(result) }`, where each cell is `{ id, column, row, text, value, previous }` and `value` is the text read as the column's kind. A grid with the editing part applies the cells through editing (read-only rules, checks, one undo step); without it the grid applies nothing and a host answers with `respondWith({ refused: [{ id, column, reason }] })` or `false`. A copy or paste covers at most 200,000 cells.
+
 ## View
+
+Every tree runtime loads the **tree tools part** (`canopyx-tree-tools.js` and `.css`) when a tree mounts: the toolbar's
+Columns, Views, Export and more menus, column fitting, auto height, named views and tree exports, from the same sources
+as the flat grid's menus and fit. Single-file pages carry it as inert payloads (`application/x-canopyx-tree-tools` and
+`application/x-canopyx-tree-tools-style`, `CanopyHtmlAssets.TreeToolsMarkup`); otherwise the runtime loads the plain or
+content-hashed files beside itself, so hosts serve them beside every entry point. A tree's Export menu body and writers
+come from the export part (`canopyx-export.js`, `application/x-canopyx-export`), loaded on first use, which single-file tree
+pages carry and hosts serve the same way. The runtime finds a payload anywhere in
+the document by its type and `data-cx-version`, so several trees on one page share one payload: fragments written with
+the same `CanopyHtmlOptions.Document` (a `CanopyHtmlDocument`) embed the part once, in the first fragment, and so do the
+export part and the filter editor part of flat grids. The tree reports ready once the part is installed; a tree whose part
+cannot load keeps its rows, search and filter switches and reports a `canopyx:error`.
+
+Tree columns other than the tree column pin left (after it) or right (`pinned`), as on flat grids; `setColumnPinned(id, pin)` changes a pin once the part is installed, and remembered state keeps the pins. A column's optional `tooltip` is `"auto"` (a cut-off cell shows its full value on hover) or the id of a declared column whose text the tooltip shows, on trees and flat grids alike; a cell's own `title` wins.
+
+The part also brings the print outline and `toOutline()` (empty until it is installed, so call it once `ready` has resolved), and row activation: Enter on a node
+row (which selects and toggles) and a double click (which toggles) first dispatch the cancelable `canopyx:rowActivate` event
+with `{ id, node, keyboard }` and call `onRowActivate(node, { keyboard })`; `preventDefault()` or a `false` return keeps the
+tree's own action from running, so a host can open its own view of the node. Space, the expander and the status rows keep
+their actions.
+
+CanopyX menus (the toolbar menus, a flat grid's column popover, a tree's actions menu and the reporting header selection
+menu) close on a pointer press or focus outside them, and when another CanopyX menu opens: an opening menu dispatches
+`canopyx:closemenus` on the document with itself as `detail.source`. A host closes them the same way, dispatching
+`canopyx:closemenus` on the document (every view) or, with `bubbles: true`, on an element that holds views (those views); `closeMenus()` on a grid
+or tree closes its own. A host can listen to the event to close its own popovers when a CanopyX menu opens.
 
 Tree columns declare their initial `width` and may include `minWidth` and `maxWidth` in CSS pixels. The bounds are
 integers from 40 through 2,147,483,647, with the minimum no greater than the maximum; absent bounds use that full
@@ -277,18 +570,21 @@ to the declared range. Resize separators expose the same range through `aria-val
 | `search` | object | Optional. Shows the search box. When present it has `minLength` (1 to 16; at least 2 for sidecar sources) and `maxResults` (1 to 500), and optionally `placeholder` (the box's placeholder and accessible name; `labels.searchPlaceholder` when absent) and `kinds`: the node kinds search can find. Without `kinds` every node can be found. |
 | `filters` | array of filters | Optional. "Only matching" switches. |
 | `timeZone` | `utc` or `local` | Optional. The time zone `datetime` columns show at first: UTC (the default), or the reader's own. A host can switch it at run time. |
-| `pinTreeColumn` | boolean | Optional. The tree column stays in view while the other columns scroll sideways. A host can change it at run time with `grid.setTreeColumnPinned(pinned)`. |
+| `pinTreeColumn` | boolean | Optional. The tree column stays in view while the other columns scroll sideways. With the tree tools part it is pinned by default, so only `pinned: null` on the tree column unpins it. A host can change it at run time with `grid.setTreeColumnPinned(pinned)`. |
+| `toolbar` | object | Optional. Per-control switches `filters`, `columns`, `views`, `export` and `more` (booleans); an absent switch keeps its control, and a control switched off is not built. The host's `toolbar` option overrides them and also takes `search`; `toolbar: false` hides the toolbar. |
+| `exportFormats` | array of strings | Optional. Ids of registered export formats the Export menu offers after CSV (see [Export](#export-clipboard-and-record-details)). |
+| `autoHeight` | boolean | Optional. A tree whose visible rows fit is as tall as its toolbar, header and rows; longer trees keep the host's height and scroll inside it. The height follows expanding and collapsing, and is measured again when the width changes the toolbar (a resize, or crossing the 640-pixel phone layout), as on flat grids: a host gives trees and flat grids the same rule, a height that caps long lists. `false` keeps the host height. Default true. |
 | `stateKey` | string | Optional. Session storage key for remembered view state: expansion, selection, columns, sorting, declared filters, timezone, focus, and scroll. |
 | `deepLink` | boolean | Optional. Selection writes the id path to the URL hash; a hash expands it on load. |
 | `labels` | object | Optional. Translations of the texts the runtime writes itself (see [Labels](#labels)); English where a name is absent. |
 | `source` | object | Where nodes come from (see [Sources](#sources)). |
 | `roots` | array of nodes | Top-level nodes; present only for inline sources. |
 
-A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable`, `hidden`, and `editable`. `editable` enables edit proposals when the host supplies an edit hook. The tree column cannot be hidden. Widths are initial: the reader drags a column edge, and a host sets one with `grid.setColumnWidth(columnId, pixels)`, for example to narrow the tree column on a small screen. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
+A column has `id`, `title`, `width` (at least 40), `kind` (`text`, `number`, or `datetime`), and optional `sortable`, `hidden`, `editable` and `renderer`. `editable` enables edit proposals when the host supplies an edit hook. `renderer` (1 to 64 ASCII letters, digits, hyphens or underscores, starting with a letter; flat-grid columns too) names a cell renderer a browser plugin registers (see [plugins.md](plugins.md)): the plugin draws the column's live cells, a host renderer for the column wins, and a name no plugin on the page registers keeps the built-in painter. Exports, print outlines and the static fallback keep the cell text. The tree column cannot be hidden. Tree columns fit as flat-grid columns do (see [column-layout.md](column-layout.md)): `autoWidth: true` measures the visible rows' content and leaves `width` as the fallback until the tree tools part has measured; without it `width` is preferred (the column grows to its content and takes spare width). The layout fields `fixed`, `flex`, `autoSize`, `priority` and `alwaysVisible` mean what they mean on flat-grid columns, and the tree column alone may declare `pinned: null` to scroll sideways with the others. A width the reader drags, types or sets stays (`sized` in remembered state) until Reset columns. A filter has `id`, `label`, `flag`, an optional `ancestorFlag`, and an optional `hidden`.
 
 ### Host Interaction Proposals
 
-Optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly.
+In tree views, optional `editable` columns, `dragDrop`, and `contextActions` use the interactive runtime. These definitions describe available controls, not executable domain operations. Static outlines remain readonly. Flat grids edit through the editing part instead ([Editing and commit](#editing-and-commit)).
 
 | Proposal | Fields |
 | --- | --- |
@@ -330,7 +626,7 @@ Checkbox state is a presentation intent. The library does not enumerate an unloa
 
 ### Labels
 
-The runtime writes some text of its own: the search box's hints and announcements, the "show more", loading, and error rows, the column chooser, the names of the column resize handles, the announcements after a page of children, `true` and `false` without display text, the UTC mark on dates and the local-time tooltip, and the notice of a view that failed to mount. `labels` translates them. Every name is optional and English applies where it is missing; a value is a string with visible text. `{name}` placeholders are replaced, numbers formatted in the page language.
+The runtime writes some text of its own: the search box's hints and announcements, the "show more", loading, and error rows, the toolbar menus, the names of the column resize handles, the announcements after a page of children, `true` and `false` without display text, the UTC mark on dates and the local-time tooltip, and the notice of a view that failed to mount. `labels` translates them. Every name is optional and English applies where it is missing; a value is a string with visible text. `{name}` placeholders are replaced, numbers formatted in the page language. A runtime accepts only the names it carries. The tree toolbar menus (from the tree tools part) use the flat grid's names for the same controls, and every tree runtime carries them with the same English texts: `gridViews`, `gridViewName`, `gridSaveView`, `gridRemoveView`, `gridResetView`, `gridChooseView`, `gridApply`, `gridFindColumn`, `gridShowAllColumns`, `gridResetColumns`, `gridReorderColumn`, `gridPinnedLeft`, `gridPinnedRight`, `gridResponsiveHidden`, `gridExport`, `gridVisibleRows`, `gridSelectedRows`, `gridAllRows`, `gridDownloadCsv`, `gridCopy`, `gridExportProgress`, `gridExportReading`, `gridExportCancelled`, `gridCancelExport`, `gridMore` and `gridPrint`. A tree translates them in its own `labels` on the core and interactive runtimes too. The other `grid*` names belong to flat grids and stay errors on the tree runtimes; a C# tree view writes only the names the tree runtimes read, so a complete label pack keeps a tree on a tree runtime (the interactive one when it translates interaction texts).
 
 | Name | English | Placeholders |
 | --- | --- | --- |
@@ -403,11 +699,28 @@ A cell is either a bare value (string, number, boolean, or null) or an object:
 ```
 
 - `value` is used for sorting and, when `text` is absent, for display. Dates are ISO 8601 UTC strings, `yyyy-MM-ddTHH:mm:ssZ` or with milliseconds `yyyy-MM-ddTHH:mm:ss.fffZ`.
+- `sort` (text of at most 4,096 code units, or a finite number from −9,007,199,254,740,991 to 9,007,199,254,740,991) is the key the cell sorts by when it differs from its value.
+  This is a magnitude bound; fractions within it are valid. For example,
+  a run named "Nightly 42" sorts by its ISO start time while its
+  column filter, value list and search read the name. Only sorting reads it (inline flat grids, which reject a malformed key, and trees, which ignore one;
+  a host source sorts on its own). The grouping column of a grouped grid orders by its values, so groups stay whole, and a column with a text
+  `ordering` policy orders by its values through that policy. Give every cell of a column a key of the same type; keys of
+  mixed types order numbers before text when ascending. `CanopyCell.SortKey` writes it from C# (dates as ISO 8601 UTC text
+  with milliseconds, `yyyy-MM-ddTHH:mm:ss.fffZ`).
 - `text` replaces the formatted value. Hosts use it for units, localisation, and phrases like "not collected".
 - `tone` is a name: a lowercase letter followed by lowercase letters, digits, and hyphens, at most 32 characters, not ending in `-bg`. The theme maps tones to colours; hosts never send colours. See [Tones](#tones).
 - Every string is inserted as text, never as HTML.
 
 A badge has `text`, an optional `tone`, and an optional `title` (tooltip).
+
+A cell object may hold one structured value, which the record panel shows whole and the `structured` presenter summarises
+([record-panel.md](record-panel.md#structured-values)): `items` (a list of cells: values with their own tone, tooltip or link;
+at most 4,096), `fields` (an object: `{ name, value, kind? }` entries, at most 512), `records` (a collection: `{ columns, rows
+| roots, total?, pageLength?, pageSize?, target? }`), `events` (a timeline: `{ time?, summary, actor?, kind?, tone?, ref?,
+changes? }`, at most 10,000) or `changes` (`{ name, before, after, kind? }`, at most 512). Values nest up to eight levels;
+list items are plain values. Any cell may carry `ref`, a link `{ id, view?, path? }` to another record of its own view or of the
+grid or tree whose view id it names (`path` is a tree record's id path). Search, sorting, filters and exports keep reading
+`value` and `text`; structured members never join queries.
 
 ### Tones
 
@@ -460,7 +773,7 @@ A detail row sits under its parent and holds one of three payloads:
 - The content of a detail row stays inside the visible width of the grid. It does not scroll away sideways with the columns, however wide they are together.
 - A table's `widths` are optional: one share of the table width per column, each 1 to 1,000 (`[2, 3, 3]` makes the first column a quarter). Without them the columns are equally wide. Text that does not fit its column wraps.
 
-Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup inserted without sanitising; hosts must encode any user-supplied text in it. The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail(node, element)` callback; `element` is the body of the row, which has the visible width of the grid, and a row without `height` takes the height of what the host puts into it. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
+Table and property cells follow the cell rules above. In the interactive browser view, `html` is trusted host markup, inserted without sanitising unless the host gives a `sanitizeHtml` option; hosts must encode any user-supplied text in it (see [security.md](security.md)). The static fallback and print outline encode HTML detail payloads as text to remain script-free; use table or property details for formatted fallback output. JavaScript hosts can also render detail rows themselves through the runtime's `renderDetail(node, element)` callback; `element` is the body of the row, which has the visible width of the grid, and a row without `height` takes the height of what the host puts into it. Host renderer callbacks own the safety of any markup they produce. Static overflow links allow relative, HTTP, HTTPS, and mailto URLs; other schemes are omitted.
 
 ## Page
 
@@ -499,7 +812,7 @@ Exact label matches rank first, then labels that start with the query, then the 
 
 ## Deep Links
 
-With `deepLink` on, selecting a row writes `#cx.<encoded view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded by `encodeURIComponent` and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report. A change of the fragment while the page is open opens its row the same way: a link followed inside the page, a fragment typed into the address bar, Back and Forward, and a router that announces its own address change with a `popstate` event (the grid listens for `hashchange` and `popstate`). `history.replaceState` and `pushState` fire neither event, so a host whose own code writes the fragment calls `grid.readLocation()` afterwards: it reads the address again and opens the row the fragment names, and returns a promise that settles when the row is open or the fragment names none (while the view is still loading, once it has loaded; when the fragment is already being opened, once that is done; when a newer fragment replaces it, without opening its row). A navigation that fires both `popstate` and `hashchange` is read once. Reading an address the grid has already opened, or wrote itself, does nothing.
+With `deepLink` on, selecting a row writes `#cx.<encoded view id>=<path>` to the URL hash, where the view id is encoded by `encodeURIComponent` and `<path>` is the node's id path with each id encoded by `encodeURIComponent` and joined with `/`. Opening the page with such a hash expands the path and selects the node. Other parameters in the hash, separated by `&`, are kept. Hosts can build these links to point into a report. A change of the fragment while the page is open opens its row the same way: a link followed inside the page, a fragment typed into the address bar, Back and Forward, and a router that announces its own address change with a `popstate` event (the grid listens for `hashchange` and `popstate`). `history.replaceState` and `pushState` fire neither event, so a host whose own code writes the fragment calls `grid.readLocation()` afterwards: it reads the address again and opens the row the fragment names, and returns a promise that settles when the row is open or the fragment names none (while the view is still loading, once it has loaded; when the fragment is already being opened, once that is done; when a newer fragment replaces it, without opening its row). A navigation that fires both `popstate` and `hashchange` is read once. Reading an address the grid has already opened, or wrote itself, does nothing. Deep links come with the links part (`canopyx-links.js`, application/x-canopyx-links), which a view with `deepLink` loads when it is created: hosts that serve runtime files serve it beside them, and single-file fragments of such a view carry its payload. A view whose links part cannot load keeps its rows and reports the error.
 
 A host with a link scheme of its own passes two callbacks to the runtime and then owns the whole fragment:
 
@@ -589,7 +902,7 @@ A manifest exceeding `MaxFileBytes` fails with a named budget error; increase th
 
 #### Search Index
 
-The index holds every node search can find once, together with its ancestors, in an entry table, and refers to nodes by entry number everywhere else. A query reads the shards of its words and the entry files of the matches it shows, never the whole index.
+The index holds every node search can find once, together with its ancestors, in an entry table, and refers to nodes by entry number everywhere else. A query reads the shards of its words and the entry files of the matches it shows, never the whole index. Browsers read the index with the search part (`canopyx-search.js`, application/x-canopyx-search), which a sidecar source loads on its first query with a word of at least two units; the runtime checks the manifest's `search` object when the manifest loads.
 
 **Entries.** The bundle writer numbers the nodes of the index in depth-first order, so a parent always has a smaller number than its children. A node gets an entry when search can find it (every node, or the nodes of the view's `search.kinds`) and when it is an ancestor of such a node, whether or not its own label has a searchable word, because the id path of a hit runs through its ancestors. A node that cannot be found and has no descendant that can is left out, so `search.entryCount` can be smaller than `nodeCount`. The files `e/0`, `e/1`, and so on hold consecutive entries, at most 256 per file and fewer when the file budget requires it. `search.entryCount` is the number of entries, and `search.entryFiles` lists the number of the first entry of each file in file order, starting with 0.
 
@@ -679,7 +992,7 @@ Loaded roots and complete inline descendants preserve surviving identities. Old 
 ## Security Notes
 
 - Labels, cells, badges, tooltips, search context, and table and property values are inserted with `textContent`, never as HTML.
-- Icon SVG and `html` detail payloads are trusted host markup. Do not build them from user input without encoding.
+- Icon SVG and `html` detail payloads are trusted host markup. Do not build them from user input without encoding. The `sanitizeHtml` host option and Trusted Types handling are described in [security.md](security.md).
 - Sidecar files are scripts. Serve a bundle only from a location the host controls, the same as the page itself.
 
 Inline tree serialization uses an iterative traversal, so deep valid hierarchies do not consume the .NET call stack. A node reference requires an explicit lazy-child declaration and cannot accompany inline children. The search placeholder is also its accessible name and must contain non-whitespace text.

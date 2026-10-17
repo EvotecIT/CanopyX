@@ -37,10 +37,11 @@
       host.appendChild(this.outline);
       this.buildHeader();
       this.onScroll = () => { this.scheduleRender(); this.stateChanged(); };
-      this.onPrint = () => { this.outline.innerHTML = this.toOutline(); };
+      this.onPrint = () => { const table = this.outlineElement(); this.outline.replaceChildren(...table ? [table] : []); };
       grid.addEventListener("scroll", this.onScroll, { passive: true });
       grid.addEventListener("click", (e) => this.onClick(e));
       grid.addEventListener("dblclick", (e) => this.onDblClick(e));
+      grid.addEventListener("pointerover", (e) => this.cellTip(e));
       grid.addEventListener("keydown", (e) => this.onKey(e));
       // Tabbing into the grid lands on the tab-stop row; adopt it so arrows start there and recycling keeps it.
       this.canvas.addEventListener("focusin", (e) => {

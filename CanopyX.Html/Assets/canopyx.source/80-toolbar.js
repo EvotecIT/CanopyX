@@ -1,15 +1,11 @@
 
-  // ---------- tree grid: toolbar (search box, filter switches, column chooser) ----------
+  // ---------- tree grid: toolbar (search box and filter switches; the tree tools part adds the menus) ----------
   Object.assign(TreeGrid.prototype, {
     buildToolbar() {
-      const bar = this.toolbar;
-      let any = false;
-      if (this.view.search && this.source.canSearch) {
-        this.buildSearch(bar, this.view.search);
-        any = true;
-      }
-      (this.view.filters || []).forEach((filter) => {
-        // A hidden filter has no switch here: the host draws the control and calls setFilterActive.
+      const bar = this.toolbar, tools = this.tools;
+      if (this.view.search && this.source.canSearch && tools.search !== false) this.buildSearch(bar, this.view.search);
+      // A hidden filter has no switch here: the host draws the control and calls setFilterActive.
+      if (tools.filters !== false) (this.view.filters || []).forEach((filter) => {
         if (filter.hidden) return;
         const label = h("label", "cx-switch");
         const input = h("input");
@@ -22,14 +18,15 @@
         label.appendChild(input);
         label.appendChild(document.createTextNode(filter.label));
         bar.appendChild(label);
-        any = true;
       });
-      if (this.columns.length > 1) {
-        this.buildColumnChooser(bar);
-        any = true;
-      }
-      bar.hidden = !any;
+      this.syncToolbar();
+      // The Columns, Views, Export and more menus, column fitting and auto height come from the tree tools part. A tree
+      // whose part cannot load or install keeps its search and filter switches and reports the error.
+      this.toolsReady = loadPart(TREE_TOOLS).then(() => this.destroyed || this.installTools()).catch(error => this.emit("error", { error }));
     },
+
+    syncToolbar() { this.toolbar.hidden = !this.toolbar.firstChild || this.opts.toolbar === false; },
+    syncColumnControls() {},
 
     /**
      * Turns the declared filters off, for a host predicate that replaces them or to reveal a row they hide, and
@@ -206,33 +203,5 @@
       box.appendChild(status);
       bar.appendChild(box);
       this.searchInput = input;
-    },
-
-    /** A native disclosure with one checkbox per hideable column; the tree column always stays. */
-    buildColumnChooser(bar) {
-      const details = h("details", "cx-columns");
-      const summary = h("summary");
-      setText(summary, this.labels.columns);
-      const group = h("fieldset", "cx-columns-list");
-      const legend = h("legend", "cx-sr-only");
-      setText(legend, this.labels.visibleColumns);
-      group.appendChild(legend);
-      this.columns.slice(1).forEach((column) => {
-        const label = h("label");
-        const input = h("input");
-        input.type = "checkbox";
-        input.checked = !column.hidden;
-        input.setAttribute("data-cx-column", column.id);
-        input.addEventListener("change", () => this.setColumnVisible(column.id, input.checked));
-        label.appendChild(input);
-        label.appendChild(document.createTextNode(column.title));
-        group.appendChild(label);
-      });
-      details.appendChild(summary);
-      details.appendChild(group);
-      bar.appendChild(details);
-      const flyout = watchFlyout(details, group, () => details.open);
-      details.addEventListener("toggle", flyout.position);
-      this.disposeColumnChooser = flyout.dispose;
     }
   });

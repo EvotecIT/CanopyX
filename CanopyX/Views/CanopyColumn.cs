@@ -34,7 +34,7 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
-    /// <summary>Gets or sets the column's immutable sizing intent. The default fits content; tree widths start at 160 pixels within the bounds.</summary>
+    /// <summary>Gets or sets the column's immutable sizing intent. The default fits content in flat grids and trees; trees write 160 pixels, within the bounds, as the width a tree uses until its columns are measured.</summary>
     public CanopyColumnSizing Sizing {
         get => _sizing;
         set => _sizing = value ?? throw new ArgumentNullException(nameof(value));
@@ -51,8 +51,26 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets whether the column can sort cell values; tree views sort siblings.</summary>
     public bool Sortable { get; set; }
 
-    /// <summary>Gets or sets whether the interactive runtime offers an editor for this column.</summary>
-    /// <remarks>The host edit hook validates and executes proposals. The runtime never changes the node value itself.</remarks>
+    /// <summary>Gets or sets whether a flat-grid column supports query predicates and filter controls. Default true.</summary>
+    /// <remarks>This capability does not hide cell values or change search, supported read-only facets, formatting, or highlight rules.</remarks>
+    public bool Filterable { get; set; } = true;
+
+    /// <summary>Gets or sets whether a flat-grid column can be included in grid exports. Default true.</summary>
+    /// <remarks>Default exports omit disabled columns; explicit requests reject them. This is an operation capability, not a data-access restriction.</remarks>
+    public bool Exportable { get; set; } = true;
+
+    /// <summary>Gets or sets whether readers can edit this column.</summary>
+    /// <remarks>
+    /// <para>
+    /// In a tree view the interactive runtime offers an editor that raises one edit proposal per change; the host edit hook
+    /// validates and executes it, and the runtime never changes the node value itself.
+    /// </para>
+    /// <para>
+    /// In a flat grid the editing part offers the column's typed <see cref="Editor"/> with its <see cref="Validation"/>. Edits
+    /// stay in the grid's change set (marked and undoable) until a row or batch commit hands them to the host, which saves them
+    /// and confirms each row. See docs/editing.md.
+    /// </para>
+    /// </remarks>
     public bool Editable { get; set; }
 
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
@@ -70,6 +88,34 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets the record drawer section label. Null uses the default details section.</summary>
     public string? Section { get; set; }
 
+    /// <summary>Gets or sets whether the record drawer shows this column. Default true; false keeps a column (an internal key, a
+    /// value the summary already shows) out of the drawer and the record panel while the grid keeps it.</summary>
+    public bool ShowInDrawer { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the name of a cell renderer a browser plugin registers (<c>cellRenderers</c> in docs/plugins.md), which
+    /// draws this column's cells in trees and flat grids. Null, or a name no plugin on the page registers, keeps the built-in
+    /// painter; a host's own renderer for the column wins. The static fallback and exports keep the cell text.
+    /// </summary>
+    /// <exception cref="ArgumentException">The name is not 1 to 64 ASCII letters, digits, hyphens or underscores starting with a letter.</exception>
+    public string? Renderer {
+        get => _renderer;
+        set {
+            if (value != null && !IsRendererName(value)) throw new ArgumentException("A renderer name is 1 to 64 ASCII letters, digits, hyphens or underscores starting with a letter.", nameof(value));
+            _renderer = value;
+        }
+    }
+
+    private string? _renderer;
+
+    private static bool IsRendererName(string value) {
+        if (value.Length == 0 || value.Length > 64 || !((value[0] >= 'a' && value[0] <= 'z') || (value[0] >= 'A' && value[0] <= 'Z'))) return false;
+        foreach (var ch in value) {
+            if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_')) return false;
+        }
+        return true;
+    }
+
     internal void WriteJson(CanopyJsonWriter writer, bool grid = false) {
         writer.BeginObject()
             .Property("id", Id)
@@ -77,17 +123,23 @@ public sealed partial class CanopyColumn {
         writer.Property("width", InitialWidth);
         if (Sizing.Minimum != MinWidth) writer.Property("minWidth", Sizing.Minimum);
         if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);
-        if (grid && !Sizing.Width.HasValue) writer.Property("autoWidth", true);
+        if (!Sizing.Width.HasValue) writer.Property("autoWidth", true);
         writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
         if (Sortable) {
             writer.Property("sortable", true);
         }
+        if (grid && !Filterable) writer.Property("filterable", false);
+        if (grid && !Exportable) writer.Property("exportable", false);
         if (Editable) writer.Property("editable", true);
+        if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
+        if (grid && Validation != null) { writer.Name("validation"); Validation.WriteJson(writer); }
         if (Wrap) writer.Property("wrap", true);
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);
-        if (grid) WriteLayoutJson(writer);
-        if (grid) writer.OptionalProperty("section", Section);
+        WriteLayoutJson(writer, grid);
+        writer.OptionalProperty("section", Section);
+        if (!ShowInDrawer) writer.Property("drawer", false);
+        writer.OptionalProperty("renderer", Renderer);
 
         if (Hidden) {
             writer.Property("hidden", true);

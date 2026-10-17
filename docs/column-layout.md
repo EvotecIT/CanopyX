@@ -1,15 +1,58 @@
 # Column sizing, priority and pinning
 
-Flat grids size their columns from their content, fill the width they are given, and decide what gives way when the
+Flat grids and trees size their columns from their content, fill the width they are given, and decide what gives way when the
 width runs short. Hosts describe intent (which column identifies a row, which columns matter, which may hide); the
 runtime turns it into widths for the current container, recomputes when the container resizes, a column is shown or
 hidden, or a new query result arrives, and never recomputes while scrolling. The generated examples include
 `column-layout.html` (and `column-layout-dark.html`) with wide, narrow, pinned and phone-sized containers.
 
-Tree columns use the same `CanopyColumnSizing` bounds. Their initial width is the assigned width, or 160 pixels
-clamped to those bounds. Pointer and keyboard resizing, `setColumnWidth()` and restored state all honour the bounds;
-the resize separator exposes them through ARIA. Automatic content fitting, flex and responsive priorities apply to
-flat grids.
+## Trees
+
+Trees run the same fit routines (`canopyx.grid.source/33-column-fit-core.js`) from their tree tools part, with these
+differences:
+
+- **Need.** A tree column measures the header and up to 2,000 visible rows (not loaded but collapsed ones) in the grid
+  font. The tree column adds each row's indent (18 pixels a level below the first), the 18-pixel expander and the cell's
+  gaps, its icon, an interactive checkbox and its badges, so its need is the width of its deepest, longest visible row.
+  It is measured whole, up to its `maxWidth`; other columns stop at 420 pixels. Columns are measured again when the
+  visible rows change (expanding, collapsing, filtering, sorting, loading), at most once a frame, never while scrolling.
+- **Identity and pinning.** The tree column is always the identity column: essential, first, and pinned left while the
+  other columns scroll, unless it declares `Pinned = CanopyGridColumnPin.None` (`pinned: null`). `PinTreeColumn` no
+  longer changes the default (it can only pin), while `setTreeColumnPinned` and remembered state still decide at run time. `RowHeader` is a flat-grid option.
+- **Pins.** As on a flat grid, any other column pins left or right (`Pinned = CanopyGridColumnPin.Left` or `Right`, `pinned:
+  "left"` or `"right"`, or `setColumnPinned(id, pin)` at run time): left pins follow the tree column and right pins stay at
+  the right edge while the other columns scroll. They keep their place next to their edge when the reader reorders columns,
+  never hide for width (except on phones, see **Hiding** below), and are part of remembered state and named views; **Reset columns** returns to the declared pins.
+  When the pins would leave the scrolling columns less than 128 pixels, the innermost of them scroll too.
+- **Widths.** A content-sized column (`CanopyColumnSizing.Content`, the default) writes `autoWidth: true` and 160 pixels as
+  the width a tree uses until the tree tools part has measured; an assigned width is preferred. User widths are sticky
+  (`sized` in remembered state and named views) until **Reset columns**; a host's restored width that differs from the
+  declared one counts as a user width. Pointer and keyboard resizing start from the width on screen.
+- **Hiding.** Optional columns hide first, normal ones too on phones (a host of 640 pixels or less), as on flat grids. The
+  Columns menu marks them "Hidden at this width"; exports keep them. On phones the tree column keeps its indent and about
+  two dozen characters (see the identity column below), the tree column holds the "+N" button of the hidden fields, and
+  the button opens the row's record drawer with every column; **Record details** in the more menu opens it for the focused
+  row, and `openDetails(id)` for any visible node.
+
+The `tree-parity.html` example (and `tree-parity-dark.html`) shows an organisation chart, a file system eleven levels deep
+and nested groups that start collapsed to three rows. The `wide-tree.html` example (and `wide-tree-dark.html`) is a document
+library with more columns than a laptop shows: the owner pins left, the status right, the description takes the spare width,
+the optional version and reviewer hide first, and the long path shows in a tooltip when it is cut off. On a phone the
+owner hides too and the essential status stays beside the tree column and its "+N" button.
+
+## Tooltips and header room
+
+A column's `Tooltip` (`tooltip`) shows on hover: `"auto"` (`CanopyColumn.AutoTooltip`) shows a cell's full value while it is
+cut off, and the id of another declared column shows that column's text. A cell's own `title` wins. Flat grids and trees both read it.
+
+A flat grid's header keeps room for its column menu button (32 pixels, 52 on phones) while columns are fitted. A host that
+draws no column menus switches them off with `Toolbar.ColumnMenus = false` (`toolbar: { columnMenus: false }`): the buttons
+are not built and the headers keep no room for them. Sorting from the header keeps working, an active header filter keeps its
+button, and readers start filters from the Filters menu.
+
+A number column's title sits at the right, over its numbers. With a mouse its menu button shows on hover at the left of
+the header; on phones and touch screens, where the button always shows, it follows the title instead, so the header reads
+as one cell ("Overall ⋮"), and so does an active header filter.
 
 ## How a width is chosen
 
@@ -23,16 +66,26 @@ flat grids.
    and keeps the extra while there is room. `fixed: true` makes `width` hard. A width the reader dragged, typed or
    fitted is sticky (`sized` in the saved view) until **Reset columns** or `autoSizeColumns()`.
 3. **Spare width** goes first to `flex` columns in proportion to their weights, then to the identity column up to the
-   cap, then it is shared between the identity column and the widest normal text column. The right side of a grid is
-   never left empty while a column can take the space.
+   cap, then it is shared between the identity column and the widest normal text column. The right side of a grid or
+   a tree is never left empty while a column can take the space: when no column grows, and for the pixels that rounding
+   the widths down leaves, the last text column below its maximum that is neither fixed nor sized by the reader takes
+   the rest, so the rows end at the right edge (number and graphic columns keep their width).
 4. **Short width** gives way in this order:
-   1. normal and optional columns lose their slack, down to their header width or about eleven characters for text;
+   1. normal and optional columns lose their slack, long free text first: `flex` columns, then the text columns from the
+      widest down (levelled to one width), and only then the others, so dates, numbers, states and short names keep their
+      whole width while the total allows; no column goes below its header width or about eleven characters for text;
    2. optional columns hide (on phones, at 640 pixels and below, normal columns hide too); hidden columns stay in the
       record drawer, exports and the phone "+N" button, and the Columns menu marks them "Hidden at this width";
    3. only then the grid scrolls horizontally inside itself, with pinned columns in place.
 
+   On phones the first shown column also holds the "+N" button that opens the hidden fields, so fitting reserves the
+   button's width beside that column's content (hiding another column when that is what makes room): with no width to
+   spare, the identity column still shows its values in full next to the button.
+
    Essential columns never shrink below their need and never hide. Pinned, user-sized and `alwaysVisible` columns
-   never hide either.
+   never hide either, except on phones: there the identity column (a tree's tree column) keeps its indent and about two
+   dozen characters beside its "+N" button, and pinned columns that are not essential hide too, after the unpinned ones and
+   in the same priority order, rather than cut it short.
 
 ## Identity column and pinning
 
@@ -68,8 +121,8 @@ Readers retain the existing `reporting.layout` map (`minimum`, `maximum`, `flex`
 
 | Method | Effect |
 |---|---|
-| `autoFitColumn(id)`, `autoFitColumns()` | Set columns to their measured content width as a sticky user width (like AG Grid `autoSizeColumns`). |
-| `autoSizeColumns(ids?)` | Drop user widths so the columns return to automatic sizing that fills the width (like AG Grid `sizeColumnsToFit`, kept live). |
+| `autoFitColumn(id)`, `autoFitColumns()` | Set columns to their measured content width as a sticky user width. |
+| `autoSizeColumns(ids?)` | Drop user widths so the columns return to automatic sizing that fills the width, and keep refitting as the width changes. |
 | `setColumnWidth(id, px)` | Sticky user width. |
 | `setColumnPinned(id, "left" \| "right" \| "none")` | Pin or unpin. |
 | `setColumnPriority(id, priority)` | Change a column's priority (string or integer). |
@@ -101,21 +154,6 @@ handle, to reorder. A moved column joins the pinned group it lands in. A "Find a
 more than eight columns, and **Show all** and **Reset columns** sit at the bottom. Pinning, fitting and hiding a single
 column live in the header's own ⋮ menu.
 
-## Coming from DataTables or AG Grid
-
-| DataTables | AG Grid | CanopyX |
-|---|---|---|
-| `autoWidth: true` | `autoSizeStrategy: { type: "fitCellContents" }` | Default: columns measure header and loaded values. |
-| `columns.width` | `width` | `width`, preferred unless `fixed`. |
-| — | `minWidth`, `maxWidth` | `minWidth`, `maxWidth`. |
-| — | `flex` | `flex`. |
-| — | `suppressAutoSize`, `resizable: false` | `autoSize: "none"`, `fixed: true`. |
-| Responsive `responsivePriority` | — | `priority` as an integer; or `essential` / `normal` / `optional`. |
-| Responsive child rows | — | Record drawer and the phone "+N" button. |
-| FixedColumns `left` / `right` | `pinned: "left" \| "right"` | `pinned: "left" \| "right"`; the identity column pins left by default. |
-| `columns.adjust()` | `sizeColumnsToFit()` | Automatic on resize; `autoSizeColumns()` drops user widths. |
-| — | `autoSizeColumns(ids)` | `autoFitColumns()` / `autoFitColumn(id)`. |
-| `column-visibility` buttons | Columns tool panel | Columns menu with find, drag reorder, Show all and Reset columns. |
-| — | `columnResized`, `columnPinned` events | `canopyx:columnResize`, `canopyx:columnPin`. |
+## Limitations
 
 The grid has no right-to-left layout yet; pinning and the shadow edges assume left-to-right documents.

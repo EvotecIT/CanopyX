@@ -9,8 +9,11 @@
         button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",fill(grid.labels.gridExpandCell,{column:column.title}));
         button.addEventListener("click",()=>grid.showReportingText(column,value,button,row.id,options.mono));return button;
       };
-      if (["statusStrip","sparklineBars","sparklineLine"].includes(options.kind)) {
-        gridRenderHistory(grid,column,options,cell,element,text);
+      if (GRID_HISTORY_KINDS.includes(options.kind)) {
+        if(GRID_HISTORY_IMPL.render)GRID_HISTORY_IMPL.render(grid,column,options,cell,element,text);else grid.loadHistory();
+      } else if (options.kind==="structured") {
+        // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).
+        if(RECORD_IMPL.summary)RECORD_IMPL.summary(grid,column,options,row,element,text);else{add(text);grid.loadRecordPanel();}
       } else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
       else if (options.kind==="link") {
         const href=gridPresenterLink(cellValue(options.hrefColumn?row.cells[options.hrefColumn]:cell));
@@ -21,7 +24,8 @@
         value.setAttribute("role","img");value.setAttribute("aria-label",raw?grid.labels.yes:grid.labels.no);
         if(raw)value.appendChild(gridIcon("check"));
       } else if(options.kind==="state"||options.kind==="enum") {
-        if(options.quietTones?.includes(tone)) add(text,"p-muted");
+        // Quiet values are plain text (muted unless quietStyle is "plain"); in an enum they keep the pills' inline start.
+        if(options.quietTones?.includes(tone)) add(text,(options.quietStyle==="plain"?"cx-presenter-text":"p-muted")+(options.kind==="enum"?" p-inset":""));
         else if(options.kind==="state"||tone==="success") {
           const state=add("","p-state"+(tone==="success"?" quiet":""));const dot=h("span","p-dot "+(tone==="success"?"quiet":tone));
           toneColors(dot,toneOf(tone));state.append(dot,document.createTextNode(text));

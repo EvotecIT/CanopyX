@@ -13,6 +13,11 @@
     { "$ref": "#/$defs/gridFacetQuery" },
     { "$ref": "#/$defs/gridFacetPage" },
     { "$ref": "#/$defs/gridSummary" },
+    { "$ref": "#/$defs/gridCommit" },
+    { "$ref": "#/$defs/gridCommitResult" },
+    { "$ref": "#/$defs/gridRecordQuery" },
+    { "$ref": "#/$defs/gridRecord" },
+    { "$ref": "#/$defs/gridRecordPack" },
     { "$ref": "#/$defs/page" },
     { "$ref": "#/$defs/search" },
     { "$ref": "#/$defs/counts" },
@@ -31,12 +36,198 @@
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
-        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
+        "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" },
+        "detail": { "$ref": "#/$defs/gridRowDetail" },
+        "fields": { "$ref": "#/$defs/recordValues", "description": "Values of the view's record fields (record.fields): shown in the record drawer only, never queried, searched, sorted, exported or saved." }
       }
     },
+    "gridEditorName": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "text, number, date, datetime, time, select, toggle, lookup, or an editor a plugin or the host registers." },
+    "gridEditorValue": { "type": ["string", "number", "boolean"], "minimum": -9007199254740991, "maximum": 9007199254740991 },
+    "gridEditor": {
+      "description": "The typed editor of an editable column. A name alone is shorthand for { \"type\": name }; without one the column's kind chooses text, number or datetime.",
+      "oneOf": [
+        { "$ref": "#/$defs/gridEditorName" },
+        { "type": "object", "required": ["type"], "additionalProperties": false, "properties": {
+          "type": { "$ref": "#/$defs/gridEditorName" },
+          "min": { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "Number editors: the smallest value, also the start of step." },
+          "max": { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991, "description": "Number editors: the largest value." },
+          "step": { "type": "number", "exclusiveMinimum": 0, "description": "Number editors: Up and Down move by it; values keep its multiple." },
+          "placeholder": { "type": "string", "maxLength": 256 },
+          "options": { "type": "array", "maxItems": 1000, "description": "Select choices, or the fixed suggestions of a lookup.",
+            "items": { "oneOf": [{ "$ref": "#/$defs/gridEditorValue" },
+              { "type": "object", "required": ["value"], "additionalProperties": false, "properties": { "value": { "$ref": "#/$defs/gridEditorValue" }, "label": { "type": "string" } } }] } },
+          "lookup": { "type": "object", "additionalProperties": false, "description": "Lookup editors: the column whose values it suggests through the data source, how many and after how many characters.",
+            "properties": { "column": { "$ref": "#/$defs/identifier" }, "limit": { "type": "integer", "minimum": 1, "maximum": 50 }, "minLength": { "type": "integer", "minimum": 0, "maximum": 16 } } }
+        } }
+      ]
+    },
+    "gridValidation": {
+      "description": "Checks an edited value must pass before its row commits; the runtime's messages are the gridEdit… labels unless message replaces them.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean" },
+        "min": { "type": ["number", "string"], "description": "A number, or an ISO 8601 moment with its time zone for date-and-time columns." },
+        "max": { "type": ["number", "string"], "description": "A number, or an ISO 8601 moment with its time zone for date-and-time columns." },
+        "minLength": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "maxLength": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "pattern": { "type": "string", "description": "A regular expression the whole text must match, in the syntax JavaScript and .NET share." },
+        "message": { "type": "string", "minLength": 1, "maxLength": 1024 }
+      }
+    },
+    "gridCommit": {
+      "description": "Changed rows a grid asks its writer to save: the new values and the values the reader started from, with the revision the grid read. The writer authorizes and executes each row (docs/data-protocol.md#editing-and-commit).",
+      "type": "object",
+      "required": ["protocol", "type", "view", "revision", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridCommit" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "revision": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "rows": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id", "values", "original"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" },
+          "values": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } },
+          "original": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } } }
+      }
+    },
+    "gridCommitResult": {
+      "description": "A writer's answer to gridCommit, per row: saved (with optional canonical cells), error (with a message or messages by column) or conflict. A row the answer leaves out was not saved; revision is the dataset's revision after the commit.",
+      "type": "object",
+      "required": ["protocol", "type", "view", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "gridCommitResult" },
+        "view": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" },
+        "rows": { "type": "array", "items": { "type": "object", "required": ["id", "status"], "additionalProperties": false,
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "status": { "enum": ["saved", "error", "conflict"] },
+            "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
+            "error": { "type": "string" },
+            "errors": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "type": "string" } } },
+          "if": { "properties": { "status": { "not": { "const": "saved" } } } },
+          "then": { "not": { "required": ["cells"] } } } }
+      }
+    },
+    "gridRowDetail": {
+      "description": "A record's detail row payload in a reporting grid with detail rows: a table, properties or trusted HTML, or the inline data of the definition's nested grid (rows) or tree (roots).",
+      "anyOf": [
+        { "$ref": "#/$defs/detail" },
+        { "type": "object", "required": ["type", "rows"], "additionalProperties": false, "properties": { "type": { "const": "grid" }, "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } } } },
+        { "type": "object", "required": ["type", "roots"], "additionalProperties": false, "properties": { "type": { "const": "tree" }, "roots": { "type": "array", "items": { "$ref": "#/$defs/node" } } } }
+      ]
+    },
+    "gridDetail": {
+      "type": "object", "additionalProperties": false,
+      "description": "Expandable detail rows. At most one content source: a page template id, a plugin detail renderer, or a nested grid or tree view whose data comes from each record's detail payload; none uses each record's own payload.",
+      "properties": {
+        "template": { "type": "string", "pattern": "^[A-Za-z][\\w:.-]{0,255}$" },
+        "renderer": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+        "view": { "anyOf": [{ "$ref": "#/$defs/grid" }, { "$ref": "#/$defs/view" }] },
+        "print": { "type": "boolean", "description": "Whether exports and print snapshots carry detail payloads. Default true." },
+        "label": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "gridGroupLevel": {
+      "type": "object", "required": ["column", "direction"], "additionalProperties": false,
+      "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] },
+        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." } }
+    },
+    "gridRowData": {
+      "description": "Compact rows of an inline grid in place of rows: each row an array of its id (or { id, tone, className }) and its cells in the order of columns, without trailing empty cells, in chunks the runtime decodes one at a time. chunks is the number of application/x-canopyx-rows scripts inside the host element (or of sidecar files rows/<n>.js under base), or the chunks themselves: arrays of rows, or with encoding gzip base64 text of the gzip-compressed JSON of each chunk. ordered declares the rows in ordinal identity order, which lets the runtime show the first rows before the last chunk is decoded.",
+      "type": "object", "required": ["version", "columns", "count", "chunks"], "additionalProperties": false,
+      "properties": {
+        "version": { "const": 1 },
+        "columns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "count": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "ordered": { "type": "boolean" },
+        "encoding": { "const": "gzip" },
+        "base": { "type": "string" },
+        "chunks": { "oneOf": [
+          { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+          { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/gridCompactRow" } }] } }
+        ] }
+      },
+      "if": { "required": ["base"] }, "then": { "properties": { "chunks": { "type": "integer" } } }
+    },
+    "gridCompactRow": {
+      "type": "array", "minItems": 1,
+      "prefixItems": [{ "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "object", "required": ["id"], "additionalProperties": false,
+        "properties": { "id": { "$ref": "#/$defs/identifier" }, "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" } } }] }],
+      "items": { "$ref": "#/$defs/cell" }
+    },
     "gridClasses": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]+$" },
-    "gridHighlightRule": {
-      "type": "object", "required": ["column", "operator", "values"], "additionalProperties": false,
+    "gridFormatPredicate": {
+      "description": "A formatting test: a filter predicate with more operators, value types, case sensitivity and a culture, or a comparison with another column.",
+      "type": "object", "required": ["column", "operator"], "additionalProperties": false,
+      "properties": {
+        "column": { "$ref": "#/$defs/identifier" },
+        "operator": { "enum": ["eq", "ne", "gt", "ge", "lt", "le", "contains", "notContains", "startsWith", "endsWith", "like", "notLike", "matches", "notMatches", "in", "notIn", "between", "betweenExclusive", "isNull", "isNotNull", "olderThan", "withinLast"] },
+        "values": { "type": "array", "maxItems": 1000, "items": { "oneOf": [{ "type": "string", "maxLength": 4096 }, { "type": "number" }, { "type": "boolean" }] } },
+        "valueColumn": { "$ref": "#/$defs/identifier" },
+        "type": { "enum": ["text", "number", "boolean", "date"] },
+        "caseSensitive": { "type": "boolean" },
+        "culture": { "type": "string", "minLength": 1, "maxLength": 64 }
+      },
+      "not": { "required": ["values", "valueColumn"] }
+    },
+    "gridFormatCondition": {
+      "description": "A formatting condition: a filter group with a third junction, none. Eight levels, 64 groups and 64 predicates at most.",
+      "type": "object", "required": ["operator"], "additionalProperties": false,
+      "properties": {
+        "operator": { "enum": ["and", "or", "none"] },
+        "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatPredicate" } },
+        "groups": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatCondition" } }
+      }
+    },
+    "gridFormatIcon": { "type": "string", "minLength": 1, "maxLength": 16, "description": "auto, none, a named icon (up, down, check, cross, warning, info, dot, circle, triangle, square, diamond, flag, star, minus, plus, clock) or up to four characters." },
+    "gridFormatStyle": {
+      "type": "object", "additionalProperties": false,
+      "anyOf": [
+        { "required": ["tone"] },
+        { "required": ["icon"], "properties": { "icon": { "not": { "const": "none" } } } },
+        { "required": ["badge"] }, { "required": ["cue"] },
+        { "required": ["bar"] }, { "required": ["scale"] }, { "required": ["bands"] },
+        { "required": ["className"], "properties": { "className": { "minLength": 1 } } },
+        { "required": ["css"], "properties": { "css": { "minProperties": 1 } } }
+      ],
+      "properties": {
+        "tone": { "$ref": "#/$defs/tone" },
+        "emphasis": { "enum": ["fill", "text", "strong"] },
+        "icon": { "$ref": "#/$defs/gridFormatIcon" },
+        "badge": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "cue": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "bar": { "type": "object", "additionalProperties": false, "properties": { "minimum": { "type": "number" }, "maximum": { "type": "number" }, "tone": { "$ref": "#/$defs/tone" }, "showValue": { "type": "boolean" } } },
+        "scale": { "type": "object", "required": ["stops"], "additionalProperties": false, "properties": { "stops": { "type": "array", "minItems": 2, "maxItems": 3, "items": {
+          "type": "object", "required": ["type", "tone"], "additionalProperties": false,
+          "properties": { "type": { "enum": ["min", "max", "number", "percent"] }, "value": { "type": "number" }, "tone": { "$ref": "#/$defs/tone" } } } } } },
+        "bands": { "type": "array", "minItems": 1, "maxItems": 16, "items": {
+          "type": "object", "required": ["tone"], "additionalProperties": false,
+          "properties": { "upperBound": { "type": "number" }, "tone": { "$ref": "#/$defs/tone" }, "label": { "type": "string", "minLength": 1, "maxLength": 64 }, "icon": { "$ref": "#/$defs/gridFormatIcon" } } } },
+        "className": { "$ref": "#/$defs/gridClasses" },
+        "css": { "type": "object", "maxProperties": 16, "propertyNames": { "pattern": "^-{0,2}[a-z][a-z0-9-]{0,63}$" }, "additionalProperties": { "type": "string", "maxLength": 200, "pattern": "^[^;{}<>\\\\\"'&]*$" } }
+      }
+    },
+    "gridFormatRule": {
+      "description": "A conditional formatting rule: identity, condition (absent matches every row), target and style. The first rule that sets an aspect of a target wins it.",
+      "type": "object", "required": ["id", "style"], "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "enabled": { "type": "boolean" },
+        "when": { "$ref": "#/$defs/gridFormatCondition" },
+        "column": { "$ref": "#/$defs/identifier" },
+        "target": { "enum": ["cell", "row", "columns"] },
+        "columns": { "type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "details": { "type": "boolean" },
+        "style": { "$ref": "#/$defs/gridFormatStyle" },
+        "stopIfTrue": { "type": "boolean" }
+      }
+    },
+    "gridHighlightRule": {      "type": "object", "required": ["column", "operator", "values"], "additionalProperties": false,
       "anyOf": [{ "required": ["tone"] }, { "required": ["className"] }],
       "allOf": [{ "$ref": "#/$defs/gridFilter/allOf/0" }],
       "properties": {
@@ -44,6 +235,36 @@
         "operator": { "$ref": "#/$defs/gridFilter/properties/operator" },
         "values": { "$ref": "#/$defs/gridFilter/properties/values" },
         "target": { "enum": ["row", "cell"] }, "tone": { "$ref": "#/$defs/tone" }, "className": { "$ref": "#/$defs/gridClasses" }
+      }
+    },
+    "searchHighlight": {
+      "description": "Marks search and filter matches inside cells with <mark>, with a match count and next/previous navigation. true uses the defaults. The reader's switch is saved in state.",
+      "oneOf": [{ "type": "boolean" }, { "type": "object", "additionalProperties": false, "properties": {
+        "enabled": { "type": "boolean", "description": "Marks shown when the view opens. Default true." },
+        "search": { "type": "boolean", "description": "Mark quick-search text. Default true." },
+        "filters": { "type": "boolean", "description": "Mark the values a flat grid's column filters match, styled apart from search hits. Default true." },
+        "matchCase": { "type": "boolean", "description": "Compare case exactly when marking. Default false." },
+        "ignoreAccents": { "type": "boolean", "description": "A letter with accents matches its base letter when marking. Default false." },
+        "minLength": { "type": "integer", "minimum": 1, "maximum": 32, "description": "The shortest term that is marked. Default 1." },
+        "filterTones": { "type": "object", "description": "A tone per column id for its filter hits.", "additionalProperties": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "not": { "pattern": "-bg$" } } }
+      } }]
+    },
+    "layoutOptions": {
+      "description": "A Layout menu with the layout modes and densities the reader can choose; the choice is saved in state.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["fit", "scroll", "cards"], "description": "The starting layout; one of modes. Default fit, or the first of modes." },
+        "modes": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "enum": ["fit", "scroll", "cards"] }, "description": "The layouts offered, in menu order. Default every layout the view supports." },
+        "density": { "enum": ["compact", "default", "comfortable"], "description": "The starting density. Default the view's own density." }
+      }
+    },
+    "treeLayoutOptions": {
+      "description": "A tree's Layout menu: the fit and scroll layouts and the densities.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["fit", "scroll"] },
+        "modes": { "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": { "enum": ["fit", "scroll"] } },
+        "density": { "enum": ["compact", "default", "comfortable"] }
       }
     },
     "grid": {
@@ -63,19 +284,34 @@
         "noun": { "type": "string", "minLength": 1, "maxLength": 256 },
         "emptyReason": { "type": "string", "maxLength": 4096 },
         "statusBar": { "type": "boolean" },
-        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" } } },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "count": { "type": "boolean" }, "columnMenus": { "type": "boolean" }, "matches": { "type": "boolean" }, "layout": { "type": "boolean" } } },
+        "exportFormats": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "not": { "const": "csv" } }, "description": "Identities of browser-registered export formats the Export menu offers after CSV, in order; an identity the page does not register is skipped. Absent offers every registered format." },
         "rowAction": { "enum": ["none", "details", "link"], "description": "What a plain row click does; a plain click never selects. Default none." },
+        "editing": { "type": "object", "additionalProperties": false, "description": "How editable columns edit (docs/editing.md); a browser host's editing option overrides these.",
+          "properties": { "readOnly": { "type": "boolean", "description": "The whole grid is read-only until the host calls setReadOnly(false)." },
+            "mode": { "enum": ["cell", "row"], "description": "One cell at a time, or every editable cell of a row. Default cell." },
+            "drawer": { "enum": ["phone", "always", "never"], "description": "When the record drawer becomes an edit form. Default phone." },
+            "editBar": { "type": "boolean", "description": "The toolbar shows unsaved changes with Undo, Redo, Discard and Save. Default true." } } },
         "autoHeight": { "type": "boolean", "description": "A grid whose rows fit is as tall as its rows; false keeps the host height. Default true." },
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
+        "searchHighlight": { "$ref": "#/$defs/searchHighlight" },
+        "layout": { "$ref": "#/$defs/layoutOptions" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
+        "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Conditional formatting rules in priority order (docs/conditional-formatting.md)." },
+        "formatting": { "type": "object", "additionalProperties": false, "description": "A legend of the labelled rules and the rule editor in the more menu.", "properties": { "legend": { "type": "boolean" }, "editor": { "type": "boolean" } } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
         "selection": { "enum": ["single", "multiple"] },
         "search": { "type": "boolean" },
         "presentation": { "enum": ["continuous", "paged"] },
         "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "pager": { "type": "object", "additionalProperties": false, "description": "Pager settings of a paged grid, read by the pager part; continuous grids ignore them. An absent setting keeps the built-in pager.", "properties": { "lengths": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "description": "Page-size choices in menu order; all (every row) needs an inline source. Absent keeps 10, 25, 50, 100 and All.", "items": { "oneOf": [{ "type": "integer", "minimum": 1, "maximum": 10000 }, { "const": "all" }, { "type": "object", "required": ["value", "label"], "additionalProperties": false, "properties": { "value": { "oneOf": [{ "type": "integer", "minimum": 1, "maximum": 10000 }, { "const": "all" }] }, "label": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "\\S" } } }] } }, "lengthMenu": { "type": "boolean", "description": "The rows-per-page menu. Default true." }, "numbers": { "type": "integer", "description": "Numbered page buttons: 0 for none (default), or 5 to 15.", "anyOf": [{ "const": 0 }, { "minimum": 5, "maximum": 15 }] }, "pageInput": { "type": "boolean", "description": "The page number field. Absent shows it unless numbered pages show." }, "firstLast": { "type": "boolean", "description": "The first-page and last-page buttons. Default true." }, "info": { "enum": ["range", "sentence", "none"], "description": "The result text: the compact range (default), a sentence with the unfiltered total while filtered, or none." } } },
         "searchDelayMs": { "type": "integer", "minimum": 0, "maximum": 5000, "description": "Search-input debounce; absent uses zero for inline sources and 300 for hosted sources. Enter applies immediately." },
         "searchColumns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" }, "$comment": "Every identity must bind to a declared grid column; absent searches every declared column." },
         "reporting": { "$ref": "#/$defs/gridReporting" },
+        "columnGroups": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/gridColumnGroup" }, "description": "Header rows above the columns, up to three levels. Each column belongs to one group at most; the grid keeps a group's columns together in its column order. Loads the column-groups part." },
+        "rangeSelection": { "oneOf": [{ "type": "boolean" }, { "type": "object", "additionalProperties": false, "properties": { "enabled": { "type": "boolean", "description": "False keeps the API without pointer, keyboard and touch input. Default true." }, "multiple": { "type": "boolean", "description": "Ctrl or Cmd adds ranges. Default true." }, "fillHandle": { "type": "boolean", "description": "Show the fill handle on a single range. Default false." } } }], "description": "Cell ranges by mouse, keyboard and touch, the cell menu and the clipboard keys. Loads the cell-range part. Absent or false leaves them off." },
+        "clipboard": { "type": "object", "additionalProperties": false, "properties": { "copyHeaders": { "type": "boolean", "description": "Copies start with the column titles and group rows. Default false." }, "copyValues": { "enum": ["display", "raw"], "description": "Copy the shown text or raw values. Default display." }, "paste": { "type": "boolean", "description": "Paste into the cells. Default true." } }, "description": "How cell ranges copy and paste." },
+        "record": { "$ref": "#/$defs/recordPanel" },
         "columns": {
           "type": "array", "minItems": 1,
           "items": { "$ref": "#/$defs/gridColumn" },
@@ -86,11 +322,12 @@
         "timeZone": { "enum": ["utc", "local"] },
         "labels": { "$ref": "#/$defs/view/properties/labels" },
         "query": { "oneOf": [{ "$ref": "#/$defs/gridQuery" }, { "$ref": "#/$defs/gridCursorQuery" }] },
-        "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } }
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } },
+        "rowData": { "$ref": "#/$defs/gridRowData" }
       },
       "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
-      "then": { "required": ["rows"] },
-      "else": { "not": { "required": ["rows"] } },
+      "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
+      "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
         "if": { "properties": { "source": { "required": ["navigation"], "properties": { "navigation": { "const": "cursor" } } } } },
         "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
@@ -159,7 +396,10 @@
         "timeZone": { "enum": ["utc", "local"] },
         "selection": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "scrollTop": { "type": "number", "minimum": 0, "maximum": 137438953408 },
+        "layout": { "type": "object", "required": ["mode", "density"], "additionalProperties": false, "properties": { "mode": { "enum": ["fit", "scroll", "cards"] }, "density": { "enum": ["compact", "default", "comfortable"] } } },
+        "highlight": { "type": "boolean", "description": "The reader's Highlight matches switch." },
         "collapsedGroups": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
+        "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Formatting rules edited at run time, when they differ from the view's." },
         "paging": { "type": "object", "required": ["pageLength", "offset"], "additionalProperties": false,
           "properties": { "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
             "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 } } }
@@ -183,6 +423,9 @@
       "description": "Optional capabilities requiring the reporting entry point. Policies bind to declared sortable text columns.",
       "properties": {
         "grouping": { "$ref": "#/$defs/gridGrouping" },
+        "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Initial runtime grouping levels, outermost first. Not combined with grouping." },
+        "groupable": { "type": "boolean", "description": "Readers can group by sortable columns. Not combined with grouping." },
+        "detail": { "$ref": "#/$defs/gridDetail" },
         "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
         "viewStorage": { "enum": ["session", "local"] },
@@ -204,7 +447,7 @@
     "gridAggregate": {
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
-        "operation": { "enum": ["count", "sum", "average", "minimum", "maximum"] },
+        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
         "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
     },
     "gridAggregateValues": {
@@ -225,7 +468,8 @@
       "properties": { "key": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "value": { "type": ["string", "number", "boolean", "null"] }, "offset": { "$ref": "#/$defs/count" },
         "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
-        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" } }
+        "aggregates": { "$ref": "#/$defs/gridAggregateValues" }, "cells": { "$ref": "#/$defs/cells" },
+        "groups": { "type": "array", "minItems": 1, "maxItems": 10000, "items": { "$ref": "#/$defs/gridGroup" }, "description": "The next level's groups inside this group; present on every group of an outer level and absent on the innermost." } }
     },
     "gridColumnLayout": {
       "type": "object", "required": ["minimum", "maximum"], "additionalProperties": false,
@@ -382,6 +626,7 @@
               "const": "enum"
             },
             "quietTones": { "$ref": "#/$defs/quietTones" },
+            "quietStyle": { "enum": ["muted", "plain"] },
             "tones": {
               "type": "object",
               "maxProperties": 512,
@@ -406,6 +651,7 @@
               "const": "state"
             },
             "quietTones": { "$ref": "#/$defs/quietTones" },
+            "quietStyle": { "enum": ["muted", "plain"] },
             "tones": {
               "type": "object",
               "maxProperties": 512,
@@ -606,6 +852,14 @@
               "const": "missing"
             }
           }
+        },
+        {
+          "type": "object", "required": ["kind"], "additionalProperties": false,
+          "description": "A summary of a structured value (a list, object, collection, timeline or changes): a count, chips, or the first item and +N.",
+          "properties": {
+            "kind": { "const": "structured" }, "display": { "enum": ["count", "chips", "first"] },
+            "limit": { "type": "integer", "minimum": 1, "maximum": 16 }, "countText": { "type": "string", "maxLength": 256, "pattern": "\\{count\\}" }
+          }
         }
       ]
     },
@@ -648,6 +902,7 @@
         "search": { "type": "string" },
         "searchMode": { "enum": ["substring", "words"], "default": "substring" },
         "filterGroup": { "$ref": "#/$defs/gridFilterGroup" },
+        "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Runtime grouping levels of a definition with groupBy or groupable, always present for such definitions; their columns lead sort." },
         "sort": {
           "type": "array",
           "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": {
@@ -774,6 +1029,16 @@
               "type": "string",
               "maxLength": 4096
             },
+            "items": { "type": "array", "maxItems": 4096, "items": { "$ref": "#/$defs/cell" }, "description": "A list value: items shown as chips. At most one of items, fields, records, events and changes; writers and readers enforce it, and that list items are values." },
+            "fields": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/recordField" }, "description": "An object value: named values shown as a nested property list." },
+            "records": { "$ref": "#/$defs/recordList" },
+            "events": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/recordEvent" }, "description": "A timeline value, in the order shown." },
+            "changes": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/recordChange" }, "description": "Before/after values of changed fields." },
+            "ref": { "$ref": "#/$defs/recordRef" },
+            "sort": {
+              "anyOf": [{ "type": "string", "maxLength": 4096 }, { "type": "number", "minimum": -9007199254740991, "maximum": 9007199254740991 }],
+              "description": "Sort key when it differs from the value (orthogonal sort data); filters, value lists, search and display keep reading value and text."
+            },
             "series": {
               "type": "array",
               "maxItems": 4096,
@@ -855,6 +1120,7 @@
         "badges": { "type": "array", "items": { "$ref": "#/$defs/badge" } },
         "flags": { "type": "array", "items": { "$ref": "#/$defs/nonEmptyString" } },
         "data": { "description": "Host facts handed to host callbacks; not shown and not searched.", "type": "object", "propertyNames": { "type": "string", "minLength": 1, "not": { "const": "__proto__" } }, "additionalProperties": { "type": "string" } },
+        "fields": { "$ref": "#/$defs/recordValues", "description": "Values of the view's record fields (record.fields), shown in the record drawer only." },
         "hasChildren": { "type": "boolean" },
         "childCount": { "type": "integer", "minimum": 1, "maximum": 2147483647, "$comment": "When children is present, readers require this value to equal its length; this cross-field equality is a semantic protocol constraint." },
         "ref": { "$ref": "#/$defs/identifier" },
@@ -909,7 +1175,30 @@
         "sortable": { "type": "boolean" },
         "editable": { "type": "boolean" },
         "hidden": { "type": "boolean" },
-        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." }
+        "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." },
+        "autoWidth": { "type": "boolean", "description": "Tree columns: fit the visible rows' content; width is the fallback until the tree tools part measures." },
+        "fixed": { "type": "boolean", "description": "Tree columns: the width is hard during fitting. Otherwise width is preferred." },
+        "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Tree columns: share of spare width, given before the tree column." },
+        "autoSize": { "enum": ["content", "header", "none"], "description": "Tree columns: what content measuring reads. Default content." },
+        "priority": { "$ref": "#/$defs/gridColumn/properties/priority" },
+        "alwaysVisible": { "type": "boolean", "description": "Tree columns: retained during responsive fitting." },
+        "tooltip": { "$ref": "#/$defs/gridColumn/properties/tooltip" },
+        "pinned": { "enum": ["left", "right", null], "description": "The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right." },
+        "drawer": { "type": "boolean", "description": "false keeps the column out of the tree's record drawer. Default true." }, "section": { "type": "string", "minLength": 1, "maxLength": 256, "description": "The record drawer section of a tree column." }, "renderer": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "The name of a cell renderer a browser plugin registers (cellRenderers, docs/plugins.md). An unregistered name keeps the built-in painter; a host renderer for the column wins." }
+      }
+    },
+    "gridColumnGroup": {
+      "description": "A named group of columns drawn as a header above them. It lists the columns directly below it and its nested groups.",
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "anyOf": [{ "required": ["columns"] }, { "required": ["groups"] }],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+        "columns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" }, "$comment": "Every identity binds to a declared grid column, in one group at most." },
+        "groups": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gridColumnGroup" }, "$comment": "At most three levels of groups." },
+        "pinned": { "enum": ["left", "right", null], "description": "Initial pin of every column of a top-level group; null scrolls. Nested groups take none." }
       }
     },
     "gridColumn": {
@@ -941,9 +1230,14 @@
         "sortable": {
           "type": "boolean"
         },
+        "filterable": { "type": "boolean", "description": "Supports query predicates and filter controls. Default true; supported read-only facets and presentation rules remain available." },
+        "exportable": { "type": "boolean", "description": "Supports grid exports. Default true. Default exports omit false; explicit requests reject it." },
         "editable": {
-          "const": false
+          "type": "boolean",
+          "description": "Readers can edit the column's cells; the editing part loads with the grid (docs/editing.md)."
         },
+        "editor": { "$ref": "#/$defs/gridEditor" },
+        "validation": { "$ref": "#/$defs/gridValidation" },
         "hidden": {
           "type": "boolean"
         },
@@ -956,14 +1250,16 @@
         "aggregatable": {
           "type": "boolean"
         },
-        "section": {
+        "drawer": { "type": "boolean", "description": "false keeps the column out of the record drawer and record panel. Default true." }, "section": {
           "type": "string",
           "minLength": 1,
           "maxLength": 256
         },
+        "renderer": { "$ref": "#/$defs/column/properties/renderer" },
         "minWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "maxWidth": { "type": "integer", "minimum": 40, "maximum": 2147483647, "description": "Widest width and the content measuring cap." },
         "alwaysVisible": { "type": "boolean", "description": "Retain this column during responsive fitting. Explicit user hiding still applies." },
+        "tooltip": { "type": "string", "minLength": 1, "maxLength": 256, "description": "auto shows a cell's full value on hover while it is cut off; another value names a declared column whose text the tooltip shows." },
         "fixed": { "type": "boolean", "description": "The width is hard; requires width. Otherwise width is preferred." },
         "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Share of spare width, given before the identity column." },
         "autoSize": { "enum": ["content", "header", "none"], "description": "What content measuring reads. Default content." },
@@ -1082,14 +1378,80 @@
         "filters": { "type": "array", "items": { "$ref": "#/$defs/filter" } },
         "timeZone": { "description": "The time zone datetime columns show at first; utc when absent.", "enum": ["utc", "local"] },
         "pinTreeColumn": { "description": "The tree column stays in view while the other columns scroll sideways.", "type": "boolean" },
+        "searchHighlight": { "$ref": "#/$defs/searchHighlight" },
+        "layout": { "$ref": "#/$defs/treeLayoutOptions" },
+        "toolbar": { "type": "object", "additionalProperties": false, "description": "Per-control tree toolbar switches; an absent switch keeps its control. A control switched off is not built. The search box is the search property.", "properties": { "filters": { "type": "boolean" }, "columns": { "type": "boolean" }, "views": { "type": "boolean" }, "export": { "type": "boolean" }, "more": { "type": "boolean" }, "matches": { "type": "boolean" }, "layout": { "type": "boolean" } } },
+        "exportFormats": { "$ref": "#/$defs/grid/properties/exportFormats" },
+        "autoHeight": { "type": "boolean", "description": "A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true." },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
+        "record": { "$ref": "#/$defs/recordPanel" },
         "labels": {
           "description": "Translations of the texts the runtime writes itself; English where a name is absent. {placeholders} are replaced.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "gridEditCell": { "type": "string" }, "gridEditSave": { "type": "string" }, "gridEditCancel": { "type": "string" }, "gridEditDiscard": { "type": "string" },
+            "gridEditUndo": { "type": "string" }, "gridEditRedo": { "type": "string" }, "gridEditEdited": { "type": "string" }, "gridEditChanges": { "type": "string" },
+            "gridEditErrors": { "type": "string" }, "gridEditSaving": { "type": "string" }, "gridEditSaved": { "type": "string" }, "gridEditFailed": { "type": "string" },
+            "gridEditRequired": { "type": "string" }, "gridEditNumber": { "type": "string" }, "gridEditDate": { "type": "string" }, "gridEditMin": { "type": "string" },
+            "gridEditMax": { "type": "string" }, "gridEditStep": { "type": "string" }, "gridEditMinLength": { "type": "string" }, "gridEditMaxLength": { "type": "string" },
+            "gridEditPattern": { "type": "string" }, "gridEditChoice": { "type": "string" }, "gridEditConflict": { "type": "string" }, "gridEditRejected": { "type": "string" },
+            "gridEditNotSaved": { "type": "string" }, "gridEditNoMatches": { "type": "string" }, "gridEditSearching": { "type": "string" }, "gridEditUndone": { "type": "string" },
+            "gridEditRedone": { "type": "string" }, "gridEditNone": { "type": "string" },
+            "recordBack": { "type": "string" },
+            "recordBackTo": { "type": "string" },
+            "recordTrail": { "type": "string" },
+            "recordShowing": { "type": "string" },
+            "recordTabs": { "type": "string" },
+            "recordSections": { "type": "string" },
+            "recordOtherFields": { "type": "string" },
+            "recordShowEmpty": { "type": "string" },
+            "recordHideEmpty": { "type": "string" },
+            "recordActions": { "type": "string" },
+            "recordCopyValues": { "type": "string" },
+            "recordCopyJson": { "type": "string" },
+            "recordCopyLink": { "type": "string" },
+            "recordCopied": { "type": "string" },
+            "recordPrint": { "type": "string" },
+            "recordExportCsv": { "type": "string" },
+            "recordExportJson": { "type": "string" },
+            "recordOpenAll": { "type": "string" },
+            "recordLoadMore": { "type": "string" },
+            "recordCount": { "type": "string" },
+            "recordItems": { "type": "string" },
+            "recordMore": { "type": "string" },
+            "recordShowAll": { "type": "string" },
+            "recordRetry": { "type": "string" },
+            "recordLoadFailed": { "type": "string" },
+            "recordUnavailable": { "type": "string" },
+            "recordField": { "type": "string" },
+            "recordValue": { "type": "string" },
+            "recordSection": { "type": "string" },
+            "recordBefore": { "type": "string" },
+            "recordAfter": { "type": "string" },
+            "recordAdded": { "type": "string" },
+            "recordRemoved": { "type": "string" },
+            "recordChanged": { "type": "string" },
             "gridFitContent": { "type": "string" },
+        "matchesHighlight": { "type": "string" },
+        "matchesCount": { "type": "string" },
+        "matchesPosition": { "type": "string" },
+        "matchesNone": { "type": "string" },
+        "matchesLoaded": { "type": "string" },
+        "matchesPrevious": { "type": "string" },
+        "matchesNext": { "type": "string" },
+        "matchesAnnounce": { "type": "string" },
+        "layoutMenu": { "type": "string" },
+        "layoutFit": { "type": "string" },
+        "layoutScroll": { "type": "string" },
+        "layoutCards": { "type": "string" },
+        "layoutDensity": { "type": "string" },
+        "layoutCompact": { "type": "string" },
+        "layoutNormal": { "type": "string" },
+        "layoutComfortable": { "type": "string" },
+        "layoutChanged": { "type": "string" },
+        "layoutSort": { "type": "string" },
         "gridUnpin": { "type": "string" },
         "gridWhere": { "type": "string" },
         "gridComplexFilter": { "type": "string" },
@@ -1167,6 +1529,9 @@
             "gridPreviousPage": { "$ref": "#/$defs/accessibleLabel" },
             "gridNextPage": { "$ref": "#/$defs/accessibleLabel" },
             "gridLastPage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPageInfo": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPageInfoFiltered": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPageButton": { "$ref": "#/$defs/accessibleLabel" },
             "gridResultCount": { "$ref": "#/$defs/accessibleLabel" },
             "gridUnknownCount": { "$ref": "#/$defs/accessibleLabel" },
             "gridMatchedCount": { "$ref": "#/$defs/accessibleLabel" },
@@ -1180,9 +1545,29 @@
             "gridFilteredResults": { "$ref": "#/$defs/accessibleLabel" },
             "gridSelectedRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridAllResults": { "$ref": "#/$defs/accessibleLabel" },
+            "gridVisibleRows": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAllRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridDownloadCsv": { "$ref": "#/$defs/accessibleLabel" },
             "gridCopy": { "$ref": "#/$defs/accessibleLabel" },
             "gridDetails": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellRangeSelected": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellRangesSelected": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellRangeCleared": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCopyCells": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCopyCellsWithHeaders": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPasteCells": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectAllCells": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellsCopied": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellsPasted": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPasteRefused": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPasteReadOnly": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPasteType": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPasteReport": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPasteCell": { "$ref": "#/$defs/accessibleLabel" },
+            "gridFillHandle": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellsFilled": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCellMenu": { "$ref": "#/$defs/accessibleLabel" },
+            "gridClearCellRanges": { "$ref": "#/$defs/accessibleLabel" },
             "gridColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridOperator": { "$ref": "#/$defs/accessibleLabel" },
             "gridValue": { "$ref": "#/$defs/accessibleLabel" },
@@ -1263,11 +1648,98 @@
             "gridGroupCollapse": { "$ref": "#/$defs/accessibleLabel" },
             "gridSummary": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupOrder": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateCount": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateSum": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateAverage": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateMinimum": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateMaximum": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupBy": { "$ref": "#/$defs/accessibleLabel" },
+            "gridUngroup": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupDrop": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExpandAll": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCollapseAll": { "$ref": "#/$defs/accessibleLabel" },
+            "gridExpandLevel": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCollapseLevel": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupMove": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupSortBy": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupSortValue": { "$ref": "#/$defs/accessibleLabel" },
+            "gridGroupSortAggregate": { "$ref": "#/$defs/accessibleLabel" },
+            "gridSelectGroup": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateDistinct": { "$ref": "#/$defs/accessibleLabel" },
+            "gridShowDetail": { "$ref": "#/$defs/accessibleLabel" },
+            "gridHideDetail": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDetailOf": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDetailFailed": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportProgress": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportReading": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportCancelled": { "$ref": "#/$defs/accessibleLabel" },
+            "gridNoExportColumns": { "$ref": "#/$defs/accessibleLabel" },
             "gridCancelExport": { "$ref": "#/$defs/accessibleLabel" },
             "gridPrint": { "$ref": "#/$defs/accessibleLabel" },
+            "formatRules": { "$ref": "#/$defs/accessibleLabel" },
+            "formatLegend": { "$ref": "#/$defs/accessibleLabel" },
+            "formatUpTo": { "$ref": "#/$defs/accessibleLabel" },
+            "formatAbove": { "$ref": "#/$defs/accessibleLabel" },
+            "formatHiddenFlagged": { "$ref": "#/$defs/accessibleLabel" },
+            "formatRule": { "$ref": "#/$defs/accessibleLabel" },
+            "formatAddRule": { "$ref": "#/$defs/accessibleLabel" },
+            "formatEditRule": { "$ref": "#/$defs/accessibleLabel" },
+            "formatDeleteRule": { "$ref": "#/$defs/accessibleLabel" },
+            "formatMoveUp": { "$ref": "#/$defs/accessibleLabel" },
+            "formatMoveDown": { "$ref": "#/$defs/accessibleLabel" },
+            "formatEnableRule": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNoRules": { "$ref": "#/$defs/accessibleLabel" },
+            "formatName": { "$ref": "#/$defs/accessibleLabel" },
+            "formatDescription": { "$ref": "#/$defs/accessibleLabel" },
+            "formatOnlyRowsWhere": { "$ref": "#/$defs/accessibleLabel" },
+            "formatEveryRow": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNone": { "$ref": "#/$defs/accessibleLabel" },
+            "formatApplyTo": { "$ref": "#/$defs/accessibleLabel" },
+            "formatTargetCell": { "$ref": "#/$defs/accessibleLabel" },
+            "formatTargetRow": { "$ref": "#/$defs/accessibleLabel" },
+            "formatTargetColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "formatStyle": { "$ref": "#/$defs/accessibleLabel" },
+            "formatHighlight": { "$ref": "#/$defs/accessibleLabel" },
+            "formatDataBar": { "$ref": "#/$defs/accessibleLabel" },
+            "formatColorScale": { "$ref": "#/$defs/accessibleLabel" },
+            "formatBands": { "$ref": "#/$defs/accessibleLabel" },
+            "formatTone": { "$ref": "#/$defs/accessibleLabel" },
+            "formatEmphasis": { "$ref": "#/$defs/accessibleLabel" },
+            "formatFill": { "$ref": "#/$defs/accessibleLabel" },
+            "formatTextOnly": { "$ref": "#/$defs/accessibleLabel" },
+            "formatStrong": { "$ref": "#/$defs/accessibleLabel" },
+            "formatIcon": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNoIcon": { "$ref": "#/$defs/accessibleLabel" },
+            "formatAutomatic": { "$ref": "#/$defs/accessibleLabel" },
+            "formatBadge": { "$ref": "#/$defs/accessibleLabel" },
+            "formatCue": { "$ref": "#/$defs/accessibleLabel" },
+            "formatLowest": { "$ref": "#/$defs/accessibleLabel" },
+            "formatMidpoint": { "$ref": "#/$defs/accessibleLabel" },
+            "formatHighest": { "$ref": "#/$defs/accessibleLabel" },
+            "formatAddBand": { "$ref": "#/$defs/accessibleLabel" },
+            "formatRemoveBand": { "$ref": "#/$defs/accessibleLabel" },
+            "formatSave": { "$ref": "#/$defs/accessibleLabel" },
+            "formatCancel": { "$ref": "#/$defs/accessibleLabel" },
+            "formatShowLegend": { "$ref": "#/$defs/accessibleLabel" },
+            "formatInvalid": { "$ref": "#/$defs/accessibleLabel" },
+            "formatMatchCase": { "$ref": "#/$defs/accessibleLabel" },
+            "formatToneDanger": { "$ref": "#/$defs/accessibleLabel" },
+            "formatToneWarning": { "$ref": "#/$defs/accessibleLabel" },
+            "formatToneSuccess": { "$ref": "#/$defs/accessibleLabel" },
+            "formatToneInfo": { "$ref": "#/$defs/accessibleLabel" },
+            "formatToneNeutral": { "$ref": "#/$defs/accessibleLabel" },
+            "formatToneMuted": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNotContains": { "$ref": "#/$defs/accessibleLabel" },
+            "formatEndsWith": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNotIn": { "$ref": "#/$defs/accessibleLabel" },
+            "formatBetween": { "$ref": "#/$defs/accessibleLabel" },
+            "formatLike": { "$ref": "#/$defs/accessibleLabel" },
+            "formatMatches": { "$ref": "#/$defs/accessibleLabel" },
+            "formatOlderThan": { "$ref": "#/$defs/accessibleLabel" },
+            "formatWithinLast": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNotLike": { "$ref": "#/$defs/accessibleLabel" },
+            "formatNotMatches": { "$ref": "#/$defs/accessibleLabel" },
+            "formatBetweenExclusive": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterMatch": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAll": { "$ref": "#/$defs/accessibleLabel" },
             "gridFilterAny": { "$ref": "#/$defs/accessibleLabel" },
@@ -1300,7 +1772,13 @@
             "no": { "$ref": "#/$defs/accessibleLabel" },
             "utcTime": { "type": "string", "pattern": "\\{time\\}" },
             "localTime": { "type": "string", "pattern": "\\{time\\}" },
-            "mountError": { "$ref": "#/$defs/accessibleLabel" }
+            "mountError": { "$ref": "#/$defs/accessibleLabel" },
+            "linkFilteredBy": { "$ref": "#/$defs/accessibleLabel" },
+            "linkRemoveFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "linkFiltered": { "$ref": "#/$defs/accessibleLabel" },
+            "linkHighlighted": { "$ref": "#/$defs/accessibleLabel" },
+            "linkHighlightedRows": { "$ref": "#/$defs/accessibleLabel" },
+            "linkCleared": { "$ref": "#/$defs/accessibleLabel" }
           }
         },
         "source": { "$ref": "#/$defs/source" },
@@ -1486,6 +1964,90 @@
         { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
         { "$ref": "#/$defs/identifier" }
       ]
+    },
+    "recordValues": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier", "not": { "const": "__proto__" } }, "additionalProperties": { "$ref": "#/$defs/cell" } },
+    "recordRef": {
+      "description": "A link to another record: of the value's own view, or of the grid or tree with id view. path is a tree record's id path, ending with id.",
+      "type": "object", "required": ["id"], "additionalProperties": false,
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "view": { "$ref": "#/$defs/identifier" }, "path": { "type": "array", "minItems": 1, "maxItems": 256, "items": { "$ref": "#/$defs/identifier" } } }
+    },
+    "recordField": {
+      "type": "object", "required": ["name", "value"], "additionalProperties": false,
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 4096 }, "value": { "$ref": "#/$defs/cell" }, "kind": { "enum": ["text", "number", "datetime"] } }
+    },
+    "recordList": {
+      "description": "A collection of records: rows with their own columns (or tree roots), the total when rows are the first ones, and the grid whose records they are.",
+      "type": "object", "required": ["columns"], "additionalProperties": false,
+      "properties": {
+        "columns": { "type": "array", "minItems": 1, "maxItems": 256, "items": { "anyOf": [{ "$ref": "#/$defs/gridColumn" }, { "$ref": "#/$defs/column" }] } },
+        "rows": { "type": "array", "maxItems": 100000, "items": { "$ref": "#/$defs/gridRow" } },
+        "roots": { "type": "array", "items": { "$ref": "#/$defs/inlineNode" } },
+        "total": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "pageLength": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "target": {
+          "type": "object", "required": ["view"], "additionalProperties": false,
+          "properties": { "view": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
+            "values": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/$defs/cellValue" } }, "filters": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/gridFilter" } } }
+        }
+      },
+      "not": { "required": ["rows", "roots"] }
+    },
+    "recordEvent": {
+      "type": "object", "required": ["summary"], "additionalProperties": false,
+      "properties": { "time": { "type": "string" }, "summary": { "type": "string", "minLength": 1, "maxLength": 4096 }, "actor": { "type": "string", "maxLength": 4096 },
+        "kind": { "type": "string", "maxLength": 256 }, "tone": { "$ref": "#/$defs/tone" }, "ref": { "$ref": "#/$defs/recordRef" },
+        "changes": { "type": "array", "maxItems": 512, "items": { "$ref": "#/$defs/recordChange" } } }
+    },
+    "recordChange": {
+      "type": "object", "required": ["name", "before", "after"], "additionalProperties": false,
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 4096 }, "before": { "$ref": "#/$defs/cell" }, "after": { "$ref": "#/$defs/cell" }, "kind": { "enum": ["text", "number", "datetime"] } }
+    },
+    "recordSection": {
+      "type": "object", "required": ["id", "label"], "additionalProperties": false,
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "fields": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/identifier" } }, "collapsed": { "type": "boolean" },
+        "renderer": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" }, "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/recordSection" } } }
+    },
+    "recordPanel": {
+      "description": "The record panel: record-only fields, a pinned summary, sections, tabs, empty-field hiding, jump list, record deep links, where details load from and the built-in actions. docs/record-panel.md. Writers and readers check that ids are unique and that sections, tabs and the summary name declared fields and sections.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "fields": { "type": "array", "items": { "type": "object", "required": ["id", "title"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "title": { "$ref": "#/$defs/accessibleLabel" }, "kind": { "enum": ["text", "number", "datetime"] },
+          "presenter": { "$ref": "#/$defs/gridPresenter" }, "wrap": { "type": "boolean" }, "section": { "type": "string", "minLength": 1, "maxLength": 256 } } } },
+        "header": { "type": "object", "additionalProperties": false, "properties": { "status": { "$ref": "#/$defs/identifier" },
+          "facts": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "$ref": "#/$defs/identifier" } } } },
+        "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/recordSection" } },
+        "tabs": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id", "label", "sections"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 256 }, "sections": { "type": "array", "items": { "$ref": "#/$defs/identifier" } } } } },
+        "hideEmpty": { "type": "boolean" }, "jumpList": { "type": "boolean" },
+        "deepLink": { "anyOf": [{ "const": true }, { "type": "object", "additionalProperties": false, "properties": { "key": { "type": "string", "pattern": "^[A-Za-z][\\w.-]{0,31}$" } } }] },
+        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host", "sidecar"] },
+          "base": { "type": "string", "minLength": 1, "maxLength": 1024 }, "shards": { "type": "integer", "minimum": 1, "maximum": 65536 } },
+          "if": { "properties": { "kind": { "const": "sidecar" } } }, "then": { "required": ["base", "shards"] } },
+        "actions": { "type": "object", "additionalProperties": false, "properties": { "copy": { "type": "boolean" }, "print": { "type": "boolean" }, "export": { "type": "boolean" }, "link": { "type": "boolean" } } }
+      }
+    },
+    "gridRecordQuery": {
+      "description": "A request for one record's details when its drawer opens: the whole record, the next rows of a collection field (field, offset, limit), or with row the record's row too.",
+      "type": "object", "required": ["protocol", "type", "view", "id"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRecordQuery" }, "view": { "$ref": "#/$defs/identifier" }, "id": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" }, "field": { "$ref": "#/$defs/identifier" }, "offset": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 10000 }, "row": { "const": true } }
+    },
+    "gridRecord": {
+      "description": "One record's details: record field values, fuller column values for the drawer, and the row when asked for it.",
+      "type": "object", "required": ["protocol", "type", "view", "id"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRecord" }, "view": { "$ref": "#/$defs/identifier" }, "id": { "$ref": "#/$defs/identifier" },
+        "revision": { "$ref": "#/$defs/identifier" }, "cells": { "$ref": "#/$defs/recordValues" }, "fields": { "$ref": "#/$defs/recordValues" }, "row": { "$ref": "#/$defs/gridRow" } }
+    },
+    "gridRecordPack": {
+      "description": "A record pack beside a page (records/r<shard>.js): the details of the records whose id hashes to the shard (FNV-1a of the UTF-16 code units, modulo the shard count).",
+      "type": "object", "required": ["protocol", "type", "view", "shard", "records"], "additionalProperties": false,
+      "properties": { "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRecordPack" }, "view": { "$ref": "#/$defs/identifier" }, "shard": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "records": { "type": "array", "items": { "type": "object", "required": ["id"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "cells": { "$ref": "#/$defs/recordValues" }, "fields": { "$ref": "#/$defs/recordValues" }, "row": { "$ref": "#/$defs/gridRow" } } } } }
     },
     "searchEntries": {
       "type": "object",

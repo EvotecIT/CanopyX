@@ -16,7 +16,10 @@ namespace CanopyX;
 /// <c>{shown}</c>, <c>{min}</c>, <c>{error}</c>, <c>{column}</c>, <c>{width}</c>, and <c>{time}</c>, as each
 /// property says. Numbers are formatted in the page language (in the browser) or in
 /// <c>CanopyStaticHtmlOptions.Culture</c> (in the outline). For a language with plural forms, phrase the text so the
-/// number stands on its own, for example <c>Wyniki: {count}</c>.
+/// number stands on its own, for example <c>Wyniki: {count}</c>, or give one form per plural category of the page language:
+/// <c>[one]{count} match[other]{count} matches</c> (categories <c>zero</c>, <c>one</c>, <c>two</c>, <c>few</c>, <c>many</c> and
+/// <c>other</c>, which every plural text needs). The browser picks the form with the language's plural rules for the count;
+/// a form cannot contain "[". The match counts use plural forms.
 /// </para>
 /// <para>
 /// Host data is never translated here: node labels, column titles, cells, badges, and the view's accessible name are
@@ -39,6 +42,24 @@ public sealed partial class CanopyLabels {
         [nameof(GridFilters)] = "Filters",
         [nameof(GridFitContent)] = "Fit to content",
         [nameof(GridUnpin)] = "Unpin",
+        [nameof(MatchesHighlight)] = "Highlight matches",
+        [nameof(MatchesCount)] = "[one]{count} match[other]{count} matches",
+        [nameof(MatchesPosition)] = "{current} of {count}",
+        [nameof(MatchesNone)] = "No matches",
+        [nameof(MatchesLoaded)] = "[one]{count} match in loaded rows[other]{count} matches in loaded rows",
+        [nameof(MatchesPrevious)] = "Previous match",
+        [nameof(MatchesNext)] = "Next match",
+        [nameof(MatchesAnnounce)] = "Match {current} of {count}, {column}",
+        [nameof(LayoutMenu)] = "Layout",
+        [nameof(LayoutFit)] = "Fit to width",
+        [nameof(LayoutScroll)] = "All columns, scroll sideways",
+        [nameof(LayoutCards)] = "Cards",
+        [nameof(LayoutDensity)] = "Density",
+        [nameof(LayoutCompact)] = "Compact",
+        [nameof(LayoutNormal)] = "Normal",
+        [nameof(LayoutComfortable)] = "Comfortable",
+        [nameof(LayoutChanged)] = "Layout: {mode}, {density}",
+        [nameof(LayoutSort)] = "Sort by",
         [nameof(GridWhere)] = "Where",
         [nameof(GridComplexFilter)] = "This column belongs to a mixed condition group. Edit it in Filters.",
         [nameof(GridClearColumnFilter)] = "Clear filter",
@@ -108,6 +129,9 @@ public sealed partial class CanopyLabels {
         [nameof(GridPreviousPage)] = "Previous page",
         [nameof(GridNextPage)] = "Next page",
         [nameof(GridLastPage)] = "Last page",
+        [nameof(GridPageInfo)] = "Showing {first} to {last} of {count} rows",
+        [nameof(GridPageInfoFiltered)] = "Showing {first} to {last} of {count} rows (filtered from {total})",
+        [nameof(GridPageButton)] = "Page {page}",
         [nameof(GridClearQuery)] = "Clear search and filters",
         [nameof(GridRemoveSearch)] = "Clear search: {search}",
         [nameof(GridGroupedFilters)] = "Grouped filters ({count} conditions)",
@@ -117,9 +141,29 @@ public sealed partial class CanopyLabels {
         [nameof(GridFilteredResults)] = "Filtered results",
         [nameof(GridSelectedRows)] = "Selected rows",
         [nameof(GridAllResults)] = "All results",
+        [nameof(GridVisibleRows)] = "Visible rows",
+        [nameof(GridAllRows)] = "All rows",
         [nameof(GridDownloadCsv)] = "Download CSV",
         [nameof(GridCopy)] = "Copy",
         [nameof(GridDetails)] = "Record details",
+        [nameof(GridCellRangeSelected)] = "{rows} rows × {columns} columns selected",
+        [nameof(GridCellRangesSelected)] = "{ranges} ranges selected, {cells} cells",
+        [nameof(GridCellRangeCleared)] = "Cell selection cleared",
+        [nameof(GridCopyCells)] = "Copy cells",
+        [nameof(GridCopyCellsWithHeaders)] = "Copy cells with headers",
+        [nameof(GridPasteCells)] = "Paste",
+        [nameof(GridSelectAllCells)] = "Select all cells",
+        [nameof(GridCellsCopied)] = "Copied {rows} rows × {columns} columns",
+        [nameof(GridCellsPasted)] = "Pasted {count} cells",
+        [nameof(GridPasteRefused)] = "{count} cells were not pasted",
+        [nameof(GridPasteReadOnly)] = "This cell cannot be changed.",
+        [nameof(GridPasteType)] = "“{value}” is not a valid value for {column}.",
+        [nameof(GridPasteReport)] = "Paste report",
+        [nameof(GridPasteCell)] = "Row {row}, {column}: {reason}",
+        [nameof(GridFillHandle)] = "Drag to fill the cells below",
+        [nameof(GridCellsFilled)] = "Filled {count} cells",
+        [nameof(GridCellMenu)] = "Cell actions",
+        [nameof(GridClearCellRanges)] = "Clear cell selection",
         [nameof(GridColumn)] = "Column",
         [nameof(GridOperator)] = "Condition",
         [nameof(GridValue)] = "Value (UTC for dates)",
@@ -199,10 +243,33 @@ public sealed partial class CanopyLabels {
         [nameof(GridGroupCollapse)] = "Collapse group",
         [nameof(GridSummary)] = "Query totals",
         [nameof(GridGroupOrder)] = "Group order is fixed by this report",
+        [nameof(GridAggregateCount)] = "count {value}",
+        [nameof(GridAggregateSum)] = "sum {value}",
+        [nameof(GridAggregateAverage)] = "avg {value}",
+        [nameof(GridAggregateMinimum)] = "min {value}",
+        [nameof(GridAggregateMaximum)] = "max {value}",
+        [nameof(GridGroupBy)] = "Group by this column",
+        [nameof(GridUngroup)] = "Stop grouping by this column",
+        [nameof(GridGroupDrop)] = "Drag a column header here to group rows",
+        [nameof(GridExpandAll)] = "Expand all",
+        [nameof(GridCollapseAll)] = "Collapse all",
+        [nameof(GridExpandLevel)] = "Expand level {level}",
+        [nameof(GridCollapseLevel)] = "Collapse level {level}",
+        [nameof(GridGroupMove)] = "Alt+Left and Alt+Right move this level",
+        [nameof(GridGroupSortBy)] = "Sort groups by",
+        [nameof(GridGroupSortValue)] = "by value",
+        [nameof(GridGroupSortAggregate)] = "by {aggregate}",
+        [nameof(GridSelectGroup)] = "Select the records of {group}",
+        [nameof(GridAggregateDistinct)] = "distinct {value}",
+        [nameof(GridShowDetail)] = "Show details",
+        [nameof(GridHideDetail)] = "Hide details",
+        [nameof(GridDetailOf)] = "Details of {record}",
+        [nameof(GridDetailFailed)] = "Details could not load: {error}",
         [nameof(GridExportProgress)] = "{completed} of {total} records",
         [nameof(GridExportReading)] = "{completed} records",
         [nameof(GridExportCancelled)] = "Export cancelled",
         [nameof(GridCancelExport)] = "Cancel export",
+        [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(GridPrint)] = "Print",
         [nameof(GridCloseRecord)] = "Close record details",
         [nameof(GridContains)] = "contains",
@@ -233,60 +300,149 @@ public sealed partial class CanopyLabels {
         [nameof(ShowMoreUnknownTotal)] = "Show more ({loaded} loaded)",
         [nameof(PageLoaded)] = "{loaded} of {total} loaded",
         [nameof(ItemsLoaded)] = "{count} items",
+        [nameof(RecordBack)] = "Back",
+        [nameof(RecordBackTo)] = "Back to {record}",
+        [nameof(RecordTrail)] = "Record trail",
+        [nameof(RecordShowing)] = "Showing {record}",
+        [nameof(RecordTabs)] = "Record views",
+        [nameof(RecordSections)] = "Jump to a section",
+        [nameof(RecordOtherFields)] = "Other fields",
+        [nameof(RecordShowEmpty)] = "Show empty fields ({count})",
+        [nameof(RecordHideEmpty)] = "Hide empty fields",
+        [nameof(RecordActions)] = "Record actions",
+        [nameof(RecordCopyValues)] = "Copy values",
+        [nameof(RecordCopyJson)] = "Copy as JSON",
+        [nameof(RecordCopyLink)] = "Copy link",
+        [nameof(RecordCopied)] = "Copied to the clipboard",
+        [nameof(RecordPrint)] = "Print record",
+        [nameof(RecordExportCsv)] = "Export CSV",
+        [nameof(RecordExportJson)] = "Export JSON",
+        [nameof(RecordOpenAll)] = "Open all in grid",
+        [nameof(RecordLoadMore)] = "Load more",
+        [nameof(RecordCount)] = "{shown} of {total}",
+        [nameof(RecordItems)] = "{count} items",
+        [nameof(RecordMore)] = "+{count}",
+        [nameof(RecordShowAll)] = "Show all {count}",
+        [nameof(RecordRetry)] = "Retry",
+        [nameof(RecordLoadFailed)] = "Could not load the record details: {error}",
+        [nameof(RecordUnavailable)] = "Record {id} is not available here.",
+        [nameof(RecordField)] = "Field",
+        [nameof(RecordValue)] = "Value",
+        [nameof(RecordSection)] = "Section",
+        [nameof(RecordBefore)] = "Before",
+        [nameof(RecordAfter)] = "After",
+        [nameof(RecordAdded)] = "Added",
+        [nameof(RecordRemoved)] = "Removed",
+        [nameof(RecordChanged)] = "{count} changed fields",
         [nameof(Yes)] = "Yes",
         [nameof(No)] = "No",
         [nameof(UtcTime)] = "{time} UTC",
         [nameof(LocalTime)] = "{time} local time",
         [nameof(MountError)] = "This view could not be displayed: {error}",
+        [nameof(GridEditCell)] = "Edit {column}",
+        [nameof(GridEditSave)] = "Save",
+        [nameof(GridEditCancel)] = "Cancel",
+        [nameof(GridEditDiscard)] = "Discard",
+        [nameof(GridEditUndo)] = "Undo",
+        [nameof(GridEditRedo)] = "Redo",
+        [nameof(GridEditEdited)] = "Edited",
+        [nameof(GridEditChanges)] = "Unsaved changes: {count}",
+        [nameof(GridEditErrors)] = "Errors: {count}",
+        [nameof(GridEditSaving)] = "Saving…",
+        [nameof(GridEditSaved)] = "Saved rows: {count}",
+        [nameof(GridEditFailed)] = "Rows not saved: {count}",
+        [nameof(GridEditRequired)] = "{column} is required.",
+        [nameof(GridEditNumber)] = "{column} must be a number.",
+        [nameof(GridEditDate)] = "{column} must be a valid date.",
+        [nameof(GridEditMin)] = "{column} must be at least {min}.",
+        [nameof(GridEditMax)] = "{column} must be at most {max}.",
+        [nameof(GridEditStep)] = "{column} must be a multiple of {step}.",
+        [nameof(GridEditMinLength)] = "{column} needs at least {min} characters.",
+        [nameof(GridEditMaxLength)] = "{column} allows at most {max} characters.",
+        [nameof(GridEditPattern)] = "{column} does not have the expected format.",
+        [nameof(GridEditChoice)] = "Choose {column} from the list.",
+        [nameof(GridEditConflict)] = "Someone else changed this row. Reload it and try again.",
+        [nameof(GridEditRejected)] = "Not saved: {error}",
+        [nameof(GridEditNotSaved)] = "Not saved.",
+        [nameof(GridEditNoMatches)] = "No matches",
+        [nameof(GridEditSearching)] = "Searching…",
+        [nameof(GridEditUndone)] = "Undone: {column}",
+        [nameof(GridEditRedone)] = "Redone: {column}",
+        [nameof(GridEditNone)] = "(none)",
+        [nameof(LinkFilteredBy)] = "Filtered by {source}: {values}",
+        [nameof(LinkRemoveFilter)] = "Remove the filter from {source}: {values}",
+        [nameof(LinkFiltered)] = "Filtered by {source}: {count} rows",
+        [nameof(LinkHighlighted)] = "{count} rows highlighted from {source}",
+        [nameof(LinkHighlightedRows)] = "{count} rows highlighted",
+        [nameof(LinkCleared)] = "Linked filters removed",
         [nameof(OverflowNote)] = "Showing {shown} of {total} rows.",
         [nameof(UnknownTotal)] = "unknown",
         [nameof(HiddenRows)] = "{count} rows below are not shown",
-        [nameof(FullReport)] = "Open the full report"
-    };
-
-    /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
-    private static readonly string[] RuntimeNames = {
-        nameof(GridGroupCount),
-        nameof(GridOfThese),
-        nameof(GridOfTheseAreTrue),
-        nameof(GridShowRowsWhere),
-        nameof(GridDeleteCondition),
-        nameof(GridConditionUpperValue),
-        nameof(GridConditionValue),
-        nameof(GridSelectionAggregate),
-        nameof(GridClearColumnFilter),
-        nameof(GridComplexFilter),
-        nameof(GridWhere),
-        nameof(GridUnpin),
-        nameof(GridFitContent),
-        nameof(GridMore), nameof(GridDone), nameof(GridClearAll), nameof(GridRows), nameof(GridResultNoun), nameof(GridSearchNoun), nameof(GridChart), nameof(GridColumnMenu), nameof(GridSortAscending), nameof(GridSortDescending), nameof(GridClearSort), nameof(GridFilterColumn), nameof(GridHideColumn), nameof(GridGroupedBy), nameof(GridRemoveGrouping), nameof(GridSelectAllValues), nameof(GridFilterValues), nameof(GridAddCondition), nameof(GridAddGroup), nameof(GridAnd), nameof(GridOr), nameof(GridEditAsText), nameof(GridFilterText), nameof(GridDeepFilters), nameof(GridToday), nameof(GridYesterday), nameof(GridLastSevenDays), nameof(GridLastThirtyDays), nameof(GridThisMonth), nameof(GridDateRange), nameof(GridEmpty), nameof(GridEmptyReason), nameof(GridNoMatches), nameof(GridNoMatchesReason), nameof(GridRetry), nameof(GridLoadFailed), nameof(GridAll), nameof(GridPageOf), nameof(GridStatusCount), nameof(GridDetailsSection), nameof(GridPreviousRecord), nameof(GridNextRecord), nameof(GridShowMore), nameof(GridNoData), nameof(GridPeriodRange), nameof(GridHealthy),
-        nameof(GridBetween), nameof(GridRangeEnd), nameof(GridInvalidRange), nameof(GridSuggestedCategory), nameof(GridChooseCategory),
-        nameof(GridBooleanValue), nameof(GridTrue), nameof(GridFalse), nameof(GridHeaderFilter), nameof(GridExpandCell), nameof(GridCloseCell), nameof(GridCloseRecord),
-        nameof(GridMoveColumn), nameof(GridResizeHelp), nameof(GridColumnMoved), nameof(GridFitColumn), nameof(GridFitAllColumns),
-        nameof(GridPinColumn), nameof(GridPinNone), nameof(GridPinLeft), nameof(GridPinRight), nameof(GridResponsiveHidden), nameof(GridFindColumn), nameof(GridShowAllColumns), nameof(GridResetColumns), nameof(GridReorderColumn), nameof(GridPinnedLeft), nameof(GridPinnedRight),
-        nameof(GridFilterGroupTitle), nameof(GridFilterMatch), nameof(GridFilterAll), nameof(GridFilterAny), nameof(GridAddFilterGroup), nameof(GridDeleteFilterGroup),
-        nameof(GridFacetValues), nameof(GridFacetSearch), nameof(GridFacetIncludeCurrent), nameof(GridFacetLoad), nameof(GridFacetChoose), nameof(GridFacetCounts), nameof(GridFacetReload),
-        nameof(GridRenameView), nameof(GridDefaultView), nameof(GridClearDefaultView), nameof(GridDefaultViewName), nameof(GridNoDefaultView), nameof(GridDefaultViewOption),
-        nameof(GridSelection), nameof(GridSelectPage), nameof(GridSelectMatching), nameof(GridClearSelection), nameof(GridSelectionCount),
-        nameof(GridSelectionQueryCount), nameof(GridSelectionQueryUnknown), nameof(GridSelectRecord),
-        nameof(GridGroupHeading), nameof(GridGroupMissing), nameof(GridGroupExpand), nameof(GridGroupCollapse), nameof(GridSummary), nameof(GridGroupOrder),
-        nameof(GridExportProgress), nameof(GridExportReading), nameof(GridExportCancelled), nameof(GridCancelExport), nameof(GridPrint),
-        nameof(GridResultCount), nameof(GridClearQuery), nameof(GridRemoveSearch), nameof(GridGroupedFilters), nameof(GridRemoveGroup), nameof(GridRemoveCondition),
-        nameof(GridUnknownCount), nameof(GridMatchedCount), nameof(GridCursorRange),
-        nameof(GridPaging), nameof(GridPageRange), nameof(GridPageNumber), nameof(GridPageLength), nameof(GridFirstPage), nameof(GridPreviousPage), nameof(GridNextPage), nameof(GridLastPage),
-        nameof(GridExport), nameof(GridFilteredResults), nameof(GridSelectedRows), nameof(GridAllResults), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridDetails),
-        nameof(SearchPlaceholder), nameof(SearchResults), nameof(SearchResultCount), nameof(SearchResultCountOfTotal), nameof(SearchResultCountOfMany),
-        nameof(GridFilters), nameof(GridColumn), nameof(GridOperator), nameof(GridValue), nameof(GridValueType), nameof(GridText), nameof(GridBoolean), nameof(GridAddFilter), nameof(GridRemoveFilter), nameof(GridApply), nameof(GridClearFilters), nameof(GridMoveEarlier), nameof(GridMoveLater), nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView), nameof(GridInvalidFilter), nameof(GridContains), nameof(GridStartsWith), nameof(GridIn), nameof(GridIsNull), nameof(GridIsNotNull),
-        nameof(SearchNoResults), nameof(SearchTooShort), nameof(SearchWordTooShort), nameof(SearchFailed), nameof(Columns), nameof(VisibleColumns),
-        nameof(ResizeColumn), nameof(ColumnWidth), nameof(Loading), nameof(LoadError), nameof(QueryFailed), nameof(ShowMore), nameof(ShowMoreUnknownTotal),
-        nameof(PageLoaded), nameof(ItemsLoaded), nameof(Yes), nameof(No), nameof(UtcTime), nameof(LocalTime), nameof(MountError),
-        nameof(Actions), nameof(EditValue), nameof(SaveEdit), nameof(CancelEdit), nameof(InvalidEdit), nameof(InteractionPending),
-        nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove)
-    };
-
-    private static readonly string[] InteractionNames = {
-        nameof(Actions), nameof(EditValue), nameof(SaveEdit), nameof(CancelEdit), nameof(InvalidEdit), nameof(InteractionPending),
-        nameof(InteractionRejected), nameof(InteractionFailed), nameof(MarkMove), nameof(MoveHere), nameof(MoveBefore), nameof(MoveAfter), nameof(CancelMove)
+        [nameof(FullReport)] = "Open the full report",
+        [nameof(FormatRules)] = "Conditional formatting",
+        [nameof(FormatLegend)] = "Formatting legend",
+        [nameof(FormatUpTo)] = "Up to",
+        [nameof(FormatAbove)] = "Above",
+        [nameof(FormatHiddenFlagged)] = "{count} hidden fields formatted: {rules}",
+        [nameof(FormatRule)] = "Rule {number}",
+        [nameof(FormatAddRule)] = "Add rule",
+        [nameof(FormatEditRule)] = "Edit {rule}",
+        [nameof(FormatDeleteRule)] = "Delete {rule}",
+        [nameof(FormatMoveUp)] = "Move {rule} up",
+        [nameof(FormatMoveDown)] = "Move {rule} down",
+        [nameof(FormatEnableRule)] = "Apply {rule}",
+        [nameof(FormatNoRules)] = "No formatting rules.",
+        [nameof(FormatName)] = "Name",
+        [nameof(FormatDescription)] = "Screen reader description",
+        [nameof(FormatOnlyRowsWhere)] = "Only rows where",
+        [nameof(FormatEveryRow)] = "Every row",
+        [nameof(FormatNone)] = "None",
+        [nameof(FormatApplyTo)] = "Apply to",
+        [nameof(FormatTargetCell)] = "Cell",
+        [nameof(FormatTargetRow)] = "Whole row",
+        [nameof(FormatTargetColumns)] = "Chosen columns",
+        [nameof(FormatStyle)] = "Style",
+        [nameof(FormatHighlight)] = "Highlight",
+        [nameof(FormatDataBar)] = "Data bar",
+        [nameof(FormatColorScale)] = "Colour scale",
+        [nameof(FormatBands)] = "Threshold bands",
+        [nameof(FormatTone)] = "Tone",
+        [nameof(FormatEmphasis)] = "Emphasis",
+        [nameof(FormatFill)] = "Fill",
+        [nameof(FormatTextOnly)] = "Text colour",
+        [nameof(FormatStrong)] = "Bold fill",
+        [nameof(FormatIcon)] = "Icon",
+        [nameof(FormatNoIcon)] = "No icon",
+        [nameof(FormatAutomatic)] = "Automatic",
+        [nameof(FormatBadge)] = "Badge",
+        [nameof(FormatCue)] = "Text cue",
+        [nameof(FormatLowest)] = "Lowest",
+        [nameof(FormatMidpoint)] = "Midpoint",
+        [nameof(FormatHighest)] = "Highest",
+        [nameof(FormatAddBand)] = "+ Band",
+        [nameof(FormatRemoveBand)] = "Remove band",
+        [nameof(FormatSave)] = "Save rule",
+        [nameof(FormatCancel)] = "Cancel",
+        [nameof(FormatShowLegend)] = "Show legend",
+        [nameof(FormatInvalid)] = "Complete the rule before saving.",
+        [nameof(FormatMatchCase)] = "Match case",
+        [nameof(FormatToneDanger)] = "Danger",
+        [nameof(FormatToneWarning)] = "Warning",
+        [nameof(FormatToneSuccess)] = "Success",
+        [nameof(FormatToneInfo)] = "Info",
+        [nameof(FormatToneNeutral)] = "Neutral",
+        [nameof(FormatToneMuted)] = "Muted",
+        [nameof(FormatNotContains)] = "does not contain",
+        [nameof(FormatEndsWith)] = "ends with",
+        [nameof(FormatNotIn)] = "is none of",
+        [nameof(FormatBetween)] = "between",
+        [nameof(FormatLike)] = "matches wildcard",
+        [nameof(FormatMatches)] = "matches pattern",
+        [nameof(FormatOlderThan)] = "older than (days)",
+        [nameof(FormatWithinLast)] = "within the last (days)",
+        [nameof(FormatNotLike)] = "does not match wildcard",
+        [nameof(FormatNotMatches)] = "does not match pattern",
+        [nameof(FormatBetweenExclusive)] = "between (exclusive)"
     };
 
     private readonly Dictionary<string, string> _values = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -309,6 +465,10 @@ public sealed partial class CanopyLabels {
     public string GridSelectedRows { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the full dataset export scope label. Default "All results".</summary>
     public string GridAllResults { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets a tree's visible-rows export scope label. Default "Visible rows".</summary>
+    public string GridVisibleRows { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets a tree's every-row export scope label. Default "All rows".</summary>
+    public string GridAllRows { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the client CSV action label. Default "Download CSV".</summary>
     public string GridDownloadCsv { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the clipboard action label. Default "Copy".</summary>
@@ -460,7 +620,10 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the flat-grid control text. Default "is present".</summary>
     public string GridIsNotNull { get => Get(); set => Set(value); }
 
-    /// <summary>Gets whether translations require the flat-grid superset runtime.</summary>
+    /// <summary>
+    /// Gets whether a flat-grid label is translated. Flat grids always use a grid runtime; a tree view writes only the
+    /// labels the tree runtimes read (its toolbar menus' grid labels among them), so its translations never require one.
+    /// </summary>
     public bool RequiresDataGridRuntime {
         get {
             foreach (var name in _values.Keys) if (name.StartsWith("Grid", StringComparison.Ordinal)) return true;
@@ -513,14 +676,6 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the command that clears a move intent. Default "Cancel move".</summary>
     public string CancelMove { get => Get(); set => Set(value); }
 
-    /// <summary>Gets whether translations use labels supplied by the interactive browser entry point.</summary>
-    public bool RequiresInteractiveRuntime {
-        get {
-            foreach (var name in InteractionNames) if (_values.ContainsKey(name)) return true;
-            return false;
-        }
-    }
-
     /// <summary>Gets or sets the "show more" row, with <c>{loaded}</c> of <c>{total}</c> children loaded. Default "Show more ({loaded} of {total} loaded)".</summary>
     public string ShowMore { get => Get(); set => Set(value); }
 
@@ -569,31 +724,6 @@ public sealed partial class CanopyLabels {
         }
 
         return copy;
-    }
-
-    /// <summary>Whether any label the browser reads differs from English, so the view document carries it.</summary>
-    internal bool HasRuntimeLabels {
-        get {
-            foreach (var name in RuntimeNames) {
-                if (_values.ContainsKey(name)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-
-    /// <summary>Writes the view document's <c>labels</c>: the labels the browser reads that differ from English.</summary>
-    internal void WriteJson(CanopyJsonWriter writer) {
-        writer.BeginObject();
-        foreach (var name in RuntimeNames) {
-            if (_values.TryGetValue(name, out var value)) {
-                writer.Property(char.ToLowerInvariant(name[0]) + name.Substring(1), value);
-            }
-        }
-
-        writer.EndObject();
     }
 
     private string Get([System.Runtime.CompilerServices.CallerMemberName] string name = "") =>

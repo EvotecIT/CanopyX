@@ -10,6 +10,19 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets or sets optional single-column flat grouping over the complete accepted query.</summary>
     public CanopyGridGrouping? Grouping { get; set; }
 
+    /// <summary>Gets the initial runtime grouping levels, outermost first, at most four.</summary>
+    /// <remarks>Runtime grouping travels in each query (<c>groupBy</c>); readers can change it (<see cref="Groupable"/>), and saved views keep it.
+    /// It cannot be combined with the fixed <see cref="Grouping"/>.</remarks>
+    public IList<CanopyGridGroupLevel> GroupBy { get; } = new List<CanopyGridGroupLevel>();
+
+    /// <summary>Gets or sets whether readers can group by sortable columns: column menus, the group-by bar and dragged headers.</summary>
+    public bool Groupable { get; set; }
+
+    /// <summary>Gets or sets expandable detail rows under the records, or null for none.</summary>
+    public CanopyGridDetail? Detail { get; set; }
+
+    internal bool DynamicGrouping => GroupBy.Count != 0 || Groupable;
+
     /// <summary>Gets up to 32 generic full-query and full-group aggregate descriptors.</summary>
     public IList<CanopyGridAggregate> Aggregates { get; } = new List<CanopyGridAggregate>();
 
@@ -54,9 +67,12 @@ public sealed class CanopyGridReporting {
             CanopyColumn? declared = null;
             if (aggregate != null) foreach (var column in columns) if (column.Id == aggregate.Column) declared = column;
             if (aggregate == null || declared == null || !aggregateIds.Add(aggregate.Id) ||
-                aggregate.Operation != CanopyGridAggregateOperation.Count && declared.Kind != CanopyColumnKind.Number)
+                aggregate.Numeric && declared.Kind != CanopyColumnKind.Number)
                 throw new InvalidOperationException("Aggregates need unique identities and declared raw columns; numeric operations require number columns.");
         }
+        if (Grouping != null && DynamicGrouping) throw new InvalidOperationException("A fixed grouping cannot be combined with GroupBy or Groupable.");
+        ValidateLevels(GroupBy, columns);
+        Detail?.Validate();
         if (ViewStorage != CanopyGridViewStorage.Session && ViewStorage != CanopyGridViewStorage.Local)
             throw new ArgumentOutOfRangeException(nameof(ViewStorage));
         var facets = new HashSet<string>(StringComparer.Ordinal);
@@ -70,9 +86,25 @@ public sealed class CanopyGridReporting {
 
     }
 
+    internal void ValidateLevels(IList<CanopyGridGroupLevel> levels, IList<CanopyColumn> columns) {
+        if (levels.Count > 4) throw new InvalidOperationException("At most four grouping levels are supported.");
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var level in levels) {
+            CanopyColumn? column = null;
+            if (level != null) foreach (var declared in columns) if (declared.Id == level.Column) column = declared;
+            var aggregate = false;
+            if (level?.Aggregate != null) foreach (var declared in Aggregates) if (declared.Id == level.Aggregate) aggregate = true;
+            if (level == null || column == null || !column.Sortable || !seen.Add(level.Column) || level.Aggregate != null && !aggregate)
+                throw new InvalidOperationException("Grouping levels need unique declared sortable columns and declared aggregates.");
+        }
+    }
+
     internal void WriteJson(CanopyJsonWriter writer, IList<CanopyColumn> columns) {
         writer.BeginObject();
         if (Grouping != null) { writer.Name("grouping"); Grouping.WriteJson(writer); }
+        if (GroupBy.Count != 0) { writer.Name("groupBy").BeginArray(); foreach (var level in GroupBy) level.WriteJson(writer); writer.EndArray(); }
+        if (Groupable) writer.Property("groupable", true);
+        if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
         if (Aggregates.Count != 0) {
             writer.Name("aggregates").BeginArray(); foreach (var aggregate in Aggregates) aggregate.WriteJson(writer); writer.EndArray();
         }

@@ -5,7 +5,13 @@
   "description": "Browser tests and benchmarks for the CanopyX runtime. Not part of the library build.",
   "scripts": {
     "test": "node node_modules/@playwright/test/cli.js test",
+    "test:all": "node tools/browsers.mjs all",
+    "test:firefox": "node tools/browsers.mjs firefox",
+    "test:webkit": "node tools/browsers.mjs webkit",
+    "test:visual": "node node_modules/@playwright/test/cli.js test --project=visual",
+    "test:visual:update": "node node_modules/@playwright/test/cli.js test --project=visual --update-snapshots",
     "test:distribution": "node tools/distribution-smoke.mjs",
+    "test:benchmarks": "node tools/browsers.mjs all --benchmarks",
     "bench": "node bench/scroll-benchmark.mjs"
   },
   "devDependencies": {

@@ -216,11 +216,25 @@ for (const mode of ["restoration","initialization"]) test(`a queued descendant t
   await page.evaluate(async mode=>{
     const host=document.querySelector(".cx-host"),data=host.canopyx.view; host.canopyx.destroy();
     window.loads={};
+    const ids=mode==="initialization"?["a","e","d","a0","c"]:["d","a0","c"];
+    let resolveBurst,queued=false;
+    window.replayBurstQueued=new Promise(resolve=>{resolveBurst=resolve;});
+    // The held restoration keeps a0's old DOM only until its loading redraw. Rendezvous inside the page, so host-side
+    // scheduling cannot outlast that window before the original user toggle burst has been queued.
+    const queueBurst=()=>{
+      if(queued||typeof window.finishRestoration!=="function")return;
+      const expanders=ids.map(id=>host.querySelector(`[data-cx-id="${id}"] .cx-exp`));
+      if(expanders.some(element=>!element?.isConnected))return;
+      queued=true;observer.disconnect();
+      for(const expander of expanders)expander.click();
+      window.replayBurstIds=ids;resolveBurst();
+    };
+    const observer=new MutationObserver(queueBurst);observer.observe(host,{childList:true,subtree:true});
     const api=CanopyX.createTreeGrid(host,{view:data,inactiveNodeLimit:0,source:{page:async node=>{
       if (!node) return {items:(mode==="initialization"?["a","e","b","c","d"]:["a","b","c","d","e"])
         .map(id=>({id,label:id,hasChildren:true,expanded:mode==="initialization"&&["a","e","b"].includes(id)})),total:5};
       window.loads[node.id]=(window.loads[node.id]||0)+1;
-      if (node.id==="b") return new Promise(resolve=>{window.finishRestoration=resolve;});
+      if (node.id==="b") return new Promise(resolve=>{window.finishRestoration=resolve;queueBurst();});
       if (node.id==="d") return new Promise(resolve=>{window.finishSlowReplay=resolve;});
       return {items:[{id:node.id+"0",label:node.id+"0",hasChildren:node.id==="a"}],total:1};
     }}});
@@ -228,16 +242,12 @@ for (const mode of ["restoration","initialization"]) test(`a queued descendant t
     else {
       await api.ready;
       for (const id of ["a","e"]) await api.expandPath([id],{expandLast:true,select:false,focus:false,reveal:false});
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       window.pendingRestore=api.setState({expanded:[["b"]]});
     }
   },mode);
   await page.waitForFunction(()=>typeof window.finishRestoration==="function");
-  await nextFrames(page);
-  // Enqueue this burst before the held layout's 250 ms loading redraw. Pointer actionability waits can
-  // outlast that deadline on a busy browser, correctly removing a0 before the test has clicked it.
-  await page.evaluate(ids=>{
-    for (const id of ids) document.querySelector(`[data-cx-id="${id}"] .cx-exp`).click();
-  },mode==="initialization"?["a","e","d","a0","c"]:["d","a0","c"]);
+  await page.evaluate(()=>window.replayBurstQueued);
   await page.evaluate(()=>window.finishRestoration({items:[{id:"b0",label:"b0"}],total:1}));
   await page.waitForFunction(()=>typeof window.finishSlowReplay==="function"); await nextFrames(page);
   await page.evaluate(async()=>{

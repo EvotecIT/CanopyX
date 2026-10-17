@@ -14,10 +14,11 @@ namespace CanopyX;
 /// browser. Implicit conversions let hosts assign plain values: <c>node.Cells["size"] = 1024;</c>.
 /// A cell that has only a value is written as a bare JSON value; otherwise it is written as an object.
 /// </remarks>
-public sealed class CanopyCell {
+public sealed partial class CanopyCell {
     private readonly object? _value;
     private List<CanopyBadge>? _badges;
     private List<CanopyCellPeriod>? _series;
+    private object? _sortKey;
 
     /// <summary>Creates an empty cell, useful for a cell that shows only badges or display text.</summary>
     public CanopyCell() {
@@ -89,6 +90,26 @@ public sealed class CanopyCell {
 
     /// <summary>Gets or sets the semantic colour of the cell text.</summary>
     public CanopyTone Tone { get; set; }
+
+    /// <summary>
+    /// Gets or sets the key this cell sorts by when it differs from its value:
+    /// text, a number, or a date (written as ISO 8601 UTC text with milliseconds, which sorts in time order). Sorting
+    /// reads it; filters, value lists, search and the display keep reading <see cref="Value"/> and <see cref="Text"/>. Null
+    /// sorts by the value. Give every cell of a column a key of one type. A host source sorts on its own and may ignore it.
+    /// </summary>
+    /// <exception cref="ArgumentException">The key is not text, a finite number or a date.</exception>
+    public object? SortKey {
+        get => _sortKey;
+        set => _sortKey = value switch {
+            double real when double.IsNaN(real) || double.IsInfinity(real) => throw new ArgumentException("A sort key number must be finite.", nameof(value)),
+            null or string or long or double or decimal => value,
+            int number => (long)number,
+            // Dates are UTC, as cell values are: a local time is converted, an unspecified one is taken as UTC.
+            DateTime date => date.Kind == DateTimeKind.Local ? date.ToUniversalTime() : DateTime.SpecifyKind(date, DateTimeKind.Utc),
+            DateTimeOffset offset => offset.UtcDateTime,
+            _ => throw new ArgumentException("A sort key is text, a number or a date.", nameof(value))
+        };
+    }
 
     /// <summary>Gets the badges shown after the cell text.</summary>
     public IList<CanopyBadge> Badges => _badges ??= new List<CanopyBadge>();
@@ -169,31 +190,38 @@ public sealed class CanopyCell {
     }
 
     /// <summary>ISO 8601 UTC, with milliseconds only when they are not zero.</summary>
-    private static string FormatIso(DateTime date) =>
+    internal static string FormatIso(DateTime date) =>
         date.ToString(date.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
     /// <summary>Checks a node's cells, walking the dictionary without an enumerator object.</summary>
-    internal static void ValidateEntries(Dictionary<string, CanopyCell>? cells) {
+    internal static void ValidateEntries(Dictionary<string, CanopyCell>? cells, int structureDepth = 0) {
         if (cells == null) {
             return;
         }
 
         foreach (var cell in cells) {
             if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
-            cell.Value?.ValidateShape();
+            cell.Value?.ValidateShape(structureDepth);
         }
     }
 
-    internal static void ValidateEntries(IEnumerable<KeyValuePair<string, CanopyCell>> cells) {
+    internal static void ValidateEntries(IEnumerable<KeyValuePair<string, CanopyCell>> cells, int structureDepth = 0) {
         foreach (var cell in cells) {
             if (string.IsNullOrEmpty(cell.Key)) throw new InvalidOperationException("A cell key must identify a column.");
-            cell.Value?.ValidateShape();
+            cell.Value?.ValidateShape(structureDepth);
         }
     }
 
-    internal void ValidateShape() {
+    internal void ValidateShape(int structureDepth = 0) {
+        ValidateStructure(structureDepth);
         if (Secondary != null && Secondary.Length > 4096) throw new InvalidOperationException("Secondary cell text is limited to 4096 code units.");
         if (_series != null && (_series.Count > 4096 || _series.Exists(point => point == null))) throw new InvalidOperationException("Cell history supports at most 4096 non-null periods.");
+        if (_sortKey is string key && key.Length > 4096) throw new InvalidOperationException("A sort key is limited to 4096 code units.");
+        switch (_sortKey) {
+            case long whole: CanopyJsonWriter.RequireSafeMagnitude((decimal)whole); break;
+            case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
+            case double real: CanopyJsonWriter.RequireSafeMagnitude(real); break;
+        }
         switch (_value) {
             case long whole: CanopyJsonWriter.RequireSafeMagnitude((decimal)whole); break;
             case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
@@ -208,7 +236,8 @@ public sealed class CanopyCell {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         ValidateShape();
-        var simple = Text == null && SearchText == null && Title == null && Secondary == null && (_series == null || _series.Count == 0) && Tone == CanopyTone.None && !HasBadges;
+        var simple = Text == null && SearchText == null && Title == null && Secondary == null && (_series == null || _series.Count == 0) && Tone == CanopyTone.None && !HasBadges &&
+            _sortKey == null && !IsStructured && Ref == null;
         if (simple) {
             WriteValue(writer);
             return;
@@ -226,6 +255,12 @@ public sealed class CanopyCell {
         writer.OptionalProperty("secondary", Secondary);
         if (_series != null && _series.Count > 0) { writer.Name("series").BeginArray(); foreach (var point in _series) point.WriteJson(writer); writer.EndArray(); }
         writer.OptionalProperty("tone", Tone.Name);
+        if (_sortKey != null) {
+            writer.Name("sort");
+            // Date keys always carry milliseconds, so their text sorts in time order within a second too.
+            if (_sortKey is DateTime date) writer.String(date.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
+            else WriteScalar(writer, _sortKey);
+        }
         if (HasBadges) {
             writer.Name("badges").BeginArray();
             foreach (var badge in _badges!) {
@@ -235,12 +270,15 @@ public sealed class CanopyCell {
             writer.EndArray();
         }
 
+        WriteStructure(writer);
         writer.EndObject();
     }
 
     /// <summary>Writes only the typed value, for cells and flat-grid query operands.</summary>
-    internal void WriteValue(CanopyJsonWriter writer) {
-        switch (_value) {
+    internal void WriteValue(CanopyJsonWriter writer) => WriteScalar(writer, _value);
+
+    private static void WriteScalar(CanopyJsonWriter writer, object? scalar) {
+        switch (scalar) {
             case null:
                 writer.Null();
                 break;
@@ -264,7 +302,7 @@ public sealed class CanopyCell {
                 writer.String(writer.IsDiscarding ? string.Empty : FormatIso(date));
                 break;
             default:
-                throw new InvalidOperationException("Unsupported cell value type: " + _value.GetType().FullName);
+                throw new InvalidOperationException("Unsupported cell value type: " + scalar.GetType().FullName);
         }
     }
 }

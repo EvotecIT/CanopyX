@@ -17,6 +17,8 @@ async function serve(page, script, body = '<div id="tree" class="cx-host"></div>
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === "/runtime.mjs") return route.fulfill({ contentType: "text/javascript", body: runtime });
     if (pathname === "/classic.js") return route.fulfill({ contentType: "text/javascript", body: classic });
+    // The tree tools part loads from beside the module, as a host serves it.
+    if (/^\/canopyx-tree-tools\.(js|css)$/.test(pathname)) return route.fulfill({ contentType: pathname.endsWith(".css") ? "text/css" : "text/javascript", body: fs.readFileSync(path.join(assets, pathname.slice(1)), "utf8") });
     return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Module host</title><style>'
       + style + '</style>' + (classic ? '<script src="/classic.js"></script>' : "")
       + '</head><body class="cx-page">' + body + '<script type="module">' + script + '</script></body></html>' });
@@ -27,13 +29,13 @@ async function serve(page, script, body = '<div id="tree" class="cx-host"></div>
 test("module exports mount a complete interactive tree and reuse its host", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  await serve(page, `import CanopyX, {createTreeGrid,protocol,labels} from '/runtime.mjs';
+  await serve(page, `import CanopyX, {createTreeGrid,protocol,labels,setNonce} from '/runtime.mjs';
     window.api=createTreeGrid(document.getElementById('tree'),{view:${JSON.stringify(view)},
       renderers:{name(node,element,context){window.rendererColumn=context.column;return false}},
       onEdit(proposal,context){window.editContext={query:context.query,revision:context.revision};return true}});
     await api.ready;
-    window.moduleState={same:api===CanopyX.createTreeGrid(api.element,{view:api.view}),global:CanopyX===window.CanopyX,protocol,save:labels.saveEdit};`);
-  await expect.poll(() => page.evaluate(() => window.moduleState)).toEqual({ same: true, global: true, protocol: "canopyx/2", save: "Save" });
+    window.moduleState={same:api===CanopyX.createTreeGrid(api.element,{view:api.view}),global:CanopyX===window.CanopyX,protocol,save:labels.saveEdit,nonce:setNonce===CanopyX.setNonce};`);
+  await expect.poll(() => page.evaluate(() => window.moduleState)).toEqual({ same: true, global: true, protocol: "canopyx/2", save: "Save", nonce: true });
   await row(page, "a").press("Space");
   expect(await page.evaluate(() => api.getCheckState("a"))).toBe(true);
   await row(page, "a").press("Alt+Enter");
@@ -77,5 +79,6 @@ test("an earlier core script fails module import without replacing its runtime",
 });
 
 test("the module and complete stylesheet retain the interactive asset budget", () => {
-  expect(gzipSync(runtime).length + gzipSync(style).length).toBeLessThanOrEqual(64 * 1024);
+  // The interactive budget of the combined roadmap integration (RuntimeAssetTests): 69.5 KiB.
+  expect(gzipSync(runtime).length + gzipSync(style).length).toBeLessThanOrEqual(71168);
 });

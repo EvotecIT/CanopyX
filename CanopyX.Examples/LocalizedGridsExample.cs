@@ -5,12 +5,12 @@ namespace CanopyX.Examples;
 /// <summary>Portable report grids using complete shipped labels and host-supplied translated data.</summary>
 internal static class LocalizedGridsExample {
     internal static void Write(string output) {
-        var languages = new[] { "pl", "de", "es" };
-        var packs = new[] { CanopyLabels.Polish(), CanopyLabels.German(), CanopyLabels.Spanish() };
-        var titles = new[] { "Rejestr raportów", "Berichtsübersicht", "Lista de informes" };
-        var columns = new[] { new[] { "Raport", "Stan", "Uwagi" }, new[] { "Bericht", "Status", "Hinweise" }, new[] { "Informe", "Estado", "Notas" } };
-        var complete = new[] { "Zakończony", "Abgeschlossen", "Completado" };
-        var review = new[] { "Do sprawdzenia", "Zu prüfen", "Pendiente de revisión" };
+        var languages = new[] { "pl", "de", "es", "fr", "it" };
+        var packs = new[] { CanopyLabels.Polish(), CanopyLabels.German(), CanopyLabels.Spanish(), CanopyLabels.French(), CanopyLabels.Italian() };
+        var titles = new[] { "Rejestr raportów", "Berichtsübersicht", "Lista de informes", "Liste des rapports", "Elenco dei report" };
+        var columns = new[] { new[] { "Raport", "Stan", "Uwagi" }, new[] { "Bericht", "Status", "Hinweise" }, new[] { "Informe", "Estado", "Notas" }, new[] { "Rapport", "État", "Remarques" }, new[] { "Report", "Stato", "Note" } };
+        var complete = new[] { "Zakończony", "Abgeschlossen", "Completado", "Terminé", "Completato" };
+        var review = new[] { "Do sprawdzenia", "Zu prüfen", "Pendiente de revisión", "À vérifier", "Da verificare" };
         for (var language = 0; language < languages.Length; language++) {
             var view = new CanopyDataGridView("localized-" + languages[language], titles[language]) {
                 Labels = packs[language], AutoRowHeight = true, Selection = CanopySelectionMode.Multiple,
@@ -32,5 +32,26 @@ internal static class LocalizedGridsExample {
                 view.SaveHtmlPage(Path.Combine(output, "localized-grid-" + languages[language] + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
                     new CanopyHtmlOptions { Title = titles[language], Language = languages[language], Theme = theme });
         }
+        WriteTree(output);
+    }
+
+    /// <summary>A tree with the complete Polish pack: its toolbar menus are translated and it stays on a tree runtime.</summary>
+    private static void WriteTree(string output) {
+        var tree = new CanopyTreeView("localized-tree", "Struktura raportów") {
+            Labels = CanopyLabels.Polish(), StateKey = "localized-tree", Search = new CanopySearchOptions()
+        };
+        tree.Columns.Add(new CanopyColumn("name", "Raport"));
+        tree.Columns.Add(new CanopyColumn("status", "Stan"));
+        for (var group = 0; group < 6; group++) {
+            var node = new CanopyNode("group-" + group, "Grupa " + (group + 1)) { Expanded = group == 0 };
+            node.Cells["status"] = "Zakończony";
+            for (var i = 0; i < 4; i++) {
+                var child = new CanopyNode("group-" + group + "-" + i, "Raport " + (group * 4 + i + 1));
+                child.Cells["status"] = i == 0 ? "Do sprawdzenia" : "Zakończony";
+                node.Children.Add(child);
+            }
+            tree.Roots.Add(node);
+        }
+        tree.SaveHtmlPage(Path.Combine(output, "localized-tree-pl.html"), new CanopyHtmlOptions { Title = tree.Label, Language = "pl" });
     }
 }

@@ -2,15 +2,26 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery } from "@evotecit/canopyx/grid";
+import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup,
+  GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
+import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
 import spanish from "@evotecit/canopyx/locales/es";
+import french from "@evotecit/canopyx/locales/fr";
+import italian from "@evotecit/canopyx/locales/it";
 const translatedNote: string = polishStatic.fullReport;
 CanopyX.configure("polish", { labels: polish });
 CanopyX.configure("german", { labels: { ...german, columns: "Host columns" } });
 CanopyX.configure("spanish", { labels: spanish });
+CanopyX.configure("french", { labels: french });
+CanopyX.configure("italian", { labels: { ...italian, columns: "Colonne host" } });
+// A strict Content Security Policy: the page nonce for inserted parts, and host markup through a sanitiser.
+CanopyX.setNonce("rAnd0m+N/once_-==");
+CanopyX.configure("sanitized", { sanitizeHtml: (html, { kind }) => kind === "icon" ? html : document.createRange().createContextualFragment(html) });
+// @ts-expect-error The sanitiser returns markup or a node.
+CanopyX.configure("unsanitized", { sanitizeHtml: () => 1 });
 // @ts-expect-error Shipped packs are immutable; use a host override.
 polish.columns = translatedNote;
 
@@ -25,6 +36,18 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
 reportingApi.autoFitColumns();
+// Compact row data in place of rows: chunks inline in the document, as host scripts (a count) or as sidecar files.
+const compactRows: GridCompactRow[] = [["r1", "Item 1", 10], [{ id: "r2", tone: "warning" }, "Item 2", null, { value: 3, text: "three" }]];
+const compactView: CompactGridView = { protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact rows",
+  source: { kind: "inline" }, pageSize: 100, selection: "none", search: true, rowHeight: 32,
+  columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }, { id: "notes", title: "Notes", kind: "text" }],
+  rowData: { version: 1, columns: ["name", "size", "notes"], count: 2, ordered: true, chunks: [compactRows] } };
+createDataGrid(document.createElement("div"), { view: compactView });
+const sidecarRows: CompactGridView["rowData"] = { version: 1, columns: ["name"], count: 10000, encoding: "gzip", base: "data/compact/", chunks: 2 };
+// @ts-expect-error A compact grid has no rows beside its row data.
+const bothRows: CompactGridView = { ...compactView, rows: [] };
+mountViews(document.querySelector("[data-canopyx-host]") ?? document);
+void sidecarRows; void bothRows;
 const measuredWireView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "measured", label: "Measured records",
   source: { kind: "inline" }, rows: [], pageSize: 100, selection: "none", search: false, rowHeight: 32, autoRowHeight: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 160, autoWidth: true, wrap: true }] };
@@ -42,6 +65,26 @@ const graphiteView: InlineGridView = {
   ], rows: [{ id: "one", cells: { name: { value: "Service", secondary: "Region" }, amount: { value: 20,
     series: [{ period: "2026-10-05", value: 20, state: "Healthy", tone: "success" }] } } }]
 };
+// Search highlighting and layout modes: typed options, state and API.
+const ticketsView: InlineGridView = { ...measuredWireView, id: "tickets",
+  searchHighlight: { ignoreAccents: true, matchCase: false, minLength: 2, filterTones: { name: "info" } },
+  layout: { mode: "cards", modes: ["cards", "fit", "scroll"], density: "compact" }, toolbar: { matches: true, layout: true } };
+const tickets = createDataGrid(document.createElement("div"), { view: ticketsView, onPrint: ({ layout }) => { const stacked: boolean = layout === "stacked"; } });
+const layout = await tickets.setLayout({ mode: "scroll", density: "comfortable" });
+const layoutModes: readonly ("fit" | "scroll" | "cards")[] = layout.modes;
+const matchCount: number = tickets.getMatches().total;
+const moved: boolean = await tickets.nextMatch({ focus: false });
+await tickets.setSearchHighlight(false);
+const savedLayout = tickets.getState().layout?.density;
+// @ts-expect-error A layout mode is fit, scroll or cards.
+await tickets.setLayout({ mode: "tiles" });
+const kbTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "kb", label: "Knowledge base", rowHeight: 28, pageSize: 100,
+  selection: "single", columns: [{ id: "name", title: "Article", width: 200, kind: "text" }], searchHighlight: true, layout: { mode: "scroll" },
+  source: { kind: "inline" }, roots: [] } });
+await kbTree.previousMatch();
+const treeLayout: string = kbTree.getLayout().mode;
+// @ts-expect-error Trees offer the fit and scroll layouts.
+const cardsTree: CanopyView = { protocol: "canopyx/2", type: "view", id: "bad", label: "Bad", rowHeight: 28, pageSize: 100, selection: "single", columns: [], layout: { mode: "cards" } };
 const graphite = createDataGrid(document.createElement("div"), { view: graphiteView,
   onChart: ({ signal, selection }) => { if (signal.aborted) return; }, onUngroup: ({ signal }) => {} });
 await graphite.setPageLength("all");
@@ -270,6 +313,13 @@ api.selectAll({ scope: "loaded" });
 await api.updateActiveFilters({ add: ["flagged"], remove: ["other"] });
 // @ts-expect-error Filter changes contain arrays of declared IDs.
 api.updateActiveFilters({ remove: "other" });
+// Tree toolbar switches, host actions, all-rows exports, named views and column order.
+createTreeGrid(document.createElement("div"), { view: { ...view, toolbar: { export: false }, autoHeight: false, exportFormats: ["xlsx"] },
+  toolbar: { columns: false, search: false }, actions: [{ label: "Audit", run: ({ nodes, signal }) => signal.aborted || nodes.length }] });
+const treeScope: "visible" | "selected" | "all" = api.prepareExport({ scope: "all" }).request.scope;
+api.saveView("Mine"); const savedViews: string[] = api.getSavedViews(); await api.resetView(); api.setColumnOrder(["name"]);
+// @ts-expect-error Tree toolbar switches are booleans.
+createTreeGrid(document.createElement("div"), { view, toolbar: { export: "no" } });
 CanopyX.badge({ text: labels.saveEdit, tone: "success" });
 await sources.inline(view).page(null, null);
 
@@ -350,3 +400,262 @@ const lazySource: DataSource = { queryAware: true,
 };
 // Input action definitions remain editable; the runtime freezes its own descriptor snapshot.
 if (view.contextActions?.[0]) view.contextActions[0].label = "Inspect record";
+
+// Export format providers: one writer for tree and flat-grid captures, registered for the page or per grid.
+const workbook: import("@evotecit/canopyx").ExportFormat = { id: "xlsx", label: "Download Excel", extension: "xlsx",
+  mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  async write(capture, { signal, progress, fileName }) {
+    const lines: string[] = [fileName];
+    for await (const row of capture.rows({ signal })) lines.push(capture.request.columns.map(column => row.cells[column.id]?.text ?? "").join("\t"));
+    progress(lines.length - 1);
+    return new Blob(lines);
+  } };
+const disposeWorkbook: () => void = CanopyX.registerExportFormat(workbook);
+disposeWorkbook();
+const exportingTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "export-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "multiple",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], roots: [] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 120000 });
+const treeCapture = exportingTree.prepareExport({ scope: "selected" });
+const treeLevel: number = treeCapture.request.recordCount;
+void exportingTree.exportAs("xlsx", { onProgress: progress => progress.completed, download: false }).then(result => result.blob.size + treeLevel);
+const exportingGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "export-grid", label: "Grid",
+  source: { kind: "inline" }, rows: [], pageSize: 50, selection: "multiple", search: true, exportFormats: ["xlsx", "pdf"],
+  columns: [{ id: "name", title: "Name", kind: "text" }] }, exportFormats: ["xlsx", workbook], exportTimeoutMs: 600000 });
+void exportingGrid.exportAs("xlsx", { scope: "filtered", timeoutMs: 30000 }).then(result => result.fileName);
+// Row activation and menu closing, on grids and trees.
+const activatingGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "activate-grid", label: "Grid",
+  source: { kind: "inline" }, rows: [], pageSize: 50, selection: "single", search: false, rowAction: "details", columns: [{ id: "name", title: "Name", kind: "text" }] },
+  onRowActivate: event => { const id: string = event.id; const keyboard: boolean = event.keyboard; return event.row.cells.name === undefined && id.length > 0 && keyboard; } });
+activatingGrid.closeMenus();
+const activatingTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "activate-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200 }], roots: [] }, onRowActivate: (node, context) => node.id === "a" && !context.keyboard ? false : undefined });
+activatingTree.closeMenus();
+// @ts-expect-error A tree's activation hook takes the node and a context.
+createTreeGrid(document.createElement("div"), { view, onRowActivate: (event: { id: number }) => false });
+// @ts-expect-error Format writers return a Blob or bytes.
+CanopyX.registerExportFormat({ id: "bad", label: "Bad", extension: "txt", write: () => 42 });
+
+// Column tooltips, the column menu switch and tree pins.
+const tipGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "tip-grid", label: "Grid", source: { kind: "inline" }, rows: [], pageSize: 50,
+  selection: "none", search: false, toolbar: { columnMenus: false }, columns: [{ id: "name", title: "Name", kind: "text", tooltip: "auto" }, { id: "path", title: "Path", kind: "text", tooltip: "name" }] } });
+void tipGrid;
+const pinTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "pin-tree", label: "Tree", source: { kind: "inline" }, rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", kind: "text", width: 200, tooltip: "auto" }, { id: "state", title: "State", kind: "text", width: 90, pinned: "right" }], roots: [] } });
+pinTree.setColumnPinned("state", "left");
+// @ts-expect-error Pins are left, right or none.
+pinTree.setColumnPinned("state", "top");
+pinTree.openDetails("node-1");
+// @ts-expect-error A node is named by its id.
+pinTree.openDetails(1);
+
+// Plugins: page-wide with use, per grid with the plugins option; columns name a plugin's cell renderer.
+import { use, registerPart, type CanopyPlugin, type CanopyPluginContext } from "@evotecit/canopyx";
+const meterPlugin: CanopyPlugin = {
+  name: "load-meter",
+  views: ["grid", "tree"],
+  requires: ["export"],
+  cellRenderers: { "load-meter": (row: { cells: Record<string, unknown> }, element: HTMLElement) => { element.textContent = String(row.cells.load); return true; } },
+  toolbarItems: [{ label: "Busiest first", run: ({ api }) => { void api; } }],
+  menuItems: [{ label: "Clear selection", run: ({ api }) => { api.clearSelection(); } }],
+  events: { select: (event: CustomEvent, context: CanopyPluginContext) => { void event.detail; void context.api; } },
+  init(context: CanopyPluginContext) { const signal: AbortSignal = context.signal; void signal; return context.part("export"); },
+  destroy() {}
+};
+const disposePlugin: () => void = use(meterPlugin);
+disposePlugin();
+CanopyX.use({ name: "empty" })();
+GridRuntime.use({ name: "grid-only", views: ["grid"] });
+createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "plugged", label: "Plugged", rowHeight: 28, pageSize: 100, selection: "single", columns: [{ id: "name", title: "Name", width: 200, kind: "text", renderer: "load-meter" }], source: { kind: "inline" }, roots: [] }, plugins: [meterPlugin] });
+registerPart("custom", { version: "0123456789abcdef", install() {} });
+// @ts-expect-error A plugin needs a name.
+use({ init() {} });
+// @ts-expect-error The views are tree and grid.
+use({ name: "bad", views: ["matrix"] });
+
+// Pager settings, progressive enhancement and simple init.
+const pagerSettings: GridPager = { lengths: [10, 25, { value: 50, label: "Fifty" }, "all"], numbers: 7, info: "sentence", lengthMenu: true, pageInput: false, firstLast: true };
+const pagedView: InlineGridView = { ...measuredWireView, id: "paged", presentation: "paged", pageLength: 25, pager: pagerSettings };
+createDataGrid(document.createElement("div"), { view: pagedView });
+void enhance("#servers", { pageLength: 10, order: [[1, "desc"]], stateSave: { storage: "local", duration: 0, url: "hash" }, texts: { search: "Find" },
+  on: { draw: (detail, table) => table.getPaging() } }).then((table: EnhancedGrid<string[]>) => {
+  table.on("draw", ({ paging }) => paging.pageIndex).on("select", detail => detail.ids);
+  const firstPage: string[] | undefined = table.getRows("page")[0];
+  const groups: readonly string[] | undefined = table.headerGroups[0]?.[0]?.columns;
+  void firstPage; void groups;
+  // @ts-expect-error getRows takes all, filtered or page
+  table.getRows("visible");
+  table.destroy();
+});
+interface ServerRecord { name: string; site: { city: string }; load: number }
+const recordOptions: GridInitOptions<ServerRecord> = { data: [{ name: "alpha", site: { city: "Warsaw" }, load: 12 }], rowId: "name", selection: "multiple",
+  columns: [{ data: "name", title: "Server" }, { data: "site.city", title: "Site" },
+    { data: "load", type: "number", render: (value, purpose) => purpose === "display" ? value + " %" : value }],
+  pageLengths: [10, "all"], pageNumbers: 5, info: "range" };
+void gridInit(document.createElement("div"), recordOptions).then(records => records.addRows([{ name: "beta", site: { city: "Berlin" }, load: 40 }]));
+void gridInit("#remote", { url: { url: "/api/servers/query", serverSide: true, headers: { "X-Key": "1" }, facetUrl: "/api/servers/facet" },
+  columns: [{ data: "name", type: "text" }, { data: "load", type: "number" }], rowId: "name" });
+// @ts-expect-error a column type is text, number, datetime, date or auto
+void gridInit("#bad", { data: [], columns: [{ data: "name", type: "html" }] });
+// Editing: typed editors and validation on the columns, host checks and writers in the options, the change API.
+import type { CanopyCellEditor, GridCommit, GridCommitResult, GridChange, GridCommitOutcome } from "@evotecit/canopyx/grid";
+const stars: CanopyCellEditor = { create(context) {
+  const select = document.createElement("select");
+  select.value = String(context.value ?? 0);
+  return { element: select, getValue: () => Number(select.value), error: () => null };
+} };
+use({ name: "stars", editors: { stars } });
+const writer = async (batch: GridCommit, { signal }: { signal: AbortSignal }): Promise<GridCommitResult> => {
+  void signal;
+  return { protocol: "canopyx/2", type: "gridCommitResult", view: batch.view, revision: "r2", rows: batch.rows.map(row => ({ id: row.id, status: "saved" as const })) };
+};
+const editable = createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "assets", label: "Assets", pageSize: 100, selection: "multiple", search: true, source: { kind: "inline" },
+    editing: { mode: "row", drawer: "always" },
+    columns: [
+      { id: "tag", title: "Tag", kind: "text", editable: true, validation: { required: true, pattern: "[A-Z]{2}-\\d{4}", maxLength: 7 } },
+      { id: "cost", title: "Cost", kind: "number", editable: true, editor: { type: "number", min: 0, step: 0.01 } },
+      { id: "when", title: "When", kind: "datetime", editable: true, editor: "date", validation: { min: "2000-01-01T00:00:00Z" } },
+      { id: "status", title: "Status", kind: "text", editable: true, editor: { type: "select", options: ["New", { value: "Old", label: "Retired" }] } },
+      { id: "owner", title: "Owner", kind: "text", editable: true, editor: { type: "lookup", lookup: { limit: 10 } } },
+      { id: "rating", title: "Rating", kind: "number", editable: true, editor: "stars" }],
+    rows: [{ id: "a1", cells: { tag: "AS-1000", cost: 1 } }] },
+  editing: {
+    isEditable: (row, column) => column !== "tag" || row.id !== "locked",
+    validators: { cost: value => typeof value === "number" && value > 1000 ? "Too expensive." : null, tag: async value => value === "XX-0000" ? "Taken." : null },
+    validateRow: (row, change: GridChange) => change.values.cost === 0 ? { cost: "Zero cost." } : null,
+    lookups: { owner: async ({ search, limit }) => ["Ada", "Ben"].filter(name => name.startsWith(search)).slice(0, limit) },
+    commit: writer,
+    undoLimit: 50
+  },
+  onCellValueChanging: event => event.value !== "forbidden",
+  onCellValueChanged: event => { void event.previous; void event.source; },
+  onRowCommit: event => event.id === "a1" ? Promise.resolve({ status: "saved" as const, cells: { cost: 2 } }) : undefined,
+  onCommit: (result: GridCommitOutcome) => { void result.saved; }
+});
+void editable.beginEdit("a1", "cost", { initial: "5" });
+void editable.setCellValue("a1", "cost", 12).then(result => { const valid: boolean = result.valid; void valid; });
+const changes: GridChange[] = editable.getChanges();
+void changes;
+void editable.commitChanges({ ids: ["a1"] }).then(result => result.rows.map(row => row.status));
+const undone: boolean = editable.undo() || editable.redo() || editable.canUndo() || editable.canRedo();
+void undone;
+editable.revertChanges(["a1"]);
+editable.setReadOnly(true);
+// @ts-expect-error The edit mode is cell or row.
+createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "x", label: "X", pageSize: 1, selection: "none", search: false, source: { kind: "inline" }, rows: [], columns: [{ id: "a", title: "A", kind: "text" }], editing: { mode: "sheet" } } });
+// @ts-expect-error setCellValue needs a cell value.
+void editable.setCellValue("a1", "cost", { value: 1 });
+// Conditional formatting: typed rules, the API, the export format and the format labels.
+const healthRules: GridFormatRule[] = [
+  { id: "down", label: "Server down", target: "row", when: { operator: "and", filters: [{ column: "status", operator: "eq", values: ["Down"] }] }, style: { tone: "danger" } },
+  { id: "cpu", column: "cpu", style: { bar: { minimum: 0, maximum: 100, tone: "info" } } },
+  { id: "latency", column: "latency", style: { scale: { stops: [{ type: "min", tone: "success" }, { type: "percent", value: 50, tone: "warning" }, { type: "max", tone: "danger" }] } } },
+  { id: "disk", column: "disk", when: { operator: "none", filters: [{ column: "disk", operator: "gt", values: [20] }] },
+    style: { bands: [{ upperBound: 10, tone: "danger", label: "Critical" }, { tone: "warning", label: "Low" }] } },
+  { id: "name", column: "name", when: { operator: "or", filters: [{ column: "name", operator: "like", values: ["web-*"], caseSensitive: true, culture: "pl-PL" },
+    { column: "name", operator: "notIn", values: ["a", "b"] }] }, style: { tone: "info", icon: "flag", badge: "web", cue: "front end", emphasis: "strong" } }
+];
+// @ts-expect-error A scale has two or three stops.
+const badScale: GridFormatRule = { id: "bad", column: "cpu", style: { scale: { stops: [{ type: "min", tone: "success" }] } } };
+const formatted: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "health", label: "Health", pageSize: 100, selection: "none", search: false,
+  columns: [{ id: "name", title: "Name", kind: "text" }, { id: "status", title: "Status", kind: "text" }, { id: "cpu", title: "CPU", kind: "number" },
+    { id: "latency", title: "Latency", kind: "number" }, { id: "disk", title: "Disk", kind: "number" }],
+  source: { kind: "inline" }, rows: [], formatRules: healthRules, formatting: { legend: true, editor: true },
+  labels: { formatRules: "Formatowanie warunkowe", formatLegend: "Legenda" } };
+const formattedGrid = createDataGrid(document.createElement("div"), { view: formatted, onFormat: ({ rules }) => rules.length });
+const currentRules: readonly GridFormatRule[] = formattedGrid.getFormatRules();
+void formattedGrid.setFormatRules([...currentRules, { id: "extra", column: "cpu", style: { tone: "warning" } }]).then(rules => rules[0].id);
+void formattedGrid.openFormatRules();
+const exportedFormat: GridExportFormat | undefined = undefined as unknown as GridExportFormat | undefined;
+void [badScale, exportedFormat?.bar?.fraction];
+// Linked views: external filters, highlights and the neutral payloads of canopyx:linkchange (docs/linked-views.md).
+import type { ExternalFilter, ExternalFilterEvent, LinkChange, LinkedView } from "@evotecit/canopyx";
+const linkedGrid = createDataGrid(document.createElement("div"), { linkEvents: true, view: { protocol: "canopyx/2", type: "grid", id: "linked", label: "Linked", pageSize: 100, selection: "multiple", search: false,
+  source: { kind: "inline" }, columns: [{ id: "site", title: "Site", kind: "text" }, { id: "load", title: "Load", kind: "number" }], rows: [] } });
+const linked: LinkedView = linkedGrid;
+void linked.setExternalFilter("site-chart", { field: "site", values: ["Berlin"], sourceLabel: "Sites chart" }).then((done: boolean) => done);
+void linked.setExternalFilter("load-band", [{ field: "load", range: [10, null], persist: true }]);
+void linked.setExternalFilter("site-chart", null);
+void linked.clearExternalFilters();
+const applied: ExternalFilter[] = linked.getExternalFilters();
+void applied[0]?.sourceLabel;
+void linked.setHighlight(["row-1"], { scroll: false, source: "Sites chart" }).then((count: number) => count);
+void linked.clearHighlight();
+void linked.startLinkEvents().then(() => undefined);
+const highlighted: string[] = linked.getHighlight();
+void highlighted;
+linkedGrid.element.addEventListener("canopyx:linkchange", event => {
+  const detail = (event as CustomEvent<LinkChange>).detail;
+  const sites: readonly (string | number | boolean)[] = detail.values.site || [];
+  void sites; void (detail.action === "select" ? detail.keys : detail.scope);
+});
+linkedGrid.element.addEventListener("canopyx:externalfilter", event => { const detail = (event as CustomEvent<ExternalFilterEvent>).detail; void (detail.reason === "user"); });
+CanopyX.configure("linked-tree", { linkEvents: true });
+// @ts-expect-error A range needs at least one end.
+void linked.setExternalFilter("open", { field: "load", range: [null, null] });
+// @ts-expect-error An external filter has values or a range, not both.
+void linked.setExternalFilter("both", { field: "load", values: [1], range: [1, 2] });
+// Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
+ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
+  detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });
+const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "orders", label: "Orders",
+  source: { kind: "inline" }, rows: [{ id: "o1", cells: { region: "North", amount: 10 }, detail: { type: "properties", items: [{ name: "Owner", value: "Ops" }] } }],
+  rowHeight: 32, pageSize: 100, selection: "multiple", search: true,
+  columns: [{ id: "region", title: "Region", kind: "text", sortable: true }, { id: "amount", title: "Amount", kind: "number", sortable: true }],
+  reporting: { groupBy: [{ column: "region", direction: "asc" }], groupable: true, detail: { print: false },
+    aggregates: [{ id: "total", column: "amount", operation: "sum", label: "Total" }, { id: "distinct", column: "region", operation: "distinctCount", label: "Regions" },
+      { id: "median", column: "amount", operation: "median", label: "Median" }] } },
+  detail: { hasDetail: row => !!row.detail, export: row => ({ type: "html", html: row.id }) } });
+const levels: readonly GroupLevel[] = groupedApi.getGroupBy?.() ?? [];
+void groupedApi.setGroupBy?.([...levels, { column: "amount", direction: "desc", aggregate: "total" }]);
+void groupedApi.setGroupLevelCollapsed?.(1, true); void groupedApi.expandAllGroups?.(); void groupedApi.expandDetail?.("o1");
+const expanded: string[] = groupedApi.getExpandedDetails?.() ?? [];
+const nestedGroups: readonly GridGroup[] | undefined = groupedApi.getSummary?.()?.groups[0]?.groups;
+void expanded; void nestedGroups;
+// Column groups and cell ranges.
+const budgetGroups: GridColumnGroup[] = [{ id: "h1", title: "First half", pinned: "left", groups: [{ id: "q1", title: "Q1", columns: ["jan", "feb", "mar"] }] }, { id: "total", title: "Totals", columns: ["year"] }];
+const budgetView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "budget", label: "Budget", source: { kind: "inline" }, rows: [], pageSize: 100, selection: "multiple", search: true, rowHeight: 34,
+  columns: ["jan", "feb", "mar", "year"].map(id => ({ id, title: id, kind: "number" as const })), columnGroups: budgetGroups,
+  rangeSelection: { multiple: true, fillHandle: true }, clipboard: { copyHeaders: true, copyValues: "raw", paste: true } };
+const budget = createDataGrid(document.createElement("div"), { view: budgetView, rangeSelection: true, clipboard: { copyValues: "display" },
+  onPaste: (event: GridPasteEvent) => { event.respondWith({ refused: event.cells.filter(cell => cell.column === "year").map(cell => ({ id: cell.id, column: cell.column, reason: "Computed" })) }); },
+  onCellRangeChange: ({ ranges }) => { const first: GridCellRange | undefined = ranges[0]; void first; } });
+const groupState: readonly GridColumnGroupState[] = budget.getColumnGroups();
+void groupState[0]?.visibleColumns;
+void budget.setColumnGroupVisible("q1", false);
+void budget.setCellRanges([{ startRow: 0, startColumn: "jan", endRow: 2, endColumn: "mar" }]);
+const rangeText: Promise<string> = budget.copyCellRanges({ headers: true, values: "raw" });
+const pasted: Promise<GridPasteResult> = budget.pasteCells("1\t2", { row: 0, column: "jan" });
+void rangeText; void pasted; void budget.getCellRanges(); void budget.clearCellRanges(); void budget.selectAllCells(); void budget.getCellRangeText();
+// @ts-expect-error Copied values are display or raw.
+void budget.copyCellRanges({ values: "typed" });
+// The record panel: structured cells, record fields, sections and tabs, details on demand, drawer sections and record actions.
+import type { GridRecordQuery, GridRecord, RecordPanelDefinition, RecordSectionRenderer } from "@evotecit/canopyx/grid";
+const recordPanel: RecordPanelDefinition = {
+  fields: [{ id: "thumbprint", title: "Thumbprint" }, { id: "contacts", title: "Contacts", section: "People" }, { id: "trend", title: "Trend", kind: "number", presenter: { kind: "sparklineLine" } }],
+  header: { status: "status", facts: ["cn"] },
+  sections: [{ id: "identity", label: "Identity", fields: ["thumbprint", "names"], renderer: "key-chart", sections: [{ id: "dates", label: "Dates", collapsed: true }] }],
+  tabs: [{ id: "overview", label: "Overview", sections: ["identity"] }],
+  hideEmpty: true, deepLink: { key: "cert" }, source: { kind: "sidecar", base: "records/", shards: 16 }, actions: { export: false }
+};
+const keyChart: RecordSectionRenderer = (record, element, context) => { element.textContent = record.id + " " + context.width; context.onDispose(() => undefined); };
+ReportingRuntime.use({ name: "record-extras", drawerSections: { "key-chart": keyChart }, recordActions: [{ label: "Renew", run: ({ record, view }) => { void (record.id + view); } }] });
+const loadRecord = async (request: GridRecordQuery, options: { signal: AbortSignal }): Promise<GridRecord | null> =>
+  options.signal.aborted ? null : { protocol: "canopyx/2", type: "gridRecord", view: request.view, id: request.id, fields: { thumbprint: "AB12" } };
+const recordGrid = ReportingRuntime.createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "certs", label: "Certificates", rowHeight: 34, pageSize: 100, selection: "single", search: true, source: { kind: "inline" },
+    columns: [{ id: "cn", title: "Common name", kind: "text", sortable: true }, { id: "status", title: "Status", kind: "text", presenter: { kind: "state" } },
+      { id: "names", title: "Names", kind: "text", presenter: { kind: "structured", display: "chips", limit: 2, countText: "{count} names" } },
+      { id: "serial", title: "Serial", kind: "text", hidden: true, drawer: false }],
+    rows: [{ id: "c1", cells: { cn: { value: "app", ref: { id: "c2" } }, status: "Valid", names: { value: "a, b", items: ["a", { value: "b", tone: "info" }] } },
+      fields: { contacts: { records: { columns: [{ id: "role", title: "Role" }], rows: [{ id: "o", cells: { role: "Owner" } }], total: 3, target: { view: "people", column: "role" } } },
+        trend: { value: 3, series: [{ period: "2026-01", value: 3 }] } } }],
+    record: recordPanel },
+  loadRecord, recordActions: [{ label: "Open", run: () => undefined }], onOpenAll: event => event.ids.length > 0, onRecordPrint: event => void event.element });
+void recordGrid.openRecord("c1", { tab: "overview" });
+const recordTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "tree", label: "Tree", rowHeight: 28, pageSize: 100, selection: "single",
+  columns: [{ id: "name", title: "Name", width: 200, kind: "text" }, { id: "state", title: "State", width: 120, kind: "text", section: "Health", drawer: true }], source: { kind: "inline" },
+  roots: [{ id: "a", label: "A", fields: { owner: { value: "Team", events: [{ time: "2026-01-01T00:00:00Z", summary: "Created", changes: [{ name: "Owner", before: null, after: "Team" }] }] } } }],
+  record: { fields: [{ id: "owner", title: "Owner" }], deepLink: true } }, onDetails: ({ node, signal }) => { void node.label; void signal; } });
+void recordTree.openRecord("a", { path: ["a"] });
+// @ts-expect-error A structured presenter displays a count, chips or the first item.
+ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "bad", label: "Bad", rowHeight: 34, pageSize: 100, selection: "single", search: false, source: { kind: "inline" }, rows: [], columns: [{ id: "a", title: "A", kind: "text", presenter: { kind: "structured", display: "table" } }] } });

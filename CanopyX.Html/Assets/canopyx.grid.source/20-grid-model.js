@@ -1,11 +1,17 @@
   // ---------- flat-grid model and accepted query lifetime ----------
   class DataGrid {
     constructor(host, options) {
-      const definition = validateGridView(options.view);
+      const { rows, rowData, ...definition } = validateGridView(options.view), owned = parsedViews.has(options.view);
+      // A host's view is copied, so later changes to it cannot reach the grid; the rows of a view the runtime parsed from the
+      // page belong to no one else, and copying a large inline dataset would double its parse time and peak memory.
       this.view = JSON.parse(JSON.stringify(definition));
+      if (rows) this.view.rows = owned ? rows : JSON.parse(JSON.stringify(rows));
+      // The rows of rowData arrive in view.rows as the data part decodes them.
+      // Structured cloning preserves invalid numeric values for the decoder to reject instead of converting them to null.
+      if (rowData) { this.view.rowData = owned ? rowData : structuredClone(rowData); this.view.rows = []; }
       this.host = host; this.opts = options; this.id = "cx" + ++instanceSeq;
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
-      this.source = options.source || (this.view.source.kind === "inline" ? inlineGridSource(this.view) : null);
+      this.source = options.source || (this.view.source.kind === "inline" ? this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
@@ -19,11 +25,13 @@
       if (!Number.isInteger(this.searchDelayMs) || this.searchDelayMs < 0 || this.searchDelayMs > 5000)
         throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
       this.cachePageLimit = options.cachePageLimit === undefined ? 40 : options.cachePageLimit;
-      this.requestTimeoutMs = options.requestTimeoutMs === undefined ? 30000 : options.requestTimeoutMs;
+      // Decoding row data is local work, which no request deadline bounds unless the host sets one.
+      this.requestTimeoutMs = options.requestTimeoutMs === undefined ? rowData && !options.source ? 2147483647 : 30000 : options.requestTimeoutMs;
       if (!Number.isInteger(this.cachePageLimit) || this.cachePageLimit < 2 || this.cachePageLimit > 1000 ||
           !Number.isInteger(this.requestTimeoutMs) || this.requestTimeoutMs < 1 || this.requestTimeoutMs > 2147483647)
         throw new Error("CanopyX: invalid grid cache or request timeout.");
-      const renderers = hostRenderers(options.renderers || {}, this.view.columns);
+      this.kind = "grid"; this.plugins = viewPlugins(options, this.kind);
+      const renderers = hostRenderers(options.renderers || {}, this.view.columns, this.plugins);
       this.columns = this.view.columns.map(column => ({ ...column,
         autoWidth: column.autoWidth || column.width === undefined,
         render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null
@@ -31,7 +39,7 @@
       this.lang = document.documentElement.lang || undefined;
       // Per-control toolbar switches: the document's toolbar object, then the host's options; a missing switch keeps its control.
       this.tools = Object.assign({}, this.view.toolbar, options.toolbar);
-      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|count)$/.test(name) || typeof value !== "boolean"))
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|count|columnMenus|matches|layout)$/.test(name) || typeof value !== "boolean"))
         throw new Error("CanopyX: toolbar options are booleans by control name.");
       this.labels = labelsFor(this.view.labels, options.labels); this.local = this.view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels); this.multi = this.view.selection === "multiple";
@@ -43,12 +51,14 @@
       this.ready = this.initializeState();
     }
 
+    // False when a listener cancelled the event or the callback returned false; only rowActivate has a default to cancel.
     emit(name, detail) {
-      this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail }));
+      let go = this.host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail, cancelable: true }));
       const callback = this.opts["on" + name[0].toUpperCase() + name.slice(1)];
       if (typeof callback === "function") {
-        try { callback(detail); } catch (error) { if (global.console) global.console.error(error); }
+        try { go = callback(detail) !== false && go; } catch (error) { if (global.console) global.console.error(error); }
       }
+      return go;
     }
 
     stateChanged() {
@@ -77,7 +87,8 @@
       clearTimeout(this.searchTimer); this.searchTimer = null;
       this.dataLifetime.abort(); this.dataLifetime = new AbortController();
       const lifetime = this.dataLifetime;
-      this.pendingPages.clear(); this.pendingQuery = query; this.setNotice(this.labels.loading, false);
+      this.pendingPages.clear(); this.pendingQuery = query; this.pendingPaging = paging ? { ...paging, pageLength: length } : null;
+      this.setNotice(this.labels.loading, false);
       this.grid.setAttribute("aria-busy", "true");
       this.syncPager();
       try {
@@ -100,10 +111,10 @@
         this.pageLength = length; if(paging)this.pageAll=!!paging.allRows; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
         if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
         if (this.autoRows) { if (!same) this.rowHeights.clear(); this.rowOffsets = null; }
-        this.storePage(page); this.pendingQuery = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
+        this.storePage(page); this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = null; this.lastFailedPaging = null; this.version++;
         const hasRows = this.cursor ? page.items.length : page.matched;
         this.total = (this.cursor ? page.items.length : this.paged ? Math.min(length, page.matched - this.pageOffset) : page.matched) * this.rowH;
-        this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1));
+        this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1 + (this.headDepth || 0)));
         this.grid.tabIndex = hasRows ? -1 : 0;
         this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader(); this.syncColumnControls();
         this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
@@ -120,7 +131,7 @@
         this.stateChanged(); return this.getQuery();
       } catch (error) {
         if (epoch === this.queryEpoch && !this.destroyed) {
-          this.pendingQuery = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
+          this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
           this.syncPager();
@@ -210,7 +221,7 @@
       this.resizeObserver.disconnect();
       this.detailObserver?.disconnect(); this.rowHeights?.clear(); this.rowOffsets = null;
       this.restoreHeight();
-      this.host.classList.remove("cx-data-grid","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right","cx-grid-awaiting","cx-pins");
+      this.host.classList.remove("cx-data-grid","cx-chrome","cx-phone","cx-has-selection","cx-scroll-left","cx-scroll-right","cx-grid-awaiting","cx-pins");
       this.grid.removeEventListener("wheel", this.onScaledWheel); this.grid.removeEventListener("touchstart", this.onScaledTouchStart);
       this.grid.removeEventListener("touchmove", this.onScaledTouchMove); this.grid.removeEventListener("touchend", this.onScaledTouchEnd);
       this.grid.removeEventListener("touchcancel", this.onScaledTouchEnd);

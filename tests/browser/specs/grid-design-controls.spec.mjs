@@ -50,7 +50,7 @@ test('complex saved column conditions open the shared builder in an ordinary gri
 });
 test('sentence builder applies typed groups and preserves deeper saved filters for text editing',async({page})=>{
   await open(page);await page.locator('.cx-grid-filters > summary').click();const form=page.locator('.cx-grid-filter-form');
-  await form.getByRole('button',{name:'+ Group',exact:true}).first().click();const group=form.locator('.cx-group').first();await group.getByRole('button',{name:'+ Condition',exact:true}).click();
+  await form.getByRole('button',{name:'+ Group',exact:true}).first().click();const group=form.locator('.cx-grid-filter-group').first();await group.getByRole('button',{name:'+ Condition',exact:true}).click();
   const row=group.locator('.cx-grid-filter');await row.locator('select').nth(0).selectOption('amount');await row.locator('select').nth(1).selectOption('gt');await row.locator('input[type="number"]').fill('9');
   await expect(page.locator('.cx-grid-result-count')).toContainText('10');await expect(form.getByRole('button',{name:'Apply',exact:true})).toHaveCount(0);
   if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'filter-builder-group-light.png')});

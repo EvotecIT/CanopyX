@@ -1,3 +1,28 @@
+<#
+.SYNOPSIS
+Builds, validates and packages CanopyX with its ordinary correctness suites.
+.DESCRIPTION
+Benchmark measurements are excluded from the normal .NET and browser test routes.
+Run the documented opt-in benchmark commands when performance evidence is requested.
+.PARAMETER Configuration
+Build configuration, Release by default.
+.PARAMETER SkipExamples
+Leaves out example generation and its browser checks.
+.PARAMETER SkipBrowserTests
+Generates examples without running browser checks.
+.PARAMETER SkipPack
+Leaves out package creation and package-consumer validation.
+.PARAMETER DotNetCommandTimeoutSeconds
+Maximum duration of each .NET build or validation command.
+.PARAMETER BrowserTestTimeoutSeconds
+Maximum duration of the complete browser correctness suite.
+.PARAMETER PackageConsumerTimeoutSeconds
+Maximum duration of package-consumer validation.
+.EXAMPLE
+./Build.ps1 -Configuration Release -SkipPack
+.OUTPUTS
+Build output, generated examples, validation reports and packages unless skipped.
+#>
 param(
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Release',
@@ -158,7 +183,7 @@ function Invoke-PackageSmoke {
 
 function Assert-RuntimeLineBudget {
     param([string] $Root)
-    foreach ($source in @('canopyx.source', 'canopyx.interactive.source', 'canopyx.grid.source', 'canopyx.reporting.source')) {
+    foreach ($source in @('canopyx.source', 'canopyx.interactive.source', 'canopyx.grid.source', 'canopyx.reporting.source', 'canopyx.tree-tools.source', 'canopyx.data.source')) {
         $parts = Join-Path $Root "CanopyX.Html/Assets/$source"
         if (!(Test-Path -LiteralPath $parts)) { continue }
         foreach ($part in Get-ChildItem -LiteralPath $parts -Filter '*.js' -File) {
@@ -174,10 +199,12 @@ function Assert-PackageContents {
         [Parameter(Mandatory = $true)] [string] $PackagePath,
         [Parameter(Mandatory = $true)] [string] $Assembly,
         [Parameter(Mandatory = $true)] [string] $Version,
-        [Parameter(Mandatory = $true)] [AllowEmptyCollection()] [string[]] $DependencyIds
+        [Parameter(Mandatory = $true)] [AllowEmptyCollection()] [string[]] $DependencyIds,
+        [string[]] $Frameworks = @('net472', 'netstandard2.0', 'net8.0', 'net10.0'),
+        [AllowEmptyCollection()] [string[]] $LegacyDependencyIds = @()
     )
 
-    $frameworks = @('net472', 'netstandard2.0', 'net8.0', 'net10.0')
+    $frameworks = $Frameworks
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
     try {
@@ -201,14 +228,22 @@ function Assert-PackageContents {
             $reader.Dispose()
         }
 
-        # Every framework group must list exactly the expected packages at the package's own version.
+        # Every framework group must list exactly the expected CanopyX packages at the package's own version. Groups for
+        # .NET Framework and .NET Standard may add the listed polyfill packages, which modern targets get from the runtime.
         $groups = @($nuspec.package.metadata.dependencies.group)
         if ($groups.Count -ne $frameworks.Count) {
             throw "$Assembly package has $($groups.Count) dependency groups, expected $($frameworks.Count)."
         }
         $expected = (@($DependencyIds | Sort-Object | ForEach-Object { "$_@$Version" }) -join ',')
         foreach ($group in $groups) {
-            $declared = (@($group.dependency | Where-Object { $_ } | Sort-Object id | ForEach-Object { "$($_.id)@$($_.version)" }) -join ',')
+            $dependencies = @($group.dependency | Where-Object { $_ })
+            $legacy = $group.targetFramework -match '^\.NET(Framework|Standard)'
+            $external = @($dependencies | Where-Object { $_.id -notlike 'CanopyX*' } | ForEach-Object { $_.id } | Sort-Object)
+            $expectedExternal = if ($legacy) { @($LegacyDependencyIds | Sort-Object) } else { @() }
+            if (($external -join ',') -ne ($expectedExternal -join ',')) {
+                throw "$Assembly package external dependencies for $($group.targetFramework) are '$($external -join ',')', expected '$($expectedExternal -join ',')'."
+            }
+            $declared = (@($dependencies | Where-Object { $_.id -like 'CanopyX*' } | Sort-Object id | ForEach-Object { "$($_.id)@$($_.version)" }) -join ',')
             if ($declared -ne $expected) {
                 throw "$Assembly package dependencies for $($group.targetFramework) are '$declared', expected '$expected'."
             }
@@ -224,16 +259,20 @@ try {
     $solution = Join-Path $root 'CanopyX.sln'
     $packageProjects = @(
         [ordered] @{ Id = 'CanopyX'; Project = (Join-Path $root 'CanopyX/CanopyX.csproj'); DependencyIds = @() },
-        [ordered] @{ Id = 'CanopyX.Html'; Project = (Join-Path $root 'CanopyX.Html/CanopyX.Html.csproj'); DependencyIds = @('CanopyX') }
+        [ordered] @{ Id = 'CanopyX.Html'; Project = (Join-Path $root 'CanopyX.Html/CanopyX.Html.csproj'); DependencyIds = @('CanopyX') },
+        [ordered] @{ Id = 'CanopyX.Data'; Project = (Join-Path $root 'CanopyX.Data/CanopyX.Data.csproj'); DependencyIds = @('CanopyX');
+            LegacyDependencyIds = @('Microsoft.Bcl.AsyncInterfaces', 'System.Text.Json') },
+        [ordered] @{ Id = 'CanopyX.AspNetCore'; Project = (Join-Path $root 'CanopyX.AspNetCore/CanopyX.AspNetCore.csproj'); DependencyIds = @('CanopyX.Data');
+            Frameworks = @('net8.0', 'net10.0') }
     )
 
-    Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html')
+    Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html', 'CanopyX.Data', 'CanopyX.AspNetCore')
     Assert-RuntimeLineBudget -Root $root
     & (Join-Path $root 'Build/Sync-Assets.ps1') -Check
 
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('build', $solution, '-c', $Configuration, '--no-restore') -Description 'Solution build' -TimeoutSeconds $DotNetCommandTimeoutSeconds
-    Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore') -Description 'Test run' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+    Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore', '--filter', 'Category!=Benchmark') -Description 'Correctness tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
 
     if (-not $SkipExamples) {
         $examplesOutput = Join-Path $root "CanopyX.Examples/bin/$Configuration/net10.0/output"
@@ -254,12 +293,15 @@ try {
 
 
             $previousExamples = $env:CANOPYX_EXAMPLES
+            $previousBenchmarks = $env:CANOPYX_BENCHMARKS
             $env:CANOPYX_EXAMPLES = $examplesOutput
+            $env:CANOPYX_BENCHMARKS = '0'
             try {
                 Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
                 Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
             } finally {
                 $env:CANOPYX_EXAMPLES = $previousExamples
+                $env:CANOPYX_BENCHMARKS = $previousBenchmarks
             }
         }
     }
@@ -288,7 +330,10 @@ try {
                 throw "Symbol package was not created: $symbols"
             }
 
-            Assert-PackageContents -PackagePath $package -Assembly $packageProject.Id -Version $version -DependencyIds $packageProject.DependencyIds
+            $contents = @{ PackagePath = $package; Assembly = $packageProject.Id; Version = $version; DependencyIds = $packageProject.DependencyIds }
+            if ($packageProject.Frameworks) { $contents.Frameworks = $packageProject.Frameworks }
+            if ($packageProject.LegacyDependencyIds) { $contents.LegacyDependencyIds = $packageProject.LegacyDependencyIds }
+            Assert-PackageContents @contents
             $packageProject.Version = $version
         }
 

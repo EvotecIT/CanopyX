@@ -14,7 +14,7 @@ for(const mode of ['embedded','plain','hashed','module'])test('editor loads on f
  await page.route('http://canopyx.test/**',route=>{
   const file=new URL(route.request().url()).pathname.split('/').at(-1);loads.push(file);
   if(file==='page'){
-   const inert=mode==='embedded'?'<script type="application/x-canopyx-filter-editor" data-cx-version="'+version+'">'+editor+'</script><script type="application/x-canopyx-filter-style" data-cx-version="'+version+'">'+editorStyle+'</script>':'';
+   const inert=mode==='embedded'?'<script type="application/x-canopyx-filter-editor" data-cx-version="'+version+'">'+editor+'</script><script type="application/x-canopyx-filter-editor-style" data-cx-version="'+version+'">'+editorStyle+'</script>':'';
    const runtime=mode==='embedded'?'<script>'+script+'</script>':'<script '+(mode==='module'?'type="module"':'defer')+' src="/assets/'+entry+'"></script>';
    return route.fulfill({contentType:'text/html',body:'<!doctype html><html lang="en"><head><title>Records</title><style>'+style+'</style>'+runtime+'</head><body><div class="cx-host" data-canopyx-host><script type="application/json" class="cx-config">'+JSON.stringify(view)+'</script></div>'+inert+'</body></html>'});
   }

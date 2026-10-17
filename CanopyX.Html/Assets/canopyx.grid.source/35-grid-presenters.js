@@ -4,7 +4,7 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing"];
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing", "structured"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
     if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
     if (["progress","change"].includes(options.kind) && column.kind!=="number" ||
@@ -20,8 +20,11 @@
         options.limit!==undefined&&(!Number.isInteger(options.limit)||options.limit<1||options.limit>16))) invalid();
     if ((options.minimum===undefined)!==(options.scaleMaximum===undefined)||options.minimum!==undefined&&
         (![options.minimum,options.scaleMaximum].every(value=>Number.isFinite(value)&&Math.abs(value)<=Number.MAX_SAFE_INTEGER)||options.minimum>=options.scaleMaximum)) invalid();
+    if (options.kind==="structured"&&(options.display!==undefined&&!["count","chips","first"].includes(options.display)||options.limit!==undefined&&(!Number.isInteger(options.limit)||options.limit<1||options.limit>16)||
+        options.countText!==undefined&&(typeof options.countText!=="string"||!options.countText.includes("{count}")||options.countText.length>256))) invalid();
     if (options.mark!==undefined&&!['last','worst'].includes(options.mark)) invalid();
     if (options.quietTones!==undefined&&(!Array.isArray(options.quietTones)||options.quietTones.length>16||options.quietTones.some(tone=>typeof tone!=="string"||!/^[a-z][a-z0-9-]{0,31}$/.test(tone)))) invalid();
+    if (options.quietStyle!==undefined&&!["muted","plain"].includes(options.quietStyle)) invalid();
     if (options.tones!==undefined&&(!options.tones||typeof options.tones!=="object"||Array.isArray(options.tones)||Object.keys(options.tones).length>512||
         Object.entries(options.tones).some(([key,value])=>key.length>4096||typeof value!=="string"))) invalid();
     if (options.thresholds!==undefined&&(!Array.isArray(options.thresholds)||options.thresholds.length>32||options.thresholds.some((point,index)=>
@@ -29,12 +32,8 @@
         typeof point.tone!=="string"||index>0&&options.thresholds[index-1].upperBound>=point.upperBound))) invalid();
   }
   function gridSeries(cell) { return isCellObject(cell)&&cell.series||[]; }
-  function gridSeriesValid(points) {
-    return Array.isArray(points)&&points.length<=4096&&points.every(point=>point&&typeof point==="object"&&!Array.isArray(point)&&
-      typeof point.period==="string"&&!!point.period.trim()&&point.period.length<=256&&
-      (point.value==null||Number.isFinite(point.value)&&Math.abs(point.value)<=Number.MAX_SAFE_INTEGER)&&
-      (point.state==null||typeof point.state==="string"&&point.state.length<=4096)&&(point.tone===undefined||typeof point.tone==="string"));
-  }
+  // Worst-first ranking of tones, shared by the history presenters and reporting group summaries.
+  const GRID_TONE_RANK={none:0,neutral:0,success:1,info:2,warning:3,danger:4}, GRID_HISTORY_KINDS=["statusStrip","sparklineBars","sparklineLine"];
   function gridPresenterTone(options,raw,fallback) {
     if (options.tones&&Object.hasOwn(options.tones,String(raw))) return options.tones[String(raw)];
     return options.thresholds?.find(item=>typeof raw==="number"&&raw<=item.upperBound)?.tone || fallback || "neutral";

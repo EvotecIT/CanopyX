@@ -1,45 +1,7 @@
-  // ---------- revisioned full-query facets; no counts inferred from mounted or cached windows ----------
-  function reportingFacetKey(value, column) {
-    if (value !== null && typeof value === "object" || value === undefined) throw new Error("CanopyX: facet values are raw scalars.");
-    const scalar = gridScalar(value, column);
-    if (scalar === null) return "null";
-    return column.kind === "datetime" ? "d:" + scalar : typeof scalar === "string" ? "s:" + foldText(scalar) :
-      typeof scalar === "boolean" ? "b:" + scalar : "n:" + scalar;
-  }
-
-  function reportingFacetProjection(query,column) { return gridColumnProjection(query,column); }
-
-  function reportingFacetPage(input, grid, request) {
-    checkDocument(input, "gridFacetPage");
-    const column = grid.view.columns.find(item => item.id === request.column);
-    if (input.view !== grid.view.id || input.revision !== request.query.revision || input.column !== request.column ||
-        input.search !== request.search || input.includeCurrentFilter !== request.includeCurrentFilter ||
-        !Number.isInteger(input.matched) || input.matched < 0 || input.matched > MAX_PROTOCOL_INTEGER ||
-        !Number.isInteger(input.totalValues) || input.totalValues < 0 || input.totalValues > input.matched ||
-        !Array.isArray(input.items) || input.items.length > request.limit || input.items.length > input.totalValues ||
-        !input.items.length && input.totalValues > 0 || input.truncated !== (input.items.length < input.totalValues))
-      throw new Error("CanopyX: facet response must match its accepted revision, projection and bounded counts.");
-    const widened = !request.includeCurrentFilter &&
-      gridResultShape(reportingFacetProjection(request.query, request.column)) !== gridResultShape(request.query);
-    if (Number.isInteger(grid.snapshot.total) && input.matched > grid.snapshot.total || Number.isInteger(grid.snapshot.matched) &&
-        (widened ? input.matched < grid.snapshot.matched : input.matched !== grid.snapshot.matched))
-      throw new Error("CanopyX: facet counts contradict the known accepted dataset counts.");
-    const keys = new Set(); let occurrences = 0;
-    const items = input.items.map(item => {
-      if (!item || !Object.hasOwn(item, "value") || !Number.isInteger(item.count) || item.count < 1 || item.count > input.matched)
-        throw new Error("CanopyX: invalid facet value/count bucket.");
-      const key = reportingFacetKey(item.value, column);
-      if (keys.has(key)) throw new Error("CanopyX: duplicate typed facet bucket.");
-      keys.add(key); occurrences += item.count;
-      return { value: item.value, count: item.count };
-    });
-    if (occurrences > input.matched || !request.search && !input.truncated && occurrences !== input.matched)
-      throw new Error("CanopyX: facet buckets contradict the matching row count.");
-    return gridFreeze({ protocol: PROTOCOL, type: "gridFacetPage", view: input.view, revision: input.revision,
-      column: input.column, search: input.search, includeCurrentFilter: input.includeCurrentFilter,
-      matched: input.matched, totalValues: input.totalValues, truncated: input.truncated, items });
-  }
-
+  // Facet validation belongs to the core so optional editing and reporting share the same response boundary.
+  const reportingFacetKey = gridFacetKey;
+  const reportingFacetPage = (input, grid, request) => validateGridFacetPage(input, grid.view, request, grid.snapshot);
+  const reportingFacetProjection = (query, column) => gridColumnProjection(query, column);
   const FACET_INLINE_SOURCE = inlineGridSource;
   inlineGridSource = view => {
     const source = FACET_INLINE_SOURCE(view);

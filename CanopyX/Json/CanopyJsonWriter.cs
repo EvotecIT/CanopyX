@@ -65,10 +65,13 @@ internal sealed class CanopyJsonWriter {
 
     /// <summary>
     /// A writer that checks what it is given and writes nothing, for validation that needs no text: the calling
-    /// thread's one discarding writer, reset, so the many checks of a tree allocate nothing. Use it for one document
-    /// at a time.
+    /// thread's reusable discarding writer, reset. A nested validation gets a fresh writer so it cannot reset the
+    /// surrounding document; ordinary sequential checks reuse the most recent writer.
     /// </summary>
-    internal static CanopyJsonWriter Discarding() => (_discarding ??= new CanopyJsonWriter(null, null)).Reset();
+    internal static CanopyJsonWriter Discarding() {
+        if (_discarding == null || _discarding._depth > 0) _discarding = new CanopyJsonWriter(null, null);
+        return _discarding.Reset();
+    }
 
     internal int Length => _builder?.Length ?? 0;
 

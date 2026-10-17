@@ -22,7 +22,8 @@ function Write-Generated([string] $Path, [string] $Content) {
     }
 }
 
-$languages = @(@{ Id = 'pl'; Name = 'Polish'; Index = 0 }, @{ Id = 'de'; Name = 'German'; Index = 1 }, @{ Id = 'es'; Name = 'Spanish'; Index = 2 })
+$languages = @(@{ Id = 'pl'; Name = 'Polish'; Index = 0 }, @{ Id = 'de'; Name = 'German'; Index = 1 }, @{ Id = 'es'; Name = 'Spanish'; Index = 2 },
+    @{ Id = 'fr'; Name = 'French'; Index = 3 }, @{ Id = 'it'; Name = 'Italian'; Index = 4 })
 foreach ($language in $languages) {
     $browser = [System.Collections.Generic.List[string]]::new()
     $static = [System.Collections.Generic.List[string]]::new()
@@ -30,14 +31,20 @@ foreach ($language in $languages) {
     foreach ($entry in $defaults) {
         $name = $entry.Groups[1].Value
         $values = $source.$name
-        if ($values.Count -ne 3 -or @($values | Where-Object { $_ -isnot [string] -or -not $_.Trim() }).Count) {
-            throw "The label $name needs visible text in all three languages."
+        if ($values.Count -ne $languages.Count -or @($values | Where-Object { $_ -isnot [string] -or -not $_.Trim() }).Count) {
+            throw "The label $name needs visible text in every language."
         }
         $text = $values[$language.Index]
         $english = $entry.Groups[2].Value | ConvertFrom-Json
         $expected = @([regex]::Matches($english, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)
         $provided = @([regex]::Matches($text, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)
         if (@(Compare-Object $expected $provided).Count) { throw "The $($language.Id) label $name must preserve its placeholders." }
+        # Plural texts ([one]...[other]...) name known categories, end with an other form, and keep the placeholders in every form.
+        if ($text.StartsWith('[', [StringComparison]::Ordinal)) {
+            $forms = [regex]::Matches($text, '\[(zero|one|two|few|many|other)\]([^\[]*)')
+            if (-not $forms.Count -or ($forms | ForEach-Object Length | Measure-Object -Sum).Sum -ne $text.Length -or -not ($forms | Where-Object { $_.Groups[1].Value -eq 'other' })) { throw "The $($language.Id) label $name has malformed plural forms." }
+            foreach ($form in $forms) { if (@(Compare-Object $expected @([regex]::Matches($form.Groups[2].Value, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)).Count) { throw "The $($language.Id) label $name must keep its placeholders in every plural form." } }
+        }
         $literal = ConvertTo-Json -InputObject $text -Compress
         $wire = $name.Substring(0, 1).ToLowerInvariant() + $name.Substring(1)
         $line = "  ${wire}: $literal,"
