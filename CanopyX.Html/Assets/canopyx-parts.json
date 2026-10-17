@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "50085bbe090b6558",
+      "version": "d3ddbdb24b179b8d",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -385,7 +385,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "19c8534d6274990f",
+      "version": "4ac9ca57a306cc1b",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"

@@ -38,6 +38,7 @@
       body.addEventListener("dragover", event => this.calDropOver(event), { signal });
       body.addEventListener("dragleave", event => { if (!body.contains(event.relatedTarget)) this.calDropClear(); }, { signal });
       body.addEventListener("drop", event => this.calDropOn(event), { signal });
+      document.addEventListener("dragend", () => { if (this.calDropDrag) this.calDropClear(); }, { signal });
     },
     /** The item in flight: a grid row (dragged or picked up), or a page element. */
     calDropItem(picked) { return picked ? GRID_DRAG.picked : GRID_DRAG.item || calDropElement; },
@@ -67,6 +68,13 @@
       this.calDrawGhost(drag);
     },
     calDropClear() { this.calDropDrag = null; this.calGhost?.remove(); this.calGhost = null; },
+    /** Escape puts down a picked-up row or cancels the drop currently previewed by this calendar. */
+    calCancelDrop() {
+      if (!this.cal.drop || !this.calDropDrag && !GRID_DRAG.picked) return false;
+      GRID_DRAG.picked = null;
+      if (this.calDropDrag) { GRID_DRAG.item = null; calDropElement = null; this.calDropClear(); }
+      return true;
+    },
     calDropOn(event) {
       // Only drags that started in this page count: another page's data in the drag is never read.
       const item = this.calDropItem(false);
@@ -79,7 +87,7 @@
     },
     /** Enter on a slot or day drops the row picked up in a grid, Escape puts it down (core calendar hook); true when handled. */
     calDropFromKey(event, cell) {
-      if (this.cal.drop && event.key === "Escape" && GRID_DRAG.picked) { GRID_DRAG.picked = null; event.preventDefault(); return true; }
+      if (event.key === "Escape" && this.calCancelDrop()) { event.preventDefault(); return true; }
       if (!this.cal.drop || event.key !== "Enter" || !GRID_DRAG.picked || !cell || this.editReadOnly) return false;
       event.preventDefault();
       const item = GRID_DRAG.picked, point = { day: Number(cell.dataset.cxDay), minutes: cell.dataset.cxMinutes !== undefined ? Number(cell.dataset.cxMinutes) : null, resource: this.calCellResource(cell) };

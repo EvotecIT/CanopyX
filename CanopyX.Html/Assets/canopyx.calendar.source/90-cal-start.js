@@ -86,6 +86,7 @@
       global.addEventListener("beforeprint", () => print(true), { signal }); global.addEventListener("afterprint", () => print(false), { signal });
       signal.addEventListener("abort", () => {
         observer.disconnect(); clearInterval(timer); clearTimeout(this.calAnnounceTimer); this.calPrevLifetime?.abort();
+        this.calCancelGesture?.(); this.calDragEnd?.(null, true); this.calStopMoving?.(); if (this.calDropDrag) this.calDropClear?.();
         this.calDisposeEventRenderers();
         root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone", "cx-cal-bare", "cx-cal-rtl", ...CAL_TOOLBAR.map(item => "cx-cal-no-" + item)); this.calHideHover(); this.calCloseDetails(false); this.calCloseMenu(false); this.calCloseCreate?.(false); this.calCloseAsk?.(null); clearTimeout(this.calPressTimer); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");
       }, { once: true });

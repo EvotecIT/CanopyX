@@ -109,12 +109,13 @@
       if (!this.cal.create || pointer.button !== 0 || this.editReadOnly) return false;
       const cell = pointer.target.closest?.("[data-cx-day]");
       if (!cell || pointer.target.closest(".cx-cal-ev,.cx-cal-more-btn,.cx-cal-num") || cell.classList.contains("cx-cal-invalid")) return false;
-      this.calCreateDrag = { first: cell, last: cell, id: pointer.pointerId, x: pointer.clientX, y: pointer.clientY, started: false };
+      this.calCreateDrag = { first: cell, last: cell, id: pointer.pointerId, x: pointer.clientX, y: pointer.clientY, started: false, selection: this.calSelection };
       return true;
     },
     calRangeMove(pointer) {
       const range = this.calCreateDrag;
       if (!range || pointer.pointerId !== range.id) return false;
+      if (range.cancelled) { pointer.preventDefault(); return true; }
       if (!range.started && Math.hypot(pointer.clientX - range.x, pointer.clientY - range.y) < 6) return true;
       range.started = true;
       const cell = document.elementFromPoint(pointer.clientX, pointer.clientY)?.closest?.("[data-cx-day]");
@@ -132,9 +133,11 @@
     calRangeEnd(pointer, cancel) {
       const range = this.calCreateDrag;
       if (!range || pointer && pointer.pointerId !== range.id) return false;
+      if (cancel) this.calCancelGesture();
       this.calCreateDrag = null;
-      if (!range.started || cancel) return true;
+      if (!range.started && !range.cancelled) return true;
       this.calSuppressClick = true; setTimeout(() => { this.calSuppressClick = false; }, 0);
+      if (cancel || range.cancelled) return true;
       this.calCreate(this.calCreateProposal(range.first, range.last), range.last).catch(error => this.emit("error", { error }));
       return true;
     },

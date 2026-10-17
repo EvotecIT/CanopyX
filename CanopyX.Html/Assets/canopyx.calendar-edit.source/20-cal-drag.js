@@ -26,6 +26,7 @@
       if (this.calCreateDrag) { this.calRangeMove(pointer); return; }
       const drag = this.calDrag;
       if (!drag || pointer.pointerId !== drag.id) return;
+      if (drag.cancelled) { pointer.preventDefault(); return; }
       if (!drag.started && Math.hypot(pointer.clientX - drag.x, pointer.clientY - drag.y) < CAL_DRAG_START) return;
       if (!drag.started) { drag.started = true; drag.element.classList.add("cx-cal-dragging"); this.host.classList.add("cx-cal-drag"); }
       pointer.preventDefault();
@@ -41,14 +42,28 @@
       if (this.calCreateDrag) { this.calRangeEnd(pointer, cancel); return; }
       const drag = this.calDrag;
       if (!drag || pointer && pointer.pointerId !== drag.id) return;
+      if (cancel) this.calCancelGesture();
       this.calDrag = null; cancelAnimationFrame(drag.frame);
       drag.element.classList.remove("cx-cal-dragging"); this.host.classList.remove("cx-cal-drag");
       this.calGhost?.remove(); this.calGhost = null;
-      if (!drag.started) return;
+      if (!drag.started && !drag.cancelled) return;
       this.calSuppressClick = true; setTimeout(() => { this.calSuppressClick = false; }, 0);
-      if (cancel || !drag.proposal) return;
+      if (cancel || drag.cancelled || !drag.proposal) return;
       if (drag.problem) { this.calAnnounce(drag.problem); return; }
       await this.calApply(drag.event, drag.proposal).catch(error => this.emit("error", { error }));
+    },
+
+    /** Cancels the preview now; matching pointer release still consumes the gesture's trailing click. */
+    calCancelGesture() {
+      const drag = this.calDrag, range = this.calCreateDrag;
+      if (!drag && !range) return false;
+      if (drag) {
+        drag.cancelled = true; cancelAnimationFrame(drag.frame); drag.frame = 0;
+        drag.element.classList.remove("cx-cal-dragging"); this.host.classList.remove("cx-cal-drag");
+      }
+      if (range && !range.cancelled) { range.cancelled = true; this.calSelection = range.selection; this.calMarkSelection(); }
+      this.calGhost?.remove(); this.calGhost = null;
+      return true;
     },
 
     /** Where a pointer is in the current view: { day, minutes (null for whole days), resource }. */
@@ -119,6 +134,10 @@
 
     /** The keyboard move mode on a focused editable event; true when it handled the key. */
     calEditKey(key) {
+      if (key.key === "Escape") {
+        const gesture = this.calCancelGesture(), drop = this.calCancelDrop?.();
+        if (gesture || drop) { this.calStopMoving(); key.preventDefault(); return true; }
+      }
       const target = key.target.closest?.(".cx-cal-ev"), moving = this.calMoving;
       if (!moving) {
         if (key.key !== "F2" || !target?._calEvent || !this.calCanEdit(target._calEvent, false) && !this.calCanEdit(target._calEvent, true)) return false;

@@ -69,6 +69,52 @@ test.describe("creating events", () => {
     expect(await p.evaluate(() => window.commits[0].rows[0].values.start)).toBe("2026-10-15T09:00:00Z");
   });
 
+  test("Escape cancels a held creation range, restores selection, and consumes its release click", async ({ page: p }) => {
+    await openBuilt(p, "cancel-create-range.html", page("{ preset: 'scheduler', events: " + EVENTS + ", date: '2026-10-16', view: 'week', firstDay: 1 }"));
+    await p.evaluate(() => { window.createRequests = 0; document.getElementById("cal").addEventListener("canopyx:eventCreate", () => window.createRequests++); });
+    const selection = () => p.locator('.cx-cal-slot[aria-selected="true"]').evaluateAll(cells => cells.map(cell => [cell.dataset.cxDay, cell.dataset.cxMinutes]));
+    await slot(p, 13, 600).focus(); await p.keyboard.press("Space"); const previous = await selection();
+    expect(previous).not.toHaveLength(0);
+    const from = await slot(p, 14, 600).boundingBox(), to = await slot(p, 14, 690).boundingBox();
+    await p.mouse.move(from.x + 10, from.y + 5); await p.mouse.down();
+    await p.mouse.move(from.x + 10, to.y + 5, { steps: 6 });
+    await expect.poll(selection).not.toEqual(previous);
+    await p.keyboard.press("Escape"); await expect.poll(selection).toEqual(previous);
+    await p.waitForTimeout(80); await p.mouse.move(from.x + 10, to.y + 29); await p.mouse.up();
+    await expect(p.getByRole("dialog")).toHaveCount(0);
+    expect(await p.evaluate(() => window.createRequests)).toBe(0);
+    expect(await p.evaluate(() => window.commits)).toEqual([]);
+    expect(await selection()).toEqual(previous);
+  });
+
+  for (const kind of ["move", "create"]) for (const origin of ["external control", "body"]) test("Escape cancels the first native " + kind + " drag entered from " + origin + " focus", async ({ page: p }, info) => {
+    await openBuilt(p, "external-focus-cancel.html", page("{ preset: 'scheduler', events: " + EVENTS + ", date: '2026-10-16', view: 'week', firstDay: 1 }",
+      { extra: '<input id="outside" aria-label="Outside calendar">' }));
+    await p.evaluate(() => {
+      window.cancelEntry = { activations: 0, creates: 0, escapeInCalendar: null };
+      const host = document.getElementById("cal");
+      host.addEventListener("canopyx:rowActivate", () => window.cancelEntry.activations++);
+      host.addEventListener("canopyx:eventCreate", () => window.cancelEntry.creates++);
+      document.addEventListener("keydown", key => { if (key.key === "Escape") window.cancelEntry.escapeInCalendar = !!key.target.closest(".cx-cal-body"); }, true);
+    });
+    if (origin === "external control") await p.getByRole("textbox", { name: "Outside calendar" }).focus();
+    else await p.locator("body").click({ position: { x: 2, y: 2 } });
+    expect(await p.evaluate(() => !!document.activeElement.closest(".cx-cal-body"))).toBe(false);
+    const target = kind === "move" ? p.locator('.cx-cal-ev[data-cx-record="a"]') : slot(p, 13, 660);
+    // No keyboard focus inside the calendar precedes the pointer press.
+    await target.scrollIntoViewIfNeeded(); const box = await target.boundingBox(), x = box.x + box.width / 2, y = box.y + Math.min(12, box.height / 2);
+    await p.mouse.move(x, y); await p.mouse.down(); await p.mouse.move(x, y + 24, { steps: 6 });
+    if (kind === "move") await expect(p.locator(".cx-cal-ghost")).toBeVisible();
+    else await expect(p.locator('.cx-cal-slot[aria-selected="true"]')).not.toHaveCount(0);
+    await p.keyboard.press("Escape"); await p.waitForTimeout(80); await p.mouse.up();
+    const result = await p.evaluate(() => ({ ...window.cancelEntry, commits: window.commits, active: document.activeElement?.className }));
+    await info.attach("external-focus-cancel", { body: JSON.stringify(result, null, 2), contentType: "application/json" });
+    expect(result.escapeInCalendar).toBe(true);
+    expect(result.commits).toEqual([]); expect(result.activations).toBe(0); expect(result.creates).toBe(0);
+    await expect(p.getByRole("dialog")).toHaveCount(0);
+    await expect(p.locator(".cx-cal-ghost")).toHaveCount(0);
+  });
+
   test("a host takes creation over by cancelling canopyx:eventCreate; the valid range refuses outside days", async ({ page: p }) => {
     await openBuilt(p, "host-create.html", page("{ preset: 'scheduler', events: " + EVENTS + ", date: '2026-10-16', view: 'month', firstDay: 1, calendar: { validRange: { start: '2026-10-05' } }, onCreate: detail => { window.created = detail; return false; } }"));
     await p.locator('.cx-cal-day[data-cx-day="' + Date.UTC(2026, 9, 21) / 86400000 + '"]').click({ position: { x: 60, y: 70 } });
@@ -89,14 +135,22 @@ test.describe("creating events", () => {
 test.describe("dropping from outside", () => {
   test("a grid row picked up with F2 drops on a slot with Enter and becomes a commit", async ({ page: p }) => {
     await openCalendar(p, "calendar-scheduler.html", { width: 1440, height: 1200 });
+    await p.evaluate(() => { window.receiveRequests = 0; document.querySelector("[data-canopyx-host]").addEventListener("canopyx:eventReceive", () => window.receiveRequests++); });
     const task = p.locator('#unscheduled, [data-canopyx-host]').last().locator(".cx-row").first();
     await task.click();
     await p.keyboard.press("F2");
     await expect(p.locator(".cx-live").filter({ hasText: "Write the release notes" }).first()).toBeAttached();
+    await p.locator(".cx-cal-ev").first().focus(); await p.keyboard.press("Escape");
+    await slot(p, 15, 600).focus(); await p.keyboard.press("Enter");
+    expect(await p.evaluate(() => window.receiveRequests)).toBe(0);
+    expect((await api(p, "api => api.getCalendarEvents()", undefined, "team-scheduler")).some(event => event.title === "Write the release notes")).toBe(false);
+    await p.keyboard.press("Escape");
+    await task.click(); await p.keyboard.press("F2");
     await slot(p, 15, 600).focus();
     await p.keyboard.press("Enter");
     await expect.poll(async () => (await api(p, "api => api.getCalendarEvents()", undefined, "team-scheduler")).find(event => event.title === "Write the release notes"))
       .toMatchObject({ start: "2026-10-15T10:00:00Z", end: "2026-10-15T11:30:00Z" });
+    expect(await p.evaluate(() => window.receiveRequests)).toBe(1);
   });
 
   test("dragging a row over the calendar shows where it lands and dropping schedules it", async ({ page: p, browserName }) => {
@@ -110,6 +164,10 @@ test.describe("dropping from outside", () => {
     // The row lasts its minutes column: an hour from noon.
     await expect(p.locator(".cx-cal-ghost")).toContainText("12:00 PM – 1:00 PM");
     await capture(p, "calendar-external-drop");
+    await row.dispatchEvent("dragend", { dataTransfer: data });
+    await expect(p.locator(".cx-cal-ghost")).toHaveCount(0);
+    await row.dispatchEvent("dragstart", { dataTransfer: data });
+    await p.locator(".cx-cal-body").first().dispatchEvent("dragover", { dataTransfer: data, clientX: target.x + 10, clientY: target.y + 4 });
     await p.locator(".cx-cal-body").first().dispatchEvent("drop", { dataTransfer: data, clientX: target.x + 10, clientY: target.y + 4 });
     await expect.poll(async () => (await api(p, "api => api.getCalendarEvents()", undefined, "team-scheduler")).find(event => event.title === "Pair on the login bug"))
       .toMatchObject({ start: "2026-10-14T12:00:00Z", end: "2026-10-14T13:00:00Z" });

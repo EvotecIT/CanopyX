@@ -136,7 +136,7 @@ test("impossible ISO calendar dates stay text while a real leap day infers datet
 
 const compactView = rowData => ({ protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact", pageSize: 50,
   selection: "none", search: false, columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }],
-  source: { kind: "inline" }, rowData: { version: 1, ...rowData } });
+  source: { kind: "inline" }, ...(rowData === undefined ? {} : { rowData: { version: 1, ...rowData } }) });
 
 test("compact descriptors keep encoding version one and reject missing or unknown versions", async ({ page }) => {
   await servePage(page, "<div id='compact'></div>");

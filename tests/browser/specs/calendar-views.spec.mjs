@@ -9,8 +9,35 @@ import { api, capture, openCalendar, NOW } from "./calendar-support.mjs";
 const day = text => Math.floor(Date.UTC(+text.slice(0, 4), +text.slice(5, 7) - 1, +text.slice(8, 10)) / 86400000);
 const live = page => page.locator(".cx-cal .cx-live");
 async function axe(page) {
-  const results = await new AxeBuilder({ page }).include(".cx-cal").analyze();
+  const results = await new AxeBuilder({ page }).analyze();
   return results.violations.filter(item => ["serious", "critical"].includes(item.impact)).map(item => item.id + ": " + item.nodes.slice(0, 3).map(node => node.target.join(" ")).join(", "));
+}
+
+/** Enters the composite through Tab, then reaches and scrolls its timed rowgroup using the grid's own keys. */
+async function enterTimeScroller(page) {
+  const body = page.locator(".cx-cal-body"), scroller = body.locator(".cx-cal-scroll");
+  await expect(body.locator('[tabindex="0"]')).toHaveCount(1);
+  await page.locator(".cx-cal-bar button:visible,.cx-cal-bar select:visible").last().focus();
+  // A phone's resource picker precedes the grid. It is an ordinary control, separate from the grid's roving cell.
+  for (let at = 0; at < 3; at++) {
+    await page.keyboard.press("Tab");
+    if (await page.locator(".cx-cal-time :focus").count()) break;
+  }
+  await expect(page.locator(".cx-cal-time :focus")).toHaveCount(1);
+  if (await page.locator(".cx-cal-allcell:focus").count()) await page.keyboard.press("ArrowDown");
+  if (await page.locator(".cx-cal-ev:focus").count()) await page.keyboard.press("Escape");
+  const first = page.locator(".cx-cal-slot:focus");
+  await expect(first).toHaveCount(1);
+  const column = await first.evaluate(cell => ({ day: cell.dataset.cxDay, resource: cell.dataset.cxResource }));
+  const start = await scroller.evaluate(element => element.scrollTop);
+  await page.keyboard.press("End");
+  const last = body.locator('.cx-cal-slot[data-cx-day="' + column.day + '"]' +
+    (column.resource === undefined ? "" : '[data-cx-resource="' + column.resource + '"]')).last();
+  await expect(last).toBeFocused();
+  await expect(last).toBeInViewport({ ratio: 0.9 });
+  await expect.poll(() => scroller.evaluate(element => element.scrollTop)).toBeGreaterThan(start);
+  await expect(body.locator('[tabindex="0"]')).toHaveCount(1);
+  await expect(scroller.locator('[tabindex="0"]')).toHaveCount(1);
 }
 
 test.describe("calendar views", () => {
@@ -23,6 +50,9 @@ test.describe("calendar views", () => {
           await nextFrames(page);
           expect(await api(page, "api => api.getCalendar().view")).toBe(view);
           await expect(page.locator(".cx-cal-body [role=grid], .cx-cal-year [role=grid]").first()).toBeVisible();
+          // The all-day row and timed scroller form one composite grid. Exercise its actual keyboard entry before the
+          // static scroll-region rule: it cannot infer ArrowDown from the all-day roving cell into the timed rowgroup.
+          if (["week", "day", "days"].includes(view)) await enterTimeScroller(page);
           expect(await axe(page)).toEqual([]);
           // Nothing overflows the page sideways at phone width.
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
@@ -30,6 +60,25 @@ test.describe("calendar views", () => {
         }
       });
     }
+  }
+
+  for (const width of [1440, 390]) {
+    test("an empty time grid remains keyboard-scrollable and passes axe at " + width, async ({ page }) => {
+      await openCalendar(page, "calendar.html", { width });
+      await api(page, "api => api.setQuery({ search: '__NO_CALENDAR_EVENTS__' })");
+      await api(page, "api => api.setCalendarView('day')");
+      await expect.poll(() => api(page, "api => api.getCalendarEvents().length")).toBe(0);
+      await enterTimeScroller(page);
+      expect(await axe(page)).toEqual([]);
+    });
+
+    test("resource columns keep keyboard scroll in their own column and pass axe at " + width, async ({ page }) => {
+      await openCalendar(page, "calendar-resources.html", { width });
+      await api(page, "api => api.setCalendarView('day')");
+      await enterTimeScroller(page);
+      await expect(page.locator(".cx-cal-slot:focus")).toHaveAttribute("data-cx-resource", /.+/);
+      expect(await axe(page)).toEqual([]);
+    });
   }
 
   test("the month folds a busy day into +N more, whose list takes focus and gives it back", async ({ page }) => {

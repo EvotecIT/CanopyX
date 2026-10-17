@@ -56,13 +56,17 @@ test.describe("calendar editing", () => {
   test("pointer and F2 moves cancel with Escape; Shift with arrows changes the end", async ({ page }) => {
     await openCalendar(page, "calendar.html");
     await api(page, "api => api.setCalendarView('week')");
+    await page.evaluate(() => { window.cancelActivations = 0; document.querySelector("[data-canopyx-host]").addEventListener("canopyx:rowActivate", () => window.cancelActivations++); });
     const event = page.locator('.cx-cal-ev[data-cx-record="op-010"]');
     await drag(page, event, 0, 48, { drop: false });
     await expect(page.locator(".cx-cal-ghost")).toBeVisible();
     await page.keyboard.press("Escape");
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    await page.waitForTimeout(80);
     await page.mouse.up();
     await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
     expect(await startOf(page, "op-010")).toBe("2026-10-16T09:00:00Z");
+    expect(await page.evaluate(() => window.cancelActivations)).toBe(0);
     await event.focus();
     await page.keyboard.press("F2");
     await expect(page.locator(".cx-cal .cx-live")).toHaveText(/^Arrow keys move/);

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { openBuilt, capture } from "./calendar-support.mjs";
 import { calendarEditPage } from "./calendar-edit-contracts-support.mjs";
+import { nextFrames } from "./support.mjs";
 
 const event = page => page.locator('.cx-cal-ev[data-cx-record="event"]').filter({ hasText: "Planning" }).last();
 const state = page => page.evaluate(() => ({ commits: window.commits, records: window.records, changes: window.api.getChanges(), events: window.api.getCalendarEvents(), errors: window.errors }));
@@ -15,6 +16,72 @@ async function evidence(page, info, name) {
 }
 
 test.describe("calendar edit contracts", () => {
+  for (const resize of [false, true]) test("Escape cancels a pointer " + (resize ? "resize" : "move") + " through release without a writer call or trailing activation", async ({ page }) => {
+    await openBuilt(page, "cancel-pointer.html", calendarEditPage());
+    await page.evaluate(() => { window.cancelActivations = 0; document.getElementById("cal").addEventListener("canopyx:rowActivate", () => window.cancelActivations++); });
+    await event(page).scrollIntoViewIfNeeded();
+    const box = await event(page).boundingBox(), x = box.x + box.width / 2, y = resize ? box.y + box.height - 3 : box.y + 12;
+    await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 24, { steps: 6 });
+    await expect(page.locator(".cx-cal-ghost")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    await page.waitForTimeout(80); await page.mouse.move(x, y + 30);
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    await page.mouse.up(); await nextFrames(page);
+    expect((await state(page)).commits).toEqual([]);
+    expect((await state(page)).changes).toEqual([]);
+    expect((await state(page)).records[0].cells).toMatchObject({ starts: "2026-10-16T09:00:00Z", ends: "2026-10-16T10:00:00Z" });
+    expect(await page.evaluate(() => window.cancelActivations)).toBe(0);
+  });
+
+  for (const first of ["keyboard", "pointer"]) test("Escape cancels mixed edit proposals entered by " + first + " before release and a later Enter", async ({ page }, info) => {
+    await openBuilt(page, "cancel-mixed.html", calendarEditPage());
+    await page.evaluate(() => {
+      window.cancelActivations = 0;
+      document.getElementById("cal").addEventListener("canopyx:rowActivate", activation => { window.cancelActivations++; activation.preventDefault(); });
+    });
+    await event(page).scrollIntoViewIfNeeded(); await event(page).focus();
+    const box = await event(page).boundingBox(), x = box.x + box.width / 2, y = box.y + 12;
+    if (first === "keyboard") { await page.keyboard.press("F2"); await page.keyboard.press("ArrowDown"); }
+    await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x, y + 24, { steps: 6 });
+    await expect(page.locator(".cx-cal-ghost")).toBeVisible();
+    if (first === "pointer") { await page.keyboard.press("F2"); await page.keyboard.press("ArrowDown"); }
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    await page.waitForTimeout(80); await page.mouse.up(); await nextFrames(page);
+    expect((await state(page)).commits).toEqual([]);
+    expect((await state(page)).changes).toEqual([]);
+    expect(await page.evaluate(() => window.cancelActivations)).toBe(0);
+    await page.keyboard.press("Enter"); await nextFrames(page);
+    expect((await state(page)).commits).toEqual([]);
+    expect((await state(page)).changes).toEqual([]);
+    expect((await state(page)).records[0].cells).toMatchObject({ starts: "2026-10-16T09:00:00Z", ends: "2026-10-16T10:00:00Z" });
+    expect((await state(page)).errors).toEqual([]);
+    expect(await page.evaluate(() => window.cancelActivations)).toBe(1);
+    await info.attach("mixed-cancel-" + first, { body: JSON.stringify({ ...await state(page), activations: await page.evaluate(() => window.cancelActivations) }, null, 2), contentType: "application/json" });
+  });
+
+  test("destroying the calendar cancels an active pointer preview before its release", async ({ page }) => {
+    await openBuilt(page, "destroy-pointer.html", calendarEditPage());
+    await event(page).scrollIntoViewIfNeeded(); const box = await event(page).boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + 12); await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, box.y + 36, { steps: 6 });
+    await expect(page.locator(".cx-cal-ghost")).toBeVisible();
+    await page.evaluate(() => window.api.destroy()); await page.mouse.up(); await nextFrames(page);
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    expect(await page.evaluate(() => window.commits)).toEqual([]);
+    expect(await page.evaluate(() => window.errors)).toEqual([]);
+  });
+
+  for (const occurrence of ["this", "ask"]) test("destroying during the " + occurrence + " occurrence hook keeps the pending gesture from saving or opening a dialog", async ({ page }) => {
+    await openBuilt(page, "destroy-occurrence.html", calendarEditPage({ occurrence, holdOccurrence: true }));
+    await move(page); await expect.poll(() => page.evaluate(() => typeof window.releaseOccurrence)).toBe("function");
+    await page.evaluate(() => { window.api.destroy(); window.releaseOccurrence(); }); await nextFrames(page);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(await page.evaluate(() => window.commits)).toEqual([]);
+    expect(await page.evaluate(() => window.errors)).toEqual([]);
+  });
+
   test("the calendar respects the host cell UI policy before keyboard move and resize", async ({ page }, info) => {
     await openBuilt(page, "edit-policy.html", calendarEditPage({ denied: ["starts", "ends"] }));
     await move(page); await move(page, ["Shift+ArrowDown"]);
