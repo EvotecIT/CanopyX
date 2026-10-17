@@ -20,5 +20,6 @@ CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.String? WriteAuthorization
 CanopyX.AspNetCore.CanopyRemoteScript : static class
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String Element(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String Element(CanopyX.Data.CanopyRecordSchema records, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
+CanopyX.AspNetCore.CanopyRemoteScript.static System.String ElementWithNonce(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, System.String? nonce, params System.ValueTuple<System.String, System.String>[]? exportFormats)
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String Script(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String Script(CanopyX.Data.CanopyRecordSchema records, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
